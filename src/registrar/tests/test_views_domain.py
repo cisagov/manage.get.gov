@@ -309,7 +309,7 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "(1.2.3.4,")
             self.assertContains(detail_page, "2.3.4.5)")
 
-    def test_domain_detail_with_no_information_or_application(self):
+    def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
         when no domain information or domain request exist"""
         with less_console_noise():

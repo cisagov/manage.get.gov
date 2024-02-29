@@ -7,8 +7,8 @@ def index(request):
     """This page is available to anyone without logging in."""
     context = {}
     if request.user.is_authenticated:
-        # Get all domain applications the user has access to
-        applications, deletable_applications = _get_applications(request)
+        # Get all domain requests the user has access to
+        applications, deletable_domain_requests = _get_domain_requests(request)
 
         context["domain_requests"] = applications
 
@@ -17,11 +17,11 @@ def index(request):
         context["domains"] = domains
 
         # Determine if the user will see applications that they can delete
-        has_deletable_applications = deletable_applications.exists()
-        context["has_deletable_applications"] = has_deletable_applications
+        has_deletable_domain_requests = deletable_domain_requests.exists()
+        context["has_deletable_domain_requests"] = has_deletable_domain_requests
 
         # If they can delete applications, add the delete button to the context
-        if has_deletable_applications:
+        if has_deletable_domain_requests:
             # Add the delete modal button to the context
             modal_button = (
                 '<button type="submit" '
@@ -33,7 +33,7 @@ def index(request):
     return render(request, "home.html", context)
 
 
-def _get_applications(request):
+def _get_domain_requests(request):
     """Given the current request,
     get all DomainRequests that are associated with the UserDomainRole object.
 
@@ -43,14 +43,14 @@ def _get_applications(request):
     # domain_requests context will be used to populate
     # the active applications table
     applications = DomainRequest.objects.filter(creator=request.user).exclude(
-        status=DomainRequest.ApplicationStatus.APPROVED
+        status=DomainRequest.DomainRequestStatus.APPROVED
     )
 
     # Create a placeholder DraftDomain for each incomplete draft
-    valid_statuses = [DomainRequest.ApplicationStatus.STARTED, DomainRequest.ApplicationStatus.WITHDRAWN]
-    deletable_applications = applications.filter(status__in=valid_statuses)
+    valid_statuses = [DomainRequest.DomainRequestStatus.STARTED, DomainRequest.DomainRequestStatus.WITHDRAWN]
+    deletable_domain_requests = applications.filter(status__in=valid_statuses)
 
-    return (applications, deletable_applications)
+    return (applications, deletable_domain_requests)
 
 
 def _get_domains(request):

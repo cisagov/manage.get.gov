@@ -6,12 +6,12 @@
 <div class="grid-container">
   <div class="grid-row grid-gap">
     <div class="tablet:grid-col-3">
-      {% include 'application_sidebar.html' %}
+      {% include 'domain_request_sidebar.html' %}
     </div>
     <div class="tablet:grid-col-9">
       <main id="main-content" class="grid-container register-form-step">
         {% if steps.prev %}
-        <a href="{% namespaced_url 'application' steps.prev %}" class="breadcrumb__back">
+        <a href="{% namespaced_url 'domain_request' steps.prev %}" class="breadcrumb__back">
           <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
             <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
           </svg><span class="margin-left-05">Previous step</span>

@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
 
-from registrar.forms import application_wizard as forms
+from registrar.forms import domain_request_wizard as forms
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
@@ -19,7 +19,7 @@ from registrar.views.utility.permission_views import DomainRequestPermissionDele
 from .utility import (
     DomainRequestPermissionView,
     DomainRequestPermissionWithdrawView,
-    ApplicationWizardPermissionView,
+    DomainRequestWizardPermissionView,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class Step(StrEnum):
     """
-    Names for each page of the application wizard.
+    Names for each page of the domain request wizard.
 
     As with Django's own `TextChoices` class, steps will
     appear in the order they are defined. (Order matters.)
@@ -50,7 +50,7 @@ class Step(StrEnum):
     REVIEW = "review"
 
 
-class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
+class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     """
     A common set of methods and configuration.
 
@@ -58,7 +58,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     Together, these steps constitute a "wizard".
 
     This base class sets up a shared state (stored in the user's session)
-    between pages of the application and provides common methods for
+    between pages of the domain request and provides common methods for
     processing form data.
 
     Views for each step should inherit from this base class.
@@ -73,7 +73,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     # (this is not seen _in_ urls, only for Django's internal naming)
     # NB: this is included here for reference. Do not change it without
     # also changing the many places it is hardcoded in the HTML templates
-    URL_NAMESPACE = "application"
+    URL_NAMESPACE = "domain_request"
     # name for accessing /application/<id>/edit
     EDIT_URL_NAME = "edit-application"
     NEW_URL_NAME = "/request/"
@@ -108,28 +108,28 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def __init__(self):
         super().__init__()
         self.steps = StepsHelper(self)
-        self._application = None  # for caching
+        self._domain_request = None  # for caching
 
     def has_pk(self):
         """Does this wizard know about a DomainRequest database record?"""
-        return "application_id" in self.storage
+        return "domain_request_id" in self.storage
 
     @property
     def prefix(self):
         """Namespace the wizard to avoid clashes in session variable names."""
         # this is a string literal but can be made dynamic if we'd like
         # users to have multiple applications open for editing simultaneously
-        return "wizard_application"
+        return "wizard_domain_request"
 
     @property
     def application(self) -> DomainRequest:
         """
         Attempt to match the current wizard with a DomainRequest.
 
-        Will create an application if none exists.
+        Will create a domain request if none exists.
         """
-        if self._application:
-            return self._application
+        if self._domain_request:
+            return self._domain_request
 
         # For linter. The else block should never be hit, but if it does,
         # there may be a UI consideration. That will need to be handled in another ticket.
@@ -140,20 +140,20 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             raise ValueError("Invalid value for User")
 
         if self.has_pk():
-            id = self.storage["application_id"]
+            id = self.storage["domain_request_id"]
             try:
-                self._application = DomainRequest.objects.get(
+                self._domain_request = DomainRequest.objects.get(
                     creator=creator,
                     pk=id,
                 )
-                return self._application
+                return self._domain_request
             except DomainRequest.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainRequest" % id)
 
-        self._application = DomainRequest.objects.create(creator=self.request.user)
+        self._domain_request = DomainRequest.objects.create(creator=self.request.user)
 
-        self.storage["application_id"] = self._application.id
-        return self._application
+        self.storage["domain_request_id"] = self._domain_request.id
+        return self._domain_request
 
     @property
     def storage(self):
@@ -179,9 +179,9 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def done(self):
         """Called when the user clicks the submit button, if all forms are valid."""
-        self.application.submit()  # change the status to submitted
-        self.application.save()
-        logger.debug("Application object saved: %s", self.application.id)
+        self.domain_request.submit()  # change the status to submitted
+        self.domain_request.save()
+        logger.debug("Application object saved: %s", self.domain_request.id)
         return redirect(reverse(f"{self.URL_NAMESPACE}:finished"))
 
     def from_model(self, attribute: str, default, *args, **kwargs):
@@ -214,20 +214,20 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # and remove any prior wizard data from their session
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
-            self.storage["application_id"] = kwargs["id"]
+            self.storage["domain_request_id"] = kwargs["id"]
             self.storage["step_history"] = self.db_check_for_unlocking_steps()
 
         # if accessing this class directly, redirect to the first step
-        #     in other words, if `ApplicationWizard` is called as view
+        #     in other words, if `DomainRequestWizard` is called as view
         #     directly by some redirect or url handler, we'll send users
         #     either to an acknowledgement page or to the first step in
         #     the processes (if an edit rather than a new request); subclasses
         #     will NOT be redirected. The purpose of this is to allow code to
-        #     send users "to the application wizard" without needing to
+        #     send users "to the domain request wizard" without needing to
         #     know which view is first in the list of steps.
-        if self.__class__ == ApplicationWizard:
+        if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
-                return render(request, "application_intro.html")
+                return render(request, "domain_request_intro.html")
             else:
                 return self.goto(self.steps.first)
 
@@ -278,7 +278,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         kwargs = {
             "files": files,
             "prefix": self.steps.current,
-            "application": self.application,  # this is a property, not an object
+            "domain_request": self.application,  # this is a property, not an object
         }
 
         if step is None:
@@ -303,72 +303,72 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def pending_requests(self):
         """return an array of pending requests if user has pending requests
         and no approved requests"""
-        if self.approved_applications_exist() or self.approved_domains_exist():
+        if self.approved_domain_requests_exist() or self.approved_domains_exist():
             return []
         else:
-            return self.pending_applications()
+            return self.pending_domain_requests()
 
-    def approved_applications_exist(self):
-        """Checks if user is creator of applications with ApplicationStatus.APPROVED status"""
-        approved_application_count = DomainRequest.objects.filter(
-            creator=self.request.user, status=DomainRequest.ApplicationStatus.APPROVED
+    def approved_domain_requests_exist(self):
+        """Checks if user is creator of applications with DomainRequestStatus.APPROVED status"""
+        approved_domain_request_count = DomainRequest.objects.filter(
+            creator=self.request.user, status=DomainRequest.DomainRequestStatus.APPROVED
         ).count()
-        return approved_application_count > 0
+        return approved_domain_request_count > 0
 
     def approved_domains_exist(self):
         """Checks if user has permissions on approved domains
 
         This additional check is necessary to account for domains which were migrated
-        and do not have an application"""
+        and do not have a domain request"""
         return self.request.user.permissions.count() > 0
 
-    def pending_applications(self):
+    def pending_domain_requests(self):
         """Returns a List of user's applications with one of the following states:
-        ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW, ApplicationStatus.ACTION_NEEDED"""
-        # if the current application has ApplicationStatus.ACTION_NEEDED status, this check should not be performed
-        if self.application.status == DomainRequest.ApplicationStatus.ACTION_NEEDED:
+        DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED"""
+        # if the current application has DomainRequestStatus.ACTION_NEEDED status, this check should not be performed
+        if self.domain_request.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
             return []
         check_statuses = [
-            DomainRequest.ApplicationStatus.SUBMITTED,
-            DomainRequest.ApplicationStatus.IN_REVIEW,
-            DomainRequest.ApplicationStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.SUBMITTED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
         ]
         return DomainRequest.objects.filter(creator=self.request.user, status__in=check_statuses)
 
     def db_check_for_unlocking_steps(self):
         """Helper for get_context_data
 
-        Queries the DB for an application and returns a list of unlocked steps."""
+        Queries the DB for a domain request and returns a list of unlocked steps."""
         history_dict = {
-            "organization_type": self.application.organization_type is not None,
-            "tribal_government": self.application.tribe_name is not None,
-            "organization_federal": self.application.federal_type is not None,
-            "organization_election": self.application.is_election_board is not None,
+            "organization_type": self.domain_request.organization_type is not None,
+            "tribal_government": self.domain_request.tribe_name is not None,
+            "organization_federal": self.domain_request.federal_type is not None,
+            "organization_election": self.domain_request.is_election_board is not None,
             "organization_contact": (
-                self.application.federal_agency is not None
-                or self.application.organization_name is not None
-                or self.application.address_line1 is not None
-                or self.application.city is not None
-                or self.application.state_territory is not None
-                or self.application.zipcode is not None
-                or self.application.urbanization is not None
+                self.domain_request.federal_agency is not None
+                or self.domain_request.organization_name is not None
+                or self.domain_request.address_line1 is not None
+                or self.domain_request.city is not None
+                or self.domain_request.state_territory is not None
+                or self.domain_request.zipcode is not None
+                or self.domain_request.urbanization is not None
             ),
-            "about_your_organization": self.application.about_your_organization is not None,
-            "authorizing_official": self.application.authorizing_official is not None,
+            "about_your_organization": self.domain_request.about_your_organization is not None,
+            "authorizing_official": self.domain_request.authorizing_official is not None,
             "current_sites": (
-                self.application.current_websites.exists() or self.application.requested_domain is not None
+                self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
             ),
-            "dotgov_domain": self.application.requested_domain is not None,
-            "purpose": self.application.purpose is not None,
-            "your_contact": self.application.submitter is not None,
+            "dotgov_domain": self.domain_request.requested_domain is not None,
+            "purpose": self.domain_request.purpose is not None,
+            "your_contact": self.domain_request.submitter is not None,
             "other_contacts": (
-                self.application.other_contacts.exists() or self.application.no_other_contacts_rationale is not None
+                self.domain_request.other_contacts.exists() or self.domain_request.no_other_contacts_rationale is not None
             ),
             "anything_else": (
-                self.application.anything_else is not None or self.application.is_policy_acknowledged is not None
+                self.domain_request.anything_else is not None or self.domain_request.is_policy_acknowledged is not None
             ),
-            "requirements": self.application.is_policy_acknowledged is not None,
-            "review": self.application.is_policy_acknowledged is not None,
+            "requirements": self.domain_request.is_policy_acknowledged is not None,
+            "review": self.domain_request.is_policy_acknowledged is not None,
         }
         return [key for key, value in history_dict.items() if value]
 
@@ -377,8 +377,8 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # Build the submit button that we'll pass to the modal.
         modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
         # Concatenate the modal header that we'll pass to the modal.
-        if self.application.requested_domain:
-            modal_heading = "You are about to submit a domain request for " + str(self.application.requested_domain)
+        if self.domain_request.requested_domain:
+            modal_heading = "You are about to submit a domain request for " + str(self.domain_request.requested_domain)
         else:
             modal_heading = "You are about to submit an incomplete request"
 
@@ -387,7 +387,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             "steps": self.steps,
             # Add information about which steps should be unlocked
             "visited": self.storage.get("step_history", []),
-            "is_federal": self.application.is_federal(),
+            "is_federal": self.domain_request.is_federal(),
             "modal_button": modal_button,
             "modal_heading": modal_heading,
         }
@@ -434,7 +434,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             return self.goto(self.steps.first)
 
         # if accessing this class directly, redirect to the first step
-        if self.__class__ == ApplicationWizard:
+        if self.__class__ == DomainRequestWizard:
             return self.goto(self.steps.first)
 
         forms = self.get_forms(use_post=True)
@@ -462,86 +462,86 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         """
         Unpack the form responses onto the model object properties.
 
-        Saves the application to the database.
+        Saves the domain request to the database.
         """
         for form in forms:
             if form is not None and hasattr(form, "to_database"):
                 form.to_database(self.application)
 
 
-class OrganizationType(ApplicationWizard):
-    template_name = "application_org_type.html"
+class OrganizationType(DomainRequestWizard):
+    template_name = "domain_request_org_type.html"
     forms = [forms.OrganizationTypeForm]
 
 
-class TribalGovernment(ApplicationWizard):
-    template_name = "application_tribal_government.html"
+class TribalGovernment(DomainRequestWizard):
+    template_name = "domain_request_tribal_government.html"
     forms = [forms.TribalGovernmentForm]
 
 
-class OrganizationFederal(ApplicationWizard):
-    template_name = "application_org_federal.html"
+class OrganizationFederal(DomainRequestWizard):
+    template_name = "domain_request_org_federal.html"
     forms = [forms.OrganizationFederalForm]
 
 
-class OrganizationElection(ApplicationWizard):
-    template_name = "application_org_election.html"
+class OrganizationElection(DomainRequestWizard):
+    template_name = "domain_request_org_election.html"
     forms = [forms.OrganizationElectionForm]
 
 
-class OrganizationContact(ApplicationWizard):
-    template_name = "application_org_contact.html"
+class OrganizationContact(DomainRequestWizard):
+    template_name = "domain_request_org_contact.html"
     forms = [forms.OrganizationContactForm]
 
 
-class AboutYourOrganization(ApplicationWizard):
-    template_name = "application_about_your_organization.html"
+class AboutYourOrganization(DomainRequestWizard):
+    template_name = "domain_request_about_your_organization.html"
     forms = [forms.AboutYourOrganizationForm]
 
 
-class AuthorizingOfficial(ApplicationWizard):
-    template_name = "application_authorizing_official.html"
+class AuthorizingOfficial(DomainRequestWizard):
+    template_name = "domain_request_authorizing_official.html"
     forms = [forms.AuthorizingOfficialForm]
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["organization_type"] = self.application.organization_type
-        context["federal_type"] = self.application.federal_type
+        context["organization_type"] = self.domain_request.organization_type
+        context["federal_type"] = self.domain_request.federal_type
         return context
 
 
-class CurrentSites(ApplicationWizard):
-    template_name = "application_current_sites.html"
+class CurrentSites(DomainRequestWizard):
+    template_name = "domain_request_current_sites.html"
     forms = [forms.CurrentSitesFormSet]
 
 
-class DotgovDomain(ApplicationWizard):
-    template_name = "application_dotgov_domain.html"
+class DotgovDomain(DomainRequestWizard):
+    template_name = "domain_request_dotgov_domain.html"
     forms = [forms.DotGovDomainForm, forms.AlternativeDomainFormSet]
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["organization_type"] = self.application.organization_type
-        context["federal_type"] = self.application.federal_type
+        context["organization_type"] = self.domain_request.organization_type
+        context["federal_type"] = self.domain_request.federal_type
         return context
 
 
-class Purpose(ApplicationWizard):
-    template_name = "application_purpose.html"
+class Purpose(DomainRequestWizard):
+    template_name = "domain_request_purpose.html"
     forms = [forms.PurposeForm]
 
 
-class YourContact(ApplicationWizard):
-    template_name = "application_your_contact.html"
+class YourContact(DomainRequestWizard):
+    template_name = "domain_request_your_contact.html"
     forms = [forms.YourContactForm]
 
 
-class OtherContacts(ApplicationWizard):
-    template_name = "application_other_contacts.html"
+class OtherContacts(DomainRequestWizard):
+    template_name = "domain_request_other_contacts.html"
     forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
 
     def is_valid(self, forms: list) -> bool:
-        """Overrides default behavior defined in ApplicationWizard.
+        """Overrides default behavior defined in DomainRequestWizard.
         Depending on value in other_contacts_yes_no_form, marks forms in
         other_contacts or no_other_contacts for deletion. Then validates
         all forms.
@@ -580,24 +580,24 @@ class OtherContacts(ApplicationWizard):
         return all_forms_valid
 
 
-class AnythingElse(ApplicationWizard):
-    template_name = "application_anything_else.html"
+class AnythingElse(DomainRequestWizard):
+    template_name = "domain_request_anything_else.html"
     forms = [forms.AnythingElseForm]
 
 
-class Requirements(ApplicationWizard):
-    template_name = "application_requirements.html"
+class Requirements(DomainRequestWizard):
+    template_name = "domain_request_requirements.html"
     forms = [forms.RequirementsForm]
 
 
-class Review(ApplicationWizard):
-    template_name = "application_review.html"
+class Review(DomainRequestWizard):
+    template_name = "domain_request_review.html"
     forms = []  # type: ignore
 
     def get_context_data(self):
         context = super().get_context_data()
         context["Step"] = Step.__members__
-        context["application"] = self.application
+        context["domain_request"] = self.application
         return context
 
     def goto_next_step(self):
@@ -623,30 +623,30 @@ class Review(ApplicationWizard):
         #     return self.goto(self.steps.current)
 
 
-class Finished(ApplicationWizard):
-    template_name = "application_done.html"
+class Finished(DomainRequestWizard):
+    template_name = "domain_request_done.html"
     forms = []  # type: ignore
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
-        context["application_id"] = self.application.id
+        context["domain_request_id"] = self.domain_request.id
         # clean up this wizard session, because we are done with it
         del self.storage
         return render(self.request, self.template_name, context)
 
 
-class ApplicationStatus(DomainRequestPermissionView):
-    template_name = "application_status.html"
+class DomainRequestStatus(DomainRequestPermissionView):
+    template_name = "domain_request_status.html"
 
 
 class ApplicationWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
 
     The DomainRequestPermissionView restricts access so that only the
-    `creator` of the application may withdraw it.
+    `creator` of the domain request may withdraw it.
     """
 
-    template_name = "application_withdraw_confirmation.html"
+    template_name = "domain_request_withdraw_confirmation.html"
 
 
 class ApplicationWithdrawn(DomainRequestPermissionWithdrawView):
@@ -659,9 +659,9 @@ class ApplicationWithdrawn(DomainRequestPermissionWithdrawView):
         If user click on withdraw confirm button, this view updates the status
         to withdraw and send back to homepage.
         """
-        application = DomainRequest.objects.get(id=self.kwargs["pk"])
-        application.withdraw()
-        application.save()
+        domain_request = DomainRequest.objects.get(id=self.kwargs["pk"])
+        domain_request.withdraw()
+        domain_request.save()
         return HttpResponseRedirect(reverse("home"))
 
 
@@ -677,7 +677,7 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
             return False
 
         status = self.get_object().status
-        valid_statuses = [DomainRequest.ApplicationStatus.WITHDRAWN, DomainRequest.ApplicationStatus.STARTED]
+        valid_statuses = [DomainRequest.DomainRequestStatus.WITHDRAWN, DomainRequest.DomainRequestStatus.STARTED]
         if status not in valid_statuses:
             return False
 
@@ -707,13 +707,13 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         return response
 
-    def _get_orphaned_contacts(self, application: DomainRequest, check_db=False):
+    def _get_orphaned_contacts(self, domain_request: DomainRequest, check_db=False):
         """
         Collects all orphaned contacts associated with a given DomainRequest object.
 
-        An orphaned contact is defined as a contact that is associated with the application,
-        but not with any other application. This includes the authorizing official, the submitter,
-        and any other contacts linked to the application.
+        An orphaned contact is defined as a contact that is associated with the domain request,
+        but not with any other domain_request. This includes the authorizing official, the submitter,
+        and any other contacts linked to the domain_request.
 
         Parameters:
         application (DomainRequest): The DomainRequest object for which to find orphaned contacts.
@@ -727,10 +727,10 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         contacts_to_delete = []
 
         # Get each contact object on the DomainRequest object
-        ao = application.authorizing_official
-        submitter = application.submitter
-        other_contacts = list(application.other_contacts.all())
-        other_contact_ids = application.other_contacts.all().values_list("id", flat=True)
+        ao = domain_request.authorizing_official
+        submitter = domain_request.submitter
+        other_contacts = list(domain_request.other_contacts.all())
+        other_contact_ids = domain_request.other_contacts.all().values_list("id", flat=True)
 
         # Check if the desired item still exists in the DB
         if check_db:
@@ -739,8 +739,8 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
             other_contacts = self._get_contacts_by_id(other_contact_ids)
 
         # Pair each contact with its db related name for use in checking if it has joins
-        checked_contacts = [(ao, "authorizing_official"), (submitter, "submitted_applications")]
-        checked_contacts.extend((contact, "contact_applications") for contact in other_contacts)
+        checked_contacts = [(ao, "authorizing_official"), (submitter, "submitted_domain_requests")]
+        checked_contacts.extend((contact, "contact_domain_requests") for contact in other_contacts)
 
         for contact, related_name in checked_contacts:
             if contact is not None and not contact.has_more_than_one_join(related_name):

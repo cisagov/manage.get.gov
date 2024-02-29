@@ -78,7 +78,7 @@ Get the secrets from Cloud.gov by running `cf env getgov-YOURSANDBOX`. More info
 The endpoint /admin can be used to view and manage site content, including but not limited to user information and the list of current applications in the database. To be able to view and use /admin locally:
 
 1. Login via login.gov
-2. Go to the home page and make sure you can see the part where you can submit an application
+2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4
 4. in src/registrar/fixtures_users.py add to the `ADMINS` list in that file by adding your UUID as your username along with your first and last name. See below:
 
@@ -93,14 +93,14 @@ The endpoint /admin can be used to view and manage site content, including but n
  ]
 ```
 
-5. In the browser, navigate to /admin. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
+5. In the browser, navigate to /admin. To verify that all is working correctly, under "domain requests" you should see fake domains with various fake statuses.
 6. Add an optional email key/value pair
 
 ### Adding an Analyst to /admin
 Analysts are a variant of the admin role with limited permissions. The process for adding an Analyst is much the same as adding an admin:
 
 1. Login via login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
-2. Go to the home page and make sure you can see the part where you can submit an application
+2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4 (this will be a different UUID than the one obtained from creating an admin)
 4. in src/registrar/fixtures_users.py add to the `STAFF` list in that file by adding your UUID as your username along with your first and last name. See below:
 
@@ -145,7 +145,7 @@ You can change the logging verbosity, if needed. Do a web search for "django log
 
 ## Mock data
 
-[load.py](../../src/registrar/management/commands/load.py) called from docker-compose (locally) and reset-db.yml (upper) loads the fixtures from [fixtures_user.py](../../src/registrar/fixtures_users.py) and [fixtures_applications.py](../../src/registrar/fixtures_applications.py), giving you some test data to play with while developing.
+[load.py](../../src/registrar/management/commands/load.py) called from docker-compose (locally) and reset-db.yml (upper) loads the fixtures from [fixtures_user.py](../../src/registrar/fixtures_users.py) and [fixtures_domain_requests.py](../../src/registrar/fixtures_domain_requests.py), giving you some test data to play with while developing.
 
 See the [database-access README](./database-access.md) for information on how to pull data to update these fixtures.
 

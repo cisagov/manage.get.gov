@@ -230,10 +230,10 @@ class DomainPermission(PermissionsLoginMixin):
 
         # Analysts may manage domains, when they are in these statuses:
         valid_domain_statuses = [
-            DomainRequest.ApplicationStatus.APPROVED,
-            DomainRequest.ApplicationStatus.IN_REVIEW,
-            DomainRequest.ApplicationStatus.REJECTED,
-            DomainRequest.ApplicationStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
             # Edge case - some domains do not have
             # a status or DomainInformation... aka a status of 'None'.
             # It is necessary to access those to correct errors.
@@ -274,7 +274,7 @@ class DomainRequestPermission(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
-        # user needs to be the creator of the application
+        # user needs to be the creator of the domain request
         # this query is empty if there isn't a domain request with this
         # id and this user as creator
         if not DomainRequest.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
@@ -328,7 +328,7 @@ class DomainRequestPermissionWithdraw(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
-        # user needs to be the creator of the application
+        # user needs to be the creator of the domain request
         # this query is empty if there isn't a domain request with this
         # id and this user as creator
         if not DomainRequest.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
@@ -341,12 +341,12 @@ class DomainRequestPermissionWithdraw(PermissionsLoginMixin):
         return True
 
 
-class ApplicationWizardPermission(PermissionsLoginMixin):
+class DomainRequestWizardPermission(PermissionsLoginMixin):
     """Permission mixin that redirects to start or edit domain request if
     user has access, otherwise 403"""
 
     def has_permission(self):
-        """Check if this user has permission to start or edit an application.
+        """Check if this user has permission to start or edit a domain request.
 
         The user is in self.request.user
         """

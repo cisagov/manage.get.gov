@@ -11,7 +11,7 @@ from .mixins import (
     DomainRequestPermission,
     DomainRequestPermissionWithdraw,
     DomainInvitationPermission,
-    ApplicationWizardPermission,
+    DomainRequestWizardPermission,
     UserDeleteDomainRolePermission,
 )
 import logging
@@ -57,7 +57,7 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 
 
 class DomainRequestPermissionView(DomainRequestPermission, DetailView, abc.ABC):
-    """Abstract base view for domain applications that enforces permissions
+    """Abstract base view for domain requests that enforces permissions
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.
@@ -94,8 +94,8 @@ class DomainRequestPermissionWithdrawView(DomainRequestPermissionWithdraw, Detai
         raise NotImplementedError
 
 
-class ApplicationWizardPermissionView(ApplicationWizardPermission, TemplateView, abc.ABC):
-    """Abstract base view for the application form that enforces permissions
+class DomainRequestWizardPermissionView(DomainRequestWizardPermission, TemplateView, abc.ABC):
+    """Abstract base view for the domain request form that enforces permissions
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.

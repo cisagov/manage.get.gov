@@ -85,15 +85,15 @@ class DomainRequestAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        application = kwargs.get("instance")
-        if application and application.pk:
-            current_state = application.status
+        domain_request = kwargs.get("instance")
+        if domain_request and domain_request.pk:
+            current_state = domain_request.status
 
             # first option in status transitions is current state
-            available_transitions = [(current_state, application.get_status_display())]
+            available_transitions = [(current_state, domain_request.get_status_display())]
 
             transitions = get_available_FIELD_transitions(
-                application, models.DomainRequest._meta.get_field("status")
+                domain_request, models.DomainRequest._meta.get_field("status")
             )
 
             for transition in transitions:
@@ -102,7 +102,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             # only set the available transitions if the user is not restricted
             # from editing the domain request; otherwise, the form will be
             # readonly and the status field will not have a widget
-            if not application.creator.is_restricted():
+            if not domain_request.creator.is_restricted():
                 self.fields["status"].widget.choices = available_transitions
 
 
@@ -867,7 +867,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
 
 class DomainRequestAdmin(ListHeaderAdmin):
-    """Custom domain applications admin class."""
+    """Custom domain requests admin class."""
 
     form = DomainRequestAdminForm
 
@@ -1061,8 +1061,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
                 if (
                     obj
-                    and original_obj.status == models.DomainRequest.ApplicationStatus.APPROVED
-                    and obj.status != models.DomainRequest.ApplicationStatus.APPROVED
+                    and original_obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
+                    and obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
                     and not obj.domain_is_not_active()
                 ):
                     # If an admin tried to set an approved application to
@@ -1082,7 +1082,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
                 elif (
                     obj
-                    and obj.status == models.DomainRequest.ApplicationStatus.REJECTED
+                    and obj.status == models.DomainRequest.DomainRequestStatus.REJECTED
                     and not obj.rejection_reason
                 ):
                     # This condition should never be triggered.
@@ -1100,14 +1100,14 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 else:
                     if obj.status != original_obj.status:
                         status_method_mapping = {
-                            models.DomainRequest.ApplicationStatus.STARTED: None,
-                            models.DomainRequest.ApplicationStatus.SUBMITTED: obj.submit,
-                            models.DomainRequest.ApplicationStatus.IN_REVIEW: obj.in_review,
-                            models.DomainRequest.ApplicationStatus.ACTION_NEEDED: obj.action_needed,
-                            models.DomainRequest.ApplicationStatus.APPROVED: obj.approve,
-                            models.DomainRequest.ApplicationStatus.WITHDRAWN: obj.withdraw,
-                            models.DomainRequest.ApplicationStatus.REJECTED: obj.reject,
-                            models.DomainRequest.ApplicationStatus.INELIGIBLE: (obj.reject_with_prejudice),
+                            models.DomainRequest.DomainRequestStatus.STARTED: None,
+                            models.DomainRequest.DomainRequestStatus.SUBMITTED: obj.submit,
+                            models.DomainRequest.DomainRequestStatus.IN_REVIEW: obj.in_review,
+                            models.DomainRequest.DomainRequestStatus.ACTION_NEEDED: obj.action_needed,
+                            models.DomainRequest.DomainRequestStatus.APPROVED: obj.approve,
+                            models.DomainRequest.DomainRequestStatus.WITHDRAWN: obj.withdraw,
+                            models.DomainRequest.DomainRequestStatus.REJECTED: obj.reject,
+                            models.DomainRequest.DomainRequestStatus.INELIGIBLE: (obj.reject_with_prejudice),
                         }
                         selected_method = status_method_mapping.get(obj.status)
                         if selected_method is None:
@@ -1158,7 +1158,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         if obj and obj.creator.status == models.User.RESTRICTED:
             messages.warning(
                 request,
-                "Cannot edit an application with a restricted creator.",
+                "Cannot edit a domain request with a restricted creator.",
             )
 
     def change_view(self, request, object_id, form_url="", extra_context=None):

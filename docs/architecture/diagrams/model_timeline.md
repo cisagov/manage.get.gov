@@ -5,7 +5,7 @@ This diagram connects the data models along with various workflow stages.
 1. The applicant starts the process at `/request` interacting with the
    `DomainRequest` object.
 
-2. The analyst approves the application using the `DomainRequest`'s
+2. The analyst approves the domain request using the `DomainRequest`'s
    `approve()` method which creates many related objects: `UserDomainRole`,
    `Domain`, and `DomainInformation`.
 

@@ -6,5 +6,5 @@ from .permission_views import (
     DomainRequestPermissionView,
     DomainRequestPermissionWithdrawView,
     DomainInvitationPermissionDeleteView,
-    ApplicationWizardPermissionView,
+    DomainRequestWizardPermissionView,
 )

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class TestProcessedMigrations(TestCase):
     """This test case class is designed to verify the idempotency of migrations
-    related to domain transitions in the application."""
+    related to domain transitions in the domain_request."""
 
     def setUp(self):
         """Defines the file name of migration_json and the folder its contained in"""

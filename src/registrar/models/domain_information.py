@@ -18,7 +18,7 @@ class DomainInformation(TimeStampedModel):
     DomainRequest. We use these field from DomainRequest with few exceptions
     which are 'removed' via pop at the bottom of this file. Most of design for domain
     management's user information are based on application, but we cannot change
-    the application once approved, so copying them that way we can make changes
+    the domain request once approved, so copying them that way we can make changes
     after its approved. Most fields here are copied from Application."""
 
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
@@ -30,7 +30,7 @@ class DomainInformation(TimeStampedModel):
 
     AGENCY_CHOICES = DomainRequest.AGENCY_CHOICES
 
-    # This is the application user who created this application. The contact
+    # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
         "registrar.User",
@@ -169,7 +169,7 @@ class DomainInformation(TimeStampedModel):
         "registrar.Contact",
         null=True,
         blank=True,
-        related_name="submitted_applications_information",
+        related_name="submitted_domain_requests_information",
         on_delete=models.PROTECT,
     )
 
@@ -182,7 +182,7 @@ class DomainInformation(TimeStampedModel):
     other_contacts = models.ManyToManyField(
         "registrar.Contact",
         blank=True,
-        related_name="contact_applications_information",
+        related_name="contact_domain_requests_information",
         verbose_name="contacts",
     )
 

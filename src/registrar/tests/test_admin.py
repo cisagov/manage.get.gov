@@ -24,7 +24,7 @@ from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockSESClient,
     AuditedAdminMockData,
-    completed_application,
+    completed_domain_request,
     generic_domain_object,
     less_console_noise,
     mock_user,
@@ -236,10 +236,10 @@ class TestDomainAdmin(MockEppLib, WebTest):
         """
         with less_console_noise():
             self.client.force_login(self.superuser)
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             mock_client = MockSESClient()
             with boto3_mocking.clients.handler_for("sesv2", mock_client):
-                application.approve()
+                domain_request.approve()
 
             response = self.client.get("/admin/registrar/domain/")
 
@@ -442,12 +442,12 @@ class TestDomainAdmin(MockEppLib, WebTest):
 class TestDomainRequestAdminForm(TestCase):
     def setUp(self):
         # Create a test application with an initial state of started
-        self.application = completed_application()
+        self.domain_request = completed_domain_request()
 
     def test_form_choices(self):
         with less_console_noise():
             # Create a form instance with the test application
-            form = DomainRequestAdminForm(instance=self.application)
+            form = DomainRequestAdminForm(instance=self.domain_request)
 
             # Verify that the form choices match the available transitions for started
             expected_choices = [("started", "Started"), ("submitted", "Submitted")]
@@ -471,12 +471,12 @@ class TestDomainRequestAdminForm(TestCase):
     def test_form_choices_when_ineligible(self):
         with less_console_noise():
             # Create a form instance with a domain request with ineligible status
-            ineligible_application = DomainRequest(status="ineligible")
+            ineligible_domain_request = DomainRequest(status="ineligible")
 
             # Attempt to create a form with the ineligible application
             # The form should not raise an error, but choices should be the
             # full list of possible choices
-            form = DomainRequestAdminForm(instance=ineligible_application)
+            form = DomainRequestAdminForm(instance=ineligible_domain_request)
 
             self.assertEqual(
                 form.fields["status"].widget.choices,
@@ -509,7 +509,7 @@ class TestDomainRequestAdmin(MockEppLib):
             p = "adminpass"
             self.client.login(username="superuser", password=p)
 
-            multiple_unalphabetical_domain_objects("application")
+            multiple_unalphabetical_domain_objects("domain_request")
 
             # Assert that our sort works correctly
             self.test_helper.assert_table_sorted("1", ("requested_domain__name",))
@@ -523,10 +523,10 @@ class TestDomainRequestAdmin(MockEppLib):
             p = "adminpass"
             self.client.login(username="superuser", password=p)
 
-            multiple_unalphabetical_domain_objects("application")
+            multiple_unalphabetical_domain_objects("domain_request")
 
-            additional_application = generic_domain_object("application", "Xylophone")
-            new_user = User.objects.filter(username=additional_application.investigator.username).get()
+            additional_domain_request = generic_domain_object("domain_request", "Xylophone")
+            new_user = User.objects.filter(username=additional_domain_request.investigator.username).get()
             new_user.first_name = "Xylophonic"
             new_user.save()
 
@@ -554,9 +554,9 @@ class TestDomainRequestAdmin(MockEppLib):
             p = "adminpass"
             self.client.login(username="superuser", password=p)
 
-            multiple_unalphabetical_domain_objects("application")
-            additional_application = generic_domain_object("application", "Xylophone")
-            new_user = User.objects.filter(username=additional_application.investigator.username).get()
+            multiple_unalphabetical_domain_objects("domain_request")
+            additional_domain_request = generic_domain_object("domain_request", "Xylophone")
+            new_user = User.objects.filter(username=additional_domain_request.investigator.username).get()
             new_user.first_name = "Xylophonic"
             new_user.save()
 
@@ -578,13 +578,13 @@ class TestDomainRequestAdmin(MockEppLib):
                 ),
             )
 
-    def test_short_org_name_in_applications_list(self):
+    def test_short_org_name_in_domain_requests_list(self):
         """
         Make sure the short name is displaying in admin on the list page
         """
         with less_console_noise():
             self.client.force_login(self.superuser)
-            completed_application()
+            completed_domain_request()
             response = self.client.get("/admin/registrar/DomainRequest/")
             # There are 4 template references to Federal (4) plus two references in the table
             # for our actual application
@@ -594,20 +594,20 @@ class TestDomainRequestAdmin(MockEppLib):
             # Now let's make sure the long description does not exist
             self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
-    def transition_state_and_send_email(self, application, status, rejection_reason=None):
+    def transition_state_and_send_email(self, domain_request, status, rejection_reason=None):
         """Helper method for the email test cases."""
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Create a mock request
-                request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(application.pk))
+                request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
 
-                # Modify the application's properties
-                application.status = status
-                application.rejection_reason = rejection_reason
+                # Modify the domain request's properties
+                domain_request.status = status
+                domain_request.rejection_reason = rejection_reason
 
                 # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
+                self.admin.save_model(request, domain_request, form=None, change=True)
 
     def assert_email_is_accurate(
         self, expected_string, email_index, email_address, test_that_no_bcc=False, bcc_email_address=""
@@ -658,42 +658,42 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application()
+            domain_request = completed_domain_request()
 
             # Test Submitted Status from started
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.SUBMITTED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, True)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Test Withdrawn Status
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.WITHDRAWN)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.WITHDRAWN)
             self.assert_email_is_accurate(
                 "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL, True
             )
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
             # Test Submitted Status Again (from withdrawn)
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.SUBMITTED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.IN_REVIEW)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.IN_REVIEW)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.SUBMITTED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.IN_REVIEW)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.IN_REVIEW)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to ACTION_NEEDED
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.ACTION_NEEDED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.SUBMITTED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     @override_settings(IS_PRODUCTION=True)
@@ -715,43 +715,43 @@ class TestDomainRequestAdmin(MockEppLib):
             BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
 
             # Create a sample application
-            application = completed_application()
+            domain_request = completed_domain_request()
 
             # Test Submitted Status from started
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.SUBMITTED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Test Withdrawn Status
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.WITHDRAWN)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.WITHDRAWN)
             self.assert_email_is_accurate(
                 "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL
             )
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
             # Test Submitted Status Again (from withdrawn)
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.SUBMITTED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.IN_REVIEW)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.IN_REVIEW)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.SUBMITTED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.IN_REVIEW)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.IN_REVIEW)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to ACTION_NEEDED
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.ACTION_NEEDED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.SUBMITTED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sends_approved_email(self):
@@ -764,24 +764,24 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Test Submitted Status
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.APPROVED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 0, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Test Withdrawn Status
             self.transition_state_and_send_email(
                 application,
-                DomainRequest.ApplicationStatus.REJECTED,
+                DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.DOMAIN_PURPOSE,
             )
             self.assert_email_is_accurate("Your .gov domain request has been rejected.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
             # Test Submitted Status Again (No new email should be sent)
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.APPROVED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sends_rejected_email_purpose_not_met(self):
@@ -794,12 +794,12 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason DOMAIN_PURPOSE and test email
             self.transition_state_and_send_email(
                 application,
-                DomainRequest.ApplicationStatus.REJECTED,
+                DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.DOMAIN_PURPOSE,
             )
             self.assert_email_is_accurate(
@@ -810,7 +810,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.APPROVED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -824,11 +824,11 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason REQUESTOR and test email including dynamic organization name
             self.transition_state_and_send_email(
-                application, DomainRequest.ApplicationStatus.REJECTED, DomainRequest.RejectionReasons.REQUESTOR
+                application, DomainRequest.DomainRequestStatus.REJECTED, DomainRequest.RejectionReasons.REQUESTOR
             )
             self.assert_email_is_accurate(
                 "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "
@@ -839,7 +839,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.APPROVED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -853,12 +853,12 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason SECOND_DOMAIN_REASONING and test email including dynamic organization name
             self.transition_state_and_send_email(
                 application,
-                DomainRequest.ApplicationStatus.REJECTED,
+                DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.SECOND_DOMAIN_REASONING,
             )
             self.assert_email_is_accurate(
@@ -867,7 +867,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.APPROVED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -881,12 +881,12 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason CONTACTS_OR_ORGANIZATION_LEGITIMACY and test email including dynamic organization name
             self.transition_state_and_send_email(
                 application,
-                DomainRequest.ApplicationStatus.REJECTED,
+                DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY,
             )
             self.assert_email_is_accurate(
@@ -898,7 +898,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.APPROVED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -912,12 +912,12 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason ORGANIZATION_ELIGIBILITY and test email including dynamic organization name
             self.transition_state_and_send_email(
                 application,
-                DomainRequest.ApplicationStatus.REJECTED,
+                DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.ORGANIZATION_ELIGIBILITY,
             )
             self.assert_email_is_accurate(
@@ -929,7 +929,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.APPROVED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -943,12 +943,12 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
             self.transition_state_and_send_email(
                 application,
-                DomainRequest.ApplicationStatus.REJECTED,
+                DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.NAMING_REQUIREMENTS,
             )
             self.assert_email_is_accurate(
@@ -957,7 +957,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.APPROVED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -971,19 +971,19 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
             self.transition_state_and_send_email(
                 application,
-                DomainRequest.ApplicationStatus.REJECTED,
+                DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.OTHER,
             )
             self.assert_email_is_accurate("Choosing a .gov domain name", 0, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.APPROVED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -995,25 +995,25 @@ class TestDomainRequestAdmin(MockEppLib):
         """
 
         with less_console_noise():
-            application = completed_application(status=DomainRequest.ApplicationStatus.APPROVED)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
 
             # Create a request object with a superuser
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(application.pk))
+            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
             request.user = self.superuser
 
             with ExitStack() as stack:
                 stack.enter_context(patch.object(messages, "error"))
-                application.status = DomainRequest.ApplicationStatus.REJECTED
+                domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
 
-                self.admin.save_model(request, application, None, True)
+                self.admin.save_model(request, domain_request, None, True)
 
                 messages.error.assert_called_once_with(
                     request,
                     "A rejection reason is required.",
                 )
 
-            application.refresh_from_db()
-            self.assertEqual(application.status, DomainRequest.ApplicationStatus.APPROVED)
+            domain_request.refresh_from_db()
+            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.APPROVED)
 
     def test_transition_to_rejected_with_rejection_reason_does_not_trigger_error(self):
         """
@@ -1023,23 +1023,23 @@ class TestDomainRequestAdmin(MockEppLib):
         """
 
         with less_console_noise():
-            application = completed_application(status=DomainRequest.ApplicationStatus.APPROVED)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
 
             # Create a request object with a superuser
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(application.pk))
+            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
             request.user = self.superuser
 
             with ExitStack() as stack:
                 stack.enter_context(patch.object(messages, "error"))
-                application.status = DomainRequest.ApplicationStatus.REJECTED
-                application.rejection_reason = DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY
+                domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
+                domain_request.rejection_reason = DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY
 
-                self.admin.save_model(request, application, None, True)
+                self.admin.save_model(request, domain_request, None, True)
 
                 messages.error.assert_not_called()
 
-            application.refresh_from_db()
-            self.assertEqual(application.status, DomainRequest.ApplicationStatus.REJECTED)
+            domain_request.refresh_from_db()
+            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.REJECTED)
 
     def test_save_model_sends_withdrawn_email(self):
         """When transitioning to withdrawn on a domain request,
@@ -1051,22 +1051,22 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Test Submitted Status
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.WITHDRAWN)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.WITHDRAWN)
             self.assert_email_is_accurate(
                 "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 0, EMAIL
             )
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Test Withdrawn Status
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.SUBMITTED)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assert_email_is_accurate("We received your .gov domain request.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
             # Test Submitted Status Again (No new email should be sent)
-            self.transition_state_and_send_email(application, DomainRequest.ApplicationStatus.WITHDRAWN)
+            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.WITHDRAWN)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sets_approved_domain(self):
@@ -1076,20 +1076,20 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(application.pk))
+            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                # Modify the application's property
-                application.status = DomainRequest.ApplicationStatus.APPROVED
+                # Modify the domain request's property
+                domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
 
                 # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
+                self.admin.save_model(request, domain_request, form=None, change=True)
 
             # Test that approved domain exists and equals requested domain
-            self.assertEqual(application.requested_domain.name, application.approved_domain.name)
+            self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)
 
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
@@ -1098,32 +1098,32 @@ class TestDomainRequestAdmin(MockEppLib):
             User.objects.filter(email=EMAIL).delete()
 
             # Create a sample application
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(application.pk))
+            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                # Modify the application's property
-                application.status = DomainRequest.ApplicationStatus.INELIGIBLE
+                # Modify the domain request's property
+                domain_request.status = DomainRequest.DomainRequestStatus.INELIGIBLE
 
                 # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
+                self.admin.save_model(request, domain_request, form=None, change=True)
 
             # Test that approved domain exists and equals requested domain
-            self.assertEqual(application.creator.status, "restricted")
+            self.assertEqual(domain_request.creator.status, "restricted")
 
     def test_readonly_when_restricted_creator(self):
         with less_console_noise():
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                application.creator.status = User.RESTRICTED
-                application.creator.save()
+                domain_request.creator.status = User.RESTRICTED
+                domain_request.creator.save()
 
             request = self.factory.get("/")
             request.user = self.superuser
 
-            readonly_fields = self.admin.get_readonly_fields(request, application)
+            readonly_fields = self.admin.get_readonly_fields(request, domain_request)
 
             expected_fields = [
                 "id",
@@ -1201,10 +1201,10 @@ class TestDomainRequestAdmin(MockEppLib):
     def test_saving_when_restricted_creator(self):
         with less_console_noise():
             # Create an instance of the model
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                application.creator.status = User.RESTRICTED
-                application.creator.save()
+                domain_request.creator.status = User.RESTRICTED
+                domain_request.creator.save()
 
             # Create a request object with a superuser
             request = self.factory.get("/")
@@ -1212,7 +1212,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             with patch("django.contrib.messages.error") as mock_error:
                 # Simulate saving the model
-                self.admin.save_model(request, application, None, False)
+                self.admin.save_model(request, domain_request, None, False)
 
                 # Assert that the error message was called with the correct argument
                 mock_error.assert_called_once_with(
@@ -1221,27 +1221,27 @@ class TestDomainRequestAdmin(MockEppLib):
                 )
 
             # Assert that the status has not changed
-            self.assertEqual(application.status, DomainRequest.ApplicationStatus.IN_REVIEW)
+            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.IN_REVIEW)
 
     def test_change_view_with_restricted_creator(self):
         with less_console_noise():
             # Create an instance of the model
-            application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                application.creator.status = User.RESTRICTED
-                application.creator.save()
+                domain_request.creator.status = User.RESTRICTED
+                domain_request.creator.save()
 
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Create a request object with a superuser
-                request = self.factory.get("/admin/your_app/DomainRequest/{}/change/".format(application.pk))
+                request = self.factory.get("/admin/your_app/DomainRequest/{}/change/".format(domain_request.pk))
                 request.user = self.superuser
 
-                self.admin.display_restricted_warning(request, application)
+                self.admin.display_restricted_warning(request, domain_request)
 
                 # Assert that the error message was called with the correct argument
                 mock_warning.assert_called_once_with(
                     request,
-                    "Cannot edit an application with a restricted creator.",
+                    "Cannot edit a domain request with a restricted creator.",
                 )
 
     def trigger_saving_approved_to_another_state(self, domain_is_active, another_state, rejection_reason=None):
@@ -1253,14 +1253,14 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with less_console_noise():
             # Create an instance of the model
-            application = completed_application(status=DomainRequest.ApplicationStatus.APPROVED)
-            domain = Domain.objects.create(name=application.requested_domain.name)
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
+            domain = Domain.objects.create(name=domain_request.requested_domain.name)
             domain_information = DomainInformation.objects.create(creator=self.superuser, domain=domain)
-            application.approved_domain = domain
-            application.save()
+            domain_request.approved_domain = domain
+            domain_request.save()
 
             # Create a request object with a superuser
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(application.pk))
+            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
             request.user = self.superuser
 
             # Define a custom implementation for is_active
@@ -1273,10 +1273,10 @@ class TestDomainRequestAdmin(MockEppLib):
                 stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
                 stack.enter_context(patch.object(messages, "error"))
 
-                application.status = another_state
-                application.rejection_reason = rejection_reason
+                domain_request.status = another_state
+                domain_request.rejection_reason = rejection_reason
 
-                self.admin.save_model(request, application, None, True)
+                self.admin.save_model(request, domain_request, None, True)
 
                 # Assert that the error message was called with the correct argument
                 if domain_is_active:
@@ -1288,7 +1288,7 @@ class TestDomainRequestAdmin(MockEppLib):
                     # Assert that the error message was never called
                     messages.error.assert_not_called()
 
-                    self.assertEqual(application.approved_domain, None)
+                    self.assertEqual(domain_request.approved_domain, None)
 
                     # Assert that Domain got Deleted
                     with self.assertRaises(Domain.DoesNotExist):
@@ -1299,32 +1299,32 @@ class TestDomainRequestAdmin(MockEppLib):
                         domain_information.refresh_from_db()
 
     def test_error_when_saving_approved_to_in_review_and_domain_is_active(self):
-        self.trigger_saving_approved_to_another_state(True, DomainRequest.ApplicationStatus.IN_REVIEW)
+        self.trigger_saving_approved_to_another_state(True, DomainRequest.DomainRequestStatus.IN_REVIEW)
 
     def test_error_when_saving_approved_to_action_needed_and_domain_is_active(self):
-        self.trigger_saving_approved_to_another_state(True, DomainRequest.ApplicationStatus.ACTION_NEEDED)
+        self.trigger_saving_approved_to_another_state(True, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
 
     def test_error_when_saving_approved_to_rejected_and_domain_is_active(self):
-        self.trigger_saving_approved_to_another_state(True, DomainRequest.ApplicationStatus.REJECTED)
+        self.trigger_saving_approved_to_another_state(True, DomainRequest.DomainRequestStatus.REJECTED)
 
     def test_error_when_saving_approved_to_ineligible_and_domain_is_active(self):
-        self.trigger_saving_approved_to_another_state(True, DomainRequest.ApplicationStatus.INELIGIBLE)
+        self.trigger_saving_approved_to_another_state(True, DomainRequest.DomainRequestStatus.INELIGIBLE)
 
     def test_side_effects_when_saving_approved_to_in_review(self):
-        self.trigger_saving_approved_to_another_state(False, DomainRequest.ApplicationStatus.IN_REVIEW)
+        self.trigger_saving_approved_to_another_state(False, DomainRequest.DomainRequestStatus.IN_REVIEW)
 
     def test_side_effects_when_saving_approved_to_action_needed(self):
-        self.trigger_saving_approved_to_another_state(False, DomainRequest.ApplicationStatus.ACTION_NEEDED)
+        self.trigger_saving_approved_to_another_state(False, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
 
     def test_side_effects_when_saving_approved_to_rejected(self):
         self.trigger_saving_approved_to_another_state(
             False,
-            DomainRequest.ApplicationStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY,
         )
 
     def test_side_effects_when_saving_approved_to_ineligible(self):
-        self.trigger_saving_approved_to_another_state(False, DomainRequest.ApplicationStatus.INELIGIBLE)
+        self.trigger_saving_approved_to_another_state(False, DomainRequest.DomainRequestStatus.INELIGIBLE)
 
     def test_has_correct_filters(self):
         """
@@ -1362,7 +1362,7 @@ class TestDomainRequestAdmin(MockEppLib):
         """
         with less_console_noise():
             # Creates a list of DomainRequests in scrambled order
-            multiple_unalphabetical_domain_objects("application")
+            multiple_unalphabetical_domain_objects("domain_request")
 
             request = self.factory.get("/")
             request.user = self.superuser
@@ -1395,8 +1395,8 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with less_console_noise():
             # Create a mock DomainRequest object, with a fake investigator
-            application: DomainRequest = generic_domain_object("application", "SomeGuy")
-            investigator_user = User.objects.filter(username=application.investigator.username).get()
+            application: DomainRequest = generic_domain_object("domain_request", "SomeGuy")
+            investigator_user = User.objects.filter(username=domain_request.investigator.username).get()
             investigator_user.is_staff = True
             investigator_user.save()
 
@@ -1440,21 +1440,21 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with less_console_noise():
             # Create a mock DomainRequest object, with a fake investigator
-            application: DomainRequest = generic_domain_object("application", "SomeGuy")
-            investigator_user = User.objects.filter(username=application.investigator.username).get()
+            application: DomainRequest = generic_domain_object("domain_request", "SomeGuy")
+            investigator_user = User.objects.filter(username=domain_request.investigator.username).get()
             investigator_user.is_staff = True
             investigator_user.save()
 
             # Create a mock DomainRequest object, with a user that is not staff
-            application_2: DomainRequest = generic_domain_object("application", "SomeOtherGuy")
-            investigator_user_2 = User.objects.filter(username=application_2.investigator.username).get()
+            domain_request_2: DomainRequest = generic_domain_object("domain_request", "SomeOtherGuy")
+            investigator_user_2 = User.objects.filter(username=domain_request_2.investigator.username).get()
             investigator_user_2.is_staff = False
             investigator_user_2.save()
 
             p = "userpass"
             self.client.login(username="staffuser", password=p)
 
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(application.pk))
+            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
 
             # Get the actual field from the model's meta information
             investigator_field = DomainRequest._meta.get_field("investigator")
@@ -1464,18 +1464,18 @@ class TestDomainRequestAdmin(MockEppLib):
             expected_dropdown = list(User.objects.filter(is_staff=True).order_by(*sorted_fields))
 
             # Grab the current dropdown. We do an API call to autocomplete to get this info.
-            application_queryset = self.admin.formfield_for_foreignkey(investigator_field, request).queryset
+            domain_request_queryset = self.admin.formfield_for_foreignkey(investigator_field, request).queryset
             user_request = self.factory.post(
                 "/admin/autocomplete/?app_label=registrar&model_name=DomainRequest&field_name=investigator"
             )
             user_admin = MyUserAdmin(User, self.site)
-            user_queryset = user_admin.get_search_results(user_request, application_queryset, None)[0]
+            user_queryset = user_admin.get_search_results(user_request, domain_request_queryset, None)[0]
             current_dropdown = list(user_queryset)
 
             self.assertEqual(expected_dropdown, current_dropdown)
 
             # Non staff users should not be in the list
-            self.assertNotIn(application_2, current_dropdown)
+            self.assertNotIn(domain_request_2, current_dropdown)
 
     def test_investigator_list_is_alphabetically_sorted(self):
         """
@@ -1484,19 +1484,19 @@ class TestDomainRequestAdmin(MockEppLib):
         """
         with less_console_noise():
             # Create a mock DomainRequest object, with a fake investigator
-            application: DomainRequest = generic_domain_object("application", "SomeGuy")
-            investigator_user = User.objects.filter(username=application.investigator.username).get()
+            application: DomainRequest = generic_domain_object("domain_request", "SomeGuy")
+            investigator_user = User.objects.filter(username=domain_request.investigator.username).get()
             investigator_user.is_staff = True
             investigator_user.save()
 
-            application_2: DomainRequest = generic_domain_object("application", "AGuy")
-            investigator_user_2 = User.objects.filter(username=application_2.investigator.username).get()
+            domain_request_2: DomainRequest = generic_domain_object("domain_request", "AGuy")
+            investigator_user_2 = User.objects.filter(username=domain_request_2.investigator.username).get()
             investigator_user_2.first_name = "AGuy"
             investigator_user_2.is_staff = True
             investigator_user_2.save()
 
-            application_3: DomainRequest = generic_domain_object("application", "FinalGuy")
-            investigator_user_3 = User.objects.filter(username=application_3.investigator.username).get()
+            domain_request_3: DomainRequest = generic_domain_object("domain_request", "FinalGuy")
+            investigator_user_3 = User.objects.filter(username=domain_request_3.investigator.username).get()
             investigator_user_3.first_name = "FinalGuy"
             investigator_user_3.is_staff = True
             investigator_user_3.save()
@@ -1946,18 +1946,18 @@ class AuditedAdminTest(TestCase):
     def test_alphabetically_sorted_domain_request_investigator(self):
         """Tests if the investigator field is alphabetically sorted by mimicking
         the call event flow"""
-        # Creates multiple domain applications - review status does not matter
-        applications = multiple_unalphabetical_domain_objects("application")
+        # Creates multiple domain requests - review status does not matter
+        applications = multiple_unalphabetical_domain_objects("domain_request")
 
         # Create a mock request
-        application_request = self.factory.post(
+        domain_request_request = self.factory.post(
             "/admin/registrar/DomainRequest/{}/change/".format(applications[0].pk)
         )
 
-        # Get the formfield data from the application page
-        application_admin = AuditedAdmin(DomainRequest, self.site)
+        # Get the formfield data from the domain request page
+        domain_request_admin = AuditedAdmin(DomainRequest, self.site)
         field = DomainRequest.investigator.field
-        application_queryset = application_admin.formfield_for_foreignkey(field, application_request).queryset
+        domain_request_queryset = domain_request_admin.formfield_for_foreignkey(field, domain_request_request).queryset
 
         request = self.factory.post(
             "/admin/autocomplete/?app_label=registrar&model_name=DomainRequest&field_name=investigator"
@@ -1968,7 +1968,7 @@ class AuditedAdminTest(TestCase):
 
         # Grab the data returned from get search results
         admin = MyUserAdmin(User, self.site)
-        search_queryset = admin.get_search_results(request, application_queryset, None)[0]
+        search_queryset = admin.get_search_results(request, domain_request_queryset, None)[0]
         current_sort_order = list(search_queryset)
 
         self.assertEqual(
@@ -1988,8 +1988,8 @@ class AuditedAdminTest(TestCase):
                 DomainRequest.requested_domain.field,
             ]
 
-            # Creates multiple domain applications - review status does not matter
-            applications = multiple_unalphabetical_domain_objects("application")
+            # Creates multiple domain requests - review status does not matter
+            applications = multiple_unalphabetical_domain_objects("domain_request")
 
             # Create a mock request
             request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(applications[0].pk))
@@ -2045,7 +2045,7 @@ class AuditedAdminTest(TestCase):
                 (DomainInformation.domain.field, ["name"]),
                 (DomainInformation.domain_request.field, ["requested_domain__name"]),
             ]
-            # Creates multiple domain applications - review status does not matter
+            # Creates multiple domain requests - review status does not matter
             applications = multiple_unalphabetical_domain_objects("information")
 
             # Create a mock request
@@ -2100,7 +2100,7 @@ class AuditedAdminTest(TestCase):
         with less_console_noise():
             tested_fields = [DomainInvitation.domain.field]
 
-            # Creates multiple domain applications - review status does not matter
+            # Creates multiple domain requests - review status does not matter
             applications = multiple_unalphabetical_domain_objects("invitation")
 
             # Create a mock request
@@ -2328,10 +2328,10 @@ class ContactAdminTest(TestCase):
             contact, _ = Contact.objects.get_or_create(user=self.staffuser)
 
             # join it to 4 domain requests. The 5th join will be a user.
-            application1 = completed_application(submitter=contact, name="city1.gov")
-            application2 = completed_application(submitter=contact, name="city2.gov")
-            application3 = completed_application(submitter=contact, name="city3.gov")
-            application4 = completed_application(submitter=contact, name="city4.gov")
+            application1 = completed_domain_request(submitter=contact, name="city1.gov")
+            application2 = completed_domain_request(submitter=contact, name="city2.gov")
+            application3 = completed_domain_request(submitter=contact, name="city3.gov")
+            application4 = completed_domain_request(submitter=contact, name="city4.gov")
 
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Use the test client to simulate the request
@@ -2363,11 +2363,11 @@ class ContactAdminTest(TestCase):
             # Create an instance of the model
             # join it to 5 domain requests. The 6th join will be a user.
             contact, _ = Contact.objects.get_or_create(user=self.staffuser)
-            application1 = completed_application(submitter=contact, name="city1.gov")
-            application2 = completed_application(submitter=contact, name="city2.gov")
-            application3 = completed_application(submitter=contact, name="city3.gov")
-            application4 = completed_application(submitter=contact, name="city4.gov")
-            application5 = completed_application(submitter=contact, name="city5.gov")
+            application1 = completed_domain_request(submitter=contact, name="city1.gov")
+            application2 = completed_domain_request(submitter=contact, name="city2.gov")
+            application3 = completed_domain_request(submitter=contact, name="city3.gov")
+            application4 = completed_domain_request(submitter=contact, name="city4.gov")
+            application5 = completed_domain_request(submitter=contact, name="city5.gov")
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Use the test client to simulate the request
                 response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))

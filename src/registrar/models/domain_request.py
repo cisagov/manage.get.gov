@@ -21,7 +21,7 @@ class DomainRequest(TimeStampedModel):
     """A registrant's application for a new domain."""
 
     # Constants for choice fields
-    class ApplicationStatus(models.TextChoices):
+    class DomainRequestStatus(models.TextChoices):
         STARTED = "started", "Started"
         SUBMITTED = "submitted", "Submitted"
         IN_REVIEW = "in review", "In review"
@@ -115,7 +115,7 @@ class DomainRequest(TimeStampedModel):
     class OrganizationChoicesVerbose(models.TextChoices):
         """
         Secondary organization choices
-        For use in the application form and on the templates
+        For use in the domain request form and on the templates
         Keys need to match OrganizationChoices
         """
 
@@ -366,10 +366,10 @@ class DomainRequest(TimeStampedModel):
         NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
 
-    # #### Internal fields about the application #####
+    # #### Internal fields about the domain request #####
     status = FSMField(
-        choices=ApplicationStatus.choices,  # possible states as an array of constants
-        default=ApplicationStatus.STARTED,  # sensible default
+        choices=DomainRequestStatus.choices,  # possible states as an array of constants
+        default=DomainRequestStatus.STARTED,  # sensible default
         protected=False,  # can change state directly, particularly in Django admin
     )
 
@@ -379,7 +379,7 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    # This is the application user who created this application. The contact
+    # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
         "registrar.User",
@@ -536,7 +536,7 @@ class DomainRequest(TimeStampedModel):
         "registrar.Contact",
         null=True,
         blank=True,
-        related_name="submitted_applications",
+        related_name="submitted_domain_requests",
         on_delete=models.PROTECT,
     )
 
@@ -549,7 +549,7 @@ class DomainRequest(TimeStampedModel):
     other_contacts = models.ManyToManyField(
         "registrar.Contact",
         blank=True,
-        related_name="contact_applications",
+        related_name="contact_domain_requests",
         verbose_name="contacts",
     )
 
@@ -638,7 +638,7 @@ class DomainRequest(TimeStampedModel):
                 email_template,
                 email_template_subject,
                 self.submitter.email,
-                context={"application": self},
+                context={"domain_request": self},
                 bcc_address=bcc_address,
             )
             logger.info(f"The {new_status} email sent to: {self.submitter.email}")
@@ -648,15 +648,15 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
-            ApplicationStatus.STARTED,
-            ApplicationStatus.IN_REVIEW,
-            ApplicationStatus.ACTION_NEEDED,
-            ApplicationStatus.WITHDRAWN,
+            DomainRequestStatus.STARTED,
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.ACTION_NEEDED,
+            DomainRequestStatus.WITHDRAWN,
         ],
-        target=ApplicationStatus.SUBMITTED,
+        target=DomainRequestStatus.SUBMITTED,
     )
     def submit(self):
-        """Submit an application that is started.
+        """Submit a domain request that is started.
 
         As a side effect, an email notification is sent."""
 
@@ -679,7 +679,7 @@ class DomainRequest(TimeStampedModel):
         self.save()
 
         # Limit email notifications to transitions from Started and Withdrawn
-        limited_statuses = [self.ApplicationStatus.STARTED, self.ApplicationStatus.WITHDRAWN]
+        limited_statuses = [self.DomainRequestStatus.STARTED, self.DomainRequestStatus.WITHDRAWN]
 
         bcc_address = ""
         if settings.IS_PRODUCTION:
@@ -697,17 +697,17 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
-            ApplicationStatus.SUBMITTED,
-            ApplicationStatus.ACTION_NEEDED,
-            ApplicationStatus.APPROVED,
-            ApplicationStatus.REJECTED,
-            ApplicationStatus.INELIGIBLE,
+            DomainRequestStatus.SUBMITTED,
+            DomainRequestStatus.ACTION_NEEDED,
+            DomainRequestStatus.APPROVED,
+            DomainRequestStatus.REJECTED,
+            DomainRequestStatus.INELIGIBLE,
         ],
-        target=ApplicationStatus.IN_REVIEW,
+        target=DomainRequestStatus.IN_REVIEW,
         conditions=[domain_is_not_active],
     )
     def in_review(self):
-        """Investigate an application that has been submitted.
+        """Investigate a domain request that has been submitted.
 
         This action is logged.
 
@@ -716,13 +716,13 @@ class DomainRequest(TimeStampedModel):
         As side effects this will delete the domain and domain_information
         (will cascade) when they exist."""
 
-        if self.status == self.ApplicationStatus.APPROVED:
+        if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("in_review")
 
-        if self.status == self.ApplicationStatus.REJECTED:
+        if self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
-        literal = DomainRequest.ApplicationStatus.IN_REVIEW
+        literal = DomainRequest.DomainRequestStatus.IN_REVIEW
         # Check if the tuple exists, then grab its value
         in_review = literal if literal is not None else "In Review"
         logger.info(f"A status change occurred. {self} was changed to '{in_review}'")
@@ -730,16 +730,16 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
-            ApplicationStatus.IN_REVIEW,
-            ApplicationStatus.APPROVED,
-            ApplicationStatus.REJECTED,
-            ApplicationStatus.INELIGIBLE,
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.APPROVED,
+            DomainRequestStatus.REJECTED,
+            DomainRequestStatus.INELIGIBLE,
         ],
-        target=ApplicationStatus.ACTION_NEEDED,
+        target=DomainRequestStatus.ACTION_NEEDED,
         conditions=[domain_is_not_active],
     )
     def action_needed(self):
-        """Send back an application that is under investigation or rejected.
+        """Send back a domain request that is under investigation or rejected.
 
         This action is logged.
 
@@ -748,13 +748,13 @@ class DomainRequest(TimeStampedModel):
         As side effects this will delete the domain and domain_information
         (will cascade) when they exist."""
 
-        if self.status == self.ApplicationStatus.APPROVED:
+        if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
 
-        if self.status == self.ApplicationStatus.REJECTED:
+        if self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
-        literal = DomainRequest.ApplicationStatus.ACTION_NEEDED
+        literal = DomainRequest.DomainRequestStatus.ACTION_NEEDED
         # Check if the tuple is setup correctly, then grab its value
         action_needed = literal if literal is not None else "Action Needed"
         logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
@@ -762,15 +762,15 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
-            ApplicationStatus.SUBMITTED,
-            ApplicationStatus.IN_REVIEW,
-            ApplicationStatus.ACTION_NEEDED,
-            ApplicationStatus.REJECTED,
+            DomainRequestStatus.SUBMITTED,
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.ACTION_NEEDED,
+            DomainRequestStatus.REJECTED,
         ],
-        target=ApplicationStatus.APPROVED,
+        target=DomainRequestStatus.APPROVED,
     )
     def approve(self, send_email=True):
-        """Approve an application that has been submitted.
+        """Approve a domain request that has been submitted.
 
         This action cleans up the rejection status if moving away from rejected.
 
@@ -796,7 +796,7 @@ class DomainRequest(TimeStampedModel):
             user=self.creator, domain=created_domain, role=UserDomainRole.Roles.MANAGER
         )
 
-        if self.status == self.ApplicationStatus.REJECTED:
+        if self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
         self._send_status_update_email(
@@ -808,11 +808,11 @@ class DomainRequest(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW, ApplicationStatus.ACTION_NEEDED],
-        target=ApplicationStatus.WITHDRAWN,
+        source=[DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED],
+        target=DomainRequestStatus.WITHDRAWN,
     )
     def withdraw(self):
-        """Withdraw an application that has been submitted."""
+        """Withdraw a domain request that has been submitted."""
 
         self._send_status_update_email(
             "withdraw",
@@ -822,17 +822,17 @@ class DomainRequest(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.ACTION_NEEDED, ApplicationStatus.APPROVED],
-        target=ApplicationStatus.REJECTED,
+        source=[DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED, DomainRequestStatus.APPROVED],
+        target=DomainRequestStatus.REJECTED,
         conditions=[domain_is_not_active],
     )
     def reject(self):
-        """Reject an application that has been submitted.
+        """Reject a domain request that has been submitted.
 
         As side effects this will delete the domain and domain_information
         (will cascade), and send an email notification."""
 
-        if self.status == self.ApplicationStatus.APPROVED:
+        if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject")
 
         self._send_status_update_email(
@@ -844,12 +844,12 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
-            ApplicationStatus.IN_REVIEW,
-            ApplicationStatus.ACTION_NEEDED,
-            ApplicationStatus.APPROVED,
-            ApplicationStatus.REJECTED,
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.ACTION_NEEDED,
+            DomainRequestStatus.APPROVED,
+            DomainRequestStatus.REJECTED,
         ],
-        target=ApplicationStatus.INELIGIBLE,
+        target=DomainRequestStatus.INELIGIBLE,
         conditions=[domain_is_not_active],
     )
     def reject_with_prejudice(self):
@@ -861,7 +861,7 @@ class DomainRequest(TimeStampedModel):
         permissions classes test against. This will also delete the domain
         and domain_information (will cascade) when they exist."""
 
-        if self.status == self.ApplicationStatus.APPROVED:
+        if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
 
         self.creator.restrict_user()
@@ -869,7 +869,7 @@ class DomainRequest(TimeStampedModel):
     # ## Form policies ###
     #
     # These methods control what questions need to be answered by applicants
-    # during the application flow. They are policies about the application so
+    # during the domain request flow. They are policies about the domain request so
     # they appear here.
 
     def show_organization_federal(self) -> bool:
@@ -905,15 +905,15 @@ class DomainRequest(TimeStampedModel):
         ]
 
     def has_rationale(self) -> bool:
-        """Does this application have no_other_contacts_rationale?"""
+        """Does this domain request have no_other_contacts_rationale?"""
         return bool(self.no_other_contacts_rationale)
 
     def has_other_contacts(self) -> bool:
-        """Does this application have other contacts listed?"""
+        """Does this domain request have other contacts listed?"""
         return self.other_contacts.exists()
 
     def is_federal(self) -> Union[bool, None]:
-        """Is this application for a federal agency?
+        """Is this domain request for a federal agency?
 
         organization_type can be both null and blank,
         """

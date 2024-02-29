@@ -12,9 +12,9 @@ Historically, the .gov vendor managed initial identity verification and organiza
 
 ## Considered Options
 
-**Option 1:** Users will not be able to submit any new applications if they have 0 prior approved applications OR prior registered .gov domains. We would add a page alert informing the user that they cannot submit their application because they have an application in one of these "3" statuses (Submitted, In Review or Action Needed). They would still be able to create and edit new applications, just not submit them. The benefits of this option are that it would allow users to have multiple applications essentially in "draft mode" that are queued up and ready for submission after they are permitted to submit.
+**Option 1:** Users will not be able to submit any new applications if they have 0 prior approved applications OR prior registered .gov domains. We would add a page alert informing the user that they cannot submit their application because they have a domain request in one of these "3" statuses (Submitted, In Review or Action Needed). They would still be able to create and edit new applications, just not submit them. The benefits of this option are that it would allow users to have multiple applications essentially in "draft mode" that are queued up and ready for submission after they are permitted to submit.
 
-**Option 2:** Users will not be able to submit any new applications if they have 0 prior approved applications OR prior registered .gov domains. Additionally, we would remove the ability to edit any application with the started/withdrawn/rejected status, or start a new application. The benefit of this option is that a user would not be able to begin an action (submitting an application) that they are not allowed to complete.
+**Option 2:** Users will not be able to submit any new applications if they have 0 prior approved applications OR prior registered .gov domains. Additionally, we would remove the ability to edit any application with the started/withdrawn/rejected status, or start a new application. The benefit of this option is that a user would not be able to begin an action (submitting a domain request) that they are not allowed to complete.
 
 ## Decision
 

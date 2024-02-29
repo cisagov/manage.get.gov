@@ -314,7 +314,7 @@ class TestDomainCreation(MockEppLib):
     """Rule: An approved domain request must result in a domain"""
 
     @boto3_mocking.patching
-    def test_approved_application_creates_domain_locally(self):
+    def test_approved_domain_request_creates_domain_locally(self):
         """
         Scenario: Analyst approves a domain request
             When the DomainRequest transitions to approved
@@ -324,14 +324,14 @@ class TestDomainCreation(MockEppLib):
         with less_console_noise():
             draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
             user, _ = User.objects.get_or_create()
-            application = DomainRequest.objects.create(creator=user, requested_domain=draft_domain)
+            domain_request = DomainRequest.objects.create(creator=user, requested_domain=draft_domain)
 
             mock_client = MockSESClient()
             with boto3_mocking.clients.handler_for("sesv2", mock_client):
                 # skip using the submit method
-                application.status = DomainRequest.ApplicationStatus.SUBMITTED
+                domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
                 # transition to approve state
-                application.approve()
+                domain_request.approve()
             # should have information present for this domain
             domain = Domain.objects.get(name="igorville.gov")
             self.assertTrue(domain)

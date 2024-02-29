@@ -8,11 +8,11 @@ Accepted
 
 ## Context
 
-The application form by which registrants apply for a .gov domain is presented over many pages.
+The domain request form by which registrants apply for a .gov domain is presented over many pages.
 
-Because we use server-side rendering, each page of the application is a unique HTML page with form fields surrounded by a form tag.
+Because we use server-side rendering, each page of the domain request is a unique HTML page with form fields surrounded by a form tag.
 
-Needing a way to coordinate state between the pages as a user fills in their application, we initially used the Form wizard from [django-formtools](https://django-formtools.readthedocs.io/en/latest/wizard.html). This eventually proved unworkable due to the lack of native ability to have more than one Django form object displayed on a single HTML page.
+Needing a way to coordinate state between the pages as a user fills in their domain request, we initially used the Form wizard from [django-formtools](https://django-formtools.readthedocs.io/en/latest/wizard.html). This eventually proved unworkable due to the lack of native ability to have more than one Django form object displayed on a single HTML page.
 
 However, a significant portion of the user workflow had already been coded, so it seemed prudent to port some of the formtools logic into our codebase.
 
