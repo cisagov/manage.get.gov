@@ -14,17 +14,15 @@ The following set of rules should be followed while an incident is in progress.
 - Once an engineer is online, they should immediately start a huddle in the #dotgov-redalert channel to begin troubleshooting.
 - All available engineers should join the huddle once they see it.
   - If downtime occurs outside of working hours, team members who are off for the day may still be pinged and called but are not required to join if unavailable to do so.
-- Uncomment the banner on get.gov, so it is transparent to users that we know about the issue on manage.get.gov.
+- Uncomment the [banner on get.gov](https://github.com/cisagov/get.gov/blob/0365d3d34b041cc9353497b2b5f81b6ab7fe75a9/_includes/header.html#L9), so it is transparent to users that we know about the issue on manage.get.gov.
   - Designers or Developers should be able to make this change; if designers are online and can help with this task, that will allow developers to focus on fixing the bug.
-- If the problem is not solved within three hours, change the rules on the [Cloudflare's DNS dashboard](https://dash.cloudflare.com/) so that navigating to manage.get.gov redirects users to get.gov. This will help them see the banner on get.gov informing them that this is a known problem.
 
 ## Post Incident
 
 The following checklist should be followed after the site is back up and running.
 
 - [ ] Message in #dotgov-announce with an @here saying the issue is resolved
-- [ ] Turn off the redirect (if used) and verify functionality.
-- [ ] Remove the banner on get.gov by commenting it out.
+- [ ] Remove the [banner on get.gov](https://github.com/cisagov/get.gov/blob/0365d3d34b041cc9353497b2b5f81b6ab7fe75a9/_includes/header.html#L9) by commenting it out.
 - [ ] Write up what happened and when; if the cause is already known, write that as well. This is a draft for internal communications and not for any public facing site and can be as simple as using bullet points.
 - [ ] If the cause is not known yet, developers should investigate the issue as the highest priority task.
 - [ ] As close to the event as possible, such as the next day, perform a team incident retro that is an hour long. The goal of this meeting should be to inform all team members what happened and what is being done now and to collect feedback on what could have been done better. This is where the draft write up of what happened will be useful.
