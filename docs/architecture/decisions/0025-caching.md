@@ -43,7 +43,7 @@ If we look at average load times in Kibana (here is [the Kibana page with preloa
 NOTE: While we considered implementing caching in a sandbox (See footnote) in order to examine risks and benefits of OPTION 1 in more detail, this incurred more overhead than expected (mainly due to poor documentation).  Therefore, we decided it was not worth the investment.
 
 Therefore, implementing caching using Whitenoise is not currently worth it for the following reasons;
-- Minimal gains:  We would only be caching static files (total load time gain estimated to be….)
+- Minimal gains:  We would only be caching static files which would not result in a large performance boost
 - Risks: Incurs risk of unforeseen loading issues (we can’t entirely rule out that we won’t run into issues like we did in our November launch incident). Although we don’t think static files should pose a problem, due diligence would call us to monitor for any unforeseen issues that might arise, which adds cost to this project that doesn’t seem proportional to the gains.
 - Maintenance: We would have to provide custom settings in cloudfront (coordinated through Cameron) for any sandboxes and other environments where caching is enabled.  If we move down the route of utilizing CDN, it would be good for every environment to have this service enabled so our dev environments reflect stable settings.  This could possibly introduce some overhead and maintenance issues.  (Although further investigation might reveal these to be negligible.)
 
