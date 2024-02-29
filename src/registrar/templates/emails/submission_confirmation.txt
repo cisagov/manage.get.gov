@@ -35,4 +35,6 @@ THANK YOU
 The .gov team
 Contact us: <https://get.gov/contact/>
 Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <http://cisa.gov/>
 {% endautoescape %}
