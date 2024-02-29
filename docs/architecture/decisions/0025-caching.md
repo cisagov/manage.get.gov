@@ -25,7 +25,7 @@ Although we could leave our architecture as-is, we decided to investigate option
 
 Caching static resources should pose little risk to our application's functionality.  Currently, every static resource from /public/... is hitting our Django application inside of Cloud.gov. We already use a Django plugin called whitenoise that can do hash-based linking to static assets so that they can be cached forever by Cloudfront. (If the content changes, then the hash changes, then it results in a different filename.)
 
-See ticket [#1371](https://github.com/cisagov/manage.get.gov/issues/1371)for more information. 
+See ticket [#1371](https://github.com/cisagov/manage.get.gov/issues/1371) for more information. 
 
 **Option 2:** Leave things as-is (we had some discussion on whether or not caching static pages will make enough of a difference to be worth the effort)
 
@@ -37,7 +37,7 @@ We decided on Option 2 - leave things as-is (for now).
 Preliminary analysis suggest that implementing caching on static pages will result in negligible improvements to our application load time.  A quick look at Kibana logs suggests most of these resources take less than 10ms to load...
 ![Kibana RTR Logs](../doc-images/caching-rtr-logs.png)
 
-If we look at average load times in Kibana, it looks like we are doing great for load times in stable (using the rtr.response_time_ms metric), staying under 200ms (in the last 4 weeks) and usually hovering around 40-80ms. Some google searching suggests that "an ideal page load time is between 0-2 seconds, but 3 seconds is also considered to be an acceptable score. Anything above 3 seconds increases the likelihood of visitors leaving your site." (Quote shamelessly copied from Sematex)
+If we look at average load times in Kibana (here is ![the Kibana page with preloaded query](https://logs.fr.cloud.gov/app/visualize#/create?_a=(filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'logs-app*',key:'@cf.app',negate:!f,params:(query:getgov-stable),type:phrase),query:(match_phrase:('@cf.app':getgov-stable)))),linked:!f,query:(language:lucene,query:''),uiState:(),vis:(aggs:!((enabled:!t,id:'1',params:(customLabel:'Average%20Response%20Time%20in%20ms',field:rtr.response_time_ms),schema:metric,type:avg),(enabled:!t,id:'2',params:(drop_partials:!f,extended_bounds:(),field:'@timestamp',interval:d,min_doc_count:1,scaleMetricValues:!f,timeRange:(from:now-20d,to:now),useNormalizedEsInterval:!t),schema:segment,type:date_histogram)),params:(addLegend:!t,addTimeMarker:!f,addTooltip:!t,categoryAxes:!((id:CategoryAxis-1,labels:(filter:!t,show:!t,truncate:100),position:bottom,scale:(type:linear),show:!t,style:(),title:(),type:category)),grid:(categoryLines:!f),labels:(show:!f),legendPosition:right,seriesParams:!((data:(id:'1',label:'Average%20Response%20Time%20in%20ms'),drawLinesBetweenPoints:!t,lineWidth:2,mode:stacked,show:!t,showCircles:!t,type:histogram,valueAxis:ValueAxis-1)),thresholdLine:(color:%23E7664C,show:!f,style:full,value:10,width:1),times:!(),type:histogram,valueAxes:!((id:ValueAxis-1,labels:(filter:!f,rotate:0,show:!t,truncate:100),name:LeftAxis-1,position:left,scale:(mode:normal,type:linear),show:!t,style:(),title:(text:'Average%20Response%20Time%20in%20ms'),type:value))),title:'',type:histogram))&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-2w,to:now))&indexPattern=logs-app*&type=histogram)), it looks like we are doing great for load times in stable (using the rtr.response_time_ms metric), staying under 200ms (in the last 4 weeks) and usually hovering around 40-80ms. Some google searching suggests that "an ideal page load time is between 0-2 seconds, but 3 seconds is also considered to be an acceptable score. Anything above 3 seconds increases the likelihood of visitors leaving your site." (Quote shamelessly copied from Sematex)
 ![Kibana Average Load Times Graph](../doc-images/caching-average-load-times.png)
 
 NOTE: While we considered implementing caching in a sandbox (See footnote) in order to examine risks and benefits of OPTION 1 in more detail, this incurred more overhead than expected (mainly due to poor documentation).  Therefore, we decided it was not worth the investment.
@@ -58,7 +58,7 @@ We will forgo (negligible) load-time improvements by leaving caching off.
 Here are notes for implementing caching using whitenoise should we decide to pick this up again in the future;
 1- Add caching capability to a sandbox using the following steps (or ![following documentation for command line](https://cloud.gov/docs/services/external-domain-service/))
     - Log-in to the cloud.gov website
-    - Navigate to "Services" (https://dashboard.fr.cloud.gov/services).  Click "Add Service"...
+    - ![Navigate to "Services"](https://dashboard.fr.cloud.gov/services).  Click "Add Service"...
     - Choose "Marketplace Service"
     - For the fields, select Cloud Foundry, Organization = "cisa-dotgov", Space = "[your sandbox. eg. "nl"]".  Click "Next"
     - For the Service, select "External Domain".  Click "Next"
@@ -67,5 +67,5 @@ Here are notes for implementing caching using whitenoise should we decide to pic
     Before you can continue, work with Cameron to setup the DNS in AWS (use the following documentation linked below):
     https://cloud.gov/docs/services/external-domain-service/
     - Once the DNS is setup, you *should* be able to continue.  We did not test this.
-2- Enable caching in the code with Whitenoise (see https://whitenoise.readthedocs.io/en/latest/django.html#add-compression-and-caching-support)
+2- Enable caching in the code with Whitenoise (see ![documentation on Whitenoise Caching](https://whitenoise.readthedocs.io/en/latest/djangohtml#add-compression-and-caching-support))
 3- Take performance measurements before/after caching is enabled to determine cost-benefits of implementing caching. (NOTE: ![lighthouse](https://developer.chrome.com/blog/lighthouse-load-performance) might be useful for this step)
