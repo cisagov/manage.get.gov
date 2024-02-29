@@ -59,6 +59,4 @@ The .gov team
 .Gov blog <https://get.gov/updates/> 
 Domain management <https://manage.get.gov>
 Get.gov <https://get.gov>
-
-The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <http://cisa.gov/>
 {% endautoescape %}
