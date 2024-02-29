@@ -76,7 +76,6 @@ function openInNewTab(el, removeAttribute = false){
             // it will not be affected by the createPhantomModalFormButtons() function.
             let cancelButton = document.querySelector('button[name="_cancel_application_ineligible"]');
             if (cancelButton){
-                console.log(`This is the previous val: ${previousValue}`)
                 cancelButton.addEventListener('click', function() {
                     // Revert the dropdown to its previous value
                     statusDropdown.value = previousValue;

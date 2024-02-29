@@ -1339,6 +1339,18 @@ class DomainAdmin(ListHeaderAdmin):
     # Table ordering
     ordering = ["name"]
 
+    def delete_view(self, request, object_id, extra_context=None):
+        """
+        Custom delete_view to perform additional actions or customize the template.
+        """
+
+        # Set the delete template to a custom one
+        self.delete_confirmation_template = "django/admin/domain_delete_confirmation.html"
+
+        response = super().delete_view(request, object_id, extra_context=extra_context)
+
+        return response
+
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         """Custom changeform implementation to pass in context information"""
         if extra_context is None:

@@ -48,10 +48,10 @@
                         This action can be reversed, if needed.
                     </p>
                     <p>
+                        Domain: <b>{{ original.requested_domain.name }}</b>
                         {# Acts as a <br> #}
                         <div class="display-inline"></div>
-                        Domain: <b>{{ original.name }}</b>
-                        New status: <b>{{ original.State }}</b>
+                        New status: <b>{{ original.ApplicationStatus.INELIGIBLE|capfirst }}</b>
                     </p>
                 </div>
 

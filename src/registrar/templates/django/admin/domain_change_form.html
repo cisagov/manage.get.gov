@@ -144,7 +144,7 @@
                         Domain: <b>{{ original.name }}</b>
                         {# Acts as a <br> #}
                         <div class="display-inline"></div>
-                        New status: <b>{{ original.State.ON_HOLD }}</b>
+                        New status: <b>{{ original.State.ON_HOLD|capfirst }}</b>
                     </p>
                 </div>
 
@@ -211,7 +211,7 @@
                         Domain: <b>{{ original.name }}</b>
                         {# Acts as a <br> #}
                         <div class="display-inline"></div>
-                        New status: <b>{{ original.State.DELETED }}</b>
+                        New status: <b>{{ original.State.DELETED|capfirst }}</b>
                     </p>
                 </div>
 
