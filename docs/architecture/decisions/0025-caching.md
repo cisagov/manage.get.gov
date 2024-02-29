@@ -27,7 +27,7 @@ Caching static resources should pose little risk to our application's functional
 
 See ticket [#1371](https://github.com/cisagov/manage.get.gov/issues/1371)for more information. 
 
-**Option 2:** Leave things as-is (we had some discussion on whether or not caching staic pages will make enough of a difference to be worth the effort)
+**Option 2:** Leave things as-is (we had some discussion on whether or not caching static pages will make enough of a difference to be worth the effort)
 
 
 ## Decision
