@@ -767,7 +767,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
 
     def test_submitting_other_contacts_deletes_no_other_contacts_rationale(self):
-        """When a user submits the Other Contacts form with other contacts selected, the application's
+        """When a user submits the Other Contacts form with other contacts selected, the domain request's
         no other contacts rationale gets deleted"""
         # Application has other contacts by default
         domain_request = completed_domain_request(user=self.user, has_other_contacts=False)
@@ -815,7 +815,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
 
     def test_submitting_no_other_contacts_rationale_deletes_other_contacts(self):
-        """When a user submits the Other Contacts form with no other contacts selected, the application's
+        """When a user submits the Other Contacts form with no other contacts selected, the domain request's
         other contacts get deleted for other contacts that exist and are not joined to other objects
         """
         # Application has other contacts by default
@@ -857,7 +857,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
 
     def test_submitting_no_other_contacts_rationale_removes_reference_other_contacts_when_joined(self):
-        """When a user submits the Other Contacts form with no other contacts selected, the application's
+        """When a user submits the Other Contacts form with no other contacts selected, the domain request's
         other contacts references get removed for other contacts that exist and are joined to other objects"""
         # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
@@ -928,7 +928,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # Verify that the no_other_contacts_rationale we saved earlier is no longer associated with the application
+        # Verify that the no_other_contacts_rationale we saved earlier is no longer associated with the domain request
         domain_request = DomainRequest.objects.get()
         self.assertEqual(
             domain_request.other_contacts.count(),
@@ -1218,7 +1218,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When you:
             1. edit an existing contact which is not joined to another model,
             2. then submit,
-        The application is linked to the existing contact, and the existing contact updated."""
+        the domain request is linked to the existing contact, and the existing contact updated."""
 
         # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
@@ -1299,7 +1299,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When you:
             1. edit an existing contact which IS joined to another model,
             2. then submit,
-        The application is linked to a new contact, and the new contact is updated."""
+        the domain request is linked to a new contact, and the new contact is updated."""
 
         # Populate the database with a domain request that
         # has 1 "other contact" assigned to it, the other contact is also
@@ -1379,7 +1379,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When you:
             1. edit an authorizing official which is not joined to another model,
             2. then submit,
-        The application is linked to the existing ao, and the ao updated."""
+        the domain request is linked to the existing ao, and the ao updated."""
 
         # Populate the database with a domain request that
         # has an authorizing_official (ao)
@@ -1444,7 +1444,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When you:
             1. edit an existing authorizing official which IS joined to another model,
             2. then submit,
-        The application is linked to a new Contact, and the new Contact is updated."""
+        the domain request is linked to a new Contact, and the new Contact is updated."""
 
         # Populate the database with a domain request that
         # has authorizing official assigned to it, the authorizing offical is also
@@ -1516,7 +1516,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When you:
             1. edit a submitter (your contact) which is not joined to another model,
             2. then submit,
-        The application is linked to the existing submitter, and the submitter updated."""
+        the domain request is linked to the existing submitter, and the submitter updated."""
 
         # Populate the database with a domain request that
         # has a submitter
@@ -1580,7 +1580,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When you:
             1. edit an existing your contact which IS joined to another model,
             2. then submit,
-        The application is linked to a new Contact, and the new Contact is updated."""
+        the domain request is linked to a new Contact, and the new Contact is updated."""
 
         # Populate the database with a domain request that
         # has submitter assigned to it, the submitter is also
@@ -2214,13 +2214,13 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         super().tearDown()
 
     def test_unlocked_steps_empty_domain_request(self):
-        """Test when all fields in the application are empty."""
+        """Test when all fields in the domain request are empty."""
         unlocked_steps = self.wizard.db_check_for_unlocking_steps()
         expected_dict = []
         self.assertEqual(unlocked_steps, expected_dict)
 
     def test_unlocked_steps_full_domain_request(self):
-        """Test when all fields in the application are filled."""
+        """Test when all fields in the domain request are filled."""
 
         completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
         # Make a request to the home page
@@ -2263,7 +2263,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
     def test_unlocked_steps_partial_domain_request(self):
-        """Test when some fields in the application are filled."""
+        """Test when some fields in the domain request are filled."""
 
         # Create the site and contacts to delete (orphaned)
         contact = Contact.objects.create(

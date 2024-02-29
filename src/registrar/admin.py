@@ -1055,7 +1055,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
         if obj and obj.creator.status != models.User.RESTRICTED:
-            if change:  # Check if the application is being edited
+            if change:  # Check if the domain request is being edited
                 # Get the original application from the database
                 original_obj = models.DomainRequest.objects.get(pk=obj.pk)
 
@@ -1133,7 +1133,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the application creator's status, so
+        admin user permissions and the domain request creator's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
