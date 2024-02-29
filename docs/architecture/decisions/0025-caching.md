@@ -56,16 +56,19 @@ We will forgo (negligible) load-time improvements by leaving caching off.
 
 ## (Footnote - How to implement caching)
 Here are notes for implementing caching using whitenoise should we decide to pick this up again in the future;
-1- Add caching capability to a sandbox using the following steps (or ![following documentation for command line](https://cloud.gov/docs/services/external-domain-service/))
-    - Log-in to the cloud.gov website
-    - ![Navigate to "Services"](https://dashboard.fr.cloud.gov/services).  Click "Add Service"...
-    - Choose "Marketplace Service"
-    - For the fields, select Cloud Foundry, Organization = "cisa-dotgov", Space = "[your sandbox. eg. "nl"]".  Click "Next"
-    - For the Service, select "External Domain".  Click "Next"
-    - For the Plan, select "domain-with-cdn" (here is ![documentation on CDN](https://cloud.gov/docs/management/custom-domains/))
-    - If you choose to bind the app, a JSON string will be required (we believe this should do it: {"domains": "example.gov"}, where "example.gov" is replaced with the domain name you want to use for this application)
-    Before you can continue, work with Cameron to setup the DNS in AWS (use the following documentation linked below):
-    https://cloud.gov/docs/services/external-domain-service/
-    - Once the DNS is setup, you *should* be able to continue.  We did not test this.
+
+1 - Add caching capability to a sandbox using the following steps (or ![following documentation for command line](https://cloud.gov/docs/services/external-domain-service/))
+- Log-in to the cloud.gov website
+- ![Navigate to "Services"](https://dashboard.fr.cloud.gov/services).  Click "Add Service"...
+- Choose "Marketplace Service"
+- For the fields, select Cloud Foundry, Organization = "cisa-dotgov", Space = "[your sandbox. eg. "nl"]".  Click "Next"
+- For the Service, select "External Domain".  Click "Next"
+- For the Plan, select "domain-with-cdn" (here is ![documentation on CDN](https://cloud.gov/docs/management/custom-domains/))
+- If you choose to bind the app, a JSON string will be required (we believe this should do it: {"domains": "example.gov"}, where "example.gov" is replaced with the domain name you want to use for this application)
+Before you can continue, work with Cameron to setup the DNS in AWS (use the following documentation linked below):
+https://cloud.gov/docs/services/external-domain-service/
+- Once the DNS is setup, you *should* be able to continue.  We did not test this.
+
 2- Enable caching in the code with Whitenoise (see ![documentation on Whitenoise Caching](https://whitenoise.readthedocs.io/en/latest/djangohtml#add-compression-and-caching-support))
+
 3- Take performance measurements before/after caching is enabled to determine cost-benefits of implementing caching. (NOTE: ![lighthouse](https://developer.chrome.com/blog/lighthouse-load-performance) might be useful for this step)
