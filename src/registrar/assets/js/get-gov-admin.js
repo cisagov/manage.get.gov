@@ -91,7 +91,6 @@ function openInNewTab(el, removeAttribute = false){
                     }
 
                     // Update previousValue if another option is selected and confirmed
-                    previousValue = this.value;
                     console.log(`This is the previous val NOW: ${previousValue}`)
                 });
                 
@@ -100,11 +99,6 @@ function openInNewTab(el, removeAttribute = false){
             }
             
         }
-    }
-
-    // Adds event listeners on the confirm and cancel modal buttons
-    function handleModalButtons(){
-
     }
 
     displayModalOnDropdownClick();
