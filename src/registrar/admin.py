@@ -384,39 +384,78 @@ def user_analytics(request):
         start_date_formatted = csv_export.format_start_date(start_date)
         end_date_formatted = csv_export.format_end_date(end_date)
 
+        # Managed vs Unmanaged
         filter_managed_domains_start_date = {
             "domain__permissions__isnull": False,
-            "domain__created_at__lte": start_date_formatted,
+            "domain__first_ready__lte": start_date_formatted,
         }
         managed_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_managed_domains_start_date)
-        managed_domains_sliced_at_start_date = [10, 20, 50, 0, 0, 12, 6, 5]
-        
-        logger.info(f"managed_domains_sliced_at_start_date {managed_domains_sliced_at_start_date}")
-        
+                
         filter_unmanaged_domains_start_date = {
             "domain__permissions__isnull": True,
             "domain__first_ready__lte": start_date_formatted,
         }
         unmanaged_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_unmanaged_domains_start_date)
-        unmanaged_domains_sliced_at_start_date = [15, 13, 60, 0, 2, 11, 6, 5]
         filter_managed_domains_end_date = {
             "domain__permissions__isnull": False,
             "domain__first_ready__lte": end_date_formatted,
         }
         managed_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_managed_domains_end_date)
-        managed_domains_sliced_at_end_date = [12, 20, 60, 0, 0, 12, 6, 4]
         filter_unmanaged_domains_end_date = {
             "domain__permissions__isnull": True,
             "domain__first_ready__lte": end_date_formatted,
         }
         unmanaged_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_unmanaged_domains_end_date)
-        unmanaged_domains_sliced_at_end_date = [5, 40, 55, 0, 0, 12, 6, 5]
+
+        # Ready and Deleted domains
+        filter_ready_domains_start_date = {
+            "domain__state__in": [Domain.State.READY],
+            "domain__first_ready__lte": start_date_formatted,
+        }
+        ready_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_ready_domains_start_date)
+                
+        filter_deleted_domains_start_date = {
+            "domain__state__in": [Domain.State.DELETED],
+            "domain__first_ready__lte": start_date_formatted,
+        }
+        deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)
+
+        filter_ready_domains_end_date = {
+            "domain__state__in": [Domain.State.READY],
+            "domain__first_ready__lte": end_date_formatted,
+        }
+        ready_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_ready_domains_end_date)
+                
+        filter_deleted_domains_end_date = {
+            "domain__state__in": [Domain.State.DELETED],
+            "domain__first_ready__lte": end_date_formatted,
+        }
+        deleted_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_deleted_domains_end_date)
+
+
         
-        # get number of ready domains, counts by org type and election office
-        # add to context
+        # Created and Submitted requests
+        filter_requests_start_date = {
+            "submission_date__lte": start_date_formatted,
+        }
+        requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_requests_start_date)
+                
+        filter_submitted_requests_start_date = {
+            "status": DomainApplication.ApplicationStatus.SUBMITTED,
+            "submission_date__lte": start_date_formatted,
+        }
+        submitted_requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_submitted_requests_start_date)
         
-        # get number of submitted request counts by org type and election office
-        # add to context
+        filter_requests_end_date = {
+            "submission_date__lte": end_date_formatted,
+        }
+        requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_requests_end_date)
+        
+        filter_submitted_requests_end_date = {
+            "status": DomainApplication.ApplicationStatus.SUBMITTED,
+            "submission_date__lte": end_date_formatted,
+        }
+        submitted_requests_at_end_date = csv_export.get_sliced_requests(filter_submitted_requests_end_date)
 
         context = dict(
             **admin.site.each_context(request),
@@ -425,10 +464,22 @@ def user_analytics(request):
                 domain_count=models.Domain.objects.all().count(),
                 applications_last_30_days=last_30_days_applications.count(),
                 average_application_approval_time_last_30_days=avg_approval_time,
+                
                 managed_domains_sliced_at_start_date=managed_domains_sliced_at_start_date,
                 unmanaged_domains_sliced_at_start_date=unmanaged_domains_sliced_at_start_date,
                 managed_domains_sliced_at_end_date=managed_domains_sliced_at_end_date,
                 unmanaged_domains_sliced_at_end_date=unmanaged_domains_sliced_at_end_date,
+                
+                ready_domains_sliced_at_start_date=ready_domains_sliced_at_start_date,
+                deleted_domains_sliced_at_start_date=deleted_domains_sliced_at_start_date,
+                ready_domains_sliced_at_end_date=ready_domains_sliced_at_end_date,
+                deleted_domains_sliced_at_end_date=deleted_domains_sliced_at_end_date,
+                
+                requests_sliced_at_start_date=requests_sliced_at_start_date,
+                submitted_requests_sliced_at_start_date=submitted_requests_sliced_at_start_date,
+                requests_sliced_at_end_date=requests_sliced_at_end_date,
+                submitted_requests_at_end_date=submitted_requests_at_end_date,
+                
             ),
         )
         return render(request, "admin/analytics.html", context)

@@ -7,7 +7,10 @@
 {% block content %}
 
   <div id="content-main" class="analytics">
-    <div class="module">
+
+    <div class="grid-row grid-gap-2">
+      <div class="tablet:grid-col-6 margin-top-2">
+    <div class="module height-full">
       <h2>At a glance</h2>
       <div class="padding-2">
         <ul>
@@ -19,7 +22,10 @@
       </div>
     </div>
 
-    <div class="module">
+  </div>
+      <div class="tablet:grid-col-6 margin-top-2">
+
+    <div class="module height-full">
       <h2>Current domains</h2>
       <div class="padding-2">
         <ul class="usa-button-group">
@@ -48,6 +54,9 @@
       </div>
     </div>
 
+  </div></div>
+  <div class="grid-row grid-gap-2 margin-top-2">
+    <div class="grid-col">
     <div class="module">
       <h2>Growth reports</h2>
       <div class="padding-2">
@@ -119,7 +128,47 @@
           </div>
         </div>
 
+        <div class="grid-row grid-gap-2 margin-y-2">
+          <div class="grid-col">
+            <canvas id="myChart3" width="400" height="200" 
+              data-list-one="{{data.deleted_domains_sliced_at_start_date}}"
+              data-list-two="{{data.deleted_domains_sliced_at_start_date}}"
+              data-list-three="{{data.ready_domains_sliced_at_end_date}}"
+              data-list-four="{{data.requests_sliced_at_start_date}}"
+            ></canvas>
+          </div>
+          <div class="grid-col">
+            <canvas id="myChart4" width="400" height="200" 
+              data-list-one="{{data.deleted_domains_sliced_at_start_date}}"
+              data-list-two="{{data.deleted_domains_sliced_at_start_date}}"
+              data-list-three="{{data.ready_domains_sliced_at_end_date}}"
+              data-list-four="{{data.deleted_domains_sliced_at_end_date}}"
+            ></canvas>
+          </div>
+        </div>
+
+        <div class="grid-row grid-gap-2 margin-y-2">
+          <div class="grid-col">
+            <canvas id="myChart5" width="400" height="200" 
+              data-list-one="{{data.requests_sliced_at_start_date}}"
+              data-list-two="{{data.submitted_requests_sliced_at_start_date}}"
+              data-list-three="{{data.requests_sliced_at_end_date}}"
+              data-list-four="{{data.submitted_requests_at_end_date}}"
+            ></canvas>
+          </div>
+          <div class="grid-col">
+            <canvas id="myChart6" width="400" height="200" 
+              data-list-one="{{data.requests_sliced_at_start_date}}"
+              data-list-two="{{data.submitted_requests_sliced_at_start_date}}"
+              data-list-three="{{data.requests_sliced_at_end_date}}"
+              data-list-four="{{data.submitted_requests_at_end_date}}"
+            ></canvas>
+          </div>
+        </div>
+
       </div>
+    </div>
+  </div>
     </div>
 
   </div>

@@ -450,6 +450,31 @@ def get_sliced_domains(filter_condition):
          school_district,
          election_board]
 
+def get_sliced_requests(filter_condition):
+    """
+    """
+
+    domain_requests = DomainApplication.objects.all().filter(**filter_condition)
+    federal = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).count()
+    interstate = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).count()
+    state_or_territory = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY).count()
+    tribal = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).count()
+    county = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).count()
+    city = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.CITY).count()
+    special_district = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).count()
+    school_district = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).count()
+    election_board = domain_requests.filter(is_election_board=True).count()
+
+    return [federal,
+         interstate,
+         state_or_territory,
+         tribal,
+         county,
+         city,
+         special_district,
+         school_district,
+         election_board]
+
 def export_data_managed_vs_unamanaged_domains(csv_file, start_date, end_date):
     """
     """
@@ -470,7 +495,7 @@ def export_data_managed_vs_unamanaged_domains(csv_file, start_date, end_date):
 
     filter_managed_domains_start_date = {
         "domain__permissions__isnull": False,
-        "domain__created_at__lte": start_date_formatted,
+        "domain__first_ready__lte": start_date_formatted,
     }
     managed_domains_sliced_at_start_date = get_sliced_domains(filter_managed_domains_start_date)
 
