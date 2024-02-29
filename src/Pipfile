@@ -30,6 +30,7 @@ greenlet = "*"
 gevent = "*"
 fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "master"}
 geventconnpool = {git = "https://github.com/rasky/geventconnpool.git", ref = "1bbb93a714a331a069adf27265fe582d9ba7ecd4"}
+pyzipper="*"
 
 [dev-packages]
 django-debug-toolbar = "*"
@@ -45,3 +46,4 @@ types-cachetools = "*"
 boto3-mocking = "*"
 boto3-stubs = "*"
 django-model2puml = "*"
+

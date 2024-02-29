@@ -74,6 +74,8 @@ secret_aws_s3_key_id = secret("access_key_id", None) or secret("AWS_S3_ACCESS_KE
 secret_aws_s3_key = secret("secret_access_key", None) or secret("AWS_S3_SECRET_ACCESS_KEY", None)
 secret_aws_s3_bucket_name = secret("bucket", None) or secret("AWS_S3_BUCKET_NAME", None)
 
+secret_encrypt_metadata = secret("SECRET_ENCRYPT_METADATA", None)
+
 secret_registry_cl_id = secret("REGISTRY_CL_ID")
 secret_registry_password = secret("REGISTRY_PASSWORD")
 secret_registry_cert = b64decode(secret("REGISTRY_CERT", ""))
@@ -94,6 +96,7 @@ DEBUG = env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
+SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 
 # Applications are modular pieces of code.
 # They are provided by Django, by third-parties, or by yourself.

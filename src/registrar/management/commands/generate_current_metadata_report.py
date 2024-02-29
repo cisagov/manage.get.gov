@@ -5,6 +5,7 @@ import os
 import pyzipper
 
 from django.core.management import BaseCommand
+from django.conf import settings
 from registrar.utility import csv_export
 from registrar.utility.s3_bucket import S3ClientHelper
 from ...utility.email import send_templated_email, EmailSendingError
@@ -61,27 +62,28 @@ class Command(BaseCommand):
         We want to make sure to upload to s3 for back up
         And now we also want to get the file and encrypt it so we can send it in an email
         """
-        unencrypted_metadata_input = s3_client.get_file(file_name)
-
 
         # Encrypt metadata into a zip file
 
         # pre-setting zip file name 
         encrypted_metadata_output = 'encrypted_metadata.zip'
-        # set this to be an env var somewhere
-        password = b'somepasswordhere'
+
+        # Secret is encrypted into getgov-credentials
+        # TODO: Update secret in getgov-credentials via cloud.gov and my own .env when ready
+        
         # encrypted_metadata is the encrypted output
-        encrypted_metadata = _encrypt_metadata(unencrypted_metadata_input, encrypted_metadata_output, password)
+        encrypted_metadata = self._encrypt_metadata(s3_client.get_file(file_name), encrypted_metadata_output, str.encode(settings.SECRET_ENCRYPT_METADATA))
         print("encrypted_metadata is:", encrypted_metadata)
 
         # Send the metadata file that is zipped
         # Q: Would we set the vars I set in email.py here to pass in to the helper function or best way to invoke
         # send_templated_email(encrypted_metadata, attachment=True)
     
-        def _encrypt_metadata(input_file, output_file, password):
-            with open(input_file, 'rb') as f_in:
-                with pyzipper.AESZipFile(output_file, 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as f_out:
-                    f_out.setpassword(password)
-                    f_out.writestr(input_file, f_in.read())
-            return output_file
+    def _encrypt_metadata(self, input_file, output_file, password):
+        # Using ZIP_DEFLATED bc it's a more common compression method supported by most zip utilities
+        # Could also use compression=pyzipper.ZIP_LZMA?
+        with pyzipper.AESZipFile(output_file, 'w', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as f_out:
+            f_out.setpassword(password)
+            f_out.writestr('encrypted_metadata.txt', input_file)
+        return output_file
 
