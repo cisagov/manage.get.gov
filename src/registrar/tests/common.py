@@ -580,7 +580,7 @@ def completed_domain_request(
     if has_anything_else:
         domain_request_kwargs["anything_else"] = "There is more"
 
-    application, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
+    domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
     if has_other_contacts:
         domain_request.other_contacts.add(other)

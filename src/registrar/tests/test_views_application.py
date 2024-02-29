@@ -463,7 +463,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # check that any new pages are added to this test
         self.assertEqual(num_pages, num_pages_tested)
 
-    # This is the start of a test to check an existing application, it currently
+    # This is the start of a test to check an existing domain_request, it currently
     # does not work and results in errors as noted in:
     # https://github.com/cisagov/getgov/pull/728
     @skip("WIP")
@@ -883,7 +883,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(555) 555 5557",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1017,7 +1017,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy3@town.com",
             phone="(201) 555 5557",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1091,7 +1091,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(201) 555 5557",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1168,7 +1168,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(201) 555 5557",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1244,7 +1244,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(201) 555 5557",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1319,7 +1319,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy-admin@town.com",
             phone="(201) 555 5556",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1391,7 +1391,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(201) 555 5555",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1457,7 +1457,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(201) 555 5555",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1528,7 +1528,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(201) 555 5555",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1593,7 +1593,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(201) 555 5555",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1935,7 +1935,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(555) 555 5557",
         )
-        application, _ = DomainRequest.objects.get_or_create(
+        domain_request, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",

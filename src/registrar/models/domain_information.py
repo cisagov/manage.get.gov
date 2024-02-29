@@ -17,9 +17,9 @@ class DomainInformation(TimeStampedModel):
     """A registrant's domain information for that domain, exported from
     DomainRequest. We use these field from DomainRequest with few exceptions
     which are 'removed' via pop at the bottom of this file. Most of design for domain
-    management's user information are based on application, but we cannot change
+    management's user information are based on domain_request, but we cannot change
     the domain request once approved, so copying them that way we can make changes
-    after its approved. Most fields here are copied from Application."""
+    after its approved. Most fields here are copied from DomainRequest."""
 
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
@@ -232,7 +232,7 @@ class DomainInformation(TimeStampedModel):
             raise ValueError("The provided DomainRequest has no id")
 
         # check if we have a record that corresponds with the domain
-        # application, if so short circuit the create
+        # domain_request, if so short circuit the create
         existing_domain_info = cls.objects.filter(domain_request__id=domain_request.id).first()
         if existing_domain_info:
             return existing_domain_info

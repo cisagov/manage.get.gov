@@ -168,7 +168,7 @@ class TestDomainRequest(TestCase):
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 with less_console_noise():
                     # Perform the specified action
-                    action_method = getattr(application, action)
+                    action_method = getattr(domain_request, action)
                     action_method()
 
             # Check if an email was sent
@@ -182,42 +182,42 @@ class TestDomainRequest(TestCase):
     def test_submit_from_started_sends_email(self):
         msg = "Create a domain request and submit it and see if email was sent."
         domain_request = completed_domain_request()
-        self.check_email_sent(application, msg, "submit", 1)
+        self.check_email_sent(domain_request, msg, "submit", 1)
 
     def test_submit_from_withdrawn_sends_email(self):
         msg = "Create a withdrawn application and submit it and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
-        self.check_email_sent(application, msg, "submit", 1)
+        self.check_email_sent(domain_request, msg, "submit", 1)
 
     def test_submit_from_action_needed_does_not_send_email(self):
         msg = "Create a domain request with ACTION_NEEDED status and submit it, check if email was not sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.ACTION_NEEDED)
-        self.check_email_sent(application, msg, "submit", 0)
+        self.check_email_sent(domain_request, msg, "submit", 0)
 
     def test_submit_from_in_review_does_not_send_email(self):
         msg = "Create a withdrawn application and submit it and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-        self.check_email_sent(application, msg, "submit", 0)
+        self.check_email_sent(domain_request, msg, "submit", 0)
 
     def test_approve_sends_email(self):
         msg = "Create a domain request and approve it and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-        self.check_email_sent(application, msg, "approve", 1)
+        self.check_email_sent(domain_request, msg, "approve", 1)
 
     def test_withdraw_sends_email(self):
         msg = "Create a domain request and withdraw it and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-        self.check_email_sent(application, msg, "withdraw", 1)
+        self.check_email_sent(domain_request, msg, "withdraw", 1)
 
     def test_reject_sends_email(self):
         msg = "Create a domain request and reject it and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
-        self.check_email_sent(application, msg, "reject", 1)
+        self.check_email_sent(domain_request, msg, "reject", 1)
 
     def test_reject_with_prejudice_does_not_send_email(self):
         msg = "Create a domain request and reject it with prejudice and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
-        self.check_email_sent(application, msg, "reject_with_prejudice", 0)
+        self.check_email_sent(domain_request, msg, "reject_with_prejudice", 0)
 
     def test_submit_transition_allowed(self):
         """
@@ -232,8 +232,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
                             domain_request.submit()
                         except TransitionNotAllowed:
@@ -252,8 +252,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
                             domain_request.submit()
 
@@ -271,8 +271,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
                             domain_request.in_review()
                         except TransitionNotAllowed:
@@ -290,8 +290,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
                             domain_request.in_review()
 
@@ -306,8 +306,8 @@ class TestDomainRequest(TestCase):
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]
         with less_console_noise():
-            for application, exception_type in test_cases:
-                with self.subTest(application=application, exception_type=exception_type):
+            for domain_request, exception_type in test_cases:
+                with self.subTest(domain_request=domain_request, exception_type=exception_type):
                     try:
                         domain_request.action_needed()
                     except TransitionNotAllowed:
@@ -324,8 +324,8 @@ class TestDomainRequest(TestCase):
             (self.withdrawn_domain_request, TransitionNotAllowed),
         ]
         with less_console_noise():
-            for application, exception_type in test_cases:
-                with self.subTest(application=application, exception_type=exception_type):
+            for domain_request, exception_type in test_cases:
+                with self.subTest(domain_request=domain_request, exception_type=exception_type):
                     with self.assertRaises(exception_type):
                         domain_request.action_needed()
 
@@ -342,8 +342,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
                             domain_request.approve()
                         except TransitionNotAllowed:
@@ -375,8 +375,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
                             domain_request.approve()
 
@@ -392,8 +392,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
                             domain_request.withdraw()
                         except TransitionNotAllowed:
@@ -413,8 +413,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
                             domain_request.withdraw()
 
@@ -430,8 +430,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
                             domain_request.reject()
                         except TransitionNotAllowed:
@@ -451,8 +451,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
                             domain_request.reject()
 
@@ -469,8 +469,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
                             domain_request.reject_with_prejudice()
                         except TransitionNotAllowed:
@@ -489,8 +489,8 @@ class TestDomainRequest(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
                             domain_request.reject_with_prejudice()
 

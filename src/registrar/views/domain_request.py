@@ -122,7 +122,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return "wizard_domain_request"
 
     @property
-    def application(self) -> DomainRequest:
+    def domain_request(self) -> DomainRequest:
         """
         Attempt to match the current wizard with a DomainRequest.
 
@@ -194,8 +194,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         in the database before the wizard has been saved.
         """
         if self.has_pk():
-            if hasattr(self.application, attribute):
-                attr = getattr(self.application, attribute)
+            if hasattr(self.domain_request, attribute):
+                attr = getattr(self.domain_request, attribute)
                 if callable(attr):
                     return attr(*args, **kwargs)
                 else:
@@ -278,7 +278,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         kwargs = {
             "files": files,
             "prefix": self.steps.current,
-            "domain_request": self.application,  # this is a property, not an object
+            "domain_request": self.domain_request,  # this is a property, not an object
         }
 
         if step is None:
@@ -290,7 +290,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         instantiated = []
 
         for form in forms:
-            data = form.from_database(self.application) if self.has_pk() else None
+            data = form.from_database(self.domain_request) if self.has_pk() else None
             if use_post:
                 instantiated.append(form(self.request.POST, **kwargs))
             elif use_db:
@@ -466,7 +466,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         """
         for form in forms:
             if form is not None and hasattr(form, "to_database"):
-                form.to_database(self.application)
+                form.to_database(self.domain_request)
 
 
 class OrganizationType(DomainRequestWizard):
@@ -597,7 +597,7 @@ class Review(DomainRequestWizard):
     def get_context_data(self):
         context = super().get_context_data()
         context["Step"] = Step.__members__
-        context["domain_request"] = self.application
+        context["domain_request"] = self.domain_request
         return context
 
     def goto_next_step(self):
@@ -702,7 +702,7 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         # This determines if any of these three fields share a contact, which is used for
         # the edge case where the same user may be an AO, and a submitter, for example.
         if len(duplicates) > 0:
-            duplicates_to_delete, _ = self._get_orphaned_contacts(application, check_db=True)
+            duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
             Contact.objects.filter(id__in=duplicates_to_delete, user=None).delete()
 
         return response

@@ -661,39 +661,39 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request = completed_domain_request()
 
             # Test Submitted Status from started
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, True)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Test Withdrawn Status
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.WITHDRAWN)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
             self.assert_email_is_accurate(
                 "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL, True
             )
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
             # Test Submitted Status Again (from withdrawn)
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to ACTION_NEEDED
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     @override_settings(IS_PRODUCTION=True)
@@ -718,40 +718,40 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request = completed_domain_request()
 
             # Test Submitted Status from started
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Test Withdrawn Status
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.WITHDRAWN)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
             self.assert_email_is_accurate(
                 "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL
             )
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
             # Test Submitted Status Again (from withdrawn)
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to ACTION_NEEDED
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sends_approved_email(self):
@@ -767,7 +767,7 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Test Submitted Status
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 0, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
@@ -781,7 +781,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
             # Test Submitted Status Again (No new email should be sent)
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sends_rejected_email_purpose_not_met(self):
@@ -810,7 +810,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -828,7 +828,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             # Reject for reason REQUESTOR and test email including dynamic organization name
             self.transition_state_and_send_email(
-                application, DomainRequest.DomainRequestStatus.REJECTED, DomainRequest.RejectionReasons.REQUESTOR
+                domain_request, DomainRequest.DomainRequestStatus.REJECTED, DomainRequest.RejectionReasons.REQUESTOR
             )
             self.assert_email_is_accurate(
                 "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "
@@ -839,7 +839,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -867,7 +867,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -898,7 +898,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -929,7 +929,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -957,7 +957,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -983,7 +983,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Approve
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.APPROVED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -1054,19 +1054,19 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Test Submitted Status
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.WITHDRAWN)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
             self.assert_email_is_accurate(
                 "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 0, EMAIL
             )
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Test Withdrawn Status
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.SUBMITTED)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assert_email_is_accurate("We received your .gov domain request.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
             # Test Submitted Status Again (No new email should be sent)
-            self.transition_state_and_send_email(application, DomainRequest.DomainRequestStatus.WITHDRAWN)
+            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sets_approved_domain(self):
