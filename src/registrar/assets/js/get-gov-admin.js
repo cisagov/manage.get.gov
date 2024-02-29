@@ -35,14 +35,20 @@ function openInNewTab(el, removeAttribute = false){
 
             let input = document.createElement("input");
             input.type = "submit";
-            input.name = button.name;
-            input.value = button.value;
+
+            if(button.name){
+                input.name = button.name;
+            }
+
+            if(button.value){
+                input.value = button.value;
+            }
+
             input.style.display = "none"
 
             // Add the hidden input to the form
             form.appendChild(input);
             button.addEventListener("click", () => {
-                console.log("clicking")
                 input.click();
             })
         })
@@ -50,6 +56,60 @@ function openInNewTab(el, removeAttribute = false){
 
     createPhantomModalFormButtons();
 })();
+
+/** An IIFE for DomainApplication to hook a modal to a dropdown option.
+ * This intentionally does not interact with createPhantomModalFormButtons()
+*/
+(function (){
+    function displayModalOnDropdownClick(){
+        // Grab the invisible element that will hook to the modal.
+        // This doesn't technically need to be done with one, but this is simpler to manage.
+        let linkClickedDisplaysModal = document.getElementById("invisible-ineligible-modal-toggler")
+        let statusDropdown = document.getElementById("id_status")
+
+        // If these exist all at the same time, we're on the right page
+        if (linkClickedDisplaysModal && statusDropdown && statusDropdown.value){
+            // Store the previous value in the event the user cancels.
+            // We only need to do this if we're on the correct page.
+            let previousValue = statusDropdown.value;
+            // Because the modal button does not have the class "dja-form-placeholder",
+            // it will not be affected by the createPhantomModalFormButtons() function.
+            let cancelButton = document.querySelector('button[name="_cancel_application_ineligible"]');
+            if (cancelButton){
+                console.log(`This is the previous val: ${previousValue}`)
+                cancelButton.addEventListener('click', function() {
+                    // Revert the dropdown to its previous value
+                    statusDropdown.value = previousValue;
+                });
+
+                // Add a change event listener to the dropdown.
+                statusDropdown.addEventListener('change', function() {
+                    // Check if "Ineligible" is selected
+                    if (this.value && this.value.toLowerCase() === "ineligible") {
+                        // Display the modal.
+                        linkClickedDisplaysModal.click()
+                    }
+
+                    // Update previousValue if another option is selected and confirmed
+                    previousValue = this.value;
+                    console.log(`This is the previous val NOW: ${previousValue}`)
+                });
+                
+            } else{
+                console.error("displayModalOnDropdownClick() -> No cancel button defined.")
+            }
+            
+        }
+    }
+
+    // Adds event listeners on the confirm and cancel modal buttons
+    function handleModalButtons(){
+
+    }
+
+    displayModalOnDropdownClick();
+})();
+
 /** An IIFE for pages in DjangoAdmin which may need custom JS implementation.
  * Currently only appends target="_blank" to the domain_form object,
  * but this can be expanded.
