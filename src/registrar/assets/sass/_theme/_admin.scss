@@ -325,5 +325,7 @@ input.admin-confirm-button {
     a {
         font-size: 13px;
         font-weight: 600;
+        border: solid 1px var(--darkened-bg);
+        background: var(--darkened-bg);
     }
 }
