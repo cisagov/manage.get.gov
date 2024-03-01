@@ -25,7 +25,8 @@ def write_header(writer, columns):
 
 def get_domain_infos(filter_condition, sort_fields):
     domain_infos = (
-        DomainInformation.objects.select_related("domain", "domain__permissions", "authorizing_official")
+        DomainInformation.objects.select_related("domain", "authorizing_official")
+        .prefetch_related("domain__permissions")
         .filter(**filter_condition)
         .order_by(*sort_fields)
     )
@@ -185,7 +186,7 @@ def write_csv(
                 continue
         total_body_rows.append(rows)
 
-    update_columns_with_domain_managers(columns, max_dm_count)    
+    update_columns_with_domain_managers(columns, max_dm_count)
     write_header(writer, columns)
     writer.writerows(total_body_rows)
 
