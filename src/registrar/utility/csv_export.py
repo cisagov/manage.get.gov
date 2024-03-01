@@ -180,14 +180,14 @@ def write_csv(
 
     writer.writerows(rows)
 
-def get_domain_requests(filter_condition, sort_fields):
-    domain_requests = (
+def get_requests(filter_condition, sort_fields):
+    requests = (
         DomainApplication.objects.all()
         .filter(**filter_condition)
         .order_by(*sort_fields)
     )
 
-    return domain_requests
+    return requests
 
 def parse_request_row(columns, request: DomainApplication):
     """Given a set of columns, generate a new row from cleaned column data"""
@@ -234,7 +234,7 @@ def write_requests_csv(
     """
     """
 
-    all_requetsts = get_domain_requests(filter_condition, sort_fields)
+    all_requetsts = get_requests(filter_condition, sort_fields)
 
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_requetsts, 1000)
@@ -426,10 +426,11 @@ def export_data_domain_growth_to_csv(csv_file, start_date, end_date):
     )
 
 def get_sliced_domains(filter_condition):
-    """
+    """Get fitered domains counts sliced by org type and election office.
     """
 
     domains = DomainInformation.objects.all().filter(**filter_condition)
+    domains_count = domains.count()
     federal = domains.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).count()
     interstate = domains.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).count()
     state_or_territory = domains.filter(organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY).count()
@@ -440,7 +441,8 @@ def get_sliced_domains(filter_condition):
     school_district = domains.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).count()
     election_board = domains.filter(is_election_board=True).count()
 
-    return [federal,
+    return [domains_count,
+            federal,
          interstate,
          state_or_territory,
          tribal,
@@ -451,21 +453,23 @@ def get_sliced_domains(filter_condition):
          election_board]
 
 def get_sliced_requests(filter_condition):
-    """
+    """Get fitered requests counts sliced by org type and election office.
     """
 
-    domain_requests = DomainApplication.objects.all().filter(**filter_condition)
-    federal = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).count()
-    interstate = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).count()
-    state_or_territory = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY).count()
-    tribal = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).count()
-    county = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).count()
-    city = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.CITY).count()
-    special_district = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).count()
-    school_district = domain_requests.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).count()
-    election_board = domain_requests.filter(is_election_board=True).count()
+    requests = DomainApplication.objects.all().filter(**filter_condition)
+    requests_count = requests.count()
+    federal = requests.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).count()
+    interstate = requests.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).count()
+    state_or_territory = requests.filter(organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY).count()
+    tribal = requests.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).count()
+    county = requests.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).count()
+    city = requests.filter(organization_type=DomainApplication.OrganizationChoices.CITY).count()
+    special_district = requests.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).count()
+    school_district = requests.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).count()
+    election_board = requests.filter(is_election_board=True).count()
 
-    return [federal,
+    return [requests_count,
+            federal,
          interstate,
          state_or_territory,
          tribal,
@@ -475,8 +479,8 @@ def get_sliced_requests(filter_condition):
          school_district,
          election_board]
 
-def export_data_managed_vs_unamanaged_domains(csv_file, start_date, end_date):
-    """
+def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
+    """Get domains have domain managers for two different dates.
     """
 
     start_date_formatted = format_start_date(start_date)
@@ -490,37 +494,18 @@ def export_data_managed_vs_unamanaged_domains(csv_file, start_date, end_date):
         "domain__name",
     ]
 
-    writer.writerow(["START DATE"])
-    writer.writerow([])
-
     filter_managed_domains_start_date = {
         "domain__permissions__isnull": False,
         "domain__first_ready__lte": start_date_formatted,
     }
     managed_domains_sliced_at_start_date = get_sliced_domains(filter_managed_domains_start_date)
 
-    writer.writerow(["MANAGED DOMAINS COUNTS"])
-    writer.writerow(["FEDERAL", "INTERSTATE", "STATE_OR_TERRITORY", "TRIBAL", "COUNTY", "CITY", "SPECIAL_DISTRICT", "SCHOOL_DISTRICT", "ELECTION OFFICE"])
+    writer.writerow(["MANAGED DOMAINS COUNTS AT SRAT DATE"])
+    writer.writerow(["Total", "Federal", "Interstate", "State or territory", "Tribal", "County", "City", "Special district", "School district", "Election office"])
     writer.writerow(managed_domains_sliced_at_start_date)
     writer.writerow([])
 
     write_csv(writer, columns, sort_fields, filter_managed_domains_start_date, get_domain_managers=True, should_write_header=True)
-    writer.writerow([])
-    
-    filter_unmanaged_domains_start_date = {
-        "domain__permissions__isnull": True,
-        "domain__first_ready__lte": start_date_formatted,
-    }
-    unmanaged_domains_sliced_at_start_date = get_sliced_domains(filter_unmanaged_domains_start_date)
-
-    writer.writerow(["UNMANAGED DOMAINS COUNTS"])
-    writer.writerow(["FEDERAL", "INTERSTATE", "STATE_OR_TERRITORY", "TRIBAL", "COUNTY", "CITY", "SPECIAL_DISTRICT", "SCHOOL_DISTRICT", "ELECTION OFFICE"])
-    writer.writerow(unmanaged_domains_sliced_at_start_date)
-    writer.writerow([])
-    write_csv(writer, columns, sort_fields, filter_unmanaged_domains_start_date, get_domain_managers=True, should_write_header=True)
-    writer.writerow([])
-
-    writer.writerow(["END DATE"])
     writer.writerow([])
 
     filter_managed_domains_end_date = {
@@ -529,12 +514,40 @@ def export_data_managed_vs_unamanaged_domains(csv_file, start_date, end_date):
     }
     managed_domains_sliced_at_end_date = get_sliced_domains(filter_managed_domains_end_date)
 
-    writer.writerow(["MANAGED DOMAINS COUNTS"])
-    writer.writerow(["FEDERAL", "INTERSTATE", "STATE_OR_TERRITORY", "TRIBAL", "COUNTY", "CITY", "SPECIAL_DISTRICT", "SCHOOL_DISTRICT", "ELECTION OFFICE"])
+    writer.writerow(["MANAGED DOMAINS COUNTS AT END DATE"])
+    writer.writerow(["Total", "Federal", "Interstate", "State or territory", "Tribal", "County", "City", "Special district", "School district", "Election office"])
     writer.writerow(managed_domains_sliced_at_end_date)
     writer.writerow([])
 
     write_csv(writer, columns, sort_fields, filter_managed_domains_end_date, get_domain_managers=True, should_write_header=True)
+
+def export_data_unmanaged_domains_to_csv(csv_file, start_date, end_date):
+    """ Get domains that do not have domain managers for two different dates.
+    """
+
+    start_date_formatted = format_start_date(start_date)
+    end_date_formatted = format_end_date(end_date)
+    writer = csv.writer(csv_file)
+    columns = [
+        "Domain name",
+        "Domain type",
+    ]
+    sort_fields = [
+        "domain__name",
+    ]
+    
+    filter_unmanaged_domains_start_date = {
+        "domain__permissions__isnull": True,
+        "domain__first_ready__lte": start_date_formatted,
+    }
+    unmanaged_domains_sliced_at_start_date = get_sliced_domains(filter_unmanaged_domains_start_date)
+
+    writer.writerow(["UNMANAGED DOMAINS AT START DATE"])
+    writer.writerow(["Total", "Federal", "Interstate", "State or territory", "Tribal", "County", "City", "Special district", "School district", "Election office"])
+    writer.writerow(unmanaged_domains_sliced_at_start_date)
+    writer.writerow([])
+
+    write_csv(writer, columns, sort_fields, filter_unmanaged_domains_start_date, get_domain_managers=True, should_write_header=True)
     writer.writerow([])
     
     filter_unmanaged_domains_end_date = {
@@ -543,14 +556,14 @@ def export_data_managed_vs_unamanaged_domains(csv_file, start_date, end_date):
     }
     unmanaged_domains_sliced_at_end_date = get_sliced_domains(filter_unmanaged_domains_end_date)
     
-    writer.writerow(["UNMANAGED DOMAINS COUNTS"])
-    writer.writerow(["FEDERAL", "INTERSTATE", "STATE_OR_TERRITORY", "TRIBAL", "COUNTY", "CITY", "SPECIAL_DISTRICT", "SCHOOL_DISTRICT", "ELECTION OFFICE"])
+    writer.writerow(["UNMANAGED DOMAINS AT END DATE"])
+    writer.writerow(["Total", "Federal", "Interstate", "State or territory", "Tribal", "County", "City", "Special district", "School district", "Election office"])
     writer.writerow(unmanaged_domains_sliced_at_end_date)
     writer.writerow([])
 
     write_csv(writer, columns, sort_fields, filter_unmanaged_domains_end_date, get_domain_managers=True, should_write_header=True)
 
-def export_data_requests_to_csv(csv_file, start_date, end_date):
+def export_data_requests_growth_to_csv(csv_file, start_date, end_date):
     """
     """
 

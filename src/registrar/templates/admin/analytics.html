@@ -16,7 +16,8 @@
         <ul>
           <li>User Count: {{ data.user_count }}</li>
           <li>Domain Count: {{ data.domain_count }}</li>
-          <li>Domain applications (last 30 days): {{ data.applications_last_30_days }}</li>
+          <li>Domain applications (last 30 days): {{ data.last_30_days_applications }}</li>
+          <li>Approved applications (last 30 days): {{ data.last_30_days_approved_applications }}</li>
           <li>Average approval time for applications (last 30 days): {{ data.average_application_approval_time_last_30_days }}</li>
         </ul>
       </div>
@@ -80,28 +81,35 @@
 
         <ul class="usa-button-group">
           <li class="usa-button-group__item">
-            <button class="button exportLink" data-export-url="{% url 'export_domain_growth' %}" type="button">
+            <button class="button exportLink" data-export-url="{% url 'export_domains_growth' %}" type="button">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
               </svg><span class="margin-left-05">Domain growth</span>
             </button>
           </li>
           <li class="usa-button-group__item">
-            <button class="button exportLink" data-export-url="{% url 'export_requests' %}" type="button">
+            <button class="button exportLink" data-export-url="{% url 'export_requests_growth' %}" type="button">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
               </svg><span class="margin-left-05">Request Growth</span>
             </button>
           </li>
           <li class="usa-button-group__item">
-            <button class="button exportLink" data-export-url="{% url 'export_managed_unmanaged' %}" type="button">
+            <button class="button exportLink" data-export-url="{% url 'export_managed_domains' %}" type="button">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
-              </svg><span class="margin-left-05">Managed vs unmanaged domain</span>
+              </svg><span class="margin-left-05">Managed domains</span>
             </button>
           </li>
           <li class="usa-button-group__item">
-            <button class="button exportLink" data-export-url="{% url 'user_analytics' %}" type="button">
+            <button class="button exportLink" data-export-url="{% url 'export_unmanaged_domains' %}" type="button">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+              </svg><span class="margin-left-05">Unmanaged domains</span>
+            </button>
+          </li>
+          <li class="usa-button-group__item">
+            <button class="button exportLink" data-export-url="{% url 'analytics' %}" type="button">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#assessment"></use>
               </svg><span class="margin-left-05">Update charts</span>
@@ -128,12 +136,12 @@
           <div class="grid-col">
             <canvas id="myChart3" width="400" height="200" 
               data-list-one="{{data.deleted_domains_sliced_at_start_date}}"
-              data-list-two="{{data.requests_sliced_at_start_date}}"
+              data-list-two="{{data.deleted_domains_sliced_at_end_date}}"
             ></canvas>
           </div>
           <div class="grid-col">
             <canvas id="myChart4" width="400" height="200" 
-              data-list-one="{{data.deleted_domains_sliced_at_start_date}}"
+              data-list-one="{{data.ready_domains_sliced_at_start_date}}"
               data-list-two="{{data.ready_domains_sliced_at_end_date}}"
             ></canvas>
           </div>
@@ -143,7 +151,7 @@
           <div class="grid-col">
             <canvas id="myChart5" width="400" height="200" 
               data-list-one="{{data.submitted_requests_sliced_at_start_date}}"
-              data-list-two="{{data.submitted_requests_at_end_date}}"
+              data-list-two="{{data.submitted_requests_sliced_at_end_date}}"
             ></canvas>
           </div>
           <div class="grid-col">

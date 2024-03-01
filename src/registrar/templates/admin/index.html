@@ -1,0 +1,11 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+<div id="content-main">
+    {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+    <div class="module module--custom">
+        <h2>Analytics</h2>
+        <a class="display-block padding-1" href="{% url 'analytics' %}">Dashboard</a>
+    </div>
+</div>
+{% endblock %}

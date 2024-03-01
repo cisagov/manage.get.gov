@@ -27,7 +27,6 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
-from registrar.views.admin_views import ExportDataDomainGrowth, ExportDataFederal, ExportDataFull, ExportDataManagedVsUnmanaged, ExportDataRequests, ExportDataType
 
 from django.utils.translation import gettext_lazy as _
 
@@ -364,16 +363,18 @@ class UserContactInline(admin.StackedInline):
     model = models.Contact
 
 
-def user_analytics(request):
+def analytics(request):
 
-        end_date = datetime.datetime.today()
-        start_date = datetime.datetime.today() - datetime.timedelta(days=30)
+        thirty_days_ago = datetime.datetime.today() - datetime.timedelta(days=30)
 
         last_30_days_applications = models.DomainApplication.objects.filter(
-            created_at__gt=start_date
+            created_at__gt=thirty_days_ago
         )
-        avg_approval_time = last_30_days_applications.annotate(
-            approval_time=F("approved_domain__created_at") - F("created_at")
+        last_30_days_approved_applications = models.DomainApplication.objects.filter(
+            created_at__gt=thirty_days_ago, status=DomainApplication.ApplicationStatus.APPROVED
+        )
+        avg_approval_time = last_30_days_approved_applications.annotate(
+            approval_time=F("approved_domain__created_at") - F("submission_date")
         ).aggregate(Avg("approval_time"))["approval_time__avg"]
         # format the timedelta?
         avg_approval_time = str(avg_approval_time)
@@ -416,7 +417,7 @@ def user_analytics(request):
                 
         filter_deleted_domains_start_date = {
             "domain__state__in": [Domain.State.DELETED],
-            "domain__first_ready__lte": start_date_formatted,
+            "domain__deleted__lte": start_date_formatted,
         }
         deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)
 
@@ -428,7 +429,7 @@ def user_analytics(request):
                 
         filter_deleted_domains_end_date = {
             "domain__state__in": [Domain.State.DELETED],
-            "domain__first_ready__lte": end_date_formatted,
+            "domain__deleted__lte": end_date_formatted,
         }
         deleted_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_deleted_domains_end_date)
 
@@ -436,7 +437,7 @@ def user_analytics(request):
         
         # Created and Submitted requests
         filter_requests_start_date = {
-            "submission_date__lte": start_date_formatted,
+            "created_at__lte": start_date_formatted,
         }
         requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_requests_start_date)
                 
@@ -447,7 +448,7 @@ def user_analytics(request):
         submitted_requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_submitted_requests_start_date)
         
         filter_requests_end_date = {
-            "submission_date__lte": end_date_formatted,
+            "created_at__lte": end_date_formatted,
         }
         requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_requests_end_date)
         
@@ -455,14 +456,15 @@ def user_analytics(request):
             "status": DomainApplication.ApplicationStatus.SUBMITTED,
             "submission_date__lte": end_date_formatted,
         }
-        submitted_requests_at_end_date = csv_export.get_sliced_requests(filter_submitted_requests_end_date)
+        submitted_requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_submitted_requests_end_date)
 
         context = dict(
             **admin.site.each_context(request),
             data=dict(
                 user_count=models.User.objects.all().count(),
                 domain_count=models.Domain.objects.all().count(),
-                applications_last_30_days=last_30_days_applications.count(),
+                last_30_days_applications=last_30_days_applications.count(),
+                last_30_days_approved_applications=last_30_days_approved_applications.count(),
                 average_application_approval_time_last_30_days=avg_approval_time,
                 
                 managed_domains_sliced_at_start_date=managed_domains_sliced_at_start_date,
@@ -478,7 +480,7 @@ def user_analytics(request):
                 requests_sliced_at_start_date=requests_sliced_at_start_date,
                 submitted_requests_sliced_at_start_date=submitted_requests_sliced_at_start_date,
                 requests_sliced_at_end_date=requests_sliced_at_end_date,
-                submitted_requests_at_end_date=submitted_requests_at_end_date,
+                submitted_requests_sliced_at_end_date=submitted_requests_sliced_at_end_date,
                 
             ),
         )
