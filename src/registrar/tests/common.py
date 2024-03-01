@@ -405,11 +405,11 @@ class AuditedAdminMockData:
                     status=status,
                 )
             case self.INFORMATION:
-                domain_app = self.create_full_dummy_domain_request(item_name)
+                domain_req = self.create_full_dummy_domain_request(item_name)
                 full_arg_dict = dict(
                     **common_args,
                     domain=self.dummy_domain(item_name, True),
-                    domain_request=domain_app,
+                    domain_request=domain_req,
                 )
             case self.INVITATION:
                 full_arg_dict = dict(
