@@ -218,7 +218,7 @@ def export_data_type_to_csv(csv_file):
     ]
     filter_condition = {
         "domain__state__in": [
-            Domain.State.UNKNOWN,
+            Domain.State.READY,
             Domain.State.DNS_NEEDED,
             Domain.State.ON_HOLD,
         ],
