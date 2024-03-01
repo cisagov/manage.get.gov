@@ -26,6 +26,7 @@ def write_header(writer, columns):
 def get_domain_infos(filter_condition, sort_fields):
     domain_infos = (
         DomainInformation.objects.select_related("domain", "authorizing_official")
+        .prefetch_related("domain__permissions")
         .filter(**filter_condition)
         .order_by(*sort_fields)
     )
@@ -49,6 +50,7 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
 
     # Domain should never be none when parsing this information
     if domain_info.domain is None:
+        logger.error("Attemting to parse row for csv exports but Domain is none in a DomainInfo")
         raise ValueError("Domain is none")
 
     domain = domain_info.domain  # type: ignore
@@ -127,15 +129,6 @@ def _get_security_emails(sec_contact_ids):
     return security_emails_dict
 
 
-def update_columns_with_domain_managers(columns, max_dm_count):
-    """
-    Update the columns list to include "Domain manager email {#}" headers
-    based on the maximum domain manager count.
-    """
-    for i in range(1, max_dm_count + 1):
-        columns.append(f"Domain manager email {i}")
-
-
 def write_csv(
     writer,
     columns,
@@ -161,19 +154,26 @@ def write_csv(
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
 
-    if get_domain_managers and len(all_domain_infos) > 0:
-        # We want to get the max amont of domain managers an
-        # account has to set the column header dynamically
-        max_dm_count = max(len(domain_info.domain.permissions.all()) for domain_info in all_domain_infos)
-        update_columns_with_domain_managers(columns, max_dm_count)
-
-    if should_write_header:
-        write_header(writer, columns)
+    # The maximum amount of domain managers an account has
+    # We get the max so we can set the column header accurately
+    max_dm_count = 0
+    total_body_rows = []
 
     for page_num in paginator.page_range:
         rows = []
         page = paginator.page(page_num)
         for domain_info in page.object_list:
+
+            # Get count of all the domain managers for an account
+            if get_domain_managers:
+                dm_count = domain_info.domain.permissions.count()
+                if dm_count > max_dm_count:
+                    max_dm_count = dm_count
+                    for i in range(1, max_dm_count + 1):
+                        column_name = f"Domain manager email {i}"
+                        if column_name not in columns:
+                            columns.append(column_name)
+
             try:
                 row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
                 rows.append(row)
@@ -183,7 +183,9 @@ def write_csv(
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
 
-        writer.writerows(rows)
+    if should_write_header:
+        write_header(writer, columns)
+    writer.writerows(total_body_rows)
 
 
 def export_data_type_to_csv(csv_file):
