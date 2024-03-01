@@ -172,7 +172,7 @@ def write_csv(
         page = paginator.page(page_num)
         for domain_info in page.object_list:
             # Get count of all the domain managers for an account
-            dm_count = len(domain_info.domain.permissions)
+            dm_count = domain_info.domain.permissions.count()
             if dm_count > max_dm_count:
                 max_dm_count = dm_count
 
@@ -220,7 +220,7 @@ def export_data_type_to_csv(csv_file):
     ]
     filter_condition = {
         "domain__state__in": [
-            Domain.State.READY,
+            Domain.State.UNKNOWN,
             Domain.State.DNS_NEEDED,
             Domain.State.ON_HOLD,
         ],
