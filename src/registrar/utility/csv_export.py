@@ -45,13 +45,12 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos_cleaned
 
 
-def parse_row(
-    columns, domain_info: DomainInformation, max_dm_count, security_emails_dict=None, get_domain_managers=False
-):
+def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None, get_domain_managers=False):
     """Given a set of columns, generate a new row from cleaned column data"""
 
     # Domain should never be none when parsing this information
     if domain_info.domain is None:
+        logger.error("Attemting to parse row for csv exports but Domain is none in a DomainInfo")
         raise ValueError("Domain is none")
 
     domain = domain_info.domain  # type: ignore
@@ -97,11 +96,6 @@ def parse_row(
     }
 
     if get_domain_managers:
-        for i in range(1, max_dm_count + 1):
-            column_name = f"Domain manager email {i}"
-            if column_name not in columns:
-                columns.append(column_name)
-
         # Get each domain managers email and add to list
         dm_emails = [dm.user.email for dm in domain.permissions.all()]
 
@@ -169,13 +163,19 @@ def write_csv(
         rows = []
         page = paginator.page(page_num)
         for domain_info in page.object_list:
+
             # Get count of all the domain managers for an account
-            dm_count = domain_info.domain.permissions.count()
-            if dm_count > max_dm_count:
-                max_dm_count = dm_count
+            if get_domain_managers:
+                dm_count = domain_info.domain.permissions.count()
+                if dm_count > max_dm_count:
+                    max_dm_count = dm_count
+                    for i in range(1, max_dm_count + 1):
+                        column_name = f"Domain manager email {i}"
+                        if column_name not in columns:
+                            columns.append(column_name)
 
             try:
-                row = parse_row(columns, domain_info, max_dm_count, security_emails_dict, get_domain_managers)
+                row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
                 rows.append(row)
             except ValueError:
                 # This should not happen. If it does, just skip this row.
@@ -205,7 +205,7 @@ def export_data_type_to_csv(csv_file):
         "State",
         "AO",
         "AO email",
-        # "Security contact email",
+        "Security contact email",
         # For domain manager we are pass it in as a parameter below in write_body
     ]
 
