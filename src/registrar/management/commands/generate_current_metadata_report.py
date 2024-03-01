@@ -71,17 +71,23 @@ class Command(BaseCommand):
         # Secret is encrypted into getgov-credentials
         # TODO: Update secret in getgov-credentials via cloud.gov and my own .env when ready
         
-        # encrypted_metadata is the encrypted output
+        # Encrypt the metadata 
+        # TODO: UPDATE SECRET_ENCRYPT_METADATA pw getgov-credentials on stable
         encrypted_metadata = self._encrypt_metadata(s3_client.get_file(file_name), encrypted_metadata_output, str.encode(settings.SECRET_ENCRYPT_METADATA))
         print("encrypted_metadata is:", encrypted_metadata)
-
+        print("the type is: ", type(encrypted_metadata))
         # Send the metadata file that is zipped
-        # Q: Would we set the vars I set in email.py here to pass in to the helper function or best way to invoke
-        # send_templated_email(encrypted_metadata, attachment=True)
-    
+        # TODO: Make new .txt files
+        send_templated_email(
+            "emails/metadata_body.txt",
+            "emails/metadata_subject.txt",
+            to_address="rebecca.hsieh@truss.works", # TODO: Update to settings.DEFAULT_FROM_EMAIL once tested
+            file=encrypted_metadata,
+        )
+
     def _encrypt_metadata(self, input_file, output_file, password):
-        # Using ZIP_DEFLATED bc it's a more common compression method supported by most zip utilities
-        # Could also use compression=pyzipper.ZIP_LZMA?
+        # Using ZIP_DEFLATED bc it's a more common compression method supported by most zip utilities and faster
+        # We could also use compression=pyzipper.ZIP_LZMA if we are looking for smaller file size
         with pyzipper.AESZipFile(output_file, 'w', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as f_out:
             f_out.setpassword(password)
             f_out.writestr('encrypted_metadata.txt', input_file)
