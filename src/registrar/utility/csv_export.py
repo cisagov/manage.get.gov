@@ -45,7 +45,9 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos_cleaned
 
 
-def parse_row(columns, domain_info: DomainInformation, max_dm_count, security_emails_dict=None, get_domain_managers=False):
+def parse_row(
+    columns, domain_info: DomainInformation, max_dm_count, security_emails_dict=None, get_domain_managers=False
+):
     """Given a set of columns, generate a new row from cleaned column data"""
 
     # Domain should never be none when parsing this information
@@ -131,6 +133,7 @@ def _get_security_emails(sec_contact_ids):
             logger.warning("csv_export -> Domain was none for PublicContact")
 
     return security_emails_dict
+
 
 def write_csv(
     writer,
