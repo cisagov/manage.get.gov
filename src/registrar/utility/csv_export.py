@@ -187,7 +187,8 @@ def write_csv(
         total_body_rows.append(rows)
 
     update_columns_with_domain_managers(columns, max_dm_count)
-    write_header(writer, columns)
+    if should_write_header:
+        write_header(writer, columns)
     writer.writerows(total_body_rows)
 
 
@@ -220,7 +221,7 @@ def export_data_type_to_csv(csv_file):
     ]
     filter_condition = {
         "domain__state__in": [
-            Domain.State.UNKNOWN,
+            Domain.State.READY,
             Domain.State.DNS_NEEDED,
             Domain.State.ON_HOLD,
         ],
