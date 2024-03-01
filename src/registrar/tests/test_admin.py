@@ -230,6 +230,20 @@ class TestDomainAdmin(MockEppLib, WebTest):
         )
         mock_add_message.assert_has_calls([expected_call], 1)
 
+    def test_custom_delete_confirmation_page(self):
+        """Tests if we override the delete confirmation page for custom content"""
+        # Create a ready domain with a preset expiration date
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        domain_change_page = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        self.assertContains(domain_change_page, "fake.gov")
+        # click the "Manage" link
+        confirmation_page = domain_change_page.click("Delete", index=0)
+
+        content_slice = "<p>When a domain is removed from the registry:</p>"
+        self.assertContains(confirmation_page, content_slice)
+
     def test_short_org_name_in_domains_list(self):
         """
         Make sure the short name is displaying in admin on the list page
@@ -309,6 +323,17 @@ class TestDomainAdmin(MockEppLib, WebTest):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, domain.name)
             self.assertContains(response, "Remove from registry")
+
+            # The contents of the modal should exist before and after the post.
+            # Check for the header
+            self.assertContains(response, "Are you sure you want to remove this domain from the registry?")
+
+            # Check for some of its body
+            self.assertContains(response, "When a domain is removed from the registry:")
+
+            # Check for some of the button content
+            self.assertContains(response, "Yes, remove from registry")
+
             # Test the info dialog
             request = self.factory.post(
                 "/admin/registrar/domain/{}/change/".format(domain.pk),
@@ -325,7 +350,59 @@ class TestDomainAdmin(MockEppLib, WebTest):
                     extra_tags="",
                     fail_silently=False,
                 )
+            
+            # The modal should still exist
+            self.assertContains(response, "Are you sure you want to remove this domain from the registry?")
+            self.assertContains(response, "When a domain is removed from the registry:")
+            self.assertContains(response, "Yes, remove from registry")
+
             self.assertEqual(domain.state, Domain.State.DELETED)
+
+    def test_on_hold_is_successful_web_test(self):
+        """
+        Scenario: Domain on_hold is successful through webtest
+        """
+        with less_console_noise():
+            domain = create_ready_domain()
+            
+            response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+            # Check the contents of the modal
+            # Check for the header
+            self.assertContains(response, "Are you sure you want to place this domain on hold?")
+
+            # Check for some of its body
+            self.assertContains(response, "When a domain is on hold:")
+
+            # Check for some of the button content
+            self.assertContains(response, "Yes, place hold")
+
+            # Grab the form to submit
+            form = response.forms["domain_form"]
+
+            # Submit the form
+            response = form.submit("_place_client_hold")
+
+            # Follow the response
+            response = response.follow()
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, domain.name)
+            self.assertContains(response, "Remove hold")
+            
+            # The modal should still exist
+            # Check for the header
+            self.assertContains(response, "Are you sure you want to place this domain on hold?")
+
+            # Check for some of its body
+            self.assertContains(response, "When a domain is on hold:")
+
+            # Check for some of the button content
+            self.assertContains(response, "Yes, place hold")
+
+            # Web test has issues grabbing up to date data from the db, so we can test
+            # the returned view instead
+            self.assertContains(response, '<div class="readonly">On hold</div>')
 
     def test_deletion_ready_fsm_failure(self):
         """
@@ -440,6 +517,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
 
 class TestDomainApplicationAdminForm(TestCase):
+
     def setUp(self):
         # Create a test application with an initial state of started
         self.application = completed_application()
@@ -1101,7 +1179,10 @@ class TestDomainApplicationAdmin(MockEppLib):
             application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk),
+                follow=True
+            )
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 # Modify the application's property
@@ -1112,6 +1193,66 @@ class TestDomainApplicationAdmin(MockEppLib):
 
             # Test that approved domain exists and equals requested domain
             self.assertEqual(application.creator.status, "restricted")
+
+    def test_user_sets_restricted_status_modal(self):
+        """Tests the modal for when a user sets the status to restricted"""
+        with less_console_noise():
+            # make sure there is no user with this email
+            EMAIL = "mayor@igorville.gov"
+            User.objects.filter(email=EMAIL).delete()
+
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+            p = "userpass"
+            self.client.login(username="staffuser", password=p)
+            response = self.client.get(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk),
+                follow=True,
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, application.requested_domain.name)
+
+            
+            # Check that the modal has the right content
+            # Check for the header
+            self.assertContains(response, "Are you sure you want to select ineligible status?")
+
+            # Check for some of its body
+            self.assertContains(response, "When a domain request is in ineligible status")
+
+            # Check for some of the button content
+            self.assertContains(response, "Yes, select ineligible status")
+
+            # Create a mock request
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk),
+                follow=True
+            )
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                # Modify the application's property
+                application.status = DomainApplication.ApplicationStatus.INELIGIBLE
+
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
+
+            # Test that approved domain exists and equals requested domain
+            self.assertEqual(application.creator.status, "restricted")
+
+            # 'Get' to the application again
+            response = self.client.get(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk),
+                follow=True,
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, application.requested_domain.name)
+
+            # The modal should be unchanged
+            self.assertContains(response, "Are you sure you want to select ineligible status?")
+            self.assertContains(response, "When a domain request is in ineligible status")
+            self.assertContains(response, "Yes, select ineligible status")
 
     def test_readonly_when_restricted_creator(self):
         with less_console_noise():
