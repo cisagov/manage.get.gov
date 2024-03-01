@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="status",
             field=django_fsm.FSMField(
                 choices=[

@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="urbanization",
             field=models.TextField(blank=True, help_text="Urbanization (required for Puerto Rico only)", null=True),
         ),

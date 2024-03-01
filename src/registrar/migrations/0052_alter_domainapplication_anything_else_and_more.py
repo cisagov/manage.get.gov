@@ -5,12 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0051_alter_DomainRequest_urbanization_and_more"),
+        ("registrar", "0051_alter_domainapplication_urbanization_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="anything_else",
             field=models.TextField(blank=True, help_text="Anything else?", null=True),
         ),

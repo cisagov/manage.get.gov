@@ -77,11 +77,11 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.RemoveField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="more_organization_information",
         ),
         migrations.RemoveField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="type_of_work",
         ),
         migrations.RemoveField(
@@ -93,7 +93,7 @@ class Migration(migrations.Migration):
             name="type_of_work",
         ),
         migrations.AddField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="about_your_organization",
             field=models.TextField(blank=True, help_text="Information about your organization", null=True),
         ),
@@ -103,14 +103,14 @@ class Migration(migrations.Migration):
             field=models.TextField(blank=True, help_text="Information about your organization", null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="approved_domain",
             field=models.OneToOneField(
                 blank=True,
                 help_text="The approved domain",
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                related_name="domain_request",
+                related_name="domain_application",
                 to="registrar.domain",
             ),
         ),

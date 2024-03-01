@@ -168,7 +168,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name="DomainRequest",
+            name="DomainApplication",
             fields=[
                 (
                     "id",

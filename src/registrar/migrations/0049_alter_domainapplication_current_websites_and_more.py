@@ -10,14 +10,14 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="current_websites",
             field=models.ManyToManyField(
                 blank=True, related_name="current+", to="registrar.website", verbose_name="websites"
             ),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="other_contacts",
             field=models.ManyToManyField(
                 blank=True, related_name="contact_applications", to="registrar.contact", verbose_name="contacts"

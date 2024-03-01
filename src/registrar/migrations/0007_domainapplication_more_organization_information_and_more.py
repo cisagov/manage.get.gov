@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="more_organization_information",
             field=models.TextField(
                 blank=True,
@@ -19,27 +19,27 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AddField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="type_of_work",
             field=models.TextField(blank=True, help_text="Type of work of the organization", null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="address_line1",
             field=models.TextField(blank=True, help_text="Street address", null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="address_line2",
             field=models.CharField(blank=True, help_text="Street address line 2", max_length=15, null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="federal_agency",
             field=models.TextField(blank=True, help_text="Federal agency", null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="federal_type",
             field=models.CharField(
                 blank=True,
@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="organization_type",
             field=models.CharField(
                 blank=True,
@@ -89,12 +89,12 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="purpose",
             field=models.TextField(blank=True, help_text="Purpose of your domain", null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="state_territory",
             field=models.CharField(
                 blank=True,
@@ -104,12 +104,12 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="urbanization",
             field=models.TextField(blank=True, help_text="Urbanization (Puerto Rico only)", null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="zipcode",
             field=models.CharField(
                 blank=True,

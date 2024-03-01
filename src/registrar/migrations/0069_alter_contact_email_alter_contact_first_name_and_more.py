@@ -6,7 +6,7 @@ import phonenumber_field.modelfields
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0068_DomainRequest_notes_domaininformation_notes"),
+        ("registrar", "0068_domainapplication_notes_domaininformation_notes"),
     ]
 
     operations = [

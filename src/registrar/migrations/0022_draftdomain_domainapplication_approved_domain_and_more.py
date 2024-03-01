@@ -40,26 +40,26 @@ class Migration(migrations.Migration):
             bases=(models.Model, registrar.models.utility.domain_helper.DomainHelper),  # type: ignore
         ),
         migrations.AddField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="approved_domain",
             field=models.OneToOneField(
                 blank=True,
                 help_text="The approved domain",
                 null=True,
                 on_delete=django.db.models.deletion.PROTECT,
-                related_name="domain_request",
+                related_name="domain_application",
                 to="registrar.domain",
             ),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="requested_domain",
             field=models.OneToOneField(
                 blank=True,
                 help_text="The requested domain",
                 null=True,
                 on_delete=django.db.models.deletion.PROTECT,
-                related_name="domain_request",
+                related_name="domain_application",
                 to="registrar.draftdomain",
             ),
         ),

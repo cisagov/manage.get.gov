@@ -7,7 +7,7 @@ import phonenumber_field.modelfields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0070_DomainRequest_rejection_reason"),
+        ("registrar", "0070_domainapplication_rejection_reason"),
     ]
 
     operations = [
@@ -32,24 +32,24 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, null=True, verbose_name="title or role in your organization"),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="address_line1",
             field=models.CharField(blank=True, help_text="Street address", null=True, verbose_name="Address line 1"),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="address_line2",
             field=models.CharField(
                 blank=True, help_text="Street address line 2 (optional)", null=True, verbose_name="Address line 2"
             ),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="city",
             field=models.CharField(blank=True, help_text="City", null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="federal_agency",
             field=models.CharField(
                 blank=True,
@@ -356,17 +356,17 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="organization_name",
             field=models.CharField(blank=True, db_index=True, help_text="Organization name", null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="tribe_name",
             field=models.CharField(blank=True, help_text="Name of tribe", null=True),
         ),
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="urbanization",
             field=models.CharField(blank=True, help_text="Urbanization (required for Puerto Rico only)", null=True),
         ),

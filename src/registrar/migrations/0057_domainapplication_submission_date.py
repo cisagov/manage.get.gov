@@ -5,12 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0056_alter_domain_state_alter_DomainRequest_status_and_more"),
+        ("registrar", "0056_alter_domain_state_alter_domainapplication_status_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="submission_date",
             field=models.DateField(blank=True, default=None, help_text="Date submitted", null=True),
         ),

@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name="DomainRequest",
+            model_name="domainapplication",
             name="organization_type",
             field=models.CharField(
                 blank=True,
