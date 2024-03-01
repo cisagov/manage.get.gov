@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import F, Value, CharField
 from django.db.models.functions import Concat, Coalesce
-
+from django.db.models import Count, Max
 from registrar.models.public_contact import PublicContact
 from registrar.utility.enums import DefaultEmail
 
@@ -97,10 +97,6 @@ def parse_row(
     }
 
     if get_domain_managers:
-        for i in range(1, max_dm_count + 1):
-            column_name = f"Domain manager email {i}"
-            if column_name not in columns:
-                columns.append(column_name)
 
         # Get each domain managers email and add to list
         dm_emails = [dm.user.email for dm in domain.permissions.all()]
@@ -160,20 +156,22 @@ def write_csv(
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
 
-    # The maximum amount of domain managers an account has
-    # We get the max so we can set the column header accurately
-    max_dm_count = 0
-    total_body_rows = []
+    if get_domain_managers:
+        # The maximum amount of domain managers an account has
+        # We get the max so we can set the column header accurately
+        max_dm_count = all_domain_infos.annotate(
+            dm_count=Count("domain__permissions")
+        ).aggregate(max_dm=Max("dm_count"))["max_dm"] or 0
 
+        for i in range(1, max_dm_count + 1):
+            column_name = f"Domain manager email {i}"
+            columns.append(column_name)
+
+    total_body_rows = []
     for page_num in paginator.page_range:
         rows = []
         page = paginator.page(page_num)
         for domain_info in page.object_list:
-            # Get count of all the domain managers for an account
-            dm_count = domain_info.domain.permissions.count()
-            if dm_count > max_dm_count:
-                max_dm_count = dm_count
-
             try:
                 row = parse_row(columns, domain_info, max_dm_count, security_emails_dict, get_domain_managers)
                 rows.append(row)
