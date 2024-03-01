@@ -362,7 +362,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             "purpose": self.domain_request.purpose is not None,
             "your_contact": self.domain_request.submitter is not None,
             "other_contacts": (
-                self.domain_request.other_contacts.exists() or self.domain_request.no_other_contacts_rationale is not None
+                self.domain_request.other_contacts.exists()
+                or self.domain_request.no_other_contacts_rationale is not None
             ),
             "anything_else": (
                 self.domain_request.anything_else is not None or self.domain_request.is_policy_acknowledged is not None

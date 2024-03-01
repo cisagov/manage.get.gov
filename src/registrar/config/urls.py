@@ -66,12 +66,12 @@ urlpatterns = [
     ),
     path(
         "domain-request/<int:pk>/withdraw",
-        views.domain-requestWithdrawConfirmation.as_view(),
+        views.DomainRequestWithdrawConfirmation.as_view(),
         name="domain-request-withdraw-confirmation",
     ),
     path(
         "domain-request/<int:pk>/withdrawconfirmed",
-        views.domain-requestWithdrawn.as_view(),
+        views.DomainRequestWithdrawn.as_view(),
         name="domain-request-withdrawn",
     ),
     path("health", views.health, name="health"),

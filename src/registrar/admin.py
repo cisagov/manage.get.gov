@@ -1081,9 +1081,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
                     )
 
                 elif (
-                    obj
-                    and obj.status == models.DomainRequest.DomainRequestStatus.REJECTED
-                    and not obj.rejection_reason
+                    obj and obj.status == models.DomainRequest.DomainRequestStatus.REJECTED and not obj.rejection_reason
                 ):
                     # This condition should never be triggered.
                     # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
