@@ -184,9 +184,10 @@ def write_csv(
                 # It indicates that DomainInformation.domain is None.
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
-        total_body_rows.append(rows)
+        total_body_rows.extend(rows)
 
-    update_columns_with_domain_managers(columns, max_dm_count)
+    if get_domain_managers:
+        update_columns_with_domain_managers(columns, max_dm_count)
     if should_write_header:
         write_header(writer, columns)
     writer.writerows(total_body_rows)
