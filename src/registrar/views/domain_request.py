@@ -73,7 +73,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     # (this is not seen _in_ urls, only for Django's internal naming)
     # NB: this is included here for reference. Do not change it without
     # also changing the many places it is hardcoded in the HTML templates
-    URL_NAMESPACE = "domain_request"
+    URL_NAMESPACE = "domain-request"
     # name for accessing /domain-request/<id>/edit
     EDIT_URL_NAME = "edit-domain-request"
     NEW_URL_NAME = "/request/"

@@ -23,7 +23,7 @@
   <section class="summary-item margin-top-3">
 
         {% if step == Step.ORGANIZATION_TYPE %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% if domain_request.organization_type is not None %}
             {% with title=form_titles|get_item:step value=domain_request.get_organization_type_display|default:"Incomplete" %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
@@ -36,7 +36,7 @@
         {% endif %}
 
         {% if step == Step.TRIBAL_GOVERNMENT %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% with title=form_titles|get_item:step value=domain_request.tribe_name|default:"Incomplete" %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
@@ -46,21 +46,21 @@
 
 
         {% if step == Step.ORGANIZATION_FEDERAL %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% with title=form_titles|get_item:step value=domain_request.get_federal_type_display|default:"Incomplete" %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
         {% endif %}
 
         {% if step == Step.ORGANIZATION_ELECTION %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% with title=form_titles|get_item:step value=domain_request.is_election_board|yesno:"Yes,No,Incomplete" %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
         {% endif %}
 
         {% if step == Step.ORGANIZATION_CONTACT %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% if domain_request.organization_name %}
             {% with title=form_titles|get_item:step value=domain_request %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url address='true' %}
@@ -73,14 +73,14 @@
         {% endif %}
 
         {% if step == Step.ABOUT_YOUR_ORGANIZATION %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% with title=form_titles|get_item:step value=domain_request.about_your_organization|default:"Incomplete" %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
         {% endif %}
 
         {% if step == Step.AUTHORIZING_OFFICIAL %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% if domain_request.authorizing_official is not None %}
             {% with title=form_titles|get_item:step value=domain_request.authorizing_official %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' %}
@@ -93,7 +93,7 @@
         {% endif %}
 
         {% if step == Step.CURRENT_SITES %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% if domain_request.current_websites.all %}
             {% with title=form_titles|get_item:step value=domain_request.current_websites.all %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url list='true' %}
@@ -106,7 +106,7 @@
         {% endif %}
 
         {% if step == Step.DOTGOV_DOMAIN %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"Incomplete" %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
@@ -122,14 +122,14 @@
         {% endif %}
 
         {% if step == Step.PURPOSE %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% with title=form_titles|get_item:step value=domain_request.purpose|default:"Incomplete" %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
         {% endif %}
 
         {% if step == Step.YOUR_CONTACT %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% if domain_request.submitter is not None %}
             {% with title=form_titles|get_item:step value=domain_request.submitter %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' %}
@@ -142,7 +142,7 @@
         {% endif %}
 
         {% if step == Step.OTHER_CONTACTS %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% if domain_request.other_contacts.all %}
             {% with title=form_titles|get_item:step value=domain_request.other_contacts.all %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' list='true' %}
@@ -156,7 +156,7 @@
 
 
         {% if step == Step.ANYTHING_ELSE %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% with title=form_titles|get_item:step value=domain_request.anything_else|default:"No" %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
@@ -164,7 +164,7 @@
 
 
         {% if step == Step.REQUIREMENTS %}
-          {% namespaced_url 'domain_request' step as domain_request_url %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
           {% with title=form_titles|get_item:step value=domain_request.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
