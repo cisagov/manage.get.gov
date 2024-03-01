@@ -94,7 +94,7 @@ class FSMApplicationError(Exception):
 
     _error_mapping = {
         FSMErrorCodes.APPROVE_DOMAIN_IN_USE: ("Cannot approve. Requested domain is already in use."),
-        FSMErrorCodes.NO_INVESTIGATOR: ("No investigator was assigned."),
+        FSMErrorCodes.NO_INVESTIGATOR: ("Investigator is required for this status."),
         FSMErrorCodes.INVESTIGATOR_NOT_STAFF: ("Investigator is not a staff user."),
         FSMErrorCodes.INVESTIGATOR_NOT_SUBMITTER: ("Only the assigned investigator can make this change."),
     }
