@@ -46,7 +46,7 @@ def get_domain_infos(filter_condition, sort_fields):
 
 
 def parse_row(
-    columns, domain_info: DomainInformation, max_dm_count, security_emails_dict=None, get_domain_managers=False
+    columns, domain_info: DomainInformation, security_emails_dict=None, get_domain_managers=False
 ):
     """Given a set of columns, generate a new row from cleaned column data"""
 
@@ -156,6 +156,9 @@ def write_csv(
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
 
+    if should_write_header:
+        write_header(writer, columns)
+
     if get_domain_managers:
         # The maximum amount of domain managers an account has
         # We get the max so we can set the column header accurately
@@ -173,7 +176,7 @@ def write_csv(
         page = paginator.page(page_num)
         for domain_info in page.object_list:
             try:
-                row = parse_row(columns, domain_info, max_dm_count, security_emails_dict, get_domain_managers)
+                row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
                 rows.append(row)
             except ValueError:
                 # This should not happen. If it does, just skip this row.
@@ -182,8 +185,6 @@ def write_csv(
                 continue
         total_body_rows.extend(rows)
 
-    if should_write_header:
-        write_header(writer, columns)
     writer.writerows(total_body_rows)
 
 
