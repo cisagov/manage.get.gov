@@ -134,9 +134,6 @@ class DomainApplicationAdminForm(forms.ModelForm):
         status = cleaned_data.get("status")
         investigator = cleaned_data.get("investigator")
 
-        # Get the old status
-        initial_status = self.initial.get("status", None)
-
         # We only care about investigator when in these statuses
         checked_statuses = [
             DomainApplication.ApplicationStatus.APPROVED,
@@ -147,7 +144,7 @@ class DomainApplicationAdminForm(forms.ModelForm):
         ]
 
         # If a status change occured, check for validity
-        if status != initial_status and status in checked_statuses:
+        if status in checked_statuses:
             # Checks the "investigators" field for validity.
             # That field must obey certain conditions when an application is approved.
             # Will call "add_error" if any issues are found.
