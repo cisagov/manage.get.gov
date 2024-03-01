@@ -25,7 +25,7 @@ def write_header(writer, columns):
 
 def get_domain_infos(filter_condition, sort_fields):
     domain_infos = (
-        DomainInformation.objects.select_related("domain", "authorizing_official")
+        DomainInformation.objects.select_related("domain", "domain__permissions", "authorizing_official")
         .filter(**filter_condition)
         .order_by(*sort_fields)
     )
@@ -161,19 +161,20 @@ def write_csv(
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
 
-    if get_domain_managers and len(all_domain_infos) > 0:
-        # We want to get the max amont of domain managers an
-        # account has to set the column header dynamically
-        max_dm_count = max(len(domain_info.domain.permissions.all()) for domain_info in all_domain_infos)
-        update_columns_with_domain_managers(columns, max_dm_count)
-
-    if should_write_header:
-        write_header(writer, columns)
+    # The maximum amount of domain managers an account has
+    # We get the max so we can set the column header accurately
+    max_dm_count = 0
+    total_body_rows = []
 
     for page_num in paginator.page_range:
         rows = []
         page = paginator.page(page_num)
         for domain_info in page.object_list:
+            # Get count of all the domain managers for an account
+            dm_count = len(domain_info.domain.permissions)
+            if dm_count > max_dm_count:
+                max_dm_count = dm_count
+
             try:
                 row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
                 rows.append(row)
@@ -182,8 +183,11 @@ def write_csv(
                 # It indicates that DomainInformation.domain is None.
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
+        total_body_rows.append(rows)
 
-        writer.writerows(rows)
+    update_columns_with_domain_managers(columns, max_dm_count)    
+    write_header(writer, columns)
+    writer.writerows(total_body_rows)
 
 
 def export_data_type_to_csv(csv_file):
