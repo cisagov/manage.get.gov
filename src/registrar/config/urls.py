@@ -10,7 +10,15 @@ from django.views.generic import RedirectView
 
 from registrar import views
 from registrar.admin import analytics
-from registrar.views.admin_views import ExportDataDomainsGrowth, ExportDataFederal, ExportDataFull, ExportDataManagedDomains, ExportDataRequestsGrowth, ExportDataType, ExportDataUnmanagedDomains
+from registrar.views.admin_views import (
+    ExportDataDomainsGrowth,
+    ExportDataFederal,
+    ExportDataFull,
+    ExportDataManagedDomains,
+    ExportDataRequestsGrowth,
+    ExportDataType,
+    ExportDataUnmanagedDomains,
+)
 
 from registrar.views.application import Step
 from registrar.views.utility import always_404
@@ -91,7 +99,6 @@ urlpatterns = [
         admin.site.admin_view(analytics),
         name="analytics",
     ),
-    
     path("admin/", admin.site.urls),
     path(
         "application/<id>/edit/",
