@@ -9,6 +9,7 @@ from django.db.models import F, Value, CharField
 from django.db.models.functions import Concat, Coalesce
 from django.db.models import Count, Max
 from registrar.models.public_contact import PublicContact
+from registrar.models.utility.generic_helper import Timer
 from registrar.utility.enums import DefaultEmail
 
 logger = logging.getLogger(__name__)
@@ -158,34 +159,34 @@ def write_csv(
 
     if should_write_header:
         write_header(writer, columns)
+    with Timer():
+        if get_domain_managers:
+            # The maximum amount of domain managers an account has
+            # We get the max so we can set the column header accurately
+            max_dm_count = all_domain_infos.annotate(
+                dm_count=Count("domain__permissions")
+            ).aggregate(max_dm=Max("dm_count"))["max_dm"] or 0
 
-    if get_domain_managers:
-        # The maximum amount of domain managers an account has
-        # We get the max so we can set the column header accurately
-        max_dm_count = all_domain_infos.annotate(
-            dm_count=Count("domain__permissions")
-        ).aggregate(max_dm=Max("dm_count"))["max_dm"] or 0
+            for i in range(1, max_dm_count + 1):
+                column_name = f"Domain manager email {i}"
+                columns.append(column_name)
 
-        for i in range(1, max_dm_count + 1):
-            column_name = f"Domain manager email {i}"
-            columns.append(column_name)
+        total_body_rows = []
+        for page_num in paginator.page_range:
+            rows = []
+            page = paginator.page(page_num)
+            for domain_info in page.object_list:
+                try:
+                    row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
+                    rows.append(row)
+                except ValueError:
+                    # This should not happen. If it does, just skip this row.
+                    # It indicates that DomainInformation.domain is None.
+                    logger.error("csv_export -> Error when parsing row, domain was None")
+                    continue
+            total_body_rows.extend(rows)
 
-    total_body_rows = []
-    for page_num in paginator.page_range:
-        rows = []
-        page = paginator.page(page_num)
-        for domain_info in page.object_list:
-            try:
-                row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
-                rows.append(row)
-            except ValueError:
-                # This should not happen. If it does, just skip this row.
-                # It indicates that DomainInformation.domain is None.
-                logger.error("csv_export -> Error when parsing row, domain was None")
-                continue
-        total_body_rows.extend(rows)
-
-    writer.writerows(total_body_rows)
+        writer.writerows(total_body_rows)
 
 
 def export_data_type_to_csv(csv_file):
@@ -204,7 +205,7 @@ def export_data_type_to_csv(csv_file):
         "State",
         "AO",
         "AO email",
-        # "Security contact email",
+        "Security contact email",
         # For domain manager we are pass it in as a parameter below in write_body
     ]
 
