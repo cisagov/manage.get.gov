@@ -157,8 +157,6 @@ def write_csv(
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
 
-    if should_write_header:
-        write_header(writer, columns)
     with Timer():
         if get_domain_managers:
             # The maximum amount of domain managers an account has
@@ -170,6 +168,9 @@ def write_csv(
             for i in range(1, max_dm_count + 1):
                 column_name = f"Domain manager email {i}"
                 columns.append(column_name)
+
+        if should_write_header:
+            write_header(writer, columns)
 
         total_body_rows = []
         for page_num in paginator.page_range:
