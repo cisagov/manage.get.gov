@@ -74,8 +74,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     # NB: this is included here for reference. Do not change it without
     # also changing the many places it is hardcoded in the HTML templates
     URL_NAMESPACE = "domain_request"
-    # name for accessing /application/<id>/edit
-    EDIT_URL_NAME = "edit-application"
+    # name for accessing /domain-request/<id>/edit
+    EDIT_URL_NAME = "edit-domain-request"
     NEW_URL_NAME = "/request/"
     # We need to pass our human-readable step titles as context to the templates.
     TITLES = {
@@ -118,7 +118,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def prefix(self):
         """Namespace the wizard to avoid clashes in session variable names."""
         # this is a string literal but can be made dynamic if we'd like
-        # users to have multiple applications open for editing simultaneously
+        # users to have multiple domain requests open for editing simultaneously
         return "wizard_domain_request"
 
     @property
@@ -148,7 +148,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 )
                 return self._domain_request
             except DomainRequest.DoesNotExist:
-                logger.debug("Application id %s did not have a DomainRequest" % id)
+                logger.debug("DomainRequest id %s did not have a DomainRequest" % id)
 
         self._domain_request = DomainRequest.objects.create(creator=self.request.user)
 
@@ -181,7 +181,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         """Called when the user clicks the submit button, if all forms are valid."""
         self.domain_request.submit()  # change the status to submitted
         self.domain_request.save()
-        logger.debug("Application object saved: %s", self.domain_request.id)
+        logger.debug("Domain Request object saved: %s", self.domain_request.id)
         return redirect(reverse(f"{self.URL_NAMESPACE}:finished"))
 
     def from_model(self, attribute: str, default, *args, **kwargs):
@@ -210,7 +210,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         current_url = resolve(request.path_info).url_name
 
         # if user visited via an "edit" url, associate the id of the
-        # application they are trying to edit to this wizard instance
+        # domain request they are trying to edit to this wizard instance
         # and remove any prior wizard data from their session
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
@@ -309,7 +309,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             return self.pending_domain_requests()
 
     def approved_domain_requests_exist(self):
-        """Checks if user is creator of applications with DomainRequestStatus.APPROVED status"""
+        """Checks if user is creator of domain requests with DomainRequestStatus.APPROVED status"""
         approved_domain_request_count = DomainRequest.objects.filter(
             creator=self.request.user, status=DomainRequest.DomainRequestStatus.APPROVED
         ).count()
@@ -323,9 +323,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return self.request.user.permissions.count() > 0
 
     def pending_domain_requests(self):
-        """Returns a List of user's applications with one of the following states:
+        """Returns a List of user's domain requests with one of the following states:
         DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED"""
-        # if the current application has DomainRequestStatus.ACTION_NEEDED status, this check should not be performed
+        # if the current domain request has DomainRequestStatus.ACTION_NEEDED status, this check should not be performed
         if self.domain_request.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
             return []
         check_statuses = [
@@ -639,7 +639,7 @@ class DomainRequestStatus(DomainRequestPermissionView):
     template_name = "domain_request_status.html"
 
 
-class ApplicationWithdrawConfirmation(DomainRequestPermissionWithdrawView):
+class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
 
     The DomainRequestPermissionView restricts access so that only the
@@ -649,7 +649,7 @@ class ApplicationWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     template_name = "domain_request_withdraw_confirmation.html"
 
 
-class ApplicationWithdrawn(DomainRequestPermissionWithdrawView):
+class DomainRequestWithdrawn(DomainRequestPermissionWithdrawView):
     # this view renders no template
     template_name = ""
 
@@ -689,8 +689,8 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
     def post(self, request, *args, **kwargs):
         # Grab all orphaned contacts
-        application: DomainRequest = self.get_object()
-        contacts_to_delete, duplicates = self._get_orphaned_contacts(application)
+        domain_request: DomainRequest = self.get_object()
+        contacts_to_delete, duplicates = self._get_orphaned_contacts(domain_request)
 
         # Delete the DomainRequest
         response = super().post(request, *args, **kwargs)
@@ -716,7 +716,7 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         and any other contacts linked to the domain_request.
 
         Parameters:
-        application (DomainRequest): The DomainRequest object for which to find orphaned contacts.
+        domain_request (DomainRequest): The DomainRequest object for which to find orphaned contacts.
         check_db (bool, optional): A flag indicating whether to check the database for the existence of the contacts.
                                 Defaults to False.
 

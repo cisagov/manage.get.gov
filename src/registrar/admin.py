@@ -1056,7 +1056,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     def save_model(self, request, obj, form, change):
         if obj and obj.creator.status != models.User.RESTRICTED:
             if change:  # Check if the domain request is being edited
-                # Get the original application from the database
+                # Get the original domain request from the database
                 original_obj = models.DomainRequest.objects.get(pk=obj.pk)
 
                 if (
@@ -1065,7 +1065,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
                     and obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
                     and not obj.domain_is_not_active()
                 ):
-                    # If an admin tried to set an approved application to
+                    # If an admin tried to set an approved domain request to
                     # another status and the related domain is already
                     # active, shortcut the action and throw a friendly
                     # error message. This action would still not go through
@@ -1127,7 +1127,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
             messages.error(
                 request,
-                "This action is not permitted for applications with a restricted creator.",
+                "This action is not permitted for domain requests with a restricted creator.",
             )
 
     def get_readonly_fields(self, request, obj=None):

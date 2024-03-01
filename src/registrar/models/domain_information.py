@@ -163,8 +163,8 @@ class DomainInformation(TimeStampedModel):
         help_text="Domain to which this information belongs",
     )
 
-    # This is the contact information provided by the applicant. The
-    # application user who created it is in the `creator` field.
+    # This is the contact information provided by the domain requestor. The
+    # user who created the domain request is in the `creator` field.
     submitter = models.ForeignKey(
         "registrar.Contact",
         null=True,

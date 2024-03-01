@@ -37,7 +37,7 @@ allowmixing
 left to right direction
 
 class DomainRequest {
-  Application for a domain
+  Request for a domain
   --
   creator (User)
   investigator (User)

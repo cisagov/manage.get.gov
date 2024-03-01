@@ -244,7 +244,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
             response = self.client.get("/admin/registrar/domain/")
 
             # There are 4 template references to Federal (4) plus four references in the table
-            # for our actual application
+            # for our actual domain_request
             self.assertContains(response, "Federal", count=8)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
@@ -441,12 +441,12 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
 class TestDomainRequestAdminForm(TestCase):
     def setUp(self):
-        # Create a test application with an initial state of started
+        # Create a test domain request with an initial state of started
         self.domain_request = completed_domain_request()
 
     def test_form_choices(self):
         with less_console_noise():
-            # Create a form instance with the test application
+            # Create a form instance with the test domain request
             form = DomainRequestAdminForm(instance=self.domain_request)
 
             # Verify that the form choices match the available transitions for started
@@ -460,7 +460,7 @@ class TestDomainRequestAdminForm(TestCase):
 
             # Verify that the form choices show all choices when no instance is provided;
             # this is necessary to show all choices when creating a new domain
-            # application in django admin;
+            # request in django admin;
             # note that FSM ensures that no domain request exists with invalid status,
             # so don't need to test for invalid status
             self.assertEqual(
@@ -473,7 +473,7 @@ class TestDomainRequestAdminForm(TestCase):
             # Create a form instance with a domain request with ineligible status
             ineligible_domain_request = DomainRequest(status="ineligible")
 
-            # Attempt to create a form with the ineligible application
+            # Attempt to create a form with the ineligible domain request
             # The form should not raise an error, but choices should be the
             # full list of possible choices
             form = DomainRequestAdminForm(instance=ineligible_domain_request)
@@ -587,7 +587,7 @@ class TestDomainRequestAdmin(MockEppLib):
             completed_domain_request()
             response = self.client.get("/admin/registrar/DomainRequest/")
             # There are 4 template references to Federal (4) plus two references in the table
-            # for our actual application
+            # for our actual domain request
             self.assertContains(response, "Federal", count=6)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
@@ -657,7 +657,7 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request()
 
             # Test Submitted Status from started
@@ -714,7 +714,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request()
 
             # Test Submitted Status from started
@@ -763,7 +763,7 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Test Submitted Status
@@ -773,7 +773,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             # Test Withdrawn Status
             self.transition_state_and_send_email(
-                application,
+                domain_request,
                 DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.DOMAIN_PURPOSE,
             )
@@ -793,12 +793,12 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason DOMAIN_PURPOSE and test email
             self.transition_state_and_send_email(
-                application,
+                domain_request,
                 DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.DOMAIN_PURPOSE,
             )
@@ -823,7 +823,7 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason REQUESTOR and test email including dynamic organization name
@@ -852,12 +852,12 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason SECOND_DOMAIN_REASONING and test email including dynamic organization name
             self.transition_state_and_send_email(
-                application,
+                domain_request,
                 DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.SECOND_DOMAIN_REASONING,
             )
@@ -880,12 +880,12 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason CONTACTS_OR_ORGANIZATION_LEGITIMACY and test email including dynamic organization name
             self.transition_state_and_send_email(
-                application,
+                domain_request,
                 DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY,
             )
@@ -911,12 +911,12 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason ORGANIZATION_ELIGIBILITY and test email including dynamic organization name
             self.transition_state_and_send_email(
-                application,
+                domain_request,
                 DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.ORGANIZATION_ELIGIBILITY,
             )
@@ -942,12 +942,12 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
             self.transition_state_and_send_email(
-                application,
+                domain_request,
                 DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.NAMING_REQUIREMENTS,
             )
@@ -970,12 +970,12 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
             self.transition_state_and_send_email(
-                application,
+                domain_request,
                 DomainRequest.DomainRequestStatus.REJECTED,
                 DomainRequest.RejectionReasons.OTHER,
             )
@@ -1050,7 +1050,7 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Test Submitted Status
@@ -1075,7 +1075,7 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Create a mock request
@@ -1097,7 +1097,7 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Create a mock request
@@ -1217,7 +1217,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 # Assert that the error message was called with the correct argument
                 mock_error.assert_called_once_with(
                     request,
-                    "This action is not permitted for applications with a restricted creator.",
+                    "This action is not permitted for domain requests with a restricted creator.",
                 )
 
             # Assert that the status has not changed
@@ -1395,7 +1395,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with less_console_noise():
             # Create a mock DomainRequest object, with a fake investigator
-            application: DomainRequest = generic_domain_object("domain_request", "SomeGuy")
+            domain_request: DomainRequest = generic_domain_object("domain_request", "SomeGuy")
             investigator_user = User.objects.filter(username=domain_request.investigator.username).get()
             investigator_user.is_staff = True
             investigator_user.save()
@@ -1440,7 +1440,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with less_console_noise():
             # Create a mock DomainRequest object, with a fake investigator
-            application: DomainRequest = generic_domain_object("domain_request", "SomeGuy")
+            domain_request: DomainRequest = generic_domain_object("domain_request", "SomeGuy")
             investigator_user = User.objects.filter(username=domain_request.investigator.username).get()
             investigator_user.is_staff = True
             investigator_user.save()
@@ -1484,7 +1484,7 @@ class TestDomainRequestAdmin(MockEppLib):
         """
         with less_console_noise():
             # Create a mock DomainRequest object, with a fake investigator
-            application: DomainRequest = generic_domain_object("domain_request", "SomeGuy")
+            domain_request: DomainRequest = generic_domain_object("domain_request", "SomeGuy")
             investigator_user = User.objects.filter(username=domain_request.investigator.username).get()
             investigator_user.is_staff = True
             investigator_user.save()
@@ -1872,7 +1872,7 @@ class ListHeaderAdminTest(TestCase):
             )
 
     def tearDown(self):
-        # delete any applications too
+        # delete any domain requests too
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         User.objects.all().delete()
@@ -1947,11 +1947,11 @@ class AuditedAdminTest(TestCase):
         """Tests if the investigator field is alphabetically sorted by mimicking
         the call event flow"""
         # Creates multiple domain requests - review status does not matter
-        applications = multiple_unalphabetical_domain_objects("domain_request")
+        domain_requests = multiple_unalphabetical_domain_objects("domain_request")
 
         # Create a mock request
         domain_request_request = self.factory.post(
-            "/admin/registrar/DomainRequest/{}/change/".format(applications[0].pk)
+            "/admin/registrar/DomainRequest/{}/change/".format(domain_requests[0].pk)
         )
 
         # Get the formfield data from the domain request page
@@ -1989,10 +1989,10 @@ class AuditedAdminTest(TestCase):
             ]
 
             # Creates multiple domain requests - review status does not matter
-            applications = multiple_unalphabetical_domain_objects("domain_request")
+            domain_requests = multiple_unalphabetical_domain_objects("domain_request")
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(applications[0].pk))
+            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_requests[0].pk))
 
             model_admin = AuditedAdmin(DomainRequest, self.site)
 
@@ -2046,10 +2046,10 @@ class AuditedAdminTest(TestCase):
                 (DomainInformation.domain_request.field, ["requested_domain__name"]),
             ]
             # Creates multiple domain requests - review status does not matter
-            applications = multiple_unalphabetical_domain_objects("information")
+            domain_requests = multiple_unalphabetical_domain_objects("information")
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/domaininformation/{}/change/".format(applications[0].pk))
+            request = self.factory.post("/admin/registrar/domaininformation/{}/change/".format(domain_requests[0].pk))
 
             model_admin = AuditedAdmin(DomainInformation, self.site)
 
@@ -2101,10 +2101,10 @@ class AuditedAdminTest(TestCase):
             tested_fields = [DomainInvitation.domain.field]
 
             # Creates multiple domain requests - review status does not matter
-            applications = multiple_unalphabetical_domain_objects("invitation")
+            domain_requests = multiple_unalphabetical_domain_objects("invitation")
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/domaininvitation/{}/change/".format(applications[0].pk))
+            request = self.factory.post("/admin/registrar/domaininvitation/{}/change/".format(domain_requests[0].pk))
 
             model_admin = AuditedAdmin(DomainInvitation, self.site)
 
@@ -2328,10 +2328,10 @@ class ContactAdminTest(TestCase):
             contact, _ = Contact.objects.get_or_create(user=self.staffuser)
 
             # join it to 4 domain requests. The 5th join will be a user.
-            application1 = completed_domain_request(submitter=contact, name="city1.gov")
-            application2 = completed_domain_request(submitter=contact, name="city2.gov")
-            application3 = completed_domain_request(submitter=contact, name="city3.gov")
-            application4 = completed_domain_request(submitter=contact, name="city4.gov")
+            domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
+            domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
+            domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
+            domain_request4 = completed_domain_request(submitter=contact, name="city4.gov")
 
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Use the test client to simulate the request
@@ -2343,13 +2343,13 @@ class ContactAdminTest(TestCase):
                     response.wsgi_request,
                     "<ul class='messagelist_content-list--unstyled'>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{application1.pk}/change/'>city1.gov</a></li>"
+                    f"DomainRequest/{domain_request1.pk}/change/'>city1.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{application2.pk}/change/'>city2.gov</a></li>"
+                    f"DomainRequest/{domain_request2.pk}/change/'>city2.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{application3.pk}/change/'>city3.gov</a></li>"
+                    f"DomainRequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{application4.pk}/change/'>city4.gov</a></li>"
+                    f"DomainRequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
                     "<li>Joined to User: <a href='/admin/registrar/"
                     f"user/{self.staffuser.pk}/change/'>staff@example.com</a></li>"
                     "</ul>",
@@ -2363,11 +2363,11 @@ class ContactAdminTest(TestCase):
             # Create an instance of the model
             # join it to 5 domain requests. The 6th join will be a user.
             contact, _ = Contact.objects.get_or_create(user=self.staffuser)
-            application1 = completed_domain_request(submitter=contact, name="city1.gov")
-            application2 = completed_domain_request(submitter=contact, name="city2.gov")
-            application3 = completed_domain_request(submitter=contact, name="city3.gov")
-            application4 = completed_domain_request(submitter=contact, name="city4.gov")
-            application5 = completed_domain_request(submitter=contact, name="city5.gov")
+            domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
+            domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
+            domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
+            domain_request4 = completed_domain_request(submitter=contact, name="city4.gov")
+            domain_request5 = completed_domain_request(submitter=contact, name="city5.gov")
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Use the test client to simulate the request
                 response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
@@ -2378,15 +2378,15 @@ class ContactAdminTest(TestCase):
                     response.wsgi_request,
                     "<ul class='messagelist_content-list--unstyled'>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{application1.pk}/change/'>city1.gov</a></li>"
+                    f"DomainRequest/{domain_request1.pk}/change/'>city1.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{application2.pk}/change/'>city2.gov</a></li>"
+                    f"DomainRequest/{domain_request2.pk}/change/'>city2.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{application3.pk}/change/'>city3.gov</a></li>"
+                    f"DomainRequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{application4.pk}/change/'>city4.gov</a></li>"
+                    f"DomainRequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{application5.pk}/change/'>city5.gov</a></li>"
+                    f"DomainRequest/{domain_request5.pk}/change/'>city5.gov</a></li>"
                     "</ul>"
                     "<p class='font-sans-3xs'>And 1 more...</p>",
                 )

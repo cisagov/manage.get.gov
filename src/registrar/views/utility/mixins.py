@@ -244,9 +244,9 @@ class DomainPermission(PermissionsLoginMixin):
         if DomainInformation.objects.filter(id=pk).exists():
             requested_domain = DomainInformation.objects.get(id=pk)
 
-        # if no domain information or application exist, the user
+        # if no domain information or domain request exist, the user
         # should be able to manage the domain; however, if domain information
-        # and domain request exist, and application is not in valid status,
+        # and domain request exist, and domain request is not in valid status,
         # user should not be able to manage domain
         if (
             requested_domain

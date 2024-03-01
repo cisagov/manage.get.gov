@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class DomainRequest(TimeStampedModel):
-    """A registrant's application for a new domain."""
+    """A registrant's domain request for a new domain."""
 
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
@@ -384,7 +384,7 @@ class DomainRequest(TimeStampedModel):
     creator = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
-        related_name="applications_created",
+        related_name="domain_requests_created",
     )
 
     investigator = models.ForeignKey(
@@ -392,7 +392,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="applications_investigating",
+        related_name="domain_requests_investigating",
     )
 
     # ##### data fields from the initial form #####
@@ -499,7 +499,7 @@ class DomainRequest(TimeStampedModel):
         on_delete=models.PROTECT,
     )
 
-    # "+" means no reverse relation to lookup applications from Website
+    # "+" means no reverse relation to lookup domain requests from Website
     current_websites = models.ManyToManyField(
         "registrar.Website",
         blank=True,
@@ -530,8 +530,8 @@ class DomainRequest(TimeStampedModel):
         related_name="alternatives+",
     )
 
-    # This is the contact information provided by the applicant. The
-    # application user who created it is in the `creator` field.
+    # This is the contact information provided by the domain requestor. The
+    # user who created the domain request is in the `creator` field.
     submitter = models.ForeignKey(
         "registrar.Contact",
         null=True,
@@ -571,7 +571,7 @@ class DomainRequest(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
-    # submission date records when application is submitted
+    # submission date records when domain request is submitted
     submission_date = models.DateField(
         null=True,
         blank=True,
@@ -590,7 +590,7 @@ class DomainRequest(TimeStampedModel):
             if self.requested_domain and self.requested_domain.name:
                 return self.requested_domain.name
             else:
-                return f"{self.status} application created by {self.creator}"
+                return f"{self.status} domain request created by {self.creator}"
         except Exception:
             return ""
 
@@ -776,7 +776,7 @@ class DomainRequest(TimeStampedModel):
 
         This has substantial side-effects because it creates another database
         object for the approved Domain and makes the user who created the
-        application into an admin on that domain. It also triggers an email
+        domain request into an admin on that domain. It also triggers an email
         notification."""
 
         # create the domain
@@ -800,7 +800,7 @@ class DomainRequest(TimeStampedModel):
             self.rejection_reason = None
 
         self._send_status_update_email(
-            "application approved",
+            "domain request approved",
             "emails/status_change_approved.txt",
             "emails/status_change_approved_subject.txt",
             send_email,
@@ -856,7 +856,7 @@ class DomainRequest(TimeStampedModel):
         """The applicant is a bad actor, reject with prejudice.
 
         No email As a side effect, but we block the applicant from editing
-        any existing domains/applications and from submitting new aplications.
+        any existing domains/domain requests and from submitting new aplications.
         We do this by setting an ineligible status on the user, which the
         permissions classes test against. This will also delete the domain
         and domain_information (will cascade) when they exist."""

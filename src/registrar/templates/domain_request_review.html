@@ -62,7 +62,7 @@
         {% if step == Step.ORGANIZATION_CONTACT %}
           {% namespaced_url 'domain_request' step as domain_request_url %}
           {% if domain_request.organization_name %}
-            {% with title=form_titles|get_item:step value=application %}
+            {% with title=form_titles|get_item:step value=domain_request %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url address='true' %}
             {% endwith %}
           {% else %}

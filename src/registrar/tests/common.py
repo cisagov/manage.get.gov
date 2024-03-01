@@ -423,20 +423,20 @@ class AuditedAdminMockData:
         """Creates a dummy domain request object"""
         domain_request_kwargs = self.dummy_kwarg_boilerplate(self.DOMAIN_REQUEST, item_name, status)
         domain_request = DomainRequest.objects.get_or_create(**domain_request_kwargs)[0]
-        return application
+        return domain_request
 
     def create_full_dummy_domain_information(self, item_name, status=DomainRequest.DomainRequestStatus.STARTED):
         """Creates a dummy domain information object"""
         domain_request_kwargs = self.dummy_kwarg_boilerplate(self.INFORMATION, item_name, status)
         domain_request = DomainInformation.objects.get_or_create(**domain_request_kwargs)[0]
-        return application
+        return domain_request
 
     def create_full_dummy_domain_invitation(self, item_name, status=DomainRequest.DomainRequestStatus.STARTED):
         """Creates a dummy domain invitation object"""
         domain_request_kwargs = self.dummy_kwarg_boilerplate(self.INVITATION, item_name, status)
         domain_request = DomainInvitation.objects.get_or_create(**domain_request_kwargs)[0]
 
-        return application
+        return domain_request
 
     def create_full_dummy_domain_object(
         self,
@@ -469,7 +469,7 @@ class AuditedAdminMockData:
             alt = self.dummy_alt(item_name)
             domain_request.alternative_domains.add(alt)
 
-        return application
+        return domain_request
 
 
 def mock_user():
@@ -589,22 +589,22 @@ def completed_domain_request(
     if has_alternative_gov_domain:
         domain_request.alternative_domains.add(alt)
 
-    return application
+    return domain_request
 
 
 def multiple_unalphabetical_domain_objects(
     domain_type=AuditedAdminMockData.DOMAIN_REQUEST,
 ):
     """Returns a list of generic domain objects for testing purposes"""
-    applications = []
+    domain_requests = []
     list_of_letters = list(ascii_uppercase)
     random.shuffle(list_of_letters)
 
     mock = AuditedAdminMockData()
     for object_name in list_of_letters:
         domain_request = mock.create_full_dummy_domain_object(domain_type, object_name)
-        applications.append(application)
-    return applications
+        domain_requests.append(domain_request)
+    return domain_requests
 
 
 def generic_domain_object(domain_type, object_name):
@@ -612,7 +612,7 @@ def generic_domain_object(domain_type, object_name):
     domain_type 'domain_request', 'information', or 'invitation'"""
     mock = AuditedAdminMockData()
     domain_request = mock.create_full_dummy_domain_object(domain_type, object_name)
-    return application
+    return domain_request
 
 
 class MockEppLib(TestCase):

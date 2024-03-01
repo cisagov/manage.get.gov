@@ -45,7 +45,7 @@ class TestWithUser(MockEppLib):
         )
 
     def tearDown(self):
-        # delete any applications too
+        # delete any domain requests too
         super().tearDown()
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()

@@ -185,7 +185,7 @@ class TestDomainRequest(TestCase):
         self.check_email_sent(domain_request, msg, "submit", 1)
 
     def test_submit_from_withdrawn_sends_email(self):
-        msg = "Create a withdrawn application and submit it and see if email was sent."
+        msg = "Create a withdrawn domain request and submit it and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
         self.check_email_sent(domain_request, msg, "submit", 1)
 
@@ -195,7 +195,7 @@ class TestDomainRequest(TestCase):
         self.check_email_sent(domain_request, msg, "submit", 0)
 
     def test_submit_from_in_review_does_not_send_email(self):
-        msg = "Create a withdrawn application and submit it and see if email was sent."
+        msg = "Create a withdrawn domain request and submit it and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
         self.check_email_sent(domain_request, msg, "submit", 0)
 
@@ -579,7 +579,7 @@ class TestDomainRequest(TestCase):
         the rejection_reason is cleared."""
 
         with less_console_noise():
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
             domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
@@ -595,7 +595,7 @@ class TestDomainRequest(TestCase):
         the rejection_reason is cleared."""
 
         with less_console_noise():
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
             domain_request.domain_is_not_active = True
             domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
@@ -612,7 +612,7 @@ class TestDomainRequest(TestCase):
         the rejection_reason is cleared."""
 
         with less_console_noise():
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
             domain_request.domain_is_not_active = True
             domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
@@ -719,7 +719,7 @@ class TestDomainInformation(TestCase):
             creator=user,
             domain=domain,
             notes="test notes",
-            domain_request=application,
+            domain_request=domain_request,
         ).__dict__
 
         # Test the two records for consistency

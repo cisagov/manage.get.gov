@@ -296,7 +296,7 @@ class OrganizationContactForm(RegistrarForm):
         federal_agency = self.cleaned_data.get("federal_agency", None)
         # need the domain request object to know if this is federal
         if self.domain_request is None:
-            # hmm, no saved application object?, default require the agency
+            # hmm, no saved domain request object?, default require the agency
             if not federal_agency:
                 # no answer was selected
                 raise forms.ValidationError(
@@ -578,13 +578,13 @@ class OtherContactsYesNoForm(RegistrarForm):
     def __init__(self, *args, **kwargs):
         """Extend the initialization of the form from RegistrarForm __init__"""
         super().__init__(*args, **kwargs)
-        # set the initial value based on attributes of application
+        # set the initial value based on attributes of domain request
         if self.domain_request and self.domain_request.has_other_contacts():
             initial_value = True
         elif self.domain_request and self.domain_request.has_rationale():
             initial_value = False
         else:
-            # No pre-selection for new applications
+            # No pre-selection for new domain requests
             initial_value = None
 
         self.fields["has_other_contacts"] = forms.TypedChoiceField(
