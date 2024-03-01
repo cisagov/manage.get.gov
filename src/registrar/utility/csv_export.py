@@ -45,7 +45,7 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos_cleaned
 
 
-def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None, get_domain_managers=False):
+def parse_row(columns, domain_info: DomainInformation, max_dm_count, security_emails_dict=None, get_domain_managers=False):
     """Given a set of columns, generate a new row from cleaned column data"""
 
     # Domain should never be none when parsing this information
@@ -95,6 +95,11 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
     }
 
     if get_domain_managers:
+        for i in range(1, max_dm_count + 1):
+            column_name = f"Domain manager email {i}"
+            if column_name not in columns:
+                columns.append(column_name)
+
         # Get each domain managers email and add to list
         dm_emails = [dm.user.email for dm in domain.permissions.all()]
 
@@ -126,16 +131,6 @@ def _get_security_emails(sec_contact_ids):
             logger.warning("csv_export -> Domain was none for PublicContact")
 
     return security_emails_dict
-
-
-def update_columns_with_domain_managers(columns, max_dm_count):
-    """
-    Update the columns list to include "Domain manager email {#}" headers
-    based on the maximum domain manager count.
-    """
-    for i in range(1, max_dm_count + 1):
-        columns.append(f"Domain manager email {i}")
-
 
 def write_csv(
     writer,
@@ -177,7 +172,7 @@ def write_csv(
                 max_dm_count = dm_count
 
             try:
-                row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
+                row = parse_row(columns, domain_info, max_dm_count, security_emails_dict, get_domain_managers)
                 rows.append(row)
             except ValueError:
                 # This should not happen. If it does, just skip this row.
@@ -186,8 +181,6 @@ def write_csv(
                 continue
         total_body_rows.extend(rows)
 
-    if get_domain_managers:
-        update_columns_with_domain_managers(columns, max_dm_count)
     if should_write_header:
         write_header(writer, columns)
     writer.writerows(total_body_rows)
@@ -209,7 +202,7 @@ def export_data_type_to_csv(csv_file):
         "State",
         "AO",
         "AO email",
-        "Security contact email",
+        # "Security contact email",
         # For domain manager we are pass it in as a parameter below in write_body
     ]
 
@@ -222,7 +215,7 @@ def export_data_type_to_csv(csv_file):
     ]
     filter_condition = {
         "domain__state__in": [
-            Domain.State.READY,
+            Domain.State.UNKNOWN,
             Domain.State.DNS_NEEDED,
             Domain.State.ON_HOLD,
         ],
