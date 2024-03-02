@@ -42,7 +42,7 @@ class EPPLibWrapper:
         # set _client to None initially. In the event that the __init__ fails
         # before _client initializes, app should still start and be in a state
         # that it can attempt _client initialization on send attempts
-        self._client = None
+        self._client = None  # type: ignore
         # prepare (but do not send) a Login command
         self._login = commands.Login(
             cl_id=settings.SECRET_REGISTRY_CL_ID,
@@ -62,7 +62,7 @@ class EPPLibWrapper:
         client. Raises errors if initialization fails.
         This method will be called at app initialization, and also during retries."""
         # establish a client object with a TCP socket transport
-        self._client = Client(
+        self._client = Client(  # type: ignore
             SocketTransport(
                 settings.SECRET_REGISTRY_HOSTNAME,
                 cert_file=CERT.filename,
@@ -72,10 +72,10 @@ class EPPLibWrapper:
         )
         try:
             # use the _client object to connect
-            self._client.connect()
-            response = self._client.send(self._login)
+            self._client.connect()  # type: ignore
+            response = self._client.send(self._login)  # type:ignore
             if response.code >= 2000:  # type: ignore
-                self._client.close()
+                self._client.close()  # type:ignore
                 raise LoginError(response.msg)  # type: ignore
         except TransportError as err:
             message = "_initialize_client failed to execute due to a connection error."
@@ -91,8 +91,8 @@ class EPPLibWrapper:
     def _disconnect(self) -> None:
         """Close the connection."""
         try:
-            self._client.send(commands.Logout())
-            self._client.close()
+            self._client.send(commands.Logout())  # type: ignore
+            self._client.close()  # type: ignore
         except Exception:
             logger.warning("Connection to registry was not cleanly closed.")
 

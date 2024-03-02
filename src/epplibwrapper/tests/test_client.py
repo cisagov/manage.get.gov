@@ -6,11 +6,7 @@ from .common import less_console_noise
 import logging
 
 try:
-    from epplib import commands
-    from epplib.client import Client
     from epplib.exceptions import TransportError
-    from epplib.transport import SocketTransport
-    from epplib.models import common, info
     from epplib.responses import Result
 except ImportError:
     pass
@@ -23,14 +19,8 @@ class TestClient(TestCase):
 
     def fake_result(self, code, msg):
         """Helper function to create a fake Result object"""
-        return Result(
-            code=code,
-            msg=msg,
-            res_data=[],
-            cl_tr_id="cl_tr_id",
-            sv_tr_id="sv_tr_id"
-        )
-    
+        return Result(code=code, msg=msg, res_data=[], cl_tr_id="cl_tr_id", sv_tr_id="sv_tr_id")
+
     @patch("epplibwrapper.client.Client")
     def test_initialize_client_success(self, mock_client):
         """Test when the initialize_client is successful"""
@@ -141,6 +131,7 @@ class TestClient(TestCase):
             # first connect() should raise an Exception
             # subsequent connect() calls should return success
             connect_call_count = 0
+
             def connect_side_effect(*args, **kwargs):
                 nonlocal connect_call_count
                 connect_call_count += 1
@@ -148,12 +139,14 @@ class TestClient(TestCase):
                     raise Exception("Connection failed")
                 else:
                     return command_success_result
+
             mock_connect = MagicMock(side_effect=connect_side_effect)
             mock_client.return_value.connect = mock_connect
             # side_effect for the send() calls
             # first send will be the send("InfoDomainCommand") and should fail
             # subsequend send() calls should return success
             send_call_count = 0
+
             def send_side_effect(*args, **kwargs):
                 nonlocal send_call_count
                 send_call_count += 1
@@ -161,19 +154,20 @@ class TestClient(TestCase):
                     return command_failure_result
                 else:
                     return command_success_result
+
             mock_send = MagicMock(side_effect=send_side_effect)
-            mock_client.return_value.send = mock_send  
+            mock_client.return_value.send = mock_send
             # Create EPPLibWrapper instance and call send command
             wrapper = EPPLibWrapper()
             wrapper.send("InfoDomainCommand", cleaned=True)
             # two connect() calls should be made, the initial failed connect()
             # and the successful connect() during retry()
-            self.assertEquals(mock_connect.call_count,2)
+            self.assertEquals(mock_connect.call_count, 2)
             # close() should only be called once, during retry()
             mock_close.assert_called_once()
             # send called 4 times: failed send("InfoDomainCommand"), passed send(logout),
             # passed send(login), passed send("InfoDomainCommand")
-            self.assertEquals(mock_send.call_count,4) 
+            self.assertEquals(mock_send.call_count, 4)
 
     @patch("epplibwrapper.client.Client")
     def test_send_command_failed_retries_and_fails_again(self, mock_client):
@@ -192,6 +186,7 @@ class TestClient(TestCase):
             # Create a mock Result instance
             send_command_success_result = self.fake_result(1000, "Command completed successfully")
             send_command_failure_result = self.fake_result(2400, "Command failed")
+
             # side_effect for send command, passes for all other sends (login, logout), but
             # fails for send("InfoDomainCommand")
             def side_effect(*args, **kwargs):
@@ -199,6 +194,7 @@ class TestClient(TestCase):
                     return send_command_failure_result
                 else:
                     return send_command_success_result
+
             mock_send = MagicMock(side_effect=side_effect)
             mock_client.return_value.connect = mock_connect
             mock_client.return_value.close = mock_close
@@ -211,12 +207,12 @@ class TestClient(TestCase):
                 wrapper.send("InfoDomainCommand", cleaned=True)
             # connect() should be called twice, once during initialization, second time
             # during retry
-            self.assertEquals(mock_connect.call_count,2)
+            self.assertEquals(mock_connect.call_count, 2)
             # close() is called once during retry
             mock_close.assert_called_once()
             # send() is called 5 times: send(login), send(command) fails, send(logout)
             # send(login), send(command)
-            self.assertEquals(mock_send.call_count,5)
+            self.assertEquals(mock_send.call_count, 5)
 
     @patch("epplibwrapper.client.Client")
     def test_send_command_failure_prompts_successful_retry(self, mock_client):
@@ -237,6 +233,7 @@ class TestClient(TestCase):
             # side_effect for send call, initial send(login) succeeds during initialization, next send(command)
             # fails, subsequent sends (logout, login, command) all succeed
             send_call_count = 0
+
             def side_effect(*args, **kwargs):
                 nonlocal send_call_count
                 send_call_count += 1
@@ -244,6 +241,7 @@ class TestClient(TestCase):
                     return send_command_failure_result
                 else:
                     return send_command_success_result
+
             mock_send = MagicMock(side_effect=side_effect)
             mock_client.return_value.connect = mock_connect
             mock_client.return_value.close = mock_close
@@ -252,8 +250,8 @@ class TestClient(TestCase):
             wrapper = EPPLibWrapper()
             wrapper.send("InfoDomainCommand", cleaned=True)
             # connect() is called twice, once during initialization of app, once during retry
-            self.assertEquals(mock_connect.call_count,2)
+            self.assertEquals(mock_connect.call_count, 2)
             # close() is called once, during retry
             mock_close.assert_called_once()
             # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
-            self.assertEquals(mock_send.call_count,5)
+            self.assertEquals(mock_send.call_count, 5)
