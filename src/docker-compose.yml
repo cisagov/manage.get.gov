@@ -4,10 +4,12 @@ services:
     build: .
     depends_on:
       - db
+      - cache
     volumes:
       - .:/app
     links:
       - db
+      - cache
     working_dir: /app
     entrypoint: python /app/docker_entrypoint.py
     deploy:
@@ -74,6 +76,13 @@ services:
       - POSTGRES_DB=app
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=feedabee
+
+  cache:
+    image: memcached:latest
+    ports:
+      - "11211:11211"
+    command:
+    - '-m 128'
 
   node:
     build:

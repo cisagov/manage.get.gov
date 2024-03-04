@@ -197,6 +197,12 @@ WSGI_APPLICATION = "registrar.config.wsgi.application"
 #         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
 #     }
 # }
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
+        'LOCATION': 'cache:11211',
+    }
+}
 
 # Absolute path to the directory where `collectstatic`
 # will place static files for deployment.
