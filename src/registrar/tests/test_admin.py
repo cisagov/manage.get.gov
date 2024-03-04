@@ -241,7 +241,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         # click the "Manage" link
         confirmation_page = domain_change_page.click("Delete", index=0)
 
-        content_slice = "<p>When a domain is removed from the registry:</p>"
+        content_slice = "When a domain is deleted:"
         self.assertContains(confirmation_page, content_slice)
 
     def test_short_org_name_in_domains_list(self):
@@ -350,7 +350,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
                     extra_tags="",
                     fail_silently=False,
                 )
-            
+
             # The modal should still exist
             self.assertContains(response, "Are you sure you want to remove this domain from the registry?")
             self.assertContains(response, "When a domain is removed from the registry:")
@@ -364,7 +364,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         """
         with less_console_noise():
             domain = create_ready_domain()
-            
+
             response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
 
             # Check the contents of the modal
@@ -389,7 +389,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, domain.name)
             self.assertContains(response, "Remove hold")
-            
+
             # The modal should still exist
             # Check for the header
             self.assertContains(response, "Are you sure you want to place this domain on hold?")
@@ -1180,8 +1180,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
             # Create a mock request
             request = self.factory.post(
-                "/admin/registrar/domainapplication/{}/change/".format(application.pk),
-                follow=True
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk), follow=True
             )
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -1214,7 +1213,6 @@ class TestDomainApplicationAdmin(MockEppLib):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, application.requested_domain.name)
 
-            
             # Check that the modal has the right content
             # Check for the header
             self.assertContains(response, "Are you sure you want to select ineligible status?")
@@ -1227,8 +1225,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
             # Create a mock request
             request = self.factory.post(
-                "/admin/registrar/domainapplication/{}/change/".format(application.pk),
-                follow=True
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk), follow=True
             )
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 # Modify the application's property
