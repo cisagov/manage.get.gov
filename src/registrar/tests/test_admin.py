@@ -61,6 +61,16 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.factory = RequestFactory()
         self.app.set_user(self.superuser.username)
         self.client.force_login(self.superuser)
+
+        # Contains some test tools
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url=reverse("admin:registrar_domain_changelist"),
+            model=Domain,
+            client=self.client,
+        )
         super().setUp()
 
     @skip("TODO for another ticket. This test case is grabbing old db data.")
@@ -243,6 +253,21 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
         content_slice = "When a domain is deleted:"
         self.assertContains(confirmation_page, content_slice)
+
+    def test_custom_delete_confirmation_page_table(self):
+        """Tests if we override the delete confirmation page for custom content on the table"""
+        # Create a ready domain
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        # Get the index. The post expects the index to be encoded as a string
+        index = f"{domain.id}"
+
+        # Simulate selecting a single record, then clicking "Delete selected domains"
+        response = self.test_helper.get_table_delete_confirmation_page("0", index)
+
+        # Check that our content exists
+        content_slice = "When a domain is deleted:"
+        self.assertContains(response, content_slice)
 
     def test_short_org_name_in_domains_list(self):
         """
