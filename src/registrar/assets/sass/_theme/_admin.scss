@@ -312,7 +312,7 @@ input.admin-confirm-button {
     max-width: 68ex;
 }
 
-.django-admin-custom-bullets {
+.django-admin-custom-bullets ul > li {
     // Set list-style-type to inherit without modifying text size
     list-style-type: inherit;
 }
