@@ -1339,6 +1339,9 @@ class DomainAdmin(ListHeaderAdmin):
     # Table ordering
     ordering = ["name"]
 
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/domain_delete_selected_confirmation.html"
+
     def delete_view(self, request, object_id, extra_context=None):
         """
         Custom delete_view to perform additional actions or customize the template.
@@ -1346,7 +1349,6 @@ class DomainAdmin(ListHeaderAdmin):
 
         # Set the delete template to a custom one
         self.delete_confirmation_template = "django/admin/domain_delete_confirmation.html"
-
         response = super().delete_view(request, object_id, extra_context=extra_context)
 
         return response

@@ -86,8 +86,6 @@ function openInNewTab(el, removeAttribute = false){
                     linkClickedDisplaysModal.click()
                 }
             });
-        }else{
-            console.error("displayModalOnDropdownClick() -> Some inputs are null")
         }
     }
 
