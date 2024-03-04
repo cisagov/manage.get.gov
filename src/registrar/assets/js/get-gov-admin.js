@@ -61,46 +61,51 @@ function openInNewTab(el, removeAttribute = false){
  * This intentionally does not interact with createPhantomModalFormButtons()
 */
 (function (){
-    function displayModalOnDropdownClick(){
-        // Grab the invisible element that will hook to the modal.
-        // This doesn't technically need to be done with one, but this is simpler to manage.
-        let linkClickedDisplaysModal = document.getElementById("invisible-ineligible-modal-toggler")
-        let statusDropdown = document.getElementById("id_status")
+    function displayModalOnDropdownClick(linkClickedDisplaysModal, statusDropdown, cancelButton, valueToCheck){
 
         // If these exist all at the same time, we're on the right page
         if (linkClickedDisplaysModal && statusDropdown && statusDropdown.value){
-            // Store the previous value in the event the user cancels.
-            // We only need to do this if we're on the correct page.
-            let previousValue = statusDropdown.value;
-            // Because the modal button does not have the class "dja-form-placeholder",
-            // it will not be affected by the createPhantomModalFormButtons() function.
-            let cancelButton = document.querySelector('button[name="_cancel_application_ineligible"]');
+
             if (cancelButton){
+                // Store the previous value in the event the user cancels.
+                // We only need to do this if cancel button is specified.
+                let previousValue = statusDropdown.value;
                 cancelButton.addEventListener('click', function() {
                     // Revert the dropdown to its previous value
                     statusDropdown.value = previousValue;
                 });
-
-                // Add a change event listener to the dropdown.
-                statusDropdown.addEventListener('change', function() {
-                    // Check if "Ineligible" is selected
-                    if (this.value && this.value.toLowerCase() === "ineligible") {
-                        // Display the modal.
-                        linkClickedDisplaysModal.click()
-                    }
-
-                    // Update previousValue if another option is selected and confirmed
-                    console.log(`This is the previous val NOW: ${previousValue}`)
-                });
-                
-            } else{
-                console.error("displayModalOnDropdownClick() -> No cancel button defined.")
+            }else {
+                console.log("displayModalOnDropdownClick() -> Cancel button was null")
             }
-            
+
+            // Add a change event listener to the dropdown.
+            statusDropdown.addEventListener('change', function() {
+                // Check if "Ineligible" is selected
+                if (this.value && this.value.toLowerCase() === valueToCheck) {
+                    // Display the modal.
+                    linkClickedDisplaysModal.click()
+                }
+            });
+        }else{
+            console.error("displayModalOnDropdownClick() -> Some inputs are null")
         }
     }
 
-    displayModalOnDropdownClick();
+    // When the status dropdown is clicked and is set to "ineligible", toggle a confirmation dropdown.
+    function hookModalToIneligibleStatus(){
+        // Grab the invisible element that will hook to the modal.
+        // This doesn't technically need to be done with one, but this is simpler to manage.
+        let modalButton = document.getElementById("invisible-ineligible-modal-toggler")
+        let statusDropdown = document.getElementById("id_status")
+
+        // Because the modal button does not have the class "dja-form-placeholder",
+        // it will not be affected by the createPhantomModalFormButtons() function.
+        let cancelButton = document.querySelector('button[name="_cancel_application_ineligible"]');
+        let valueToCheck = "ineligible"
+        displayModalOnDropdownClick(modalButton, statusDropdown, cancelButton, valueToCheck);
+    }
+
+    hookModalToIneligibleStatus()
 })();
 
 /** An IIFE for pages in DjangoAdmin which may need custom JS implementation.
