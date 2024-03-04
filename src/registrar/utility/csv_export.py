@@ -25,9 +25,10 @@ def write_header(writer, columns):
 
 def get_domain_infos(filter_condition, sort_fields):
     domain_infos = (
-        DomainInformation.objects.select_related("domain", "authorizing_official")
+        DomainInformation.objects.prefetch_related("domain", "authorizing_official", "domain__permissions")
         .filter(**filter_condition)
         .order_by(*sort_fields)
+        .distinct()
     )
 
     # Do a mass concat of the first and last name fields for authorizing_official.
@@ -44,7 +45,7 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos_cleaned
 
 
-def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None, get_domain_managers=False):
+def parse_domain_row(columns, domain_info: DomainInformation, security_emails_dict=None, get_domain_managers=False):
     """Given a set of columns, generate a new row from cleaned column data"""
 
     # Domain should never be none when parsing this information
@@ -136,7 +137,7 @@ def update_columns_with_domain_managers(columns, max_dm_count):
         columns.append(f"Domain manager email {i}")
 
 
-def write_csv(
+def write_domains_csv(
     writer,
     columns,
     sort_fields,
@@ -145,8 +146,8 @@ def write_csv(
     should_write_header=True,
 ):
     """
-    Receives params from the parent methods and outputs a CSV with fltered and sorted domains.
-    Works with write_header as longas the same writer object is passed.
+    Receives params from the parent methods and outputs a CSV with filtered and sorted domains.
+    Works with write_header as long as the same writer object is passed.
     get_domain_managers: Conditional bc we only use domain manager info for export_data_full_to_csv
     should_write_header: Conditional bc export_data_domain_growth_to_csv calls write_body twice
     """
@@ -172,7 +173,7 @@ def write_csv(
         rows = []
         for domain_info in page.object_list:
             try:
-                row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
+                row = parse_domain_row(columns, domain_info, security_emails_dict, get_domain_managers)
                 rows.append(row)
             except ValueError:
                 # This should not happen. If it does, just skip this row.
@@ -188,7 +189,6 @@ def write_csv(
 
 def get_requests(filter_condition, sort_fields):
     requests = DomainApplication.objects.all().filter(**filter_condition).order_by(*sort_fields)
-
     return requests
 
 
@@ -235,7 +235,8 @@ def write_requests_csv(
     filter_condition,
     should_write_header=True,
 ):
-    """ """
+    """Receives params from the parent methods and outputs a CSV with filtered and sorted requests.
+    Works with write_header as long as the same writer object is passed."""
 
     all_requetsts = get_requests(filter_condition, sort_fields)
 
@@ -295,7 +296,7 @@ def export_data_type_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True)
+    write_domains_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True)
 
 
 def export_data_full_to_csv(csv_file):
@@ -326,7 +327,7 @@ def export_data_full_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_domains_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
 
 
 def export_data_federal_to_csv(csv_file):
@@ -358,7 +359,7 @@ def export_data_federal_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_domains_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
 
 
 def get_default_start_date():
@@ -426,8 +427,8 @@ def export_data_domain_growth_to_csv(csv_file, start_date, end_date):
         "domain__deleted__gte": start_date_formatted,
     }
 
-    write_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
-    write_csv(
+    write_domains_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_domains_csv(
         writer,
         columns,
         sort_fields_for_deleted_domains,
@@ -440,19 +441,19 @@ def export_data_domain_growth_to_csv(csv_file, start_date, end_date):
 def get_sliced_domains(filter_condition):
     """Get fitered domains counts sliced by org type and election office."""
 
-    domains = DomainInformation.objects.all().filter(**filter_condition)
+    domains = DomainInformation.objects.all().filter(**filter_condition).distinct()
     domains_count = domains.count()
-    federal = domains.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).count()
+    federal = domains.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).distinct().count()
     interstate = domains.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).count()
     state_or_territory = domains.filter(
         organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY
-    ).count()
-    tribal = domains.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).count()
-    county = domains.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).count()
-    city = domains.filter(organization_type=DomainApplication.OrganizationChoices.CITY).count()
-    special_district = domains.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).count()
-    school_district = domains.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).count()
-    election_board = domains.filter(is_election_board=True).count()
+    ).distinct().count()
+    tribal = domains.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).distinct().count()
+    county = domains.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).distinct().count()
+    city = domains.filter(organization_type=DomainApplication.OrganizationChoices.CITY).distinct().count()
+    special_district = domains.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+    school_district = domains.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    election_board = domains.filter(is_election_board=True).distinct().count()
 
     return [
         domains_count,
@@ -471,19 +472,19 @@ def get_sliced_domains(filter_condition):
 def get_sliced_requests(filter_condition):
     """Get fitered requests counts sliced by org type and election office."""
 
-    requests = DomainApplication.objects.all().filter(**filter_condition)
+    requests = DomainApplication.objects.all().filter(**filter_condition).distinct()
     requests_count = requests.count()
-    federal = requests.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).count()
-    interstate = requests.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).count()
+    federal = requests.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).distinct().count()
+    interstate = requests.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).distinct().count()
     state_or_territory = requests.filter(
         organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY
-    ).count()
-    tribal = requests.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).count()
-    county = requests.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).count()
-    city = requests.filter(organization_type=DomainApplication.OrganizationChoices.CITY).count()
-    special_district = requests.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).count()
-    school_district = requests.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).count()
-    election_board = requests.filter(is_election_board=True).count()
+    ).distinct().count()
+    tribal = requests.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).distinct().count()
+    county = requests.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).distinct().count()
+    city = requests.filter(organization_type=DomainApplication.OrganizationChoices.CITY).distinct().count()
+    special_district = requests.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+    school_district = requests.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    election_board = requests.filter(is_election_board=True).distinct().count()
 
     return [
         requests_count,
@@ -500,7 +501,8 @@ def get_sliced_requests(filter_condition):
 
 
 def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
-    """Get domains have domain managers for two different dates."""
+    """Get counts for domains that have domain managers for two different dates,
+    get list of domains at end_date."""
 
     start_date_formatted = format_start_date(start_date)
     end_date_formatted = format_end_date(end_date)
@@ -512,14 +514,13 @@ def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
     sort_fields = [
         "domain__name",
     ]
-
     filter_managed_domains_start_date = {
         "domain__permissions__isnull": False,
         "domain__first_ready__lte": start_date_formatted,
     }
     managed_domains_sliced_at_start_date = get_sliced_domains(filter_managed_domains_start_date)
 
-    writer.writerow(["MANAGED DOMAINS COUNTS AT SRAT DATE"])
+    writer.writerow(["MANAGED DOMAINS COUNTS AT START DATE"])
     writer.writerow(
         [
             "Total",
@@ -535,16 +536,6 @@ def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
         ]
     )
     writer.writerow(managed_domains_sliced_at_start_date)
-    writer.writerow([])
-
-    write_csv(
-        writer,
-        columns,
-        sort_fields,
-        filter_managed_domains_start_date,
-        get_domain_managers=True,
-        should_write_header=True,
-    )
     writer.writerow([])
 
     filter_managed_domains_end_date = {
@@ -571,7 +562,7 @@ def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
     writer.writerow(managed_domains_sliced_at_end_date)
     writer.writerow([])
 
-    write_csv(
+    write_domains_csv(
         writer,
         columns,
         sort_fields,
@@ -582,7 +573,8 @@ def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
 
 
 def export_data_unmanaged_domains_to_csv(csv_file, start_date, end_date):
-    """Get domains that do not have domain managers for two different dates."""
+    """Get counts for domains that do not have domain managers for two different dates,
+    get list of domains at end_date."""
 
     start_date_formatted = format_start_date(start_date)
     end_date_formatted = format_end_date(end_date)
@@ -619,16 +611,6 @@ def export_data_unmanaged_domains_to_csv(csv_file, start_date, end_date):
     writer.writerow(unmanaged_domains_sliced_at_start_date)
     writer.writerow([])
 
-    write_csv(
-        writer,
-        columns,
-        sort_fields,
-        filter_unmanaged_domains_start_date,
-        get_domain_managers=True,
-        should_write_header=True,
-    )
-    writer.writerow([])
-
     filter_unmanaged_domains_end_date = {
         "domain__permissions__isnull": True,
         "domain__first_ready__lte": end_date_formatted,
@@ -653,18 +635,23 @@ def export_data_unmanaged_domains_to_csv(csv_file, start_date, end_date):
     writer.writerow(unmanaged_domains_sliced_at_end_date)
     writer.writerow([])
 
-    write_csv(
+    write_domains_csv(
         writer,
         columns,
         sort_fields,
         filter_unmanaged_domains_end_date,
-        get_domain_managers=True,
+        get_domain_managers=False,
         should_write_header=True,
     )
 
 
 def export_data_requests_growth_to_csv(csv_file, start_date, end_date):
-    """ """
+    """
+    Growth report:
+    Receive start and end dates from the view, parse them.
+    Request from write_requests_body SUBMITTED requests that are created between
+    the start and end dates. Specify sort params.
+    """
 
     start_date_formatted = format_start_date(start_date)
     end_date_formatted = format_end_date(end_date)
@@ -676,7 +663,7 @@ def export_data_requests_growth_to_csv(csv_file, start_date, end_date):
         "Submission date",
     ]
     sort_fields = [
-        # "domain__name",
+        "requested_domain__name",
     ]
     filter_condition = {
         "status": DomainApplication.ApplicationStatus.SUBMITTED,

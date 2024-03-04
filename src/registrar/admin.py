@@ -374,8 +374,8 @@ def analytics(request):
     avg_approval_time = last_30_days_approved_applications.annotate(
         approval_time=F("approved_domain__created_at") - F("submission_date")
     ).aggregate(Avg("approval_time"))["approval_time__avg"]
-    # format the timedelta?
-    avg_approval_time = str(avg_approval_time)
+    # Format the timedelta to display only days
+    avg_approval_time = f"{avg_approval_time.days} days"
 
     start_date = request.GET.get("start_date", "")
     end_date = request.GET.get("end_date", "")
@@ -383,75 +383,69 @@ def analytics(request):
     start_date_formatted = csv_export.format_start_date(start_date)
     end_date_formatted = csv_export.format_end_date(end_date)
 
-    # Managed vs Unmanaged
     filter_managed_domains_start_date = {
         "domain__permissions__isnull": False,
         "domain__first_ready__lte": start_date_formatted,
     }
+    filter_managed_domains_end_date = {
+        "domain__permissions__isnull": False,
+        "domain__first_ready__lte": end_date_formatted,
+    }
     managed_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_managed_domains_start_date)
+    managed_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_managed_domains_end_date)
 
     filter_unmanaged_domains_start_date = {
         "domain__permissions__isnull": True,
         "domain__first_ready__lte": start_date_formatted,
     }
-    unmanaged_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_unmanaged_domains_start_date)
-    filter_managed_domains_end_date = {
-        "domain__permissions__isnull": False,
-        "domain__first_ready__lte": end_date_formatted,
-    }
-    managed_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_managed_domains_end_date)
     filter_unmanaged_domains_end_date = {
         "domain__permissions__isnull": True,
         "domain__first_ready__lte": end_date_formatted,
     }
+    unmanaged_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_unmanaged_domains_start_date)
     unmanaged_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_unmanaged_domains_end_date)
 
-    # Ready and Deleted domains
     filter_ready_domains_start_date = {
         "domain__state__in": [Domain.State.READY],
         "domain__first_ready__lte": start_date_formatted,
     }
+    filter_ready_domains_end_date = {
+        "domain__state__in": [Domain.State.READY],
+        "domain__first_ready__lte": end_date_formatted,
+    }
     ready_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_ready_domains_start_date)
+    ready_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_ready_domains_end_date)
 
     filter_deleted_domains_start_date = {
         "domain__state__in": [Domain.State.DELETED],
         "domain__deleted__lte": start_date_formatted,
     }
-    deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)
-
-    filter_ready_domains_end_date = {
-        "domain__state__in": [Domain.State.READY],
-        "domain__first_ready__lte": end_date_formatted,
-    }
-    ready_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_ready_domains_end_date)
-
     filter_deleted_domains_end_date = {
         "domain__state__in": [Domain.State.DELETED],
         "domain__deleted__lte": end_date_formatted,
     }
+    deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)    
     deleted_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_deleted_domains_end_date)
 
     # Created and Submitted requests
     filter_requests_start_date = {
         "created_at__lte": start_date_formatted,
     }
+    filter_requests_end_date = {
+        "created_at__lte": end_date_formatted,
+    }
     requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_requests_start_date)
+    requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_requests_end_date)
 
     filter_submitted_requests_start_date = {
         "status": DomainApplication.ApplicationStatus.SUBMITTED,
         "submission_date__lte": start_date_formatted,
     }
-    submitted_requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_submitted_requests_start_date)
-
-    filter_requests_end_date = {
-        "created_at__lte": end_date_formatted,
-    }
-    requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_requests_end_date)
-
     filter_submitted_requests_end_date = {
         "status": DomainApplication.ApplicationStatus.SUBMITTED,
         "submission_date__lte": end_date_formatted,
     }
+    submitted_requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_submitted_requests_start_date)
     submitted_requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_submitted_requests_end_date)
 
     context = dict(
@@ -459,6 +453,7 @@ def analytics(request):
         data=dict(
             user_count=models.User.objects.all().count(),
             domain_count=models.Domain.objects.all().count(),
+            ready_domain_count=models.Domain.objects.all().filter(state=models.Domain.State.READY).count(),
             last_30_days_applications=last_30_days_applications.count(),
             last_30_days_approved_applications=last_30_days_approved_applications.count(),
             average_application_approval_time_last_30_days=avg_approval_time,
@@ -1096,7 +1091,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     fieldsets = [
-        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
+        (None, {"fields": ["status", "rejection_reason", "submission_date", "investigator", "creator", "approved_domain", "notes"]}),
         (
             "Type of organization",
             {
@@ -1448,7 +1443,7 @@ class DomainAdmin(ListHeaderAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    readonly_fields = ["state", "expiration_date", "first_ready", "deleted"]
+    readonly_fields = ["state", "expiration_date", "deleted"]
 
     # Table ordering
     ordering = ["name"]

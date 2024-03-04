@@ -319,6 +319,9 @@ input.admin-confirm-button {
     .usa-icon {
         top: 2px;
     }
+    a.button:active, a.button:focus {
+        text-decoration: none;
+    }
 }
 
 .module--custom {

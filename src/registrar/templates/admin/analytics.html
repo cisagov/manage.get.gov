@@ -16,6 +16,7 @@
             <ul>
               <li>User Count: {{ data.user_count }}</li>
               <li>Domain Count: {{ data.domain_count }}</li>
+              <li>Domains in READY state: {{ data.ready_domain_count }}</li>
               <li>Domain applications (last 30 days): {{ data.last_30_days_applications }}</li>
               <li>Approved applications (last 30 days): {{ data.last_30_days_approved_applications }}</li>
               <li>Average approval time for applications (last 30 days): {{ data.average_application_approval_time_last_30_days }}</li>
@@ -63,8 +64,6 @@
           {% comment %} 
               Inputs of type date suck for accessibility.
               We'll need to replace those guys with a django form once we figure out how to hook one onto this page.
-              The challenge is in the path definition in urls. It does NOT like admin/export_domain_growth/
-        
               See the commit "Review for ticket #999"
           {% endcomment %}
           <div class="display-flex flex-align-baseline margin-top-1 margin-bottom-2">
@@ -107,7 +106,7 @@
               </button>
             </li>
             <li class="usa-button-group__item">
-              <button class="button exportLink" data-export-url="{% url 'analytics' %}" type="button">
+              <button class="button exportLink usa-button--accent-cool" data-export-url="{% url 'analytics' %}" type="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#assessment"></use>
                 </svg><span class="margin-left-05">Update charts</span>
@@ -117,15 +116,15 @@
 
           <div class="grid-row grid-gap-2 margin-y-2">
             <div class="grid-col">
-              <canvas id="myChart" width="400" height="200" 
-                data-list-one="{{data.unmanaged_domains_sliced_at_start_date}}"
-                data-list-two="{{data.unmanaged_domains_sliced_at_end_date}}"
-              ></canvas>
-            </div>
-            <div class="grid-col">
               <canvas id="myChart2" width="400" height="200" 
                 data-list-one="{{data.managed_domains_sliced_at_start_date}}"
                 data-list-two="{{data.managed_domains_sliced_at_end_date}}"
+              ></canvas>
+            </div>
+            <div class="grid-col">
+              <canvas id="myChart" width="400" height="200" 
+                data-list-one="{{data.unmanaged_domains_sliced_at_start_date}}"
+                data-list-two="{{data.unmanaged_domains_sliced_at_end_date}}"
               ></canvas>
             </div>
           </div>

@@ -3,7 +3,7 @@ from django.urls import reverse
 from registrar.tests.common import create_superuser
 
 
-class TestViews(TestCase):
+class TestAdminViews(TestCase):
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
@@ -26,7 +26,7 @@ class TestViews(TestCase):
 
         # Construct the URL for the export data view with start_date and end_date parameters:
         # This stuff is currently done in JS
-        export_data_url = reverse("admin:admin_export_domain_growth") + f"?start_date={start_date}&end_date={end_date}"
+        export_data_url = reverse("export_domains_growth") + f"?start_date={start_date}&end_date={end_date}"
 
         # Make a GET request to the export data page
         response = self.client.get(export_data_url)
