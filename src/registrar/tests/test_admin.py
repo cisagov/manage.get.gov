@@ -1816,41 +1816,41 @@ class ListHeaderAdminTest(TestCase):
         self.superuser = create_superuser()
 
     def test_changelist_view(self):
-        with less_console_noise():
-            # Have to get creative to get past linter
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
-            # Mock a user
-            user = mock_user()
-            # Make the request using the Client class
-            # which handles CSRF
-            # Follow=True handles the redirect
-            response = self.client.get(
-                "/admin/registrar/domainapplication/",
+        # with less_console_noise():
+        # Have to get creative to get past linter
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        # Mock a user
+        user = mock_user()
+        # Make the request using the Client class
+        # which handles CSRF
+        # Follow=True handles the redirect
+        response = self.client.get(
+            "/admin/registrar/domainapplication/",
+            {
+                "status__exact": "started",
+                "investigator__id__exact": user.id,
+                "q": "Hello",
+            },
+            follow=True,
+        )
+        # Assert that the filters and search_query are added to the extra_context
+        self.assertIn("filters", response.context)
+        self.assertIn("search_query", response.context)
+        # Assert the content of filters and search_query
+        filters = response.context["filters"]
+        search_query = response.context["search_query"]
+        self.assertEqual(search_query, "Hello")
+        self.assertEqual(
+            filters,
+            [
+                {"parameter_name": "status", "parameter_value": "started"},
                 {
-                    "status__exact": "started",
-                    "investigator__id__exact": user.id,
-                    "q": "Hello",
+                    "parameter_name": "investigator",
+                    "parameter_value": user.first_name + " " + user.last_name,
                 },
-                follow=True,
-            )
-            # Assert that the filters and search_query are added to the extra_context
-            self.assertIn("filters", response.context)
-            self.assertIn("search_query", response.context)
-            # Assert the content of filters and search_query
-            filters = response.context["filters"]
-            search_query = response.context["search_query"]
-            self.assertEqual(search_query, "Hello")
-            self.assertEqual(
-                filters,
-                [
-                    {"parameter_name": "status", "parameter_value": "started"},
-                    {
-                        "parameter_name": "investigator",
-                        "parameter_value": user.first_name + " " + user.last_name,
-                    },
-                ],
-            )
+            ],
+        )
 
     def test_get_filters(self):
         with less_console_noise():
