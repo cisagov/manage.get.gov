@@ -311,3 +311,12 @@ input.admin-confirm-button {
     margin-top: 0;
     max-width: 68ex;
 }
+
+.django-admin-custom-bullets {
+    // Set list-style-type to inherit without modifying text size
+    list-style-type: inherit;
+}
+
+.usa-summary-box__dhs-color {
+    color: $dhs-blue-70;
+}

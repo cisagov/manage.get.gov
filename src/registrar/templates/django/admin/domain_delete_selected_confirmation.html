@@ -1,21 +1,28 @@
 {% extends 'admin/delete_selected_confirmation.html' %}
 {% load i18n static %}
 
+
 {% block content %}
-{# TODO modify the "Are you sure?" to the text content below.. #}
-{% comment %}
-<h3>Are you sure you want to remove this domain from the registry?</h3>
-{% endcomment %}
-<h2>Description</h2>
-<p>When a domain is removed from the registry:</p>
-
-<ul>
-    <li>The domain and its subdomains won’t resolve in DNS. Any infrastructure (like websites) will go offline.</li>
-    <li>The domain will still appear in the registrar / admin.</li>
-    <li>Domain managers won’t be able to edit the domain.</li>
-</ul>
-
-<p>This action cannot be undone.</p>
-
-{{ block.super }}
+    <div
+    class="usa-summary-box width-tablet"
+    role="region"
+    aria-labelledby="summary-box-description"
+    >
+        <div class="usa-summary-box__body">
+            <h3 class="usa-summary-box__heading usa-summary-box__dhs-color" id="summary-box-description">
+            When a domain is deleted:
+            </h3>
+            <div class="usa-summary-box__text">
+                <ul class="usa-list">
+                    <li>The domain will no longer appear in the registrar / admin.</li>
+                    <li>It will be removed from the registry. </li>
+                    <li>The domain and its subdomains won’t resolve in DNS.</li>
+                    <li>Any infrastructure (like websites) will go offline.</li>
+                </ul>
+                <p>You should probably remove these domains from the registry instead of deleting them.</p>
+                <p><strong>This action cannot be undone.</strong></p>
+            </div>
+        </div>
+    </div>
+    {{ block.super }}
 {% endblock %}
