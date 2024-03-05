@@ -62,6 +62,8 @@ class EPPLibWrapper:
         client. Raises errors if initialization fails.
         This method will be called at app initialization, and also during retries."""
         # establish a client object with a TCP socket transport
+        # note that type: ignore added in several places because linter complains
+        # about _client initially being set to None, and None type doesn't match code
         self._client = Client(  # type: ignore
             SocketTransport(
                 settings.SECRET_REGISTRY_HOSTNAME,
@@ -73,9 +75,9 @@ class EPPLibWrapper:
         try:
             # use the _client object to connect
             self._client.connect()  # type: ignore
-            response = self._client.send(self._login)  # type:ignore
+            response = self._client.send(self._login)  # type: ignore
             if response.code >= 2000:  # type: ignore
-                self._client.close()  # type:ignore
+                self._client.close()  # type: ignore
                 raise LoginError(response.msg)  # type: ignore
         except TransportError as err:
             message = "_initialize_client failed to execute due to a connection error."
