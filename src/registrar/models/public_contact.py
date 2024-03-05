@@ -60,15 +60,15 @@ class PublicContact(TimeStampedModel):
     )
 
     name = models.CharField(null=False, help_text="Contact's full name")
-    org = models.CharField(null=True, blank=True, help_text="Contact's organization (null ok)")
+    org = models.CharField(null=True, help_text="Contact's organization (null ok)")
     street1 = models.CharField(null=False, help_text="Contact's street")
-    street2 = models.CharField(null=True, blank=True, help_text="Contact's street (null ok)")
-    street3 = models.CharField(null=True, blank=True, help_text="Contact's street (null ok)")
+    street2 = models.CharField(null=True, help_text="Contact's street (null ok)")
+    street3 = models.CharField(null=True, help_text="Contact's street (null ok)")
     city = models.CharField(null=False, help_text="Contact's city")
     sp = models.CharField(null=False, help_text="Contact's state or province")
     pc = models.CharField(null=False, help_text="Contact's postal code")
     cc = models.CharField(null=False, help_text="Contact's country code")
-    email = models.CharField(null=False, help_text="Contact's email address")
+    email = models.EmailField(null=False, help_text="Contact's email address")
     voice = models.CharField(null=False, help_text="Contact's phone number. Must be in ITU.E164.2005 format")
     fax = models.CharField(
         null=True,
