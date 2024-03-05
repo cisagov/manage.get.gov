@@ -115,46 +115,76 @@
 
           <div class="grid-row grid-gap-2 margin-y-2">
             <div class="grid-col">
-              <canvas id="myChart2" width="400" height="200" 
+              <canvas id="myChart1" width="400" height="200"
+                aria-label="Chart: {{ data.managed_domains_sliced_at_end_date.0 }} managed domains for {{ data.end_date }}"
+                role="img"
                 data-list-one="{{data.managed_domains_sliced_at_start_date}}"
                 data-list-two="{{data.managed_domains_sliced_at_end_date}}"
-              ></canvas>
+              >
+                <h2>Chart: Managed domains</h2>
+                <p>{{ data.managed_domains_sliced_at_end_date.0 }} managed domains for {{ data.end_date }}</p>
+              </canvas>
             </div>
             <div class="grid-col">
-              <canvas id="myChart" width="400" height="200" 
+              <canvas id="myChart2" width="400" height="200"
+                aria-label="Chart: {{ data.unmanaged_domains_sliced_at_end_date.0 }} unmanaged domains for {{ data.end_date }}"
+                role="img"
                 data-list-one="{{data.unmanaged_domains_sliced_at_start_date}}"
                 data-list-two="{{data.unmanaged_domains_sliced_at_end_date}}"
-              ></canvas>
+              >
+                <h2>Chart: Unanaged domains</h2>
+                <p>{{ data.unmanaged_domains_sliced_at_end_date.0 }} unmanaged domains for {{ data.end_date }}</p>
+            </canvas>
             </div>
           </div>
 
           <div class="grid-row grid-gap-2 margin-y-2">
             <div class="grid-col">
-              <canvas id="myChart3" width="400" height="200" 
+              <canvas id="myChart3" width="400" height="200"
+                aria-label="Chart: {{ data.deleted_domains_sliced_at_end_date.0 }} deleted domains for {{ data.end_date }}"
+                role="img" 
                 data-list-one="{{data.deleted_domains_sliced_at_start_date}}"
                 data-list-two="{{data.deleted_domains_sliced_at_end_date}}"
-              ></canvas>
+              >
+                <h2>Chart: Deleted domains</h2>
+                <p>{{ data.deleted_domains_sliced_at_end_date.0 }} deleted domains for {{ data.end_date }}</p>
+            </canvas>
             </div>
             <div class="grid-col">
-              <canvas id="myChart4" width="400" height="200" 
+              <canvas id="myChart4" width="400" height="200"
+                aria-label="Chart: {{ data.ready_domains_sliced_at_end_date.0 }} ready domains for {{ data.end_date }}"
+                role="img" 
                 data-list-one="{{data.ready_domains_sliced_at_start_date}}"
                 data-list-two="{{data.ready_domains_sliced_at_end_date}}"
-              ></canvas>
+              >
+                <h2>Chart: Ready domains</h2>
+                <p>{{ data.ready_domains_sliced_at_end_date.0 }} ready domains for {{ data.end_date }}</p>
+            </canvas>
             </div>
           </div>
 
           <div class="grid-row grid-gap-2 margin-y-2">
             <div class="grid-col">
-              <canvas id="myChart5" width="400" height="200" 
+              <canvas id="myChart5" width="400" height="200"
+                aria-label="Chart: {{ data.submitted_requests_sliced_at_end_date.0 }} submitted requests for {{ data.end_date }}"
+                role="img" 
                 data-list-one="{{data.submitted_requests_sliced_at_start_date}}"
                 data-list-two="{{data.submitted_requests_sliced_at_end_date}}"
-              ></canvas>
+              >
+                <h2>Chart: Submitted requests</h2>
+                <p>{{ data.submitted_requests_sliced_at_end_date.0 }} submitted requests for {{ data.end_date }}</p>
+            </canvas>
             </div>
             <div class="grid-col">
-              <canvas id="myChart6" width="400" height="200" 
+              <canvas id="myChart6" width="400" height="200"
+                aria-label="Chart: {{ data.requests_sliced_at_end_date.0 }} requests for {{ data.end_date }}"
+                role="img" 
                 data-list-one="{{data.requests_sliced_at_start_date}}"
                 data-list-two="{{data.requests_sliced_at_end_date}}"
-              ></canvas>
+              >
+                <h2>Chart: All requests</h2>
+                <p>{{ data.requests_sliced_at_end_date.0 }} requests for {{ data.end_date }}</p>
+            </canvas>
             </div>
           </div>
 

@@ -470,6 +470,8 @@ def analytics(request):
             submitted_requests_sliced_at_start_date=submitted_requests_sliced_at_start_date,
             requests_sliced_at_end_date=requests_sliced_at_end_date,
             submitted_requests_sliced_at_end_date=submitted_requests_sliced_at_end_date,
+            start_date=start_date,
+            end_date=end_date,
         ),
     )
     return render(request, "admin/analytics.html", context)
