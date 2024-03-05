@@ -907,7 +907,7 @@ class DomainRequest(TimeStampedModel):
     def has_rationale(self) -> bool:
         """Does this domain request have no_other_contacts_rationale?"""
         return bool(self.no_other_contacts_rationale)
-1
+
     def has_other_contacts(self) -> bool:
         """Does this domain request have other contacts listed?"""
         return self.other_contacts.exists()

@@ -585,7 +585,7 @@ class TestDomainRequestAdmin(MockEppLib):
         with less_console_noise():
             self.client.force_login(self.superuser)
             completed_domain_request()
-            response = self.client.get("/admin/registrar/DomainRequest/")
+            response = self.client.get("/admin/registrar/domainrequest/")
             # There are 4 template references to Federal (4) plus two references in the table
             # for our actual domain request
             self.assertContains(response, "Federal", count=6)
