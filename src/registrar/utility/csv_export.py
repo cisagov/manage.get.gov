@@ -498,7 +498,7 @@ def get_sliced_requests(filter_condition):
 
 def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
     """Get counts for domains that have domain managers for two different dates,
-    get list of domains at end_date."""
+    get list of managed domains at end_date."""
 
     start_date_formatted = format_start_date(start_date)
     end_date_formatted = format_end_date(end_date)
@@ -570,7 +570,7 @@ def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
 
 def export_data_unmanaged_domains_to_csv(csv_file, start_date, end_date):
     """Get counts for domains that do not have domain managers for two different dates,
-    get list of domains at end_date."""
+    get list of unmanaged domains at end_date."""
 
     start_date_formatted = format_start_date(start_date)
     end_date_formatted = format_end_date(end_date)
