@@ -5,7 +5,6 @@ import logging
 from datetime import datetime
 from django.conf import settings
 from django.template.loader import get_template
-from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -20,7 +19,9 @@ class EmailSendingError(RuntimeError):
     pass
 
 
-def send_templated_email(template_name: str, subject_template_name: str, to_address: str, bcc_address="", context={}, file: str = None):
+def send_templated_email(
+    template_name: str, subject_template_name: str, to_address: str, bcc_address="", context={}, file: str = None
+):
     """Send an email built from a template to one email address.
 
     template_name and subject_template_name are relative to the same template
@@ -60,7 +61,7 @@ def send_templated_email(template_name: str, subject_template_name: str, to_addr
                         "Subject": {"Data": subject},
                         "Body": {"Text": {"Data": email_body}},
                     },
-                }
+                },
             )
         else:
             ses_client = boto3.client(

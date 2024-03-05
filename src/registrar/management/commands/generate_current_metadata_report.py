@@ -10,7 +10,7 @@ from django.core.management import BaseCommand
 from django.conf import settings
 from registrar.utility import csv_export
 from registrar.utility.s3_bucket import S3ClientHelper
-from ...utility.email import send_templated_email, EmailSendingError
+from ...utility.email import send_templated_email
 
 
 logger = logging.getLogger(__name__)

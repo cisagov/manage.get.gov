@@ -198,13 +198,11 @@ class TestEmails(TestCase):
             response = email.send_email_with_attachment(
                 sender_email, recipient_email, subject, body, attachment_file, self.mock_client
             )
-            print("response is", response)
             # Assert that the `send_raw_email` method of the mocked SES client was called with the expected params
             self.mock_client.send_raw_email.assert_called_once()
 
             # Get the args passed to the `send_raw_email` method
             call_args = self.mock_client.send_raw_email.call_args[1]
-            print("call_args is", call_args)
 
             # Assert that the attachment filename is correct
             self.assertEqual(call_args["RawMessage"]["Data"].count(f'filename="{current_filename}"'), 1)
