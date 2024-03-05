@@ -59,7 +59,8 @@ def send_templated_email(template_name: str, subject_template_name: str, to_addr
                     "Simple": {
                         "Subject": {"Data": subject},
                         "Body": {"Text": {"Data": email_body}},
-                },
+                    },
+                }
             )
         else:
             ses_client = boto3.client(
