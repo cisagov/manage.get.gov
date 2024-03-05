@@ -76,9 +76,7 @@ class ExportDataManagedDomains(View):
         start_date = request.GET.get("start_date", "")
         end_date = request.GET.get("end_date", "")
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = (
-            f'attachment; filename="managed-domains-{start_date}-to-{end_date}.csv"'
-        )
+        response["Content-Disposition"] = f'attachment; filename="managed-domains-{start_date}-to-{end_date}.csv"'
         csv_export.export_data_managed_domains_to_csv(response, start_date, end_date)
 
         return response
@@ -91,9 +89,7 @@ class ExportDataUnmanagedDomains(View):
         start_date = request.GET.get("start_date", "")
         end_date = request.GET.get("end_date", "")
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = (
-            f'attachment; filename="unamanaged-domains-{start_date}-to-{end_date}.csv"'
-        )
+        response["Content-Disposition"] = f'attachment; filename="unamanaged-domains-{start_date}-to-{end_date}.csv"'
         csv_export.export_data_unmanaged_domains_to_csv(response, start_date, end_date)
 
         return response
