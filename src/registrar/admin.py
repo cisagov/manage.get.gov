@@ -364,6 +364,7 @@ class UserContactInline(admin.StackedInline):
 
 
 def analytics(request):
+    """View for the reports page."""
 
     thirty_days_ago = datetime.datetime.today() - datetime.timedelta(days=30)
 
@@ -377,6 +378,7 @@ def analytics(request):
     # Format the timedelta to display only days
     avg_approval_time = f"{avg_approval_time.days} days"
 
+    # The start and end dates are passed as url params
     start_date = request.GET.get("start_date", "")
     end_date = request.GET.get("end_date", "")
 
@@ -427,7 +429,6 @@ def analytics(request):
     deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)
     deleted_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_deleted_domains_end_date)
 
-    # Created and Submitted requests
     filter_requests_start_date = {
         "created_at__lte": start_date_formatted,
     }
