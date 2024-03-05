@@ -1,12 +1,9 @@
 import csv
 import io
-from django.test import Client, RequestFactory, TestCase
+from django.test import Client, RequestFactory
 from io import StringIO
 from registrar.models.domain_application import DomainApplication
-from registrar.models.domain_information import DomainInformation
 from registrar.models.domain import Domain
-from registrar.models.user import User
-from django.contrib.auth import get_user_model
 from registrar.utility.csv_export import (
     get_sliced_domains,
     get_sliced_requests,
@@ -23,7 +20,7 @@ from django.conf import settings
 from botocore.exceptions import ClientError
 import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from django.utils import timezone
 from .common import MockDb, MockEppLib, less_console_noise
 
