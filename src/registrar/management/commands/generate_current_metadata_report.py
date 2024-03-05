@@ -72,7 +72,7 @@ class Command(BaseCommand):
         # Set context for the subject
         current_date_str = datetime.now().strftime("%Y-%m-%d")
 
-        # TODO: Update secret in getgov-credentials via cloud.gov and my own .env when ready
+        # TODO: Update secret in getgov-credentials via cloud.gov and my own .env when merging
 
         # Encrypt the metadata
         encrypted_metadata_in_bytes = self._encrypt_metadata(
@@ -83,15 +83,15 @@ class Command(BaseCommand):
         send_templated_email(
             template_name="emails/metadata_body.txt",
             subject_template_name="emails/metadata_subject.txt",
-            to_address=settings.DEFAULT_FROM_EMAIL,
-            # to_address="rebecca.hsieh@truss.works <rebecca.hsieh@truss.works>", # TODO: Update to settings.DEFAULT_FROM_EMAIL once tested
+            # to_address=settings.DEFAULT_FROM_EMAIL, # TODO: Uncomment this when ready to merge
+            to_address="rebecca.hsieh@truss.works <rebecca.hsieh@truss.works>",
             context={"current_date_str": current_date_str},
             file=encrypted_metadata_in_bytes,
         )
 
     def _encrypt_metadata(self, input_file, output_file, password):
         current_date = datetime.now().strftime("%m%d%Y")
-        current_filename = f"domain-metadata-{current_date}.txt"
+        current_filename = f"domain-metadata-{current_date}.csv"
         # Using ZIP_DEFLATED bc it's a more common compression method supported by most zip utilities and faster
         # We could also use compression=pyzipper.ZIP_LZMA if we are looking for smaller file size
         with pyzipper.AESZipFile(

@@ -65,11 +65,11 @@ def send_templated_email(template_name: str, subject_template_name: str, to_addr
                 aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
                 config=settings.BOTO_CONFIG,
             )
-            # Define the subject line with the current date
             response = send_email_with_attachment(
                 settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, file, ses_client
             )
-            # TODO: Remove this print statement
+            # TODO: Remove this print statement when ready to merge,
+            # leaving rn for getting error codes in case
             print("Response from send_email_with_attachment_is:", response)
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
