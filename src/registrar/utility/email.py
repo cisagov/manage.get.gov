@@ -2,6 +2,7 @@
 
 import boto3
 import logging
+from datetime import datetime
 from django.conf import settings
 from django.template.loader import get_template
 from email.mime.base import MIMEBase
@@ -19,7 +20,7 @@ class EmailSendingError(RuntimeError):
     pass
 
 
-def send_templated_email(template_name: str, subject_template_name: str, to_address: str, context={}, file: str=None):
+def send_templated_email(template_name: str, subject_template_name: str, to_address: str, context={}, file: str = None):
     """Send an email built from a template to one email address.
 
     template_name and subject_template_name are relative to the same template
@@ -56,8 +57,7 @@ def send_templated_email(template_name: str, subject_template_name: str, to_addr
                     },
                 },
             )
-        if file is not None:
-            # TODO: Update sender email when we figure out
+        else:
             ses_client = boto3.client(
                 "ses",
                 region_name=settings.AWS_REGION,
@@ -65,35 +65,34 @@ def send_templated_email(template_name: str, subject_template_name: str, to_addr
                 aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
                 config=settings.BOTO_CONFIG,
             )
-
-            #TODO: Update sender to settings.DEFAULT_FROM_EMAIL
-            response = send_email_with_attachment(settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, file, ses_client)
+            # Define the subject line with the current date
+            response = send_email_with_attachment(
+                settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, file, ses_client
+            )
+            # TODO: Remove this print statement
             print("Response from send_email_with_attachment_is:", response)
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
 
+
 def send_email_with_attachment(sender, recipient, subject, body, attachment_file, ses_client):
     # Create a multipart/mixed parent container
-    msg = MIMEMultipart('mixed')
-    msg['Subject'] = subject
-    msg['From'] = sender
-    msg['To'] = recipient
+    msg = MIMEMultipart("mixed")
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = recipient
 
     # Add the text part
-    text_part = MIMEText(body, 'plain')
+    text_part = MIMEText(body, "plain")
     msg.attach(text_part)
 
     # Add the attachment part
-
-    # set it into this "type"
     attachment_part = MIMEApplication(attachment_file)
     # Adding attachment header + filename that the attachment will be called
-    attachment_part.add_header('Content-Disposition', f'attachment; filename="encrypted_metadata.zip"')
+    current_date = datetime.now().strftime("%m%d%Y")
+    current_filename = f"domain-metadata-{current_date}.zip"
+    attachment_part.add_header("Content-Disposition", f'attachment; filename="{current_filename}"')
     msg.attach(attachment_part)
 
-    response = ses_client.send_raw_email(
-        Source=sender,
-        Destinations=[recipient],
-        RawMessage={"Data": msg.as_string()}
-    )
+    response = ses_client.send_raw_email(Source=sender, Destinations=[recipient], RawMessage={"Data": msg.as_string()})
     return response

@@ -4,6 +4,8 @@ import logging
 import os
 import pyzipper
 
+from datetime import datetime
+
 from django.core.management import BaseCommand
 from django.conf import settings
 from registrar.utility import csv_export
@@ -13,9 +15,11 @@ from ...utility.email import send_templated_email, EmailSendingError
 
 logger = logging.getLogger(__name__)
 
+
 class Command(BaseCommand):
     help = (
-        "Generates and uploads a current-metadata.csv file to our S3 bucket " "which is based off of all existing Domains."
+        "Generates and uploads a current-metadata.csv file to our S3 bucket "
+        "which is based off of all existing Domains."
     )
 
     def add_arguments(self, parser):
@@ -26,7 +30,7 @@ class Command(BaseCommand):
             default=True,
             help="Flag that determines if we do a check for os.path.exists. Used for test cases",
         )
-    
+
     def handle(self, **options):
         """Grabs the directory then creates current-metadata.csv in that directory"""
         file_name = "current-metadata.csv"
@@ -58,38 +62,43 @@ class Command(BaseCommand):
 
         # Upload this generated file for our S3 instance
         s3_client.upload_file(file_path, file_name)
-        """
-        We want to make sure to upload to s3 for back up
-        And now we also want to get the file and encrypt it so we can send it in an email
-        """
 
-        # Encrypt metadata into a zip file
+        # Set zip file name
+        current_date = datetime.now().strftime("%m%d%Y")
+        current_filename = f"domain-metadata-{current_date}.zip"
+        # Pre-set zip file name
+        encrypted_metadata_output = current_filename
 
-        # pre-setting zip file name 
-        encrypted_metadata_output = 'encrypted_metadata.zip'
+        # Set context for the subject
+        current_date_str = datetime.now().strftime("%Y-%m-%d")
 
-        # Secret is encrypted into getgov-credentials
         # TODO: Update secret in getgov-credentials via cloud.gov and my own .env when ready
-        
-        # Encrypt the metadata 
-        # TODO: UPDATE SECRET_ENCRYPT_METADATA pw getgov-credentials on stable
-        encrypted_metadata = self._encrypt_metadata(s3_client.get_file(file_name), encrypted_metadata_output, str.encode(settings.SECRET_ENCRYPT_METADATA))
-        print("encrypted_metadata is:", encrypted_metadata)
-        print("the type is: ", type(encrypted_metadata))
+
+        # Encrypt the metadata
+        encrypted_metadata_in_bytes = self._encrypt_metadata(
+            s3_client.get_file(file_name), encrypted_metadata_output, str.encode(settings.SECRET_ENCRYPT_METADATA)
+        )
+
         # Send the metadata file that is zipped
-        # TODO: Make new .txt files
         send_templated_email(
-            "emails/metadata_body.txt",
-            "emails/metadata_subject.txt",
-            to_address="rebecca.hsieh@truss.works", # TODO: Update to settings.DEFAULT_FROM_EMAIL once tested
-            file=encrypted_metadata,
+            template_name="emails/metadata_body.txt",
+            subject_template_name="emails/metadata_subject.txt",
+            to_address=settings.DEFAULT_FROM_EMAIL,
+            # to_address="rebecca.hsieh@truss.works <rebecca.hsieh@truss.works>", # TODO: Update to settings.DEFAULT_FROM_EMAIL once tested
+            context={"current_date_str": current_date_str},
+            file=encrypted_metadata_in_bytes,
         )
 
     def _encrypt_metadata(self, input_file, output_file, password):
+        current_date = datetime.now().strftime("%m%d%Y")
+        current_filename = f"domain-metadata-{current_date}.txt"
         # Using ZIP_DEFLATED bc it's a more common compression method supported by most zip utilities and faster
         # We could also use compression=pyzipper.ZIP_LZMA if we are looking for smaller file size
-        with pyzipper.AESZipFile(output_file, 'w', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as f_out:
+        with pyzipper.AESZipFile(
+            output_file, "w", compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES
+        ) as f_out:
             f_out.setpassword(password)
-            f_out.writestr('encrypted_metadata.txt', input_file)
-        return output_file
-
+            f_out.writestr(current_filename, input_file)
+        with open(output_file, "rb") as file_data:
+            attachment_in_bytes = file_data.read()
+        return attachment_in_bytes
