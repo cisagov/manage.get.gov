@@ -1,4 +1,3 @@
-import datetime
 import os
 import logging
 
@@ -473,7 +472,8 @@ class AuditedAdminMockData:
             application.alternative_domains.add(alt)
 
         return application
-    
+
+
 class MockDb(TestCase):
     """Hardcoded mocks make test case assertions sraightforward."""
 
@@ -535,69 +535,66 @@ class MockDb(TestCase):
             organization_type="federal",
             federal_agency="World War I Centennial Commission",
             federal_type="executive",
-            is_election_board=True
+            is_election_board=True,
         )
         self.domain_information_2, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_2,
-            organization_type="interstate",
-            is_election_board=True
+            creator=self.user, domain=self.domain_2, organization_type="interstate", is_election_board=True
         )
         self.domain_information_3, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_3,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=True
+            is_election_board=True,
         )
         self.domain_information_4, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_4,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=True
+            is_election_board=True,
         )
         self.domain_information_5, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_5,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=False
+            is_election_board=False,
         )
         self.domain_information_6, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_6,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=False
+            is_election_board=False,
         )
         self.domain_information_7, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_7,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=False
+            is_election_board=False,
         )
         self.domain_information_8, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_8,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=False
+            is_election_board=False,
         )
         self.domain_information_9, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_9,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=False
+            is_election_board=False,
         )
         self.domain_information_10, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_10,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=False
+            is_election_board=False,
         )
 
         meoward_user = get_user_model().objects.create(
@@ -625,11 +622,21 @@ class MockDb(TestCase):
         )
 
         with less_console_noise():
-            self.domain_request_1 = completed_application(status=DomainApplication.ApplicationStatus.STARTED, name="city1.gov")
-            self.domain_request_2 = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW, name="city2.gov")
-            self.domain_request_3 = completed_application(status=DomainApplication.ApplicationStatus.STARTED, name="city3.gov")
-            self.domain_request_4 = completed_application(status=DomainApplication.ApplicationStatus.STARTED, name="city4.gov")
-            self.domain_request_5 = completed_application(status=DomainApplication.ApplicationStatus.APPROVED, name="city5.gov")
+            self.domain_request_1 = completed_application(
+                status=DomainApplication.ApplicationStatus.STARTED, name="city1.gov"
+            )
+            self.domain_request_2 = completed_application(
+                status=DomainApplication.ApplicationStatus.IN_REVIEW, name="city2.gov"
+            )
+            self.domain_request_3 = completed_application(
+                status=DomainApplication.ApplicationStatus.STARTED, name="city3.gov"
+            )
+            self.domain_request_4 = completed_application(
+                status=DomainApplication.ApplicationStatus.STARTED, name="city4.gov"
+            )
+            self.domain_request_5 = completed_application(
+                status=DomainApplication.ApplicationStatus.APPROVED, name="city5.gov"
+            )
             self.domain_request_3.submit()
             self.domain_request_3.save()
             self.domain_request_4.submit()

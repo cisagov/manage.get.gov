@@ -424,7 +424,7 @@ def analytics(request):
         "domain__state__in": [Domain.State.DELETED],
         "domain__deleted__lte": end_date_formatted,
     }
-    deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)    
+    deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)
     deleted_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_deleted_domains_end_date)
 
     # Created and Submitted requests

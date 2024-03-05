@@ -43,7 +43,7 @@ class CsvReportsTest(MockDb):
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
                 call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
-                call('adomain10.gov,Federal,Armed Forces Retirement Home,,,, \r\n'),
+                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
             ]
             # We don't actually want to write anything for a test case,
@@ -64,7 +64,7 @@ class CsvReportsTest(MockDb):
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
                 call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
-                call('adomain10.gov,Federal,Armed Forces Retirement Home,,,, \r\n'),
+                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
                 call("adomain2.gov,Interstate,,,,, \r\n"),
             ]
@@ -525,7 +525,7 @@ class ExportDataTest(MockDb, MockEppLib):
 
     def test_export_data_managed_domains_to_csv(self):
         """Test get counts for domains that have domain managers for two different dates,
-            get list of managed domains at end_date."""
+        get list of managed domains at end_date."""
 
         with less_console_noise():
             # Create a CSV file in memory
@@ -596,32 +596,34 @@ class ExportDataTest(MockDb, MockEppLib):
             csv_file.seek(0)
             # Read the content into a variable
             csv_content = csv_file.read()
-            self.maxDiff=None
+            self.maxDiff = None
             # We expect the READY domain names with the domain managers: Their counts, and listing at end_date.
             expected_content = (
                 "MANAGED DOMAINS COUNTS AT START DATE\n"
-                "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,School district,Election office\n"
+                "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
+                "School district,Election office\n"
                 "0,0,0,0,0,0,0,0,0,0\n"
                 "\n"
                 "MANAGED DOMAINS COUNTS AT END DATE\n"
-                "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,School district,Election office\n"
+                "Total,Federal,Interstate,State or territory,Tribal,County,City,"
+                "Special district,School district,Election office\n"
                 "1,1,0,0,0,0,0,0,0,1\n"
                 "\n"
                 "Domain name,Domain type,Domain manager email 1,Domain manager email 2,Domain manager email 3\n"
                 "cdomain1.gov,Federal - Executive,meoward@rocks.com,info@example.com,big_lebowski@dude.co\n"
             )
-            
+
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-            
+
             self.assertEqual(csv_content, expected_content)
 
     def test_export_data_unmanaged_domains_to_csv(self):
         """Test get counts for domains that do not have domain managers for two different dates,
-            get list of unmanaged domains at end_date."""
-        
+        get list of unmanaged domains at end_date."""
+
         with less_console_noise():
             # Create a CSV file in memory
             csv_file = StringIO()
@@ -691,26 +693,28 @@ class ExportDataTest(MockDb, MockEppLib):
             csv_file.seek(0)
             # Read the content into a variable
             csv_content = csv_file.read()
-            self.maxDiff=None
+            self.maxDiff = None
             # We expect the READY domain names with the domain managers: Their counts, and listing at end_date.
             expected_content = (
                 "UNMANAGED DOMAINS COUNTS AT START DATE\n"
-                "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,School district,Election office\n"
+                "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
+                "School district,Election office\n"
                 "0,0,0,0,0,0,0,0,0,0\n"
                 "\n"
                 "UNMANAGED DOMAINS COUNTS AT END DATE\n"
-                "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,School district,Election office\n"
+                "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
+                "School district,Election office\n"
                 "1,1,0,0,0,0,0,0,0,0\n"
                 "\n"
                 "Domain name,Domain type\n"
                 "adomain10.gov,Federal\n"
             )
-            
+
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-            
+
             self.assertEqual(csv_content, expected_content)
 
     def test_write_requests_body_with_date_filter_pulls_requests_in_range(self):
@@ -750,13 +754,14 @@ class ExportDataTest(MockDb, MockEppLib):
                 "city3.gov,Federal - Executive,2024-03-05\n"
                 "city4.gov,Federal - Executive,2024-03-05\n"
             )
-            
+
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-            
+
             self.assertEqual(csv_content, expected_content)
+
 
 class HelperFunctions(MockDb):
     """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
@@ -774,28 +779,24 @@ class HelperFunctions(MockDb):
 
     def test_get_sliced_domains(self):
         """Should get fitered domains counts sliced by org type and election office."""
-        
+
         with less_console_noise():
             filter_condition = {
                 "domain__permissions__isnull": False,
                 "domain__first_ready__lte": self.end_date,
             }
             managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
-            expected_content = (
-                [1, 1, 0, 0, 0, 0, 0, 0, 0, 1]
-            )
+            expected_content = [1, 1, 0, 0, 0, 0, 0, 0, 0, 1]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
     def test_get_sliced_requests(self):
         """Should get fitered requests counts sliced by org type and election office."""
-        
+
         with less_console_noise():
             filter_condition = {
                 "status": DomainApplication.ApplicationStatus.SUBMITTED,
                 "submission_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)
-            expected_content = (
-                [2, 2, 0, 0, 0, 0, 0, 0, 0, 0]
-            )
+            expected_content = [2, 2, 0, 0, 0, 0, 0, 0, 0, 0]
             self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)

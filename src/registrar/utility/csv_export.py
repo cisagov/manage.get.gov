@@ -128,6 +128,7 @@ def _get_security_emails(sec_contact_ids):
 
     return security_emails_dict
 
+
 def write_domains_csv(
     writer,
     columns,
@@ -253,7 +254,6 @@ def write_requests_csv(
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
 
-    
     if should_write_header:
         write_header(writer, columns)
     writer.writerows(rows)
@@ -293,7 +293,9 @@ def export_data_type_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_domains_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True)
+    write_domains_csv(
+        writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True
+    )
 
 
 def export_data_full_to_csv(csv_file):
@@ -324,7 +326,9 @@ def export_data_full_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_domains_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_domains_csv(
+        writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+    )
 
 
 def export_data_federal_to_csv(csv_file):
@@ -356,7 +360,9 @@ def export_data_federal_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_domains_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_domains_csv(
+        writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+    )
 
 
 def get_default_start_date():
@@ -424,7 +430,9 @@ def export_data_domain_growth_to_csv(csv_file, start_date, end_date):
         "domain__deleted__gte": start_date_formatted,
     }
 
-    write_domains_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_domains_csv(
+        writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+    )
     write_domains_csv(
         writer,
         columns,
@@ -442,14 +450,18 @@ def get_sliced_domains(filter_condition):
     domains_count = domains.count()
     federal = domains.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).distinct().count()
     interstate = domains.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).count()
-    state_or_territory = domains.filter(
-        organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY
-    ).distinct().count()
+    state_or_territory = (
+        domains.filter(organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
+    )
     tribal = domains.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).distinct().count()
     county = domains.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).distinct().count()
     city = domains.filter(organization_type=DomainApplication.OrganizationChoices.CITY).distinct().count()
-    special_district = domains.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
-    school_district = domains.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    special_district = (
+        domains.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+    )
+    school_district = (
+        domains.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    )
     election_board = domains.filter(is_election_board=True).distinct().count()
 
     return [
@@ -473,14 +485,18 @@ def get_sliced_requests(filter_condition):
     requests_count = requests.count()
     federal = requests.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).distinct().count()
     interstate = requests.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).distinct().count()
-    state_or_territory = requests.filter(
-        organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY
-    ).distinct().count()
+    state_or_territory = (
+        requests.filter(organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
+    )
     tribal = requests.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).distinct().count()
     county = requests.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).distinct().count()
     city = requests.filter(organization_type=DomainApplication.OrganizationChoices.CITY).distinct().count()
-    special_district = requests.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
-    school_district = requests.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    special_district = (
+        requests.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+    )
+    school_district = (
+        requests.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    )
     election_board = requests.filter(is_election_board=True).distinct().count()
 
     return [
