@@ -48,8 +48,11 @@ class Command(BaseCommand):
             logger.info(f"Success! Created {file_name}")
 
     def generate_current_metadata_report(self, directory, file_name, check_path):
-        """Creates a current-full.csv file under the specified directory,
-        then uploads it to a AWS S3 bucket"""
+        """Creates a current-metadata.csv file under the specified directory,
+        then uploads it to a AWS S3 bucket. This is done for resiliency
+        reasons in the event our application goes down and/or the email
+        cannot send -- we'll still be able to grab info from the S3
+        instance"""
         s3_client = S3ClientHelper()
         file_path = os.path.join(directory, file_name)
 
@@ -60,7 +63,6 @@ class Command(BaseCommand):
         if check_path and not os.path.exists(file_path):
             raise FileNotFoundError(f"Could not find newly created file at '{file_path}'")
 
-        # Upload this generated file for our S3 instance
         s3_client.upload_file(file_path, file_name)
 
         # Set zip file name
