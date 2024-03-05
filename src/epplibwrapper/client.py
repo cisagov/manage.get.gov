@@ -143,6 +143,7 @@ class EPPLibWrapper:
     def send(self, command, *, cleaned=False):
         """Login, the send the command. Retry once if an error is found"""
         # try to prevent use of this method without appropriate safeguards
+        cmd_type = command.__class__.__name__
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
         try:
@@ -155,6 +156,8 @@ class EPPLibWrapper:
                 or err.is_server_error()
                 or err.should_retry()
             ):
+                message = f"{cmd_type} failed and will be retried"
+                logger.info(f"{message} Error: {err}")
                 return self._retry(command)
             else:
                 raise err
