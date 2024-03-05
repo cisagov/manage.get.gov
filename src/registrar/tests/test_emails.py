@@ -195,7 +195,7 @@ class TestEmails(TestCase):
             current_date = datetime.now().strftime("%m%d%Y")
             current_filename = f"domain-metadata-{current_date}.zip"
 
-            response = email.send_email_with_attachment(
+            email.send_email_with_attachment(
                 sender_email, recipient_email, subject, body, attachment_file, self.mock_client
             )
             # Assert that the `send_raw_email` method of the mocked SES client was called with the expected params

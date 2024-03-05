@@ -51,11 +51,10 @@ def send_templated_email(
         destination["BccAddresses"] = [bcc_address]
 
     try:
-
         if file is None:
             ses_client.send_email(
                 FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
-                Destination={"ToAddresses": [to_address]},
+                Destination=destination,
                 Content={
                     "Simple": {
                         "Subject": {"Data": subject},
