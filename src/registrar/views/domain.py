@@ -10,6 +10,7 @@ import logging
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
+from django.forms import ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -22,6 +23,8 @@ from registrar.models import (
     User,
     UserDomainRole,
 )
+from registrar.models.domain_application import DomainApplication
+from registrar.models.domain_information import DomainInformation
 from registrar.models.public_contact import PublicContact
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
@@ -225,6 +228,35 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, save the authorizing official."""
+        # if not self.request.user.is_staff:
+
+        _domain_info = DomainInformation.objects.filter(domain__name=self.object.name)
+
+        current_domain_info = None
+        if _domain_info.exists() and _domain_info.count() == 1:
+            current_domain_info = _domain_info.get()
+        else:
+            logger.error("Could not update Authorizing Official. No domain info exists, or duplicates exist.")
+            messages.error(self.request, "Something went wrong when attempting to save.")
+            return self.form_invalid(form)
+
+        # Determine if the domain is federal or tribal
+        is_federal = current_domain_info.organization_type == DomainApplication.OrganizationChoices.FEDERAL
+        is_tribal = current_domain_info.organization_type == DomainApplication.OrganizationChoices.TRIBAL
+
+        # Get the old and new ao values
+        old_authorizing_official = form.initial
+        new_authorizing_official = form.cleaned_data
+
+        # This action should be blocked by the UI, as the text fields are readonly.
+        # If they get past this point, we forbid it this way.
+        # This could be malicious, but it won't always be.
+        if (is_federal or is_tribal) and old_authorizing_official != new_authorizing_official:
+            logger.warning(f"User {self.request.user} attempted to change AO on {self.object.name}")
+            messages.error(self.request, "You cannot modify the Authorizing Official.")
+
+            return self.form_invalid(form)
+
         # Set the domain information in the form so that it can be accessible
         # to associate a new Contact as authorizing official, if new Contact is needed
         # in the save() method
