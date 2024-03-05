@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from api.tests.common import less_console_noise
 from registrar.models.domain_application import DomainApplication
 from registrar.models.domain_information import DomainInformation
 from registrar.models.domain import Domain
@@ -8,7 +9,7 @@ from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from datetime import date, datetime, timedelta
 from django.utils import timezone
-from registrar.tests.common import MockEppLib
+from registrar.tests.common import MockEppLib, completed_application
 
 class MockDb(MockEppLib):
     def setUp(self):
@@ -152,81 +153,22 @@ class MockDb(MockEppLib):
             user=meoward_user, domain=self.domain_2, role=UserDomainRole.Roles.MANAGER
         )
 
-        # self.domain_request_1, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     requested_domain=self.domain_1.name,
-        #     organization_type="federal",
-        #     federal_agency="World War I Centennial Commission",
-        #     federal_type="executive",
-        #     is_election_board=True
-        # )
-        # self.domain_request_2, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     domain=self.domain_2,
-        #     organization_type="interstate",
-        #     is_election_board=True
-        # )
-        # self.domain_request_3, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     domain=self.domain_3,
-        #     organization_type="federal",
-        #     federal_agency="Armed Forces Retirement Home",
-        #     is_election_board=True
-        # )
-        # self.domain_request_4, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     domain=self.domain_4,
-        #     organization_type="federal",
-        #     federal_agency="Armed Forces Retirement Home",
-        #     is_election_board=True
-        # )
-        # self.domain_request_5, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     domain=self.domain_5,
-        #     organization_type="federal",
-        #     federal_agency="Armed Forces Retirement Home",
-        #     is_election_board=False
-        # )
-        # self.domain_request_6, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     domain=self.domain_6,
-        #     organization_type="federal",
-        #     federal_agency="Armed Forces Retirement Home",
-        #     is_election_board=False
-        # )
-        # self.domain_request_7, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     domain=self.domain_7,
-        #     organization_type="federal",
-        #     federal_agency="Armed Forces Retirement Home",
-        #     is_election_board=False
-        # )
-        # self.domain_request_8, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     domain=self.domain_8,
-        #     organization_type="federal",
-        #     federal_agency="Armed Forces Retirement Home",
-        #     is_election_board=False
-        # )
-        # self.domain_information_9, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     domain=self.domain_9,
-        #     organization_type="federal",
-        #     federal_agency="Armed Forces Retirement Home",
-        #     is_election_board=False
-        # )
-        # self.domain_information_10, _ = DomainApplication.objects.get_or_create(
-        #     creator=self.user,
-        #     domain=self.domain_10,
-        #     organization_type="federal",
-        #     federal_agency="Armed Forces Retirement Home",
-        #     is_election_board=False
-        # )
+        with less_console_noise():
+            self.domain_request_1 = completed_application(status=DomainApplication.ApplicationStatus.STARTED, name="city1.gov")
+            self.domain_request_2 = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW, name="city2.gov")
+            self.domain_request_3 = completed_application(status=DomainApplication.ApplicationStatus.STARTED, name="city3.gov")
+            self.domain_request_4 = completed_application(status=DomainApplication.ApplicationStatus.STARTED, name="city4.gov")
+            self.domain_request_5 = completed_application(status=DomainApplication.ApplicationStatus.APPROVED, name="city5.gov")
+            self.domain_request_3.submit()
+            self.domain_request_3.save()
+            self.domain_request_4.submit()
+            self.domain_request_4.save()
 
     def tearDown(self):
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
         super().tearDown()

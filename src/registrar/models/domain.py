@@ -1022,7 +1022,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     first_ready = DateField(
         null=True,
-        editable=True,
+        editable=False,
         help_text="The last time this domain moved into the READY state",
     )
 

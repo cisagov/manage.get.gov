@@ -1091,7 +1091,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     fieldsets = [
-        (None, {"fields": ["status", "rejection_reason", "submission_date", "investigator", "creator", "approved_domain", "notes"]}),
+        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
         (
             "Type of organization",
             {
@@ -1443,7 +1443,7 @@ class DomainAdmin(ListHeaderAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    readonly_fields = ["state", "expiration_date", "deleted"]
+    readonly_fields = ["state", "expiration_date", "first_ready", "deleted"]
 
     # Table ordering
     ordering = ["name"]

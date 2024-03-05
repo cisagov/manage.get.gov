@@ -2,6 +2,7 @@ import csv
 import io
 from django.test import Client, RequestFactory, TestCase
 from io import StringIO
+from registrar.models.domain_application import DomainApplication
 from registrar.models.domain_information import DomainInformation
 from registrar.models.domain import Domain
 from registrar.models.public_contact import PublicContact
@@ -13,9 +14,11 @@ from registrar.utility.csv_export import (
     format_end_date,
     format_start_date,
     get_sliced_domains,
+    get_sliced_requests,
     write_domains_csv,
     get_default_start_date,
     get_default_end_date,
+    write_requests_csv,
 )
 
 from django.core.management import call_command
@@ -27,7 +30,7 @@ import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from datetime import date, datetime, timedelta
 from django.utils import timezone
-from .common import less_console_noise
+from .common import completed_application, less_console_noise
 
 
 class CsvReportsTest(TestCase):
@@ -771,9 +774,58 @@ class ExportDataTest(MockDb):
         Test that requests  are sorted by requested domain name.
         """
 
-        pass
+        with less_console_noise():
+            # Create a CSV file in memory
+            csv_file = StringIO()
+            writer = csv.writer(csv_file)
+            # We use timezone.make_aware to sync to server time a datetime object with the current date
+            # (using date.today()) and a specific time (using datetime.min.time()).
+            
+            # Create a time-aware current date
+            current_datetime = timezone.now()
+            # Extract the date part
+            current_date = current_datetime.date()
+            # Create start and end dates using timedelta
+            end_date = current_date + timedelta(days=2)
+            start_date = current_date - timedelta(days=2)
 
-class HelperFunctions(TestCase):
+            # Define columns, sort fields, and filter condition
+            columns = [
+                "Requested domain",
+                "Organization type",
+                "Submission date",
+            ]
+            sort_fields = [
+                "requested_domain__name",
+            ]
+            filter_condition = {
+                "status": DomainApplication.ApplicationStatus.SUBMITTED,
+                "submission_date__lte": end_date,
+                "submission_date__gte": start_date,
+            }
+            write_requests_csv(writer, columns, sort_fields, filter_condition, should_write_header=True)
+            # Reset the CSV file's position to the beginning
+            csv_file.seek(0)
+
+            # Read the content into a variable
+            csv_content = csv_file.read()
+
+            # We expect READY domains first, created between today-2 and today+2, sorted by created_at then name
+            # and DELETED domains deleted between today-2 and today+2, sorted by deleted then name
+            expected_content = (
+                "Requested domain,Organization type,Submission date\n"
+                "city3.gov,Federal - Executive,2024-03-05\n"
+                "city4.gov,Federal - Executive,2024-03-05\n"
+            )
+
+            # Normalize line endings and remove commas,
+            # spaces and leading/trailing whitespace
+            csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+            expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+
+            self.assertEqual(csv_content, expected_content)
+
+class HelperFunctions(MockDb):
     """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
 
     def test_get_default_start_date(self):
@@ -787,10 +839,52 @@ class HelperFunctions(TestCase):
         actual_date = get_default_end_date()
         self.assertEqual(actual_date.date(), expected_date.date())
 
-    def get_sliced_domains(self):
+    def test_get_sliced_domains(self):
         """Should get fitered domains counts sliced by org type and election office."""
-        pass
+        with less_console_noise():
+            # Create a time-aware current date
+            current_datetime = timezone.now()
+            # Extract the date part
+            current_date = current_datetime.date()
+            # Create start and end dates using timedelta
+            end_date = current_date + timedelta(days=2)
+            start_date = current_date - timedelta(days=2)
+
+            filter_condition = {
+                "domain__permissions__isnull": False,
+                "domain__first_ready__lte": end_date,
+            }
+            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
+
+            expected_content = (
+                [1, 1, 0, 0, 0, 0, 0, 0, 0, 1]
+            )
+
+            self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
+
+
 
     def test_get_sliced_requests(self):
         """Should get fitered requests counts sliced by org type and election office."""
-        pass
+        with less_console_noise():
+            # Create a time-aware current date
+            current_datetime = timezone.now()
+            # Extract the date part
+            current_date = current_datetime.date()
+            # Create start and end dates using timedelta
+            end_date = current_date + timedelta(days=2)
+            start_date = current_date - timedelta(days=2)
+
+            filter_condition = {
+                "status": DomainApplication.ApplicationStatus.SUBMITTED,
+                "submission_date__lte": end_date,
+            }
+            submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)
+
+            print(f'managed_domains_sliced_at_end_date {submitted_requests_sliced_at_end_date}')
+
+            expected_content = (
+                [2, 2, 0, 0, 0, 0, 0, 0, 0, 0]
+            )
+
+            self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)

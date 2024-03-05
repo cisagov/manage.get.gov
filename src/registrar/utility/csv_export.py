@@ -188,7 +188,7 @@ def write_domains_csv(
 
 
 def get_requests(filter_condition, sort_fields):
-    requests = DomainApplication.objects.all().filter(**filter_condition).order_by(*sort_fields)
+    requests = DomainApplication.objects.all().filter(**filter_condition).order_by(*sort_fields).distinct()
     return requests
 
 
@@ -197,12 +197,8 @@ def parse_request_row(columns, request: DomainApplication):
 
     requested_domain_name = "No requested domain"
 
-    # Domain should never be none when parsing this information
     if request.requested_domain is not None:
-        domain = request.requested_domain
-        requested_domain_name = domain.name
-
-    domain = request.requested_domain  # type: ignore
+        requested_domain_name = request.requested_domain.name
 
     if request.federal_type:
         request_type = f"{request.get_organization_type_display()} - {request.get_federal_type_display()}"
