@@ -13,6 +13,7 @@ from typing import Any
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
 from registrar.utility.enums import DefaultEmail
+from registrar.utility import errors
 
 from registrar.utility.errors import (
     ActionNotAllowed,
@@ -192,9 +193,17 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @classmethod
     def available(cls, domain: str) -> bool:
-        """Check if a domain is available."""
+        """Check if a domain is available.
+        This is called by the availablility api and
+        is called in the validate function on the request/domain page
+
+        throws- RegistryError or InvalidDomainError"""
         if not cls.string_could_be_domain(domain):
-            raise ValueError("Not a valid domain: %s" % str(domain))
+            logger.warning("Not a valid domain: %s" % str(domain))
+            # throw invalid domain error so that it can be caught in
+            # validate_and_handle_errors in domain_helper
+            raise errors.InvalidDomainError()
+
         domain_name = domain.lower()
         req = commands.CheckDomain([domain_name])
         return registry.send(req, cleaned=True).res_data[0].avail
@@ -429,7 +438,6 @@ class Domain(TimeStampedModel, DomainHelper):
             raise NameserverError(code=nsErrorCodes.INVALID_HOST, nameserver=nameserver)
         elif cls.isSubdomain(name, nameserver) and (ip is None or ip == []):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
-
         elif not cls.isSubdomain(name, nameserver) and (ip is not None and ip != []):
             raise NameserverError(code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED, nameserver=nameserver, ip=ip)
         elif ip is not None and ip != []:
@@ -1780,6 +1788,10 @@ class Domain(TimeStampedModel, DomainHelper):
         for cleaned_host in cleaned_hosts:
             # Check if the cleaned_host already exists
             host_in_db, host_created = Host.objects.get_or_create(domain=self, name=cleaned_host["name"])
+            # Check if the nameserver is a subdomain of the current domain
+            # If it is NOT a subdomain, we remove the IP address
+            if not Domain.isSubdomain(self.name, cleaned_host["name"]):
+                cleaned_host["addrs"] = []
             # Get cleaned list of ips for update
             cleaned_ips = cleaned_host["addrs"]
             if not host_created:

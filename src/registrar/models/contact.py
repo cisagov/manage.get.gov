@@ -1,8 +1,8 @@
 from django.db import models
 
-from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
-
 from .utility.time_stamped_model import TimeStampedModel
+
+from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
 
 class Contact(TimeStampedModel):
@@ -15,23 +15,23 @@ class Contact(TimeStampedModel):
         on_delete=models.SET_NULL,
     )
 
-    first_name = models.TextField(
+    first_name = models.CharField(
         null=True,
         blank=True,
         verbose_name="first name / given name",
         db_index=True,
     )
-    middle_name = models.TextField(
+    middle_name = models.CharField(
         null=True,
         blank=True,
     )
-    last_name = models.TextField(
+    last_name = models.CharField(
         null=True,
         blank=True,
         verbose_name="last name / family name",
         db_index=True,
     )
-    title = models.TextField(
+    title = models.CharField(
         null=True,
         blank=True,
         verbose_name="title or role in your organization",

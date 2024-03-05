@@ -14,6 +14,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
+from django.conf import settings
 
 from registrar.models import (
     Domain,
@@ -707,7 +708,7 @@ class DomainAddUserView(DomainFormBaseView):
           adding a success message to the view if the email sending succeeds"""
 
         # Set a default email address to send to for staff
-        requestor_email = "help@get.gov"
+        requestor_email = settings.DEFAULT_FROM_EMAIL
 
         # Check if the email requestor has a valid email address
         if not requestor.is_staff and requestor.email is not None and requestor.email.strip() != "":

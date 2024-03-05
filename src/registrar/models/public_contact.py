@@ -8,6 +8,8 @@ from registrar.utility.enums import DefaultEmail
 
 from .utility.time_stamped_model import TimeStampedModel
 
+from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
+
 
 def get_id():
     """Generate a 16 character registry ID with a low probability of collision."""
@@ -59,22 +61,22 @@ class PublicContact(TimeStampedModel):
         related_name="contacts",
     )
 
-    name = models.TextField(null=False, help_text="Contact's full name")
-    org = models.TextField(null=True, help_text="Contact's organization (null ok)")
-    street1 = models.TextField(null=False, help_text="Contact's street")
-    street2 = models.TextField(null=True, help_text="Contact's street (null ok)")
-    street3 = models.TextField(null=True, help_text="Contact's street (null ok)")
-    city = models.TextField(null=False, help_text="Contact's city")
-    sp = models.TextField(null=False, help_text="Contact's state or province")
-    pc = models.TextField(null=False, help_text="Contact's postal code")
-    cc = models.TextField(null=False, help_text="Contact's country code")
-    email = models.TextField(null=False, help_text="Contact's email address")
-    voice = models.TextField(null=False, help_text="Contact's phone number. Must be in ITU.E164.2005 format")
-    fax = models.TextField(
+    name = models.CharField(null=False, help_text="Contact's full name")
+    org = models.CharField(null=True, help_text="Contact's organization (null ok)")
+    street1 = models.CharField(null=False, help_text="Contact's street")
+    street2 = models.CharField(null=True, help_text="Contact's street (null ok)")
+    street3 = models.CharField(null=True, help_text="Contact's street (null ok)")
+    city = models.CharField(null=False, help_text="Contact's city")
+    sp = models.CharField(null=False, help_text="Contact's state or province")
+    pc = models.CharField(null=False, help_text="Contact's postal code")
+    cc = models.CharField(null=False, help_text="Contact's country code")
+    email = models.EmailField(null=False, help_text="Contact's email address")
+    voice = PhoneNumberField(null=False, help_text="Contact's phone number. Must be in ITU.E164.2005 format")
+    fax = PhoneNumberField(
         null=True,
         help_text="Contact's fax number (null ok). Must be in ITU.E164.2005 format.",
     )
-    pw = models.TextField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
+    pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
 
     @classmethod
     def get_default_registrant(cls):
