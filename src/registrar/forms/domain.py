@@ -222,7 +222,7 @@ class AuthorizingOfficialContactForm(ContactForm):
 
     JOIN = "authorizing_official"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, disable_fields=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Overriding bc phone not required in this form
@@ -242,6 +242,17 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
+
+        # TODO - uswds text fields dont have disabled styling??
+        # All fields should be disabled if the domain is federal or tribal
+        if disable_fields:
+            self._mass_disable_fields()
+
+    def _mass_disable_fields(self):
+        """Given all available fields, invoke .disabled = True on them"""
+        for field in self.fields.values():
+            field.disabled = True
+        
 
     def save(self, commit=True):
         """
@@ -356,6 +367,20 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
+
+        is_federal = self.instance.organization_type == DomainApplication.OrganizationChoices.FEDERAL
+        is_tribal = self.instance.organization_type == DomainApplication.OrganizationChoices.TRIBAL
+
+        # (Q) Should required = False be set here?
+        # These fields should not be None. If they are, 
+        # it seems like an analyst should intervene?
+
+        # TODO - maybe consider adding a modal on these fields on hover
+        # ALSO TODO - uswds text fields dont have disabled styling??
+        if is_federal:
+            self.fields['federal_agency'].disabled = True
+        elif is_tribal:
+            self.fields['organization_name'].disabled = True
     
     def save(self, commit=True):
         """Override the save() method of the BaseModelForm."""

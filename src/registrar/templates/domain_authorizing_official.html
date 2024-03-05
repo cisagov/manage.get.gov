@@ -11,6 +11,13 @@
 
   <p>Your authorizing official is a person within your organization who can
   authorize domain requests. This person must be in a role of significant, executive responsibility within the organization. Read more about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/eligibility/#you-must-have-approval-from-an-authorizing-official-within-your-organization' %}">who can serve as an authorizing official</a>.</p>
+  
+  {% if organization_type == "federal" or organization_type == "tribal" %}
+    <p>
+      The authorizing official for your organization can’t be updated here. 
+      To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+    </p>
+  {% endif %}
 
   {% include "includes/required_fields.html" %}
 
@@ -24,7 +31,7 @@
     {% input_with_errors form.title %}
 
     {% input_with_errors form.email %}
-
+    
     <button
           type="submit"
           class="usa-button"
