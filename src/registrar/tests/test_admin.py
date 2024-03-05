@@ -293,7 +293,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         Scenario: Domain deletion is unsuccessful
             When the domain is deleted
             Then a user-friendly success message is returned for displaying on the web
-            And `state` is et to `DELETED`
+            And `state` is set to `DELETED`
         """
         with less_console_noise():
             domain = create_ready_domain()
@@ -498,7 +498,7 @@ class TestDomainRequestAdmin(MockEppLib):
             factory=self.factory,
             user=self.superuser,
             admin=self.admin,
-            url="/admin/registrar/DomainRequest/",
+            url="/admin/registrar/domainrequest/",
             model=DomainRequest,
         )
         self.mock_client = MockSESClient()
@@ -600,7 +600,7 @@ class TestDomainRequestAdmin(MockEppLib):
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Create a mock request
-                request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
+                request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
                 # Modify the domain request's properties
                 domain_request.status = status
@@ -998,7 +998,7 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
 
             # Create a request object with a superuser
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
+            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
             request.user = self.superuser
 
             with ExitStack() as stack:
@@ -1026,7 +1026,7 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
 
             # Create a request object with a superuser
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
+            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
             request.user = self.superuser
 
             with ExitStack() as stack:
@@ -1079,7 +1079,7 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
+            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 # Modify the domain request's property
@@ -1101,7 +1101,7 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
+            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 # Modify the domain request's property
@@ -1233,7 +1233,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Create a request object with a superuser
-                request = self.factory.get("/admin/your_app/DomainRequest/{}/change/".format(domain_request.pk))
+                request = self.factory.get("/admin/your_app/domainrequest/{}/change/".format(domain_request.pk))
                 request.user = self.superuser
 
                 self.admin.display_restricted_warning(request, domain_request)
@@ -1260,7 +1260,7 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request.save()
 
             # Create a request object with a superuser
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
+            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
             request.user = self.superuser
 
             # Define a custom implementation for is_active
@@ -1403,7 +1403,7 @@ class TestDomainRequestAdmin(MockEppLib):
             p = "userpass"
             self.client.login(username="staffuser", password=p)
             response = self.client.get(
-                "/admin/registrar/DomainRequest/",
+                "/admin/registrar/domainrequest/",
                 {
                     "investigator__id__exact": investigator_user.id,
                 },
@@ -1454,7 +1454,7 @@ class TestDomainRequestAdmin(MockEppLib):
             p = "userpass"
             self.client.login(username="staffuser", password=p)
 
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_request.pk))
+            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
             # Get the actual field from the model's meta information
             investigator_field = DomainRequest._meta.get_field("investigator")
@@ -1824,7 +1824,7 @@ class ListHeaderAdminTest(TestCase):
             # which handles CSRF
             # Follow=True handles the redirect
             response = self.client.get(
-                "/admin/registrar/DomainRequest/",
+                "/admin/registrar/domainrequest/",
                 {
                     "status__exact": "started",
                     "investigator__id__exact": user.id,
@@ -1909,7 +1909,7 @@ class MyUserAdminTest(TestCase):
             self.assertEqual(fieldsets, expected_fieldsets)
 
     def test_get_fieldsets_cisa_analyst(self):
-        with less_console_noise():
+        if True:
             request = self.client.request().wsgi_request
             request.user = create_user()
             fieldsets = self.admin.get_fieldsets(request)
@@ -1951,7 +1951,7 @@ class AuditedAdminTest(TestCase):
 
         # Create a mock request
         domain_request_request = self.factory.post(
-            "/admin/registrar/DomainRequest/{}/change/".format(domain_requests[0].pk)
+            "/admin/registrar/domainrequest/{}/change/".format(domain_requests[0].pk)
         )
 
         # Get the formfield data from the domain request page
@@ -1992,7 +1992,7 @@ class AuditedAdminTest(TestCase):
             domain_requests = multiple_unalphabetical_domain_objects("domain_request")
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/DomainRequest/{}/change/".format(domain_requests[0].pk))
+            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_requests[0].pk))
 
             model_admin = AuditedAdmin(DomainRequest, self.site)
 
@@ -2343,13 +2343,13 @@ class ContactAdminTest(TestCase):
                     response.wsgi_request,
                     "<ul class='messagelist_content-list--unstyled'>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{domain_request1.pk}/change/'>city1.gov</a></li>"
+                    f"domainrequest/{domain_request1.pk}/change/'>city1.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{domain_request2.pk}/change/'>city2.gov</a></li>"
+                    f"domainrequest/{domain_request2.pk}/change/'>city2.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
+                    f"domainrequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
+                    f"domainrequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
                     "<li>Joined to User: <a href='/admin/registrar/"
                     f"user/{self.staffuser.pk}/change/'>staff@example.com</a></li>"
                     "</ul>",
@@ -2378,15 +2378,15 @@ class ContactAdminTest(TestCase):
                     response.wsgi_request,
                     "<ul class='messagelist_content-list--unstyled'>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{domain_request1.pk}/change/'>city1.gov</a></li>"
+                    f"domainrequest/{domain_request1.pk}/change/'>city1.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{domain_request2.pk}/change/'>city2.gov</a></li>"
+                    f"domainrequest/{domain_request2.pk}/change/'>city2.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
+                    f"domainrequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
+                    f"domainrequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"DomainRequest/{domain_request5.pk}/change/'>city5.gov</a></li>"
+                    f"domainrequest/{domain_request5.pk}/change/'>city5.gov</a></li>"
                     "</ul>"
                     "<p class='font-sans-3xs'>And 1 more...</p>",
                 )
