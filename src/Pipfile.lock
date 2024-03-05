@@ -458,10 +458,6 @@
             "markers": "python_version >= '3.8'",
             "version": "==24.2.1"
         },
-        "geventconnpool": {
-            "git": "https://github.com/rasky/geventconnpool.git",
-            "ref": "1bbb93a714a331a069adf27265fe582d9ba7ecd4"
-        },
         "greenlet": {
             "hashes": [
                 "sha256:01bc7ea167cf943b4c802068e178bbf70ae2e8c080467070d01bfa02f337ee67",
