@@ -141,7 +141,7 @@ class EPPLibWrapper:
         return self._send(command)
 
     def send(self, command, *, cleaned=False):
-        """Login, send the command, then close the connection. Tries 3 times."""
+        """Login, the send the command. Retry once if an error is found"""
         # try to prevent use of this method without appropriate safeguards
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
