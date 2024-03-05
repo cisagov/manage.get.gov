@@ -213,43 +213,6 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
-
-        current_domain_info = self.get_domain_info_from_domain()
-        if current_domain_info is None:
-            messages.error(self.request, "Something went wrong when attempting to save.")
-            return self.form_invalid(form)
-
-        # Get the old and new values to see if a change is occuring
-        old_org_info = form.initial
-        new_org_info = form.cleaned_data
-
-        if old_org_info != new_org_info:
-
-            error_message = None
-            # These actions, aside from the default, should be blocked by the UI, as the field is readonly.
-            # If they get past this point, we forbid it this way.
-            # This could be malicious, but it won't always be.
-            match current_domain_info.organization_type:
-                case DomainApplication.OrganizationChoices.FEDERAL:
-                    old_fed_agency = old_org_info.get("federal_agency", None)
-                    new_fed_agency = new_org_info.get("federal_agency", None)
-                    if old_fed_agency != new_fed_agency:
-                        error_message = "You cannot modify Federal Agency"
-                case DomainApplication.OrganizationChoices.TRIBAL:
-                    old_org_name = old_org_info.get("organization_name", None)
-                    new_org_name = new_org_info.get("organization_name", None)
-                    if old_org_name != new_org_name:
-                        error_message = "You cannot modify Organization Name."
-                case _:
-                    # Do nothing
-                    pass
-            
-            # If we encounter an error, forbid this action.
-            if error_message is not None:
-                logger.warning(f"User {self.request.user} attempted to change org info on {self.object.name}")
-                messages.error(self.request, "You cannot modify the Authorizing Official.")
-                return self.form_invalid(form)
-
         form.save()
 
         messages.success(self.request, "The organization information for this domain has been updated.")
@@ -278,31 +241,9 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, save the authorizing official."""
-        # if not self.request.user.is_staff:
-        
-        current_domain_info = self.get_domain_info_from_domain()
-        if current_domain_info is None:
-            messages.error(self.request, "Something went wrong when attempting to save.")
-            return self.form_invalid(form)
-
-        # Determine if the domain is federal or tribal
-        is_federal = current_domain_info.organization_type == DomainApplication.OrganizationChoices.FEDERAL
-        is_tribal = current_domain_info.organization_type == DomainApplication.OrganizationChoices.TRIBAL
-
-        # Get the old and new ao values
-        old_authorizing_official = form.initial
-        new_authorizing_official = form.cleaned_data
-
-        # This action should be blocked by the UI, as the text fields are readonly.
-        # If they get past this point, we forbid it this way.
-        # This could be malicious, but it won't always be.
-        if (is_federal or is_tribal) and old_authorizing_official != new_authorizing_official:
-            logger.warning(f"User {self.request.user} attempted to change AO on {self.object.name}")
-            messages.error(self.request, "You cannot modify the Authorizing Official.")
-            return self.form_invalid(form)
 
         # Set the domain information in the form so that it can be accessible
-        # to associate a new Contact as authorizing official, if new Contact is needed
+        # to associate a new Contact, if a new Contact is needed
         # in the save() method
         form.set_domain_info(self.object.domain_info)
         form.save()

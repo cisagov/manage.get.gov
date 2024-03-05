@@ -1,9 +1,9 @@
 """Forms for domain management."""
-
+import logging
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.forms import formset_factory
-
+from registrar.models import DomainApplication
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.utility.errors import (
     NameserverError,
@@ -21,6 +21,9 @@ from .common import (
 )
 
 import re
+
+
+logger = logging.getLogger(__name__)
 
 
 class DomainAddUserForm(forms.Form):
@@ -205,6 +208,13 @@ class ContactForm(forms.ModelForm):
             "required": "Enter your email address in the required format, like name@example.com."
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
+        self.domainInfo = None
+
+    def set_domain_info(self, domainInfo):
+        """Set the domain information for the form.
+        The form instance is associated with the contact itself. In order to access the associated
+        domain information object, this needs to be set in the form by the view."""
+        self.domainInfo = domainInfo
 
 
 class AuthorizingOfficialContactForm(ContactForm):
@@ -232,20 +242,32 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
-        self.domainInfo = None
-
-    def set_domain_info(self, domainInfo):
-        """Set the domain information for the form.
-        The form instance is associated with the contact itself. In order to access the associated
-        domain information object, this needs to be set in the form by the view."""
-        self.domainInfo = domainInfo
 
     def save(self, commit=True):
-        """Override the save() method of the BaseModelForm."""
+        """
+        Override the save() method of the BaseModelForm.
+        Used to perform checks on the underlying domain_information object.
+        If this doesn't exist, we just save as normal.
+        """
+
+        # If the underlying Domain doesn't have a domainInfo object,
+        # just let the default super handle it.
+        if not self.domainInfo:
+            return super().save()
+
+        # Determine if the domain is federal or tribal
+        is_federal = self.domainInfo.organization_type == DomainApplication.OrganizationChoices.FEDERAL
+        is_tribal = self.domainInfo.organization_type == DomainApplication.OrganizationChoices.TRIBAL
 
         # Get the Contact object from the db for the Authorizing Official
         db_ao = Contact.objects.get(id=self.instance.id)
-        if self.domainInfo and db_ao.has_more_than_one_join("information_authorizing_official"):
+
+        if (is_federal or is_tribal) and self.has_changed():
+            # This action should be blocked by the UI, as the text fields are readonly.
+            # If they get past this point, we forbid it this way.
+            # This could be malicious, so lets reserve information for the backend only.
+            raise ValueError("Authorizing Official cannot be modified for federal or tribal domains.")
+        elif db_ao.has_more_than_one_join("information_authorizing_official"):
             # Handle the case where the domain information object is available and the AO Contact
             # has more than one joined object.
             # In this case, create a new Contact, and update the new Contact with form data.
@@ -254,6 +276,7 @@ class AuthorizingOfficialContactForm(ContactForm):
             self.domainInfo.authorizing_official = Contact.objects.create(**data)
             self.domainInfo.save()
         else:
+            # If all checks pass, just save normally
             super().save()
 
 
@@ -333,6 +356,36 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
+    
+    def save(self, commit=True):
+        """Override the save() method of the BaseModelForm."""
+        if self.has_changed():
+            is_federal = self.instance.organization_type == DomainApplication.OrganizationChoices.FEDERAL
+            is_tribal = self.instance.organization_type == DomainApplication.OrganizationChoices.TRIBAL
+
+            # This action should be blocked by the UI, as the text fields are readonly.
+            # If they get past this point, we forbid it this way.
+            # This could be malicious, so lets reserve information for the backend only.
+            if is_federal and not self._field_unchanged("federal_agency"):
+                raise ValueError("federal_agency cannot be modified when the organization_type is federal")
+            elif is_tribal and not self._field_unchanged("organization_name"):
+                raise ValueError("organization_name cannot be modified when the organization_type is tribal")
+
+        else:
+            super().save()
+
+    def _field_unchanged(self, field_name) -> bool:
+        """
+        Checks if a specified field has not changed between the old value
+        and the new value.
+
+        The old value is grabbed from self.initial.
+        The new value is grabbed from self.cleaned_data.
+        """
+        old_value = self.initial.get(field_name, None)
+        new_value = self.cleaned_data.get(field_name, None)
+        return old_value == new_value
+
 
 
 class DomainDnssecForm(forms.Form):
