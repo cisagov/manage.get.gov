@@ -159,18 +159,18 @@ def write_domains_csv(
 
     security_emails_dict = _get_security_emails(sec_contact_ids)
 
+    # Reduce the memory overhead when performing the write operation
+    paginator = Paginator(all_domain_infos, 1000)
+
     if get_domain_managers and len(all_domain_infos) > 0:
         # We want to get the max amont of domain managers an
         # account has to set the column header dynamically
         max_dm_count = max(len(domain_info.domain.permissions.all()) for domain_info in all_domain_infos)
         update_columns_with_domain_managers(columns, max_dm_count)
 
-    # Reduce the memory overhead when performing the write operation
-    paginator = Paginator(all_domain_infos, 1000)
-
     for page_num in paginator.page_range:
-        page = paginator.page(page_num)
         rows = []
+        page = paginator.page(page_num)
         for domain_info in page.object_list:
             try:
                 row = parse_domain_row(columns, domain_info, security_emails_dict, get_domain_managers)
@@ -183,7 +183,6 @@ def write_domains_csv(
 
     if should_write_header:
         write_header(writer, columns)
-
     writer.writerows(rows)
 
 
@@ -252,9 +251,10 @@ def write_requests_csv(
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
 
+    
     if should_write_header:
         write_header(writer, columns)
-
+    
     writer.writerows(rows)
 
 
