@@ -8,8 +8,6 @@ from registrar.utility.enums import DefaultEmail
 
 from .utility.time_stamped_model import TimeStampedModel
 
-from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
-
 
 def get_id():
     """Generate a 16 character registry ID with a low probability of collision."""
@@ -71,8 +69,8 @@ class PublicContact(TimeStampedModel):
     pc = models.CharField(null=False, help_text="Contact's postal code")
     cc = models.CharField(null=False, help_text="Contact's country code")
     email = models.EmailField(null=False, help_text="Contact's email address")
-    voice = PhoneNumberField(null=False, help_text="Contact's phone number. Must be in ITU.E164.2005 format")
-    fax = PhoneNumberField(
+    voice = models.CharField(null=False, help_text="Contact's phone number. Must be in ITU.E164.2005 format")
+    fax = models.CharField(
         null=True,
         help_text="Contact's fax number (null ok). Must be in ITU.E164.2005 format.",
     )
