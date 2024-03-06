@@ -46,4 +46,3 @@ types-cachetools = "*"
 boto3-mocking = "*"
 boto3-stubs = "*"
 django-model2puml = "*"
-

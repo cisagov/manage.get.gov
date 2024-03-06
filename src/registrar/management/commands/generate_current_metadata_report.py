@@ -45,7 +45,7 @@ class Command(BaseCommand):
             # TODO - #1317: Notify operations when auto report generation fails
             raise err
         else:
-            logger.info(f"Success! Created {file_name}")
+            logger.info(f"Success! Created {file_name} and successfully sent out an email!")
 
     def generate_current_metadata_report(self, directory, file_name, check_path):
         """Creates a current-metadata.csv file under the specified directory,
@@ -68,6 +68,7 @@ class Command(BaseCommand):
         # Set zip file name
         current_date = datetime.now().strftime("%m%d%Y")
         current_filename = f"domain-metadata-{current_date}.zip"
+
         # Pre-set zip file name
         encrypted_metadata_output = current_filename
 
@@ -92,6 +93,7 @@ class Command(BaseCommand):
         )
 
     def _encrypt_metadata(self, input_file, output_file, password):
+        """Helper function for encrypting the attachment file"""
         current_date = datetime.now().strftime("%m%d%Y")
         current_filename = f"domain-metadata-{current_date}.csv"
         # Using ZIP_DEFLATED bc it's a more common compression method supported by most zip utilities and faster

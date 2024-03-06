@@ -120,6 +120,8 @@ This is the hostname at which the registry can be found.
 
 ## SECRET_METADATA_KEY
 
-This is in reference to the key for the metadata email that is sent daily. Reach out to product team members or leads with access to security passwords if the passcode is needed.
+This is the passphrase for the zipped and encrypted metadata email that is sent out daily. Reach out to product team members or leads with access to security passwords if the passcode is needed.
 
-To change the password, use a password generator to generate a password, then update the user credentials per the above instructions. Be sure to update the `KDBX` file in Google Drive with this password change. 
+To change the password, use a password generator to generate a password, then update the user credentials per the above instructions. Be sure to update the [KBDX](https://docs.google.com/document/d/1_BbJmjYZNYLNh4jJPPnUEG9tFCzJrOc0nMrZrnSKKyw) file in Google Drive with this password change. 
+
+

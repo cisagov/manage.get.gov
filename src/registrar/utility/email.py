@@ -20,7 +20,12 @@ class EmailSendingError(RuntimeError):
 
 
 def send_templated_email(
-    template_name: str, subject_template_name: str, to_address: str, bcc_address="", context={}, file: str = None
+    template_name: str,
+    subject_template_name: str,
+    to_address: str,
+    bcc_address="",
+    context={},
+    attachment_file: str = None,
 ):
     """Send an email built from a template to one email address.
 
@@ -51,7 +56,7 @@ def send_templated_email(
         destination["BccAddresses"] = [bcc_address]
 
     try:
-        if file is None:
+        if attachment_file is None:
             ses_client.send_email(
                 FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
                 Destination=destination,
@@ -71,7 +76,7 @@ def send_templated_email(
                 config=settings.BOTO_CONFIG,
             )
             response = send_email_with_attachment(
-                settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, file, ses_client
+                settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, attachment_file, ses_client
             )
             # TODO: Remove this print statement when ready to merge,
             # leaving rn for getting error codes in case

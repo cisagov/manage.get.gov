@@ -211,3 +211,4 @@ class TestEmails(TestCase):
             self.assertIn("Content-Type: application/octet-stream", call_args["RawMessage"]["Data"])
             self.assertIn("Content-Transfer-Encoding: base64", call_args["RawMessage"]["Data"])
             self.assertIn("Content-Disposition: attachment;", call_args["RawMessage"]["Data"])
+            self.assertNotIn("Attachment file content", call_args["RawMessage"]["Data"])
