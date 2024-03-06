@@ -1087,6 +1087,101 @@ class TestDomainOrganization(TestDomainOverview):
 
         self.assertContains(success_result_page, "Not igorville")
         self.assertContains(success_result_page, "Faketown")
+    
+    def test_domain_org_name_address_form_tribal(self):
+        """
+        Submitting a change to organization_name is blocked for tribal domains
+        """
+        # Set the current domain to a tribal organization with a preset value.
+        # Save first, so we can test if saving is unaffected (it should be).
+        tribal_org_type = DomainInformation.OrganizationChoices.TRIBAL
+        self.domain_information.organization_type = tribal_org_type
+        self.domain_information.save()
+        try:
+            # Add an org name
+            self.domain_information.organization_name = "Town of Igorville"
+            self.domain_information.save()
+        except ValueError as err:
+            self.fail(f"A ValueError was caught during the test: {err}")
+
+        self.assertEqual(self.domain_information.organization_type, tribal_org_type)
+
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        print(f"what is the org name page? {org_name_page}")
+
+        form = org_name_page.forms[0]
+        # Check the value of the input field
+        organization_name_input = form.fields["organization_name"][0]
+        self.assertEqual(organization_name_input.value, "Town of Igorville")
+        
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in organization_name_input.attrs)
+        self.assertEqual(organization_name_input.attrs.get("disabled"), "")
+        
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        org_name_page.form["organization_name"] = "Not igorville"
+        org_name_page.form["city"] = "Faketown"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Make the change. The org name should be unchanged, but city should be modifiable.
+        success_result_page = org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 200)
+
+        # Check for the old and new value
+        self.assertContains(success_result_page, "Town of Igorville")
+        self.assertNotContains(success_result_page, "Not igorville")
+
+        # Check for the value we want to update
+        self.assertContains(success_result_page, "Faketown")
+    
+    def test_domain_org_name_address_form_federal(self):
+        """
+        Submitting a change to federal_agency is blocked for federal domains
+        """
+        # Set the current domain to a tribal organization with a preset value.
+        # Save first, so we can test if saving is unaffected (it should be).
+        federal_org_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.organization_type = federal_org_type
+        self.domain_information.save()
+        try:
+            # Add a federal agency. Defined as a tuple since this list may change order.
+            self.domain_information.federal_agency = ("AMTRAK", "AMTRAK")
+            self.domain_information.save()
+        except ValueError as err:
+            self.fail(f"A ValueError was caught during the test: {err}")
+
+        self.assertEqual(self.domain_information.organization_type, federal_org_type)
+
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+
+        form = org_name_page.forms[0]
+        # Check the value of the input field
+        federal_agency_input = form.fields["federal_agency"][0]
+        self.assertEqual(federal_agency_input.value, "AMTRAK")
+        
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in federal_agency_input.attrs)
+        self.assertEqual(federal_agency_input.attrs.get("disabled"), "")
+        
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        org_name_page.form["organization_name"] = "Not igorville"
+        org_name_page.form["city"] = "Faketown"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Make the change. The org name should be unchanged, but city should be modifiable.
+        success_result_page = org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 200)
+
+        # Check for the old and new value
+        self.assertContains(success_result_page, "Town of Igorville")
+        self.assertNotContains(success_result_page, "Not igorville")
+
+        # Check for the value we want to update
+        self.assertContains(success_result_page, "Faketown")
 
 
 class TestDomainContactInformation(TestDomainOverview):

@@ -243,15 +243,28 @@ class AuthorizingOfficialContactForm(ContactForm):
             "required": "Enter an email address in the required format, like name@example.com."
         }
 
-        # TODO - uswds text fields dont have disabled styling??
         # All fields should be disabled if the domain is federal or tribal
         if disable_fields:
-            self._mass_disable_fields()
+            self._mass_disable_fields(disable_required=True, disable_maxlength=True)
 
-    def _mass_disable_fields(self):
-        """Given all available fields, invoke .disabled = True on them"""
+    def _mass_disable_fields(self, disable_required=False, disable_maxlength=False):
+        """
+        Given all available fields, invoke .disabled = True on them.
+
+        disable_required: bool -> invokes .required = False on each field.
+        disable_maxlength: bool -> pops "maxlength" from each field.
+        """
         for field in self.fields.values():
             field.disabled = True
+
+            if disable_required:
+                # if a field is disabled, it can't be required
+                field.required = False
+
+            if disable_maxlength:
+                # Remove the maxlength dialog
+                if "maxlength" in field.widget.attrs:
+                    field.widget.attrs.pop('maxlength', None)
         
 
     def save(self, commit=True):
@@ -371,17 +384,11 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         is_federal = self.instance.organization_type == DomainApplication.OrganizationChoices.FEDERAL
         is_tribal = self.instance.organization_type == DomainApplication.OrganizationChoices.TRIBAL
 
-        # (Q) Should required = False be set here?
-        # These fields should not be None. If they are, 
-        # it seems like an analyst should intervene?
-
-        # TODO - maybe consider adding a modal on these fields on hover
-        # ALSO TODO - uswds text fields dont have disabled styling??
         if is_federal:
-            self.fields['federal_agency'].disabled = True
+            self.fields["federal_agency"].disabled = True
         elif is_tribal:
-            self.fields['organization_name'].disabled = True
-    
+            self.fields["organization_name"].disabled = True
+
     def save(self, commit=True):
         """Override the save() method of the BaseModelForm."""
         if self.has_changed():
@@ -410,7 +417,6 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         old_value = self.initial.get(field_name, None)
         new_value = self.cleaned_data.get(field_name, None)
         return old_value == new_value
-
 
 
 class DomainDnssecForm(forms.Form):
