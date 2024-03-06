@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "8094a1c9461f860e928b51542adf891c0f6f6c4c62bd1bd8ac3bba55a67f918d"
+            "sha256": "082a951f15bb26a28f2dca7e0840fdf61518b3d90c42d77a310f982344cbd1dc"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -457,10 +457,6 @@
             "index": "pypi",
             "markers": "python_version >= '3.8'",
             "version": "==24.2.1"
-        },
-        "geventconnpool": {
-            "git": "https://github.com/rasky/geventconnpool.git",
-            "ref": "1bbb93a714a331a069adf27265fe582d9ba7ecd4"
         },
         "greenlet": {
             "hashes": [
@@ -1217,12 +1213,12 @@
         },
         "boto3-stubs": {
             "hashes": [
-                "sha256:5ee40bdfba94fcdba26f36869339c849e918827ed1fb2f8e470474e6b1e923ff",
-                "sha256:cbbae1b811b97e4e1f1d00eba237ff987678e652502226b87e6276f7963935b4"
+                "sha256:627f8eca69d832581ee1676d39df099a2a2e3a86d6b3ebd21c81c5f11ed6a6fa",
+                "sha256:a87e7ecbab6235ec371b4363027e57483bca349a9cd5c891f40db81dadfa273e"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==1.34.55"
+            "version": "==1.34.56"
         },
         "botocore": {
             "hashes": [
