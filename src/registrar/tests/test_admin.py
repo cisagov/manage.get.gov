@@ -1542,6 +1542,8 @@ class DomainInvitationAdminTest(TestCase):
     def tearDown(self):
         """Delete all DomainInvitation objects"""
         DomainInvitation.objects.all().delete()
+        User.objects.all().delete()
+        Contact.objects.all().delete()
 
     def test_get_filters(self):
         """Ensures that our filters are displaying correctly"""
