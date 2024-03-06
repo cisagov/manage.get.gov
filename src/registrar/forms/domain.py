@@ -351,11 +351,11 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             },
         }
         widgets = {
-            # We need to set the required attributed for federal_agency and
-            # state/territory because for these fields we are creating an individual
+            # We need to set the required attributed for State/territory 
+            # because for this fields we are creating an individual
             # instance of the Select. For the other fields we use the for loop to set
             # the class's required attribute to true.
-            "federal_agency": forms.Select(attrs={"required": True}, choices=DomainInformation.AGENCY_CHOICES),
+            "federal_agency": forms.TextInput,
             "organization_name": forms.TextInput,
             "address_line1": forms.TextInput,
             "address_line2": forms.TextInput,
