@@ -135,7 +135,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         # superclass has the redirect
         return super().form_invalid(form)
-    
+
     def get_domain_info_from_domain(self) -> DomainInformation | None:
         """
         Grabs the underlying domain_info object based off of self.object.name.
@@ -147,7 +147,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             current_domain_info = _domain_info.get()
         else:
             logger.error("Could get domain_info. No domain info exists, or duplicates exist.")
-        
+
         return current_domain_info
 
 
@@ -237,7 +237,7 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
         domain_info = self.get_domain_info_from_domain()
         invalid_fields = [DomainApplication.OrganizationChoices.FEDERAL, DomainApplication.OrganizationChoices.TRIBAL]
         is_federal_or_tribal = domain_info and (domain_info.organization_type in invalid_fields)
-        
+
         form_kwargs["disable_fields"] = is_federal_or_tribal
         return form_kwargs
 

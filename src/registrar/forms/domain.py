@@ -1,4 +1,5 @@
 """Forms for domain management."""
+
 import logging
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
@@ -264,8 +265,7 @@ class AuthorizingOfficialContactForm(ContactForm):
             if disable_maxlength:
                 # Remove the maxlength dialog
                 if "maxlength" in field.widget.attrs:
-                    field.widget.attrs.pop('maxlength', None)
-        
+                    field.widget.attrs.pop("maxlength", None)
 
     def save(self, commit=True):
         """
