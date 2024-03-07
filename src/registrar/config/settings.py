@@ -192,15 +192,12 @@ WSGI_APPLICATION = "registrar.config.wsgi.application"
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 
-# Caching is disabled by default.
-# For a low to medium traffic site, caching causes more
-# problems than it solves. Should caching be desired,
-# a reasonable start might be:
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-#     }
-# }
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "cache_table",
+    }
+}
 
 # Absolute path to the directory where `collectstatic`
 # will place static files for deployment.
