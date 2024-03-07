@@ -1298,7 +1298,7 @@ class TestDomainOrganization(TestDomainOverview):
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
 
-        self.assertEqual(self.domain_information.organization_type, tribal_org_type)
+        self.assertEqual(self.domain_information.organization_type, fed_org_type)
 
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
 
