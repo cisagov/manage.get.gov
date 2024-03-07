@@ -1466,7 +1466,7 @@ class TestDomainRequestAdmin(MockEppLib):
             # Grab the current dropdown. We do an API call to autocomplete to get this info.
             domain_request_queryset = self.admin.formfield_for_foreignkey(investigator_field, request).queryset
             user_request = self.factory.post(
-                "/admin/autocomplete/?app_label=registrar&model_name=DomainRequest&field_name=investigator"
+                "/admin/autocomplete/?app_label=registrar&model_name=domainrequest&field_name=investigator"
             )
             user_admin = MyUserAdmin(User, self.site)
             user_queryset = user_admin.get_search_results(user_request, domain_request_queryset, None)[0]
@@ -1962,7 +1962,7 @@ class AuditedAdminTest(TestCase):
         domain_request_queryset = domain_request_admin.formfield_for_foreignkey(field, domain_request_request).queryset
 
         request = self.factory.post(
-            "/admin/autocomplete/?app_label=registrar&model_name=DomainRequest&field_name=investigator"
+            "/admin/autocomplete/?app_label=registrar&model_name=domainrequest&field_name=investigator"
         )
 
         sorted_fields = ["first_name", "last_name", "email"]
