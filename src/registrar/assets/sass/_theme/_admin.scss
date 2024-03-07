@@ -141,6 +141,10 @@ h1, h2, h3,
     font-weight: font-weight('bold');
 }
 
+#content h2 {
+    font-size: 1.3rem;
+}
+
 .module h3 {
     padding: 0;
     color: var(--link-fg);
