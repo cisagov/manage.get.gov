@@ -1911,7 +1911,7 @@ class MyUserAdminTest(TestCase):
             self.assertEqual(fieldsets, expected_fieldsets)
 
     def test_get_fieldsets_cisa_analyst(self):
-        if True:
+        with less_console_noise():
             request = self.client.request().wsgi_request
             request.user = create_user()
             fieldsets = self.admin.get_fieldsets(request)

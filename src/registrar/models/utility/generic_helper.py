@@ -16,7 +16,7 @@ class Timer:
 
     Note that this class does not account for general randomness as more
     robust libraries do, so there is some tiny amount of latency involved
-    in using this, but it is minimal enough that for most domain requests it is not
+    in using this, but it is minimal enough that for most applications it is not
     noticable.
 
     Usage:
