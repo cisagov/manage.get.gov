@@ -777,18 +777,21 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "domain_application", "notes"]}),
+        (None, {"fields": ["creator", "submitter", "domain_application", "notes"]}),
+        (".gov domain", {"fields": ["domain"]}),
+        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Background info", {"fields": ["anything_else"]}),
         (
             "Type of organization",
             {
                 "fields": [
                     "organization_type",
+                    "is_election_board",
+                    "federal_type",
+                    "federal_agency",
+                    "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
-                    "tribe_name",
-                    "federal_agency",
-                    "federal_type",
-                    "is_election_board",
                     "about_your_organization",
                 ]
             },
@@ -798,27 +801,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
             {
                 "fields": [
                     "organization_name",
+                    "state_territory",
                     "address_line1",
                     "address_line2",
                     "city",
-                    "state_territory",
                     "zipcode",
                     "urbanization",
                 ]
             },
-        ),
-        ("Authorizing official", {"fields": ["authorizing_official"]}),
-        (".gov domain", {"fields": ["domain"]}),
-        ("Your contact information", {"fields": ["submitter"]}),
-        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
-        (
-            "No other employees from your organization?",
-            {"fields": ["no_other_contacts_rationale"]},
-        ),
-        ("Anything else?", {"fields": ["anything_else"]}),
-        (
-            "Requirements for operating a .gov domain",
-            {"fields": ["is_policy_acknowledged"]},
         ),
     ]
 
@@ -979,18 +969,21 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     fieldsets = [
-        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
+        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "submitter", "approved_domain", "notes"]}),
+        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
+        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
         (
             "Type of organization",
             {
                 "fields": [
                     "organization_type",
+                    "is_election_board",
+                    "federal_type",
+                    "federal_agency",
+                    "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
-                    "tribe_name",
-                    "federal_agency",
-                    "federal_type",
-                    "is_election_board",
                     "about_your_organization",
                 ]
             },
@@ -1000,29 +993,14 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             {
                 "fields": [
                     "organization_name",
+                    "state_territory",
                     "address_line1",
                     "address_line2",
                     "city",
-                    "state_territory",
                     "zipcode",
                     "urbanization",
                 ]
             },
-        ),
-        ("Authorizing official", {"fields": ["authorizing_official"]}),
-        ("Current websites", {"fields": ["current_websites"]}),
-        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        ("Purpose of your domain", {"fields": ["purpose"]}),
-        ("Your contact information", {"fields": ["submitter"]}),
-        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
-        (
-            "No other employees from your organization?",
-            {"fields": ["no_other_contacts_rationale"]},
-        ),
-        ("Anything else?", {"fields": ["anything_else"]}),
-        (
-            "Requirements for operating a .gov domain",
-            {"fields": ["is_policy_acknowledged"]},
         ),
     ]
 
