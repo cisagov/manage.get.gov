@@ -40,14 +40,14 @@ class Command(BaseCommand):
 
         logger.info("Generating report...")
         try:
-            self.generate_current_metadata_report(directory, file_name, check_path)
+            self.email_current_metadata_report(directory, file_name, check_path)
         except Exception as err:
             # TODO - #1317: Notify operations when auto report generation fails
             raise err
         else:
             logger.info(f"Success! Created {file_name} and successfully sent out an email!")
 
-    def generate_current_metadata_report(self, directory, file_name, check_path):
+    def email_current_metadata_report(self, directory, file_name, check_path):
         """Creates a current-metadata.csv file under the specified directory,
         then uploads it to a AWS S3 bucket. This is done for resiliency
         reasons in the event our application goes down and/or the email
