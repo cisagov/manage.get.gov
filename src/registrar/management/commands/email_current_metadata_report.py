@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = (
-        "Generates and uploads a current-metadata.csv file to our S3 bucket "
+        "Generates and uploads a domain-metadata.csv file to our S3 bucket "
         "which is based off of all existing Domains."
     )
 
@@ -32,8 +32,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, **options):
-        """Grabs the directory then creates current-metadata.csv in that directory"""
-        file_name = "current-metadata.csv"
+        """Grabs the directory then creates domain-metadata.csv in that directory"""
+        file_name = "domain-metadata.csv"
         # Ensures a slash is added
         directory = os.path.join(options.get("directory"), "")
         check_path = options.get("checkpath")
