@@ -475,7 +475,6 @@ class AuditedAdminMockData:
 def mock_user():
     """A simple user."""
     user_kwargs = dict(
-        id=4,
         first_name="Jeff",
         last_name="Lebowski",
     )
