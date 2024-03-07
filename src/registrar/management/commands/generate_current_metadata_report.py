@@ -89,7 +89,7 @@ class Command(BaseCommand):
             # to_address=settings.DEFAULT_FROM_EMAIL, # TODO: Uncomment this when ready to merge
             to_address="rebecca.hsieh@truss.works <rebecca.hsieh@truss.works>",
             context={"current_date_str": current_date_str},
-            file=encrypted_metadata_in_bytes,
+            attachment_file=encrypted_metadata_in_bytes,
         )
 
     def _encrypt_metadata(self, input_file, output_file, password):
