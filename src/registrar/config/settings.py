@@ -188,15 +188,12 @@ WSGI_APPLICATION = "registrar.config.wsgi.application"
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 
-# Caching is disabled by default.
-# For a low to medium traffic site, caching causes more
-# problems than it solves. Should caching be desired,
-# a reasonable start might be:
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-#     }
-# }
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "cache_table",
+    }
+}
 
 # Absolute path to the directory where `collectstatic`
 # will place static files for deployment.
@@ -600,20 +597,6 @@ SECRET_REGISTRY_CERT = secret_registry_cert
 SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
-
-# Use this variable to set the size of our connection pool in client.py
-# WARNING: Setting this value too high could cause frequent app crashes!
-# Having too many connections open could cause the sandbox to timeout,
-# as the spinup time could exceed the timeout time.
-EPP_CONNECTION_POOL_SIZE = 1
-
-# Determines the interval in which we ping open connections in seconds
-# Calculated as POOL_KEEP_ALIVE / EPP_CONNECTION_POOL_SIZE
-POOL_KEEP_ALIVE = 60
-
-# Determines how long we try to keep a pool alive for,
-# before restarting it.
-POOL_TIMEOUT = 60
 
 # endregion
 # region: Security and Privacy----------------------------------------------###
