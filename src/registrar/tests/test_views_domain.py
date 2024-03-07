@@ -1245,7 +1245,6 @@ class TestDomainOrganization(TestDomainOverview):
         self.assertEqual(self.domain_information.organization_type, tribal_org_type)
 
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
-        print(f"what is the org name page? {org_name_page}")
 
         form = org_name_page.forms[0]
         # Check the value of the input field
@@ -1284,37 +1283,61 @@ class TestDomainOrganization(TestDomainOverview):
         # Check for the value we want to update
         self.assertContains(success_result_page, "Faketown")
 
-    def test_domain_org_name_address_form_federal_disabled(self):
+    def test_domain_org_name_address_form_federal(self):
         """
-        Tests if the federal_agency field is readonly
+        Submitting a change to federal_agency is blocked for federal domains
         """
         # Set the current domain to a tribal organization with a preset value.
         # Save first, so we can test if saving is unaffected (it should be).
-        federal_org_type = DomainInformation.OrganizationChoices.FEDERAL
-        self.domain_information.organization_type = federal_org_type
+        fed_org_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.organization_type = fed_org_type
         self.domain_information.save()
         try:
-            # Add a federal agency. Defined as a tuple since this list may change order.
-            self.domain_information.federal_agency = ("AMTRAK", "AMTRAK")
+            self.domain_information.federal_agency = "AMTRAK"
             self.domain_information.save()
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
 
-        self.assertEqual(self.domain_information.organization_type, federal_org_type)
+        self.assertEqual(self.domain_information.organization_type, tribal_org_type)
 
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
-        print(f"what is the org name page? {org_name_page}")
 
         form = org_name_page.forms[0]
         # Check the value of the input field
-        organization_name_input = form.fields["federal_agency"][0]
+        agency_input = form.fields["federal_agency"][0]
+        self.assertEqual(agency_input.value, "AMTRAK")
 
-        # Check if the input field is disabled.
-        # Webtest has some issues dealing with Selects, so we can't
-        # directly test the value but we can test its attributes.
-        # This is done in another test.
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in agency_input.attrs)
+        self.assertEqual(agency_input.attrs.get("disabled"), "")
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        org_name_page.form["federal_agency"] = "Department of State"
+        org_name_page.form["city"] = "Faketown"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Make the change. The agency should be unchanged, but city should be modifiable.
+        success_result_page = org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 200)
+
+        # Check for the old and new value
+        self.assertContains(success_result_page, "AMTRAK")
+        self.assertNotContains(success_result_page, "Department of State")
+
+        # Do another check on the form itself
+        form = success_result_page.forms[0]
+        # Check the value of the input field
+        organization_name_input = form.fields["federal_agency"][0]
+        self.assertEqual(organization_name_input.value, "AMTRAK")
+
+        # Check if the input field is disabled
         self.assertTrue("disabled" in organization_name_input.attrs)
         self.assertEqual(organization_name_input.attrs.get("disabled"), "")
+
+        # Check for the value we want to update
+        self.assertContains(success_result_page, "Faketown")
 
     def test_federal_agency_submit_blocked(self):
         """
