@@ -486,7 +486,7 @@ class MyUserAdmin(BaseUserAdmin):
         field_name = request_get.get("field_name", None)
 
         # Make sure we're only modifying requests from these models.
-        models_to_target = {"DomainRequest"}
+        models_to_target = {"domain_request"}
         if model_name in models_to_target:
             # Define rules per field
             match field_name:
