@@ -969,7 +969,20 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     fieldsets = [
-        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "submitter", "approved_domain", "notes"]}),
+        (
+            None,
+            {
+                "fields": [
+                    "status",
+                    "rejection_reason",
+                    "investigator",
+                    "creator",
+                    "submitter",
+                    "approved_domain",
+                    "notes",
+                ]
+            },
+        ),
         (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
         ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
