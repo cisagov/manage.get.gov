@@ -1527,8 +1527,8 @@ class Domain(TimeStampedModel, DomainHelper):
         for domainContact in contact_data:
             req = commands.InfoContact(id=domainContact.contact)
             res_data = registry.send(req, cleaned=True).res_data
-            if len(res_data)>0:
-                data=res_data[0]
+            if len(res_data) > 0:
+                data = res_data[0]
 
                 # Map the object we recieved from EPP to a PublicContact
                 mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
@@ -1537,9 +1537,10 @@ class Domain(TimeStampedModel, DomainHelper):
                 in_db = self._get_or_create_public_contact(mapped_object)
                 contacts_dict[in_db.contact_type] = in_db.registry_id
             else:
-                logger.warning(f"Domain {self.name} is missing a response for contact {domainContact.contact} value returned was {res_data}")
-            
-            
+                logger.warning(
+                    f"Domain {self.name} is missing a response for contact {domainContact.contact} value returned was {res_data}"
+                )
+
         return contacts_dict
 
     def _get_or_create_contact(self, contact: PublicContact):
@@ -1576,8 +1577,8 @@ class Domain(TimeStampedModel, DomainHelper):
         for name in host_data:
             req = commands.InfoHost(name=name)
             res_data = registry.send(req, cleaned=True).res_data
-            if len(res_data)>0:
-                data=res_data[0]
+            if len(res_data) > 0:
+                data = res_data[0]
                 host = {
                     "name": name,
                     "addrs": [item.addr for item in getattr(data, "addrs", [])],
@@ -1589,7 +1590,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 hosts.append({k: v for k, v in host.items() if v is not ...})
             else:
                 logger.warning(f"Domain {self.name} is missing a response for host {name} response was {res_data}")
-        
+
         return hosts
 
     def _convert_ips(self, ip_list: list[str]):
