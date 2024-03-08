@@ -376,7 +376,10 @@ def analytics(request):
         approval_time=F("approved_domain__created_at") - F("submission_date")
     ).aggregate(Avg("approval_time"))["approval_time__avg"]
     # Format the timedelta to display only days
-    avg_approval_time = f"{avg_approval_time.days} days"
+    
+    avg_approval_time="No approvals to use"
+    if avg_approval_time is not None:
+        avg_approval_time = f"{avg_approval_time.days} days"
 
     # The start and end dates are passed as url params
     start_date = request.GET.get("start_date", "")
