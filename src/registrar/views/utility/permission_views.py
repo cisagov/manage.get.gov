@@ -66,7 +66,7 @@ class DomainRequestPermissionView(DomainRequestPermission, DetailView, abc.ABC):
     # DetailView property for what model this is viewing
     model = DomainRequest
     # variable name in template context for the model object
-    context_object_name = "DomainRequest"
+    context_object_name = "domainrequest"
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property
@@ -85,7 +85,7 @@ class DomainRequestPermissionWithdrawView(DomainRequestPermissionWithdraw, Detai
     # DetailView property for what model this is viewing
     model = DomainRequest
     # variable name in template context for the model object
-    context_object_name = "DomainRequest"
+    context_object_name = "domainrequest"
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property
