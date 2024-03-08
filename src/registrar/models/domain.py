@@ -1538,7 +1538,8 @@ class Domain(TimeStampedModel, DomainHelper):
                 contacts_dict[in_db.contact_type] = in_db.registry_id
             else:
                 logger.warning(
-                    f"Domain {self.name} is missing a response for contact {domainContact.contact} value returned was {res_data}"
+                    f"Domain {self.name} is missing a response for contact {domainContact.contact}"
+                    " value returned was {res_data}"
                 )
 
         return contacts_dict
@@ -1589,7 +1590,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 }
                 hosts.append({k: v for k, v in host.items() if v is not ...})
             else:
-                logger.warning(f"Domain {self.name} is missing a response for host {name} response was {res_data}")
+                logger.warning(f"Domain {self.name} is missing a response for host {name}" " response was {res_data}")
 
         return hosts
 
@@ -1717,7 +1718,14 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _extract_data_from_response(self, data_response):
         """extract data from response from registry"""
-        data = data_response.res_data[0]
+        res_data = data_response.res_data
+
+        if len(res_data) > 0:
+            data = res_data[0]
+        else:
+            data = {}
+            logger.warning(f"For domain {self.name} response was {data_response}")
+
         return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),
