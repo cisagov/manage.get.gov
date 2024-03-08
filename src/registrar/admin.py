@@ -1,5 +1,6 @@
 from datetime import date
 import logging
+import copy
 
 from django import forms
 from django.db.models.functions import Concat, Coalesce
@@ -1185,7 +1186,13 @@ class DomainInformationInline(admin.StackedInline):
 
     model = models.DomainInformation
 
-    fieldsets = DomainInformationAdmin.fieldsets
+    fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
+    # remove .gov domain from fieldset
+    for index, (title, _) in enumerate(fieldsets):
+        if title == ".gov domain":
+            del fieldsets[index]
+            break
+
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
     # to activate the edit/delete/view buttons
