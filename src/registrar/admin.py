@@ -1188,7 +1188,7 @@ class DomainInformationInline(admin.StackedInline):
 
     fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
     # remove .gov domain from fieldset
-    for index, (title, _) in enumerate(fieldsets):
+    for index, (title, f) in enumerate(fieldsets):
         if title == ".gov domain":
             del fieldsets[index]
             break
