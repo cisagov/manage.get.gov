@@ -1,0 +1,41 @@
+# This workflow is to for testing a change to our deploy structure and will be deleted when testing finishes
+
+name: Deploy Main 
+run-name: Run deploy for ${{ github.event.inputs.environment }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Which environment should we run deploy for?
+        options:
+          - development
+          - backup
+          - ky
+          - es
+          - nl
+          - rh
+          - za
+          - gd
+          - rb
+          - ko
+          - ab
+          - rjm
+          - dk
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+    steps:
+      - name: Deploy to cloud.gov sandbox
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ env.ENVIRONMENT }}
+          cf_command: "cf push -f ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml --strategy rolling"
