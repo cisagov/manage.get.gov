@@ -28,6 +28,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
+      ENVIRONMENT: ${{ needs.variables.outputs.environment }}
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
     steps:
