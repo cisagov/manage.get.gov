@@ -942,7 +942,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "submission_date", #this is the right change
+        "submission_date",
         "submitter",
         "investigator",
     ]
