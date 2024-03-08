@@ -61,18 +61,19 @@ function openInNewTab(el, removeAttribute = false){
  * This intentionally does not interact with createPhantomModalFormButtons()
 */
 (function (){
-    function displayModalOnDropdownClick(linkClickedDisplaysModal, statusDropdown, cancelButton, valueToCheck){
+    function displayModalOnDropdownClick(linkClickedDisplaysModal, statusDropdown, actionButton, valueToCheck){
 
         // If these exist all at the same time, we're on the right page
         if (linkClickedDisplaysModal && statusDropdown && statusDropdown.value){
+            
+            // Set the previous value in the event the user cancels.
+            let previousValue = statusDropdown.value;
+            if (actionButton){
 
-            if (cancelButton){
-                // Store the previous value in the event the user cancels.
-                // We only need to do this if cancel button is specified.
-                let previousValue = statusDropdown.value;
-                cancelButton.addEventListener('click', function() {
+                // Otherwise, if the confirmation buttion is pressed, set it to that
+                actionButton.addEventListener('click', function() {
                     // Revert the dropdown to its previous value
-                    statusDropdown.value = previousValue;
+                    statusDropdown.value = valueToCheck;
                 });
             }else {
                 console.log("displayModalOnDropdownClick() -> Cancel button was null")
@@ -82,6 +83,10 @@ function openInNewTab(el, removeAttribute = false){
             statusDropdown.addEventListener('change', function() {
                 // Check if "Ineligible" is selected
                 if (this.value && this.value.toLowerCase() === valueToCheck) {
+                    // Set the old value in the event the user cancels,
+                    // or otherwise exists the dropdown.
+                    statusDropdown.value = previousValue
+
                     // Display the modal.
                     linkClickedDisplaysModal.click()
                 }
@@ -98,9 +103,9 @@ function openInNewTab(el, removeAttribute = false){
 
         // Because the modal button does not have the class "dja-form-placeholder",
         // it will not be affected by the createPhantomModalFormButtons() function.
-        let cancelButton = document.querySelector('button[name="_cancel_application_ineligible"]');
+        let actionButton = document.querySelector('button[name="_set_application_ineligible"]');
         let valueToCheck = "ineligible"
-        displayModalOnDropdownClick(modalButton, statusDropdown, cancelButton, valueToCheck);
+        displayModalOnDropdownClick(modalButton, statusDropdown, actionButton, valueToCheck);
     }
 
     hookModalToIneligibleStatus()
