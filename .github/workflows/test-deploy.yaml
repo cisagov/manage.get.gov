@@ -38,4 +38,4 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
-          cf_command: "cf push -f ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml --strategy rolling"
+          cf_command: "push -f ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml --strategy rolling"
