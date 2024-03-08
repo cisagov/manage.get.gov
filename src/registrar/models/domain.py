@@ -1526,14 +1526,20 @@ class Domain(TimeStampedModel, DomainHelper):
         }
         for domainContact in contact_data:
             req = commands.InfoContact(id=domainContact.contact)
-            data = registry.send(req, cleaned=True).res_data[0]
+            res_data = registry.send(req, cleaned=True).res_data
+            if len(res_data)>0:
+                data=res_data[0]
 
-            # Map the object we recieved from EPP to a PublicContact
-            mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
+                # Map the object we recieved from EPP to a PublicContact
+                mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
 
-            # Find/create it in the DB
-            in_db = self._get_or_create_public_contact(mapped_object)
-            contacts_dict[in_db.contact_type] = in_db.registry_id
+                # Find/create it in the DB
+                in_db = self._get_or_create_public_contact(mapped_object)
+                contacts_dict[in_db.contact_type] = in_db.registry_id
+            else:
+                logger.warning(f"Domain {self.name} is missing a response for contact {domainContact.contact} value returned was {res_data}")
+            
+            
         return contacts_dict
 
     def _get_or_create_contact(self, contact: PublicContact):
@@ -1569,16 +1575,21 @@ class Domain(TimeStampedModel, DomainHelper):
         hosts = []
         for name in host_data:
             req = commands.InfoHost(name=name)
-            data = registry.send(req, cleaned=True).res_data[0]
-            host = {
-                "name": name,
-                "addrs": [item.addr for item in getattr(data, "addrs", [])],
-                "cr_date": getattr(data, "cr_date", ...),
-                "statuses": getattr(data, "statuses", ...),
-                "tr_date": getattr(data, "tr_date", ...),
-                "up_date": getattr(data, "up_date", ...),
-            }
-            hosts.append({k: v for k, v in host.items() if v is not ...})
+            res_data = registry.send(req, cleaned=True).res_data
+            if len(res_data)>0:
+                data=res_data[0]
+                host = {
+                    "name": name,
+                    "addrs": [item.addr for item in getattr(data, "addrs", [])],
+                    "cr_date": getattr(data, "cr_date", ...),
+                    "statuses": getattr(data, "statuses", ...),
+                    "tr_date": getattr(data, "tr_date", ...),
+                    "up_date": getattr(data, "up_date", ...),
+                }
+                hosts.append({k: v for k, v in host.items() if v is not ...})
+            else:
+                logger.warning(f"Domain {self.name} is missing a response for host {name} response was {res_data}")
+        
         return hosts
 
     def _convert_ips(self, ip_list: list[str]):
