@@ -5,7 +5,6 @@ import phonenumber_field.modelfields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("registrar", "0070_domainapplication_rejection_reason"),
     ]
