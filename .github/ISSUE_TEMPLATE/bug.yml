@@ -22,7 +22,7 @@ body:
     attributes:
       label: Expected Behavior
       description: "Please add a concise description of the behavior you would expect if this issue were not occurring"
-      placeholder: "Example: When submitting a new domain application, the request should be successful, OR if there is a problem with the user's application preventing submission, errors should be enumerated to the user"
+      placeholder: "Example: When submitting a new domain request, the request should be successful, OR if there is a problem with the user's application preventing submission, errors should be enumerated to the user"
     validations:
       required: true
   - type: textarea
@@ -33,8 +33,8 @@ body:
         How can the issue be reliably reproduced? Feel free to include screenshots or other supporting artifacts
         
         Example:
-        1. In the test environment, fill out the application for a new domain
-        2. Click the button to trigger a save/submit on the final page and complete the application 
+        1. In the test environment, fill out the domain request for a new domain
+        2. Click the button to trigger a save/submit on the final page and complete the domain request 
         3. See the error
       value: |
         1.
