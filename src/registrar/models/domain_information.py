@@ -2,7 +2,7 @@ from __future__ import annotations
 from django.db import transaction
 
 from registrar.models.utility.domain_helper import DomainHelper
-from .domain_application import DomainApplication
+from .domain_request import DomainRequest
 from .utility.time_stamped_model import TimeStampedModel
 
 import logging
@@ -15,22 +15,22 @@ logger = logging.getLogger(__name__)
 
 class DomainInformation(TimeStampedModel):
     """A registrant's domain information for that domain, exported from
-    DomainApplication. We use these field from DomainApplication with few exceptions
+    DomainRequest. We use these field from DomainRequest with few exceptions
     which are 'removed' via pop at the bottom of this file. Most of design for domain
-    management's user information are based on application, but we cannot change
-    the application once approved, so copying them that way we can make changes
-    after its approved. Most fields here are copied from Application."""
+    management's user information are based on domain_request, but we cannot change
+    the domain request once approved, so copying them that way we can make changes
+    after its approved. Most fields here are copied from DomainRequest."""
 
-    StateTerritoryChoices = DomainApplication.StateTerritoryChoices
+    StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
     # use the short names in Django admin
-    OrganizationChoices = DomainApplication.OrganizationChoices
+    OrganizationChoices = DomainRequest.OrganizationChoices
 
-    BranchChoices = DomainApplication.BranchChoices
+    BranchChoices = DomainRequest.BranchChoices
 
-    AGENCY_CHOICES = DomainApplication.AGENCY_CHOICES
+    AGENCY_CHOICES = DomainRequest.AGENCY_CHOICES
 
-    # This is the application user who created this application. The contact
+    # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
         "registrar.User",
@@ -38,13 +38,13 @@ class DomainInformation(TimeStampedModel):
         related_name="information_created",
     )
 
-    domain_application = models.OneToOneField(
-        "registrar.DomainApplication",
+    domain_request = models.OneToOneField(
+        "registrar.DomainRequest",
         on_delete=models.PROTECT,
         blank=True,
         null=True,
-        related_name="domainapplication_info",
-        help_text="Associated domain application",
+        related_name="DomainRequest_info",
+        help_text="Associated domain request",
         unique=True,
     )
 
@@ -163,13 +163,13 @@ class DomainInformation(TimeStampedModel):
         help_text="Domain to which this information belongs",
     )
 
-    # This is the contact information provided by the applicant. The
-    # application user who created it is in the `creator` field.
+    # This is the contact information provided by the domain requestor. The
+    # user who created the domain request is in the `creator` field.
     submitter = models.ForeignKey(
         "registrar.Contact",
         null=True,
         blank=True,
-        related_name="submitted_applications_information",
+        related_name="submitted_domain_requests_information",
         on_delete=models.PROTECT,
     )
 
@@ -182,7 +182,7 @@ class DomainInformation(TimeStampedModel):
     other_contacts = models.ManyToManyField(
         "registrar.Contact",
         blank=True,
-        related_name="contact_applications_information",
+        related_name="contact_domain_requests_information",
         verbose_name="Other employees",
     )
 
@@ -220,25 +220,25 @@ class DomainInformation(TimeStampedModel):
             return ""
 
     @classmethod
-    def create_from_da(cls, domain_application: DomainApplication, domain=None):
-        """Takes in a DomainApplication and converts it into DomainInformation"""
+    def create_from_da(cls, domain_request: DomainRequest, domain=None):
+        """Takes in a DomainRequest and converts it into DomainInformation"""
 
         # Throw an error if we get None - we can't create something from nothing
-        if domain_application is None:
-            raise ValueError("The provided DomainApplication is None")
+        if domain_request is None:
+            raise ValueError("The provided DomainRequest is None")
 
         # Throw an error if the da doesn't have an id
-        if not hasattr(domain_application, "id"):
-            raise ValueError("The provided DomainApplication has no id")
+        if not hasattr(domain_request, "id"):
+            raise ValueError("The provided DomainRequest has no id")
 
         # check if we have a record that corresponds with the domain
-        # application, if so short circuit the create
-        existing_domain_info = cls.objects.filter(domain_application__id=domain_application.id).first()
+        # domain_request, if so short circuit the create
+        existing_domain_info = cls.objects.filter(domain_request__id=domain_request.id).first()
         if existing_domain_info:
             return existing_domain_info
 
-        # Get the fields that exist on both DomainApplication and DomainInformation
-        common_fields = DomainHelper.get_common_fields(DomainApplication, DomainInformation)
+        # Get the fields that exist on both DomainRequest and DomainInformation
+        common_fields = DomainHelper.get_common_fields(DomainRequest, DomainInformation)
 
         # Get a list of all many_to_many relations on DomainInformation (needs to be saved differently)
         info_many_to_many_fields = DomainInformation._get_many_to_many_fields()
@@ -249,11 +249,11 @@ class DomainInformation(TimeStampedModel):
         for field in common_fields:
             # If the field isn't many_to_many, populate the da_dict.
             # If it is, populate da_many_to_many_dict as we need to save this later.
-            if hasattr(domain_application, field):
+            if hasattr(domain_request, field):
                 if field not in info_many_to_many_fields:
-                    da_dict[field] = getattr(domain_application, field)
+                    da_dict[field] = getattr(domain_request, field)
                 else:
-                    da_many_to_many_dict[field] = getattr(domain_application, field).all()
+                    da_many_to_many_dict[field] = getattr(domain_request, field).all()
 
         # This will not happen in normal code flow, but having some redundancy doesn't hurt.
         # da_dict should not have "id" under any circumstances.
@@ -266,8 +266,8 @@ class DomainInformation(TimeStampedModel):
         # Create a placeholder DomainInformation object
         domain_info = DomainInformation(**da_dict)
 
-        # Add the domain_application and domain fields
-        domain_info.domain_application = domain_application
+        # Add the domain_request and domain fields
+        domain_info.domain_request = domain_request
         if domain:
             domain_info.domain = domain
 

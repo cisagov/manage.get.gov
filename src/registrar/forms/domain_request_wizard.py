@@ -10,7 +10,7 @@ from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 from django.db.models.fields.related import ForeignObjectRel
 
-from registrar.models import Contact, DomainApplication, DraftDomain, Domain
+from registrar.models import Contact, DomainRequest, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 
@@ -21,7 +21,7 @@ class RegistrarForm(forms.Form):
     """
     A common set of methods and configuration.
 
-    The registrar's domain application is several pages of "steps".
+    The registrar's domain request is several pages of "steps".
     Each step is an HTML form containing one or more Django "forms".
 
     Subclass this class to create new forms.
@@ -29,11 +29,11 @@ class RegistrarForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("label_suffix", "")
-        # save a reference to an application object
-        self.application = kwargs.pop("application", None)
+        # save a reference to a domain request object
+        self.domain_request = kwargs.pop("domain_request", None)
         super(RegistrarForm, self).__init__(*args, **kwargs)
 
-    def to_database(self, obj: DomainApplication | Contact):
+    def to_database(self, obj: DomainRequest | Contact):
         """
         Adds this form's cleaned data to `obj` and saves `obj`.
 
@@ -46,7 +46,7 @@ class RegistrarForm(forms.Form):
         obj.save()
 
     @classmethod
-    def from_database(cls, obj: DomainApplication | Contact | None):
+    def from_database(cls, obj: DomainRequest | Contact | None):
         """Returns a dict of form field values gotten from `obj`."""
         if obj is None:
             return {}
@@ -61,8 +61,8 @@ class RegistrarFormSet(forms.BaseFormSet):
     """
 
     def __init__(self, *args, **kwargs):
-        # save a reference to an application object
-        self.application = kwargs.pop("application", None)
+        # save a reference to an domain_request object
+        self.domain_request = kwargs.pop("domain_request", None)
         super(RegistrarFormSet, self).__init__(*args, **kwargs)
         # quick workaround to ensure that the HTML `required`
         # attribute shows up on required fields for any forms
@@ -85,7 +85,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         """Code to run before an item in the formset is created in the database."""
         return cleaned
 
-    def to_database(self, obj: DomainApplication):
+    def to_database(self, obj: DomainRequest):
         """
         Adds this form's cleaned data to `obj` and saves `obj`.
 
@@ -97,7 +97,7 @@ class RegistrarFormSet(forms.BaseFormSet):
 
     def _to_database(
         self,
-        obj: DomainApplication,
+        obj: DomainRequest,
         join: str,
         should_delete: Callable,
         pre_update: Callable,
@@ -137,14 +137,14 @@ class RegistrarFormSet(forms.BaseFormSet):
                 if should_delete(cleaned):
                     if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(related_name):
                         # Remove the specific relationship without deleting the object
-                        getattr(db_obj, related_name).remove(self.application)
+                        getattr(db_obj, related_name).remove(self.domain_request)
                     else:
                         # If there are no other relationships, delete the object
                         db_obj.delete()
                 else:
                     if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(related_name):
                         # create a new db_obj and disconnect existing one
-                        getattr(db_obj, related_name).remove(self.application)
+                        getattr(db_obj, related_name).remove(self.domain_request)
                         kwargs = pre_create(db_obj, cleaned)
                         getattr(obj, join).create(**kwargs)
                     else:
@@ -163,15 +163,15 @@ class RegistrarFormSet(forms.BaseFormSet):
         return query.values()
 
     @classmethod
-    def from_database(cls, obj: DomainApplication, join: str, on_fetch: Callable):
+    def from_database(cls, obj: DomainRequest, join: str, on_fetch: Callable):
         """Returns a dict of form field values gotten from `obj`."""
         return on_fetch(getattr(obj, join).order_by("created_at"))  # order matters
 
 
 class OrganizationTypeForm(RegistrarForm):
     organization_type = forms.ChoiceField(
-        # use the long names in the application form
-        choices=DomainApplication.OrganizationChoicesVerbose.choices,
+        # use the long names in the domain request form
+        choices=DomainRequest.OrganizationChoicesVerbose.choices,
         widget=forms.RadioSelect,
         error_messages={"required": "Select the type of organization you represent."},
     )
@@ -201,7 +201,7 @@ class TribalGovernmentForm(RegistrarForm):
                 # into a link. There should be no user-facing input in the
                 # HTML indicated here.
                 mark_safe(  # nosec
-                    "You can’t complete this application yet. "
+                    "You can’t complete this domain request yet. "
                     "Only tribes recognized by the U.S. federal government "
                     "or by a U.S. state government are eligible for .gov "
                     'domains. Use our <a href="{}">contact form</a> to '
@@ -215,7 +215,7 @@ class TribalGovernmentForm(RegistrarForm):
 
 class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
-        choices=DomainApplication.BranchChoices.choices,
+        choices=DomainRequest.BranchChoices.choices,
         widget=forms.RadioSelect,
         error_messages={"required": ("Select the part of the federal government your organization is in.")},
     )
@@ -251,7 +251,7 @@ class OrganizationContactForm(RegistrarForm):
         # it is a federal agency. Use clean to check programatically
         # if it has been filled in when required.
         required=False,
-        choices=[("", "--Select--")] + DomainApplication.AGENCY_CHOICES,
+        choices=[("", "--Select--")] + DomainRequest.AGENCY_CHOICES,
     )
     organization_name = forms.CharField(
         label="Organization name",
@@ -271,7 +271,7 @@ class OrganizationContactForm(RegistrarForm):
     )
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
-        choices=[("", "--Select--")] + DomainApplication.StateTerritoryChoices.choices,
+        choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },
@@ -294,16 +294,16 @@ class OrganizationContactForm(RegistrarForm):
     def clean_federal_agency(self):
         """Require something to be selected when this is a federal agency."""
         federal_agency = self.cleaned_data.get("federal_agency", None)
-        # need the application object to know if this is federal
-        if self.application is None:
-            # hmm, no saved application object?, default require the agency
+        # need the domain request object to know if this is federal
+        if self.domain_request is None:
+            # hmm, no saved domain request object?, default require the agency
             if not federal_agency:
                 # no answer was selected
                 raise forms.ValidationError(
                     "Select the federal agency your organization is in.",
                     code="required",
                 )
-        if self.application.is_federal():
+        if self.domain_request.is_federal():
             if not federal_agency:
                 # no answer was selected
                 raise forms.ValidationError(
@@ -390,7 +390,7 @@ class BaseCurrentSitesFormSet(RegistrarFormSet):
         website = cleaned.get("website", "")
         return website.strip() == ""
 
-    def to_database(self, obj: DomainApplication):
+    def to_database(self, obj: DomainRequest):
         # If we want to test against multiple joins for a website object, replace the empty array
         # and change the JOIN in the models to allow for reverse references
         self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
@@ -444,7 +444,7 @@ class BaseAlternativeDomainFormSet(RegistrarFormSet):
         else:
             return {}
 
-    def to_database(self, obj: DomainApplication):
+    def to_database(self, obj: DomainRequest):
         # If we want to test against multiple joins for a website object, replace the empty array and
         # change the JOIN in the models to allow for reverse references
         self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
@@ -530,7 +530,7 @@ class YourContactForm(RegistrarForm):
         if not self.is_valid():
             return
         contact = getattr(obj, "submitter", None)
-        if contact is not None and not contact.has_more_than_one_join("submitted_applications"):
+        if contact is not None and not contact.has_more_than_one_join("submitted_domain_requests"):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
         else:
@@ -578,13 +578,13 @@ class OtherContactsYesNoForm(RegistrarForm):
     def __init__(self, *args, **kwargs):
         """Extend the initialization of the form from RegistrarForm __init__"""
         super().__init__(*args, **kwargs)
-        # set the initial value based on attributes of application
-        if self.application and self.application.has_other_contacts():
+        # set the initial value based on attributes of domain request
+        if self.domain_request and self.domain_request.has_other_contacts():
             initial_value = True
-        elif self.application and self.application.has_rationale():
+        elif self.domain_request and self.domain_request.has_rationale():
             initial_value = False
         else:
-            # No pre-selection for new applications
+            # No pre-selection for new domain requests
             initial_value = None
 
         self.fields["has_other_contacts"] = forms.TypedChoiceField(
@@ -687,7 +687,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
     this case, all forms in formset are marked for deletion. Both of these conditions
     must co-exist.
     Also, other_contacts have db relationships to multiple db objects. When attempting
-    to delete an other_contact from an application, those db relationships must be
+    to delete an other_contact from a domain request, those db relationships must be
     tested and handled.
     """
 
@@ -701,7 +701,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         Override __init__ for RegistrarFormSet.
         """
         self.formset_data_marked_for_deletion = False
-        self.application = kwargs.pop("application", None)
+        self.domain_request = kwargs.pop("domain_request", None)
         super(RegistrarFormSet, self).__init__(*args, **kwargs)
         # quick workaround to ensure that the HTML `required`
         # attribute shows up on required fields for the first form
@@ -722,7 +722,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
             cleaned.pop("DELETE")
         return cleaned
 
-    def to_database(self, obj: DomainApplication):
+    def to_database(self, obj: DomainRequest):
         self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod

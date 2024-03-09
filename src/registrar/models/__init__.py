@@ -1,6 +1,6 @@
 from auditlog.registry import auditlog  # type: ignore
 from .contact import Contact
-from .domain_application import DomainApplication
+from .domain_request import DomainRequest
 from .domain_information import DomainInformation
 from .domain import Domain
 from .draft_domain import DraftDomain
@@ -17,7 +17,7 @@ from .verified_by_staff import VerifiedByStaff
 
 __all__ = [
     "Contact",
-    "DomainApplication",
+    "DomainRequest",
     "DomainInformation",
     "Domain",
     "DraftDomain",
@@ -34,7 +34,7 @@ __all__ = [
 ]
 
 auditlog.register(Contact)
-auditlog.register(DomainApplication)
+auditlog.register(DomainRequest)
 auditlog.register(Domain)
 auditlog.register(DraftDomain)
 auditlog.register(DomainInvitation)

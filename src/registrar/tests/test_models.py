@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from registrar.models import (
     Contact,
-    DomainApplication,
+    DomainRequest,
     DomainInformation,
     User,
     Website,
@@ -17,39 +17,39 @@ from registrar.models import (
 import boto3_mocking
 from registrar.models.transition_domain import TransitionDomain
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
-from .common import MockSESClient, less_console_noise, completed_application
+from .common import MockSESClient, less_console_noise, completed_domain_request
 from django_fsm import TransitionNotAllowed
 
 
 # Test comment for push -- will remove
-# The DomainApplication submit method has a side effect of sending an email
+# The DomainRequest submit method has a side effect of sending an email
 # with AWS SES, so mock that out in all of these test cases
 @boto3_mocking.patching
-class TestDomainApplication(TestCase):
+class TestDomainRequest(TestCase):
     def setUp(self):
-        self.started_application = completed_application(
-            status=DomainApplication.ApplicationStatus.STARTED, name="started.gov"
+        self.started_domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED, name="started.gov"
         )
-        self.submitted_application = completed_application(
-            status=DomainApplication.ApplicationStatus.SUBMITTED, name="submitted.gov"
+        self.submitted_domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED, name="submitted.gov"
         )
-        self.in_review_application = completed_application(
-            status=DomainApplication.ApplicationStatus.IN_REVIEW, name="in-review.gov"
+        self.in_review_domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, name="in-review.gov"
         )
-        self.action_needed_application = completed_application(
-            status=DomainApplication.ApplicationStatus.ACTION_NEEDED, name="action-needed.gov"
+        self.action_needed_domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED, name="action-needed.gov"
         )
-        self.approved_application = completed_application(
-            status=DomainApplication.ApplicationStatus.APPROVED, name="approved.gov"
+        self.approved_domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.APPROVED, name="approved.gov"
         )
-        self.withdrawn_application = completed_application(
-            status=DomainApplication.ApplicationStatus.WITHDRAWN, name="withdrawn.gov"
+        self.withdrawn_domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.WITHDRAWN, name="withdrawn.gov"
         )
-        self.rejected_application = completed_application(
-            status=DomainApplication.ApplicationStatus.REJECTED, name="rejected.gov"
+        self.rejected_domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.REJECTED, name="rejected.gov"
         )
-        self.ineligible_application = completed_application(
-            status=DomainApplication.ApplicationStatus.INELIGIBLE, name="ineligible.gov"
+        self.ineligible_domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.INELIGIBLE, name="ineligible.gov"
         )
 
         self.mock_client = MockSESClient()
@@ -64,19 +64,19 @@ class TestDomainApplication(TestCase):
             return self.assertRaises(Exception, None, exception_type)
 
     def test_empty_create_fails(self):
-        """Can't create a completely empty domain application.
+        """Can't create a completely empty domain request.
         NOTE: something about theexception this test raises messes up with the
         atomic block in a custom tearDown method for the parent test class."""
         with less_console_noise():
             with self.assertRaisesRegex(IntegrityError, "creator"):
-                DomainApplication.objects.create()
+                DomainRequest.objects.create()
 
     def test_minimal_create(self):
         """Can create with just a creator."""
         with less_console_noise():
             user, _ = User.objects.get_or_create(username="testy")
-            application = DomainApplication.objects.create(creator=user)
-            self.assertEqual(application.status, DomainApplication.ApplicationStatus.STARTED)
+            domain_request = DomainRequest.objects.create(creator=user)
+            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.STARTED)
 
     def test_full_create(self):
         """Can create with all fields."""
@@ -86,11 +86,11 @@ class TestDomainApplication(TestCase):
             com_website, _ = Website.objects.get_or_create(website="igorville.com")
             gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
             domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-            application = DomainApplication.objects.create(
+            domain_request = DomainRequest.objects.create(
                 creator=user,
                 investigator=user,
-                organization_type=DomainApplication.OrganizationChoices.FEDERAL,
-                federal_type=DomainApplication.BranchChoices.EXECUTIVE,
+                organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+                federal_type=DomainRequest.BranchChoices.EXECUTIVE,
                 is_election_board=False,
                 organization_name="Test",
                 address_line1="100 Main St.",
@@ -104,10 +104,10 @@ class TestDomainApplication(TestCase):
                 anything_else="All of Igorville loves the dotgov program.",
                 is_policy_acknowledged=True,
             )
-            application.current_websites.add(com_website)
-            application.alternative_domains.add(gov_website)
-            application.other_contacts.add(contact)
-            application.save()
+            domain_request.current_websites.add(com_website)
+            domain_request.alternative_domains.add(gov_website)
+            domain_request.other_contacts.add(contact)
+            domain_request.save()
 
     def test_domain_info(self):
         """Can create domain info with all fields."""
@@ -140,35 +140,35 @@ class TestDomainApplication(TestCase):
     def test_status_fsm_submit_fail(self):
         with less_console_noise():
             user, _ = User.objects.get_or_create(username="testy")
-            application = DomainApplication.objects.create(creator=user)
+            domain_request = DomainRequest.objects.create(creator=user)
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 with less_console_noise():
                     with self.assertRaises(ValueError):
-                        # can't submit an application with a null domain name
-                        application.submit()
+                        # can't submit a domain request with a null domain name
+                        domain_request.submit()
 
     def test_status_fsm_submit_succeed(self):
         with less_console_noise():
             user, _ = User.objects.get_or_create(username="testy")
             site = DraftDomain.objects.create(name="igorville.gov")
-            application = DomainApplication.objects.create(creator=user, requested_domain=site)
+            domain_request = DomainRequest.objects.create(creator=user, requested_domain=site)
 
             # no submitter email so this emits a log warning
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 with less_console_noise():
-                    application.submit()
-            self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
+                    domain_request.submit()
+            self.assertEqual(domain_request.status, domain_request.DomainRequestStatus.SUBMITTED)
 
-    def check_email_sent(self, application, msg, action, expected_count):
+    def check_email_sent(self, domain_request, msg, action, expected_count):
         """Check if an email was sent after performing an action."""
 
         with self.subTest(msg=msg, action=action):
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 with less_console_noise():
                     # Perform the specified action
-                    action_method = getattr(application, action)
+                    action_method = getattr(domain_request, action)
                     action_method()
 
             # Check if an email was sent
@@ -180,62 +180,62 @@ class TestDomainApplication(TestCase):
             self.assertEqual(len(sent_emails), expected_count)
 
     def test_submit_from_started_sends_email(self):
-        msg = "Create an application and submit it and see if email was sent."
-        application = completed_application()
-        self.check_email_sent(application, msg, "submit", 1)
+        msg = "Create a domain request and submit it and see if email was sent."
+        domain_request = completed_domain_request()
+        self.check_email_sent(domain_request, msg, "submit", 1)
 
     def test_submit_from_withdrawn_sends_email(self):
-        msg = "Create a withdrawn application and submit it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
-        self.check_email_sent(application, msg, "submit", 1)
+        msg = "Create a withdrawn domain request and submit it and see if email was sent."
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
+        self.check_email_sent(domain_request, msg, "submit", 1)
 
     def test_submit_from_action_needed_does_not_send_email(self):
-        msg = "Create an application with ACTION_NEEDED status and submit it, check if email was not sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
-        self.check_email_sent(application, msg, "submit", 0)
+        msg = "Create a domain request with ACTION_NEEDED status and submit it, check if email was not sent."
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.ACTION_NEEDED)
+        self.check_email_sent(domain_request, msg, "submit", 0)
 
     def test_submit_from_in_review_does_not_send_email(self):
-        msg = "Create a withdrawn application and submit it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-        self.check_email_sent(application, msg, "submit", 0)
+        msg = "Create a withdrawn domain request and submit it and see if email was sent."
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        self.check_email_sent(domain_request, msg, "submit", 0)
 
     def test_approve_sends_email(self):
-        msg = "Create an application and approve it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-        self.check_email_sent(application, msg, "approve", 1)
+        msg = "Create a domain request and approve it and see if email was sent."
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        self.check_email_sent(domain_request, msg, "approve", 1)
 
     def test_withdraw_sends_email(self):
-        msg = "Create an application and withdraw it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-        self.check_email_sent(application, msg, "withdraw", 1)
+        msg = "Create a domain request and withdraw it and see if email was sent."
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        self.check_email_sent(domain_request, msg, "withdraw", 1)
 
     def test_reject_sends_email(self):
-        msg = "Create an application and reject it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        self.check_email_sent(application, msg, "reject", 1)
+        msg = "Create a domain request and reject it and see if email was sent."
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
+        self.check_email_sent(domain_request, msg, "reject", 1)
 
     def test_reject_with_prejudice_does_not_send_email(self):
-        msg = "Create an application and reject it with prejudice and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        self.check_email_sent(application, msg, "reject_with_prejudice", 0)
+        msg = "Create a domain request and reject it with prejudice and see if email was sent."
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
+        self.check_email_sent(domain_request, msg, "reject_with_prejudice", 0)
 
     def test_submit_transition_allowed(self):
         """
         Test that calling submit from allowable statuses does raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.started_application, TransitionNotAllowed),
-            (self.in_review_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.withdrawn_application, TransitionNotAllowed),
+            (self.started_domain_request, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.withdrawn_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
-                            application.submit()
+                            domain_request.submit()
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
@@ -244,37 +244,37 @@ class TestDomainApplication(TestCase):
         Test that calling submit against transition rules raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.submitted_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
-            (self.ineligible_application, TransitionNotAllowed),
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
-                            application.submit()
+                            domain_request.submit()
 
     def test_in_review_transition_allowed(self):
         """
         Test that calling in_review from allowable statuses does raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.submitted_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
-            (self.ineligible_application, TransitionNotAllowed),
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
-                            application.in_review()
+                            domain_request.in_review()
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
@@ -283,33 +283,33 @@ class TestDomainApplication(TestCase):
         Test that calling in_review against transition rules raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.started_application, TransitionNotAllowed),
-            (self.in_review_application, TransitionNotAllowed),
-            (self.withdrawn_application, TransitionNotAllowed),
+            (self.started_domain_request, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.withdrawn_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
-                            application.in_review()
+                            domain_request.in_review()
 
     def test_action_needed_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.in_review_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
-            (self.ineligible_application, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
         ]
         with less_console_noise():
-            for application, exception_type in test_cases:
-                with self.subTest(application=application, exception_type=exception_type):
+            for domain_request, exception_type in test_cases:
+                with self.subTest(domain_request=domain_request, exception_type=exception_type):
                     try:
-                        application.action_needed()
+                        domain_request.action_needed()
                     except TransitionNotAllowed:
                         self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
@@ -318,34 +318,34 @@ class TestDomainApplication(TestCase):
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.started_application, TransitionNotAllowed),
-            (self.submitted_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.withdrawn_application, TransitionNotAllowed),
+            (self.started_domain_request, TransitionNotAllowed),
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.withdrawn_domain_request, TransitionNotAllowed),
         ]
         with less_console_noise():
-            for application, exception_type in test_cases:
-                with self.subTest(application=application, exception_type=exception_type):
+            for domain_request, exception_type in test_cases:
+                with self.subTest(domain_request=domain_request, exception_type=exception_type):
                     with self.assertRaises(exception_type):
-                        application.action_needed()
+                        domain_request.action_needed()
 
     def test_approved_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.submitted_application, TransitionNotAllowed),
-            (self.in_review_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
-                            application.approve()
+                            domain_request.approve()
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
@@ -357,7 +357,7 @@ class TestDomainApplication(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                self.submitted_application.approve(send_email=False)
+                self.submitted_domain_request.approve(send_email=False)
 
         # Assert that no emails were sent
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 0)
@@ -367,35 +367,35 @@ class TestDomainApplication(TestCase):
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.started_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
-            (self.withdrawn_application, TransitionNotAllowed),
-            (self.ineligible_application, TransitionNotAllowed),
+            (self.started_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.withdrawn_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
-                            application.approve()
+                            domain_request.approve()
 
     def test_withdraw_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.submitted_application, TransitionNotAllowed),
-            (self.in_review_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
-                            application.withdraw()
+                            domain_request.withdraw()
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
@@ -404,36 +404,36 @@ class TestDomainApplication(TestCase):
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.started_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
-            (self.withdrawn_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
-            (self.ineligible_application, TransitionNotAllowed),
+            (self.started_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.withdrawn_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
-                            application.withdraw()
+                            domain_request.withdraw()
 
     def test_reject_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.in_review_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
-                            application.reject()
+                            domain_request.reject()
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
@@ -442,37 +442,37 @@ class TestDomainApplication(TestCase):
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.started_application, TransitionNotAllowed),
-            (self.submitted_application, TransitionNotAllowed),
-            (self.withdrawn_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
-            (self.ineligible_application, TransitionNotAllowed),
+            (self.started_domain_request, TransitionNotAllowed),
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.withdrawn_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
-                            application.reject()
+                            domain_request.reject()
 
     def test_reject_with_prejudice_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.in_review_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         try:
-                            application.reject_with_prejudice()
+                            domain_request.reject_with_prejudice()
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
@@ -481,26 +481,26 @@ class TestDomainApplication(TestCase):
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
         """
         test_cases = [
-            (self.started_application, TransitionNotAllowed),
-            (self.submitted_application, TransitionNotAllowed),
-            (self.withdrawn_application, TransitionNotAllowed),
-            (self.ineligible_application, TransitionNotAllowed),
+            (self.started_domain_request, TransitionNotAllowed),
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.withdrawn_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
+                for domain_request, exception_type in test_cases:
+                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
                         with self.assertRaises(exception_type):
-                            application.reject_with_prejudice()
+                            domain_request.reject_with_prejudice()
 
     def test_transition_not_allowed_approved_in_review_when_domain_is_active(self):
-        """Create an application with status approved, create a matching domain that
+        """Create a domain request with status approved, create a matching domain that
         is active, and call in_review against transition rules"""
 
-        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
-        self.approved_application.approved_domain = domain
-        self.approved_application.save()
+        domain = Domain.objects.create(name=self.approved_domain_request.requested_domain.name)
+        self.approved_domain_request.approved_domain = domain
+        self.approved_domain_request.save()
 
         # Define a custom implementation for is_active
         def custom_is_active(self):
@@ -512,15 +512,15 @@ class TestDomainApplication(TestCase):
                 with patch.object(Domain, "is_active", custom_is_active):
                     # Now, when you call is_active on Domain, it will return True
                     with self.assertRaises(TransitionNotAllowed):
-                        self.approved_application.in_review()
+                        self.approved_domain_request.in_review()
 
     def test_transition_not_allowed_approved_action_needed_when_domain_is_active(self):
-        """Create an application with status approved, create a matching domain that
+        """Create a domain request with status approved, create a matching domain that
         is active, and call action_needed against transition rules"""
 
-        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
-        self.approved_application.approved_domain = domain
-        self.approved_application.save()
+        domain = Domain.objects.create(name=self.approved_domain_request.requested_domain.name)
+        self.approved_domain_request.approved_domain = domain
+        self.approved_domain_request.save()
 
         # Define a custom implementation for is_active
         def custom_is_active(self):
@@ -532,15 +532,15 @@ class TestDomainApplication(TestCase):
                 with patch.object(Domain, "is_active", custom_is_active):
                     # Now, when you call is_active on Domain, it will return True
                     with self.assertRaises(TransitionNotAllowed):
-                        self.approved_application.action_needed()
+                        self.approved_domain_request.action_needed()
 
     def test_transition_not_allowed_approved_rejected_when_domain_is_active(self):
-        """Create an application with status approved, create a matching domain that
+        """Create a domain request with status approved, create a matching domain that
         is active, and call reject against transition rules"""
 
-        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
-        self.approved_application.approved_domain = domain
-        self.approved_application.save()
+        domain = Domain.objects.create(name=self.approved_domain_request.requested_domain.name)
+        self.approved_domain_request.approved_domain = domain
+        self.approved_domain_request.save()
 
         # Define a custom implementation for is_active
         def custom_is_active(self):
@@ -552,15 +552,15 @@ class TestDomainApplication(TestCase):
                 with patch.object(Domain, "is_active", custom_is_active):
                     # Now, when you call is_active on Domain, it will return True
                     with self.assertRaises(TransitionNotAllowed):
-                        self.approved_application.reject()
+                        self.approved_domain_request.reject()
 
     def test_transition_not_allowed_approved_ineligible_when_domain_is_active(self):
-        """Create an application with status approved, create a matching domain that
+        """Create a domain request with status approved, create a matching domain that
         is active, and call reject_with_prejudice against transition rules"""
 
-        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
-        self.approved_application.approved_domain = domain
-        self.approved_application.save()
+        domain = Domain.objects.create(name=self.approved_domain_request.requested_domain.name)
+        self.approved_domain_request.approved_domain = domain
+        self.approved_domain_request.save()
 
         # Define a custom implementation for is_active
         def custom_is_active(self):
@@ -572,83 +572,83 @@ class TestDomainApplication(TestCase):
                 with patch.object(Domain, "is_active", custom_is_active):
                     # Now, when you call is_active on Domain, it will return True
                     with self.assertRaises(TransitionNotAllowed):
-                        self.approved_application.reject_with_prejudice()
+                        self.approved_domain_request.reject_with_prejudice()
 
     def test_approve_from_rejected_clears_rejection_reason(self):
         """When transitioning from rejected to approved on a domain request,
         the rejection_reason is cleared."""
 
         with less_console_noise():
-            # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-            application.rejection_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+            # Create a sample domain request
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
+            domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
             # Approve
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                application.approve()
+                domain_request.approve()
 
-            self.assertEqual(application.status, DomainApplication.ApplicationStatus.APPROVED)
-            self.assertEqual(application.rejection_reason, None)
+            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.APPROVED)
+            self.assertEqual(domain_request.rejection_reason, None)
 
     def test_in_review_from_rejected_clears_rejection_reason(self):
         """When transitioning from rejected to in_review on a domain request,
         the rejection_reason is cleared."""
 
         with less_console_noise():
-            # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-            application.domain_is_not_active = True
-            application.rejection_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+            # Create a sample domain request
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
+            domain_request.domain_is_not_active = True
+            domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
             # Approve
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                application.in_review()
+                domain_request.in_review()
 
-            self.assertEqual(application.status, DomainApplication.ApplicationStatus.IN_REVIEW)
-            self.assertEqual(application.rejection_reason, None)
+            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            self.assertEqual(domain_request.rejection_reason, None)
 
     def test_action_needed_from_rejected_clears_rejection_reason(self):
         """When transitioning from rejected to action_needed on a domain request,
         the rejection_reason is cleared."""
 
         with less_console_noise():
-            # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-            application.domain_is_not_active = True
-            application.rejection_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+            # Create a sample domain request
+            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
+            domain_request.domain_is_not_active = True
+            domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
             # Approve
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                application.action_needed()
+                domain_request.action_needed()
 
-            self.assertEqual(application.status, DomainApplication.ApplicationStatus.ACTION_NEEDED)
-            self.assertEqual(application.rejection_reason, None)
+            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
+            self.assertEqual(domain_request.rejection_reason, None)
 
     def test_has_rationale_returns_true(self):
-        """has_rationale() returns true when an application has no_other_contacts_rationale"""
+        """has_rationale() returns true when a domain request has no_other_contacts_rationale"""
         with less_console_noise():
-            self.started_application.no_other_contacts_rationale = "You talkin' to me?"
-            self.started_application.save()
-            self.assertEquals(self.started_application.has_rationale(), True)
+            self.started_domain_request.no_other_contacts_rationale = "You talkin' to me?"
+            self.started_domain_request.save()
+            self.assertEquals(self.started_domain_request.has_rationale(), True)
 
     def test_has_rationale_returns_false(self):
-        """has_rationale() returns false when an application has no no_other_contacts_rationale"""
+        """has_rationale() returns false when a domain request has no no_other_contacts_rationale"""
         with less_console_noise():
-            self.assertEquals(self.started_application.has_rationale(), False)
+            self.assertEquals(self.started_domain_request.has_rationale(), False)
 
     def test_has_other_contacts_returns_true(self):
-        """has_other_contacts() returns true when an application has other_contacts"""
+        """has_other_contacts() returns true when a domain request has other_contacts"""
         with less_console_noise():
-            # completed_application has other contacts by default
-            self.assertEquals(self.started_application.has_other_contacts(), True)
+            # completed_domain_request has other contacts by default
+            self.assertEquals(self.started_domain_request.has_other_contacts(), True)
 
     def test_has_other_contacts_returns_false(self):
-        """has_other_contacts() returns false when an application has no other_contacts"""
+        """has_other_contacts() returns false when a domain request has no other_contacts"""
         with less_console_noise():
-            application = completed_application(
-                status=DomainApplication.ApplicationStatus.STARTED, name="no-others.gov", has_other_contacts=False
+            domain_request = completed_domain_request(
+                status=DomainRequest.DomainRequestStatus.STARTED, name="no-others.gov", has_other_contacts=False
             )
-            self.assertEquals(application.has_other_contacts(), False)
+            self.assertEquals(domain_request.has_other_contacts(), False)
 
 
 class TestPermissions(TestCase):
@@ -666,13 +666,13 @@ class TestPermissions(TestCase):
     def test_approval_creates_role(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
+        domain_request = DomainRequest.objects.create(creator=user, requested_domain=draft_domain)
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # skip using the submit method
-                application.status = DomainApplication.ApplicationStatus.SUBMITTED
-                application.approve()
+                domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
+                domain_request.approve()
 
         # should be a role for this user
         domain = Domain.objects.get(name="igorville.gov")
@@ -691,7 +691,7 @@ class TestDomainInformation(TestCase):
         self.mock_client.EMAILS_SENT.clear()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
-        DomainApplication.objects.all().delete()
+        DomainRequest.objects.all().delete()
         User.objects.all().delete()
         DraftDomain.objects.all().delete()
 
@@ -700,13 +700,13 @@ class TestDomainInformation(TestCase):
         self.maxDiff = None
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
+        domain_request = DomainRequest.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # skip using the submit method
-                application.status = DomainApplication.ApplicationStatus.SUBMITTED
-                application.approve()
+                domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
+                domain_request.approve()
 
         # should be an information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
@@ -719,7 +719,7 @@ class TestDomainInformation(TestCase):
             creator=user,
             domain=domain,
             notes="test notes",
-            domain_application=application,
+            domain_request=domain_request,
         ).__dict__
 
         # Test the two records for consistency
@@ -852,11 +852,11 @@ class TestContact(TestCase):
         self.contact, _ = Contact.objects.get_or_create(user=self.user)
 
         self.contact_as_ao, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
-        self.application = DomainApplication.objects.create(creator=self.user, authorizing_official=self.contact_as_ao)
+        self.domain_request = DomainRequest.objects.create(creator=self.user, authorizing_official=self.contact_as_ao)
 
     def tearDown(self):
         super().tearDown()
-        DomainApplication.objects.all().delete()
+        DomainRequest.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
 
@@ -936,6 +936,6 @@ class TestContact(TestCase):
         # test for a contact which has one user defined
         self.assertFalse(self.contact.has_more_than_one_join("user"))
         self.assertTrue(self.contact.has_more_than_one_join("authorizing_official"))
-        # test for a contact which is assigned as an authorizing official on an application
+        # test for a contact which is assigned as an authorizing official on a domain request
         self.assertFalse(self.contact_as_ao.has_more_than_one_join("authorizing_official"))
-        self.assertTrue(self.contact_as_ao.has_more_than_one_join("submitted_applications"))
+        self.assertTrue(self.contact_as_ao.has_more_than_one_join("submitted_domain_requests"))
