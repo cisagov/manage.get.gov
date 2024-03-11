@@ -39,8 +39,8 @@ class "registrar.Contact <Registrar>" as registrar.Contact #d6f4e9 {
 registrar.Contact -- registrar.User
 
 
-class "registrar.DomainApplication <Registrar>" as registrar.DomainApplication #d6f4e9 {
-    domain application
+class "registrar.DomainRequest <Registrar>" as registrar.DomainRequest #d6f4e9 {
+    domain request
     --
     + id (BigAutoField)
     + created_at (DateTimeField)
@@ -77,15 +77,15 @@ class "registrar.DomainApplication <Registrar>" as registrar.DomainApplication #
     # other_contacts (ManyToManyField)
     --
 }
-registrar.DomainApplication -- registrar.User
-registrar.DomainApplication -- registrar.User
-registrar.DomainApplication -- registrar.Contact
-registrar.DomainApplication -- registrar.DraftDomain
-registrar.DomainApplication -- registrar.Domain
-registrar.DomainApplication -- registrar.Contact
-registrar.DomainApplication *--* registrar.Website
-registrar.DomainApplication *--* registrar.Website
-registrar.DomainApplication *--* registrar.Contact
+registrar.DomainRequest -- registrar.User
+registrar.DomainRequest -- registrar.User
+registrar.DomainRequest -- registrar.Contact
+registrar.DomainRequest -- registrar.DraftDomain
+registrar.DomainRequest -- registrar.Domain
+registrar.DomainRequest -- registrar.Contact
+registrar.DomainRequest *--* registrar.Website
+registrar.DomainRequest *--* registrar.Website
+registrar.DomainRequest *--* registrar.Contact
 
 
 class "registrar.DomainInformation <Registrar>" as registrar.DomainInformation #d6f4e9 {
@@ -95,7 +95,7 @@ class "registrar.DomainInformation <Registrar>" as registrar.DomainInformation #
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
     ~ creator (ForeignKey)
-    ~ domain_application (OneToOneField)
+    ~ domain_request (OneToOneField)
     + organization_type (CharField)
     + federally_recognized_tribe (BooleanField)
     + state_recognized_tribe (BooleanField)
@@ -124,7 +124,7 @@ class "registrar.DomainInformation <Registrar>" as registrar.DomainInformation #
     --
 }
 registrar.DomainInformation -- registrar.User
-registrar.DomainInformation -- registrar.DomainApplication
+registrar.DomainInformation -- registrar.DomainRequest
 registrar.DomainInformation -- registrar.Contact
 registrar.DomainInformation -- registrar.Domain
 registrar.DomainInformation -- registrar.Contact

@@ -114,7 +114,7 @@ that can be used for specific tasks.
 ## Cloud.gov dashboard
 
 At <https://dashboard.fr.cloud.gov/applications> there is a list for all of the
-applications that a Cloud.gov user has access to. Clicking on an application
+applications that a Cloud.gov user has access to. Clicking on a domain request
 goes to a screen for that individual application, e.g.
 <https://dashboard.fr.cloud.gov/applications/2oBn9LBurIXUNpfmtZCQTCHnxUM/53b88024-1492-46aa-8fb6-1429bdb35f95/summary>.
 On that page is a left-hand link for "Log Stream" e.g.
