@@ -605,7 +605,7 @@ SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 # WARNING: Setting this value too high could cause frequent app crashes!
 # Having too many connections open could cause the sandbox to timeout,
 # as the spinup time could exceed the timeout time.
-EPP_CONNECTION_POOL_SIZE = 3
+EPP_CONNECTION_POOL_SIZE = 2
 
 # Determines the amount of time we wait to spawn new EPP clients.
 EPP_CLIENT_SPAWN_FREQUENCY = 0.1
