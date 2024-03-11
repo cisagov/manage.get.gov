@@ -94,6 +94,7 @@ class EPPLibWrapper:
 
     def _create_client_pool(self):
         """Given our current pool size, add a thread containing an epp client with an open epp connection"""
+        logger.info(f"in _create_client_pool()")
         for _thread_number in range(self.pool_size):
             self._create_client_thread()
 
@@ -108,12 +109,13 @@ class EPPLibWrapper:
                 logger.info(f"populate_client_pool() -> Thread #{thread_number} created successfully.")
 
     def _create_client_thread(self):
+        logger.info(f"in _create_client_thread()")
         client_thread = self.client_pool.spawn(self._initialize_client)
         self.client_threads.append(client_thread)
 
     def kill_client_pool(self) -> bool:
         """Destroys an existing client pool. Closes stale connections, then removes all gevent threads."""
-
+        logger.info(f"in kill_client_pool()")
         kill_was_successful = False
         try:
             # Remove stale connections
@@ -143,6 +145,7 @@ class EPPLibWrapper:
             return kill_was_successful
 
     def kill_client_thread(self, client_thread):
+        logger.info(f"in kill_client_thread()")
         client = client_thread.value
         self._disconnect(client)
         self.client_pool.killone(client_thread)
@@ -166,7 +169,8 @@ class EPPLibWrapper:
             self._create_client_thread()
             self.connection_lock.release()
             raise
-        except Exception:
+        except Exception as err:
+            logger.error(f"Found an exception: {err}")
             # TODO - maybe restart the entire pool here
             self.client_threads.append(thread)
             self.connection_lock.release()
@@ -179,6 +183,7 @@ class EPPLibWrapper:
         """Initialize a client, assuming _login defined. Sets _client to initialized
         client. Raises errors if initialization fails.
         This method will be called at app initialization, and also during retries."""
+        logger.error(f"In _initialize_client()")
         # establish a client object with a TCP socket transport
         # note that type: ignore added in several places because linter complains
         # about _client initially being set to None, and None type doesn't match code
@@ -211,6 +216,7 @@ class EPPLibWrapper:
 
     def _disconnect(self, client) -> None:
         """Close the connection."""
+        logger.info("in _disconnect()")
         try:
             client.send(commands.Logout())  # type: ignore
             client.close()  # type: ignore
@@ -220,7 +226,7 @@ class EPPLibWrapper:
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
-
+        logger.info("in _send()")
         try:
             # TODO. This will need to be updated. The parent
             # "send" needs to split this into a thread.
@@ -266,6 +272,7 @@ class EPPLibWrapper:
         try:
             return self._send(command)
         except RegistryError as err:
+            """
             if (
                 err.is_transport_error()
                 or err.is_connection_error()
@@ -277,7 +284,8 @@ class EPPLibWrapper:
                 logger.info(f"{message} Error: {err}")
                 return self._retry(command)
             else:
-                raise err
+            """
+            raise err
 
 
 try:
