@@ -70,7 +70,7 @@ class EPPLibWrapper:
         self.populate_client_pool()
 
     def populate_client_pool(self):
-
+        logger.info("populate_client_pool() -> Creating client pool")
         # If a pool already exists, kill it.
         if len(self.client_threads) > 0:
             self.kill_client_pool()
@@ -106,7 +106,6 @@ class EPPLibWrapper:
                 raise RegistryError("Not all client connections were initialized within the timeout period.")
             else:
                 logger.info(f"populate_client_pool() -> Thread #{thread_number} created successfully.")
-                self.connection_lock.acquire()
 
     def _create_client_thread(self):
         client_thread = self.client_pool.spawn(self._initialize_client)
