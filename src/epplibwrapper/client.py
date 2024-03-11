@@ -60,9 +60,6 @@ class EPPLibWrapper:
         self.client_pool = Pool(self.pool_size)
         self.client_connection_pool_running = False
 
-        # Create a command pool for dealing with concurrent connections
-        self.command_pool = Pool(self.pool_size)
-
         # Lets store all threads in a common location. 
         # Each thread contains a client with an active connection to EPP.
         self.client_threads = deque()
@@ -73,10 +70,10 @@ class EPPLibWrapper:
         self.populate_client_pool()
 
     def populate_client_pool(self):
-        """Creates the client pool."""
         logger.info("populate_client_pool() -> Creating client pool")
         # If a pool already exists, kill it.
-        self.kill_client_pool()
+        if len(self.client_threads) > 0:
+            self.kill_client_pool()
 
         self.client_connection_pool_running = False
         try:
@@ -84,8 +81,14 @@ class EPPLibWrapper:
         except RegistryError as err:
             # Close old EPP connections if any exist. We want to start from a fresh slate.
             if len(self.client_pool) > 0:
-                self.kill_client_pool()
-            logger.error(f"Cannot initialize the connection pool: {err}")
+                success = self.kill_client_pool()
+            
+            if success:
+                logger.error(f"Cannot initialize the connection pool: {err}")
+            else:
+                # TODO: Raise pool error.
+                # This could lead to a memory leak if not handled correctly.
+                raise Exception("Cannot initialize the connection pool. Existing connections could not be killed.")
         else:
             self.client_connection_pool_running = True
 
@@ -93,8 +96,7 @@ class EPPLibWrapper:
         """Given our current pool size, add a thread containing an epp client with an open epp connection"""
         logger.info(f"in _create_client_pool()")
         for _thread_number in range(self.pool_size):
-            client_thread = self.client_pool.spawn(self._initialize_client)
-            self.client_threads.append(client_thread)
+            self._create_client_thread()
 
         # Wait for all the pools to finish spawning.
         self.client_pool.join(timeout=settings.EPP_POOL_TIMEOUT)
@@ -106,8 +108,15 @@ class EPPLibWrapper:
             else:
                 logger.info(f"populate_client_pool() -> Thread #{thread_number} created successfully.")
 
+    def _create_client_thread(self):
+        logger.info(f"in _create_client_thread()")
+        client_thread = self.client_pool.spawn(self._initialize_client)
+        self.client_threads.append(client_thread)
+
     def kill_client_pool(self) -> bool:
         """Destroys an existing client pool. Closes stale connections, then removes all gevent threads."""
+        logger.info(f"in kill_client_pool()")
+        kill_was_successful = False
         try:
             # Remove stale connections
             logger.warning("kill_client_pool() -> Killing client pool.")
@@ -130,8 +139,16 @@ class EPPLibWrapper:
 
             logger.info("Client pool cleared and all connections stopped.")
         except Exception as err:
-            message = f"Could not kill all connections. Error: {err}"
-            raise RegistryError(message)
+            logger.error(f"kill_client_pool() -> Could not kill all connections: {err}")
+        else:
+            kill_was_successful = True
+            return kill_was_successful
+
+    def kill_client_thread(self, client_thread):
+        logger.info(f"in kill_client_thread()")
+        client = client_thread.value
+        self._disconnect(client)
+        self.client_pool.killone(client_thread)
 
     @contextmanager
     def get_active_client_connection(self):
@@ -146,17 +163,21 @@ class EPPLibWrapper:
         try:
             client = thread.value
             yield client
-        finally:
-            # No matter what happens, keep these in sync.
+        except TransportError:
+            # Restart the thread
+            self.kill_client_thread(thread)
+            self._create_client_thread()
+            self.connection_lock.release()
+            raise
+        except Exception as err:
+            logger.error(f"Found an exception: {err}")
+            # TODO - maybe restart the entire pool here
             self.client_threads.append(thread)
             self.connection_lock.release()
-
-    def kill_client_thread(self, client_thread):
-        """Removes a thread by disconnecting from EPP, then killing it through gevent."""
-        logger.info(f"kill_client_thread() -> killing thread: {client_thread}")
-        client = client_thread.value
-        self._disconnect(client)
-        self.client_pool.killone(client_thread)
+            raise
+        else:
+            self.client_threads.append(thread)
+            self.connection_lock.release()
 
     def _initialize_client(self) -> Client:
         """Initialize a client, assuming _login defined. Sets _client to initialized
@@ -205,7 +226,10 @@ class EPPLibWrapper:
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
+        logger.info("in _send()")
         try:
+            # TODO. This will need to be updated. The parent
+            # "send" needs to split this into a thread.
             with self.get_active_client_connection() as _client:
                 response = _client.send(command)
         except (ValueError, ParsingError) as err:
@@ -232,23 +256,23 @@ class EPPLibWrapper:
             else:
                 return response
 
+    def _retry(self, client, command):
+        """Retry sending a command through EPP by re-initializing the client
+        and then sending the command."""
+        # re-initialize by disconnecting and initial
+        self._disconnect(client)
+        return self._send(command)
+
     def send(self, command, *, cleaned=False):
         """Login, the send the command. Retry once if an error is found"""
         # try to prevent use of this method without appropriate safeguards
         cmd_type = command.__class__.__name__
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
-
         try:
             return self._send(command)
         except RegistryError as err:
-            # Regenerate the pool.
-            # We do this on every error we encounter.
-            # For a low number of threads, this is fine.
-            # But for a high number this is overzealous, 
-            # so this may need to change then.
-            self.populate_client_pool()
-
+            """
             if (
                 err.is_transport_error()
                 or err.is_connection_error()
@@ -258,28 +282,10 @@ class EPPLibWrapper:
             ):
                 message = f"{cmd_type} failed and will be retried"
                 logger.info(f"{message} Error: {err}")
-                return self._send(command)
+                return self._retry(command)
             else:
-                raise err
-
-    def send_concurrent(self, commands, *, cleaned=False):
-        """Send multiple commands concurrently, utilizing the client pool."""
-        if not cleaned:
-            raise ValueError("Please sanitize user input before sending it.")
-
-        greenlets = []
-        for command in commands:
-            command_thread = self.command_pool.spawn(self.send, command, cleaned)
-            greenlets.append(command_thread)
-        
-        # Wait for all greenlets to complete
-        gevent.joinall(greenlets)
-        
-        # Kill any dangling threads
-        self.command_pool.kill()
-
-        results = [g.value for g in greenlets]
-        return results
+            """
+            raise err
 
 
 try:
