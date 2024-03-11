@@ -223,8 +223,10 @@ class EPPLibWrapper:
         cmd_type = command.__class__.__name__
 
         try:
-            _client = self.get_active_client_connection()
-            response = _client.send(command)
+            # TODO. This will need to be updated. The parent
+            # "send" needs to split this into a thread.
+            with self.get_active_client_connection() as _client:
+                response = _client.send(command)
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
             logger.error(f"{message} Error: {err}")
