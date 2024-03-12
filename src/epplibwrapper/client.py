@@ -181,19 +181,6 @@ class EPPLibWrapper:
         client_thread = self.client_pool.spawn(self._initialize_client)
         self.client_threads.append(client_thread)
 
-    def kill_client_thread(self, client_thread):
-        """
-        Terminates a specified client thread (greenlet) and closes its EPP connection.
-
-        This method first retrieves the client associated with the given greenlet,
-        closes the EPP connection using `_disconnect`, and then removes
-        the greenlet using `killone` to ensure it is properly terminated.
-        """
-        logger.debug(f"in kill_client_thread()")
-        client = client_thread.value
-        self._disconnect(client)
-        self.client_pool.killone(client_thread)
-
     # == EPP Connection == #
     def _initialize_client(self) -> Client:
         """Initialize a client, assuming _login defined. Sets _client to initialized
@@ -237,17 +224,15 @@ class EPPLibWrapper:
 
     def _disconnect(self, client) -> None:
         """Close the connection."""
-        # Acquire a connection, so we don't send
-        # multiple disconnects at once.
-        self.connection_lock.acquire()
         try:
             client.send(commands.Logout())  # type: ignore
+        except Exception as err:
+            logger.warning(f"Logout command was not sent: {err}.")
+
+        try:
             client.close()  # type: ignore
         except Exception as err:
             logger.warning(f"Connection to registry was not cleanly closed for client: {err}.")
-
-        # Release the connection
-        self.connection_lock.release()
 
     # == Send/Commands == #
     @contextmanager
@@ -258,35 +243,31 @@ class EPPLibWrapper:
         if not self.client_threads or len(self.client_threads) == 0:
             self.populate_client_pool()
 
-        self.connection_lock.acquire()
         thread = self.client_threads.popleft()
         try:
             client = thread.value
             yield client
         except RegistryError as err:
-            if err.should_restart_epp_client_and_retry():
-                # Restart the thread
-                self.kill_client_thread(thread)
-                self._create_client_thread()
-                self.connection_lock.release()
-
-            self.client_threads.append(thread)
-            self.connection_lock.release()
             raise err
         finally:
-            logger.debug("get_active_client_connection() -> Releasing thread....")
-            self.client_threads.append(thread)
+            logger.debug("get_active_client_connection() -> Releasing thread")
             self.connection_lock.release()
+            self.client_threads.append(thread)
 
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
         logger.debug("in _send()")
         try:
-            # TODO. This will need to be updated. The parent
-            # "send" needs to split this into a thread.
             with self.get_active_client_connection() as _client:
-                response = _client.send(command)
+                if hasattr(_client, "send"):
+                    response = _client.send(command)
+                else:
+                    # This can happen if get_active_client_connection is modifed
+                    # and a thread is sent, rather than the underlying client.
+                    # Or if the thread itself is none.
+                    # This will not happen in normal code flow.
+                    raise ValueError("_client does not have attribute 'send'")
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
             logger.error(f"{message} Error: {err}")
@@ -320,13 +301,13 @@ class EPPLibWrapper:
         try:
             return self._send(command)
         except RegistryError as err:
+            # Recreate the connection pool
+            self.populate_client_pool()
             if err.should_restart_epp_client_and_retry():
                 message = f"{cmd_type} failed and will be retried"
                 logger.info(f"{message} Error: {err}")
                 return self._send(command)
             else:
-                # Recreate the connection pool
-                self.populate_client_pool()
                 raise err
 
 

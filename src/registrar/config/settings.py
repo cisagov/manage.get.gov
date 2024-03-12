@@ -602,7 +602,7 @@ SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
 # region: Connection Pool----------------------------------------------------------###
 # Use this variable to set the size of our connection pool in client.py
-EPP_CONNECTION_POOL_SIZE = 3
+EPP_CONNECTION_POOL_SIZE = 1
 
 # Determines the amount of time we wait to spawn new EPP clients.
 EPP_CLIENT_SPAWN_FREQUENCY = 0.1
