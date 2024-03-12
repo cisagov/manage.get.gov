@@ -245,11 +245,11 @@ class TestDomainRequest(TestCase):
     def assert_fsm_transition_does_not_raise_error(self, test_cases, method_to_run):
         """Given a list of test cases, ensure that none of them throw transition errors"""
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
-            for application, exception_type in test_cases:
-                with self.subTest(application=application, exception_type=exception_type):
+            for domain_request, exception_type in test_cases:
+                with self.subTest(domain_request=domain_request, exception_type=exception_type):
                     try:
                         # Retrieve the method by name from the application object and call it
-                        method = getattr(application, method_to_run)
+                        method = getattr(domain_request, method_to_run)
                         # Call the method
                         method()
                     except exception_type:
@@ -920,7 +920,7 @@ class TestDomainInformation(TestCase):
         self.maxDiff = None
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        domain_request = DomainApplication.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
+        domain_request = DomainRequest.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():

@@ -600,7 +600,7 @@ def completed_domain_request(
     return domain_request
 
 def set_domain_request_investigators(domain_request_list: list[DomainRequest], investigator_user: User):
-    """Helper method that sets the investigator field of all provided domain_requests"""
+    """Helper method that sets the investigator field of all provided domain requests"""
     for request in domain_request_list:
         request.investigator = investigator_user
         request.save()

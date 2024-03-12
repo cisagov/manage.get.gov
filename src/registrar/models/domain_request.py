@@ -777,7 +777,7 @@ class DomainRequest(TimeStampedModel):
         conditions=[investigator_exists_and_is_staff],
     )
     def approve(self, send_email=True):
-        """Approve an domain_request that has been submitted.
+        """Approve an domain request that has been submitted.
 
         This action cleans up the rejection status if moving away from rejected.
 
