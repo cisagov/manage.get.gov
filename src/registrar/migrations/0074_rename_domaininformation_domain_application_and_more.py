@@ -12,11 +12,12 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
+        migrations.RenameField(
             model_name="domaininformation",
-            name="domain_application",
+            old_name="domain_application",
+            new_name="domain_request",
         ),
-        migrations.AddField(
+        migrations.AlterField(
             model_name="domaininformation",
             name="domain_request",
             field=models.OneToOneField(
