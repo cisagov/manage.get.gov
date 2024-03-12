@@ -53,8 +53,7 @@ class EPPLibWrapper:
                 "urn:ietf:params:xml:ns:contact-1.0",
             ],
         )
-        # We should only ever have one active connection at a time,
-        # given that
+        # We should only ever have one active connection at a time
         self.connection_lock = BoundedSemaphore(1)
         try:
             self._initialize_client()
