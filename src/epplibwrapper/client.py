@@ -1,6 +1,7 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
+from gevent.lock import BoundedSemaphore
 
 try:
     from epplib.client import Client
@@ -52,6 +53,9 @@ class EPPLibWrapper:
                 "urn:ietf:params:xml:ns:contact-1.0",
             ],
         )
+        # We should only ever have one active connection at a time,
+        # given that 
+        self.connection_lock = BoundedSemaphore(1)
         try:
             self._initialize_client()
         except Exception:
@@ -91,12 +95,23 @@ class EPPLibWrapper:
             raise RegistryError(message) from err
 
     def _disconnect(self) -> None:
-        """Close the connection."""
+        """Close the connection. Sends a logout command and closes the connection."""
+        self._send_logout_command()
+        self._close_client()
+
+    def _send_logout_command(self):
+        """Sends a logout command to epp"""
         try:
             self._client.send(commands.Logout())  # type: ignore
-            self._client.close()  # type: ignore
-        except Exception:
-            logger.warning("Connection to registry was not cleanly closed.")
+        except Exception as err:
+            logger.warning(f"Logout command not sent successfully: {err}")
+    
+    def _close_client(self):
+        """Closes an active client connection"""
+        try:
+            self._client.close()
+        except Exception as err:
+            logger.warning(f"Connection to registry was not cleanly closed: {err}")
 
     def _send(self, command):
         """Helper function used by `send`."""
@@ -146,6 +161,8 @@ class EPPLibWrapper:
         cmd_type = command.__class__.__name__
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
+        
+        self.connection_lock.acquire()
         try:
             return self._send(command)
         except RegistryError as err:
@@ -161,6 +178,8 @@ class EPPLibWrapper:
                 return self._retry(command)
             else:
                 raise err
+        finally:
+            self.connection_lock.release()
 
 
 try:
