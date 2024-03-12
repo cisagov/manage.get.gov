@@ -5,7 +5,7 @@ from .common import MockEppLib  # type: ignore
 
 
 from registrar.models import (
-    DomainApplication,
+    DomainRequest,
     DomainInformation,
 )
 import logging
@@ -26,8 +26,8 @@ class TestViews(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 302)
 
-    def test_application_form_not_logged_in(self):
-        """Application form not accessible without a logged-in user."""
+    def test_domain_request_form_not_logged_in(self):
+        """Domain request form not accessible without a logged-in user."""
         response = self.client.get("/request/")
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login?next=/request/", response.headers["Location"])
@@ -45,9 +45,9 @@ class TestWithUser(MockEppLib):
         )
 
     def tearDown(self):
-        # delete any applications too
+        # delete any domain requests too
         super().tearDown()
-        DomainApplication.objects.all().delete()
+        DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
         self.user.delete()
 

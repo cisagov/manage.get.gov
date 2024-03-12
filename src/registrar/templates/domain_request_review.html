@@ -1,0 +1,177 @@
+{% extends 'domain_request_form.html' %}
+{% load static url_helpers %}
+{% load custom_filters %}
+
+{% block form_required_fields_help_text %}
+{# there are no required fields on this page so don't show this #}
+{% endblock %}
+
+{% block form_page_title %}
+  <span class="display-flex flex-align-start maxw-mobile-lg"> 
+    <img 
+        class= "margin-right-105" 
+        src="{%static 'img/registrar/dotgov_review_magnify.svg' %}" 
+        alt=""
+        width="72"
+        />
+    <h1> Review and submit your domain request </h1>
+  </span>
+{% endblock %}
+
+{% block form_fields %}
+  {% for step in steps.all|slice:":-1" %}
+  <section class="summary-item margin-top-3">
+
+        {% if step == Step.ORGANIZATION_TYPE %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% if domain_request.organization_type is not None %}
+            {% with title=form_titles|get_item:step value=domain_request.get_organization_type_display|default:"Incomplete" %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+            {% endwith %}
+          {% else %}
+            {% with title=form_titles|get_item:step value="Incomplete" %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+            {% endwith %}
+          {% endif %}
+        {% endif %}
+
+        {% if step == Step.TRIBAL_GOVERNMENT %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% with title=form_titles|get_item:step value=domain_request.tribe_name|default:"Incomplete" %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+          {% endwith %}
+          {% if domain_request.federally_recognized_tribe %}<p>Federally-recognized tribe</p>{% endif %}
+          {% if domain_request.state_recognized_tribe %}<p>State-recognized tribe</p>{% endif %}
+        {% endif %}
+
+
+        {% if step == Step.ORGANIZATION_FEDERAL %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% with title=form_titles|get_item:step value=domain_request.get_federal_type_display|default:"Incomplete" %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+          {% endwith %}
+        {% endif %}
+
+        {% if step == Step.ORGANIZATION_ELECTION %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% with title=form_titles|get_item:step value=domain_request.is_election_board|yesno:"Yes,No,Incomplete" %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+          {% endwith %}
+        {% endif %}
+
+        {% if step == Step.ORGANIZATION_CONTACT %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% if domain_request.organization_name %}
+            {% with title=form_titles|get_item:step value=domain_request %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url address='true' %}
+            {% endwith %}
+          {% else %}
+            {% with title=form_titles|get_item:step value='Incomplete' %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+            {% endwith %}
+          {% endif %}
+        {% endif %}
+
+        {% if step == Step.ABOUT_YOUR_ORGANIZATION %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% with title=form_titles|get_item:step value=domain_request.about_your_organization|default:"Incomplete" %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+          {% endwith %}
+        {% endif %}
+
+        {% if step == Step.AUTHORIZING_OFFICIAL %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% if domain_request.authorizing_official is not None %}
+            {% with title=form_titles|get_item:step value=domain_request.authorizing_official %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' %}
+            {% endwith %}
+          {% else %}
+            {% with title=form_titles|get_item:step value="Incomplete" %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+            {% endwith %}
+          {% endif %}
+        {% endif %}
+
+        {% if step == Step.CURRENT_SITES %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% if domain_request.current_websites.all %}
+            {% with title=form_titles|get_item:step value=domain_request.current_websites.all %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url list='true' %}
+            {% endwith %}
+          {% else %}
+            {% with title=form_titles|get_item:step value='None' %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+            {% endwith %}
+          {% endif %}
+        {% endif %}
+
+        {% if step == Step.DOTGOV_DOMAIN %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"Incomplete" %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+          {% endwith %}
+
+          {% if domain_request.alternative_domains.all %}
+            <h3 class="register-form-review-header">Alternative domains</h3>
+            <ul class="usa-list usa-list--unstyled margin-top-0">
+              {% for site in domain_request.alternative_domains.all %}
+                <li>{{ site.website }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endif %}
+
+        {% if step == Step.PURPOSE %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% with title=form_titles|get_item:step value=domain_request.purpose|default:"Incomplete" %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+          {% endwith %}
+        {% endif %}
+
+        {% if step == Step.YOUR_CONTACT %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% if domain_request.submitter is not None %}
+            {% with title=form_titles|get_item:step value=domain_request.submitter %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' %}
+            {% endwith %}
+          {% else %}
+            {% with title=form_titles|get_item:step value="Incomplete" %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+            {% endwith %}
+          {% endif %}
+        {% endif %}
+
+        {% if step == Step.OTHER_CONTACTS %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% if domain_request.other_contacts.all %}
+            {% with title=form_titles|get_item:step value=domain_request.other_contacts.all %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' list='true' %}
+            {% endwith %}
+          {% else %}
+            {% with title=form_titles|get_item:step value=domain_request.no_other_contacts_rationale|default:"Incomplete" %}
+              {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+            {% endwith %}
+          {% endif %}
+        {% endif %}
+
+
+        {% if step == Step.ANYTHING_ELSE %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% with title=form_titles|get_item:step value=domain_request.anything_else|default:"No" %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+          {% endwith %}
+        {% endif %}
+
+
+        {% if step == Step.REQUIREMENTS %}
+          {% namespaced_url 'domain-request' step as domain_request_url %}
+          {% with title=form_titles|get_item:step value=domain_request.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+          {% endwith %}
+        {% endif %}
+
+
+    
+  </section>
+  {% endfor %}
+{% endblock %}
