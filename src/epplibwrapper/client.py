@@ -54,7 +54,7 @@ class EPPLibWrapper:
             ],
         )
         # We should only ever have one active connection at a time,
-        # given that 
+        # given that
         self.connection_lock = BoundedSemaphore(1)
         try:
             self._initialize_client()
@@ -105,7 +105,7 @@ class EPPLibWrapper:
             self._client.send(commands.Logout())  # type: ignore
         except Exception as err:
             logger.warning(f"Logout command not sent successfully: {err}")
-    
+
     def _close_client(self):
         """Closes an active client connection"""
         try:
@@ -161,7 +161,7 @@ class EPPLibWrapper:
         cmd_type = command.__class__.__name__
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
-        
+
         self.connection_lock.acquire()
         try:
             return self._send(command)
