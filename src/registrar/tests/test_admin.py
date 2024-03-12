@@ -1224,7 +1224,7 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             p = "userpass"
@@ -1261,7 +1261,7 @@ class TestDomainRequestAdmin(MockEppLib):
             # Test that approved domain exists and equals requested domain
             self.assertEqual(domain_request.creator.status, "restricted")
 
-            # 'Get' to the application again
+            # 'Get' to the domain request again
             response = self.client.get(
                 "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
                 follow=True,
@@ -1282,7 +1282,7 @@ class TestDomainRequestAdmin(MockEppLib):
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample application
+            # Create a sample domain request
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
             p = "userpass"
@@ -1310,7 +1310,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk), follow=True
             )
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                # Modify the application's property
+                # Modify the domain request's property
                 domain_request.status = DomainRequest.DomainRequestStatus.INELIGIBLE
 
                 # Use the model admin's save_model method
@@ -1319,7 +1319,7 @@ class TestDomainRequestAdmin(MockEppLib):
             # Test that approved domain exists and equals requested domain
             self.assertEqual(domain_request.creator.status, "restricted")
 
-            # 'Get' to the application again
+            # 'Get' to the domain request again
             response = self.client.get(
                 "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
                 follow=True,
