@@ -70,10 +70,10 @@ class EPPLibWrapper:
         self.populate_client_pool()
 
     def populate_client_pool(self):
-        logger.info("populate_client_pool() -> Creating client pool")
         # Wipe the pool
         self.kill_client_pool()
 
+        logger.info("populate_client_pool() -> Creating client pool")
         self.client_connection_pool_running = False
         try:
             self._create_client_pool()
@@ -116,17 +116,15 @@ class EPPLibWrapper:
         try:
             # Remove stale connections
             logger.warning("kill_client_pool() -> Killing client pool.")
-            logger.info(f"kill_client_pool() -> Closing stale connections: {self.client_pool}")
+            logger.info(f"kill_client_pool() -> Closing stale connections")
             for client_thread in self.client_threads:
                 # Get the underlying client object
                 client = client_thread.value
-
                 # Disconnect the client by sending a disconnect command to EPP. 
                 self._disconnect(client)
 
-
             # Kill all existing threads.
-            logger.info(f"kill_client_pool() -> Killing all threads: {self.client_pool}")
+            logger.info(f"kill_client_pool() -> Killing all threads")
             self.client_pool.kill()
 
             # After killing all greenlets, clear the list to remove references.
@@ -161,17 +159,18 @@ class EPPLibWrapper:
         try:
             client = thread.value
             yield client
-        except TransportError:
-            # Restart the thread
-            self.kill_client_thread(thread)
-            self._create_client_thread()
-            self.connection_lock.release()
-            raise err
-        except Exception as err:
+        except RegistryError as err:
+            if (err.should_restart_epp_client_and_retry()):
+                # Restart the thread
+                self.kill_client_thread(thread)
+                self._create_client_thread()
+                self.connection_lock.release()
+            
             self.client_threads.append(thread)
             self.connection_lock.release()
             raise err
-        else:
+        finally:
+            logger.info("get_active_client_connection() -> Releasing thread....")
             self.client_threads.append(thread)
             self.connection_lock.release()
 
@@ -261,13 +260,6 @@ class EPPLibWrapper:
             else:
                 return response
 
-    def _retry(self, client, command):
-        """Retry sending a command through EPP by re-initializing the client
-        and then sending the command."""
-        # re-initialize by disconnecting and initial
-        self._disconnect(client)
-        return self._send(command)
-
     def send(self, command, *, cleaned=False):
         """Login, the send the command. Retry once if an error is found"""
         # try to prevent use of this method without appropriate safeguards
@@ -277,22 +269,14 @@ class EPPLibWrapper:
         try:
             return self._send(command)
         except RegistryError as err:
-            """
-            if (
-                err.is_transport_error()
-                or err.is_connection_error()
-                or err.is_session_error()
-                or err.is_server_error()
-                or err.should_retry()
-            ):
+            if (err.should_restart_epp_client_and_retry()):
                 message = f"{cmd_type} failed and will be retried"
                 logger.info(f"{message} Error: {err}")
-                return self._retry(command)
+                return self._send(command)
             else:
-            """
-            # Recreate the connection pool
-            self.populate_client_pool()
-            raise err
+                # Recreate the connection pool
+                self.populate_client_pool()
+                raise err
 
 
 try:

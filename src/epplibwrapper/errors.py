@@ -84,6 +84,18 @@ class RegistryError(Exception):
 
     def is_client_error(self):
         return self.code is not None and (self.code >= 2000 and self.code <= 2308)
+    
+    def should_restart_epp_client_and_retry(self):
+        if (
+            self.is_transport_error()
+            or self.is_connection_error()
+            or self.is_session_error()
+            or self.is_server_error()
+            or self.should_retry()
+        ):
+            return True
+        else:
+            return False
 
 
 class LoginError(RegistryError):
