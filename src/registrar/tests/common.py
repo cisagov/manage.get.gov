@@ -529,6 +529,7 @@ def completed_domain_request(
     user=False,
     submitter=False,
     name="city.gov",
+    investigator=None,
 ):
     """A completed domain request."""
     if not user:
@@ -558,6 +559,13 @@ def completed_domain_request(
         email="testy2@town.com",
         phone="(555) 555 5557",
     )
+    if not investigator:
+        investigator, _ = User.objects.get_or_create(
+            username="incrediblyfakeinvestigator",
+            first_name="Joe",
+            last_name="Bob",
+            is_staff=True,
+        )
     domain_request_kwargs = dict(
         organization_type="federal",
         federal_type="executive",
@@ -573,6 +581,7 @@ def completed_domain_request(
         submitter=submitter,
         creator=user,
         status=status,
+        investigator=investigator,
     )
     if has_about_your_organization:
         domain_request_kwargs["about_your_organization"] = "e-Government"
@@ -589,6 +598,13 @@ def completed_domain_request(
         domain_request.alternative_domains.add(alt)
 
     return domain_request
+
+
+def set_domain_request_investigators(domain_request_list: list[DomainRequest], investigator_user: User):
+    """Helper method that sets the investigator field of all provided domain requests"""
+    for request in domain_request_list:
+        request.investigator = investigator_user
+        request.save()
 
 
 def multiple_unalphabetical_domain_objects(
