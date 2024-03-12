@@ -139,17 +139,17 @@ class DomainRequestAdminForm(forms.ModelForm):
 
         # We only care about investigator when in these statuses
         checked_statuses = [
-            DomainApplication.ApplicationStatus.APPROVED,
-            DomainApplication.ApplicationStatus.IN_REVIEW,
-            DomainApplication.ApplicationStatus.ACTION_NEEDED,
-            DomainApplication.ApplicationStatus.REJECTED,
-            DomainApplication.ApplicationStatus.INELIGIBLE,
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.INELIGIBLE,
         ]
 
         # If a status change occured, check for validity
         if status != initial_status and status in checked_statuses:
             # Checks the "investigators" field for validity.
-            # That field must obey certain conditions when an application is approved.
+            # That field must obey certain conditions when an domain_request is approved.
             # Will call "add_error" if any issues are found.
             self._check_for_valid_investigator(investigator)
 
@@ -1163,7 +1163,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
         # == Handle non-status changes == #
 
-        # Get the original application from the database.
+        # Get the original domain_request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
@@ -1203,9 +1203,9 @@ class DomainRequestAdmin(ListHeaderAdmin):
             should_proceed = False
             return should_proceed
 
-        application_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
-        if application_is_not_approved and not obj.domain_is_not_active():
-            # If an admin tried to set an approved application to
+        request_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+        if request_is_not_approved and not obj.domain_is_not_active():
+            # If an admin tried to set an approved domain_request to
             # another status and the related domain is already
             # active, shortcut the action and throw a friendly
             # error message. This action would still not go through
@@ -1248,7 +1248,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         return (obj, should_proceed)
 
     def get_status_method_mapping(self, domain_request):
-        """Returns what method should be ran given an application object"""
+        """Returns what method should be ran given an DomainRequest object"""
         # Define a per-object mapping
         status_method_mapping = {
             models.DomainRequest.DomainRequestStatus.STARTED: None,

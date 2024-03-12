@@ -599,11 +599,11 @@ def completed_domain_request(
 
     return domain_request
 
-def set_domain_request_investigators(application_list: list[DomainRequest], investigator_user: User):
+def set_domain_request_investigators(domain_request_list: list[DomainRequest], investigator_user: User):
     """Helper method that sets the investigator field of all provided domain_requests"""
-    for application in application_list:
-        application.investigator = investigator_user
-        application.save()
+    for request in domain_request_list:
+        request.investigator = investigator_user
+        request.save()
 
 
 def multiple_unalphabetical_domain_objects(

@@ -9,7 +9,7 @@ from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
-from registrar.utility.errors import FSMdomain_requestError, FSMErrorCodes
+from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class DomainRequest(TimeStampedModel):
-    """A registrant's request for a new domain."""
+    """A registrant's domain request for a new domain."""
 
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
@@ -116,7 +116,7 @@ class DomainRequest(TimeStampedModel):
     class OrganizationChoicesVerbose(models.TextChoices):
         """
         Secondary organization choices
-        For use in the domain_request form and on the templates
+        For use in the domain request form and on the templates
         Keys need to match OrganizationChoices
         """
 
@@ -367,7 +367,7 @@ class DomainRequest(TimeStampedModel):
         NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
 
-    # #### Internal fields about the domain_request #####
+    # #### Internal fields about the domain request #####
     status = FSMField(
         choices=DomainRequestStatus.choices,  # possible states as an array of constants
         default=DomainRequestStatus.STARTED,  # sensible default
@@ -380,7 +380,7 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    # This is the domain_request user who created this domain_request. The contact
+    # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
         "registrar.User",
@@ -500,7 +500,7 @@ class DomainRequest(TimeStampedModel):
         on_delete=models.PROTECT,
     )
 
-    # "+" means no reverse relation to lookup domain_requests from Website
+    # "+" means no reverse relation to lookup domain requests from Website
     current_websites = models.ManyToManyField(
         "registrar.Website",
         blank=True,
@@ -513,7 +513,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         help_text="The approved domain",
-        related_name="domain_domain_request",
+        related_name="domain_request",
         on_delete=models.SET_NULL,
     )
 
@@ -522,7 +522,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         help_text="The requested domain",
-        related_name="domain_domain_request",
+        related_name="domain_request",
         on_delete=models.PROTECT,
     )
     alternative_domains = models.ManyToManyField(
@@ -531,8 +531,8 @@ class DomainRequest(TimeStampedModel):
         related_name="alternatives+",
     )
 
-    # This is the contact information provided by the applicant. The
-    # domain_request user who created it is in the `creator` field.
+    # This is the contact information provided by the domain requestor. The
+    # user who created the domain request is in the `creator` field.
     submitter = models.ForeignKey(
         "registrar.Contact",
         null=True,
@@ -572,7 +572,7 @@ class DomainRequest(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
-    # submission date records when domain_request is submitted
+    # submission date records when domain request is submitted
     submission_date = models.DateField(
         null=True,
         blank=True,
@@ -591,7 +591,7 @@ class DomainRequest(TimeStampedModel):
             if self.requested_domain and self.requested_domain.name:
                 return self.requested_domain.name
             else:
-                return f"{self.status} domain_request created by {self.creator}"
+                return f"{self.status} domain request created by {self.creator}"
         except Exception:
             return ""
 
@@ -665,7 +665,7 @@ class DomainRequest(TimeStampedModel):
         target=DomainRequestStatus.SUBMITTED,
     )
     def submit(self):
-        """Submit an domain_request that is started.
+        """Submit an domain request that is started.
 
         As a side effect, an email notification is sent."""
 
@@ -713,7 +713,7 @@ class DomainRequest(TimeStampedModel):
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def in_review(self):
-        """Investigate an domain_request that has been submitted.
+        """Investigate an domain request that has been submitted.
 
         This action is logged.
 
@@ -745,7 +745,7 @@ class DomainRequest(TimeStampedModel):
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def action_needed(self):
-        """Send back an domain_request that is under investigation or rejected.
+        """Send back an domain request that is under investigation or rejected.
 
         This action is logged.
 
@@ -783,7 +783,7 @@ class DomainRequest(TimeStampedModel):
 
         This has substantial side-effects because it creates another database
         object for the approved Domain and makes the user who created the
-        domain_request into an admin on that domain. It also triggers an email
+        domain request into an admin on that domain. It also triggers an email
         notification."""
 
         # create the domain
@@ -791,7 +791,7 @@ class DomainRequest(TimeStampedModel):
 
         # == Check that the domain_request is valid == #
         if Domain.objects.filter(name=self.requested_domain.name).exists():
-            raise FSMdomain_requestError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
+            raise FSMApplicationError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
 
         # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)
@@ -799,7 +799,7 @@ class DomainRequest(TimeStampedModel):
 
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
-        DomainInformation.create_from_da(domain_domain_request=self, domain=created_domain)
+        DomainInformation.create_from_da(domain_request=self, domain=created_domain)
 
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
@@ -812,7 +812,7 @@ class DomainRequest(TimeStampedModel):
 
         # == Send out an email == #
         self._send_status_update_email(
-            "domain_request approved",
+            "domain request approved",
             "emails/status_change_approved.txt",
             "emails/status_change_approved_subject.txt",
             send_email,
@@ -824,7 +824,7 @@ class DomainRequest(TimeStampedModel):
         target=DomainRequestStatus.WITHDRAWN,
     )
     def withdraw(self):
-        """Withdraw an domain_request that has been submitted."""
+        """Withdraw an domain request that has been submitted."""
 
         self._send_status_update_email(
             "withdraw",
@@ -839,7 +839,7 @@ class DomainRequest(TimeStampedModel):
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def reject(self):
-        """Reject an domain_request that has been submitted.
+        """Reject an domain request that has been submitted.
 
         As side effects this will delete the domain and domain_information
         (will cascade), and send an email notification."""
@@ -868,7 +868,7 @@ class DomainRequest(TimeStampedModel):
         """The applicant is a bad actor, reject with prejudice.
 
         No email As a side effect, but we block the applicant from editing
-        any existing domains/domain_requests and from submitting new aplications.
+        any existing domains/domain requests and from submitting new aplications.
         We do this by setting an ineligible status on the user, which the
         permissions classes test against. This will also delete the domain
         and domain_information (will cascade) when they exist."""
@@ -881,7 +881,7 @@ class DomainRequest(TimeStampedModel):
     # ## Form policies ###
     #
     # These methods control what questions need to be answered by applicants
-    # during the domain_request flow. They are policies about the domain_request so
+    # during the domain request flow. They are policies about the domain request so
     # they appear here.
 
     def show_organization_federal(self) -> bool:
@@ -917,15 +917,15 @@ class DomainRequest(TimeStampedModel):
         ]
 
     def has_rationale(self) -> bool:
-        """Does this domain_request have no_other_contacts_rationale?"""
+        """Does this domain request have no_other_contacts_rationale?"""
         return bool(self.no_other_contacts_rationale)
 
     def has_other_contacts(self) -> bool:
-        """Does this domain_request have other contacts listed?"""
+        """Does this domain request have other contacts listed?"""
         return self.other_contacts.exists()
 
     def is_federal(self) -> Union[bool, None]:
-        """Is this domain_request for a federal agency?
+        """Is this domain request for a federal agency?
 
         organization_type can be both null and blank,
         """
