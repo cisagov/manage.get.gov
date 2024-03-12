@@ -917,10 +917,12 @@ class TestDomainInformation(TestCase):
 
     @boto3_mocking.patching
     def test_approval_creates_info(self):
-        self.maxDiff = None
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        domain_request = DomainRequest.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
+        investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
+        domain_request = DomainRequest.objects.create(
+            creator=user, requested_domain=draft_domain, notes="test notes", investigator=investigator
+        )
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
