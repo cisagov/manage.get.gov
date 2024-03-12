@@ -14,7 +14,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
 from registrar.utility import csv_export
 from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
@@ -70,12 +70,12 @@ class DomainInformationInlineForm(forms.ModelForm):
         }
 
 
-class DomainApplicationAdminForm(forms.ModelForm):
+class DomainRequestAdminForm(forms.ModelForm):
     """Custom form to limit transitions to available transitions.
     This form utilizes the custom widget for its class's ManyToMany UIs."""
 
     class Meta:
-        model = models.DomainApplication
+        model = models.DomainRequest
         fields = "__all__"
         widgets = {
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
@@ -86,29 +86,29 @@ class DomainApplicationAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        application = kwargs.get("instance")
-        if application and application.pk:
-            current_state = application.status
+        domain_request = kwargs.get("instance")
+        if domain_request and domain_request.pk:
+            current_state = domain_request.status
 
             # first option in status transitions is current state
-            available_transitions = [(current_state, application.get_status_display())]
+            available_transitions = [(current_state, domain_request.get_status_display())]
 
-            if application.investigator is not None:
+            if domain_request.investigator is not None:
                 transitions = get_available_FIELD_transitions(
-                    application, models.DomainApplication._meta.get_field("status")
+                    domain_request, models.DomainRequest._meta.get_field("status")
                 )
             else:
                 transitions = self.get_custom_field_transitions(
-                    application, models.DomainApplication._meta.get_field("status")
+                    domain_request, models.DomainRequest._meta.get_field("status")
                 )
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target.label))
 
             # only set the available transitions if the user is not restricted
-            # from editing the domain application; otherwise, the form will be
+            # from editing the domain request; otherwise, the form will be
             # readonly and the status field will not have a widget
-            if not application.creator.is_restricted():
+            if not domain_request.creator.is_restricted():
                 self.fields["status"].widget.choices = available_transitions
 
     def get_custom_field_transitions(self, instance, field):
@@ -291,8 +291,8 @@ class AdminSortFields:
         "alternative_domains": (Website, "website"),
         # == DraftDomain == #
         "requested_domain": (DraftDomain, "name"),
-        # == DomainApplication == #
-        "domain_application": (DomainApplication, "requested_domain__name"),
+        # == DomainRequest == #
+        "domain_request": (DomainRequest, "requested_domain__name"),
         # == Domain == #
         "domain": (Domain, "name"),
         "approved_domain": (Domain, "name"),
@@ -539,7 +539,7 @@ class MyUserAdmin(BaseUserAdmin):
     def get_search_results(self, request, queryset, search_term):
         """
         Override for get_search_results. This affects any upstream model using autocomplete_fields,
-        such as DomainApplication. This is because autocomplete_fields uses an API call to fetch data,
+        such as DomainRequest. This is because autocomplete_fields uses an API call to fetch data,
         and this fetch comes from this method.
         """
         # Custom filtering logic
@@ -553,13 +553,13 @@ class MyUserAdmin(BaseUserAdmin):
         request_get = request.GET
 
         # The request defines model name and field name.
-        # For instance, model_name could be "DomainApplication"
+        # For instance, model_name could be "DomainRequest"
         # and field_name could be "investigator".
         model_name = request_get.get("model_name", None)
         field_name = request_get.get("field_name", None)
 
         # Make sure we're only modifying requests from these models.
-        models_to_target = {"domainapplication"}
+        models_to_target = {"domainrequest"}
         if model_name in models_to_target:
             # Define rules per field
             match field_name:
@@ -850,7 +850,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "domain_application", "notes"]}),
+        (None, {"fields": ["creator", "domain_request", "notes"]}),
         (
             "Type of organization",
             {
@@ -901,7 +901,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "type_of_work",
         "more_organization_information",
         "domain",
-        "domain_application",
+        "domain_request",
         "submitter",
         "no_other_contacts_rationale",
         "anything_else",
@@ -914,7 +914,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
     autocomplete_fields = [
         "creator",
-        "domain_application",
+        "domain_request",
         "authorizing_official",
         "domain",
         "submitter",
@@ -939,10 +939,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
         return readonly_fields  # Read-only fields for analysts
 
 
-class DomainApplicationAdmin(ListHeaderAdmin):
-    """Custom domain applications admin class."""
+class DomainRequestAdmin(ListHeaderAdmin):
+    """Custom domain requests admin class."""
 
-    form = DomainApplicationAdminForm
+    form = DomainRequestAdminForm
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
@@ -957,7 +957,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             """
             # Select all investigators that are staff, then order by name and email
             privileged_users = (
-                DomainApplication.objects.select_related("investigator")
+                DomainRequest.objects.select_related("investigator")
                 .filter(investigator__is_staff=True)
                 .order_by("investigator__first_name", "investigator__last_name", "investigator__email")
             )
@@ -1138,7 +1138,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             messages.set_level(request, messages.ERROR)
             messages.error(
                 request,
-                "Could not save DomainApplication. Something went wrong.",
+                "Could not save DomainRequest. Something went wrong.",
             )
             return None
 
@@ -1150,7 +1150,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
             messages.error(
                 request,
-                "This action is not permitted for applications with a restricted creator.",
+                "This action is not permitted for domain requests with a restricted creator.",
             )
 
             return None
@@ -1164,7 +1164,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         # == Handle non-status changes == #
 
         # Get the original application from the database.
-        original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+        original_obj = models.DomainRequest.objects.get(pk=obj.pk)
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
             return super().save_model(request, obj, form, change)
@@ -1187,7 +1187,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         In the event that we should not status change, an error message
         will be displayed.
 
-        Returns a tuple: (obj: DomainApplication, should_proceed: bool)
+        Returns a tuple: (obj: DomainRequest, should_proceed: bool)
         """
 
         should_proceed = True
@@ -1203,7 +1203,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             should_proceed = False
             return should_proceed
 
-        application_is_not_approved = obj.status != models.DomainApplication.ApplicationStatus.APPROVED
+        application_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
         if application_is_not_approved and not obj.domain_is_not_active():
             # If an admin tried to set an approved application to
             # another status and the related domain is already
@@ -1212,7 +1212,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             # shortcut or not as the rules are duplicated on the model,
             # but the error would be an ugly Django error screen.
             error_message = "This action is not permitted. The domain is already active."
-        elif obj.status == models.DomainApplication.ApplicationStatus.REJECTED and not obj.rejection_reason:
+        elif obj.status == models.DomainRequest.DomainRequestStatus.REJECTED and not obj.rejection_reason:
             # This condition should never be triggered.
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
             # because we clean up the rejection reason in the transition in the model.
@@ -1247,27 +1247,27 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
         return (obj, should_proceed)
 
-    def get_status_method_mapping(self, application):
+    def get_status_method_mapping(self, domain_request):
         """Returns what method should be ran given an application object"""
         # Define a per-object mapping
         status_method_mapping = {
-            models.DomainApplication.ApplicationStatus.STARTED: None,
-            models.DomainApplication.ApplicationStatus.SUBMITTED: application.submit,
-            models.DomainApplication.ApplicationStatus.IN_REVIEW: application.in_review,
-            models.DomainApplication.ApplicationStatus.ACTION_NEEDED: application.action_needed,
-            models.DomainApplication.ApplicationStatus.APPROVED: application.approve,
-            models.DomainApplication.ApplicationStatus.WITHDRAWN: application.withdraw,
-            models.DomainApplication.ApplicationStatus.REJECTED: application.reject,
-            models.DomainApplication.ApplicationStatus.INELIGIBLE: (application.reject_with_prejudice),
+            models.DomainRequest.DomainRequestStatus.STARTED: None,
+            models.DomainRequest.DomainRequestStatus.SUBMITTED: domain_request.submit,
+            models.DomainRequest.DomainRequestStatus.IN_REVIEW: domain_request.in_review,
+            models.DomainRequest.DomainRequestStatus.ACTION_NEEDED: domain_request.action_needed,
+            models.DomainRequest.DomainRequestStatus.APPROVED: domain_request.approve,
+            models.DomainRequest.DomainRequestStatus.WITHDRAWN: domain_request.withdraw,
+            models.DomainRequest.DomainRequestStatus.REJECTED: domain_request.reject,
+            models.DomainRequest.DomainRequestStatus.INELIGIBLE: (domain_request.reject_with_prejudice),
         }
 
         # Grab the method
-        return status_method_mapping.get(application.status, None)
+        return status_method_mapping.get(domain_request.status, None)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the application creator's status, so
+        admin user permissions and the domain request creator's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
@@ -1292,7 +1292,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         if obj and obj.creator.status == models.User.RESTRICTED:
             messages.warning(
                 request,
-                "Cannot edit an application with a restricted creator.",
+                "Cannot edit a domain request with a restricted creator.",
             )
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
@@ -1336,7 +1336,7 @@ class DomainInformationInline(admin.StackedInline):
 
     autocomplete_fields = [
         "creator",
-        "domain_application",
+        "domain_request",
         "authorizing_official",
         "domain",
         "submitter",
@@ -1846,6 +1846,6 @@ admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
-admin.site.register(models.DomainApplication, DomainApplicationAdmin)
+admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
