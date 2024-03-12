@@ -88,3 +88,7 @@ class RegistryError(Exception):
 
 class LoginError(RegistryError):
     pass
+
+
+class PoolError(RegistryError):
+    pass

@@ -18,7 +18,7 @@ except ImportError:
 from django.conf import settings
 
 from .cert import Cert, Key
-from .errors import ErrorCode, LoginError, RegistryError
+from .errors import ErrorCode, LoginError, PoolError, RegistryError
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class EPPLibWrapper:
             else:
                 # TODO: Raise pool error.
                 # This could lead to a memory leak if not handled correctly.
-                raise Exception("Cannot initialize the connection pool. Existing connections could not be killed.")
+                raise PoolError("Existing connections could not be killed.")
         else:
             self.client_connection_pool_running = True
 
@@ -153,7 +153,7 @@ class EPPLibWrapper:
     @contextmanager
     def get_active_client_connection(self):
         """
-        Get a connection from the pool, to make and receive traffic.
+        Get a connection from the pool
         """
         if not self.client_threads or len(self.client_threads) == 0:
             self.populate_client_pool()
@@ -170,8 +170,6 @@ class EPPLibWrapper:
             self.connection_lock.release()
             raise
         except Exception as err:
-            logger.error(f"Found an exception: {err}")
-            # TODO - maybe restart the entire pool here
             self.client_threads.append(thread)
             self.connection_lock.release()
             raise
@@ -220,8 +218,8 @@ class EPPLibWrapper:
         try:
             client.send(commands.Logout())  # type: ignore
             client.close()  # type: ignore
-        except Exception:
-            logger.warning(f"Connection to registry was not cleanly for client: {client}.")
+        except Exception as err:
+            logger.warning(f"Connection to registry was not cleanly for client: {err}.")
 
     def _send(self, command):
         """Helper function used by `send`."""
