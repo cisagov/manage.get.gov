@@ -243,6 +243,7 @@ class EPPLibWrapper:
         if not self.client_threads or len(self.client_threads) == 0:
             self.populate_client_pool()
 
+        self.connection_lock.acquire()
         thread = self.client_threads.popleft()
         try:
             client = thread.value
