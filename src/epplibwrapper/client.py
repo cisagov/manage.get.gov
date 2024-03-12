@@ -106,7 +106,7 @@ class EPPLibWrapper:
                 logger.info(f"populate_client_pool() -> Thread #{thread_number} created successfully.")
 
     def _create_client_thread(self):
-        logger.info(f"_create_client_thread() -> Creating a new thread")
+        logger.debug(f"_create_client_thread() -> Creating a new thread")
         client_thread = self.client_pool.spawn(self._initialize_client)
         self.client_threads.append(client_thread)
 
@@ -116,7 +116,7 @@ class EPPLibWrapper:
         try:
             # Remove stale connections
             logger.warning("kill_client_pool() -> Killing client pool.")
-            logger.info(f"Closing stale connections: {self.client_pool}")
+            logger.info(f"kill_client_pool() -> Closing stale connections: {self.client_pool}")
             for client_thread in self.client_threads:
                 # Get the underlying client object
                 client = client_thread.value
@@ -126,7 +126,7 @@ class EPPLibWrapper:
 
 
             # Kill all existing threads.
-            logger.info(f"Killing all threads: {self.client_pool}")
+            logger.info(f"kill_client_pool() -> Killing all threads: {self.client_pool}")
             self.client_pool.kill()
 
             # After killing all greenlets, clear the list to remove references.
@@ -135,7 +135,7 @@ class EPPLibWrapper:
             # Reinit the pool object itself, just for good measure
             self.client_pool = Pool(self.pool_size)
 
-            logger.info("Client pool cleared and all connections stopped.")
+            logger.info("kill_client_pool() -> Client pool cleared and all connections stopped.")
         except Exception as err:
             logger.error(f"kill_client_pool() -> Could not kill all connections: {err}")
         else:
@@ -143,7 +143,7 @@ class EPPLibWrapper:
             return kill_was_successful
 
     def kill_client_thread(self, client_thread):
-        logger.info(f"in kill_client_thread()")
+        logger.debug(f"in kill_client_thread()")
         client = client_thread.value
         self._disconnect(client)
         self.client_pool.killone(client_thread)
@@ -179,7 +179,7 @@ class EPPLibWrapper:
         """Initialize a client, assuming _login defined. Sets _client to initialized
         client. Raises errors if initialization fails.
         This method will be called at app initialization, and also during retries."""
-        logger.error(f"In _initialize_client()")
+        logger.debug(f"In _initialize_client()")
         # establish a client object with a TCP socket transport
         # note that type: ignore added in several places because linter complains
         # about _client initially being set to None, and None type doesn't match code
@@ -277,6 +277,7 @@ class EPPLibWrapper:
         try:
             return self._send(command)
         except RegistryError as err:
+            """
             if (
                 err.is_transport_error()
                 or err.is_connection_error()
@@ -288,7 +289,10 @@ class EPPLibWrapper:
                 logger.info(f"{message} Error: {err}")
                 return self._retry(command)
             else:
-                raise err
+            """
+            # Recreate the connection pool
+            self.populate_client_pool()
+            raise err
 
 
 try:
