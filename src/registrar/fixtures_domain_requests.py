@@ -1,6 +1,7 @@
 import logging
 import random
 from faker import Faker
+from django.db import transaction
 
 from registrar.models import (
     User,
@@ -184,6 +185,14 @@ class DomainRequestFixture:
             logger.warning(e)
             return
 
+        # Lumped under .atomic to ensure we don't make redundant DB calls.
+        # This bundles them all together, and then saves it in a single call.
+        with transaction.atomic():
+            cls._create_domain_requests(users)
+
+    @classmethod
+    def _create_domain_requests(cls, users):
+        """Creates DomainRequests given a list of users"""
         for user in users:
             logger.debug("Loading domain requests for %s" % user)
             for app in cls.DA:
@@ -211,8 +220,16 @@ class DomainFixture(DomainRequestFixture):
             logger.warning(e)
             return
 
+        # Lumped under .atomic to ensure we don't make redundant DB calls.
+        # This bundles them all together, and then saves it in a single call.
+        with transaction.atomic():
+            # approve each user associated with `in review` status domains
+            DomainFixture._approve_domain_requests(users)
+
+    @staticmethod
+    def _approve_domain_requests(users):
+        """Approves all provided domain requests if they are in the state in_review"""
         for user in users:
-            # approve one of each users in review status domains
             domain_request = DomainRequest.objects.filter(
                 creator=user, status=DomainRequest.DomainRequestStatus.IN_REVIEW
             ).last()
@@ -220,5 +237,13 @@ class DomainFixture(DomainRequestFixture):
 
             # We don't want fixtures sending out real emails to
             # fake email addresses, so we just skip that and log it instead
+
+            # All approvals require an investigator, so if there is none,
+            # assign one.
+            if domain_request.investigator is None:
+                # All "users" in fixtures have admin perms per prior config.
+                # No need to check for that.
+                domain_request.investigator = random.choice(users)  # nosec
+
             domain_request.approve(send_email=False)
             domain_request.save()
