@@ -1,0 +1,18 @@
+{% extends 'domain_request_form.html' %}
+{% load field_helpers %}
+
+{% block form_instructions %}
+  <h2 class="margin-bottom-05">
+    Which federal branch is your organization in?
+  </h2>
+{% endblock %}
+
+{% block form_required_fields_help_text %}
+{# commented out so it does not appear on this page #}
+{% endblock %}
+
+{% block form_fields %}
+  {% with add_class="usa-radio__input--tile"  add_legend_class="usa-sr-only" %}
+    {% input_with_errors forms.0.federal_type %}
+  {% endwith %}
+{% endblock %}

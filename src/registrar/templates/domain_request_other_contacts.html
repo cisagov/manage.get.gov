@@ -1,0 +1,96 @@
+{% extends 'domain_request_form.html' %}
+{% load static field_helpers %}
+
+{% block form_instructions %}
+  <p>To help us determine your organization’s eligibility for a .gov domain, it’s helpful to have  contact information for other employees from your organization.
+    <ul class="usa-list">
+      <li>They should be clearly and publicly affiliated with your organization and familiar with your domain request.</li>
+      <li>They don’t need to be involved with the technical management of your domain (although they can be).</li>
+      <li><strong>We typically don’t reach out to these employees</strong>, but if contact is necessary, our practice is to coordinate with you first.</li>
+    </ul>
+  </p>
+
+{% endblock %}
+
+{% block form_required_fields_help_text %}
+{# commented out so it does not appear at this point on this page #}
+{% endblock %}
+
+{% block form_fields %}
+    <fieldset class="usa-fieldset margin-top-2">
+      <legend>
+        <h2>Are there other employees who can help verify your request?</h2>
+      </legend>
+
+      {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+        {% input_with_errors forms.0.has_other_contacts %}
+      {% endwith %}
+      {# forms.0 is a small yes/no form that toggles the visibility of "other contact" formset #}
+
+    </fieldset>
+
+    <div id="other-employees" class="other-contacts-form">
+        {% include "includes/required_fields.html" %}
+        {{ forms.1.management_form }}
+        {# forms.1 is a formset and this iterates over its forms #}
+        {% for form in forms.1.forms %}
+            <fieldset class="usa-fieldset repeatable-form padding-y-1">
+            
+              <legend class="float-left-tablet">
+                  <h2 class="margin-top-1">Organization contact {{ forloop.counter }}</h2>
+              </legend>
+
+              <button type="button" class="usa-button usa-button--unstyled display-block float-right-tablet delete-record margin-bottom-2">
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+                  </svg><span class="margin-left-05">Delete</span>
+              </button>
+
+
+            {% if forms.1.can_delete %}
+              {{ form.DELETE }}
+            {% endif %}
+
+            <div class="clear-both">
+              {% input_with_errors form.first_name %}
+            </div>
+
+            {% input_with_errors form.middle_name %}
+
+            {% input_with_errors form.last_name %}
+
+            {% input_with_errors form.title %}
+
+            {% comment %} There seems to be an issue with the character counter on emails.
+            It's not counting anywhere, and in this particular instance it's
+            affecting the margin of this block. The wrapper div is a 
+            temporary workaround. {% endcomment %}
+            <div class="margin-top-3">
+              {% input_with_errors form.email %}
+            </div>
+
+            {% with add_class="usa-input--medium" %}
+              {% input_with_errors form.phone %}
+            {% endwith %}
+
+            </fieldset>
+        {% endfor %}
+
+        <button type="button" class="usa-button usa-button--unstyled" id="add-form">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
+            </svg><span class="margin-left-05">Add another contact</span>
+        </button>
+    </div>
+
+    <div id="no-other-employees">
+        <fieldset class="usa-fieldset margin-top-4">
+          <legend>
+            <h2 class="margin-bottom-0">No other employees from your organization?</h2>
+          </legend>
+          <p>You don’t need to provide names of other employees now, but it may slow down our assessment of your eligibility. Describe why there are no other employees who can help verify your request.</p>
+        {% with attr_maxlength=1000 add_label_class="usa-sr-only" %}
+            {% input_with_errors forms.2.no_other_contacts_rationale %}
+        {% endwith %}
+    </div>
+{% endblock %}

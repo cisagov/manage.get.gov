@@ -1,0 +1,34 @@
+{% extends 'domain_request_form.html' %}
+{% load field_helpers %}
+
+{% block form_instructions %}
+  <p>While reviewing your domain request, we may need to reach out with questions. We’ll also email you when we complete our review.</p>
+
+<h2>What contact information should we use to reach you?</h2>
+
+<p>Your contact information won’t be made public and will be used only for .gov purposes. The information you provide here won't impact your Login.gov account information.</p>
+{% endblock %}
+
+
+{% block form_fields %}
+  <fieldset class="usa-fieldset">
+    <legend class="usa-sr-only">
+      Your contact information
+    </legend>
+
+    {% input_with_errors forms.0.first_name %}
+
+    {% input_with_errors forms.0.middle_name %}
+
+    {% input_with_errors forms.0.last_name %}
+
+    {% input_with_errors forms.0.title %}
+
+    {% input_with_errors forms.0.email %}
+
+    {% with add_class="usa-input--medium" %}
+      {% input_with_errors forms.0.phone %}
+    {% endwith %}
+
+  </fieldset>
+{% endblock %}

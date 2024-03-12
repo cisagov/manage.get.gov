@@ -1,0 +1,25 @@
+{% extends 'domain_request_form.html' %}
+{% load field_helpers %}
+
+{% block form_instructions %}
+  <p>To help us determine your eligibility for a .gov domain, we need to know more about your tribal government.</p>
+{% endblock %}
+
+{% block form_fields %}
+
+  <h2>What is the name of the tribe you represent?</h2>
+  <p>Please include the full name of your tribe as recognized by the <a rel="noopener noreferrer" class="usa-link usa-link--external" href="https://www.federalregister.gov/documents/2024/01/08/2024-00109/indian-entities-recognized-by-and-eligible-to-receive-services-from-the-united-states-bureau-of" target="_blank">Bureau of Indian Affairs</a>.</p>
+
+  {% with external_link="true" target_blank="true" %}
+    {% input_with_errors forms.0.tribe_name %}
+  {% endwith %}
+
+  <fieldset class="usa-fieldset">
+    <legend class="usa-legend">
+      <h2>Is your organization a federally-recognized tribe or a state-recognized tribe?</h2>
+    </legend>
+    <p>Check all that apply. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
+    {% input_with_errors forms.0.federally_recognized_tribe %}
+    {% input_with_errors forms.0.state_recognized_tribe %}
+  </fieldset>
+{% endblock %}

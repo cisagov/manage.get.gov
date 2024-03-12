@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static form_helpers url_helpers %}
+
+{% block title %}{{form_titles|get_item:steps.current}} | Request a .gov | {% endblock %}
+{% block content %}
+<div class="grid-container">
+  <div class="grid-row grid-gap">
+    <div class="tablet:grid-col-3">
+      {% include 'domain_request_sidebar.html' %}
+    </div>
+    <div class="tablet:grid-col-9">
+      <main id="main-content" class="grid-container register-form-step">
+        {% if steps.prev %}
+        <a href="{% namespaced_url 'domain-request' steps.prev %}" class="breadcrumb__back">
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
+          </svg><span class="margin-left-05">Previous step</span>
+        </a>
+        {% endif %}
+
+{% block form_messages %}
+          {% include "includes/form_messages.html" %}
+{% endblock %}
+
+{% if pending_requests_message %}
+<div class="usa-alert usa-alert--info margin-bottom-3">
+  <div class="usa-alert__body">
+    {{ pending_requests_message }}
+  </div>
+</div>
+{% endif %}
+
+{% block form_errors %}
+        {% comment %}
+           to make sense of this loop, consider that 
+           a context variable of `forms` contains all
+           the forms for this page; each of these
+           may be itself a formset and contain additional
+           forms, hence `forms.forms`
+        {% endcomment %}
+        {% for outer in forms %}
+          {% if outer|isformset %}
+            {% for inner in outer.forms %}
+              {% include "includes/form_errors.html" with form=inner %}
+            {% endfor %}
+          {% else %}
+            {% include "includes/form_errors.html" with form=outer %}
+          {% endif %}
+        {% endfor %}
+{% endblock %}
+
+{% block form_page_title %}
+        <h1> {{form_titles|get_item:steps.current}} </h1>
+{% endblock %}
+
+{% block form_instructions %}
+{% endblock %}
+
+<!-- The "No other employees from your organization?" page is a one-field form and should not have the required fields sentence -->
+{% if steps.current != "no_other_contacts" %}
+  {% block form_required_fields_help_text %}
+    {% include "includes/required_fields.html" %}
+  {% endblock %}
+{% endif %}
+
+        <form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
+          {% csrf_token %}
+
+{% block form_fields %}{% endblock %}
+
+{% block form_buttons %}
+          <div class="stepnav">
+            {% if steps.next %}
+            <button
+              type="submit"
+              name="submit_button"
+              value="next"
+              class="usa-button"
+            >Save and continue</button>
+            {% elif pending_requests_exist %}
+            <button
+              type="submit"
+              name="submit_button"
+              value="save_and_return"
+              class="usa-button usa-button--outline"
+            >Save and return to manage your domains</button>
+            {% else %}
+            <a
+              href="#toggle-submit-domain-request"
+              class="usa-button usa-button--big dotgov-button--green"
+              aria-controls="toggle-submit-domain-request"
+              data-open-modal
+              >Submit your domain request</a
+            >
+            {% endif %}
+          </div>
+{% endblock %}
+
+        </form>
+
+        <div
+          class="usa-modal"
+          id="toggle-submit-domain-request"
+          aria-labelledby="Are you sure you want to submit a domain request?"
+          aria-describedby="Are you sure you want to submit a domain request?"
+          data-force-action
+        >
+            {% include 'includes/modal.html' with modal_heading=modal_heading|safe modal_description="Once you submit this request, you won’t be able to edit it until we review it. You’ll only be able to withdraw your request." modal_button=modal_button|safe %}
+        </div>
+
+{% block after_form_content %}{% endblock %}
+
+      </main>
+    </div> 
+  </div>
+</div>
+{% endblock %}

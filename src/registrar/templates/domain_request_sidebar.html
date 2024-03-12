@@ -1,0 +1,42 @@
+{% load static url_helpers %}
+
+<div class="margin-bottom-4 tablet:margin-bottom-0">
+  <nav aria-label="Form steps,">
+    <ul class="usa-sidenav">
+    {% for this_step in steps.all %}
+      {% if this_step in visited %}
+      <li class="usa-sidenav__item sidenav__step--locked">
+        <span>
+          {% if not this_step == steps.current %}
+            {% if this_step != "review" %}
+              <svg class="usa-icon text-green" aria-hidden="true" focsuable="false" role="img" width="24" height="24">
+                <title id="checked-step__{{forloop.counter}}">Checked mark</title>
+                <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
+              </svg>
+            {% endif %}
+          {% endif %}
+        <a href="{% namespaced_url 'domain-request' this_step %}" 
+           {% if this_step == steps.current %}
+           class="usa-current"
+           {% else %}
+           class="link_usa-checked"
+           {% endif%}>
+          {{ form_titles|get_item:this_step }}
+        </a>
+      </span>
+      {% else %}
+        <li class="usa-sidenav__item sidenav__step--locked">
+          <span>
+            <svg class="usa-icon" aria-hidden="true" focsuable="false" role="img" width="24" height="24">
+              <title id="locked-step__{{forloop.counter}}">lock icon</title>
+              <use xlink:href="{%static 'img/sprite.svg'%}#lock"></use>
+            </svg>
+              {{ form_titles|get_item:this_step }}
+              <span class="usa-sr-only">locked until previous steps have been completed</span>
+          </span>
+      {% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+  </nav>
+</div>

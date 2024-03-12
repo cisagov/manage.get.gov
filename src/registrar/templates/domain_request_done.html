@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load url_helpers %}
+
+{% block title %}Thanks for your domain request! | {% endblock %}
+
+{% block content %}
+<main id="main-content" class="grid-container register-form-step">
+  <span class="display-flex flex-align-center" > 
+    <img 
+        class= "maxw-7 margin-top-neg-2 margin-right-105" 
+        src="{%static 'img/registrar/dotgov_confirmation.svg' %}" 
+        alt="Check mark confirming submission"
+        width="56"
+        />
+    <h1>Thanks for your domain request!</h1>
+  </span>
+  <p>We’ll email a copy of your request to you.</p>
+
+  <h2>Next steps in this process</h2>
+
+  <p> We’ll review your request. This review period can take 30 business days. Due to the volume of requests, the wait time is longer than usual. We appreciate your patience.</p> 
+    
+  <p>During our review we’ll verify that:</p> 
+  <ul class="usa-list">
+    <li>Your organization is eligible for a .gov domain.</li>
+    <li>You work at the organization and/or can make requests on its behalf.</li> 
+    <li>Your requested domain meets our naming requirements.</li>
+  </ul>
+
+  <p> We’ll email you if we have questions. We’ll also email you as soon as we complete our review. You can <a href="{% url 'home' %}">check the status</a>
+      of your request at any time on the registrar homepage.</p> 
+  
+  <p> <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'contact' %}">Contact us if you need help during this process</a>.</p>
+
+</main>
+{% endblock %}
