@@ -17,7 +17,7 @@ from registrar.models import (
 import boto3_mocking
 from registrar.models.transition_domain import TransitionDomain
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
-from .common import MockSESClient, less_console_noise, completed_domain_request
+from .common import MockSESClient, less_console_noise, completed_domain_request, set_domain_request_investigators
 from django_fsm import TransitionNotAllowed
 
 
@@ -51,6 +51,18 @@ class TestDomainRequest(TestCase):
         self.ineligible_domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.INELIGIBLE, name="ineligible.gov"
         )
+
+        # Store all domain request statuses in a variable for ease of use
+        self.all_domain_requests = [
+            self.started_domain_request,
+            self.submitted_domain_request,
+            self.in_review_domain_request,
+            self.action_needed_domain_request,
+            self.approved_domain_request,
+            self.withdrawn_domain_request,
+            self.rejected_domain_request,
+            self.ineligible_domain_request,
+        ]
 
         self.mock_client = MockSESClient()
 
@@ -219,6 +231,65 @@ class TestDomainRequest(TestCase):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
         self.check_email_sent(domain_request, msg, "reject_with_prejudice", 0)
 
+    def assert_fsm_transition_raises_error(self, test_cases, method_to_run):
+        """Given a list of test cases, check if each transition throws the intended error"""
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
+            for domain_request, exception_type in test_cases:
+                with self.subTest(domain_request=domain_request, exception_type=exception_type):
+                    with self.assertRaises(exception_type):
+                        # Retrieve the method by name from the domain_request object and call it
+                        method = getattr(domain_request, method_to_run)
+                        # Call the method
+                        method()
+
+    def assert_fsm_transition_does_not_raise_error(self, test_cases, method_to_run):
+        """Given a list of test cases, ensure that none of them throw transition errors"""
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
+            for domain_request, exception_type in test_cases:
+                with self.subTest(domain_request=domain_request, exception_type=exception_type):
+                    try:
+                        # Retrieve the method by name from the DomainRequest object and call it
+                        method = getattr(domain_request, method_to_run)
+                        # Call the method
+                        method()
+                    except exception_type:
+                        self.fail(f"{exception_type} was raised, but it was not expected.")
+
+    def test_submit_transition_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator.
+        For submit, this should be valid in all cases.
+        """
+
+        test_cases = [
+            (self.started_domain_request, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.withdrawn_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        set_domain_request_investigators(self.all_domain_requests, None)
+
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "submit")
+
+    def test_submit_transition_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition with an investigator user that is not staff.
+        For submit, this should be valid in all cases.
+        """
+
+        test_cases = [
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_domain_request_investigators(self.all_domain_requests, user)
+
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "submit")
+
     def test_submit_transition_allowed(self):
         """
         Test that calling submit from allowable statuses does raises TransitionNotAllowed.
@@ -230,14 +301,27 @@ class TestDomainRequest(TestCase):
             (self.withdrawn_domain_request, TransitionNotAllowed),
         ]
 
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "submit")
+
+    def test_submit_transition_allowed_twice(self):
+        """
+        Test that rotating between submit and in_review doesn't throw an error
+        """
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        try:
-                            domain_request.submit()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+                try:
+                    # Make a submission
+                    self.in_review_domain_request.submit()
+
+                    # Rerun the old method to get back to the original state
+                    self.in_review_domain_request.in_review()
+
+                    # Make another submission
+                    self.in_review_domain_request.submit()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+        self.assertEqual(self.in_review_domain_request.status, DomainRequest.DomainRequestStatus.SUBMITTED)
 
     def test_submit_transition_not_allowed(self):
         """
@@ -250,12 +334,7 @@ class TestDomainRequest(TestCase):
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        with self.assertRaises(exception_type):
-                            domain_request.submit()
+        self.assert_fsm_transition_raises_error(test_cases, "submit")
 
     def test_in_review_transition_allowed(self):
         """
@@ -269,14 +348,43 @@ class TestDomainRequest(TestCase):
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        try:
-                            domain_request.in_review()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "in_review")
+
+    def test_in_review_transition_not_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator
+        """
+
+        test_cases = [
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        set_domain_request_investigators(self.all_domain_requests, None)
+
+        self.assert_fsm_transition_raises_error(test_cases, "in_review")
+
+    def test_in_review_transition_not_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition with an investigator that is not staff.
+        This should throw an exception.
+        """
+
+        test_cases = [
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_domain_request_investigators(self.all_domain_requests, user)
+
+        self.assert_fsm_transition_raises_error(test_cases, "in_review")
 
     def test_in_review_transition_not_allowed(self):
         """
@@ -288,12 +396,7 @@ class TestDomainRequest(TestCase):
             (self.withdrawn_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        with self.assertRaises(exception_type):
-                            domain_request.in_review()
+        self.assert_fsm_transition_raises_error(test_cases, "in_review")
 
     def test_action_needed_transition_allowed(self):
         """
@@ -305,13 +408,43 @@ class TestDomainRequest(TestCase):
             (self.rejected_domain_request, TransitionNotAllowed),
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]
-        with less_console_noise():
-            for domain_request, exception_type in test_cases:
-                with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                    try:
-                        domain_request.action_needed()
-                    except TransitionNotAllowed:
-                        self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "action_needed")
+
+    def test_action_needed_transition_not_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator
+        """
+
+        test_cases = [
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        set_domain_request_investigators(self.all_domain_requests, None)
+
+        self.assert_fsm_transition_raises_error(test_cases, "action_needed")
+
+    def test_action_needed_transition_not_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition with an investigator that is not staff
+        """
+
+        test_cases = [
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_domain_request_investigators(self.all_domain_requests, user)
+
+        self.assert_fsm_transition_raises_error(test_cases, "action_needed")
 
     def test_action_needed_transition_not_allowed(self):
         """
@@ -323,11 +456,8 @@ class TestDomainRequest(TestCase):
             (self.action_needed_domain_request, TransitionNotAllowed),
             (self.withdrawn_domain_request, TransitionNotAllowed),
         ]
-        with less_console_noise():
-            for domain_request, exception_type in test_cases:
-                with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                    with self.assertRaises(exception_type):
-                        domain_request.action_needed()
+
+        self.assert_fsm_transition_raises_error(test_cases, "action_needed")
 
     def test_approved_transition_allowed(self):
         """
@@ -340,14 +470,40 @@ class TestDomainRequest(TestCase):
             (self.rejected_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        try:
-                            domain_request.approve()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "approve")
+
+    def test_approved_transition_not_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator
+        """
+
+        test_cases = [
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        set_domain_request_investigators(self.all_domain_requests, None)
+
+        self.assert_fsm_transition_raises_error(test_cases, "approve")
+
+    def test_approved_transition_not_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition with an investigator that is not staff
+        """
+
+        test_cases = [
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_domain_request_investigators(self.all_domain_requests, user)
+
+        self.assert_fsm_transition_raises_error(test_cases, "approve")
 
     def test_approved_skips_sending_email(self):
         """
@@ -372,13 +528,7 @@ class TestDomainRequest(TestCase):
             (self.withdrawn_domain_request, TransitionNotAllowed),
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        with self.assertRaises(exception_type):
-                            domain_request.approve()
+        self.assert_fsm_transition_raises_error(test_cases, "approve")
 
     def test_withdraw_transition_allowed(self):
         """
@@ -390,14 +540,42 @@ class TestDomainRequest(TestCase):
             (self.action_needed_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        try:
-                            domain_request.withdraw()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
+
+    def test_withdraw_transition_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator.
+        For withdraw, this should be valid in all cases.
+        """
+
+        test_cases = [
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        set_domain_request_investigators(self.all_domain_requests, None)
+
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
+
+    def test_withdraw_transition_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition when investigator is not staff.
+        For withdraw, this should be valid in all cases.
+        """
+
+        test_cases = [
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_domain_request_investigators(self.all_domain_requests, user)
+
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
 
     def test_withdraw_transition_not_allowed(self):
         """
@@ -411,12 +589,7 @@ class TestDomainRequest(TestCase):
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        with self.assertRaises(exception_type):
-                            domain_request.withdraw()
+        self.assert_fsm_transition_raises_error(test_cases, "withdraw")
 
     def test_reject_transition_allowed(self):
         """
@@ -428,14 +601,40 @@ class TestDomainRequest(TestCase):
             (self.approved_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        try:
-                            domain_request.reject()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "reject")
+
+    def test_reject_transition_not_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator
+        """
+
+        test_cases = [
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        set_domain_request_investigators(self.all_domain_requests, None)
+
+        self.assert_fsm_transition_raises_error(test_cases, "reject")
+
+    def test_reject_transition_not_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition when investigator is not staff
+        """
+
+        test_cases = [
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_domain_request_investigators(self.all_domain_requests, user)
+
+        self.assert_fsm_transition_raises_error(test_cases, "reject")
 
     def test_reject_transition_not_allowed(self):
         """
@@ -449,12 +648,7 @@ class TestDomainRequest(TestCase):
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        with self.assertRaises(exception_type):
-                            domain_request.reject()
+        self.assert_fsm_transition_raises_error(test_cases, "reject")
 
     def test_reject_with_prejudice_transition_allowed(self):
         """
@@ -467,14 +661,42 @@ class TestDomainRequest(TestCase):
             (self.rejected_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        try:
-                            domain_request.reject_with_prejudice()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "reject_with_prejudice")
+
+    def test_reject_with_prejudice_transition_not_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator
+        """
+
+        test_cases = [
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        set_domain_request_investigators(self.all_domain_requests, None)
+
+        self.assert_fsm_transition_raises_error(test_cases, "reject_with_prejudice")
+
+    def test_reject_with_prejudice_not_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition when investigator is not staff
+        """
+
+        test_cases = [
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_domain_request_investigators(self.all_domain_requests, user)
+
+        self.assert_fsm_transition_raises_error(test_cases, "reject_with_prejudice")
 
     def test_reject_with_prejudice_transition_not_allowed(self):
         """
@@ -487,12 +709,7 @@ class TestDomainRequest(TestCase):
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for domain_request, exception_type in test_cases:
-                    with self.subTest(domain_request=domain_request, exception_type=exception_type):
-                        with self.assertRaises(exception_type):
-                            domain_request.reject_with_prejudice()
+        self.assert_fsm_transition_raises_error(test_cases, "reject_with_prejudice")
 
     def test_transition_not_allowed_approved_in_review_when_domain_is_active(self):
         """Create a domain request with status approved, create a matching domain that
@@ -666,7 +883,10 @@ class TestPermissions(TestCase):
     def test_approval_creates_role(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        domain_request = DomainRequest.objects.create(creator=user, requested_domain=draft_domain)
+        investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
+        domain_request = DomainRequest.objects.create(
+            creator=user, requested_domain=draft_domain, investigator=investigator
+        )
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
@@ -697,10 +917,12 @@ class TestDomainInformation(TestCase):
 
     @boto3_mocking.patching
     def test_approval_creates_info(self):
-        self.maxDiff = None
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        domain_request = DomainRequest.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
+        investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
+        domain_request = DomainRequest.objects.create(
+            creator=user, requested_domain=draft_domain, notes="test notes", investigator=investigator
+        )
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
