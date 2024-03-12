@@ -84,7 +84,7 @@ class RegistryError(Exception):
 
     def is_client_error(self):
         return self.code is not None and (self.code >= 2000 and self.code <= 2308)
-    
+
     def should_restart_epp_client_and_retry(self):
         if (
             self.is_transport_error()
