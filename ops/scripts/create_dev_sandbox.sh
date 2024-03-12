@@ -7,51 +7,51 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# if [ ! $(command -v gh) ] || [ ! $(command -v jq) ] || [ ! $(command -v cf) ]; then
-#     echo "jq, cf, and gh packages must be installed. Please install via your preferred manager."
-#     exit 1
-# fi
+if [ ! $(command -v gh) ] || [ ! $(command -v jq) ] || [ ! $(command -v cf) ]; then
+    echo "jq, cf, and gh packages must be installed. Please install via your preferred manager."
+    exit 1
+fi
 
 upcase_name=$(printf "%s" "$1" | tr '[:lower:]' '[:upper:]')
 
-# read -p "Are you on a new branch? We will have to commit this work. (y/n) " -n 1 -r
-# echo
-# if [[ ! $REPLY =~ ^[Yy]$ ]]
-# then
-#     git checkout -b new-dev-sandbox-$1
-# fi
+read -p "Are you on a new branch? We will have to commit this work. (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    git checkout -b new-dev-sandbox-$1
+fi
 
-# cf target -o cisa-dotgov
+cf target -o cisa-dotgov
 
-# read -p "Are you logged in to the cisa-dotgov CF org above? (y/n) " -n 1 -r
-# echo
-# if [[ ! $REPLY =~ ^[Yy]$ ]]
-# then
-#     cf login -a https://api.fr.cloud.gov --sso
-# fi
+read -p "Are you logged in to the cisa-dotgov CF org above? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    cf login -a https://api.fr.cloud.gov --sso
+fi
 
-# gh auth status
-# read -p "Are you logged into a Github account with access to cisagov/getgov? (y/n) " -n 1 -r
-# echo
-# if [[ ! $REPLY =~ ^[Yy]$ ]]
-# then
-#     gh auth login
-# fi
+gh auth status
+read -p "Are you logged into a Github account with access to cisagov/getgov? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    gh auth login
+fi
 
-# echo "Creating manifest for $1..."
-# cp ops/scripts/manifest-sandbox-template.yaml ops/manifests/manifest-$1.yaml
-# sed -i '' "s/ENVIRONMENT/$1/" "ops/manifests/manifest-$1.yaml"
+echo "Creating manifest for $1..."
+cp ops/scripts/manifest-sandbox-template.yaml ops/manifests/manifest-$1.yaml
+sed -i '' "s/ENVIRONMENT/$1/" "ops/manifests/manifest-$1.yaml"
 
-# echo "Adding new environment to settings.py..."
-# sed -i '' '/getgov-development.app.cloud.gov/ {a\
-#     '\"getgov-$1.app.cloud.gov\"',
-# }' src/registrar/config/settings.py
+echo "Adding new environment to settings.py..."
+sed -i '' '/getgov-development.app.cloud.gov/ {a\
+    '\"getgov-$1.app.cloud.gov\"',
+}' src/registrar/config/settings.py
 
-# echo "Creating new cloud.gov space for $1..."
-# cf create-space $1
-# cf target -o "cisa-dotgov" -s $1
-# cf bind-security-group public_networks_egress cisa-dotgov --space $1
-# cf bind-security-group trusted_local_networks_egress cisa-dotgov --space $1
+echo "Creating new cloud.gov space for $1..."
+cf create-space $1
+cf target -o "cisa-dotgov" -s $1
+cf bind-security-group public_networks_egress cisa-dotgov --space $1
+cf bind-security-group trusted_local_networks_egress cisa-dotgov --space $1
 
 echo "Creating new cloud.gov DB for $1. This usually takes about 5 minutes..."
 cf create-service aws-rds micro-psql getgov-$1-database
