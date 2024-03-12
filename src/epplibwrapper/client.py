@@ -71,9 +71,8 @@ class EPPLibWrapper:
 
     def populate_client_pool(self):
         logger.info("populate_client_pool() -> Creating client pool")
-        # If a pool already exists, kill it.
-        if len(self.client_threads) > 0:
-            self.kill_client_pool()
+        # Wipe the pool
+        self.kill_client_pool()
 
         self.client_connection_pool_running = False
         try:
@@ -86,15 +85,13 @@ class EPPLibWrapper:
             if success:
                 logger.error(f"Cannot initialize the connection pool: {err}")
             else:
-                # TODO: Raise pool error.
-                # This could lead to a memory leak if not handled correctly.
                 raise PoolError("Existing connections could not be killed.")
         else:
             self.client_connection_pool_running = True
 
     def _create_client_pool(self):
         """Given our current pool size, add a thread containing an epp client with an open epp connection"""
-        logger.info(f"in _create_client_pool()")
+
         for _thread_number in range(self.pool_size):
             self._create_client_thread()
 
@@ -109,13 +106,12 @@ class EPPLibWrapper:
                 logger.info(f"populate_client_pool() -> Thread #{thread_number} created successfully.")
 
     def _create_client_thread(self):
-        logger.info(f"in _create_client_thread()")
+        logger.info(f"_create_client_thread() -> Creating a new thread")
         client_thread = self.client_pool.spawn(self._initialize_client)
         self.client_threads.append(client_thread)
 
     def kill_client_pool(self) -> bool:
         """Destroys an existing client pool. Closes stale connections, then removes all gevent threads."""
-        logger.info(f"in kill_client_pool()")
         kill_was_successful = False
         try:
             # Remove stale connections
@@ -124,8 +120,10 @@ class EPPLibWrapper:
             for client_thread in self.client_threads:
                 # Get the underlying client object
                 client = client_thread.value
+
                 # Disconnect the client by sending a disconnect command to EPP. 
                 self._disconnect(client)
+
 
             # Kill all existing threads.
             logger.info(f"Killing all threads: {self.client_pool}")
@@ -168,11 +166,11 @@ class EPPLibWrapper:
             self.kill_client_thread(thread)
             self._create_client_thread()
             self.connection_lock.release()
-            raise
+            raise err
         except Exception as err:
             self.client_threads.append(thread)
             self.connection_lock.release()
-            raise
+            raise err
         else:
             self.client_threads.append(thread)
             self.connection_lock.release()
@@ -193,6 +191,8 @@ class EPPLibWrapper:
                 password=settings.SECRET_REGISTRY_KEY_PASSPHRASE,
             )
         )
+
+        self.connection_lock.acquire()
         try:
             # use the _client object to connect
             _client.connect()  # type: ignore
@@ -210,16 +210,23 @@ class EPPLibWrapper:
             message = "_initialize_client failed to execute due to an unknown error."
             logger.error(f"{message} Error: {err}")
             raise RegistryError(message) from err
+        finally:
+            self.connection_lock.release()
         return _client
 
     def _disconnect(self, client) -> None:
         """Close the connection."""
-        logger.info("in _disconnect()")
+        # Acquire a connection, so we don't send
+        # multiple disconnects at once.
+        self.connection_lock.acquire()
         try:
             client.send(commands.Logout())  # type: ignore
             client.close()  # type: ignore
         except Exception as err:
-            logger.warning(f"Connection to registry was not cleanly for client: {err}.")
+            logger.warning(f"Connection to registry was not cleanly closed for client: {err}.")
+
+        # Release the connection
+        self.connection_lock.release()
 
     def _send(self, command):
         """Helper function used by `send`."""
@@ -270,7 +277,6 @@ class EPPLibWrapper:
         try:
             return self._send(command)
         except RegistryError as err:
-            """
             if (
                 err.is_transport_error()
                 or err.is_connection_error()
@@ -282,8 +288,7 @@ class EPPLibWrapper:
                 logger.info(f"{message} Error: {err}")
                 return self._retry(command)
             else:
-            """
-            raise err
+                raise err
 
 
 try:
