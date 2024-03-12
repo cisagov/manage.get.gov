@@ -248,7 +248,7 @@ class TestDomainRequest(TestCase):
             for domain_request, exception_type in test_cases:
                 with self.subTest(domain_request=domain_request, exception_type=exception_type):
                     try:
-                        # Retrieve the method by name from the application object and call it
+                        # Retrieve the method by name from the DomainRequest object and call it
                         method = getattr(domain_request, method_to_run)
                         # Call the method
                         method()
@@ -374,15 +374,15 @@ class TestDomainRequest(TestCase):
         """
 
         test_cases = [
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
-            (self.ineligible_application, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
         # Set all investigators to a user with no staff privs
         user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
-        set_applications_investigators(self.all_domain_requests, user)
+        set_domain_request_investigators(self.all_domain_requests, user)
 
         self.assert_fsm_transition_raises_error(test_cases, "in_review")
 
@@ -434,15 +434,15 @@ class TestDomainRequest(TestCase):
         """
 
         test_cases = [
-            (self.in_review_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
-            (self.ineligible_application, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
+            (self.ineligible_domain_request, TransitionNotAllowed),
         ]
 
         # Set all investigators to a user with no staff privs
         user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
-        set_applications_investigators(self.all_domain_requests, user)
+        set_domain_request_investigators(self.all_domain_requests, user)
 
         self.assert_fsm_transition_raises_error(test_cases, "action_needed")
 
@@ -494,14 +494,14 @@ class TestDomainRequest(TestCase):
         """
 
         test_cases = [
-            (self.in_review_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
         ]
 
         # Set all investigators to a user with no staff privs
         user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
-        set_applications_investigators(self.all_domain_requests, user)
+        set_domain_request_investigators(self.all_domain_requests, user)
 
         self.assert_fsm_transition_raises_error(test_cases, "approve")
 
@@ -566,14 +566,14 @@ class TestDomainRequest(TestCase):
         """
 
         test_cases = [
-            (self.submitted_application, TransitionNotAllowed),
-            (self.in_review_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
+            (self.submitted_domain_request, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
         ]
 
         # Set all investigators to a user with no staff privs
         user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
-        set_applications_investigators(self.all_domain_requests, user)
+        set_domain_request_investigators(self.all_domain_requests, user)
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
 
@@ -625,14 +625,14 @@ class TestDomainRequest(TestCase):
         """
 
         test_cases = [
-            (self.in_review_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
         ]
 
         # Set all investigators to a user with no staff privs
         user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
-        set_applications_investigators(self.all_domain_requests, user)
+        set_domain_request_investigators(self.all_domain_requests, user)
 
         self.assert_fsm_transition_raises_error(test_cases, "reject")
 
@@ -686,15 +686,15 @@ class TestDomainRequest(TestCase):
         """
 
         test_cases = [
-            (self.in_review_application, TransitionNotAllowed),
-            (self.action_needed_application, TransitionNotAllowed),
-            (self.approved_application, TransitionNotAllowed),
-            (self.rejected_application, TransitionNotAllowed),
+            (self.in_review_domain_request, TransitionNotAllowed),
+            (self.action_needed_domain_request, TransitionNotAllowed),
+            (self.approved_domain_request, TransitionNotAllowed),
+            (self.rejected_domain_request, TransitionNotAllowed),
         ]
 
         # Set all investigators to a user with no staff privs
         user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
-        set_applications_investigators(self.all_domain_requests, user)
+        set_domain_request_investigators(self.all_domain_requests, user)
 
         self.assert_fsm_transition_raises_error(test_cases, "reject_with_prejudice")
 
