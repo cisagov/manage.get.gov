@@ -8,7 +8,8 @@ Accepted
 
 ## Context
 
-CISA needs a way to perform administrative actions to manage the new get.gov application as well as the .gov domain requests submitted. Analysts need to be able to view, review, and approve domain requests. Other
+CISA needs a way to perform administrative actions to manage the new get.gov application as well as the .gov domain
+application requests submitted. Analysts need to be able to view, review, and approve domain applications. Other
 dashboard views, reports, searches (with filters and sorting) are also highly desired.
 
 ## Decision

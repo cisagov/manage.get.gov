@@ -5,7 +5,7 @@ from auditlog.context import disable_auditlog  # type: ignore
 
 
 from registrar.fixtures_users import UserFixture
-from registrar.fixtures_domain_requests import DomainRequestFixture, DomainFixture
+from registrar.fixtures_applications import DomainApplicationFixture, DomainFixture
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,6 @@ class Command(BaseCommand):
         # https://github.com/jazzband/django-auditlog/issues/17
         with disable_auditlog():
             UserFixture.load()
-            DomainRequestFixture.load()
+            DomainApplicationFixture.load()
             DomainFixture.load()
             logger.info("All fixtures loaded.")

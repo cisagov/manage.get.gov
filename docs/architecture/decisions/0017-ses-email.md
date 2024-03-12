@@ -9,7 +9,7 @@ Approved
 ## Context
 
 Our application needs to be able to send email to applicants for various
-purposes including notifying them that their domain request has been submitted.
+purposes including notifying them that their application has been submitted.
 We need infrastructure for programmatically sending email. Amazon Web Services
 (AWS) provides the Simple Email Service (SES) that can do that. CISA can
 provide access to AWS SES for our application.

@@ -33,8 +33,8 @@ class UserGroup(Group):
             },
             {
                 "app_label": "registrar",
-                "model": "domainrequest",
-                "permissions": ["change_domainrequest"],
+                "model": "domainapplication",
+                "permissions": ["change_domainapplication"],
             },
             {
                 "app_label": "registrar",

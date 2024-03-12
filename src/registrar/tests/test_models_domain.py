@@ -12,7 +12,7 @@ from django.utils.timezone import make_aware
 from registrar.models import Domain, Host, HostIP
 
 from unittest import skip
-from registrar.models.domain_request import DomainRequest
+from registrar.models.domain_application import DomainApplication
 from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
@@ -311,27 +311,27 @@ class TestDomainCache(MockEppLib):
 
 
 class TestDomainCreation(MockEppLib):
-    """Rule: An approved domain request must result in a domain"""
+    """Rule: An approved domain application must result in a domain"""
 
     @boto3_mocking.patching
-    def test_approved_domain_request_creates_domain_locally(self):
+    def test_approved_application_creates_domain_locally(self):
         """
-        Scenario: Analyst approves a domain request
-            When the DomainRequest transitions to approved
+        Scenario: Analyst approves a domain application
+            When the DomainApplication transitions to approved
             Then a Domain exists in the database with the same `name`
             But a domain object does not exist in the registry
         """
         with less_console_noise():
             draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
             user, _ = User.objects.get_or_create()
-            domain_request = DomainRequest.objects.create(creator=user, requested_domain=draft_domain)
+            application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
 
             mock_client = MockSESClient()
             with boto3_mocking.clients.handler_for("sesv2", mock_client):
                 # skip using the submit method
-                domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
+                application.status = DomainApplication.ApplicationStatus.SUBMITTED
                 # transition to approve state
-                domain_request.approve()
+                application.approve()
             # should have information present for this domain
             domain = Domain.objects.get(name="igorville.gov")
             self.assertTrue(domain)
@@ -395,7 +395,7 @@ class TestDomainCreation(MockEppLib):
 
     def tearDown(self) -> None:
         DomainInformation.objects.all().delete()
-        DomainRequest.objects.all().delete()
+        DomainApplication.objects.all().delete()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()

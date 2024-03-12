@@ -18,7 +18,7 @@ from registrar.models import (
     Contact,
     DraftDomain,
     Website,
-    DomainRequest,
+    DomainApplication,
     DomainInvitation,
     User,
     UserGroup,
@@ -221,7 +221,7 @@ class AuditedAdminMockData:
 
     # Constants for different domain object types
     INFORMATION = "information"
-    DOMAIN_REQUEST = "domain_request"
+    APPLICATION = "application"
     INVITATION = "invitation"
 
     def dummy_user(self, item_name, short_hand):
@@ -365,24 +365,24 @@ class AuditedAdminMockData:
         self,
         domain_type,
         item_name,
-        status=DomainRequest.DomainRequestStatus.STARTED,
+        status=DomainApplication.ApplicationStatus.STARTED,
         org_type="federal",
         federal_type="executive",
         purpose="Purpose of the site",
     ):
         """
-        Returns a prebuilt kwarg dictionary for DomainRequest,
+        Returns a prebuilt kwarg dictionary for DomainApplication,
         DomainInformation, or DomainInvitation.
         Args:
-            domain_type (str): is either 'domain_request', 'information',
+            domain_type (str): is either 'application', 'information',
             or 'invitation'.
 
             item_name (str): A shared str value appended to first_name, last_name,
             organization_name, address_line1, address_line2,
             title, email, and username.
 
-            status (str - optional): Defines the status for DomainRequest,
-            e.g. DomainRequest.DomainRequestStatus.STARTED
+            status (str - optional): Defines the status for DomainApplication,
+            e.g. DomainApplication.ApplicationStatus.STARTED
 
             org_type (str - optional): Sets a domains org_type
 
@@ -391,13 +391,13 @@ class AuditedAdminMockData:
             purpose (str - optional): Sets a domains purpose
         Returns:
             dict: Returns a dictionary structurally consistent with the expected input
-            of either DomainRequest, DomainInvitation, or DomainInformation
+            of either DomainApplication, DomainInvitation, or DomainInformation
             based on the 'domain_type' field.
         """  # noqa
         common_args = self.get_common_domain_arg_dictionary(item_name, org_type, federal_type, purpose)
         full_arg_dict = None
         match domain_type:
-            case self.DOMAIN_REQUEST:
+            case self.APPLICATION:
                 full_arg_dict = dict(
                     **common_args,
                     requested_domain=self.dummy_draft_domain(item_name),
@@ -405,11 +405,11 @@ class AuditedAdminMockData:
                     status=status,
                 )
             case self.INFORMATION:
-                domain_req = self.create_full_dummy_domain_request(item_name)
+                domain_app = self.create_full_dummy_domain_application(item_name)
                 full_arg_dict = dict(
                     **common_args,
                     domain=self.dummy_domain(item_name, True),
-                    domain_request=domain_req,
+                    domain_application=domain_app,
                 )
             case self.INVITATION:
                 full_arg_dict = dict(
@@ -419,24 +419,24 @@ class AuditedAdminMockData:
                 )
         return full_arg_dict
 
-    def create_full_dummy_domain_request(self, item_name, status=DomainRequest.DomainRequestStatus.STARTED):
-        """Creates a dummy domain request object"""
-        domain_request_kwargs = self.dummy_kwarg_boilerplate(self.DOMAIN_REQUEST, item_name, status)
-        domain_request = DomainRequest.objects.get_or_create(**domain_request_kwargs)[0]
-        return domain_request
+    def create_full_dummy_domain_application(self, item_name, status=DomainApplication.ApplicationStatus.STARTED):
+        """Creates a dummy domain application object"""
+        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.APPLICATION, item_name, status)
+        application = DomainApplication.objects.get_or_create(**domain_application_kwargs)[0]
+        return application
 
-    def create_full_dummy_domain_information(self, item_name, status=DomainRequest.DomainRequestStatus.STARTED):
+    def create_full_dummy_domain_information(self, item_name, status=DomainApplication.ApplicationStatus.STARTED):
         """Creates a dummy domain information object"""
-        domain_request_kwargs = self.dummy_kwarg_boilerplate(self.INFORMATION, item_name, status)
-        domain_request = DomainInformation.objects.get_or_create(**domain_request_kwargs)[0]
-        return domain_request
+        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INFORMATION, item_name, status)
+        application = DomainInformation.objects.get_or_create(**domain_application_kwargs)[0]
+        return application
 
-    def create_full_dummy_domain_invitation(self, item_name, status=DomainRequest.DomainRequestStatus.STARTED):
+    def create_full_dummy_domain_invitation(self, item_name, status=DomainApplication.ApplicationStatus.STARTED):
         """Creates a dummy domain invitation object"""
-        domain_request_kwargs = self.dummy_kwarg_boilerplate(self.INVITATION, item_name, status)
-        domain_request = DomainInvitation.objects.get_or_create(**domain_request_kwargs)[0]
+        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INVITATION, item_name, status)
+        application = DomainInvitation.objects.get_or_create(**domain_application_kwargs)[0]
 
-        return domain_request
+        return application
 
     def create_full_dummy_domain_object(
         self,
@@ -445,31 +445,31 @@ class AuditedAdminMockData:
         has_other_contacts=True,
         has_current_website=True,
         has_alternative_gov_domain=True,
-        status=DomainRequest.DomainRequestStatus.STARTED,
+        status=DomainApplication.ApplicationStatus.STARTED,
     ):
-        """A helper to create a dummy domain request object"""
-        domain_request = None
+        """A helper to create a dummy domain application object"""
+        application = None
         match domain_type:
-            case self.DOMAIN_REQUEST:
-                domain_request = self.create_full_dummy_domain_request(item_name, status)
+            case self.APPLICATION:
+                application = self.create_full_dummy_domain_application(item_name, status)
             case self.INVITATION:
-                domain_request = self.create_full_dummy_domain_invitation(item_name, status)
+                application = self.create_full_dummy_domain_invitation(item_name, status)
             case self.INFORMATION:
-                domain_request = self.create_full_dummy_domain_information(item_name, status)
+                application = self.create_full_dummy_domain_information(item_name, status)
             case _:
                 raise ValueError("Invalid domain_type, must conform to given constants")
 
         if has_other_contacts and domain_type != self.INVITATION:
             other = self.dummy_contact(item_name, "other")
-            domain_request.other_contacts.add(other)
-        if has_current_website and domain_type == self.DOMAIN_REQUEST:
+            application.other_contacts.add(other)
+        if has_current_website and domain_type == self.APPLICATION:
             current = self.dummy_current(item_name)
-            domain_request.current_websites.add(current)
-        if has_alternative_gov_domain and domain_type == self.DOMAIN_REQUEST:
+            application.current_websites.add(current)
+        if has_alternative_gov_domain and domain_type == self.APPLICATION:
             alt = self.dummy_alt(item_name)
-            domain_request.alternative_domains.add(alt)
+            application.alternative_domains.add(alt)
 
-        return domain_request
+        return application
 
 
 def mock_user():
@@ -519,18 +519,18 @@ def create_ready_domain():
     return domain
 
 
-def completed_domain_request(
+def completed_application(
     has_other_contacts=True,
     has_current_website=True,
     has_alternative_gov_domain=True,
     has_about_your_organization=True,
     has_anything_else=True,
-    status=DomainRequest.DomainRequestStatus.STARTED,
+    status=DomainApplication.ApplicationStatus.STARTED,
     user=False,
     submitter=False,
     name="city.gov",
 ):
-    """A completed domain request."""
+    """A completed domain application."""
     if not user:
         user = get_user_model().objects.create(username="username" + str(uuid.uuid4())[:8])
     ao, _ = Contact.objects.get_or_create(
@@ -558,7 +558,7 @@ def completed_domain_request(
         email="testy2@town.com",
         phone="(555) 555 5557",
     )
-    domain_request_kwargs = dict(
+    domain_application_kwargs = dict(
         organization_type="federal",
         federal_type="executive",
         purpose="Purpose of the site",
@@ -575,43 +575,43 @@ def completed_domain_request(
         status=status,
     )
     if has_about_your_organization:
-        domain_request_kwargs["about_your_organization"] = "e-Government"
+        domain_application_kwargs["about_your_organization"] = "e-Government"
     if has_anything_else:
-        domain_request_kwargs["anything_else"] = "There is more"
+        domain_application_kwargs["anything_else"] = "There is more"
 
-    domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
+    application, _ = DomainApplication.objects.get_or_create(**domain_application_kwargs)
 
     if has_other_contacts:
-        domain_request.other_contacts.add(other)
+        application.other_contacts.add(other)
     if has_current_website:
-        domain_request.current_websites.add(current)
+        application.current_websites.add(current)
     if has_alternative_gov_domain:
-        domain_request.alternative_domains.add(alt)
+        application.alternative_domains.add(alt)
 
-    return domain_request
+    return application
 
 
 def multiple_unalphabetical_domain_objects(
-    domain_type=AuditedAdminMockData.DOMAIN_REQUEST,
+    domain_type=AuditedAdminMockData.APPLICATION,
 ):
     """Returns a list of generic domain objects for testing purposes"""
-    domain_requests = []
+    applications = []
     list_of_letters = list(ascii_uppercase)
     random.shuffle(list_of_letters)
 
     mock = AuditedAdminMockData()
     for object_name in list_of_letters:
-        domain_request = mock.create_full_dummy_domain_object(domain_type, object_name)
-        domain_requests.append(domain_request)
-    return domain_requests
+        application = mock.create_full_dummy_domain_object(domain_type, object_name)
+        applications.append(application)
+    return applications
 
 
 def generic_domain_object(domain_type, object_name):
     """Returns a generic domain object of
-    domain_type 'domain_request', 'information', or 'invitation'"""
+    domain_type 'application', 'information', or 'invitation'"""
     mock = AuditedAdminMockData()
-    domain_request = mock.create_full_dummy_domain_object(domain_type, object_name)
-    return domain_request
+    application = mock.create_full_dummy_domain_object(domain_type, object_name)
+    return application
 
 
 class MockEppLib(TestCase):

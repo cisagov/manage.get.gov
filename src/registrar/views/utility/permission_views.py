@@ -3,15 +3,15 @@
 import abc  # abstract base class
 
 from django.views.generic import DetailView, DeleteView, TemplateView
-from registrar.models import Domain, DomainRequest, DomainInvitation
+from registrar.models import Domain, DomainApplication, DomainInvitation
 from registrar.models.user_domain_role import UserDomainRole
 
 from .mixins import (
     DomainPermission,
-    DomainRequestPermission,
-    DomainRequestPermissionWithdraw,
+    DomainApplicationPermission,
+    DomainApplicationPermissionWithdraw,
     DomainInvitationPermission,
-    DomainRequestWizardPermission,
+    ApplicationWizardPermission,
     UserDeleteDomainRolePermission,
 )
 import logging
@@ -56,17 +56,17 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         raise NotImplementedError
 
 
-class DomainRequestPermissionView(DomainRequestPermission, DetailView, abc.ABC):
-    """Abstract base view for domain requests that enforces permissions
+class DomainApplicationPermissionView(DomainApplicationPermission, DetailView, abc.ABC):
+    """Abstract base view for domain applications that enforces permissions
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.
     """
 
     # DetailView property for what model this is viewing
-    model = DomainRequest
+    model = DomainApplication
     # variable name in template context for the model object
-    context_object_name = "DomainRequest"
+    context_object_name = "domainapplication"
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property
@@ -75,17 +75,17 @@ class DomainRequestPermissionView(DomainRequestPermission, DetailView, abc.ABC):
         raise NotImplementedError
 
 
-class DomainRequestPermissionWithdrawView(DomainRequestPermissionWithdraw, DetailView, abc.ABC):
-    """Abstract base view for domain request withdraw function
+class DomainApplicationPermissionWithdrawView(DomainApplicationPermissionWithdraw, DetailView, abc.ABC):
+    """Abstract base view for domain application withdraw function
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.
     """
 
     # DetailView property for what model this is viewing
-    model = DomainRequest
+    model = DomainApplication
     # variable name in template context for the model object
-    context_object_name = "DomainRequest"
+    context_object_name = "domainapplication"
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property
@@ -94,8 +94,8 @@ class DomainRequestPermissionWithdrawView(DomainRequestPermissionWithdraw, Detai
         raise NotImplementedError
 
 
-class DomainRequestWizardPermissionView(DomainRequestWizardPermission, TemplateView, abc.ABC):
-    """Abstract base view for the domain request form that enforces permissions
+class ApplicationWizardPermissionView(ApplicationWizardPermission, TemplateView, abc.ABC):
+    """Abstract base view for the application form that enforces permissions
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.
@@ -121,11 +121,11 @@ class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteVie
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
 
-class DomainRequestPermissionDeleteView(DomainRequestPermission, DeleteView, abc.ABC):
-    """Abstract view for deleting a DomainRequest."""
+class DomainApplicationPermissionDeleteView(DomainApplicationPermission, DeleteView, abc.ABC):
+    """Abstract view for deleting a DomainApplication."""
 
-    model = DomainRequest
-    object: DomainRequest
+    model = DomainApplication
+    object: DomainApplication
 
 
 class UserDomainRolePermissionDeleteView(UserDeleteDomainRolePermission, DeleteView, abc.ABC):

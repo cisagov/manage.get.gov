@@ -13,18 +13,18 @@ from registrar import views
 from registrar.views.admin_views import ExportData
 
 
-from registrar.views.domain_request import Step
+from registrar.views.application import Step
 from registrar.views.utility import always_404
 from api.views import available, get_current_federal, get_current_full
 
 
-DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
-domain_request_urls = [
-    path("", views.DomainRequestWizard.as_view(), name=""),
+APPLICATION_NAMESPACE = views.ApplicationWizard.URL_NAMESPACE
+application_urls = [
+    path("", views.ApplicationWizard.as_view(), name=""),
     path("finished/", views.Finished.as_view(), name="finished"),
 ]
 
-# dynamically generate the other domain_request_urls
+# dynamically generate the other application_urls
 for step, view in [
     # add/remove steps here
     (Step.ORGANIZATION_TYPE, views.OrganizationType),
@@ -43,7 +43,7 @@ for step, view in [
     (Step.REQUIREMENTS, views.Requirements),
     (Step.REVIEW, views.Review),
 ]:
-    domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
+    application_urls.append(path(f"{step}/", view.as_view(), name=step))
 
 
 urlpatterns = [
@@ -55,28 +55,28 @@ urlpatterns = [
     path("export_data/", ExportData.as_view(), name="admin_export_data"),
     path("admin/", admin.site.urls),
     path(
-        "domain-request/<id>/edit/",
-        views.DomainRequestWizard.as_view(),
-        name=views.DomainRequestWizard.EDIT_URL_NAME,
+        "application/<id>/edit/",
+        views.ApplicationWizard.as_view(),
+        name=views.ApplicationWizard.EDIT_URL_NAME,
     ),
     path(
-        "domain-request/<int:pk>",
-        views.DomainRequestStatus.as_view(),
-        name="domain-request-status",
+        "application/<int:pk>",
+        views.ApplicationStatus.as_view(),
+        name="application-status",
     ),
     path(
-        "domain-request/<int:pk>/withdraw",
-        views.DomainRequestWithdrawConfirmation.as_view(),
-        name="domain-request-withdraw-confirmation",
+        "application/<int:pk>/withdraw",
+        views.ApplicationWithdrawConfirmation.as_view(),
+        name="application-withdraw-confirmation",
     ),
     path(
-        "domain-request/<int:pk>/withdrawconfirmed",
-        views.DomainRequestWithdrawn.as_view(),
-        name="domain-request-withdrawn",
+        "application/<int:pk>/withdrawconfirmed",
+        views.ApplicationWithdrawn.as_view(),
+        name="application-withdrawn",
     ),
     path("health", views.health, name="health"),
     path("openid/", include("djangooidc.urls")),
-    path("request/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
+    path("request/", include((application_urls, APPLICATION_NAMESPACE))),
     path("api/v1/available/", available, name="available"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),
     path("api/v1/get-report/current-full", get_current_full, name="get-current-full"),
@@ -138,9 +138,9 @@ urlpatterns = [
         name="invitation-delete",
     ),
     path(
-        "domain-request/<int:pk>/delete",
-        views.DomainRequestDeleteView.as_view(http_method_names=["post"]),
-        name="domain-request-delete",
+        "application/<int:pk>/delete",
+        views.DomainApplicationDeleteView.as_view(http_method_names=["post"]),
+        name="application-delete",
     ),
     path(
         "domain/<int:pk>/users/<int:user_pk>/delete",

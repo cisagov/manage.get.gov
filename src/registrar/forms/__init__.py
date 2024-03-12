@@ -1,4 +1,4 @@
-from .domain_request_wizard import *
+from .application_wizard import *
 from .domain import (
     DomainAddUserForm,
     NameserverFormset,

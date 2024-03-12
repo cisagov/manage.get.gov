@@ -19,7 +19,7 @@ body:
         
         Example:
         As an analyst
-        I want the ability to approve a domain request
+        I want the ability to approve a domain application
         so that a request can be fulfilled and a new .gov domain can be provisioned
       value: |
         As a 
@@ -36,11 +36,11 @@ body:
         
         Example:
         - Application sends an email when analysts approve domain requests
-        - Domain request status is "approved"
+        - Domain application status is "approved"
         
         Example ("given, when, then" format):
-        Given that I am an analyst who has finished reviewing a domain request
-        When I click to approve a domain request
+        Given that I am an analyst who has finished reviewing a domain application
+        When I click to approve a domain application
         Then the domain provisioning process should be initiated, and the applicant should receive an email update.
     validations:
       required: true

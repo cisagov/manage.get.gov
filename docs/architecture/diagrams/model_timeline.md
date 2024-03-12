@@ -3,9 +3,9 @@
 This diagram connects the data models along with various workflow stages.
 
 1. The applicant starts the process at `/request` interacting with the
-   `DomainRequest` object.
+   `DomainApplication` object.
 
-2. The analyst approves the domain request using the `DomainRequest`'s
+2. The analyst approves the application using the `DomainApplication`'s
    `approve()` method which creates many related objects: `UserDomainRole`,
    `Domain`, and `DomainInformation`.
 
@@ -36,8 +36,8 @@ $ docker run -v $(pwd):$(pwd) -w $(pwd) -it plantuml/plantuml -tsvg model_timeli
 allowmixing
 left to right direction
 
-class DomainRequest {
-  Request for a domain
+class DomainApplication {
+  Application for a domain
   --
   creator (User)
   investigator (User)
@@ -66,7 +66,7 @@ note left of User
   <b>username</b> is the Login UUID
 end note
 
-DomainRequest -l- User : creator, investigator
+DomainApplication -l- User : creator, investigator
 
 class Contact {
   Contact info for a person
@@ -80,7 +80,7 @@ class Contact {
   --
 }
 
-DomainRequest *-r-* Contact : authorizing_official, submitter, other_contacts
+DomainApplication *-r-* Contact : authorizing_official, submitter, other_contacts
 
 class DraftDomain {
   Requested domain
@@ -89,7 +89,7 @@ class DraftDomain {
   --
 }
 
-DomainRequest -l- DraftDomain : requested_domain
+DomainApplication -l- DraftDomain : requested_domain
 
 class Domain {
   Approved domain
@@ -99,21 +99,21 @@ class Domain {
   <b>EPP methods</b>
 }
 
-DomainRequest .right[#blue].> Domain : approve()
+DomainApplication .right[#blue].> Domain : approve()
 
 class DomainInformation {
   Registrar information on a domain
   --
   domain (Domain)
-  domain_request (DomainRequest)
+  domain_application (DomainApplication)
   security_email
   --
   Request information...
 }
 
 DomainInformation -- Domain
-DomainInformation -- DomainRequest
-DomainRequest .[#blue].> DomainInformation : approve()
+DomainInformation -- DomainApplication
+DomainApplication .[#blue].> DomainInformation : approve()
 
 class UserDomainRole {
   Permissions
@@ -125,7 +125,7 @@ class UserDomainRole {
 }
 UserDomainRole -- User
 UserDomainRole -- Domain
-DomainRequest .[#blue].> UserDomainRole : approve()
+DomainApplication .[#blue].> UserDomainRole : approve()
 
 class DomainInvitation {
   Email invitations sent
@@ -139,10 +139,10 @@ DomainInvitation -- Domain
 DomainInvitation .[#green].> UserDomainRole : User.on_each_login()
 
 actor applicant #Red
-applicant -d-> DomainRequest : **/request**
+applicant -d-> DomainApplication : **/request**
 
 actor analyst #Blue
-analyst -[#blue]-> DomainRequest : **approve()**
+analyst -[#blue]-> DomainApplication : **approve()**
 
 actor user1 #Green
 user1 -[#green]-> Domain : **/domain/<id>/nameservers**

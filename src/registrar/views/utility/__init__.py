@@ -3,8 +3,8 @@ from .always_404 import always_404
 
 from .permission_views import (
     DomainPermissionView,
-    DomainRequestPermissionView,
-    DomainRequestPermissionWithdrawView,
+    DomainApplicationPermissionView,
+    DomainApplicationPermissionWithdrawView,
     DomainInvitationPermissionDeleteView,
-    DomainRequestWizardPermissionView,
+    ApplicationWizardPermissionView,
 )

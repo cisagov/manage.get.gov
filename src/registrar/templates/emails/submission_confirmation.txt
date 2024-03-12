@@ -1,10 +1,10 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi, {{ domain_request.submitter.first_name }}.
+Hi, {{ application.submitter.first_name }}.
 
 We received your .gov domain request.
 
-DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
-REQUEST RECEIVED ON: {{ domain_request.submission_date|date }}
+DOMAIN REQUESTED: {{ application.requested_domain.name }}
+REQUEST RECEIVED ON: {{ application.submission_date|date }}
 STATUS: Submitted
 
 ----------------------------------------------------------------
@@ -29,7 +29,7 @@ THANK YOU
 
 ----------------------------------------------------------------
 
-{% include 'emails/includes/domain_request_summary.txt' %}
+{% include 'emails/includes/application_summary.txt' %}
 ----------------------------------------------------------------
 
 The .gov team

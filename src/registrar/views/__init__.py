@@ -1,4 +1,4 @@
-from .domain_request import *
+from .application import *
 from .domain import (
     DomainView,
     DomainAuthorizingOfficialView,

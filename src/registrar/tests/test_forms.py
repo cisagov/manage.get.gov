@@ -4,7 +4,7 @@ import json
 from django.test import TestCase, RequestFactory
 from api.views import available
 
-from registrar.forms.domain_request_wizard import (
+from registrar.forms.application_wizard import (
     AlternativeDomainForm,
     CurrentSitesForm,
     DotGovDomainForm,

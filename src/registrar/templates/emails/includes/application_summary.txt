@@ -1,0 +1,55 @@
+SUMMARY OF YOUR DOMAIN REQUEST
+
+Type of organization:
+{{ application.get_organization_type_display }}
+{% if application.show_organization_federal %}
+Federal government branch:
+{{ application.get_federal_type_display }}
+{% elif application.show_tribal_government %}
+Tribal government:
+{{ application.tribe_name|default:"Incomplete" }}{% if application.federally_recognized_tribe %}
+Federally-recognized tribe
+{% endif %}{% if application.state_recognized_tribe %}
+State-recognized tribe
+{% endif %}{% endif %}{% if application.show_organization_election %}
+Election office:
+{{ application.is_election_board|yesno:"Yes,No,Incomplete" }}
+{% endif %}
+Organization name and mailing address:
+{% spaceless %}{{ application.federal_agency }}
+{{ application.organization_name }}
+{{ application.address_line1 }}{% if  application.address_line2  %}
+{{ application.address_line2 }}{% endif %}
+{{ application.city }}, {{ application.state_territory }}
+{{ application.zipcode }}{% if application.urbanization  %}
+{{ application.urbanization }}{% endif %}{% endspaceless %}
+{% if application.about_your_organization %}{# if block makes one newline if it's false #}
+About your organization:
+{% spaceless %}{{ application.about_your_organization }}{% endspaceless %}
+{% endif %}
+Authorizing official:
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=application.authorizing_official %}{% endspaceless %}
+{% if application.current_websites.exists %}{# if block makes a newline #}
+Current websites: {% for site in application.current_websites.all %}
+{% spaceless %}{{ site.website }}{% endspaceless %}
+{% endfor %}{% endif %}
+.gov domain:
+{{ application.requested_domain.name }}
+{% if application.alternative_domains.all %}
+Alternative domains:
+{% for site in application.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}
+{% endfor %}{% endif %}
+Purpose of your domain:
+{{ application.purpose }}
+
+Your contact information:
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=application.submitter %}{% endspaceless %}
+
+Other employees from your organization:{% for other in application.other_contacts.all %}
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=other %}{% endspaceless %}
+{% empty %}
+{{ application.no_other_contacts_rationale }}
+{% endfor %}{% if application.anything_else %}
+Anything else?
+{{ application.anything_else }}
+{% endif %}

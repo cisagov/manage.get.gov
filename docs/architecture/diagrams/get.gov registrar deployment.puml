@@ -18,13 +18,13 @@ Deployment_Node(aws, "AWS GovCloud", "Amazon Web Services Region") {
             Deployment_Node(organization, "get.gov organization") {
                 Deployment_Node(sandbox, "sandbox space") {
                     System_Boundary(dashboard_sandbox, "get.gov registrar") {
-                        Container(getgov_app_sandbox, "Registrar Domain Request", "Python, Django", "Delivers static HTML/CSS and forms")
+                        Container(getgov_app_sandbox, "Registrar Application", "Python, Django", "Delivers static HTML/CSS and forms")
                         ContainerDb(dashboard_db_sandbox, "sandbox PostgreSQL Database", "AWS RDS", "Stores agency information and reports")
                     }
                 }
                 Deployment_Node(stable, "stable space") {
                     System_Boundary(dashboard_stable, "get.gov registrar") {
-                        Container(getgov_app_stable, "Registrar Domain Request", "Python, Django", "Delivers static HTML/CSS and forms")
+                        Container(getgov_app_stable, "Registrar Application", "Python, Django", "Delivers static HTML/CSS and forms")
                         ContainerDb(dashboard_db_stable, "stable PostgreSQL Database", "AWS RDS", "Stores agency information and reports")
                     }
                 }

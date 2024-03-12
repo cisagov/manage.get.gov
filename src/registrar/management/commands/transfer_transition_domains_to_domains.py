@@ -15,7 +15,7 @@ from registrar.management.commands.utility.terminal_helper import (
     TerminalHelper,
 )
 from registrar.models.contact import Contact
-from registrar.models.domain_request import DomainRequest
+from registrar.models.domain_application import DomainApplication
 from registrar.models.domain_information import DomainInformation
 from registrar.models.user import User
 
@@ -817,9 +817,9 @@ class Command(BaseCommand):
                 raise Exception(f"Domain {existing_domain} wants to be added" "but doesn't exist in the DB")
             invitation.save()
 
-        valid_org_choices = [(name, value) for name, value in DomainRequest.OrganizationChoices.choices]
-        valid_fed_choices = [value for name, value in DomainRequest.BranchChoices.choices]
-        valid_agency_choices = DomainRequest.AGENCIES
+        valid_org_choices = [(name, value) for name, value in DomainApplication.OrganizationChoices.choices]
+        valid_fed_choices = [value for name, value in DomainApplication.BranchChoices.choices]
+        valid_agency_choices = DomainApplication.AGENCIES
         # ======================================================
         # ================= DOMAIN INFORMATION =================
         logger.info(
