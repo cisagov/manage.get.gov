@@ -1,4 +1,7 @@
+import datetime
+from dateutil.tz import tzlocal  # type: ignore
 from unittest.mock import MagicMock, patch
+from pathlib import Path
 from django.test import TestCase
 from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.errors import RegistryError, LoginError
@@ -8,6 +11,10 @@ import logging
 try:
     from epplib.exceptions import TransportError
     from epplib.responses import Result
+    from epplib.client import Client
+    from epplib.transport import SocketTransport
+    from epplib import commands
+    from epplib.models import common, info
 except ImportError:
     pass
 
@@ -255,3 +262,101 @@ class TestClient(TestCase):
             mock_close.assert_called_once()
             # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
             self.assertEquals(mock_send.call_count, 5)
+
+    def test_send_command_close_failure_recovers(self):
+        """Test when the .close on a connection fails and a .send follows suit.
+        Flow:
+        Initialization succeeds
+        Send command fails (with 2400 code) prompting retry
+        Client closes and re-initializes, and command succeeds"""
+
+        expected_result = {
+            "cl_tr_id": None,
+            "code": 1000,
+            "extensions": [],
+            "msg": "Command completed successfully",
+            "msg_q": None,
+            "res_data": [
+                info.InfoDomainResultData(
+                    roid="DF1340360-GOV",
+                    statuses=[
+                        common.Status(
+                            state="serverTransferProhibited",
+                            description=None,
+                            lang="en",
+                        ),
+                        common.Status(state="inactive", description=None, lang="en"),
+                    ],
+                    cl_id="gov2023-ote",
+                    cr_id="gov2023-ote",
+                    cr_date=datetime.datetime(2023, 8, 15, 23, 56, 36, tzinfo=tzlocal()),
+                    up_id="gov2023-ote",
+                    up_date=datetime.datetime(2023, 8, 17, 2, 3, 19, tzinfo=tzlocal()),
+                    tr_date=None,
+                    name="test3.gov",
+                    registrant="TuaWnx9hnm84GCSU",
+                    admins=[],
+                    nsset=None,
+                    keyset=None,
+                    ex_date=datetime.date(2024, 8, 15),
+                    auth_info=info.DomainAuthInfo(pw="2fooBAR123fooBaz"),
+                )
+            ],
+            "sv_tr_id": "wRRNVhKhQW2m6wsUHbo/lA==-29a",
+        }
+
+        def fake_receive(command, cleaned=None):
+            location = Path(__file__).parent / "utility" / "infoDomain.xml"
+            xml = (location).read_bytes()
+            return xml
+
+        def fake_success_send(self, command, cleaned=None):
+            mock = MagicMock(
+                code=1000,
+                msg="Command completed successfully",
+                res_data=None,
+                cl_tr_id="xkw1uo#2023-10-17T15:29:09.559376",
+                sv_tr_id="5CcH4gxISuGkq8eqvr1UyQ==-35a",
+                extensions=[],
+                msg_q=None,
+            )
+            return mock
+
+        def fake_failure_send(self, command, cleaned=None):
+            mock = MagicMock(
+                code=2400,
+                msg="Command failed",
+                res_data=None,
+                cl_tr_id="xkw1uo#2023-10-17T15:29:09.559376",
+                sv_tr_id="5CcH4gxISuGkq8eqvr1UyQ==-35a",
+                extensions=[],
+                msg_q=None,
+            )
+            return mock
+
+        def do_nothing(command):
+            pass
+
+        wrapper = None
+        # Trigger a retry
+        # Do nothing on connect, as we aren't testing it and want to connect while
+        # mimicking the rest of the client as closely as possible (which is not entirely possible with MagicMock)
+        with patch.object(EPPLibWrapper, "_connect", do_nothing):
+            with patch.object(SocketTransport, "send", fake_failure_send):
+                wrapper = EPPLibWrapper()
+                tested_command = commands.InfoDomain(name="test.gov")
+                try:
+                    wrapper.send(tested_command, cleaned=True)
+                    wrapper._retry(tested_command)
+                except RegistryError as err:
+                    expected_error = "InfoDomain failed to execute due to a connection error."
+                    self.assertEqual(err.args[0], expected_error)
+                else:
+                    self.fail("Registry error was not thrown")
+
+        with patch.object(EPPLibWrapper, "_connect", do_nothing):
+            with patch.object(SocketTransport, "send", fake_success_send), patch.object(
+                SocketTransport, "receive", fake_receive
+            ):
+                result = wrapper.send(tested_command, cleaned=True)
+                self.assertEqual(expected_result, result.__dict__)

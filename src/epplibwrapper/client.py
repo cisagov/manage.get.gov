@@ -55,15 +55,20 @@ class EPPLibWrapper:
         )
         # We should only ever have one active connection at a time
         self.connection_lock = BoundedSemaphore(1)
+
+        self.connection_lock.acquire()
         try:
             self._initialize_client()
         except Exception:
             logger.warning("Unable to configure epplib. Registrar cannot contact registry.")
+        finally:
+            self.connection_lock.release()
 
     def _initialize_client(self) -> None:
         """Initialize a client, assuming _login defined. Sets _client to initialized
         client. Raises errors if initialization fails.
         This method will be called at app initialization, and also during retries."""
+
         # establish a client object with a TCP socket transport
         # note that type: ignore added in several places because linter complains
         # about _client initially being set to None, and None type doesn't match code
@@ -77,11 +82,7 @@ class EPPLibWrapper:
         )
         try:
             # use the _client object to connect
-            self._client.connect()  # type: ignore
-            response = self._client.send(self._login)  # type: ignore
-            if response.code >= 2000:  # type: ignore
-                self._client.close()  # type: ignore
-                raise LoginError(response.msg)  # type: ignore
+            self._connect()
         except TransportError as err:
             message = "_initialize_client failed to execute due to a connection error."
             logger.error(f"{message} Error: {err}")
@@ -92,6 +93,15 @@ class EPPLibWrapper:
             message = "_initialize_client failed to execute due to an unknown error."
             logger.error(f"{message} Error: {err}")
             raise RegistryError(message) from err
+
+    def _connect(self) -> None:
+        """Connects to EPP. Sends a login command. If an invalid response is returned,
+        the client will be closed and a LoginError raised."""
+        self._client.connect()  # type: ignore
+        response = self._client.send(self._login)  # type: ignore
+        if response.code >= 2000:  # type: ignore
+            self._client.close()  # type: ignore
+            raise LoginError(response.msg)  # type: ignore
 
     def _disconnect(self) -> None:
         """Close the connection. Sends a logout command and closes the connection."""
@@ -115,7 +125,6 @@ class EPPLibWrapper:
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
-
         try:
             # check for the condition that the _client was not initialized properly
             # at app initialization
