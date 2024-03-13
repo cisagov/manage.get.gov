@@ -18,7 +18,7 @@ from django.conf import settings
 
 from registrar.models import (
     Domain,
-    DomainApplication,
+    DomainRequest,
     DomainInformation,
     DomainInvitation,
     User,
@@ -235,7 +235,7 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
         form_kwargs["instance"] = self.object.domain_info.authorizing_official
 
         domain_info = self.get_domain_info_from_domain()
-        invalid_fields = [DomainApplication.OrganizationChoices.FEDERAL, DomainApplication.OrganizationChoices.TRIBAL]
+        invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]
         is_federal_or_tribal = domain_info and (domain_info.organization_type in invalid_fields)
 
         form_kwargs["disable_fields"] = is_federal_or_tribal

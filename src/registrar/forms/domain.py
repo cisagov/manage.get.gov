@@ -4,7 +4,7 @@ import logging
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.forms import formset_factory
-from registrar.models import DomainApplication
+from registrar.models import DomainRequest
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.utility.errors import (
     NameserverError,
@@ -280,8 +280,8 @@ class AuthorizingOfficialContactForm(ContactForm):
             return super().save()
 
         # Determine if the domain is federal or tribal
-        is_federal = self.domainInfo.organization_type == DomainApplication.OrganizationChoices.FEDERAL
-        is_tribal = self.domainInfo.organization_type == DomainApplication.OrganizationChoices.TRIBAL
+        is_federal = self.domainInfo.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+        is_tribal = self.domainInfo.organization_type == DomainRequest.OrganizationChoices.TRIBAL
 
         # Get the Contact object from the db for the Authorizing Official
         db_ao = Contact.objects.get(id=self.instance.id)
@@ -381,26 +381,24 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
 
-        is_federal = self.instance.organization_type == DomainApplication.OrganizationChoices.FEDERAL
-        is_tribal = self.instance.organization_type == DomainApplication.OrganizationChoices.TRIBAL
+        self.is_federal = self.instance.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+        self.is_tribal = self.instance.organization_type == DomainRequest.OrganizationChoices.TRIBAL
 
-        if is_federal:
+        if self.is_federal:
             self.fields["federal_agency"].disabled = True
-        elif is_tribal:
+        elif self.is_tribal:
             self.fields["organization_name"].disabled = True
 
     def save(self, commit=True):
         """Override the save() method of the BaseModelForm."""
         if self.has_changed():
-            is_federal = self.instance.organization_type == DomainApplication.OrganizationChoices.FEDERAL
-            is_tribal = self.instance.organization_type == DomainApplication.OrganizationChoices.TRIBAL
 
             # This action should be blocked by the UI, as the text fields are readonly.
             # If they get past this point, we forbid it this way.
             # This could be malicious, so lets reserve information for the backend only.
-            if is_federal and not self._field_unchanged("federal_agency"):
+            if self.is_federal and not self._field_unchanged("federal_agency"):
                 raise ValueError("federal_agency cannot be modified when the organization_type is federal")
-            elif is_tribal and not self._field_unchanged("organization_name"):
+            elif self.is_tribal and not self._field_unchanged("organization_name"):
                 raise ValueError("organization_name cannot be modified when the organization_type is tribal")
 
         else:
