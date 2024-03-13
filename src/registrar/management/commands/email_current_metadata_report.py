@@ -75,8 +75,6 @@ class Command(BaseCommand):
         # Set context for the subject
         current_date_str = datetime.now().strftime("%Y-%m-%d")
 
-        # TODO: Update secret in getgov-credentials via cloud.gov and my own .env when merging
-
         # Encrypt the metadata
         encrypted_metadata_in_bytes = self._encrypt_metadata(
             s3_client.get_file(file_name), encrypted_metadata_output, str.encode(settings.SECRET_ENCRYPT_METADATA)
@@ -86,7 +84,7 @@ class Command(BaseCommand):
         send_templated_email(
             template_name="emails/metadata_body.txt",
             subject_template_name="emails/metadata_subject.txt",
-            # to_address=settings.DEFAULT_FROM_EMAIL, # TODO: Uncomment this when ready to merge
+            # to_address=settings.DEFAULT_FROM_EMAIL,
             to_address="rebecca.hsieh@truss.works <rebecca.hsieh@truss.works>",
             context={"current_date_str": current_date_str},
             attachment_file=encrypted_metadata_in_bytes,

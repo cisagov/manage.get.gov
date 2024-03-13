@@ -75,12 +75,9 @@ def send_templated_email(
                 aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
                 config=settings.BOTO_CONFIG,
             )
-            response = send_email_with_attachment(
+            send_email_with_attachment(
                 settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, attachment_file, ses_client
             )
-            # TODO: Remove this print statement when ready to merge,
-            # leaving rn for getting error codes in case
-            print("Response from send_email_with_attachment_is:", response)
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
 
