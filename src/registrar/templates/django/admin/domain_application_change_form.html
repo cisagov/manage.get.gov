@@ -27,7 +27,7 @@
     class="usa-modal"
     id="toggle-set-ineligible"
     aria-labelledby="Are you sure you want to select ineligible status?"
-    aria-describedby="This application will be marked as ineligible."
+    aria-describedby="This request will be marked as ineligible."
     >
         <div class="usa-modal__content">
             <div class="usa-modal__main">
@@ -51,7 +51,7 @@
                         Domain: <b>{{ original.requested_domain.name }}</b>
                         {# Acts as a <br> #}
                         <div class="display-inline"></div>
-                        New status: <b>{{ original.ApplicationStatus.INELIGIBLE|capfirst }}</b>
+                        New status: <b>{{ original.DomainRequestStatus.INELIGIBLE|capfirst }}</b>
                     </p>
                 </div>
 
@@ -61,7 +61,7 @@
                             <button
                             type="submit" 
                             class="usa-button" 
-                            name="_set_application_ineligible"
+                            name="_set_domain_request_ineligible"
                             data-close-modal
                             >
                                 Yes, select ineligible status
@@ -71,7 +71,7 @@
                             <button
                             type="button"
                             class="usa-button usa-button--unstyled padding-105 text-center"
-                            name="_cancel_application_ineligible"
+                            name="_cancel_domain_request_ineligible"
                             data-close-modal
                             >
                                 Cancel

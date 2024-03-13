@@ -57,7 +57,7 @@ function openInNewTab(el, removeAttribute = false){
     createPhantomModalFormButtons();
 })();
 
-/** An IIFE for DomainApplication to hook a modal to a dropdown option.
+/** An IIFE for DomainRequest to hook a modal to a dropdown option.
  * This intentionally does not interact with createPhantomModalFormButtons()
 */
 (function (){
@@ -103,7 +103,7 @@ function openInNewTab(el, removeAttribute = false){
 
         // Because the modal button does not have the class "dja-form-placeholder",
         // it will not be affected by the createPhantomModalFormButtons() function.
-        let actionButton = document.querySelector('button[name="_set_application_ineligible"]');
+        let actionButton = document.querySelector('button[name="_set_domain_request_ineligible"]');
         let valueToCheck = "ineligible"
         displayModalOnDropdownClick(modalButton, statusDropdown, actionButton, valueToCheck);
     }
