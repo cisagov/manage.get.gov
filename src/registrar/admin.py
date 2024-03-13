@@ -1015,7 +1015,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "created_at",
+        "submission_date",
         "submitter",
         "investigator",
     ]
