@@ -21,7 +21,7 @@ from registrar.utility.errors import (
 )
 
 from registrar.models import (
-    DomainApplication,
+    DomainRequest,
     Domain,
     DomainInformation,
     DomainInvitation,
@@ -120,7 +120,7 @@ class TestWithDomainPermissions(TestWithUser):
             UserDomainRole.objects.all().delete()
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
-            DomainApplication.objects.all().delete()
+            DomainRequest.objects.all().delete()
             DomainInformation.objects.all().delete()
             PublicContact.objects.all().delete()
             HostIP.objects.all().delete()
@@ -309,9 +309,9 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "(1.2.3.4,")
             self.assertContains(detail_page, "2.3.4.5)")
 
-    def test_domain_detail_with_no_information_or_application(self):
+    def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
-        when no domain information or domain application exist"""
+        when no domain information or domain request exist"""
         with less_console_noise():
             # have to use staff user for this test
             staff_user = create_user()

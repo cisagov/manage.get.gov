@@ -90,6 +90,9 @@ cd src/
 cd ..
 cf push getgov-$1 -f ops/manifests/manifest-$1.yaml
 
+echo "Creating cache table..."
+cf run-task getgov-$1 --command 'python manage.py createcachetable' --name createcachetable
+
 read -p "Please provide the email of the space developer: " -r
 cf set-space-role $REPLY cisa-dotgov $1 SpaceDeveloper
 

@@ -898,8 +898,8 @@ class Domain(TimeStampedModel, DomainHelper):
     def security_contact(self, contact: PublicContact):
         """makes the contact in the registry,
         for security the public contact should have the org or registrant information
-        from domain information (not domain application)
-        and should have the security email from DomainApplication"""
+        from domain information (not domain request)
+        and should have the security email from DomainRequest"""
         logger.info("making security contact in registry")
         self._set_singleton_contact(contact, expectedType=contact.ContactTypeChoices.SECURITY)
 
