@@ -84,8 +84,7 @@ class Command(BaseCommand):
         send_templated_email(
             template_name="emails/metadata_body.txt",
             subject_template_name="emails/metadata_subject.txt",
-            # to_address=settings.DEFAULT_FROM_EMAIL,
-            to_address="rebecca.hsieh@truss.works <rebecca.hsieh@truss.works>",
+            to_address=settings.DEFAULT_FROM_EMAIL,
             context={"current_date_str": current_date_str},
             attachment_file=encrypted_metadata_in_bytes,
         )
