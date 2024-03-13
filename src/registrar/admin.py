@@ -133,6 +133,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         cleaned_data = super().clean()
         status = cleaned_data.get("status")
         investigator = cleaned_data.get("investigator")
+        rejection_reason = cleaned_data.get("rejection_reason")
 
         # Get the old status
         initial_status = self.initial.get("status", None)
@@ -168,7 +169,7 @@ class DomainRequestAdminForm(forms.ModelForm):
 
         # Check if a rejection reason exists. Rejection is not possible without one.
         error_message = None
-        if rejection_reason is None:
+        if rejection_reason is None or rejection_reason == "":
             # Lets grab the error message from a common location
             error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
         else:
