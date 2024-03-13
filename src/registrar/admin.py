@@ -153,7 +153,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             # That field must obey certain conditions when an domain request is approved.
             # Will call "add_error" if any issues are found.
             self._check_for_valid_investigator(investigator)
-        
+
         # If the status is rejected, a rejection reason must exist
         if status == DomainRequest.DomainRequestStatus.REJECTED:
             self._check_for_valid_rejection_reason(rejection_reason)
