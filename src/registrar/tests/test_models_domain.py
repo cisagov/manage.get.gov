@@ -324,7 +324,10 @@ class TestDomainCreation(MockEppLib):
         with less_console_noise():
             draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
             user, _ = User.objects.get_or_create()
-            domain_request = DomainRequest.objects.create(creator=user, requested_domain=draft_domain)
+            investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
+            domain_request = DomainRequest.objects.create(
+                creator=user, requested_domain=draft_domain, investigator=investigator
+            )
 
             mock_client = MockSESClient()
             with boto3_mocking.clients.handler_for("sesv2", mock_client):

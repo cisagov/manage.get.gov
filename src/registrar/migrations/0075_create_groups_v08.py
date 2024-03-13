@@ -25,7 +25,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0073_domainrequest_and_more"),
+        ("registrar", "0074_rename_domainapplication_domainrequest_and_more"),
     ]
 
     operations = [

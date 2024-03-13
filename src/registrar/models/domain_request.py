@@ -9,6 +9,7 @@ from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
+from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -645,6 +646,14 @@ class DomainRequest(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
+    def investigator_exists_and_is_staff(self):
+        """Checks if the current investigator is in a valid state for a state transition"""
+        is_valid = True
+        # Check if an investigator is assigned. No approval is possible without one.
+        if self.investigator is None or not self.investigator.is_staff:
+            is_valid = False
+        return is_valid
+
     @transition(
         field="status",
         source=[
@@ -656,7 +665,7 @@ class DomainRequest(TimeStampedModel):
         target=DomainRequestStatus.SUBMITTED,
     )
     def submit(self):
-        """Submit a domain request that is started.
+        """Submit an domain request that is started.
 
         As a side effect, an email notification is sent."""
 
@@ -664,10 +673,7 @@ class DomainRequest(TimeStampedModel):
         # can raise more informative exceptions
 
         # requested_domain could be None here
-        if not hasattr(self, "requested_domain"):
-            raise ValueError("Requested domain is missing.")
-
-        if self.requested_domain is None:
+        if not hasattr(self, "requested_domain") or self.requested_domain is None:
             raise ValueError("Requested domain is missing.")
 
         DraftDomain = apps.get_model("registrar.DraftDomain")
@@ -704,10 +710,10 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.INELIGIBLE,
         ],
         target=DomainRequestStatus.IN_REVIEW,
-        conditions=[domain_is_not_active],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def in_review(self):
-        """Investigate a domain request that has been submitted.
+        """Investigate an domain request that has been submitted.
 
         This action is logged.
 
@@ -736,10 +742,10 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.INELIGIBLE,
         ],
         target=DomainRequestStatus.ACTION_NEEDED,
-        conditions=[domain_is_not_active],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def action_needed(self):
-        """Send back a domain request that is under investigation or rejected.
+        """Send back an domain request that is under investigation or rejected.
 
         This action is logged.
 
@@ -768,9 +774,10 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.REJECTED,
         ],
         target=DomainRequestStatus.APPROVED,
+        conditions=[investigator_exists_and_is_staff],
     )
     def approve(self, send_email=True):
-        """Approve a domain request that has been submitted.
+        """Approve an domain request that has been submitted.
 
         This action cleans up the rejection status if moving away from rejected.
 
@@ -781,8 +788,12 @@ class DomainRequest(TimeStampedModel):
 
         # create the domain
         Domain = apps.get_model("registrar.Domain")
+
+        # == Check that the domain_request is valid == #
         if Domain.objects.filter(name=self.requested_domain.name).exists():
-            raise ValueError("Cannot approve. Requested domain is already in use.")
+            raise FSMApplicationError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
+
+        # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
 
@@ -799,6 +810,7 @@ class DomainRequest(TimeStampedModel):
         if self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
+        # == Send out an email == #
         self._send_status_update_email(
             "domain request approved",
             "emails/status_change_approved.txt",
@@ -812,7 +824,7 @@ class DomainRequest(TimeStampedModel):
         target=DomainRequestStatus.WITHDRAWN,
     )
     def withdraw(self):
-        """Withdraw a domain request that has been submitted."""
+        """Withdraw an domain request that has been submitted."""
 
         self._send_status_update_email(
             "withdraw",
@@ -824,10 +836,10 @@ class DomainRequest(TimeStampedModel):
         field="status",
         source=[DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED, DomainRequestStatus.APPROVED],
         target=DomainRequestStatus.REJECTED,
-        conditions=[domain_is_not_active],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def reject(self):
-        """Reject a domain request that has been submitted.
+        """Reject an domain request that has been submitted.
 
         As side effects this will delete the domain and domain_information
         (will cascade), and send an email notification."""
@@ -850,7 +862,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.REJECTED,
         ],
         target=DomainRequestStatus.INELIGIBLE,
-        conditions=[domain_is_not_active],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def reject_with_prejudice(self):
         """The applicant is a bad actor, reject with prejudice.

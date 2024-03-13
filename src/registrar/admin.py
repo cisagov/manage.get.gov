@@ -17,6 +17,7 @@ from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
 from registrar.utility import csv_export
+from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -93,9 +94,14 @@ class DomainRequestAdminForm(forms.ModelForm):
             # first option in status transitions is current state
             available_transitions = [(current_state, domain_request.get_status_display())]
 
-            transitions = get_available_FIELD_transitions(
-                domain_request, models.DomainRequest._meta.get_field("status")
-            )
+            if domain_request.investigator is not None:
+                transitions = get_available_FIELD_transitions(
+                    domain_request, models.DomainRequest._meta.get_field("status")
+                )
+            else:
+                transitions = self.get_custom_field_transitions(
+                    domain_request, models.DomainRequest._meta.get_field("status")
+                )
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target.label))
@@ -105,6 +111,73 @@ class DomainRequestAdminForm(forms.ModelForm):
             # readonly and the status field will not have a widget
             if not domain_request.creator.is_restricted():
                 self.fields["status"].widget.choices = available_transitions
+
+    def get_custom_field_transitions(self, instance, field):
+        """Custom implementation of get_available_FIELD_transitions
+        in the FSM. Allows us to still display fields filtered out by a condition."""
+        curr_state = field.get_state(instance)
+        transitions = field.transitions[instance.__class__]
+
+        for name, transition in transitions.items():
+            meta = transition._django_fsm
+            if meta.has_transition(curr_state):
+                yield meta.get_transition(curr_state)
+
+    def clean(self):
+        """
+        Override of the default clean on the form.
+        This is so we can inject custom form-level error messages.
+        """
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        status = cleaned_data.get("status")
+        investigator = cleaned_data.get("investigator")
+
+        # Get the old status
+        initial_status = self.initial.get("status", None)
+
+        # We only care about investigator when in these statuses
+        checked_statuses = [
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.INELIGIBLE,
+        ]
+
+        # If a status change occured, check for validity
+        if status != initial_status and status in checked_statuses:
+            # Checks the "investigators" field for validity.
+            # That field must obey certain conditions when an domain request is approved.
+            # Will call "add_error" if any issues are found.
+            self._check_for_valid_investigator(investigator)
+
+        return cleaned_data
+
+    def _check_for_valid_investigator(self, investigator) -> bool:
+        """
+        Checks if the investigator field is not none, and is staff.
+        Adds form errors on failure.
+        """
+
+        is_valid = False
+
+        # Check if an investigator is assigned. No approval is possible without one.
+        error_message = None
+        if investigator is None:
+            # Lets grab the error message from a common location
+            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
+        elif not investigator.is_staff:
+            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("investigator", error_message)
+
+        return is_valid
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
@@ -1046,72 +1119,24 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
-        if obj and obj.creator.status != models.User.RESTRICTED:
-            if change:  # Check if the domain request is being edited
-                # Get the original domain request from the database
-                original_obj = models.DomainRequest.objects.get(pk=obj.pk)
+        """Custom save_model definition that handles edge cases"""
 
-                if (
-                    obj
-                    and original_obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
-                    and obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
-                    and not obj.domain_is_not_active()
-                ):
-                    # If an admin tried to set an approved domain request to
-                    # another status and the related domain is already
-                    # active, shortcut the action and throw a friendly
-                    # error message. This action would still not go through
-                    # shortcut or not as the rules are duplicated on the model,
-                    # but the error would be an ugly Django error screen.
+        # == Check that the obj is in a valid state == #
 
-                    # Clear the success message
-                    messages.set_level(request, messages.ERROR)
+        # If obj is none, something went very wrong.
+        # The form should have blocked this, so lets forbid it.
+        if not obj:
+            logger.error(f"Invalid value for obj ({obj})")
+            messages.set_level(request, messages.ERROR)
+            messages.error(
+                request,
+                "Could not save DomainRequest. Something went wrong.",
+            )
+            return None
 
-                    messages.error(
-                        request,
-                        "This action is not permitted. The domain is already active.",
-                    )
-
-                elif (
-                    obj and obj.status == models.DomainRequest.DomainRequestStatus.REJECTED and not obj.rejection_reason
-                ):
-                    # This condition should never be triggered.
-                    # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
-                    # because we clean up the rejection reason in the transition in the model.
-
-                    # Clear the success message
-                    messages.set_level(request, messages.ERROR)
-
-                    messages.error(
-                        request,
-                        "A rejection reason is required.",
-                    )
-
-                else:
-                    if obj.status != original_obj.status:
-                        status_method_mapping = {
-                            models.DomainRequest.DomainRequestStatus.STARTED: None,
-                            models.DomainRequest.DomainRequestStatus.SUBMITTED: obj.submit,
-                            models.DomainRequest.DomainRequestStatus.IN_REVIEW: obj.in_review,
-                            models.DomainRequest.DomainRequestStatus.ACTION_NEEDED: obj.action_needed,
-                            models.DomainRequest.DomainRequestStatus.APPROVED: obj.approve,
-                            models.DomainRequest.DomainRequestStatus.WITHDRAWN: obj.withdraw,
-                            models.DomainRequest.DomainRequestStatus.REJECTED: obj.reject,
-                            models.DomainRequest.DomainRequestStatus.INELIGIBLE: (obj.reject_with_prejudice),
-                        }
-                        selected_method = status_method_mapping.get(obj.status)
-                        if selected_method is None:
-                            logger.warning("Unknown status selected in django admin")
-                        else:
-                            # This is an fsm in model which will throw an error if the
-                            # transition condition is violated, so we roll back the
-                            # status to what it was before the admin user changed it and
-                            # let the fsm method set it.
-                            obj.status = original_obj.status
-                            selected_method()
-
-                    super().save_model(request, obj, form, change)
-        else:
+        # If the user is restricted or we're saving an invalid model,
+        # forbid this action.
+        if not obj or obj.creator.status == models.User.RESTRICTED:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
 
@@ -1119,6 +1144,117 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 request,
                 "This action is not permitted for domain requests with a restricted creator.",
             )
+
+            return None
+
+        # == Check if we're making a change or not == #
+
+        # If we're not making a change (adding a record), run save model as we do normally
+        if not change:
+            return super().save_model(request, obj, form, change)
+
+        # == Handle non-status changes == #
+
+        # Get the original domain request from the database.
+        original_obj = models.DomainRequest.objects.get(pk=obj.pk)
+        if obj.status == original_obj.status:
+            # If the status hasn't changed, let the base function take care of it
+            return super().save_model(request, obj, form, change)
+
+        # == Handle status changes == #
+
+        # Run some checks on the current object for invalid status changes
+        obj, should_save = self._handle_status_change(request, obj, original_obj)
+
+        # We should only save if we don't display any errors in the step above.
+        if should_save:
+            return super().save_model(request, obj, form, change)
+
+    def _handle_status_change(self, request, obj, original_obj):
+        """
+        Checks for various conditions when a status change is triggered.
+        In the event that it is valid, the status will be mapped to
+        the appropriate method.
+
+        In the event that we should not status change, an error message
+        will be displayed.
+
+        Returns a tuple: (obj: DomainRequest, should_proceed: bool)
+        """
+
+        should_proceed = True
+        error_message = None
+
+        # Get the method that should be run given the status
+        selected_method = self.get_status_method_mapping(obj)
+        if selected_method is None:
+            logger.warning("Unknown status selected in django admin")
+
+            # If the status is not mapped properly, saving could cause
+            # weird issues down the line. Instead, we should block this.
+            should_proceed = False
+            return should_proceed
+
+        request_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+        if request_is_not_approved and not obj.domain_is_not_active():
+            # If an admin tried to set an approved domain request to
+            # another status and the related domain is already
+            # active, shortcut the action and throw a friendly
+            # error message. This action would still not go through
+            # shortcut or not as the rules are duplicated on the model,
+            # but the error would be an ugly Django error screen.
+            error_message = "This action is not permitted. The domain is already active."
+        elif obj.status == models.DomainRequest.DomainRequestStatus.REJECTED and not obj.rejection_reason:
+            # This condition should never be triggered.
+            # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
+            # because we clean up the rejection reason in the transition in the model.
+            error_message = "A rejection reason is required."
+        else:
+            # This is an fsm in model which will throw an error if the
+            # transition condition is violated, so we roll back the
+            # status to what it was before the admin user changed it and
+            # let the fsm method set it.
+            obj.status = original_obj.status
+
+            # Try to perform the status change.
+            # Catch FSMApplicationError's and return the message,
+            # as these are typically user errors.
+            try:
+                selected_method()
+            except FSMApplicationError as err:
+                logger.warning(f"An error encountered when trying to change status: {err}")
+                error_message = err.message
+
+        if error_message is not None:
+            # Clear the success message
+            messages.set_level(request, messages.ERROR)
+            # Display the error
+            messages.error(
+                request,
+                error_message,
+            )
+
+            # If an error message exists, we shouldn't proceed
+            should_proceed = False
+
+        return (obj, should_proceed)
+
+    def get_status_method_mapping(self, domain_request):
+        """Returns what method should be ran given an domain request object"""
+        # Define a per-object mapping
+        status_method_mapping = {
+            models.DomainRequest.DomainRequestStatus.STARTED: None,
+            models.DomainRequest.DomainRequestStatus.SUBMITTED: domain_request.submit,
+            models.DomainRequest.DomainRequestStatus.IN_REVIEW: domain_request.in_review,
+            models.DomainRequest.DomainRequestStatus.ACTION_NEEDED: domain_request.action_needed,
+            models.DomainRequest.DomainRequestStatus.APPROVED: domain_request.approve,
+            models.DomainRequest.DomainRequestStatus.WITHDRAWN: domain_request.withdraw,
+            models.DomainRequest.DomainRequestStatus.REJECTED: domain_request.reject,
+            models.DomainRequest.DomainRequestStatus.INELIGIBLE: (domain_request.reject_with_prejudice),
+        }
+
+        # Grab the method
+        return status_method_mapping.get(domain_request.status, None)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
