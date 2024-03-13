@@ -16,7 +16,7 @@ from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
 from registrar.utility import csv_export
-from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -152,8 +152,32 @@ class DomainRequestAdminForm(forms.ModelForm):
             # That field must obey certain conditions when an domain request is approved.
             # Will call "add_error" if any issues are found.
             self._check_for_valid_investigator(investigator)
+        
+        # If the status is rejected, a rejection reason must exist
+        if status == DomainRequest.DomainRequestStatus.REJECTED:
+            self._check_for_valid_rejection_reason(rejection_reason)
 
         return cleaned_data
+
+    def _check_for_valid_rejection_reason(self, rejection_reason) -> bool:
+        """
+        Checks if the rejection_reason field is not none.
+        Adds form errors on failure.
+        """
+        is_valid = False
+
+        # Check if a rejection reason exists. Rejection is not possible without one.
+        error_message = None
+        if rejection_reason is None:
+            # Lets grab the error message from a common location
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("rejection_reason", error_message)
+
+        return is_valid
 
     def _check_for_valid_investigator(self, investigator) -> bool:
         """
@@ -167,9 +191,9 @@ class DomainRequestAdminForm(forms.ModelForm):
         error_message = None
         if investigator is None:
             # Lets grab the error message from a common location
-            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
         elif not investigator.is_staff:
-            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
         else:
             is_valid = True
 
@@ -1216,7 +1240,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
             # This condition should never be triggered.
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
             # because we clean up the rejection reason in the transition in the model.
-            error_message = "A rejection reason is required."
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
         else:
             # This is an fsm in model which will throw an error if the
             # transition condition is violated, so we roll back the
@@ -1225,11 +1249,11 @@ class DomainRequestAdmin(ListHeaderAdmin):
             obj.status = original_obj.status
 
             # Try to perform the status change.
-            # Catch FSMApplicationError's and return the message,
+            # Catch FSMDomainRequestError's and return the message,
             # as these are typically user errors.
             try:
                 selected_method()
-            except FSMApplicationError as err:
+            except FSMDomainRequestError as err:
                 logger.warning(f"An error encountered when trying to change status: {err}")
                 error_message = err.message
 

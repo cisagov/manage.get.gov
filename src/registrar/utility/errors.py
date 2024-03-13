@@ -78,15 +78,17 @@ class FSMErrorCodes(IntEnum):
         - 2 NO_INVESTIGATOR No investigator is assigned
         - 3 INVESTIGATOR_NOT_STAFF Investigator is a non-staff user
         - 4 INVESTIGATOR_NOT_SUBMITTER The form submitter is not the investigator
+        - 5 NO_REJECTION_REASON No rejection reason is specified
     """
 
     APPROVE_DOMAIN_IN_USE = 1
     NO_INVESTIGATOR = 2
     INVESTIGATOR_NOT_STAFF = 3
     INVESTIGATOR_NOT_SUBMITTER = 4
+    NO_REJECTION_REASON = 5
 
 
-class FSMApplicationError(Exception):
+class FSMDomainRequestError(Exception):
     """
     Used to raise exceptions when doing FSM Transitions.
     Uses `FSMErrorCodes` as an enum.
@@ -97,6 +99,7 @@ class FSMApplicationError(Exception):
         FSMErrorCodes.NO_INVESTIGATOR: ("Investigator is required for this status."),
         FSMErrorCodes.INVESTIGATOR_NOT_STAFF: ("Investigator is not a staff user."),
         FSMErrorCodes.INVESTIGATOR_NOT_SUBMITTER: ("Only the assigned investigator can make this change."),
+        FSMErrorCodes.NO_REJECTION_REASON: ("A rejection reason is required."),
     }
 
     def __init__(self, *args, code=None, **kwargs):
