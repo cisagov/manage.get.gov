@@ -11,7 +11,6 @@ import logging
 try:
     from epplib.exceptions import TransportError
     from epplib.responses import Result
-    from epplib.client import Client
     from epplib.transport import SocketTransport
     from epplib import commands
     from epplib.models import common, info
