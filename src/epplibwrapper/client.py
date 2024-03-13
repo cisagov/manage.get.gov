@@ -68,7 +68,6 @@ class EPPLibWrapper:
         """Initialize a client, assuming _login defined. Sets _client to initialized
         client. Raises errors if initialization fails.
         This method will be called at app initialization, and also during retries."""
-
         # establish a client object with a TCP socket transport
         # note that type: ignore added in several places because linter complains
         # about _client initially being set to None, and None type doesn't match code
@@ -125,6 +124,7 @@ class EPPLibWrapper:
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
+
         try:
             # check for the condition that the _client was not initialized properly
             # at app initialization
