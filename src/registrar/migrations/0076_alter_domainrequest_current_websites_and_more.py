@@ -27,4 +27,14 @@ class Migration(migrations.Migration):
                 verbose_name="Other employees",
             ),
         ),
+        migrations.AlterField(
+            model_name="domaininformation",
+            name="other_contacts",
+            field=models.ManyToManyField(
+                blank=True,
+                related_name="contact_domain_requests_information",
+                to="registrar.contact",
+                verbose_name="Other employees",
+            ),
+        ),
     ]
