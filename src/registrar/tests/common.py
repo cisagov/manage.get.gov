@@ -623,19 +623,19 @@ class MockDb(TestCase):
 
         with less_console_noise():
             self.domain_request_1 = completed_application(
-                status=DomainApplication.ApplicationStatus.STARTED, name="city1.gov"
+                status=DomainRequest.DomainRequestStatus.STARTED, name="city1.gov"
             )
             self.domain_request_2 = completed_application(
-                status=DomainApplication.ApplicationStatus.IN_REVIEW, name="city2.gov"
+                status=DomainRequest.DomainRequestStatus.IN_REVIEW, name="city2.gov"
             )
             self.domain_request_3 = completed_application(
-                status=DomainApplication.ApplicationStatus.STARTED, name="city3.gov"
+                status=DomainRequest.DomainRequestStatus.STARTED, name="city3.gov"
             )
             self.domain_request_4 = completed_application(
-                status=DomainApplication.ApplicationStatus.STARTED, name="city4.gov"
+                status=DomainRequest.DomainRequestStatus.STARTED, name="city4.gov"
             )
             self.domain_request_5 = completed_application(
-                status=DomainApplication.ApplicationStatus.APPROVED, name="city5.gov"
+                status=DomainRequest.DomainRequestStatus.APPROVED, name="city5.gov"
             )
             self.domain_request_3.submit()
             self.domain_request_3.save()
@@ -647,7 +647,7 @@ class MockDb(TestCase):
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
-        DomainApplication.objects.all().delete()
+        DomainRequest.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 

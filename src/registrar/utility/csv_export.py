@@ -2,7 +2,7 @@ import csv
 import logging
 from datetime import datetime
 from registrar.models.domain import Domain
-from registrar.models.domain_application import DomainApplication
+from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from django.utils import timezone
 from django.core.paginator import Paginator
@@ -190,11 +190,11 @@ def write_domains_csv(
 
 
 def get_requests(filter_condition, sort_fields):
-    requests = DomainApplication.objects.all().filter(**filter_condition).order_by(*sort_fields).distinct()
+    requests = DomainRequest.objects.all().filter(**filter_condition).order_by(*sort_fields).distinct()
     return requests
 
 
-def parse_request_row(columns, request: DomainApplication):
+def parse_request_row(columns, request: DomainRequest):
     """Given a set of columns, generate a new row from cleaned column data"""
 
     requested_domain_name = "No requested domain"
@@ -448,19 +448,19 @@ def get_sliced_domains(filter_condition):
 
     domains = DomainInformation.objects.all().filter(**filter_condition).distinct()
     domains_count = domains.count()
-    federal = domains.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).distinct().count()
-    interstate = domains.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).count()
+    federal = domains.filter(organization_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
+    interstate = domains.filter(organization_type=DomainRequest.OrganizationChoices.INTERSTATE).count()
     state_or_territory = (
-        domains.filter(organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
+        domains.filter(organization_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
     )
-    tribal = domains.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).distinct().count()
-    county = domains.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).distinct().count()
-    city = domains.filter(organization_type=DomainApplication.OrganizationChoices.CITY).distinct().count()
+    tribal = domains.filter(organization_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
+    county = domains.filter(organization_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
+    city = domains.filter(organization_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
     special_district = (
-        domains.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+        domains.filter(organization_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
     )
     school_district = (
-        domains.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+        domains.filter(organization_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
     )
     election_board = domains.filter(is_election_board=True).distinct().count()
 
@@ -481,21 +481,21 @@ def get_sliced_domains(filter_condition):
 def get_sliced_requests(filter_condition):
     """Get fitered requests counts sliced by org type and election office."""
 
-    requests = DomainApplication.objects.all().filter(**filter_condition).distinct()
+    requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
     requests_count = requests.count()
-    federal = requests.filter(organization_type=DomainApplication.OrganizationChoices.FEDERAL).distinct().count()
-    interstate = requests.filter(organization_type=DomainApplication.OrganizationChoices.INTERSTATE).distinct().count()
+    federal = requests.filter(organization_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
+    interstate = requests.filter(organization_type=DomainRequest.OrganizationChoices.INTERSTATE).distinct().count()
     state_or_territory = (
-        requests.filter(organization_type=DomainApplication.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
+        requests.filter(organization_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
     )
-    tribal = requests.filter(organization_type=DomainApplication.OrganizationChoices.TRIBAL).distinct().count()
-    county = requests.filter(organization_type=DomainApplication.OrganizationChoices.COUNTY).distinct().count()
-    city = requests.filter(organization_type=DomainApplication.OrganizationChoices.CITY).distinct().count()
+    tribal = requests.filter(organization_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
+    county = requests.filter(organization_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
+    city = requests.filter(organization_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
     special_district = (
-        requests.filter(organization_type=DomainApplication.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+        requests.filter(organization_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
     )
     school_district = (
-        requests.filter(organization_type=DomainApplication.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+        requests.filter(organization_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
     )
     election_board = requests.filter(is_election_board=True).distinct().count()
 
@@ -679,7 +679,7 @@ def export_data_requests_growth_to_csv(csv_file, start_date, end_date):
         "requested_domain__name",
     ]
     filter_condition = {
-        "status": DomainApplication.ApplicationStatus.SUBMITTED,
+        "status": DomainRequest.DomainRequestStatus.SUBMITTED,
         "submission_date__lte": end_date_formatted,
         "submission_date__gte": start_date_formatted,
     }

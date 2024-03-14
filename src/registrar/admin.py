@@ -442,9 +442,9 @@ def analytics(request):
 
     thirty_days_ago = datetime.datetime.today() - datetime.timedelta(days=30)
 
-    last_30_days_applications = models.DomainApplication.objects.filter(created_at__gt=thirty_days_ago)
-    last_30_days_approved_applications = models.DomainApplication.objects.filter(
-        created_at__gt=thirty_days_ago, status=DomainApplication.ApplicationStatus.APPROVED
+    last_30_days_applications = models.DomainRequest.objects.filter(created_at__gt=thirty_days_ago)
+    last_30_days_approved_applications = models.DomainRequest.objects.filter(
+        created_at__gt=thirty_days_ago, status=DomainRequest.DomainRequestStatus.APPROVED
     )
     avg_approval_time = last_30_days_approved_applications.annotate(
         approval_time=F("approved_domain__created_at") - F("submission_date")
@@ -516,11 +516,11 @@ def analytics(request):
     requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_requests_end_date)
 
     filter_submitted_requests_start_date = {
-        "status": DomainApplication.ApplicationStatus.SUBMITTED,
+        "status": DomainRequest.DomainRequestStatus.SUBMITTED,
         "submission_date__lte": start_date_formatted,
     }
     filter_submitted_requests_end_date = {
-        "status": DomainApplication.ApplicationStatus.SUBMITTED,
+        "status": DomainRequest.DomainRequestStatus.SUBMITTED,
         "submission_date__lte": end_date_formatted,
     }
     submitted_requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_submitted_requests_start_date)

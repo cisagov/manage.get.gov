@@ -2,7 +2,7 @@ import csv
 import io
 from django.test import Client, RequestFactory
 from io import StringIO
-from registrar.models.domain_application import DomainApplication
+from registrar.models.domain_request import DomainRequest
 from registrar.models.domain import Domain
 from registrar.utility.csv_export import (
     get_sliced_domains,
@@ -738,7 +738,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "requested_domain__name",
             ]
             filter_condition = {
-                "status": DomainApplication.ApplicationStatus.SUBMITTED,
+                "status": DomainRequest.RequestStatus.SUBMITTED,
                 "submission_date__lte": self.end_date,
                 "submission_date__gte": self.start_date,
             }
@@ -794,7 +794,7 @@ class HelperFunctions(MockDb):
 
         with less_console_noise():
             filter_condition = {
-                "status": DomainApplication.ApplicationStatus.SUBMITTED,
+                "status": DomainRequest.RequestStatus.SUBMITTED,
                 "submission_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)
