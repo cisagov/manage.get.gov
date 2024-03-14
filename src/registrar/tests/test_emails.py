@@ -5,7 +5,8 @@ from unittest.mock import MagicMock
 from django.test import TestCase
 from .common import completed_domain_request, less_console_noise
 
-
+from datetime import datetime
+from registrar.utility import email
 import boto3_mocking  # type: ignore
 
 
@@ -182,3 +183,32 @@ class TestEmails(TestCase):
         self.assertNotIn("Anything else", body)
         # spacing should be right between adjacent elements
         self.assertRegex(body, r"5557\n\n----")
+
+    @boto3_mocking.patching
+    def test_send_email_with_attachment(self):
+        with boto3_mocking.clients.handler_for("ses", self.mock_client_class):
+            sender_email = "sender@example.com"
+            recipient_email = "recipient@example.com"
+            subject = "Test Subject"
+            body = "Test Body"
+            attachment_file = b"Attachment file content"
+            current_date = datetime.now().strftime("%m%d%Y")
+            current_filename = f"domain-metadata-{current_date}.zip"
+
+            email.send_email_with_attachment(
+                sender_email, recipient_email, subject, body, attachment_file, self.mock_client
+            )
+            # Assert that the `send_raw_email` method of the mocked SES client was called with the expected params
+            self.mock_client.send_raw_email.assert_called_once()
+
+            # Get the args passed to the `send_raw_email` method
+            call_args = self.mock_client.send_raw_email.call_args[1]
+
+            # Assert that the attachment filename is correct
+            self.assertEqual(call_args["RawMessage"]["Data"].count(f'filename="{current_filename}"'), 1)
+
+            # Assert that the attachment content is encrypted
+            self.assertIn("Content-Type: application/octet-stream", call_args["RawMessage"]["Data"])
+            self.assertIn("Content-Transfer-Encoding: base64", call_args["RawMessage"]["Data"])
+            self.assertIn("Content-Disposition: attachment;", call_args["RawMessage"]["Data"])
+            self.assertNotIn("Attachment file content", call_args["RawMessage"]["Data"])
