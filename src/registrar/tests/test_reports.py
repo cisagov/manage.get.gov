@@ -5,6 +5,8 @@ from io import StringIO
 from registrar.models.domain_request import DomainRequest
 from registrar.models.domain import Domain
 from registrar.utility.csv_export import (
+    export_data_managed_domains_to_csv,
+    export_data_unmanaged_domains_to_csv,
     get_sliced_domains,
     get_sliced_requests,
     write_domains_csv,
@@ -530,68 +532,10 @@ class ExportDataTest(MockDb, MockEppLib):
         with less_console_noise():
             # Create a CSV file in memory
             csv_file = StringIO()
-            writer = csv.writer(csv_file)
-            # Define columns, sort fields, and filter condition
-            columns = [
-                "Domain name",
-                "Domain type",
-            ]
-            sort_fields = [
-                "domain__name",
-            ]
-            filter_managed_domains_start_date = {
-                "domain__permissions__isnull": False,
-                "domain__first_ready__lte": self.start_date,
-            }
-            managed_domains_sliced_at_start_date = get_sliced_domains(filter_managed_domains_start_date)
-            # Call the export functions
-            writer.writerow(["MANAGED DOMAINS COUNTS AT START DATE"])
-            writer.writerow(
-                [
-                    "Total",
-                    "Federal",
-                    "Interstate",
-                    "State or territory",
-                    "Tribal",
-                    "County",
-                    "City",
-                    "Special district",
-                    "School district",
-                    "Election office",
-                ]
+            export_data_managed_domains_to_csv(
+                csv_file, self.start_date.strftime("%Y-%m-%d"), self.end_date.strftime("%Y-%m-%d")
             )
-            writer.writerow(managed_domains_sliced_at_start_date)
-            writer.writerow([])
-            filter_managed_domains_end_date = {
-                "domain__permissions__isnull": False,
-                "domain__first_ready__lte": self.end_date,
-            }
-            managed_domains_sliced_at_end_date = get_sliced_domains(filter_managed_domains_end_date)
-            writer.writerow(["MANAGED DOMAINS COUNTS AT END DATE"])
-            writer.writerow(
-                [
-                    "Total",
-                    "Federal",
-                    "Interstate",
-                    "State or territory",
-                    "Tribal",
-                    "County",
-                    "City",
-                    "Special district",
-                    "School district",
-                    "Election office",
-                ]
-            )
-            writer.writerow(managed_domains_sliced_at_end_date)
-            writer.writerow([])
-            write_domains_csv(
-                writer,
-                columns,
-                sort_fields,
-                filter_managed_domains_end_date,
-                get_domain_managers=True,
-                should_write_header=True,
-            )
+
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -627,68 +571,10 @@ class ExportDataTest(MockDb, MockEppLib):
         with less_console_noise():
             # Create a CSV file in memory
             csv_file = StringIO()
-            writer = csv.writer(csv_file)
-            # Define columns, sort fields, and filter condition
-            columns = [
-                "Domain name",
-                "Domain type",
-            ]
-            sort_fields = [
-                "domain__name",
-            ]
-            filter_unmanaged_domains_start_date = {
-                "domain__permissions__isnull": True,
-                "domain__first_ready__lte": self.start_date,
-            }
-            unmanaged_domains_sliced_at_start_date = get_sliced_domains(filter_unmanaged_domains_start_date)
-            # Call the export functions
-            writer.writerow(["UNMANAGED DOMAINS COUNTS AT START DATE"])
-            writer.writerow(
-                [
-                    "Total",
-                    "Federal",
-                    "Interstate",
-                    "State or territory",
-                    "Tribal",
-                    "County",
-                    "City",
-                    "Special district",
-                    "School district",
-                    "Election office",
-                ]
+            export_data_unmanaged_domains_to_csv(
+                csv_file, self.start_date.strftime("%Y-%m-%d"), self.end_date.strftime("%Y-%m-%d")
             )
-            writer.writerow(unmanaged_domains_sliced_at_start_date)
-            writer.writerow([])
-            filter_unmanaged_domains_end_date = {
-                "domain__permissions__isnull": True,
-                "domain__first_ready__lte": self.end_date,
-            }
-            unmanaged_domains_sliced_at_end_date = get_sliced_domains(filter_unmanaged_domains_end_date)
-            writer.writerow(["UNMANAGED DOMAINS COUNTS AT END DATE"])
-            writer.writerow(
-                [
-                    "Total",
-                    "Federal",
-                    "Interstate",
-                    "State or territory",
-                    "Tribal",
-                    "County",
-                    "City",
-                    "Special district",
-                    "School district",
-                    "Election office",
-                ]
-            )
-            writer.writerow(unmanaged_domains_sliced_at_end_date)
-            writer.writerow([])
-            write_domains_csv(
-                writer,
-                columns,
-                sort_fields,
-                filter_unmanaged_domains_end_date,
-                get_domain_managers=False,
-                should_write_header=True,
-            )
+
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -696,12 +582,12 @@ class ExportDataTest(MockDb, MockEppLib):
             self.maxDiff = None
             # We expect the READY domain names with the domain managers: Their counts, and listing at end_date.
             expected_content = (
-                "UNMANAGED DOMAINS COUNTS AT START DATE\n"
+                "UNMANAGED DOMAINS AT START DATE\n"
                 "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
                 "School district,Election office\n"
                 "0,0,0,0,0,0,0,0,0,0\n"
                 "\n"
-                "UNMANAGED DOMAINS COUNTS AT END DATE\n"
+                "UNMANAGED DOMAINS AT END DATE\n"
                 "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
                 "School district,Election office\n"
                 "1,1,0,0,0,0,0,0,0,0\n"
@@ -729,16 +615,17 @@ class ExportDataTest(MockDb, MockEppLib):
             csv_file = StringIO()
             writer = csv.writer(csv_file)
             # Define columns, sort fields, and filter condition
+            # We'll skip submission date because it's dynamic and therefore
+            # impossible to set in expected_content
             columns = [
                 "Requested domain",
                 "Organization type",
-                "Submission date",
             ]
             sort_fields = [
                 "requested_domain__name",
             ]
             filter_condition = {
-                "status": DomainRequest.RequestStatus.SUBMITTED,
+                "status": DomainRequest.DomainRequestStatus.SUBMITTED,
                 "submission_date__lte": self.end_date,
                 "submission_date__gte": self.start_date,
             }
@@ -750,9 +637,9 @@ class ExportDataTest(MockDb, MockEppLib):
             # We expect READY domains first, created between today-2 and today+2, sorted by created_at then name
             # and DELETED domains deleted between today-2 and today+2, sorted by deleted then name
             expected_content = (
-                "Requested domain,Organization type,Submission date\n"
-                "city3.gov,Federal - Executive,2024-03-05\n"
-                "city4.gov,Federal - Executive,2024-03-05\n"
+                "Requested domain,Organization type\n"
+                "city3.gov,Federal - Executive\n"
+                "city4.gov,Federal - Executive\n"
             )
 
             # Normalize line endings and remove commas,
@@ -785,8 +672,14 @@ class HelperFunctions(MockDb):
                 "domain__permissions__isnull": False,
                 "domain__first_ready__lte": self.end_date,
             }
-            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
+            # Test with distinct
+            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition, True)
             expected_content = [1, 1, 0, 0, 0, 0, 0, 0, 0, 1]
+            self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
+
+            # Test without distinct
+            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
+            expected_content = [1, 3, 0, 0, 0, 0, 0, 0, 0, 1]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
     def test_get_sliced_requests(self):
@@ -794,7 +687,7 @@ class HelperFunctions(MockDb):
 
         with less_console_noise():
             filter_condition = {
-                "status": DomainRequest.RequestStatus.SUBMITTED,
+                "status": DomainRequest.DomainRequestStatus.SUBMITTED,
                 "submission_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)

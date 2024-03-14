@@ -1,13 +1,12 @@
 from datetime import date
 import logging
-import datetime
 import copy
 
 from django import forms
-from django.db.models import Avg, F, Value, CharField, Q
+from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -17,7 +16,6 @@ from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
-from registrar.utility import csv_export
 from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -435,123 +433,6 @@ class UserContactInline(admin.StackedInline):
     """Edit a user's profile on the user page."""
 
     model = models.Contact
-
-
-def analytics(request):
-    """View for the reports page."""
-
-    thirty_days_ago = datetime.datetime.today() - datetime.timedelta(days=30)
-
-    last_30_days_applications = models.DomainRequest.objects.filter(created_at__gt=thirty_days_ago)
-    last_30_days_approved_applications = models.DomainRequest.objects.filter(
-        created_at__gt=thirty_days_ago, status=DomainRequest.DomainRequestStatus.APPROVED
-    )
-    avg_approval_time = last_30_days_approved_applications.annotate(
-        approval_time=F("approved_domain__created_at") - F("submission_date")
-    ).aggregate(Avg("approval_time"))["approval_time__avg"]
-    # Format the timedelta to display only days
-
-    if avg_approval_time is not None:
-        avg_approval_time = f"{avg_approval_time.days} days"
-    else:
-        avg_approval_time = "No approvals to use"
-    # The start and end dates are passed as url params
-    start_date = request.GET.get("start_date", "")
-    end_date = request.GET.get("end_date", "")
-
-    start_date_formatted = csv_export.format_start_date(start_date)
-    end_date_formatted = csv_export.format_end_date(end_date)
-
-    filter_managed_domains_start_date = {
-        "domain__permissions__isnull": False,
-        "domain__first_ready__lte": start_date_formatted,
-    }
-    filter_managed_domains_end_date = {
-        "domain__permissions__isnull": False,
-        "domain__first_ready__lte": end_date_formatted,
-    }
-    managed_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_managed_domains_start_date)
-    managed_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_managed_domains_end_date)
-
-    filter_unmanaged_domains_start_date = {
-        "domain__permissions__isnull": True,
-        "domain__first_ready__lte": start_date_formatted,
-    }
-    filter_unmanaged_domains_end_date = {
-        "domain__permissions__isnull": True,
-        "domain__first_ready__lte": end_date_formatted,
-    }
-    unmanaged_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_unmanaged_domains_start_date)
-    unmanaged_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_unmanaged_domains_end_date)
-
-    filter_ready_domains_start_date = {
-        "domain__state__in": [Domain.State.READY],
-        "domain__first_ready__lte": start_date_formatted,
-    }
-    filter_ready_domains_end_date = {
-        "domain__state__in": [Domain.State.READY],
-        "domain__first_ready__lte": end_date_formatted,
-    }
-    ready_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_ready_domains_start_date)
-    ready_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_ready_domains_end_date)
-
-    filter_deleted_domains_start_date = {
-        "domain__state__in": [Domain.State.DELETED],
-        "domain__deleted__lte": start_date_formatted,
-    }
-    filter_deleted_domains_end_date = {
-        "domain__state__in": [Domain.State.DELETED],
-        "domain__deleted__lte": end_date_formatted,
-    }
-    deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)
-    deleted_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_deleted_domains_end_date)
-
-    filter_requests_start_date = {
-        "created_at__lte": start_date_formatted,
-    }
-    filter_requests_end_date = {
-        "created_at__lte": end_date_formatted,
-    }
-    requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_requests_start_date)
-    requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_requests_end_date)
-
-    filter_submitted_requests_start_date = {
-        "status": DomainRequest.DomainRequestStatus.SUBMITTED,
-        "submission_date__lte": start_date_formatted,
-    }
-    filter_submitted_requests_end_date = {
-        "status": DomainRequest.DomainRequestStatus.SUBMITTED,
-        "submission_date__lte": end_date_formatted,
-    }
-    submitted_requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_submitted_requests_start_date)
-    submitted_requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_submitted_requests_end_date)
-
-    context = dict(
-        **admin.site.each_context(request),
-        data=dict(
-            user_count=models.User.objects.all().count(),
-            domain_count=models.Domain.objects.all().count(),
-            ready_domain_count=models.Domain.objects.all().filter(state=models.Domain.State.READY).count(),
-            last_30_days_applications=last_30_days_applications.count(),
-            last_30_days_approved_applications=last_30_days_approved_applications.count(),
-            average_application_approval_time_last_30_days=avg_approval_time,
-            managed_domains_sliced_at_start_date=managed_domains_sliced_at_start_date,
-            unmanaged_domains_sliced_at_start_date=unmanaged_domains_sliced_at_start_date,
-            managed_domains_sliced_at_end_date=managed_domains_sliced_at_end_date,
-            unmanaged_domains_sliced_at_end_date=unmanaged_domains_sliced_at_end_date,
-            ready_domains_sliced_at_start_date=ready_domains_sliced_at_start_date,
-            deleted_domains_sliced_at_start_date=deleted_domains_sliced_at_start_date,
-            ready_domains_sliced_at_end_date=ready_domains_sliced_at_end_date,
-            deleted_domains_sliced_at_end_date=deleted_domains_sliced_at_end_date,
-            requests_sliced_at_start_date=requests_sliced_at_start_date,
-            submitted_requests_sliced_at_start_date=submitted_requests_sliced_at_start_date,
-            requests_sliced_at_end_date=requests_sliced_at_end_date,
-            submitted_requests_sliced_at_end_date=submitted_requests_sliced_at_end_date,
-            start_date=start_date,
-            end_date=end_date,
-        ),
-    )
-    return render(request, "admin/analytics.html", context)
 
 
 class MyUserAdmin(BaseUserAdmin):

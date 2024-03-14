@@ -46,7 +46,7 @@
                 <a href="{% url 'export_data_federal' %}" class="button" role="button">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                     <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
-                  </svg><span class="margin-left-05">Current Federal</span>
+                  </svg><span class="margin-left-05">Current federal</span>
                 </a>
             </li>
           </ul>
@@ -87,7 +87,7 @@
               <button class="button exportLink" data-export-url="{% url 'export_requests_growth' %}" type="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
-                </svg><span class="margin-left-05">Request Growth</span>
+                </svg><span class="margin-left-05">Request growth</span>
               </button>
             </li>
             <li class="usa-button-group__item">
@@ -132,7 +132,7 @@
                 data-list-one="{{data.unmanaged_domains_sliced_at_start_date}}"
                 data-list-two="{{data.unmanaged_domains_sliced_at_end_date}}"
               >
-                <h2>Chart: Unanaged domains</h2>
+                <h2>Chart: Unmanaged domains</h2>
                 <p>{{ data.unmanaged_domains_sliced_at_end_date.0 }} unmanaged domains for {{ data.end_date }}</p>
             </canvas>
             </div>

@@ -1,3 +1,4 @@
+from collections import Counter
 import csv
 import logging
 from datetime import datetime
@@ -25,7 +26,8 @@ def write_header(writer, columns):
 
 def get_domain_infos(filter_condition, sort_fields):
     domain_infos = (
-        DomainInformation.objects.prefetch_related("domain", "authorizing_official", "domain__permissions")
+        DomainInformation.objects.select_related("domain", "authorizing_official")
+        .prefetch_related("domain__permissions")
         .filter(**filter_condition)
         .order_by(*sort_fields)
         .distinct()
@@ -190,7 +192,7 @@ def write_domains_csv(
 
 
 def get_requests(filter_condition, sort_fields):
-    requests = DomainRequest.objects.all().filter(**filter_condition).order_by(*sort_fields).distinct()
+    requests = DomainRequest.objects.filter(**filter_condition).order_by(*sort_fields).distinct()
     return requests
 
 
@@ -236,10 +238,10 @@ def write_requests_csv(
     """Receives params from the parent methods and outputs a CSV with filtered and sorted requests.
     Works with write_header as long as the same writer object is passed."""
 
-    all_requetsts = get_requests(filter_condition, sort_fields)
+    all_requests = get_requests(filter_condition, sort_fields)
 
     # Reduce the memory overhead when performing the write operation
-    paginator = Paginator(all_requetsts, 1000)
+    paginator = Paginator(all_requests, 1000)
 
     for page_num in paginator.page_range:
         page = paginator.page(page_num)
@@ -443,26 +445,37 @@ def export_data_domain_growth_to_csv(csv_file, start_date, end_date):
     )
 
 
-def get_sliced_domains(filter_condition):
-    """Get fitered domains counts sliced by org type and election office."""
+def get_sliced_domains(filter_condition, distinct=False):
+    """Get filtered domains counts sliced by org type and election office.
+    Pass distinct=True when filtering by permissions so we do not to count multiples
+    when a domain has more that one manager.
+    """
 
-    domains = DomainInformation.objects.all().filter(**filter_condition).distinct()
-    domains_count = domains.count()
-    federal = domains.filter(organization_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
-    interstate = domains.filter(organization_type=DomainRequest.OrganizationChoices.INTERSTATE).count()
-    state_or_territory = (
-        domains.filter(organization_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
-    )
-    tribal = domains.filter(organization_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
-    county = domains.filter(organization_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
-    city = domains.filter(organization_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
-    special_district = (
-        domains.filter(organization_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
-    )
-    school_district = (
-        domains.filter(organization_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
-    )
-    election_board = domains.filter(is_election_board=True).distinct().count()
+    # Round trip 1: Get distinct domain names based on filter condition
+    domains_count = DomainInformation.objects.filter(**filter_condition).distinct().count()
+
+    # Round trip 2: Get counts for other slices
+    if distinct:
+        organization_types_query = (
+            DomainInformation.objects.filter(**filter_condition).values_list("organization_type", flat=True).distinct()
+        )
+    else:
+        organization_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
+            "organization_type", flat=True
+        )
+    organization_type_counts = Counter(organization_types_query)
+
+    federal = organization_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
+    interstate = organization_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
+    state_or_territory = organization_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
+    tribal = organization_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
+    county = organization_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
+    city = organization_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
+    special_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
+    school_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
+
+    # Round trip 3
+    election_board = DomainInformation.objects.filter(is_election_board=True, **filter_condition).distinct().count()
 
     return [
         domains_count,
@@ -478,26 +491,34 @@ def get_sliced_domains(filter_condition):
     ]
 
 
-def get_sliced_requests(filter_condition):
-    """Get fitered requests counts sliced by org type and election office."""
+def get_sliced_requests(filter_condition, distinct=False):
+    """Get filtered requests counts sliced by org type and election office."""
 
-    requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
-    requests_count = requests.count()
-    federal = requests.filter(organization_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
-    interstate = requests.filter(organization_type=DomainRequest.OrganizationChoices.INTERSTATE).distinct().count()
-    state_or_territory = (
-        requests.filter(organization_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
-    )
-    tribal = requests.filter(organization_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
-    county = requests.filter(organization_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
-    city = requests.filter(organization_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
-    special_district = (
-        requests.filter(organization_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
-    )
-    school_district = (
-        requests.filter(organization_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
-    )
-    election_board = requests.filter(is_election_board=True).distinct().count()
+    # Round trip 1: Get distinct requests based on filter condition
+    requests_count = DomainRequest.objects.filter(**filter_condition).distinct().count()
+
+    # Round trip 2: Get counts for other slices
+    if distinct:
+        organization_types_query = (
+            DomainRequest.objects.filter(**filter_condition).values_list("organization_type", flat=True).distinct()
+        )
+    else:
+        organization_types_query = DomainRequest.objects.filter(**filter_condition).values_list(
+            "organization_type", flat=True
+        )
+    organization_type_counts = Counter(organization_types_query)
+
+    federal = organization_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
+    interstate = organization_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
+    state_or_territory = organization_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
+    tribal = organization_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
+    county = organization_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
+    city = organization_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
+    special_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
+    school_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
+
+    # Round trip 3
+    election_board = DomainRequest.objects.filter(is_election_board=True, **filter_condition).distinct().count()
 
     return [
         requests_count,
@@ -531,7 +552,7 @@ def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
         "domain__permissions__isnull": False,
         "domain__first_ready__lte": start_date_formatted,
     }
-    managed_domains_sliced_at_start_date = get_sliced_domains(filter_managed_domains_start_date)
+    managed_domains_sliced_at_start_date = get_sliced_domains(filter_managed_domains_start_date, True)
 
     writer.writerow(["MANAGED DOMAINS COUNTS AT START DATE"])
     writer.writerow(
@@ -555,7 +576,7 @@ def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
         "domain__permissions__isnull": False,
         "domain__first_ready__lte": end_date_formatted,
     }
-    managed_domains_sliced_at_end_date = get_sliced_domains(filter_managed_domains_end_date)
+    managed_domains_sliced_at_end_date = get_sliced_domains(filter_managed_domains_end_date, True)
 
     writer.writerow(["MANAGED DOMAINS COUNTS AT END DATE"])
     writer.writerow(
@@ -604,7 +625,7 @@ def export_data_unmanaged_domains_to_csv(csv_file, start_date, end_date):
         "domain__permissions__isnull": True,
         "domain__first_ready__lte": start_date_formatted,
     }
-    unmanaged_domains_sliced_at_start_date = get_sliced_domains(filter_unmanaged_domains_start_date)
+    unmanaged_domains_sliced_at_start_date = get_sliced_domains(filter_unmanaged_domains_start_date, True)
 
     writer.writerow(["UNMANAGED DOMAINS AT START DATE"])
     writer.writerow(
@@ -628,7 +649,7 @@ def export_data_unmanaged_domains_to_csv(csv_file, start_date, end_date):
         "domain__permissions__isnull": True,
         "domain__first_ready__lte": end_date_formatted,
     }
-    unmanaged_domains_sliced_at_end_date = get_sliced_domains(filter_unmanaged_domains_end_date)
+    unmanaged_domains_sliced_at_end_date = get_sliced_domains(filter_unmanaged_domains_end_date, True)
 
     writer.writerow(["UNMANAGED DOMAINS AT END DATE"])
     writer.writerow(

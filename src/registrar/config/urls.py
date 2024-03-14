@@ -9,7 +9,6 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar import views
-from registrar.admin import analytics
 from registrar.views.admin_views import (
     ExportDataDomainsGrowth,
     ExportDataFederal,
@@ -18,6 +17,7 @@ from registrar.views.admin_views import (
     ExportDataRequestsGrowth,
     ExportDataType,
     ExportDataUnmanagedDomains,
+    AnalyticsView,
 )
 
 from registrar.views.domain_request import Step
@@ -96,7 +96,7 @@ urlpatterns = [
     ),
     path(
         "admin/analytics/",
-        admin.site.admin_view(analytics),
+        AnalyticsView.as_view(),
         name="analytics",
     ),
     path("admin/", admin.site.urls),

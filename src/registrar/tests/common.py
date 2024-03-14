@@ -475,7 +475,7 @@ class AuditedAdminMockData:
 
 
 class MockDb(TestCase):
-    """Hardcoded mocks make test case assertions sraightforward."""
+    """Hardcoded mocks make test case assertions straightforward."""
 
     def setUp(self):
         super().setUp()
@@ -622,19 +622,19 @@ class MockDb(TestCase):
         )
 
         with less_console_noise():
-            self.domain_request_1 = completed_application(
+            self.domain_request_1 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED, name="city1.gov"
             )
-            self.domain_request_2 = completed_application(
+            self.domain_request_2 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW, name="city2.gov"
             )
-            self.domain_request_3 = completed_application(
+            self.domain_request_3 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED, name="city3.gov"
             )
-            self.domain_request_4 = completed_application(
+            self.domain_request_4 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED, name="city4.gov"
             )
-            self.domain_request_5 = completed_application(
+            self.domain_request_5 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.APPROVED, name="city5.gov"
             )
             self.domain_request_3.submit()
