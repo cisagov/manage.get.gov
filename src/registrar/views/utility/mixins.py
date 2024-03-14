@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 
 from registrar.models import (
     Domain,
-    DomainApplication,
+    DomainRequest,
     DomainInvitation,
     DomainInformation,
     UserDomainRole,
@@ -230,10 +230,10 @@ class DomainPermission(PermissionsLoginMixin):
 
         # Analysts may manage domains, when they are in these statuses:
         valid_domain_statuses = [
-            DomainApplication.ApplicationStatus.APPROVED,
-            DomainApplication.ApplicationStatus.IN_REVIEW,
-            DomainApplication.ApplicationStatus.REJECTED,
-            DomainApplication.ApplicationStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
             # Edge case - some domains do not have
             # a status or DomainInformation... aka a status of 'None'.
             # It is necessary to access those to correct errors.
@@ -244,14 +244,14 @@ class DomainPermission(PermissionsLoginMixin):
         if DomainInformation.objects.filter(id=pk).exists():
             requested_domain = DomainInformation.objects.get(id=pk)
 
-        # if no domain information or application exist, the user
+        # if no domain information or domain request exist, the user
         # should be able to manage the domain; however, if domain information
-        # and domain application exist, and application is not in valid status,
+        # and domain request exist, and domain request is not in valid status,
         # user should not be able to manage domain
         if (
             requested_domain
-            and requested_domain.domain_application
-            and requested_domain.domain_application.status not in valid_domain_statuses
+            and requested_domain.domain_request
+            and requested_domain.domain_request.status not in valid_domain_statuses
         ):
             return False
 
@@ -261,12 +261,12 @@ class DomainPermission(PermissionsLoginMixin):
         return True
 
 
-class DomainApplicationPermission(PermissionsLoginMixin):
-    """Permission mixin that redirects to domain application if user
+class DomainRequestPermission(PermissionsLoginMixin):
+    """Permission mixin that redirects to domain request if user
     has access, otherwise 403"""
 
     def has_permission(self):
-        """Check if this user has access to this domain application.
+        """Check if this user has access to this domain request.
 
         The user is in self.request.user and the domain needs to be looked
         up from the domain's primary key in self.kwargs["pk"]
@@ -274,10 +274,10 @@ class DomainApplicationPermission(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
-        # user needs to be the creator of the application
-        # this query is empty if there isn't a domain application with this
+        # user needs to be the creator of the domain request
+        # this query is empty if there isn't a domain request with this
         # id and this user as creator
-        if not DomainApplication.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
+        if not DomainRequest.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
             return False
 
         return True
@@ -288,7 +288,7 @@ class UserDeleteDomainRolePermission(PermissionsLoginMixin):
     has access, otherwise 403"""
 
     def has_permission(self):
-        """Check if this user has access to this domain application.
+        """Check if this user has access to this domain request.
 
         The user is in self.request.user and the domain needs to be looked
         up from the domain's primary key in self.kwargs["pk"]
@@ -319,19 +319,19 @@ class UserDeleteDomainRolePermission(PermissionsLoginMixin):
         return True
 
 
-class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
-    """Permission mixin that redirects to withdraw action on domain application
+class DomainRequestPermissionWithdraw(PermissionsLoginMixin):
+    """Permission mixin that redirects to withdraw action on domain request
     if user has access, otherwise 403"""
 
     def has_permission(self):
-        """Check if this user has access to withdraw this domain application."""
+        """Check if this user has access to withdraw this domain request."""
         if not self.request.user.is_authenticated:
             return False
 
-        # user needs to be the creator of the application
-        # this query is empty if there isn't a domain application with this
+        # user needs to be the creator of the domain request
+        # this query is empty if there isn't a domain request with this
         # id and this user as creator
-        if not DomainApplication.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
+        if not DomainRequest.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
             return False
 
         # Restricted users should not be able to withdraw domain requests
@@ -341,12 +341,12 @@ class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
         return True
 
 
-class ApplicationWizardPermission(PermissionsLoginMixin):
-    """Permission mixin that redirects to start or edit domain application if
+class DomainRequestWizardPermission(PermissionsLoginMixin):
+    """Permission mixin that redirects to start or edit domain request if
     user has access, otherwise 403"""
 
     def has_permission(self):
-        """Check if this user has permission to start or edit an application.
+        """Check if this user has permission to start or edit a domain request.
 
         The user is in self.request.user
         """

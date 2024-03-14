@@ -74,6 +74,9 @@ secret_aws_s3_key_id = secret("access_key_id", None) or secret("AWS_S3_ACCESS_KE
 secret_aws_s3_key = secret("secret_access_key", None) or secret("AWS_S3_SECRET_ACCESS_KEY", None)
 secret_aws_s3_bucket_name = secret("bucket", None) or secret("AWS_S3_BUCKET_NAME", None)
 
+# Passphrase for the encrypted metadata email
+secret_encrypt_metadata = secret("SECRET_ENCRYPT_METADATA", None)
+
 secret_registry_cl_id = secret("REGISTRY_CL_ID")
 secret_registry_password = secret("REGISTRY_PASSWORD")
 secret_registry_cert = b64decode(secret("REGISTRY_CERT", ""))
@@ -94,6 +97,7 @@ DEBUG = env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
+SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 
 # Applications are modular pieces of code.
 # They are provided by Django, by third-parties, or by yourself.
@@ -188,15 +192,12 @@ WSGI_APPLICATION = "registrar.config.wsgi.application"
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 
-# Caching is disabled by default.
-# For a low to medium traffic site, caching causes more
-# problems than it solves. Should caching be desired,
-# a reasonable start might be:
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-#     }
-# }
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "cache_table",
+    }
+}
 
 # Absolute path to the directory where `collectstatic`
 # will place static files for deployment.

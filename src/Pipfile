@@ -29,6 +29,7 @@ django-login-required-middleware = "*"
 greenlet = "*"
 gevent = "*"
 fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "master"}
+pyzipper="*"
 tblib = "*"
 
 [dev-packages]

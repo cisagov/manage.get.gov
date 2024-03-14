@@ -24,8 +24,8 @@
 ## Status Change Approved
 - Starting Location: Django Admin
 - Workflow: Analyst Admin
-- Workflow Step: Click "Domain applications" -> Click an application in a status of "submitted", "In review", "rejected", or "ineligible" -> Click status dropdown -> (select "approved") -> click "Save"
-- Notes: Note that this will send an email to the submitter (email listed on Your Contact Information). To test this with your own email, you need to create an application, then set the status to "approved". This will send you an email.
+- Workflow Step: Click "domain requests" -> Click a domain request in a status of "submitted", "In review", "rejected", or "ineligible" -> Click status dropdown -> (select "approved") -> click "Save"
+- Notes: Note that this will send an email to the submitter (email listed on Your Contact Information). To test this with your own email, you need to create a domain request, then set the status to "approved". This will send you an email.
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/status_change_approved.txt)
 
 ### Status Change Approved Subject
@@ -35,8 +35,8 @@
 ## Status Change Rejected
 - Starting Location: Django Admin
 - Workflow: Analyst Admin
-- Workflow Step: Click "Domain applications" -> Click an application in a status of "In review", or "approved" -> Click status dropdown -> (select "rejected") -> click "Save"
-- Notes: Note that this will send an email to the submitter (email listed on Your Contact Information). To test this with your own email, you need to create an application, then set the status to "in review" (and click save). Then, go back to the same application and set the status to "rejected". This will send you an email.
+- Workflow Step: Click "domain requests" -> Click a domain request in a status of "In review", or "approved" -> Click status dropdown -> (select "rejected") -> click "Save"
+- Notes: Note that this will send an email to the submitter (email listed on Your Contact Information). To test this with your own email, you need to create a domain request, then set the status to "in review" (and click save). Then, go back to the same application and set the status to "rejected". This will send you an email.
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/status_change_rejected.txt)
 
 ### Status Change Rejected Subject

@@ -58,6 +58,8 @@ services:
       - AWS_S3_SECRET_ACCESS_KEY
       - AWS_S3_REGION
       - AWS_S3_BUCKET_NAME
+      # File encryption credentials
+      - SECRET_ENCRYPT_METADATA
     stdin_open: true
     tty: true
     ports:
@@ -66,6 +68,7 @@ services:
     command: >
       bash -c " python manage.py migrate &&
       python manage.py load &&
+      python manage.py createcachetable &&
       python manage.py runserver 0.0.0.0:8080"
 
   db:
