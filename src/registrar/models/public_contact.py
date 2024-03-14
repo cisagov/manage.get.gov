@@ -72,7 +72,7 @@ class PublicContact(TimeStampedModel):
     voice = models.CharField(null=False, help_text="Contact's phone number. Must be in ITU.E164.2005 format")
     fax = models.CharField(
         null=True,
-        blank=True, 
+        blank=True,
         help_text="Contact's fax number (null ok). Must be in ITU.E164.2005 format.",
     )
     pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
