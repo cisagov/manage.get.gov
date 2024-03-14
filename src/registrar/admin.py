@@ -1,6 +1,7 @@
 from datetime import date
 import logging
 import datetime
+import copy
 
 from django import forms
 from django.db.models import Avg, F, Value, CharField, Q
@@ -15,8 +16,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
 from registrar.utility import csv_export
+from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -70,12 +72,12 @@ class DomainInformationInlineForm(forms.ModelForm):
         }
 
 
-class DomainApplicationAdminForm(forms.ModelForm):
+class DomainRequestAdminForm(forms.ModelForm):
     """Custom form to limit transitions to available transitions.
     This form utilizes the custom widget for its class's ManyToMany UIs."""
 
     class Meta:
-        model = models.DomainApplication
+        model = models.DomainRequest
         fields = "__all__"
         widgets = {
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
@@ -86,25 +88,97 @@ class DomainApplicationAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        application = kwargs.get("instance")
-        if application and application.pk:
-            current_state = application.status
+        domain_request = kwargs.get("instance")
+        if domain_request and domain_request.pk:
+            current_state = domain_request.status
 
             # first option in status transitions is current state
-            available_transitions = [(current_state, application.get_status_display())]
+            available_transitions = [(current_state, domain_request.get_status_display())]
 
-            transitions = get_available_FIELD_transitions(
-                application, models.DomainApplication._meta.get_field("status")
-            )
+            if domain_request.investigator is not None:
+                transitions = get_available_FIELD_transitions(
+                    domain_request, models.DomainRequest._meta.get_field("status")
+                )
+            else:
+                transitions = self.get_custom_field_transitions(
+                    domain_request, models.DomainRequest._meta.get_field("status")
+                )
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target.label))
 
             # only set the available transitions if the user is not restricted
-            # from editing the domain application; otherwise, the form will be
+            # from editing the domain request; otherwise, the form will be
             # readonly and the status field will not have a widget
-            if not application.creator.is_restricted():
+            if not domain_request.creator.is_restricted():
                 self.fields["status"].widget.choices = available_transitions
+
+    def get_custom_field_transitions(self, instance, field):
+        """Custom implementation of get_available_FIELD_transitions
+        in the FSM. Allows us to still display fields filtered out by a condition."""
+        curr_state = field.get_state(instance)
+        transitions = field.transitions[instance.__class__]
+
+        for name, transition in transitions.items():
+            meta = transition._django_fsm
+            if meta.has_transition(curr_state):
+                yield meta.get_transition(curr_state)
+
+    def clean(self):
+        """
+        Override of the default clean on the form.
+        This is so we can inject custom form-level error messages.
+        """
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        status = cleaned_data.get("status")
+        investigator = cleaned_data.get("investigator")
+
+        # Get the old status
+        initial_status = self.initial.get("status", None)
+
+        # We only care about investigator when in these statuses
+        checked_statuses = [
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.INELIGIBLE,
+        ]
+
+        # If a status change occured, check for validity
+        if status != initial_status and status in checked_statuses:
+            # Checks the "investigators" field for validity.
+            # That field must obey certain conditions when an domain request is approved.
+            # Will call "add_error" if any issues are found.
+            self._check_for_valid_investigator(investigator)
+
+        return cleaned_data
+
+    def _check_for_valid_investigator(self, investigator) -> bool:
+        """
+        Checks if the investigator field is not none, and is staff.
+        Adds form errors on failure.
+        """
+
+        is_valid = False
+
+        # Check if an investigator is assigned. No approval is possible without one.
+        error_message = None
+        if investigator is None:
+            # Lets grab the error message from a common location
+            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
+        elif not investigator.is_staff:
+            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("investigator", error_message)
+
+        return is_valid
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
@@ -219,8 +293,8 @@ class AdminSortFields:
         "alternative_domains": (Website, "website"),
         # == DraftDomain == #
         "requested_domain": (DraftDomain, "name"),
-        # == DomainApplication == #
-        "domain_application": (DomainApplication, "requested_domain__name"),
+        # == DomainRequest == #
+        "domain_request": (DomainRequest, "requested_domain__name"),
         # == Domain == #
         "domain": (Domain, "name"),
         "approved_domain": (Domain, "name"),
@@ -584,7 +658,7 @@ class MyUserAdmin(BaseUserAdmin):
     def get_search_results(self, request, queryset, search_term):
         """
         Override for get_search_results. This affects any upstream model using autocomplete_fields,
-        such as DomainApplication. This is because autocomplete_fields uses an API call to fetch data,
+        such as DomainRequest. This is because autocomplete_fields uses an API call to fetch data,
         and this fetch comes from this method.
         """
         # Custom filtering logic
@@ -598,13 +672,13 @@ class MyUserAdmin(BaseUserAdmin):
         request_get = request.GET
 
         # The request defines model name and field name.
-        # For instance, model_name could be "DomainApplication"
+        # For instance, model_name could be "DomainRequest"
         # and field_name could be "investigator".
         model_name = request_get.get("model_name", None)
         field_name = request_get.get("field_name", None)
 
         # Make sure we're only modifying requests from these models.
-        models_to_target = {"domainapplication"}
+        models_to_target = {"domainrequest"}
         if model_name in models_to_target:
             # Define rules per field
             match field_name:
@@ -895,18 +969,21 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "domain_application", "notes"]}),
+        (None, {"fields": ["creator", "submitter", "domain_request", "notes"]}),
+        (".gov domain", {"fields": ["domain"]}),
+        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Background info", {"fields": ["anything_else"]}),
         (
             "Type of organization",
             {
                 "fields": [
                     "organization_type",
+                    "is_election_board",
+                    "federal_type",
+                    "federal_agency",
+                    "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
-                    "tribe_name",
-                    "federal_agency",
-                    "federal_type",
-                    "is_election_board",
                     "about_your_organization",
                 ]
             },
@@ -916,27 +993,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
             {
                 "fields": [
                     "organization_name",
+                    "state_territory",
                     "address_line1",
                     "address_line2",
                     "city",
-                    "state_territory",
                     "zipcode",
                     "urbanization",
                 ]
             },
-        ),
-        ("Authorizing official", {"fields": ["authorizing_official"]}),
-        (".gov domain", {"fields": ["domain"]}),
-        ("Your contact information", {"fields": ["submitter"]}),
-        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
-        (
-            "No other employees from your organization?",
-            {"fields": ["no_other_contacts_rationale"]},
-        ),
-        ("Anything else?", {"fields": ["anything_else"]}),
-        (
-            "Requirements for operating a .gov domain",
-            {"fields": ["is_policy_acknowledged"]},
         ),
     ]
 
@@ -946,7 +1010,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "type_of_work",
         "more_organization_information",
         "domain",
-        "domain_application",
+        "domain_request",
         "submitter",
         "no_other_contacts_rationale",
         "anything_else",
@@ -959,7 +1023,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
     autocomplete_fields = [
         "creator",
-        "domain_application",
+        "domain_request",
         "authorizing_official",
         "domain",
         "submitter",
@@ -984,10 +1048,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
         return readonly_fields  # Read-only fields for analysts
 
 
-class DomainApplicationAdmin(ListHeaderAdmin):
-    """Custom domain applications admin class."""
+class DomainRequestAdmin(ListHeaderAdmin):
+    """Custom domain requests admin class."""
 
-    form = DomainApplicationAdminForm
+    form = DomainRequestAdminForm
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
@@ -1002,7 +1066,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             """
             # Select all investigators that are staff, then order by name and email
             privileged_users = (
-                DomainApplication.objects.select_related("investigator")
+                DomainRequest.objects.select_related("investigator")
                 .filter(investigator__is_staff=True)
                 .order_by("investigator__first_name", "investigator__last_name", "investigator__email")
             )
@@ -1060,7 +1124,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "created_at",
+        "submission_date",
         "submitter",
         "investigator",
     ]
@@ -1097,18 +1161,34 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     fieldsets = [
-        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
+        (
+            None,
+            {
+                "fields": [
+                    "status",
+                    "rejection_reason",
+                    "investigator",
+                    "creator",
+                    "submitter",
+                    "approved_domain",
+                    "notes",
+                ]
+            },
+        ),
+        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
+        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
         (
             "Type of organization",
             {
                 "fields": [
                     "organization_type",
+                    "is_election_board",
+                    "federal_type",
+                    "federal_agency",
+                    "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
-                    "tribe_name",
-                    "federal_agency",
-                    "federal_type",
-                    "is_election_board",
                     "about_your_organization",
                 ]
             },
@@ -1118,29 +1198,14 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             {
                 "fields": [
                     "organization_name",
+                    "state_territory",
                     "address_line1",
                     "address_line2",
                     "city",
-                    "state_territory",
                     "zipcode",
                     "urbanization",
                 ]
             },
-        ),
-        ("Authorizing official", {"fields": ["authorizing_official"]}),
-        ("Current websites", {"fields": ["current_websites"]}),
-        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        ("Purpose of your domain", {"fields": ["purpose"]}),
-        ("Your contact information", {"fields": ["submitter"]}),
-        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
-        (
-            "No other employees from your organization?",
-            {"fields": ["no_other_contacts_rationale"]},
-        ),
-        ("Anything else?", {"fields": ["anything_else"]}),
-        (
-            "Requirements for operating a .gov domain",
-            {"fields": ["is_policy_acknowledged"]},
         ),
     ]
 
@@ -1172,86 +1237,147 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
-        if obj and obj.creator.status != models.User.RESTRICTED:
-            if change:  # Check if the application is being edited
-                # Get the original application from the database
-                original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+        """Custom save_model definition that handles edge cases"""
 
-                if (
-                    obj
-                    and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
-                    and obj.status != models.DomainApplication.ApplicationStatus.APPROVED
-                    and not obj.domain_is_not_active()
-                ):
-                    # If an admin tried to set an approved application to
-                    # another status and the related domain is already
-                    # active, shortcut the action and throw a friendly
-                    # error message. This action would still not go through
-                    # shortcut or not as the rules are duplicated on the model,
-                    # but the error would be an ugly Django error screen.
+        # == Check that the obj is in a valid state == #
 
-                    # Clear the success message
-                    messages.set_level(request, messages.ERROR)
+        # If obj is none, something went very wrong.
+        # The form should have blocked this, so lets forbid it.
+        if not obj:
+            logger.error(f"Invalid value for obj ({obj})")
+            messages.set_level(request, messages.ERROR)
+            messages.error(
+                request,
+                "Could not save DomainRequest. Something went wrong.",
+            )
+            return None
 
-                    messages.error(
-                        request,
-                        "This action is not permitted. The domain is already active.",
-                    )
-
-                elif (
-                    obj
-                    and obj.status == models.DomainApplication.ApplicationStatus.REJECTED
-                    and not obj.rejection_reason
-                ):
-                    # This condition should never be triggered.
-                    # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
-                    # because we clean up the rejection reason in the transition in the model.
-
-                    # Clear the success message
-                    messages.set_level(request, messages.ERROR)
-
-                    messages.error(
-                        request,
-                        "A rejection reason is required.",
-                    )
-
-                else:
-                    if obj.status != original_obj.status:
-                        status_method_mapping = {
-                            models.DomainApplication.ApplicationStatus.STARTED: None,
-                            models.DomainApplication.ApplicationStatus.SUBMITTED: obj.submit,
-                            models.DomainApplication.ApplicationStatus.IN_REVIEW: obj.in_review,
-                            models.DomainApplication.ApplicationStatus.ACTION_NEEDED: obj.action_needed,
-                            models.DomainApplication.ApplicationStatus.APPROVED: obj.approve,
-                            models.DomainApplication.ApplicationStatus.WITHDRAWN: obj.withdraw,
-                            models.DomainApplication.ApplicationStatus.REJECTED: obj.reject,
-                            models.DomainApplication.ApplicationStatus.INELIGIBLE: (obj.reject_with_prejudice),
-                        }
-                        selected_method = status_method_mapping.get(obj.status)
-                        if selected_method is None:
-                            logger.warning("Unknown status selected in django admin")
-                        else:
-                            # This is an fsm in model which will throw an error if the
-                            # transition condition is violated, so we roll back the
-                            # status to what it was before the admin user changed it and
-                            # let the fsm method set it.
-                            obj.status = original_obj.status
-                            selected_method()
-
-                    super().save_model(request, obj, form, change)
-        else:
+        # If the user is restricted or we're saving an invalid model,
+        # forbid this action.
+        if not obj or obj.creator.status == models.User.RESTRICTED:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
 
             messages.error(
                 request,
-                "This action is not permitted for applications with a restricted creator.",
+                "This action is not permitted for domain requests with a restricted creator.",
             )
+
+            return None
+
+        # == Check if we're making a change or not == #
+
+        # If we're not making a change (adding a record), run save model as we do normally
+        if not change:
+            return super().save_model(request, obj, form, change)
+
+        # == Handle non-status changes == #
+
+        # Get the original domain request from the database.
+        original_obj = models.DomainRequest.objects.get(pk=obj.pk)
+        if obj.status == original_obj.status:
+            # If the status hasn't changed, let the base function take care of it
+            return super().save_model(request, obj, form, change)
+
+        # == Handle status changes == #
+
+        # Run some checks on the current object for invalid status changes
+        obj, should_save = self._handle_status_change(request, obj, original_obj)
+
+        # We should only save if we don't display any errors in the step above.
+        if should_save:
+            return super().save_model(request, obj, form, change)
+
+    def _handle_status_change(self, request, obj, original_obj):
+        """
+        Checks for various conditions when a status change is triggered.
+        In the event that it is valid, the status will be mapped to
+        the appropriate method.
+
+        In the event that we should not status change, an error message
+        will be displayed.
+
+        Returns a tuple: (obj: DomainRequest, should_proceed: bool)
+        """
+
+        should_proceed = True
+        error_message = None
+
+        # Get the method that should be run given the status
+        selected_method = self.get_status_method_mapping(obj)
+        if selected_method is None:
+            logger.warning("Unknown status selected in django admin")
+
+            # If the status is not mapped properly, saving could cause
+            # weird issues down the line. Instead, we should block this.
+            should_proceed = False
+            return should_proceed
+
+        request_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+        if request_is_not_approved and not obj.domain_is_not_active():
+            # If an admin tried to set an approved domain request to
+            # another status and the related domain is already
+            # active, shortcut the action and throw a friendly
+            # error message. This action would still not go through
+            # shortcut or not as the rules are duplicated on the model,
+            # but the error would be an ugly Django error screen.
+            error_message = "This action is not permitted. The domain is already active."
+        elif obj.status == models.DomainRequest.DomainRequestStatus.REJECTED and not obj.rejection_reason:
+            # This condition should never be triggered.
+            # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
+            # because we clean up the rejection reason in the transition in the model.
+            error_message = "A rejection reason is required."
+        else:
+            # This is an fsm in model which will throw an error if the
+            # transition condition is violated, so we roll back the
+            # status to what it was before the admin user changed it and
+            # let the fsm method set it.
+            obj.status = original_obj.status
+
+            # Try to perform the status change.
+            # Catch FSMApplicationError's and return the message,
+            # as these are typically user errors.
+            try:
+                selected_method()
+            except FSMApplicationError as err:
+                logger.warning(f"An error encountered when trying to change status: {err}")
+                error_message = err.message
+
+        if error_message is not None:
+            # Clear the success message
+            messages.set_level(request, messages.ERROR)
+            # Display the error
+            messages.error(
+                request,
+                error_message,
+            )
+
+            # If an error message exists, we shouldn't proceed
+            should_proceed = False
+
+        return (obj, should_proceed)
+
+    def get_status_method_mapping(self, domain_request):
+        """Returns what method should be ran given an domain request object"""
+        # Define a per-object mapping
+        status_method_mapping = {
+            models.DomainRequest.DomainRequestStatus.STARTED: None,
+            models.DomainRequest.DomainRequestStatus.SUBMITTED: domain_request.submit,
+            models.DomainRequest.DomainRequestStatus.IN_REVIEW: domain_request.in_review,
+            models.DomainRequest.DomainRequestStatus.ACTION_NEEDED: domain_request.action_needed,
+            models.DomainRequest.DomainRequestStatus.APPROVED: domain_request.approve,
+            models.DomainRequest.DomainRequestStatus.WITHDRAWN: domain_request.withdraw,
+            models.DomainRequest.DomainRequestStatus.REJECTED: domain_request.reject,
+            models.DomainRequest.DomainRequestStatus.INELIGIBLE: (domain_request.reject_with_prejudice),
+        }
+
+        # Grab the method
+        return status_method_mapping.get(domain_request.status, None)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the application creator's status, so
+        admin user permissions and the domain request creator's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
@@ -1276,7 +1402,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         if obj and obj.creator.status == models.User.RESTRICTED:
             messages.warning(
                 request,
-                "Cannot edit an application with a restricted creator.",
+                "Cannot edit a domain request with a restricted creator.",
             )
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
@@ -1312,7 +1438,13 @@ class DomainInformationInline(admin.StackedInline):
 
     model = models.DomainInformation
 
-    fieldsets = DomainInformationAdmin.fieldsets
+    fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
+    # remove .gov domain from fieldset
+    for index, (title, f) in enumerate(fieldsets):
+        if title == ".gov domain":
+            del fieldsets[index]
+            break
+
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
     # to activate the edit/delete/view buttons
@@ -1320,7 +1452,7 @@ class DomainInformationInline(admin.StackedInline):
 
     autocomplete_fields = [
         "creator",
-        "domain_application",
+        "domain_request",
         "authorizing_official",
         "domain",
         "submitter",
@@ -1781,6 +1913,6 @@ admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
-admin.site.register(models.DomainApplication, DomainApplicationAdmin)
+admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)

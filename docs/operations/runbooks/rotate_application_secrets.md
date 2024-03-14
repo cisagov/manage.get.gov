@@ -117,3 +117,11 @@ You'll need to give the new certificate to the registry vendor _before_ rotating
 ## REGISTRY_HOSTNAME
 
 This is the hostname at which the registry can be found.
+
+## SECRET_METADATA_KEY
+
+This is the passphrase for the zipped and encrypted metadata email that is sent out daily. Reach out to product team members or leads with access to security passwords if the passcode is needed.
+
+To change the password, use a password generator to generate a password, then update the user credentials per the above instructions. Be sure to update the [KBDX](https://docs.google.com/document/d/1_BbJmjYZNYLNh4jJPPnUEG9tFCzJrOc0nMrZrnSKKyw) file in Google Drive with this password change. 
+
+
