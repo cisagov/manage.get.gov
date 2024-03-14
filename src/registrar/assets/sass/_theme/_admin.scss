@@ -299,3 +299,22 @@ input.admin-confirm-button {
         display: contents !important;
     }
 }
+
+.admin-icon-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .usa-button__icon {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        border: none;
+        background: transparent;
+        padding: 0 1rem;
+        margin: 0;
+    }
+}
+
+

@@ -640,6 +640,17 @@ class ContactAdmin(ListHeaderAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
+    fieldsets = [
+        (
+            None,
+            {
+                "fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]
+            },
+        )
+    ]
+
+    change_form_template = "django/admin/public_contact_change_form.html"
+
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
     # This gets around the linter limitation, for now.
@@ -1805,6 +1816,12 @@ class DraftDomainAdmin(ListHeaderAdmin):
     ordering = ["name"]
 
 
+class PublicContactAdmin(ListHeaderAdmin):
+    """Custom PublicContact admin class."""
+
+    change_form_template = "django/admin/public_contact_change_form.html"
+
+
 class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
@@ -1845,7 +1862,7 @@ admin.site.register(models.DraftDomain, DraftDomainAdmin)
 # do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
-admin.site.register(models.PublicContact, AuditedAdmin)
+admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
