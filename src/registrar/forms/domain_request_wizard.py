@@ -319,8 +319,8 @@ class AboutYourOrganizationForm(RegistrarForm):
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(
-                1000,
-                message="Response must be less than 1000 characters.",
+                2000,
+                message="Response must be less than 2000 characters.",
             )
         ],
         error_messages={"required": ("Enter more information about your organization.")},
@@ -830,8 +830,8 @@ class AnythingElseForm(RegistrarForm):
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(
-                1000,
-                message="Response must be less than 1000 characters.",
+                2000,
+                message="Response must be less than 2000 characters.",
             )
         ],
     )
