@@ -2,8 +2,8 @@
 
 import abc  # abstract base class
 
-from django.conf import settings
 from django.views.generic import DetailView, DeleteView, TemplateView
+from registrar.context_processors import is_production
 from registrar.models import Domain, DomainRequest, DomainInvitation
 from registrar.models.user_domain_role import UserDomainRole
 
@@ -39,7 +39,8 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         """
         if "IS_PRODUCTION" not in request.session:
             # Pass the production flag to the context
-            request.session["IS_PRODUCTION"] = settings.IS_PRODUCTION
+            production_status = is_production(request)
+            request.session.update(production_status)
         return super().dispatch(request, *args, **kwargs)
 
     # Adds context information for user permissions
