@@ -184,15 +184,15 @@ class Client(oic.Client):
             # this most likely means the user's Django session vanished
             if session.get("state", None) is None:
                 logger.error(
-                    f"The OP state {state} does not match the session state."
-                    f"The session state is None."
-                    f"authn_response['state'] = {authn_response['state']}"
+                    f"The OP state {state} does not match the session state. "
+                    f"The session state is None. "
+                    f"authn_response['state'] = {authn_response['state']} "
                     f"session.get('state', None) = {session.get('state', None)}"
                 )
             else:
                 logger.error(
-                    f"The OP state {state} does not match the session state."
-                    f"authn_response['state'] = {authn_response['state']}"
+                    f"The OP state {state} does not match the session state. "
+                    f"authn_response['state'] = {authn_response['state']} "
                     f"session.get('state', None) = {session.get('state', None)}"
                 )
             raise o_e.StateMismatch()

@@ -124,7 +124,7 @@ def login_callback(request):
             logger.warning(f"No State Defined: {nsd_err}")
             return redirect(request.session.get("next", "/"))
         else:
-            # Clear the redirect_attempted flag? 
+            # Clear the redirect_attempted flag?
             return error_page(request, nsd_err)
     except Exception as err:
         return error_page(request, err)
