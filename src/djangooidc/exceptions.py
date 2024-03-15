@@ -33,8 +33,8 @@ class AuthenticationFailed(OIDCException):
     friendly_message = "This login attempt didn't work."
 
 
-class NoStateDefined(OIDCException):
-    friendly_message = "The session state is None."
+class StateMismatch(OIDCException):
+    friendly_message = "State mismatch. This login attempt didn't work."
 
 
 class InternalError(OIDCException):

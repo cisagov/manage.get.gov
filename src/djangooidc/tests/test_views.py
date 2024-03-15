@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.test import Client, TestCase, RequestFactory
 from django.urls import reverse
 
-from djangooidc.exceptions import NoStateDefined, InternalError
+from djangooidc.exceptions import StateMismatch, InternalError
 from ..views import login_callback
 
 from .common import less_console_noise
@@ -129,14 +129,14 @@ class ViewsTest(TestCase):
                     self.assertContains(response, "Hi")
 
     def test_login_callback_with_no_session_state(self, mock_client):
-        """If the local session is None (ie the server restarted while user was logged out),
+        """If the local session does not match the OP session,
         we do not throw an exception. Rather, we attempt to login again."""
         with less_console_noise():
             # MOCK
             # mock the acr_value to some string
-            # mock the callback function to raise the NoStateDefined Exception
+            # mock the callback function to raise the StateMismatch Exception
             mock_client.get_default_acr_value.side_effect = self.create_acr
-            mock_client.callback.side_effect = NoStateDefined()
+            mock_client.callback.side_effect = StateMismatch()
             # TEST
             # test the login callback
             response = self.client.get(reverse("openid_login_callback"))
