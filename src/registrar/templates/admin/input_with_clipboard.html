@@ -1,0 +1,19 @@
+{% load i18n static %}
+
+{% comment %}
+Template for an input field with a clipboard
+{% endcomment %}
+
+<div class="admin-icon-group">
+    {{ field }}
+    <button 
+    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard" 
+    type="button"
+    >
+        <svg 
+        class="usa-icon" 
+        >
+            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+        </svg>
+    </button>
+</div>

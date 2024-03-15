@@ -1,5 +1,4 @@
 {% extends "admin/fieldset.html" %}
-{% load i18n static %}
 
 {% comment %}
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
@@ -19,16 +18,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                             {% if field.is_readonly %}
                                 <div class="readonly">{{ field.contents }}</div>
                             {% elif field.field.name == "email" %}
-                                <div class="admin-icon-group">
-                                    {{ field.field }}
-                                    <button class="usa-button usa-button__icon usa-button__clipboard" type="button">
-                                        <svg 
-                                        class="usa-icon" 
-                                        >
-                                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
-                                        </svg>
-                                    </button>
-                                </div>
+                                {% include "admin/input_with_clipboard.html" with field=field.field %}
                             {% else %}
                                 {{ field.field }}
                             {% endif %}

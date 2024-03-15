@@ -97,7 +97,7 @@ function openInNewTab(el, removeAttribute = false){
                     setTimeout(function() {
                         // Change back to the copy icon
                         buttonIcon.setAttribute('xlink:href', currentHref); 
-                    }, 2000);
+                    }, 1500);
                 }
 
             }).catch(function(error) {
@@ -109,7 +109,24 @@ function openInNewTab(el, removeAttribute = false){
     function handleClipboardButtons() {
         clipboardButtons = document.querySelectorAll(".usa-button__clipboard")
         clipboardButtons.forEach((button) => {
-            button.addEventListener("click", ()=>{copyToClipboardAndChangeIcon(button)});
+
+            // Handle copying the text to your clipboard,
+            // and changing the icon.
+            button.addEventListener("click", ()=>{
+                copyToClipboardAndChangeIcon(button);
+            });
+            
+            // Add a class that removes the outline style on click
+            button.addEventListener("mousedown", function() {
+                this.classList.remove("no-outline-on-click");
+            });
+            
+            // But add it back in after the user clicked,
+            // for accessibility reasons (so we can still tab, etc)
+            button.addEventListener("blur", function() {
+                this.classList.remove("no-outline-on-click");
+            });
+
         });
     }
 

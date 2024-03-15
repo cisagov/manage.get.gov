@@ -308,16 +308,18 @@ input.admin-confirm-button {
     .usa-button__icon {
         position: absolute;
         right: 0;
-        top: 0;
         height: 100%;
-        border: none;
-        background: transparent;
-        padding: 0 1rem;
-        margin: 0;
     }
 
     input {
-        padding-right: 45px;
+        // Allow for padding around the copy button
+        padding-right: 35px;
+        // Match the height of other inputs
+        min-height: 2.25rem;
+    }
+
+    .no-outline-on-click:focus {
+        outline: none !important;
     }
 }
 
