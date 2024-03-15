@@ -641,6 +641,19 @@ class ContactAdmin(ListHeaderAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
+    fieldsets = [
+        (
+            None,
+            {
+                "fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]
+            },
+        )
+    ]
+
+    autocomplete_fields = ["user"]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
     # This gets around the linter limitation, for now.
@@ -821,6 +834,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     # without triggering the FSM Transition Not Allowed
     # error.
     readonly_fields = ["status"]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
 
 class DomainInformationAdmin(ListHeaderAdmin):
@@ -1307,6 +1322,8 @@ class TransitionDomainAdmin(ListHeaderAdmin):
 
     search_fields = ["username", "domain_name"]
     search_help_text = "Search by user or domain name."
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
 
 class DomainInformationInline(admin.StackedInline):
@@ -1803,6 +1820,13 @@ class DraftDomainAdmin(ListHeaderAdmin):
     ordering = ["name"]
 
 
+class PublicContactAdmin(ListHeaderAdmin):
+    """Custom PublicContact admin class."""
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+    autocomplete_fields = ["domain"]
+
+
 class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
@@ -1843,7 +1867,7 @@ admin.site.register(models.DraftDomain, DraftDomainAdmin)
 # do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
-admin.site.register(models.PublicContact, AuditedAdmin)
+admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)

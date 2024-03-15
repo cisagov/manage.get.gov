@@ -76,6 +76,65 @@ function openInNewTab(el, removeAttribute = false){
     prepareDjangoAdmin();
 })();
 
+/** An IIFE for pages in DjangoAdmin that use a clipboard button
+*/
+(function (){
+    function copyToClipboardAndChangeIcon(button) {
+        // Assuming the input is the previous sibling of the button
+        let input = button.previousElementSibling;
+        
+        // Copy input value to clipboard
+        if (input) {
+            navigator.clipboard.writeText(input.value).then(function() {
+                // Change the icon to a checkmark on successful copy
+                let buttonIcon = button .querySelector('.usa-button__clipboard use');
+                if (buttonIcon) {
+                    let currentHref = buttonIcon.getAttribute('xlink:href');
+                    let baseHref = currentHref.split('#')[0];
+
+                    // Append the new icon reference
+                    buttonIcon.setAttribute('xlink:href', baseHref + '#check');
+                    setTimeout(function() {
+                        // Change back to the copy icon
+                        buttonIcon.setAttribute('xlink:href', currentHref); 
+                    }, 1500);
+                }
+
+            }).catch(function(error) {
+                console.error('Clipboard copy failed', error);
+            });
+        }
+    }
+    
+    function handleClipboardButtons() {
+        clipboardButtons = document.querySelectorAll(".usa-button__clipboard")
+        clipboardButtons.forEach((button) => {
+
+            // Handle copying the text to your clipboard,
+            // and changing the icon.
+            button.addEventListener("click", ()=>{
+                copyToClipboardAndChangeIcon(button);
+            });
+            
+            // Add a class that removes the outline style on click
+            button.addEventListener("mousedown", function() {
+                this.classList.remove("no-outline-on-click");
+            });
+            
+            // But add it back in after the user clicked,
+            // for accessibility reasons (so we can still tab, etc)
+            button.addEventListener("blur", function() {
+                this.classList.remove("no-outline-on-click");
+            });
+
+        });
+    }
+
+    handleClipboardButtons();
+
+})();
+
+
 /**
  * An IIFE to listen to changes on filter_horizontal and enable or disable the change/delete/view buttons as applicable
  *
