@@ -1807,9 +1807,6 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
     search_help_text = "Search by email."
-    list_filter = [
-        "requestor",
-    ]
     readonly_fields = [
         "requestor",
     ]
