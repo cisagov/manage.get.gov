@@ -649,7 +649,9 @@ class ContactAdmin(ListHeaderAdmin):
         )
     ]
 
-    change_form_template = "django/admin/public_contact_change_form.html"
+    autocomplete_fields = ["user"]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -831,6 +833,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     # without triggering the FSM Transition Not Allowed
     # error.
     readonly_fields = ["status"]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
 
 class DomainInformationAdmin(ListHeaderAdmin):
@@ -1327,6 +1331,8 @@ class TransitionDomainAdmin(ListHeaderAdmin):
     search_fields = ["username", "domain_name"]
     search_help_text = "Search by user or domain name."
 
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
 
 class DomainInformationInline(admin.StackedInline):
     """Edit a domain information on the domain page.
@@ -1819,7 +1825,8 @@ class DraftDomainAdmin(ListHeaderAdmin):
 class PublicContactAdmin(ListHeaderAdmin):
     """Custom PublicContact admin class."""
 
-    change_form_template = "django/admin/public_contact_change_form.html"
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+    autocomplete_fields = ["domain"]
 
 
 class VerifiedByStaffAdmin(ListHeaderAdmin):
