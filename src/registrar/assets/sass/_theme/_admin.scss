@@ -304,27 +304,15 @@ input.admin-confirm-button {
     }
 }
 
-.admin-icon-group {
-    position: relative;
-    display: flex;
-    align-items: center;
-
-    .usa-button__icon {
-        position: absolute;
-        right: 0;
-        height: 100%;
-    }
-
-    input {
-        // Allow for padding around the copy button
-        padding-right: 35px;
-        // Match the height of other inputs
-        min-height: 2.25rem;
-    }
-
-    .no-outline-on-click:focus {
-        outline: none !important;
-    }
+.django-admin-modal .usa-prose ul > li {
+    list-style-type: inherit;
+    // Styling based off of the <p> styling in django admin
+    line-height: 1.5;
+    margin-bottom: 0;
+    margin-top: 0;
+    max-width: 68ex;
 }
 
-
+.usa-summary-box__dhs-color {
+    color: $dhs-blue-70;
+}
