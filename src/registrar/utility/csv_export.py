@@ -25,6 +25,12 @@ def write_header(writer, columns):
 
 
 def get_domain_infos(filter_condition, sort_fields):
+    """
+    Returns DomainInformation objects filtered and sorted based on the provided conditions.
+    filter_condition -> A dictionary of conditions to filter the objects.
+    sort_fields -> A list of fields to sort the resulting query set.
+    returns: A queryset of DomainInformation objects
+    """
     domain_infos = (
         DomainInformation.objects.select_related("domain", "authorizing_official")
         .prefetch_related("domain__permissions")
@@ -192,6 +198,12 @@ def write_domains_csv(
 
 
 def get_requests(filter_condition, sort_fields):
+    """
+    Returns DomainRequest objects filtered and sorted based on the provided conditions.
+    filter_condition -> A dictionary of conditions to filter the objects.
+    sort_fields -> A list of fields to sort the resulting query set.
+    returns: A queryset of DomainRequest objects
+    """
     requests = DomainRequest.objects.filter(**filter_condition).order_by(*sort_fields).distinct()
     return requests
 
