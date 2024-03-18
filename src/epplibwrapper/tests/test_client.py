@@ -263,7 +263,7 @@ class TestClient(TestCase):
             # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
             self.assertEquals(mock_send.call_count, 5)
 
-    def test_send_command_close_failure_recovers(self, mock_wrapper):
+    def test_send_command_close_failure_recovers(self):
         """Test when the .close on a connection fails and a .send follows suit.
         Scenario:
         Initialization succeeds
