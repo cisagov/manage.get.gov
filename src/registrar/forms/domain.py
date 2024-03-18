@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.forms import formset_factory
 from registrar.models import DomainRequest
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
+from registrar.models.utility.domain_helper import DomainHelper
 from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
@@ -246,26 +247,7 @@ class AuthorizingOfficialContactForm(ContactForm):
 
         # All fields should be disabled if the domain is federal or tribal
         if disable_fields:
-            self._mass_disable_fields(disable_required=True, disable_maxlength=True)
-
-    def _mass_disable_fields(self, disable_required=False, disable_maxlength=False):
-        """
-        Given all available fields, invoke .disabled = True on them.
-
-        disable_required: bool -> invokes .required = False on each field.
-        disable_maxlength: bool -> pops "maxlength" from each field.
-        """
-        for field in self.fields.values():
-            field.disabled = True
-
-            if disable_required:
-                # if a field is disabled, it can't be required
-                field.required = False
-
-            if disable_maxlength:
-                # Remove the maxlength dialog
-                if "maxlength" in field.widget.attrs:
-                    field.widget.attrs.pop("maxlength", None)
+            DomainHelper.mass_disable_fields(fields=self.fields, disable_required=True, disable_maxlength=True)
 
     def save(self, commit=True):
         """
@@ -384,10 +366,15 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         self.is_federal = self.instance.organization_type == DomainRequest.OrganizationChoices.FEDERAL
         self.is_tribal = self.instance.organization_type == DomainRequest.OrganizationChoices.TRIBAL
 
+        field_to_disable = None
         if self.is_federal:
-            self.fields["federal_agency"].disabled = True
+            field_to_disable = "federal_agency"
         elif self.is_tribal:
-            self.fields["organization_name"].disabled = True
+            field_to_disable = "organization_name"
+
+        # Disable any field that should be disabled, if applicable
+        if field_to_disable is not None:
+            DomainHelper.disable_field(self.fields[field_to_disable], disable_required=True)
 
     def save(self, commit=True):
         """Override the save() method of the BaseModelForm."""
