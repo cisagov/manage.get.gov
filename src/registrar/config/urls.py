@@ -149,6 +149,18 @@ urlpatterns = [
     ),
 ]
 
+# Djangooidc strips out context data from that context, so we define a custom error
+# view through this method.
+# If Djangooidc is left to its own devices and uses reverse directly,
+# then both context and session information will be obliterated due to:
+
+# a) Djangooidc being out of scope for context_processors
+# b) Potential cyclical import errors restricting what kind of data is passable.
+
+# Rather than dealing with that, we keep everything centralized in one location.
+# This way, we can share a view for djangooidc, and other pages as we see fit.
+handler500 = "registrar.views.utility.error_views.custom_500_error_view"
+
 # we normally would guard these with `if settings.DEBUG` but tests run with
 # DEBUG = False even when these apps have been loaded because settings.DEBUG
 # was actually True. Instead, let's add these URLs any time we are able to

@@ -303,3 +303,16 @@ input.admin-confirm-button {
         display: contents !important;
     }
 }
+
+.django-admin-modal .usa-prose ul > li {
+    list-style-type: inherit;
+    // Styling based off of the <p> styling in django admin
+    line-height: 1.5;
+    margin-bottom: 0;
+    margin-top: 0;
+    max-width: 68ex;
+}
+
+.usa-summary-box__dhs-color {
+    color: $dhs-blue-70;
+}

@@ -1,0 +1,28 @@
+{% extends 'admin/delete_selected_confirmation.html' %}
+{% load i18n static %}
+
+
+{% block content %}
+    <div
+    class="usa-summary-box width-tablet"
+    role="region"
+    aria-labelledby="summary-box-description"
+    >
+        <div class="usa-summary-box__body">
+            <h3 class="usa-summary-box__heading usa-summary-box__dhs-color" id="summary-box-description">
+            When a domain is deleted:
+            </h3>
+            <div class="usa-summary-box__text">
+                <ul class="usa-list">
+                    <li>The domain will no longer appear in the registrar / admin.</li>
+                    <li>It will be removed from the registry. </li>
+                    <li>The domain and its subdomains won’t resolve in DNS.</li>
+                    <li>Any infrastructure (like websites) will go offline.</li>
+                </ul>
+                <p>You should probably remove these domains from the registry instead.</p>
+                <p><strong>This action cannot be undone.</strong></p>
+            </div>
+        </div>
+    </div>
+    {{ block.super }}
+{% endblock %}
