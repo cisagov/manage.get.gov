@@ -42,8 +42,8 @@ legend.float-left-tablet + button.float-right-tablet {
 // Custom style for disabled inputs
 @media (prefers-color-scheme: light) {
   .usa-input:disabled, .usa-select:disabled, .usa-textarea:disabled {
-    background-color: #666666;
-    color: #eeeeee;
+    background-color: #eeeeee;
+    color: #666666;
   }
 }
 
