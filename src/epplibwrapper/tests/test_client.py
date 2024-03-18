@@ -264,11 +264,17 @@ class TestClient(TestCase):
             self.assertEquals(mock_send.call_count, 5)
 
     def test_send_command_close_failure_recovers(self):
-        """Test when the .close on a connection fails and a .send follows suit.
+        """
+        Validates the resilience of the connection handling mechanism 
+        during command execution on retry.
+        
         Scenario:
-        Initialization succeeds
-        Send command fails (with 2400 code) prompting retry
-        Client closes and re-initializes, and command succeeds"""
+        - Initialization of the connection is successful.
+        - An attempt to send a command fails with a specific error code (ConcurrentObjectUseError)
+        - The client attempts to retry.
+        - Subsequently, the client re-initializes the connection.
+        - A retry of the command execution post-reinitialization succeeds.
+        """
 
         expected_result = self.get_fake_epp_result()
         wrapper = None
