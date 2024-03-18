@@ -264,7 +264,7 @@ class TestClient(TestCase):
 
     def test_send_command_close_failure_recovers(self):
         """Test when the .close on a connection fails and a .send follows suit.
-        Flow:
+        Scenario:
         Initialization succeeds
         Send command fails (with 2400 code) prompting retry
         Client closes and re-initializes, and command succeeds"""
