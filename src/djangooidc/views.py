@@ -50,13 +50,13 @@ def error_page(request, error):
     """Display a sensible message and log the error."""
     logger.error(error)
     if isinstance(error, o_e.AuthenticationFailed):
-        context={
+        context = {
             "friendly_message": error.friendly_message,
             "log_identifier": error.locator,
         }
         return custom_401_error_view(request, context)
     if isinstance(error, o_e.InternalError):
-        context={
+        context = {
             "friendly_message": error.friendly_message,
             "log_identifier": error.locator,
         }

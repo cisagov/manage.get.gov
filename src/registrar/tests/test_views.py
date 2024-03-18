@@ -6,7 +6,7 @@ from registrar.models.domain import Domain
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.views.domain import DomainNameserversView
 
-from .common import MockEppLib, less_console_noise  # type: ignore
+from .common import MockEppLib  # type: ignore
 from unittest.mock import patch
 from django.urls import reverse
 
@@ -135,4 +135,3 @@ class TestEnvironmentVariablesEffects(TestCase):
                 self.assertEqual(contact_page_500.status_code, 500)
 
                 self.assertNotContains(contact_page_500, "You are on a test site.")
-

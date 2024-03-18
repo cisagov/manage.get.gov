@@ -2,7 +2,6 @@
 
 import abc  # abstract base class
 
-from django.conf import settings
 from django.views.generic import DetailView, DeleteView, TemplateView
 from registrar.models import Domain, DomainRequest, DomainInvitation
 from registrar.models.user_domain_role import UserDomainRole
