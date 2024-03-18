@@ -97,7 +97,7 @@ def less_console_noise(output_stream=None):
 class GenericTestHelper(TestCase):
     """A helper class that contains various helper functions for TestCases"""
 
-    def __init__(self, admin, model=None, url=None, user=None, factory=None, **kwargs):
+    def __init__(self, admin, model=None, url=None, user=None, factory=None, client=None, **kwargs):
         """
         Parameters:
             admin (ModelAdmin): The Django ModelAdmin instance associated with the model.
@@ -112,6 +112,7 @@ class GenericTestHelper(TestCase):
         self.admin = admin
         self.model = model
         self.url = url
+        self.client = client
 
     def assert_table_sorted(self, o_index, sort_fields):
         """
@@ -147,9 +148,7 @@ class GenericTestHelper(TestCase):
         dummy_request.user = self.user
 
         # Mock a user request
-        middleware = SessionMiddleware(lambda req: req)
-        middleware.process_request(dummy_request)
-        dummy_request.session.save()
+        dummy_request = self._mock_user_request_for_factory(dummy_request)
 
         expected_sort_order = list(self.model.objects.order_by(*sort_fields))
 
@@ -159,6 +158,27 @@ class GenericTestHelper(TestCase):
         returned_sort_order = list(response.context_data["cl"].result_list)
 
         self.assertEqual(expected_sort_order, returned_sort_order)
+
+    def _mock_user_request_for_factory(self, request):
+        """Adds sessionmiddleware when using factory to associate session information"""
+        middleware = SessionMiddleware(lambda req: req)
+        middleware.process_request(request)
+        request.session.save()
+        return request
+
+    def get_table_delete_confirmation_page(self, selected_across: str, index: str):
+        """
+        Grabs the response for the delete confirmation page (generated from the actions toolbar).
+        selected_across and index must both be numbers encoded as str, e.g. "0" rather than 0
+        """
+
+        response = self.client.post(
+            self.url,
+            {"action": "delete_selected", "select_across": selected_across, "index": index, "_selected_action": "23"},
+            follow=True,
+        )
+        print(f"what is the response? {response}")
+        return response
 
 
 class MockUserLogin:

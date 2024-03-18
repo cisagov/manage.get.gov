@@ -1,5 +1,6 @@
 from datetime import date
 import logging
+import copy
 
 from django import forms
 from django.db.models.functions import Concat, Coalesce
@@ -850,18 +851,21 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "domain_request", "notes"]}),
+        (None, {"fields": ["creator", "submitter", "domain_request", "notes"]}),
+        (".gov domain", {"fields": ["domain"]}),
+        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Background info", {"fields": ["anything_else"]}),
         (
             "Type of organization",
             {
                 "fields": [
                     "organization_type",
+                    "is_election_board",
+                    "federal_type",
+                    "federal_agency",
+                    "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
-                    "tribe_name",
-                    "federal_agency",
-                    "federal_type",
-                    "is_election_board",
                     "about_your_organization",
                 ]
             },
@@ -871,27 +875,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
             {
                 "fields": [
                     "organization_name",
+                    "state_territory",
                     "address_line1",
                     "address_line2",
                     "city",
-                    "state_territory",
                     "zipcode",
                     "urbanization",
                 ]
             },
-        ),
-        ("Authorizing official", {"fields": ["authorizing_official"]}),
-        (".gov domain", {"fields": ["domain"]}),
-        ("Your contact information", {"fields": ["submitter"]}),
-        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
-        (
-            "No other employees from your organization?",
-            {"fields": ["no_other_contacts_rationale"]},
-        ),
-        ("Anything else?", {"fields": ["anything_else"]}),
-        (
-            "Requirements for operating a .gov domain",
-            {"fields": ["is_policy_acknowledged"]},
         ),
     ]
 
@@ -1004,6 +995,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
+    change_form_template = "django/admin/domain_application_change_form.html"
+
     # Columns
     list_display = [
         "requested_domain",
@@ -1015,7 +1008,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "created_at",
+        "submission_date",
         "submitter",
         "investigator",
     ]
@@ -1052,18 +1045,34 @@ class DomainRequestAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     fieldsets = [
-        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
+        (
+            None,
+            {
+                "fields": [
+                    "status",
+                    "rejection_reason",
+                    "investigator",
+                    "creator",
+                    "submitter",
+                    "approved_domain",
+                    "notes",
+                ]
+            },
+        ),
+        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
+        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
         (
             "Type of organization",
             {
                 "fields": [
                     "organization_type",
+                    "is_election_board",
+                    "federal_type",
+                    "federal_agency",
+                    "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
-                    "tribe_name",
-                    "federal_agency",
-                    "federal_type",
-                    "is_election_board",
                     "about_your_organization",
                 ]
             },
@@ -1073,29 +1082,14 @@ class DomainRequestAdmin(ListHeaderAdmin):
             {
                 "fields": [
                     "organization_name",
+                    "state_territory",
                     "address_line1",
                     "address_line2",
                     "city",
-                    "state_territory",
                     "zipcode",
                     "urbanization",
                 ]
             },
-        ),
-        ("Authorizing official", {"fields": ["authorizing_official"]}),
-        ("Current websites", {"fields": ["current_websites"]}),
-        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        ("Purpose of your domain", {"fields": ["purpose"]}),
-        ("Your contact information", {"fields": ["submitter"]}),
-        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
-        (
-            "No other employees from your organization?",
-            {"fields": ["no_other_contacts_rationale"]},
-        ),
-        ("Anything else?", {"fields": ["anything_else"]}),
-        (
-            "Requirements for operating a .gov domain",
-            {"fields": ["is_policy_acknowledged"]},
         ),
     ]
 
@@ -1328,7 +1322,13 @@ class DomainInformationInline(admin.StackedInline):
 
     model = models.DomainInformation
 
-    fieldsets = DomainInformationAdmin.fieldsets
+    fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
+    # remove .gov domain from fieldset
+    for index, (title, f) in enumerate(fieldsets):
+        if title == ".gov domain":
+            del fieldsets[index]
+            break
+
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
     # to activate the edit/delete/view buttons
@@ -1470,6 +1470,20 @@ class DomainAdmin(ListHeaderAdmin):
 
     # Table ordering
     ordering = ["name"]
+
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/domain_delete_selected_confirmation.html"
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """
+        Custom delete_view to perform additional actions or customize the template.
+        """
+
+        # Set the delete template to a custom one
+        self.delete_confirmation_template = "django/admin/domain_delete_confirmation.html"
+        response = super().delete_view(request, object_id, extra_context=extra_context)
+
+        return response
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         """Custom changeform implementation to pass in context information"""
@@ -1809,9 +1823,6 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
     search_help_text = "Search by email."
-    list_filter = [
-        "requestor",
-    ]
     readonly_fields = [
         "requestor",
     ]
