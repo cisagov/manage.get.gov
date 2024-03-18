@@ -6,12 +6,13 @@ from django.conf import settings
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from urllib.parse import parse_qs, urlencode
 
 from djangooidc.oidc import Client
 from djangooidc import exceptions as o_e
 from registrar.models import User
+from registrar.views.utility.error_views import custom_500_error_view, custom_401_error_view
 
 logger = logging.getLogger(__name__)
 
@@ -49,27 +50,19 @@ def error_page(request, error):
     """Display a sensible message and log the error."""
     logger.error(error)
     if isinstance(error, o_e.AuthenticationFailed):
-        return render(
-            request,
-            "401.html",
-            context={
-                "friendly_message": error.friendly_message,
-                "log_identifier": error.locator,
-            },
-            status=401,
-        )
+        context = {
+            "friendly_message": error.friendly_message,
+            "log_identifier": error.locator,
+        }
+        return custom_401_error_view(request, context)
     if isinstance(error, o_e.InternalError):
-        return render(
-            request,
-            "500.html",
-            context={
-                "friendly_message": error.friendly_message,
-                "log_identifier": error.locator,
-            },
-            status=500,
-        )
+        context = {
+            "friendly_message": error.friendly_message,
+            "log_identifier": error.locator,
+        }
+        return custom_500_error_view(request, context)
     if isinstance(error, Exception):
-        return render(request, "500.html", status=500)
+        return custom_500_error_view(request)
 
 
 def openid(request):
