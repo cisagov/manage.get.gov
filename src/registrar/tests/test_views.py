@@ -1,8 +1,14 @@
 from django.test import Client, TestCase, override_settings
 from django.contrib.auth import get_user_model
 
-from .common import MockEppLib  # type: ignore
+from api.tests.common import less_console_noise_decorator
+from registrar.models.domain import Domain
+from registrar.models.user_domain_role import UserDomainRole
+from registrar.views.domain import DomainNameserversView
 
+from .common import MockEppLib, less_console_noise  # type: ignore
+from unittest.mock import patch
+from django.urls import reverse
 
 from registrar.models import (
     DomainRequest,
@@ -66,6 +72,7 @@ class TestEnvironmentVariablesEffects(TestCase):
 
     def tearDown(self):
         super().tearDown()
+        Domain.objects.all().delete()
         self.user.delete()
 
     @override_settings(IS_PRODUCTION=True)
@@ -79,3 +86,86 @@ class TestEnvironmentVariablesEffects(TestCase):
         """Banner on non-prod."""
         home_page = self.client.get("/")
         self.assertContains(home_page, "You are on a test site.")
+
+    def side_effect_raise_value_error(self):
+        """Side effect that raises a 500 error"""
+        raise ValueError("Some error")
+
+    @less_console_noise_decorator
+    @override_settings(IS_PRODUCTION=False)
+    def test_non_production_environment_raises_500_and_shows_banner(self):
+        """Tests if the non-prod banner is still shown on a 500"""
+        fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+
+        # Add a role
+        fake_role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+        with patch.object(DomainNameserversView, "get_initial", side_effect=self.side_effect_raise_value_error):
+            with self.assertRaises(ValueError):
+                contact_page_500 = self.client.get(
+                    reverse("domain-dns-nameservers", kwargs={"pk": fake_domain.id}),
+                )
+
+                # Check that a 500 response is returned
+                self.assertEqual(contact_page_500.status_code, 500)
+
+                self.assertContains(contact_page_500, "You are on a test site.")
+
+    @less_console_noise_decorator
+    @override_settings(IS_PRODUCTION=True)
+    def test_production_environment_raises_500_and_doesnt_show_banner(self):
+        """Test if the non-prod banner is not shown on production when a 500 is raised"""
+
+        fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+
+        # Add a role
+        fake_role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+        with patch.object(DomainNameserversView, "get_initial", side_effect=self.side_effect_raise_value_error):
+            with self.assertRaises(ValueError):
+                contact_page_500 = self.client.get(
+                    reverse("domain-dns-nameservers", kwargs={"pk": fake_domain.id}),
+                )
+
+                # Check that a 500 response is returned
+                self.assertEqual(contact_page_500.status_code, 500)
+
+                self.assertNotContains(contact_page_500, "You are on a test site.")
+
+    @less_console_noise_decorator
+    @override_settings(IS_PRODUCTION=False)
+    def test_non_production_environment_raises_403_and_shows_banner(self):
+        """Test if the non-prod banner is shown when a 403 is raised"""
+
+        fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+
+        # Test navigating to the contact page. Should return a 403,
+        # but the banner should still appear.
+        contact_page_403 = self.client.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": fake_domain.id}),
+        )
+
+        self.assertEqual(contact_page_403.status_code, 403)
+
+        self.assertContains(contact_page_403, "You are on a test site.", status_code=403)
+
+    @less_console_noise_decorator
+    @override_settings(IS_PRODUCTION=True)
+    def test_production_environment_raises_403_and_doesnt_show_banner(self):
+        """Test if the non-prod banner is not shown on production when a 403 is raised"""
+
+        fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+
+        # Test navigating to the contact page. Should return a 403,
+        # but the banner should still appear.
+        contact_page_403 = self.client.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": fake_domain.id}),
+        )
+
+        self.assertEqual(contact_page_403.status_code, 403)
+
+        self.assertNotContains(contact_page_403, "You are on a test site.", status_code=403)

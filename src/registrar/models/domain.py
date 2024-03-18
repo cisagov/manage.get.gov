@@ -325,7 +325,6 @@ class Domain(TimeStampedModel, DomainHelper):
         Subordinate hosts (something.your-domain.gov) MUST have IP addresses,
         while non-subordinate hosts MUST NOT.
         """
-        raise ValueError("test")
         try:
             # attempt to retrieve hosts from registry and store in cache and db
             hosts = self._get_property("hosts")
