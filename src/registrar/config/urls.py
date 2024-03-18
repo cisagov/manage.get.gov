@@ -3,7 +3,7 @@
 For more information see:
     https://docs.djangoproject.com/en/4.0/topics/http/urls/
 """
-
+from django.conf.urls import handler500
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
@@ -148,6 +148,10 @@ urlpatterns = [
         name="domain-user-delete",
     ),
 ]
+
+# Djangooidc strips out context data from that context, so we define a custom error
+# view through this method.
+handler500 = "registrar.views.utility.error_views.custom_500_error_view"
 
 # we normally would guard these with `if settings.DEBUG` but tests run with
 # DEBUG = False even when these apps have been loaded because settings.DEBUG

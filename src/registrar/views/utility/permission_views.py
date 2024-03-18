@@ -32,16 +32,6 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
     # variable name in template context for the model object
     context_object_name = "domain"
 
-    def dispatch(self, request, *args, **kwargs):
-        """
-        Custom implementation of dispatch to ensure that 500 error pages (and others)
-        have access to the IS_PRODUCTION flag
-        """
-        if "IS_PRODUCTION" not in request.session:
-            # Pass the production flag to the context
-            request.session["IS_PRODUCTION"] = settings.IS_PRODUCTION
-        return super().dispatch(request, *args, **kwargs)
-
     # Adds context information for user permissions
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

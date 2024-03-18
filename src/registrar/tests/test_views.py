@@ -136,36 +136,3 @@ class TestEnvironmentVariablesEffects(TestCase):
 
                 self.assertNotContains(contact_page_500, "You are on a test site.")
 
-    @less_console_noise_decorator
-    @override_settings(IS_PRODUCTION=False)
-    def test_non_production_environment_raises_403_and_shows_banner(self):
-        """Test if the non-prod banner is shown when a 403 is raised"""
-
-        fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-
-        # Test navigating to the contact page. Should return a 403,
-        # but the banner should still appear.
-        contact_page_403 = self.client.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": fake_domain.id}),
-        )
-
-        self.assertEqual(contact_page_403.status_code, 403)
-
-        self.assertContains(contact_page_403, "You are on a test site.", status_code=403)
-
-    @less_console_noise_decorator
-    @override_settings(IS_PRODUCTION=True)
-    def test_production_environment_raises_403_and_doesnt_show_banner(self):
-        """Test if the non-prod banner is not shown on production when a 403 is raised"""
-
-        fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-
-        # Test navigating to the contact page. Should return a 403,
-        # but the banner should still appear.
-        contact_page_403 = self.client.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": fake_domain.id}),
-        )
-
-        self.assertEqual(contact_page_403.status_code, 403)
-
-        self.assertNotContains(contact_page_403, "You are on a test site.", status_code=403)
