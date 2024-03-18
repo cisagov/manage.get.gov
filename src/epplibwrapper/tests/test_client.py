@@ -276,7 +276,7 @@ class TestClient(TestCase):
         # Do nothing on connect, as we aren't testing it and want to connect while
         # mimicking the rest of the client as closely as possible (which is not entirely possible with MagicMock)
         with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
-            with patch.object(SocketTransport, "send", self.fake_failure_send):
+            with patch.object(SocketTransport, "send", self.fake_failure_send_concurrent_threads):
                 wrapper = EPPLibWrapper()
                 tested_command = commands.InfoDomain(name="test.gov")
                 try:
@@ -290,16 +290,19 @@ class TestClient(TestCase):
         # After a retry, try sending again to see if the connection recovers
         with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
             with patch.object(SocketTransport, "send", self.fake_success_send), patch.object(
-                SocketTransport, "receive", self.fake_receive
+                SocketTransport, "receive", self.fake_info_domain_received
             ):
                 result = wrapper.send(tested_command, cleaned=True)
                 self.assertEqual(expected_result, result.__dict__)
 
-    def fake_failure_send(self, command=None, cleaned=None):
+    def fake_failure_send_concurrent_threads(self, command=None, cleaned=None):
+        """
+        Raises a ConcurrentObjectUseError, which gevent throws when accessing
+        the same thread from two different locations.
+        """
         # This error is thrown when two threads are being used concurrently
         raise ConcurrentObjectUseError("This socket is already used by another greenlet")
 
-    
     def do_nothing(self, command=None):
         """
         A placeholder method that performs no action.
@@ -318,7 +321,7 @@ class TestClient(TestCase):
         )
         return mock
 
-    def fake_receive(self, command=None, cleaned=None):
+    def fake_info_domain_received(self, command=None, cleaned=None):
         """
         Simulates receiving a response by reading from a predefined XML file.
         """
