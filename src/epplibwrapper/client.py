@@ -60,7 +60,7 @@ class EPPLibWrapper:
         try:
             self._initialize_client()
         except Exception:
-            logger.warning("Unable to configure epplib. Registrar cannot contact registry.")
+            logger.warning("Unable to configure the connection to the registry.")
         finally:
             self.connection_lock.release()
 
