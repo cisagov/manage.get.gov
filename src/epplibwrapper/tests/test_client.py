@@ -316,6 +316,9 @@ class TestClient(TestCase):
         pass
 
     def fake_success_send(self, command=None, cleaned=None):
+        """
+        Simulates receiving a success response from EPP.
+        """
         mock = MagicMock(
             code=1000,
             msg="Command completed successfully",
