@@ -3,6 +3,7 @@ from dateutil.tz import tzlocal  # type: ignore
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from django.test import TestCase
+from gevent.exceptions import ConcurrentObjectUseError
 from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.errors import RegistryError, LoginError
 from .common import less_console_noise
@@ -262,14 +263,72 @@ class TestClient(TestCase):
             # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
             self.assertEquals(mock_send.call_count, 5)
 
-    def test_send_command_close_failure_recovers(self):
+    def test_send_command_close_failure_recovers(self, mock_wrapper):
         """Test when the .close on a connection fails and a .send follows suit.
         Scenario:
         Initialization succeeds
         Send command fails (with 2400 code) prompting retry
         Client closes and re-initializes, and command succeeds"""
 
-        expected_result = {
+        expected_result = self.get_fake_epp_result()
+        wrapper = None
+        # Trigger a retry
+        # Do nothing on connect, as we aren't testing it and want to connect while
+        # mimicking the rest of the client as closely as possible (which is not entirely possible with MagicMock)
+        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
+            with patch.object(SocketTransport, "send", self.fake_failure_send):
+                wrapper = EPPLibWrapper()
+                tested_command = commands.InfoDomain(name="test.gov")
+                try:
+                    wrapper.send(tested_command, cleaned=True)
+                except RegistryError as err:
+                    expected_error = "InfoDomain failed to execute due to an unknown error."
+                    self.assertEqual(err.args[0], expected_error)
+                else:
+                    self.fail("Registry error was not thrown")
+
+        # After a retry, try sending again to see if the connection recovers
+        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
+            with patch.object(SocketTransport, "send", self.fake_success_send), patch.object(
+                SocketTransport, "receive", self.fake_receive
+            ):
+                result = wrapper.send(tested_command, cleaned=True)
+                self.assertEqual(expected_result, result.__dict__)
+
+    def fake_failure_send(self, command=None, cleaned=None):
+        # This error is thrown when two threads are being used concurrently
+        raise ConcurrentObjectUseError("This socket is already used by another greenlet")
+
+    
+    def do_nothing(self, command=None):
+        """
+        A placeholder method that performs no action.
+        """
+        pass
+
+    def fake_success_send(self, command=None, cleaned=None):
+        mock = MagicMock(
+            code=1000,
+            msg="Command completed successfully",
+            res_data=None,
+            cl_tr_id="xkw1uo#2023-10-17T15:29:09.559376",
+            sv_tr_id="5CcH4gxISuGkq8eqvr1UyQ==-35a",
+            extensions=[],
+            msg_q=None,
+        )
+        return mock
+
+    def fake_receive(self, command=None, cleaned=None):
+        """
+        Simulates receiving a response by reading from a predefined XML file.
+        """
+        location = Path(__file__).parent / "utility" / "infoDomain.xml"
+        xml = (location).read_bytes()
+        return xml
+
+    def get_fake_epp_result(self):
+        """Mimics a return from EPP by returning a dictionary in the same format"""
+        result = {
             "cl_tr_id": None,
             "code": 1000,
             "extensions": [],
@@ -303,59 +362,4 @@ class TestClient(TestCase):
             ],
             "sv_tr_id": "wRRNVhKhQW2m6wsUHbo/lA==-29a",
         }
-
-        def fake_receive(command, cleaned=None):
-            location = Path(__file__).parent / "utility" / "infoDomain.xml"
-            xml = (location).read_bytes()
-            return xml
-
-        def fake_success_send(self, command, cleaned=None):
-            mock = MagicMock(
-                code=1000,
-                msg="Command completed successfully",
-                res_data=None,
-                cl_tr_id="xkw1uo#2023-10-17T15:29:09.559376",
-                sv_tr_id="5CcH4gxISuGkq8eqvr1UyQ==-35a",
-                extensions=[],
-                msg_q=None,
-            )
-            return mock
-
-        def fake_failure_send(self, command, cleaned=None):
-            mock = MagicMock(
-                code=2400,
-                msg="Command failed",
-                res_data=None,
-                cl_tr_id="xkw1uo#2023-10-17T15:29:09.559376",
-                sv_tr_id="5CcH4gxISuGkq8eqvr1UyQ==-35a",
-                extensions=[],
-                msg_q=None,
-            )
-            return mock
-
-        def do_nothing(command):
-            pass
-
-        wrapper = None
-        # Trigger a retry
-        # Do nothing on connect, as we aren't testing it and want to connect while
-        # mimicking the rest of the client as closely as possible (which is not entirely possible with MagicMock)
-        with patch.object(EPPLibWrapper, "_connect", do_nothing):
-            with patch.object(SocketTransport, "send", fake_failure_send):
-                wrapper = EPPLibWrapper()
-                tested_command = commands.InfoDomain(name="test.gov")
-                try:
-                    wrapper.send(tested_command, cleaned=True)
-                    wrapper._retry(tested_command)
-                except RegistryError as err:
-                    expected_error = "InfoDomain failed to execute due to a connection error."
-                    self.assertEqual(err.args[0], expected_error)
-                else:
-                    self.fail("Registry error was not thrown")
-
-        with patch.object(EPPLibWrapper, "_connect", do_nothing):
-            with patch.object(SocketTransport, "send", fake_success_send), patch.object(
-                SocketTransport, "receive", fake_receive
-            ):
-                result = wrapper.send(tested_command, cleaned=True)
-                self.assertEqual(expected_result, result.__dict__)
+        return result
