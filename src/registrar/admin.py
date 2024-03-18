@@ -1098,6 +1098,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "requested_domain",
         "approved_domain",
         "alternative_domains",
+        "other_contacts",
+        "current_websites",
         "purpose",
         "submitter",
         "no_other_contacts_rationale",
