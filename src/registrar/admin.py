@@ -1826,6 +1826,7 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 class FederalAgencyAdmin(ListHeaderAdmin):
+    list_display = ["agency"]
     search_fields = ["agency"]
     search_help_text = "Search by agency name."
     ordering = ["agency"]
