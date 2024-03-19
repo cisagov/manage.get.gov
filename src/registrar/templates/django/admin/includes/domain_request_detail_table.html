@@ -1,0 +1,27 @@
+{% load i18n static %}
+
+{% if start_opened %}
+<details class="margin-top-1 dja-detail-table" open>
+{% else %}
+<details class="margin-top-1 dja-detail-table">
+{% endif%}
+    <summary class="padding-1 dja-details-summary">Details</summary>
+    <div class="grid-container padding-left-0 padding-right-0 dja-details-contents">
+        <table>
+            <tbody>
+                <tr>
+                    <th scope="row">Title</th>
+                    <td>{{ user.title }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">Email</th>
+                    <td>{{ user.email }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">Phone</th>
+                    <td>{{ user.phone }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</details>

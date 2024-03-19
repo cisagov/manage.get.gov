@@ -23,43 +23,13 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         {% endif %}
                     </div>
                 {% if field.field.name == "creator" %}
-                    <ul>
-                        {% if original.creator.title %}
-                        <li>{{ original.creator.title }}</li>
-                        {% endif %}
-
-                        {% if original.creator.email %}
-                            <li>{{ original.creator.email }}</li>
-                        {% endif %}
-
-                        {% if original.creator.phone %}
-                            <li>{{ original.creator.phone }}</li>
-                        {% endif %}
-                    </ul>
+                    {% include "django/admin/includes/domain_request_detail_table.html" with user=original.creator start_opened=True %}
                 {% elif field.field.name == "submitter" %}
-                    <details class="dja-detail-table" open>
-                        <summary class="padding-1 dja-details-summary">Details</summary>
-                        <div class="grid-container padding-left-0 padding-right-0 dja-details-contents">
-                            <table>
-                                <tbody>
-                                    <tr>
-                                        <th scope="row">Title</th>
-                                        <td>{{ original.submitter.title }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">Email</th>
-                                        <td>{{ original.submitter.email }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">Phone</th>
-                                        <td>{{ original.submitter.phone }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </details>
+                    {% include "django/admin/includes/domain_request_detail_table.html" with user=original.submitter start_opened=True %}
+                {% elif field.field.name == "authorizing_official" %}
+                    {% include "django/admin/includes/domain_request_detail_table.html" with user=original.authorizing_official start_opened=True %}
                 {% elif field.field.name == "other_contacts" %}
-                    <details class="dja-detail-table">
+                    <details class="margin-top-1 dja-detail-table">
                         <summary class="padding-1 dja-details-summary">Details</summary>
                         <div class="grid-container padding-left-0 padding-right-0 dja-details-contents">
                             <table>
@@ -77,6 +47,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         </div>
                     </details>
                 {% endif %}
+
                 {% if field.field.help_text %}
                     <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
                         <div>{{ field.field.help_text|safe }}</div>
