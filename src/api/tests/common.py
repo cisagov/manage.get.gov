@@ -49,3 +49,17 @@ def less_console_noise():
             handler.setStream(restore[handler.name])
         # close the file we opened
         devnull.close()
+
+
+def less_console_noise_decorator(func):
+    """
+    Decorator to silence console logging using the less_console_noise() function.
+    """
+
+    # "Wrap" the original function in the less_console_noise with clause,
+    # then just return this wrapper.
+    def wrapper(*args, **kwargs):
+        with less_console_noise():
+            return func(*args, **kwargs)
+
+    return wrapper
