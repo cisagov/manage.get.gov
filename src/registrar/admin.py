@@ -1099,8 +1099,6 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "about_your_organization",
         "requested_domain",
         "approved_domain",
-        "other_contacts",
-        "current_websites",
         "alternative_domains",
         "other_contacts",
         "current_websites",
