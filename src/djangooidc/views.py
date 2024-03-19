@@ -119,7 +119,7 @@ def login_callback(request):
             # Set the flag to indicate that the redirect has been attempted
             request.session["redirect_attempted"] = True
 
-            # In the event of a sstate mismatch between OP and session, redirect the user to the
+            # In the event of a state mismatch between OP and session, redirect the user to the
             # beginning of login process without raising an error to the user. Attempt once.
             logger.warning(f"No State Defined: {nsd_err}")
             return redirect(request.session.get("next", "/"))
