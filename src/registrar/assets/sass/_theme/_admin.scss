@@ -332,7 +332,7 @@ input.admin-confirm-button {
         border: solid 1px var(--darkened-bg);
         background: var(--darkened-bg);
     }
-.django-admin-modal .usa-prose ul > li {
+.usa-modal--django-admin .usa-prose ul > li {
     list-style-type: inherit;
     // Styling based off of the <p> styling in django admin
     line-height: 1.5;
