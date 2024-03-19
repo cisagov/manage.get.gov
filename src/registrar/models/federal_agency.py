@@ -17,6 +17,9 @@ class FederalAgency(TimeStampedModel):
         help_text="Federal agency",
     )
 
+    def __str__(self) -> str:
+        return self.agency
+
     # TODO: Update parameters to put in
     def create_federal_agencies(apps, schema_editor):
         """This method gets run from a data migration."""
