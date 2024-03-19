@@ -18,6 +18,8 @@ from django.conf import settings
 
 from registrar.models import (
     Domain,
+    DomainRequest,
+    DomainInformation,
     DomainInvitation,
     User,
     UserDomainRole,
@@ -134,6 +136,20 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         # superclass has the redirect
         return super().form_invalid(form)
 
+    def get_domain_info_from_domain(self) -> DomainInformation | None:
+        """
+        Grabs the underlying domain_info object based off of self.object.name.
+        Returns None if nothing is found.
+        """
+        _domain_info = DomainInformation.objects.filter(domain__name=self.object.name)
+        current_domain_info = None
+        if _domain_info.exists() and _domain_info.count() == 1:
+            current_domain_info = _domain_info.get()
+        else:
+            logger.error("Could get domain_info. No domain info exists, or duplicates exist.")
+
+        return current_domain_info
+
 
 class DomainView(DomainBaseView):
     """Domain detail overview page."""
@@ -217,7 +233,19 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
         """Add domain_info.authorizing_official instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
         form_kwargs["instance"] = self.object.domain_info.authorizing_official
+
+        domain_info = self.get_domain_info_from_domain()
+        invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]
+        is_federal_or_tribal = domain_info and (domain_info.organization_type in invalid_fields)
+
+        form_kwargs["disable_fields"] = is_federal_or_tribal
         return form_kwargs
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        context["organization_type"] = self.object.domain_info.organization_type
+        return context
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
@@ -225,8 +253,9 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, save the authorizing official."""
+
         # Set the domain information in the form so that it can be accessible
-        # to associate a new Contact as authorizing official, if new Contact is needed
+        # to associate a new Contact, if a new Contact is needed
         # in the save() method
         form.set_domain_info(self.object.domain_info)
         form.save()
