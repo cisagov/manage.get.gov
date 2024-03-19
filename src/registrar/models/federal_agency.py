@@ -10,7 +10,7 @@ class FederalAgency(TimeStampedModel):
     class Meta:
         verbose_name = "Federal agency"
         verbose_name_plural = "Federal agencies"
-    
+
     agency = models.CharField(
         null=True,
         blank=True,
@@ -18,12 +18,12 @@ class FederalAgency(TimeStampedModel):
     )
 
     def __str__(self) -> str:
-        return self.agency
+        return f"{self.agency}"
 
     # TODO: Update parameters to put in
     def create_federal_agencies(apps, schema_editor):
         """This method gets run from a data migration."""
-        
+
         # Hard to pass self to these methods as the calls from migrations
         # are only expecting apps and schema_editor, so we'll just define
         # apps, schema_editor in the local scope instead
@@ -213,10 +213,10 @@ class FederalAgency(TimeStampedModel):
             "Woodrow Wilson International Center for Scholars",
             "World War I Centennial Commission",
         ]
-        
+
         FederalAgency = apps.get_model("registrar", "FederalAgency")
         logger.info("Creating federal agency table.")
-        
+
         try:
             for agency in AGENCIES:
                 federal_agencies_list, _ = FederalAgency.objects.get_or_create(

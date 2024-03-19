@@ -15,8 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, FederalAgency
-from registrar.utility import csv_export
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
 from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -1788,6 +1787,7 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         # Set the user field to the current admin user
         obj.requestor = request.user if request.user.is_authenticated else None
         super().save_model(request, obj, form, change)
+
 
 class FederalAgencyAdmin(ListHeaderAdmin):
     list_display = ["agency"]

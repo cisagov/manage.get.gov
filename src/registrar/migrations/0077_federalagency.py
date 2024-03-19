@@ -6,9 +6,11 @@ from django.db import migrations, models
 from registrar.models import FederalAgency
 from typing import Any
 
+
 # For linting: RunPython expects a function reference.
 def create_federal_agencies(apps, schema_editor) -> Any:
     FederalAgency.create_federal_agencies(apps, schema_editor)
+
 
 class Migration(migrations.Migration):
 
