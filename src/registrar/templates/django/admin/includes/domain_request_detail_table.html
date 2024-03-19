@@ -1,12 +1,10 @@
 {% load i18n static %}
 
-{% if start_opened %}
-<details class="margin-top-1 dja-detail-table" open>
-{% else %}
-<details class="margin-top-1 dja-detail-table">
-{% endif%}
+
+<details class="margin-top-1 dja-detail-table" {% if start_opened %}open{% endif %}>
     <summary class="padding-1 dja-details-summary">Details</summary>
     <div class="grid-container padding-left-0 padding-right-0 dja-details-contents">
+        {% if user.title or user.email or user.phone %}
         <table>
             <tbody>
                 <tr>
@@ -23,5 +21,8 @@
                 </tr>
             </tbody>
         </table>
+        {% else %}
+        <div class="padding-1">No details found</div>
+        {% endif %}
     </div>
 </details>
