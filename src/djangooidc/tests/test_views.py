@@ -150,7 +150,7 @@ class ViewsTest(TestCase):
             mock_client.get_default_acr_value.side_effect = self.create_acr
             mock_client.callback.side_effect = StateMismatch()
             session = self.client.session
-            session['redirect_attempted'] = True
+            session["redirect_attempted"] = True
             session.save()
             # TEST
             response = self.client.get(reverse("openid_login_callback"))
