@@ -143,6 +143,10 @@ h1, h2, h3,
     font-weight: font-weight('bold');
 }
 
+div#content > h2 {
+    font-size: 1.3rem;
+}
+
 .module h3 {
     padding: 0;
     color: var(--link-fg);
@@ -298,6 +302,19 @@ input.admin-confirm-button {
     .button-list-mobile {
         display: contents !important;
     }
+}
+
+.django-admin-modal .usa-prose ul > li {
+    list-style-type: inherit;
+    // Styling based off of the <p> styling in django admin
+    line-height: 1.5;
+    margin-bottom: 0;
+    margin-top: 0;
+    max-width: 68ex;
+}
+
+.usa-summary-box__dhs-color {
+    color: $dhs-blue-70;
 }
 
 .admin-icon-group {

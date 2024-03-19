@@ -16,6 +16,8 @@ on:
           - stable
           - staging
           - development
+          - bob
+          - meoward
           - backup
           - ky
           - es
