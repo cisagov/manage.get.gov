@@ -1,5 +1,9 @@
+import datetime
+from dateutil.tz import tzlocal  # type: ignore
 from unittest.mock import MagicMock, patch
+from pathlib import Path
 from django.test import TestCase
+from gevent.exceptions import ConcurrentObjectUseError
 from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.errors import RegistryError, LoginError
 from .common import less_console_noise
@@ -8,6 +12,9 @@ import logging
 try:
     from epplib.exceptions import TransportError
     from epplib.responses import Result
+    from epplib.transport import SocketTransport
+    from epplib import commands
+    from epplib.models import common, info
 except ImportError:
     pass
 
@@ -255,3 +262,116 @@ class TestClient(TestCase):
             mock_close.assert_called_once()
             # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
             self.assertEquals(mock_send.call_count, 5)
+
+    def fake_failure_send_concurrent_threads(self, command=None, cleaned=None):
+        """
+        Raises a ConcurrentObjectUseError, which gevent throws when accessing
+        the same thread from two different locations.
+        """
+        # This error is thrown when two threads are being used concurrently
+        raise ConcurrentObjectUseError("This socket is already used by another greenlet")
+
+    def do_nothing(self, command=None):
+        """
+        A placeholder method that performs no action.
+        """
+        pass  # noqa
+
+    def fake_success_send(self, command=None, cleaned=None):
+        """
+        Simulates receiving a success response from EPP.
+        """
+        mock = MagicMock(
+            code=1000,
+            msg="Command completed successfully",
+            res_data=None,
+            cl_tr_id="xkw1uo#2023-10-17T15:29:09.559376",
+            sv_tr_id="5CcH4gxISuGkq8eqvr1UyQ==-35a",
+            extensions=[],
+            msg_q=None,
+        )
+        return mock
+
+    def fake_info_domain_received(self, command=None, cleaned=None):
+        """
+        Simulates receiving a response by reading from a predefined XML file.
+        """
+        location = Path(__file__).parent / "utility" / "infoDomain.xml"
+        xml = (location).read_bytes()
+        return xml
+
+    def get_fake_epp_result(self):
+        """Mimics a return from EPP by returning a dictionary in the same format"""
+        result = {
+            "cl_tr_id": None,
+            "code": 1000,
+            "extensions": [],
+            "msg": "Command completed successfully",
+            "msg_q": None,
+            "res_data": [
+                info.InfoDomainResultData(
+                    roid="DF1340360-GOV",
+                    statuses=[
+                        common.Status(
+                            state="serverTransferProhibited",
+                            description=None,
+                            lang="en",
+                        ),
+                        common.Status(state="inactive", description=None, lang="en"),
+                    ],
+                    cl_id="gov2023-ote",
+                    cr_id="gov2023-ote",
+                    cr_date=datetime.datetime(2023, 8, 15, 23, 56, 36, tzinfo=tzlocal()),
+                    up_id="gov2023-ote",
+                    up_date=datetime.datetime(2023, 8, 17, 2, 3, 19, tzinfo=tzlocal()),
+                    tr_date=None,
+                    name="test3.gov",
+                    registrant="TuaWnx9hnm84GCSU",
+                    admins=[],
+                    nsset=None,
+                    keyset=None,
+                    ex_date=datetime.date(2024, 8, 15),
+                    auth_info=info.DomainAuthInfo(pw="2fooBAR123fooBaz"),
+                )
+            ],
+            "sv_tr_id": "wRRNVhKhQW2m6wsUHbo/lA==-29a",
+        }
+        return result
+
+    def test_send_command_close_failure_recovers(self):
+        """
+        Validates the resilience of the connection handling mechanism
+        during command execution on retry.
+
+        Scenario:
+        - Initialization of the connection is successful.
+        - An attempt to send a command fails with a specific error code (ConcurrentObjectUseError)
+        - The client attempts to retry.
+        - Subsequently, the client re-initializes the connection.
+        - A retry of the command execution post-reinitialization succeeds.
+        """
+
+        expected_result = self.get_fake_epp_result()
+        wrapper = None
+        # Trigger a retry
+        # Do nothing on connect, as we aren't testing it and want to connect while
+        # mimicking the rest of the client as closely as possible (which is not entirely possible with MagicMock)
+        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
+            with patch.object(SocketTransport, "send", self.fake_failure_send_concurrent_threads):
+                wrapper = EPPLibWrapper()
+                tested_command = commands.InfoDomain(name="test.gov")
+                try:
+                    wrapper.send(tested_command, cleaned=True)
+                except RegistryError as err:
+                    expected_error = "InfoDomain failed to execute due to an unknown error."
+                    self.assertEqual(err.args[0], expected_error)
+                else:
+                    self.fail("Registry error was not thrown")
+
+        # After a retry, try sending again to see if the connection recovers
+        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
+            with patch.object(SocketTransport, "send", self.fake_success_send), patch.object(
+                SocketTransport, "receive", self.fake_info_domain_received
+            ):
+                result = wrapper.send(tested_command, cleaned=True)
+                self.assertEqual(expected_result, result.__dict__)

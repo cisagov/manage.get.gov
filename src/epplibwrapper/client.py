@@ -1,6 +1,7 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
+from gevent.lock import BoundedSemaphore
 
 try:
     from epplib.client import Client
@@ -52,10 +53,16 @@ class EPPLibWrapper:
                 "urn:ietf:params:xml:ns:contact-1.0",
             ],
         )
+        # We should only ever have one active connection at a time
+        self.connection_lock = BoundedSemaphore(1)
+
+        self.connection_lock.acquire()
         try:
             self._initialize_client()
         except Exception:
-            logger.warning("Unable to configure epplib. Registrar cannot contact registry.")
+            logger.warning("Unable to configure the connection to the registry.")
+        finally:
+            self.connection_lock.release()
 
     def _initialize_client(self) -> None:
         """Initialize a client, assuming _login defined. Sets _client to initialized
@@ -74,11 +81,7 @@ class EPPLibWrapper:
         )
         try:
             # use the _client object to connect
-            self._client.connect()  # type: ignore
-            response = self._client.send(self._login)  # type: ignore
-            if response.code >= 2000:  # type: ignore
-                self._client.close()  # type: ignore
-                raise LoginError(response.msg)  # type: ignore
+            self._connect()
         except TransportError as err:
             message = "_initialize_client failed to execute due to a connection error."
             logger.error(f"{message} Error: {err}")
@@ -90,13 +93,33 @@ class EPPLibWrapper:
             logger.error(f"{message} Error: {err}")
             raise RegistryError(message) from err
 
+    def _connect(self) -> None:
+        """Connects to EPP. Sends a login command. If an invalid response is returned,
+        the client will be closed and a LoginError raised."""
+        self._client.connect()  # type: ignore
+        response = self._client.send(self._login)  # type: ignore
+        if response.code >= 2000:  # type: ignore
+            self._client.close()  # type: ignore
+            raise LoginError(response.msg)  # type: ignore
+
     def _disconnect(self) -> None:
-        """Close the connection."""
+        """Close the connection. Sends a logout command and closes the connection."""
+        self._send_logout_command()
+        self._close_client()
+
+    def _send_logout_command(self):
+        """Sends a logout command to epp"""
         try:
             self._client.send(commands.Logout())  # type: ignore
-            self._client.close()  # type: ignore
-        except Exception:
-            logger.warning("Connection to registry was not cleanly closed.")
+        except Exception as err:
+            logger.warning(f"Logout command not sent successfully: {err}")
+
+    def _close_client(self):
+        """Closes an active client connection"""
+        try:
+            self._client.close()
+        except Exception as err:
+            logger.warning(f"Connection to registry was not cleanly closed: {err}")
 
     def _send(self, command):
         """Helper function used by `send`."""
@@ -146,6 +169,8 @@ class EPPLibWrapper:
         cmd_type = command.__class__.__name__
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
+
+        self.connection_lock.acquire()
         try:
             return self._send(command)
         except RegistryError as err:
@@ -161,6 +186,8 @@ class EPPLibWrapper:
                 return self._retry(command)
             else:
                 raise err
+        finally:
+            self.connection_lock.release()
 
 
 try:
