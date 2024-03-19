@@ -1099,6 +1099,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "about_your_organization",
         "requested_domain",
         "approved_domain",
+        "other_contacts",
+        "current_websites",
         "alternative_domains",
         "purpose",
         "submitter",
@@ -1118,6 +1120,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
     # Table ordering
     ordering = ["requested_domain__name"]
+
+    change_form_template = "django/admin/domain_request_change_form.html"
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
