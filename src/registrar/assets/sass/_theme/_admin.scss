@@ -316,3 +316,17 @@ input.admin-confirm-button {
 .usa-summary-box__dhs-color {
     color: $dhs-blue-70;
 }
+
+details.dja-detail-table {
+    background-color: var(--darkened-bg);
+    display: inline-table;
+    .dja-details-summary {
+        color: var(--header-link-color);
+        background-color: var(--primary);
+    }
+    .dja-details-contents {
+        tr {
+            background-color: var(--darkened-bg);
+        }
+    }
+}

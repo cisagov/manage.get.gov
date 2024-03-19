@@ -37,19 +37,45 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         {% endif %}
                     </ul>
                 {% elif field.field.name == "submitter" %}
-                    <ul>
-                        {% if original.submitter.title %}
-                        <li>{{ original.submitter.title }}</li>
-                        {% endif %}
-
-                        {% if original.submitter.email %}
-                            <li>{{ original.submitter.email }}</li>
-                        {% endif %}
-
-                        {% if original.submitter.phone %}
-                            <li>{{ original.submitter.phone }}</li>
-                        {% endif %}
-                    </ul>
+                    <details class="dja-detail-table" open>
+                        <summary class="padding-1 dja-details-summary">Details</summary>
+                        <div class="grid-container padding-left-0 padding-right-0 dja-details-contents">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">Title</th>
+                                        <td>{{ original.submitter.title }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Email</th>
+                                        <td>{{ original.submitter.email }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Phone</th>
+                                        <td>{{ original.submitter.phone }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                {% elif field.field.name == "other_contacts" %}
+                    <details class="dja-detail-table">
+                        <summary class="padding-1 dja-details-summary">Details</summary>
+                        <div class="grid-container padding-left-0 padding-right-0 dja-details-contents">
+                            <table>
+                                <tbody>
+                                    {% for contact in original.other_contacts.all %}
+                                    <tr>
+                                        <th scope="row">{{contact.first_name}} {{contact.last_name}}</th>
+                                        <td>{{ contact.title }}</td>
+                                        <td>{{ contact.email }}</td>
+                                        <td>{{ contact.phone }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
                 {% endif %}
                 {% if field.field.help_text %}
                     <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
