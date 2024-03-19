@@ -330,3 +330,35 @@ details.dja-detail-table {
         }
     }
 }
+
+table.dja-user-detail-table {
+    margin-left: 160px;
+    tr {
+        background-color: var(--body-bg);
+    }
+}
+
+.admin-icon-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .usa-button__icon {
+        position: absolute;
+        right: 0;
+        height: 100%;
+    }
+
+    input {
+        // Allow for padding around the copy button
+        padding-right: 35px;
+        // Match the height of other inputs
+        min-height: 2.25rem;
+    }
+
+    .no-outline-on-click:focus {
+        outline: none !important;
+    }
+}
+
+

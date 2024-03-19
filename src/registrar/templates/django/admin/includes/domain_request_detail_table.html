@@ -1,28 +1,18 @@
 {% load i18n static %}
 
-
-<details class="margin-top-1 dja-detail-table" {% if start_opened %}open{% endif %}>
-    <summary class="padding-1 dja-details-summary">Details</summary>
-    <div class="grid-container padding-left-0 padding-right-0 dja-details-contents">
-        {% if user.title or user.email or user.phone %}
-        <table>
-            <tbody>
-                <tr>
-                    <th scope="row">Title</th>
-                    <td>{{ user.title }}</td>
-                </tr>
-                <tr>
-                    <th scope="row">Email</th>
-                    <td>{{ user.email }}</td>
-                </tr>
-                <tr>
-                    <th scope="row">Phone</th>
-                    <td>{{ user.phone }}</td>
-                </tr>
-            </tbody>
-        </table>
-        {% else %}
-        <div class="padding-1">No details found</div>
-        {% endif %}
-    </div>
-</details>
+<table class="dja-user-detail-table">
+    <tbody>
+        <tr>
+            <th class="padding-left-0" scope="row">Title</th>
+            <td>{{ user.title }}</td>
+        </tr>
+        <tr>
+            <th class="padding-left-0" scope="row">Email</th>
+            <td>{{ user.email }}</td>
+        </tr>
+        <tr>
+            <th class="padding-left-0" scope="row">Phone</th>
+            <td>{{ user.phone }}</td>
+        </tr>
+    </tbody>
+</table>
