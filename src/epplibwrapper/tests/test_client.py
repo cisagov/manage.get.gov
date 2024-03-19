@@ -263,44 +263,6 @@ class TestClient(TestCase):
             # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
             self.assertEquals(mock_send.call_count, 5)
 
-    def test_send_command_close_failure_recovers(self):
-        """
-        Validates the resilience of the connection handling mechanism 
-        during command execution on retry.
-        
-        Scenario:
-        - Initialization of the connection is successful.
-        - An attempt to send a command fails with a specific error code (ConcurrentObjectUseError)
-        - The client attempts to retry.
-        - Subsequently, the client re-initializes the connection.
-        - A retry of the command execution post-reinitialization succeeds.
-        """
-
-        expected_result = self.get_fake_epp_result()
-        wrapper = None
-        # Trigger a retry
-        # Do nothing on connect, as we aren't testing it and want to connect while
-        # mimicking the rest of the client as closely as possible (which is not entirely possible with MagicMock)
-        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
-            with patch.object(SocketTransport, "send", self.fake_failure_send_concurrent_threads):
-                wrapper = EPPLibWrapper()
-                tested_command = commands.InfoDomain(name="test.gov")
-                try:
-                    wrapper.send(tested_command, cleaned=True)
-                except RegistryError as err:
-                    expected_error = "InfoDomain failed to execute due to an unknown error."
-                    self.assertEqual(err.args[0], expected_error)
-                else:
-                    self.fail("Registry error was not thrown")
-
-        # After a retry, try sending again to see if the connection recovers
-        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
-            with patch.object(SocketTransport, "send", self.fake_success_send), patch.object(
-                SocketTransport, "receive", self.fake_info_domain_received
-            ):
-                result = wrapper.send(tested_command, cleaned=True)
-                self.assertEqual(expected_result, result.__dict__)
-
     def fake_failure_send_concurrent_threads(self, command=None, cleaned=None):
         """
         Raises a ConcurrentObjectUseError, which gevent throws when accessing
@@ -313,7 +275,7 @@ class TestClient(TestCase):
         """
         A placeholder method that performs no action.
         """
-        pass
+        pass  # noqa
 
     def fake_success_send(self, command=None, cleaned=None):
         """
@@ -375,3 +337,41 @@ class TestClient(TestCase):
             "sv_tr_id": "wRRNVhKhQW2m6wsUHbo/lA==-29a",
         }
         return result
+
+    def test_send_command_close_failure_recovers(self):
+        """
+        Validates the resilience of the connection handling mechanism
+        during command execution on retry.
+
+        Scenario:
+        - Initialization of the connection is successful.
+        - An attempt to send a command fails with a specific error code (ConcurrentObjectUseError)
+        - The client attempts to retry.
+        - Subsequently, the client re-initializes the connection.
+        - A retry of the command execution post-reinitialization succeeds.
+        """
+
+        expected_result = self.get_fake_epp_result()
+        wrapper = None
+        # Trigger a retry
+        # Do nothing on connect, as we aren't testing it and want to connect while
+        # mimicking the rest of the client as closely as possible (which is not entirely possible with MagicMock)
+        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
+            with patch.object(SocketTransport, "send", self.fake_failure_send_concurrent_threads):
+                wrapper = EPPLibWrapper()
+                tested_command = commands.InfoDomain(name="test.gov")
+                try:
+                    wrapper.send(tested_command, cleaned=True)
+                except RegistryError as err:
+                    expected_error = "InfoDomain failed to execute due to an unknown error."
+                    self.assertEqual(err.args[0], expected_error)
+                else:
+                    self.fail("Registry error was not thrown")
+
+        # After a retry, try sending again to see if the connection recovers
+        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
+            with patch.object(SocketTransport, "send", self.fake_success_send), patch.object(
+                SocketTransport, "receive", self.fake_info_domain_received
+            ):
+                result = wrapper.send(tested_command, cleaned=True)
+                self.assertEqual(expected_result, result.__dict__)
