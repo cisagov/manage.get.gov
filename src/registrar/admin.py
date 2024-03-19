@@ -1102,6 +1102,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "other_contacts",
         "current_websites",
         "alternative_domains",
+        "other_contacts",
+        "current_websites",
         "purpose",
         "submitter",
         "no_other_contacts_rationale",
