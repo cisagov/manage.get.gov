@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, FederalAgency
 from registrar.utility import csv_export
 from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
@@ -1839,6 +1839,7 @@ admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
+admin.site.register(FederalAgency)
 # Host and HostIP removed from django admin because changes in admin
 # do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)

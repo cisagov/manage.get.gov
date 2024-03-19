@@ -1,22 +1,30 @@
-from django.contrib.auth.models import Group
+from .utility.time_stamped_model import TimeStampedModel
+from django.db import models
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 # TODO: Update param model
-class FederalAgency(Group):
+class FederalAgency(TimeStampedModel):
     class Meta:
         verbose_name = "Federal agency"
         verbose_name_plural = "Federal agencies"
+    
+    agency = models.CharField(
+        null=True,
+        blank=True,
+        help_text="Federal agency",
+    )
 
     # TODO: Update parameters to put in
     def create_federal_agencies(apps, schema_editor):
         """This method gets run from a data migration."""
-
+        
         # Hard to pass self to these methods as the calls from migrations
         # are only expecting apps and schema_editor, so we'll just define
         # apps, schema_editor in the local scope instead
+
         AGENCIES = [
             "Administrative Conference of the United States",
             "Advisory Council on Historic Preservation",
@@ -202,30 +210,17 @@ class FederalAgency(Group):
             "Woodrow Wilson International Center for Scholars",
             "World War I Centennial Commission",
         ]
-
-    # TODO: Get apps back here
-    FederalAgency = apps.get_model("registrar", "FederalAgency")
-
-    try:
-        federal_agencies_list, _ = FederalAgency.objects.get_or_create(
-            name="cisa_analysts_group",
-        )
-
-        federal_agencies_list.federal_agency.clear()
-
-        # TODO: Why is AGENCIES not loading here?
-        for agency in AGENCIES:
-
-            # Assign the permissions to the group
-            federal_agencies_list.agency.add(*agency)
-
-            # TODO: Maybe remove?
-            # Convert the permissions QuerySet to a list of codenames
-            agency_list = list(agency.values_list("codename", flat=True))
-
-            logger.debug(agency + " added to group " + federal_agencies_list.name)
-
-            federal_agencies_list.save()
-            logger.debug("Federal agency added to table " + federal_agencies_list.name)
-    except Exception as e:
-        logger.error(f"Error creating fedearl agency: {e}")
+        
+        FederalAgency = apps.get_model("registrar", "FederalAgency")
+        logger.info("Creating federal agency table.")
+        
+        try:
+            for agency in AGENCIES:
+                federal_agencies_list, _ = FederalAgency.objects.get_or_create(
+                    agency=agency,
+                )
+                logger.debug(agency + " added to record " + federal_agencies_list.agency)
+                federal_agencies_list.save()
+                logger.debug("Federal agency added to table " + federal_agencies_list.agency)
+        except Exception as e:
+            logger.error(f"Error creating federal agency: {e}")
