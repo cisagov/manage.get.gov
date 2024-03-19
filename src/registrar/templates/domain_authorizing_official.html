@@ -20,9 +20,18 @@
   {% else %}
   {% include "includes/required_fields.html" %}
   {% endif %}
+  
 
   <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
     {% csrf_token %}
+
+    {% if organization_type == "federal" or organization_type == "tribal" %}
+    {# If all fields are disabled, add SR content #}
+    <div class="usa-sr-only" aria-labelledby="id_first_name" id="sr-ao-first-name">{{ form.first_name.value }}</div>
+    <div class="usa-sr-only" aria-labelledby="id_last_name" id="sr-ao-last-name">{{ form.last_name.value }}</div>
+    <div class="usa-sr-only" aria-labelledby="id_title" id="sr-ao-title">{{ form.title.value }}</div>
+    <div class="usa-sr-only" aria-labelledby="id_email" id="sr-ao-email">{{ form.email.value }}</div>
+    {% endif %}
 
     {% input_with_errors form.first_name %}
 
