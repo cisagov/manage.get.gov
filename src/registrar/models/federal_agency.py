@@ -5,7 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# TODO: Update param model
 class FederalAgency(TimeStampedModel):
     class Meta:
         verbose_name = "Federal agency"
@@ -20,7 +19,6 @@ class FederalAgency(TimeStampedModel):
     def __str__(self) -> str:
         return f"{self.agency}"
 
-    # TODO: Update parameters to put in
     def create_federal_agencies(apps, schema_editor):
         """This method gets run from a data migration."""
 
