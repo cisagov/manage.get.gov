@@ -11,11 +11,27 @@
 
   <p>Your authorizing official is a person within your organization who can
   authorize domain requests. This person must be in a role of significant, executive responsibility within the organization. Read more about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/eligibility/#you-must-have-approval-from-an-authorizing-official-within-your-organization' %}">who can serve as an authorizing official</a>.</p>
-
+  
+  {% if organization_type == "federal" or organization_type == "tribal" %}
+    <p>
+      The authorizing official for your organization can’t be updated here.
+      To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+    </p>
+  {% else %}
   {% include "includes/required_fields.html" %}
+  {% endif %}
+  
 
   <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
     {% csrf_token %}
+
+    {% if organization_type == "federal" or organization_type == "tribal" %}
+    {# If all fields are disabled, add SR content #}
+    <div class="usa-sr-only" aria-labelledby="id_first_name" id="sr-ao-first-name">{{ form.first_name.value }}</div>
+    <div class="usa-sr-only" aria-labelledby="id_last_name" id="sr-ao-last-name">{{ form.last_name.value }}</div>
+    <div class="usa-sr-only" aria-labelledby="id_title" id="sr-ao-title">{{ form.title.value }}</div>
+    <div class="usa-sr-only" aria-labelledby="id_email" id="sr-ao-email">{{ form.email.value }}</div>
+    {% endif %}
 
     {% input_with_errors form.first_name %}
 
@@ -24,11 +40,9 @@
     {% input_with_errors form.title %}
 
     {% input_with_errors form.email %}
-
-    <button
-          type="submit"
-          class="usa-button"
-      >Save</button>
-    </form>
-
+    
+    {% if organization_type != "federal" and organization_type != "tribal" %}
+    <button type="submit" class="usa-button">Save</button>
+    {% endif %}
+  </form>
 {% endblock %}  {# domain_content #}
