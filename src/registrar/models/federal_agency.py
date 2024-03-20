@@ -213,6 +213,8 @@ class FederalAgency(TimeStampedModel):
         ]
 
         FederalAgency = apps.get_model("registrar", "FederalAgency")
+        ContentType = apps.get_model("contenttypes", "ContentType")
+
         logger.info("Creating federal agency table.")
 
         try:
