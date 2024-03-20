@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0076_alter_domainrequest_current_websites_and_more"),
+        ("registrar", "0077_alter_publiccontact_fax_alter_publiccontact_org_and_more"),
     ]
 
     operations = [
