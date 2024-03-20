@@ -1339,6 +1339,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "about_your_organization",
                 "requested_domain",
                 "approved_domain",
+                "other_contacts",
+                "current_websites",
                 "alternative_domains",
                 "purpose",
                 "submitter",
