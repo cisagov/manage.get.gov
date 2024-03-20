@@ -31,3 +31,12 @@ jobs:
           cf_space: ${{ secrets.CF_REPORT_ENV }}
           cf_command: "run-task getgov-${{ secrets.CF_REPORT_ENV }} --command 'python manage.py generate_current_full_report' --name full"
 
+      - name: Generate and email domain-metadata.csv
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ secrets.CF_REPORT_ENV }}
+          cf_command: "run-task getgov-${{ secrets.CF_REPORT_ENV }} --command 'python manage.py email_current_metadata_report' --name metadata"
+

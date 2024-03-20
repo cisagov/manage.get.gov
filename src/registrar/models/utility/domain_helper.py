@@ -188,3 +188,33 @@ class DomainHelper:
         common_fields = model_1_fields & model_2_fields
 
         return common_fields
+
+    @staticmethod
+    def mass_disable_fields(fields, disable_required=False, disable_maxlength=False):
+        """
+        Given some fields, invoke .disabled = True on them.
+        disable_required: bool -> invokes .required = False on each field.
+        disable_maxlength: bool -> pops "maxlength" from each field.
+        """
+        for field in fields.values():
+            field = DomainHelper.disable_field(field, disable_required, disable_maxlength)
+        return fields
+
+    @staticmethod
+    def disable_field(field, disable_required=False, disable_maxlength=False):
+        """
+        Given a fields, invoke .disabled = True on it.
+        disable_required: bool -> invokes .required = False for the field.
+        disable_maxlength: bool -> pops "maxlength" for the field.
+        """
+        field.disabled = True
+
+        if disable_required:
+            # if a field is disabled, it can't be required
+            field.required = False
+
+        if disable_maxlength:
+            # Remove the maxlength dialog
+            if "maxlength" in field.widget.attrs:
+                field.widget.attrs.pop("maxlength", None)
+        return field

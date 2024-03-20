@@ -1021,6 +1021,144 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         self.assertEqual("Testy2", self.domain_information.authorizing_official.first_name)
         self.assertEqual(ao_pk, self.domain_information.authorizing_official.id)
 
+    def assert_all_form_fields_have_expected_values(self, form, test_cases, test_for_disabled=False):
+        """
+        Asserts that each specified form field has the expected value and, optionally, checks if the field is disabled.
+
+        This method iterates over a list of tuples, where each
+        tuple contains a field name and the expected value for that field.
+        It uses subtests to isolate each assertion, allowing multiple field
+        checks within a single test method without stopping at the first failure.
+
+        Example usage:
+        test_cases = [
+            ("first_name", "John"),
+            ("last_name", "Doe"),
+            ("email", "john.doe@example.com"),
+        ]
+        self.assert_all_form_fields_have_expected_values(my_form, test_cases, test_for_disabled=True)
+        """
+        for field_name, expected_value in test_cases:
+            with self.subTest(field_name=field_name, expected_value=expected_value):
+                # Test that each field has the value we expect
+                self.assertEqual(expected_value, form[field_name].value)
+
+                if test_for_disabled:
+                    # Test for disabled on each field
+                    self.assertTrue("disabled" in form[field_name].attrs)
+
+    def test_domain_edit_authorizing_official_federal(self):
+        """Tests that no edit can occur when the underlying domain is federal"""
+
+        # Set the org type to federal
+        self.domain_information.organization_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.save()
+
+        # Add an AO. We can do this at the model level, just not the form level.
+        self.domain_information.authorizing_official = Contact(
+            first_name="Apple", last_name="Tester", title="CIO", email="nobody@igorville.gov"
+        )
+        self.domain_information.authorizing_official.save()
+        self.domain_information.save()
+
+        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Test if the form is populating data correctly
+        ao_form = ao_page.forms[0]
+
+        test_cases = [
+            ("first_name", "Apple"),
+            ("last_name", "Tester"),
+            ("title", "CIO"),
+            ("email", "nobody@igorville.gov"),
+        ]
+        self.assert_all_form_fields_have_expected_values(ao_form, test_cases, test_for_disabled=True)
+
+        # Attempt to change data on each field. Because this domain is federal,
+        # this should not succeed.
+        ao_form["first_name"] = "Orange"
+        ao_form["last_name"] = "Smoothie"
+        ao_form["title"] = "Cat"
+        ao_form["email"] = "somebody@igorville.gov"
+
+        submission = ao_form.submit()
+
+        # A 302 indicates this page underwent a redirect.
+        self.assertEqual(submission.status_code, 302)
+
+        followed_submission = submission.follow()
+
+        # Test the returned form for data accuracy. These values should be unchanged.
+        new_form = followed_submission.forms[0]
+        self.assert_all_form_fields_have_expected_values(new_form, test_cases, test_for_disabled=True)
+
+        # refresh domain information. Test these values in the DB.
+        self.domain_information.refresh_from_db()
+
+        # All values should be unchanged. These are defined manually for code clarity.
+        self.assertEqual("Apple", self.domain_information.authorizing_official.first_name)
+        self.assertEqual("Tester", self.domain_information.authorizing_official.last_name)
+        self.assertEqual("CIO", self.domain_information.authorizing_official.title)
+        self.assertEqual("nobody@igorville.gov", self.domain_information.authorizing_official.email)
+
+    def test_domain_edit_authorizing_official_tribal(self):
+        """Tests that no edit can occur when the underlying domain is tribal"""
+
+        # Set the org type to federal
+        self.domain_information.organization_type = DomainInformation.OrganizationChoices.TRIBAL
+        self.domain_information.save()
+
+        # Add an AO. We can do this at the model level, just not the form level.
+        self.domain_information.authorizing_official = Contact(
+            first_name="Apple", last_name="Tester", title="CIO", email="nobody@igorville.gov"
+        )
+        self.domain_information.authorizing_official.save()
+        self.domain_information.save()
+
+        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Test if the form is populating data correctly
+        ao_form = ao_page.forms[0]
+
+        test_cases = [
+            ("first_name", "Apple"),
+            ("last_name", "Tester"),
+            ("title", "CIO"),
+            ("email", "nobody@igorville.gov"),
+        ]
+        self.assert_all_form_fields_have_expected_values(ao_form, test_cases, test_for_disabled=True)
+
+        # Attempt to change data on each field. Because this domain is federal,
+        # this should not succeed.
+        ao_form["first_name"] = "Orange"
+        ao_form["last_name"] = "Smoothie"
+        ao_form["title"] = "Cat"
+        ao_form["email"] = "somebody@igorville.gov"
+
+        submission = ao_form.submit()
+
+        # A 302 indicates this page underwent a redirect.
+        self.assertEqual(submission.status_code, 302)
+
+        followed_submission = submission.follow()
+
+        # Test the returned form for data accuracy. These values should be unchanged.
+        new_form = followed_submission.forms[0]
+        self.assert_all_form_fields_have_expected_values(new_form, test_cases, test_for_disabled=True)
+
+        # refresh domain information. Test these values in the DB.
+        self.domain_information.refresh_from_db()
+
+        # All values should be unchanged. These are defined manually for code clarity.
+        self.assertEqual("Apple", self.domain_information.authorizing_official.first_name)
+        self.assertEqual("Tester", self.domain_information.authorizing_official.last_name)
+        self.assertEqual("CIO", self.domain_information.authorizing_official.title)
+        self.assertEqual("nobody@igorville.gov", self.domain_information.authorizing_official.email)
+
     def test_domain_edit_authorizing_official_creates_new(self):
         """When editing an authorizing official for domain information and AO IS
         joined to another object"""
@@ -1087,6 +1225,149 @@ class TestDomainOrganization(TestDomainOverview):
 
         self.assertContains(success_result_page, "Not igorville")
         self.assertContains(success_result_page, "Faketown")
+
+    def test_domain_org_name_address_form_tribal(self):
+        """
+        Submitting a change to organization_name is blocked for tribal domains
+        """
+        # Set the current domain to a tribal organization with a preset value.
+        # Save first, so we can test if saving is unaffected (it should be).
+        tribal_org_type = DomainInformation.OrganizationChoices.TRIBAL
+        self.domain_information.organization_type = tribal_org_type
+        self.domain_information.save()
+        try:
+            # Add an org name
+            self.domain_information.organization_name = "Town of Igorville"
+            self.domain_information.save()
+        except ValueError as err:
+            self.fail(f"A ValueError was caught during the test: {err}")
+
+        self.assertEqual(self.domain_information.organization_type, tribal_org_type)
+
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+
+        form = org_name_page.forms[0]
+        # Check the value of the input field
+        organization_name_input = form.fields["organization_name"][0]
+        self.assertEqual(organization_name_input.value, "Town of Igorville")
+
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in organization_name_input.attrs)
+        self.assertEqual(organization_name_input.attrs.get("disabled"), "")
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        org_name_page.form["organization_name"] = "Not igorville"
+        org_name_page.form["city"] = "Faketown"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Make the change. The org name should be unchanged, but city should be modifiable.
+        success_result_page = org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 200)
+
+        # Check for the old and new value
+        self.assertContains(success_result_page, "Town of Igorville")
+        self.assertNotContains(success_result_page, "Not igorville")
+
+        # Do another check on the form itself
+        form = success_result_page.forms[0]
+        # Check the value of the input field
+        organization_name_input = form.fields["organization_name"][0]
+        self.assertEqual(organization_name_input.value, "Town of Igorville")
+
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in organization_name_input.attrs)
+        self.assertEqual(organization_name_input.attrs.get("disabled"), "")
+
+        # Check for the value we want to update
+        self.assertContains(success_result_page, "Faketown")
+
+    def test_domain_org_name_address_form_federal(self):
+        """
+        Submitting a change to federal_agency is blocked for federal domains
+        """
+        # Set the current domain to a tribal organization with a preset value.
+        # Save first, so we can test if saving is unaffected (it should be).
+        fed_org_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.organization_type = fed_org_type
+        self.domain_information.save()
+        try:
+            self.domain_information.federal_agency = "AMTRAK"
+            self.domain_information.save()
+        except ValueError as err:
+            self.fail(f"A ValueError was caught during the test: {err}")
+
+        self.assertEqual(self.domain_information.organization_type, fed_org_type)
+
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+
+        form = org_name_page.forms[0]
+        # Check the value of the input field
+        agency_input = form.fields["federal_agency"][0]
+        self.assertEqual(agency_input.value, "AMTRAK")
+
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in agency_input.attrs)
+        self.assertEqual(agency_input.attrs.get("disabled"), "")
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        org_name_page.form["federal_agency"] = "Department of State"
+        org_name_page.form["city"] = "Faketown"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Make the change. The agency should be unchanged, but city should be modifiable.
+        success_result_page = org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 200)
+
+        # Check for the old and new value
+        self.assertContains(success_result_page, "AMTRAK")
+        self.assertNotContains(success_result_page, "Department of State")
+
+        # Do another check on the form itself
+        form = success_result_page.forms[0]
+        # Check the value of the input field
+        organization_name_input = form.fields["federal_agency"][0]
+        self.assertEqual(organization_name_input.value, "AMTRAK")
+
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in organization_name_input.attrs)
+        self.assertEqual(organization_name_input.attrs.get("disabled"), "")
+
+        # Check for the value we want to update
+        self.assertContains(success_result_page, "Faketown")
+
+    def test_federal_agency_submit_blocked(self):
+        """
+        Submitting a change to federal_agency is blocked for federal domains
+        """
+        # Set the current domain to a tribal organization with a preset value.
+        # Save first, so we can test if saving is unaffected (it should be).
+        federal_org_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.organization_type = federal_org_type
+        self.domain_information.save()
+
+        old_federal_agency_value = ("AMTRAK", "AMTRAK")
+        try:
+            # Add a federal agency. Defined as a tuple since this list may change order.
+            self.domain_information.federal_agency = old_federal_agency_value
+            self.domain_information.save()
+        except ValueError as err:
+            self.fail(f"A ValueError was caught during the test: {err}")
+
+        self.assertEqual(self.domain_information.organization_type, federal_org_type)
+
+        new_value = ("Department of State", "Department of State")
+        self.client.post(
+            reverse("domain-org-name-address", kwargs={"pk": self.domain.id}),
+            {
+                "federal_agency": new_value,
+            },
+        )
+        self.assertEqual(self.domain_information.federal_agency, old_federal_agency_value)
+        self.assertNotEqual(self.domain_information.federal_agency, new_value)
 
 
 class TestDomainContactInformation(TestDomainOverview):

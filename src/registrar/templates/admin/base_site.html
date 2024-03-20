@@ -20,7 +20,9 @@
   >
   <script src="{% static 'js/uswds-init.min.js' %}" defer></script>
   <script src="{% static 'js/uswds.min.js' %}" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script type="application/javascript" src="{% static 'js/get-gov-admin.js' %}" defer></script>
+  <script type="application/javascript" src="{% static 'js/get-gov-reports.js' %}" defer></script>
 {% endblock %}
 
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}

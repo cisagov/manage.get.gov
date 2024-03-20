@@ -1,6 +1,6 @@
 ---
 applications:
-- name: getgov-ab
+- name: getgov-bob
   buildpacks:
     - python_buildpack
   path: ../../src
@@ -18,7 +18,7 @@ applications:
     # Tell Django where to find its configuration
     DJANGO_SETTINGS_MODULE: registrar.config.settings
     # Tell Django where it is being hosted
-    DJANGO_BASE_URL: https://getgov-ab.app.cloud.gov
+    DJANGO_BASE_URL: https://getgov-bob.app.cloud.gov
     # Tell Django how much stuff to log
     DJANGO_LOG_LEVEL: INFO
     # default public site location
@@ -26,7 +26,7 @@ applications:
     # Flag to disable/enable features in prod environments
     IS_PRODUCTION: False
   routes:
-    - route: getgov-ab.app.cloud.gov
+    - route: getgov-bob.app.cloud.gov
   services:
   - getgov-credentials
-  - getgov-ab-database
+  - getgov-bob-database
