@@ -1,5 +1,5 @@
 {% extends "admin/fieldset.html" %}
-
+{% load static url_helpers %}
 {% comment %}
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endcomment %}
@@ -16,18 +16,38 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         {% else %}
                             {{ field.label_tag }}
                             {% if field.is_readonly %}
-                                <div class="readonly">{{ field.contents }}</div>
+                                {% if field.field.name == "other_contacts" %}
+                                    <div class="readonly">
+                                        {% for contact in field.contents|split:", " %}
+                                            <a href="#" class="other-contact__{{forloop.counter}}">{{ contact }}</a>{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% elif field.field.name == "current_websites" %}
+                                    {% comment %}
+                                    The "website" model is essentially just a text field.
+                                    It is not useful to be redirected to the object definition,
+                                    rather it is more useful in this scenario to be redirected to the
+                                    actual website (as its just a plaintext string otherwise).
+
+                                    This ONLY applies to analysts. For superusers, its business as usual.
+                                    {% endcomment %}
+                                    {% for website in field.contents|split:", " %}
+                                        <a href="{{ website }}" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="readonly">{{ field.contents }}</div>
+                                {% endif %}
                             {% else %}
                                 {{ field.field }}
                             {% endif %}
                         {% endif %}
                     </div>
                 {% if field.field.name == "creator" %}
-                    {% include "django/admin/includes/domain_request_detail_table.html" with user=original.creator start_opened=True %}
+                    {% include "django/admin/includes/domain_request_detail_table.html" with user=original.creator field_name="creator" %}
                 {% elif field.field.name == "submitter" %}
-                    {% include "django/admin/includes/domain_request_detail_table.html" with user=original.submitter start_opened=True %}
+                    {% include "django/admin/includes/domain_request_detail_table.html" with user=original.submitter field_name="submitter" %}
                 {% elif field.field.name == "authorizing_official" %}
-                    {% include "django/admin/includes/domain_request_detail_table.html" with user=original.authorizing_official start_opened=True %}
+                    {% include "django/admin/includes/domain_request_detail_table.html" with user=original.authorizing_official field_name="authorizing_official" %}
                 {% elif field.field.name == "other_contacts" %}
                     <details class="margin-top-1 dja-detail-table">
                         <summary class="padding-1 dja-details-summary">Details</summary>
@@ -35,7 +55,11 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                             <table>
                                 <tbody>
                                     {% for contact in original.other_contacts.all %}
-                                    <tr>
+                                    {% comment %}
+                                    Since we can't get the id from field, we can embed this information here.
+                                    Then we can link these two fields using javascript.
+                                    {% endcomment %}
+                                    <tr data-contact-id="{{ contact.id }}" data-contact-url="{% url 'admin:registrar_contact_change' contact.id %}">
                                         <th scope="row">{{contact.first_name}} {{contact.last_name}}</th>
                                         <td>{{ contact.title }}</td>
                                         <td>{{ contact.email }}</td>

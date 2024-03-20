@@ -361,6 +361,13 @@ details.dja-detail-table {
     }
 }
 
+table.dja-user-detail-table {
+    margin-left: 160px;
+    tr {
+        background-color: var(--body-bg);
+    }
+}
+
 .admin-icon-group {
     position: relative;
     display: flex;

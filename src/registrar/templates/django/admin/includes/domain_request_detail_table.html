@@ -1,28 +1,42 @@
 {% load i18n static %}
 
-
-<details class="margin-top-1 dja-detail-table" {% if start_opened %}open{% endif %}>
-    <summary class="padding-1 dja-details-summary">Details</summary>
-    <div class="grid-container padding-left-0 padding-right-0 dja-details-contents">
-        {% if user.title or user.email or user.phone %}
-        <table>
-            <tbody>
-                <tr>
-                    <th scope="row">Title</th>
-                    <td>{{ user.title }}</td>
-                </tr>
-                <tr>
-                    <th scope="row">Email</th>
-                    <td>{{ user.email }}</td>
-                </tr>
-                <tr>
-                    <th scope="row">Phone</th>
-                    <td>{{ user.phone }}</td>
-                </tr>
-            </tbody>
-        </table>
-        {% else %}
-        <div class="padding-1">No details found</div>
-        {% endif %}
-    </div>
-</details>
+<table class="dja-user-detail-table" {% if field_name %} id="id_detail_table__{{field_name}}" {% endif %}>
+    <tbody>
+        <tr>
+            <th class="padding-left-0" scope="row">Title</th>
+            {% if user.title or user.contact.title %}
+                {% if user.contact.title %}
+                <td>{{ user.contact.title }}</td>
+                {% else %}
+                <td>{{ user.title }}</td>
+                {% endif %}
+            {% else %}
+            <td>Nothing found</td>
+            {% endif %}
+        </tr>
+        <tr>
+            <th class="padding-left-0" scope="row">Email</th>
+            {% if user.email or user.contact.email %}
+                {% if user.contact.email %}
+                <td>{{ user.contact.email }}</td>
+                {% else %}
+                <td>{{ user.email }}</td>
+                {% endif %}
+            {% else %}
+            <td>Nothing found</td>
+            {% endif %}
+        </tr>
+        <tr>
+            <th class="padding-left-0" scope="row">Phone</th>
+            {% if user.phone or user.contact.phone %}
+                {% if user.contact.phone %}
+                <td>{{ user.contact.phone }}</td>
+                {% else %}
+                <td>{{ user.phone }}</td>
+                {% endif %}
+            {% else %}
+            <td>Nothing found</td>
+            {% endif %}
+        </tr>
+    </tbody>
+</table>

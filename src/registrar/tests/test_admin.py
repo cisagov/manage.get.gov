@@ -2,6 +2,7 @@ from datetime import date
 from django.test import TestCase, RequestFactory, Client, override_settings
 from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
+from api.tests.common import less_console_noise_decorator
 from django_webtest import WebTest  # type: ignore
 from django.contrib import messages
 from django.urls import reverse
@@ -1193,6 +1194,182 @@ class TestDomainRequestAdmin(MockEppLib):
             # Test that approved domain exists and equals requested domain
             self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)
 
+    @less_console_noise_decorator
+    def test_other_contacts_has_readonly_link(self):
+        """Tests if the readonly other_contacts field has links"""
+
+        # Create a fake domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+
+        # Get the other contact
+        other_contact = domain_request.other_contacts.all().first()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Check that the page contains the url we expect
+        expected_href = reverse("admin:registrar_contact_change", args=[other_contact.id])
+        self.assertContains(response, expected_href)
+
+        # Check that the page contains the link we expect.
+        # Since the url is dynamic (populated by JS), we can test for its existence
+        # by checking for the end tag.
+        expected_url = "Testy Tester</a>"
+        self.assertContains(response, expected_url)
+
+    @less_console_noise_decorator
+    def test_other_websites_has_readonly_link(self):
+        """Tests if the readonly other_websites field has links"""
+
+        # Create a fake domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Check that the page contains the link we expect.
+        expected_url = '<a href="city.com" class="padding-top-1 current-website__1">city.com</a>'
+        self.assertContains(response, expected_url)
+
+    def assert_response_contains_distinct_values(self, response, expected_values):
+        """
+        Asserts that each specified value appears exactly once in the response.
+
+        This method iterates over a list of tuples, where each tuple contains a field name
+        and its expected value. It then performs an assertContains check for each value,
+        ensuring that each value appears exactly once in the response.
+
+        Parameters:
+        - response: The HttpResponse object to inspect.
+        - expected_values: A list of tuples, where each tuple contains:
+            - field: The name of the field (used for subTest identification).
+            - value: The expected value to check for in the response.
+
+        Example usage:
+        expected_values = [
+            ("title", "Treat inspector</td>"),
+            ("email", "meoward.jones@igorville.gov</td>"),
+        ]
+        self.assert_response_contains_distinct_values(response, expected_values)
+        """
+        for field, value in expected_values:
+            with self.subTest(field=field, expected_value=value):
+                self.assertContains(response, value, count=1)
+
+    @less_console_noise_decorator
+    def test_contact_fields_have_detail_table(self):
+        """Tests if the contact fields have the detail table which displays title, email, and phone"""
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+        )
+
+        # Due to the relation between User <==> Contact,
+        # the underlying contact has to be modified this way.
+        _creator.contact.email = "meoward.jones@igorville.gov"
+        _creator.contact.phone = "(555) 123 12345"
+        _creator.contact.title = "Treat inspector"
+        _creator.contact.save()
+
+        # Create a fake domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Check that the modal has the right content
+        # Check for the header
+
+        # == Check for the creator == #
+
+        # Check for the right title, email, and phone number in the response.
+        # We only need to check for the end tag
+        # (Otherwise this test will fail if we change classes, etc)
+        expected_creator_fields = [
+            # Field, expected value
+            ("title", "Treat inspector</td>"),
+            ("email", "meoward.jones@igorville.gov</td>"),
+            ("phone", "(555) 123 12345</td>"),
+        ]
+        self.assert_response_contains_distinct_values(response, expected_creator_fields)
+
+        # Check for the field itself
+        self.assertContains(response, "Meoward Jones")
+
+        # == Check for the submitter == #
+        expected_submitter_fields = [
+            # Field, expected value
+            ("title", "Admin Tester</td>"),
+            ("email", "mayor@igorville.gov</td>"),
+            ("phone", "(555) 555 5556</td>"),
+        ]
+        self.assert_response_contains_distinct_values(response, expected_submitter_fields)
+        self.assertContains(response, "Testy2 Tester2")
+
+        # == Check for the authorizing_official == #
+        expected_ao_fields = [
+            # Field, expected value
+            ("title", "Chief Tester</td>"),
+            ("email", "testy@town.com</td>"),
+            ("phone", "(555) 555 5555</td>"),
+        ]
+        self.assert_response_contains_distinct_values(response, expected_ao_fields)
+
+        # count=4 because the underlying domain has two users with this name.
+        # The dropdown has 3 of these.
+        self.assertContains(response, "Testy Tester", count=4)
+
+        # Check for table titles. We only need to check for the end tag
+        # (Otherwise this test will fail if we change classes, etc)
+
+        # Title. Count=3 because this table appears on three records.
+        self.assertContains(response, "Title</th>", count=3)
+
+        # Email. Count=3 because this table appears on three records.
+        self.assertContains(response, "Email</th>", count=3)
+
+        # Phone. Count=3 because this table appears on three records.
+        self.assertContains(response, "Phone</th>", count=3)
+
+        # == Test the other_employees field == #
+        expected_other_employees_fields = [
+            # Field, expected value
+            ("title", "Another Tester</td>"),
+            ("email", "testy2@town.com</td>"),
+            ("phone", "(555) 555 5557</td>"),
+        ]
+        self.assert_response_contains_distinct_values(response, expected_other_employees_fields)
+
+        # count=1 as only one should exist in a table
+        self.assertContains(response, "Testy Tester</th>", count=1)
+
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
             # make sure there is no user with this email
@@ -1340,6 +1517,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "requested_domain",
                 "approved_domain",
                 "alternative_domains",
+                "other_contacts",
+                "current_websites",
                 "purpose",
                 "submitter",
                 "no_other_contacts_rationale",
