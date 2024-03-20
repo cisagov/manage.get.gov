@@ -3,9 +3,9 @@ import logging
 import copy
 
 from django import forms
-from django.db.models.functions import Concat, Coalesce
 from django.db.models import Value, CharField, Q
-from django.http import HttpResponse, HttpResponseRedirect
+from django.db.models.functions import Concat, Coalesce
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
@@ -16,7 +16,6 @@ from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
-from registrar.utility import csv_export
 from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -995,6 +994,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
+    change_form_template = "django/admin/domain_application_change_form.html"
+
     # Columns
     list_display = [
         "requested_domain",
@@ -1463,11 +1464,24 @@ class DomainAdmin(ListHeaderAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state", "expiration_date", "first_ready", "deleted"]
 
     # Table ordering
     ordering = ["name"]
+
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/domain_delete_selected_confirmation.html"
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """
+        Custom delete_view to perform additional actions or customize the template.
+        """
+
+        # Set the delete template to a custom one
+        self.delete_confirmation_template = "django/admin/domain_delete_confirmation.html"
+        response = super().delete_view(request, object_id, extra_context=extra_context)
+
+        return response
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         """Custom changeform implementation to pass in context information"""
@@ -1495,56 +1509,6 @@ class DomainAdmin(ListHeaderAdmin):
             extra_context["extended_expiration_date"] = None
 
         return super().changeform_view(request, object_id, form_url, extra_context)
-
-    def export_data_type(self, request):
-        # match the CSV example with all the fields
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="domains-by-type.csv"'
-        csv_export.export_data_type_to_csv(response)
-        return response
-
-    def export_data_full(self, request):
-        # Smaller export based on 1
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="current-full.csv"'
-        csv_export.export_data_full_to_csv(response)
-        return response
-
-    def export_data_federal(self, request):
-        # Federal only
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="current-federal.csv"'
-        csv_export.export_data_federal_to_csv(response)
-        return response
-
-    def get_urls(self):
-        from django.urls import path
-
-        urlpatterns = super().get_urls()
-
-        # Used to extrapolate a path name, for instance
-        # name="{app_label}_{model_name}_export_data_type"
-        info = self.model._meta.app_label, self.model._meta.model_name
-
-        my_url = [
-            path(
-                "export_data_type/",
-                self.export_data_type,
-                name="%s_%s_export_data_type" % info,
-            ),
-            path(
-                "export_data_full/",
-                self.export_data_full,
-                name="%s_%s_export_data_full" % info,
-            ),
-            path(
-                "export_data_federal/",
-                self.export_data_federal,
-                name="%s_%s_export_data_federal" % info,
-            ),
-        ]
-
-        return my_url + urlpatterns
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
@@ -1677,9 +1641,11 @@ class DomainAdmin(ListHeaderAdmin):
             else:
                 self.message_user(
                     request,
-                    "Error deleting this Domain: "
-                    f"Can't switch from state '{obj.state}' to 'deleted'"
-                    ", must be either 'dns_needed' or 'on_hold'",
+                    (
+                        "Error deleting this Domain: "
+                        f"Can't switch from state '{obj.state}' to 'deleted'"
+                        ", must be either 'dns_needed' or 'on_hold'"
+                    ),
                     messages.ERROR,
                 )
         except Exception:
@@ -1691,7 +1657,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("Domain %s has been deleted. Thanks!") % obj.name,
+                "Domain %s has been deleted. Thanks!" % obj.name,
             )
 
         return HttpResponseRedirect(".")
@@ -1733,7 +1699,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("%s is in client hold. This domain is no longer accessible on the public internet.") % obj.name,
+                "%s is in client hold. This domain is no longer accessible on the public internet." % obj.name,
             )
         return HttpResponseRedirect(".")
 
@@ -1762,7 +1728,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("%s is ready. This domain is accessible on the public internet.") % obj.name,
+                "%s is ready. This domain is accessible on the public internet." % obj.name,
             )
         return HttpResponseRedirect(".")
 
@@ -1807,9 +1773,6 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
     search_help_text = "Search by email."
-    list_filter = [
-        "requestor",
-    ]
     readonly_fields = [
         "requestor",
     ]

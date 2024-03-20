@@ -64,6 +64,11 @@
       </table>
     </div>
   {% endfor %}
+  <div class="module module--custom">
+    <h2>Analytics</h2>
+    <a class="display-block padding-y-1 padding-x-1" href="{% url 'analytics' %}">Dashboard</a>
+  </div>
 {% else %}
   <p>{% translate 'You don’t have permission to view or edit anything.' %}</p>
 {% endif %}
+

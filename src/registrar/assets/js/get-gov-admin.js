@@ -29,20 +29,26 @@ function openInNewTab(el, removeAttribute = false){
 */
 (function (){
     function createPhantomModalFormButtons(){
-        let submitButtons = document.querySelectorAll('.usa-modal button[type="submit"]');
+        let submitButtons = document.querySelectorAll('.usa-modal button[type="submit"].dja-form-placeholder');
         form = document.querySelector("form")
         submitButtons.forEach((button) => {
 
             let input = document.createElement("input");
             input.type = "submit";
-            input.name = button.name;
-            input.value = button.value;
+
+            if(button.name){
+                input.name = button.name;
+            }
+
+            if(button.value){
+                input.value = button.value;
+            }
+
             input.style.display = "none"
 
             // Add the hidden input to the form
             form.appendChild(input);
             button.addEventListener("click", () => {
-                console.log("clicking")
                 input.click();
             })
         })
@@ -50,6 +56,61 @@ function openInNewTab(el, removeAttribute = false){
 
     createPhantomModalFormButtons();
 })();
+
+/** An IIFE for DomainRequest to hook a modal to a dropdown option.
+ * This intentionally does not interact with createPhantomModalFormButtons()
+*/
+(function (){
+    function displayModalOnDropdownClick(linkClickedDisplaysModal, statusDropdown, actionButton, valueToCheck){
+
+        // If these exist all at the same time, we're on the right page
+        if (linkClickedDisplaysModal && statusDropdown && statusDropdown.value){
+            
+            // Set the previous value in the event the user cancels.
+            let previousValue = statusDropdown.value;
+            if (actionButton){
+
+                // Otherwise, if the confirmation buttion is pressed, set it to that
+                actionButton.addEventListener('click', function() {
+                    // Revert the dropdown to its previous value
+                    statusDropdown.value = valueToCheck;
+                });
+            }else {
+                console.log("displayModalOnDropdownClick() -> Cancel button was null")
+            }
+
+            // Add a change event listener to the dropdown.
+            statusDropdown.addEventListener('change', function() {
+                // Check if "Ineligible" is selected
+                if (this.value && this.value.toLowerCase() === valueToCheck) {
+                    // Set the old value in the event the user cancels,
+                    // or otherwise exists the dropdown.
+                    statusDropdown.value = previousValue
+
+                    // Display the modal.
+                    linkClickedDisplaysModal.click()
+                }
+            });
+        }
+    }
+
+    // When the status dropdown is clicked and is set to "ineligible", toggle a confirmation dropdown.
+    function hookModalToIneligibleStatus(){
+        // Grab the invisible element that will hook to the modal.
+        // This doesn't technically need to be done with one, but this is simpler to manage.
+        let modalButton = document.getElementById("invisible-ineligible-modal-toggler")
+        let statusDropdown = document.getElementById("id_status")
+
+        // Because the modal button does not have the class "dja-form-placeholder",
+        // it will not be affected by the createPhantomModalFormButtons() function.
+        let actionButton = document.querySelector('button[name="_set_domain_request_ineligible"]');
+        let valueToCheck = "ineligible"
+        displayModalOnDropdownClick(modalButton, statusDropdown, actionButton, valueToCheck);
+    }
+
+    hookModalToIneligibleStatus()
+})();
+
 /** An IIFE for pages in DjangoAdmin which may need custom JS implementation.
  * Currently only appends target="_blank" to the domain_form object,
  * but this can be expanded.
@@ -306,43 +367,6 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     viewLink.setAttribute('href', viewLink.getAttribute('data-href-template').replace('__fk__', elementPk));
     viewLink.setAttribute('title', viewLink.getAttribute('title-template').replace('selected item', elementText));
 }
-
-/** An IIFE for admin in DjangoAdmin to listen to clicks on the growth report export button,
- * attach the seleted start and end dates to a url that'll trigger the view, and finally
- * redirect to that url.
-*/
-(function (){
-
-    // Get the current date in the format YYYY-MM-DD
-    let currentDate = new Date().toISOString().split('T')[0];
-
-    // Default the value of the start date input field to the current date
-    let startDateInput =document.getElementById('start');
-
-    // Default the value of the end date input field to the current date
-    let endDateInput =document.getElementById('end');
-
-    let exportGrowthReportButton = document.getElementById('exportLink');
-
-    if (exportGrowthReportButton) {
-        startDateInput.value = currentDate;
-        endDateInput.value = currentDate;
-
-        exportGrowthReportButton.addEventListener('click', function() {
-            // Get the selected start and end dates
-            let startDate = startDateInput.value;
-            let endDate = endDateInput.value;
-            let exportUrl = document.getElementById('exportLink').dataset.exportUrl;
-
-            // Build the URL with parameters
-            exportUrl += "?start_date=" + startDate + "&end_date=" + endDate;
-        
-            // Redirect to the export URL
-            window.location.href = exportUrl;
-        });
-    }
-
-})();
 
 /** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
  * status select amd to show/hide the rejection reason
