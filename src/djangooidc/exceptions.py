@@ -33,7 +33,7 @@ class AuthenticationFailed(OIDCException):
     friendly_message = "This login attempt didn't work."
 
 
-class StateMismatch(OIDCException):
+class StateMismatch(AuthenticationFailed):
     friendly_message = "State mismatch. This login attempt didn't work."
 
 

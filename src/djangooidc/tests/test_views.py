@@ -132,10 +132,11 @@ class ViewsTest(TestCase):
         """If the local session does not match the OP session,
         we do not throw an exception. Rather, we attempt to login again."""
         with less_console_noise():
-            # MOCK
+            # MOCK get_default_acr_value and the callback to raise StateMismatch
+            # error when called
             mock_client.get_default_acr_value.side_effect = self.create_acr
             mock_client.callback.side_effect = StateMismatch()
-            # TEST
+            # TEST receiving a response from login.gov
             response = self.client.get(reverse("openid_login_callback"))
             # ASSERT
             self.assertEqual(response.status_code, 302)
@@ -146,16 +147,17 @@ class ViewsTest(TestCase):
     def test_login_callback_with_no_session_state_attempt_again_only_once(self, mock_client):
         """We only attempt to relogin once. After that, it's the error page for you."""
         with less_console_noise():
-            # MOCK
+            # MOCK get_default_acr_value, redirect_attempted to True and the callback
+            # to raise StateMismatch error when called
             mock_client.get_default_acr_value.side_effect = self.create_acr
             mock_client.callback.side_effect = StateMismatch()
             session = self.client.session
             session["redirect_attempted"] = True
             session.save()
-            # TEST
+            # TEST receiving a response from login.gov
             response = self.client.get(reverse("openid_login_callback"))
             # ASSERT
-            self.assertEqual(response.status_code, 500)
+            self.assertEqual(response.status_code, 401)
 
     def test_login_callback_reads_next(self, mock_client):
         """If the next value is set in the session, test that login_callback returns
