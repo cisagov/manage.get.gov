@@ -1,18 +1,42 @@
 {% load i18n static %}
 
-<table class="dja-user-detail-table">
+<table class="dja-user-detail-table" {% if field_name %} id="id_detail_table__{{field_name}}" {% endif %}>
     <tbody>
         <tr>
             <th class="padding-left-0" scope="row">Title</th>
-            <td>{{ user.title }}</td>
+            {% if user.title or user.contact.title %}
+                {% if user.contact.title %}
+                <td>{{ user.contact.title }}</td>
+                {% else %}
+                <td>{{ user.title }}</td>
+                {% endif %}
+            {% else %}
+            <td>Nothing found</td>
+            {% endif %}
         </tr>
         <tr>
             <th class="padding-left-0" scope="row">Email</th>
-            <td>{{ user.email }}</td>
+            {% if user.email or user.contact.email %}
+                {% if user.contact.email %}
+                <td>{{ user.contact.email }}</td>
+                {% else %}
+                <td>{{ user.email }}</td>
+                {% endif %}
+            {% else %}
+            <td>Nothing found</td>
+            {% endif %}
         </tr>
         <tr>
             <th class="padding-left-0" scope="row">Phone</th>
-            <td>{{ user.phone }}</td>
+            {% if user.phone or user.contact.phone %}
+                {% if user.contact.phone %}
+                <td>{{ user.contact.phone }}</td>
+                {% else %}
+                <td>{{ user.phone }}</td>
+                {% endif %}
+            {% else %}
+            <td>Nothing found</td>
+            {% endif %}
         </tr>
     </tbody>
 </table>

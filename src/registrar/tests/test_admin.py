@@ -2,6 +2,7 @@ from datetime import date
 from django.test import TestCase, RequestFactory, Client, override_settings
 from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
+from api.tests.common import less_console_noise_decorator
 from django_webtest import WebTest  # type: ignore
 from django.contrib import messages
 from django.urls import reverse
@@ -1193,6 +1194,63 @@ class TestDomainRequestAdmin(MockEppLib):
             # Test that approved domain exists and equals requested domain
             self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)
 
+    @less_console_noise_decorator
+    def test_creator_has_detail_table(self):
+        """Tests if the "creator" field has the detail table which displays title, email, and phone"""
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name = "Meoward",
+            last_name = "Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector"
+        )
+        # Create a fake domain request
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            creator=_creator
+        )
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Check that the modal has the right content
+        # Check for the header
+        
+        # Check for the creator
+        self.assertContains(response, "Meoward Jones")
+        # Check that it is readonly
+        self.assertContains(response, "")
+
+        # Check for the right title, email, and phone number in the response
+
+        # Title
+        self.assertContains(response, "Treat inspector")
+
+        # Email
+        self.assertContains(response, "meoward.jones@igorville.gov")
+
+        # Phone number
+        self.assertContains(response, "(555) 123 12345")
+
+        # Check for table titles
+
+        # Title. We only need to check for the end tag
+        # (Otherwise this test will fail if we change classes, etc)
+        self.assertContains(response, "Title</th>")
+        self.assertContains(response, "Email</th>")
+        self.assertContains(response, "Phone</th>")
+
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
             # make sure there is no user with this email
@@ -1339,9 +1397,9 @@ class TestDomainRequestAdmin(MockEppLib):
                 "about_your_organization",
                 "requested_domain",
                 "approved_domain",
+                "alternative_domains",
                 "other_contacts",
                 "current_websites",
-                "alternative_domains",
                 "purpose",
                 "submitter",
                 "no_other_contacts_rationale",

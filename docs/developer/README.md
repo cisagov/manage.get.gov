@@ -204,6 +204,16 @@ from .common import less_console_noise
             # <test code goes here>
 ```
 
+Or alternatively, if you prefer using a decorator, just use:
+
+```python
+from .common import less_console_noise_decorator
+
+@less_console_noise_decorator
+def some_function():
+  # <test code goes here>
+```
+
 ### Accessibility Testing in the browser
 
 We use the [ANDI](https://www.ssa.gov/accessibility/andi/help/install.html) browser extension 
