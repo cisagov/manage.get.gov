@@ -22,6 +22,18 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                             <a href="#" class="other-contact__{{forloop.counter}}">{{ contact }}</a>{% if not forloop.last %}, {% endif %}
                                         {% endfor %}
                                     </div>
+                                {% elif field.field.name == "current_websites" %}
+                                    {% comment %}
+                                    The "website" model is essentially just a text field.
+                                    It is not useful to be redirected to the object definition,
+                                    rather it is more useful in this scenario to be redirected to the
+                                    actual website (as its just a plaintext string otherwise).
+
+                                    This ONLY applies to analysts. For superusers, its business as usual.
+                                    {% endcomment %}
+                                    {% for website in field.contents|split:", " %}
+                                        <a href="{{ website }}" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
                                 {% else %}
                                     <div class="readonly">{{ field.contents }}</div>
                                 {% endif %}

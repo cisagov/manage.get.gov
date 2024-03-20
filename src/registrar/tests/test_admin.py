@@ -1247,7 +1247,29 @@ class TestDomainRequestAdmin(MockEppLib):
         # Check that the page contains the link we expect.
         # Since the url is dynamic (populated by JS), we can test for its existence
         # by checking for the end tag.
-        expected_url = f"Testy Tester</a>"
+        expected_url = "Testy Tester</a>"
+        self.assertContains(response, expected_url)
+
+    @less_console_noise_decorator
+    def test_other_websites_has_readonly_link(self):
+        """Tests if the readonly other_websites field has links"""
+
+        # Create a fake domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Check that the page contains the link we expect.
+        expected_url = '<a href="city.com" class="padding-top-1 current-website__1">city.com</a>'
         self.assertContains(response, expected_url)
 
     @less_console_noise_decorator
