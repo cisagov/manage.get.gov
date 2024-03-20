@@ -262,8 +262,8 @@ class AuthorizingOfficialContactForm(ContactForm):
             return super().save()
 
         # Determine if the domain is federal or tribal
-        is_federal = self.domainInfo.organization_type == DomainRequest.OrganizationChoices.FEDERAL
-        is_tribal = self.domainInfo.organization_type == DomainRequest.OrganizationChoices.TRIBAL
+        is_federal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+        is_tribal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
 
         # Get the Contact object from the db for the Authorizing Official
         db_ao = Contact.objects.get(id=self.instance.id)
@@ -363,8 +363,8 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
 
-        self.is_federal = self.instance.organization_type == DomainRequest.OrganizationChoices.FEDERAL
-        self.is_tribal = self.instance.organization_type == DomainRequest.OrganizationChoices.TRIBAL
+        self.is_federal = self.instance.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+        self.is_tribal = self.instance.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
 
         field_to_disable = None
         if self.is_federal:
@@ -384,9 +384,9 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             # If they get past this point, we forbid it this way.
             # This could be malicious, so lets reserve information for the backend only.
             if self.is_federal and not self._field_unchanged("federal_agency"):
-                raise ValueError("federal_agency cannot be modified when the organization_type is federal")
+                raise ValueError("federal_agency cannot be modified when the generic_org_type is federal")
             elif self.is_tribal and not self._field_unchanged("organization_name"):
-                raise ValueError("organization_name cannot be modified when the organization_type is tribal")
+                raise ValueError("organization_name cannot be modified when the generic_org_type is tribal")
 
         else:
             super().save()

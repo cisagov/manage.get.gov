@@ -286,7 +286,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
             # for our actual domain_request
             self.assertContains(response, "Federal", count=8)
             # This may be a bit more robust
-            self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
+            self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
             self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -692,7 +692,7 @@ class TestDomainRequestAdmin(MockEppLib):
             # for our actual domain request
             self.assertContains(response, "Federal", count=6)
             # This may be a bit more robust
-            self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
+            self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
             self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -1295,7 +1295,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "rejection_reason",
                 "creator",
                 "investigator",
-                "organization_type",
+                "generic_org_type",
                 "federally_recognized_tribe",
                 "state_recognized_tribe",
                 "tribe_name",
@@ -1503,7 +1503,7 @@ class TestDomainRequestAdmin(MockEppLib):
             readonly_fields = self.admin.get_list_filter(request)
             expected_fields = (
                 "status",
-                "organization_type",
+                "generic_org_type",
                 "federal_type",
                 DomainRequestAdmin.ElectionOfficeFilter,
                 "rejection_reason",
