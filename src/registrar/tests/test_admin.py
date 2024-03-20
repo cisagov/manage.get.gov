@@ -1219,15 +1219,15 @@ class TestDomainRequestAdmin(MockEppLib):
             with self.subTest(field=field, expected_value=value):
                 self.assertContains(response, value, count=1)
 
-        @less_console_noise_decorator
-    def test_other_contacts_readonly_has_link(self):
+    @less_console_noise_decorator
+    def test_other_contacts_has_readonly_link(self):
         """Tests if the readonly other_contacts field has links"""
 
         # Create a fake domain request
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            user=_creator
-        )
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+
+        # Get the other contact
+        other_contact = domain_request.other_contacts.all().first()
 
         p = "userpass"
         self.client.login(username="staffuser", password=p)
@@ -1240,6 +1240,16 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain_request.requested_domain.name)
 
+        # Check that the page contains the url we expect
+        expected_href = reverse("admin:registrar_contact_change", args=[other_contact.id])
+        self.assertContains(response, expected_href)
+
+        # Check that the page contains the link we expect.
+        # Since the url is dynamic (populated by JS), we can test for its existence
+        # by checking for the end tag.
+        expected_url = f"Testy Tester</a>"
+        self.assertContains(response, expected_url)
+
     @less_console_noise_decorator
     def test_contact_fields_have_detail_table(self):
         """Tests if the contact fields have the detail table which displays title, email, and phone"""
@@ -1247,8 +1257,8 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create fake creator
         _creator = User.objects.create(
             username="MrMeoward",
-            first_name = "Meoward",
-            last_name = "Jones",
+            first_name="Meoward",
+            last_name="Jones",
         )
 
         # Due to the relation between User <==> Contact,
@@ -1259,10 +1269,7 @@ class TestDomainRequestAdmin(MockEppLib):
         _creator.contact.save()
 
         # Create a fake domain request
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            user=_creator
-        )
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
 
         p = "userpass"
         self.client.login(username="staffuser", password=p)
@@ -1277,9 +1284,8 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Check that the modal has the right content
         # Check for the header
-        
-        # == Check for the creator == # 
-        self.assertContains(response, "Meoward Jones")
+
+        # == Check for the creator == #
 
         # Check for the right title, email, and phone number in the response.
         # We only need to check for the end tag
@@ -1288,31 +1294,32 @@ class TestDomainRequestAdmin(MockEppLib):
             # Field, expected value
             ("title", "Treat inspector</td>"),
             ("email", "meoward.jones@igorville.gov</td>"),
-            ("phone", "(555) 123 12345</td>")
+            ("phone", "(555) 123 12345</td>"),
         ]
         self.assert_response_contains_distinct_values(response, expected_creator_fields)
 
-        # == Check for the submitter == # 
-        self.assertContains(response, "Testy2 Tester2")
+        # Check for the field itself
+        self.assertContains(response, "Meoward Jones")
 
+        # == Check for the submitter == #
         expected_submitter_fields = [
             # Field, expected value
             ("title", "Admin Tester</td>"),
             ("email", "mayor@igorville.gov</td>"),
-            ("phone", "(555) 555 5556</td>")
+            ("phone", "(555) 555 5556</td>"),
         ]
         self.assert_response_contains_distinct_values(response, expected_submitter_fields)
+        self.assertContains(response, "Testy2 Tester2")
 
-        # == Check for the authorizing_official == # 
-        self.assertContains(response, "Testy Tester")
-
+        # == Check for the authorizing_official == #
         expected_ao_fields = [
             # Field, expected value
             ("title", "Chief Tester</td>"),
             ("email", "testy@town.com</td>"),
-            ("phone", "(555) 555 5555</td>")
+            ("phone", "(555) 555 5555</td>"),
         ]
         self.assert_response_contains_distinct_values(response, expected_ao_fields)
+        self.assertContains(response, "Testy Tester")
 
         # Check for table titles. We only need to check for the end tag
         # (Otherwise this test will fail if we change classes, etc)

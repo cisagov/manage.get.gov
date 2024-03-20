@@ -33,6 +33,7 @@ def split_string(value, key):
     """
     return value.split(key)
 
+
 @register.simple_tag
 def public_site_url(url_path):
     """Make a full URL for this path at our public site.
