@@ -1341,7 +1341,10 @@ class TestDomainRequestAdmin(MockEppLib):
             ("phone", "(555) 555 5555</td>"),
         ]
         self.assert_response_contains_distinct_values(response, expected_ao_fields)
-        self.assertContains(response, "Testy Tester")
+
+        # count=4 because the underlying domain has two users with this name.
+        # The dropdown has 3 of these.
+        self.assertContains(response, "Testy Tester", count=4)
 
         # Check for table titles. We only need to check for the end tag
         # (Otherwise this test will fail if we change classes, etc)
@@ -1354,6 +1357,18 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Phone. Count=3 because this table appears on three records.
         self.assertContains(response, "Phone</th>", count=3)
+
+        # == Test the other_employees field == #
+        expected_other_employees_fields = [
+            # Field, expected value
+            ("title", "Another Tester</td>"),
+            ("email", "testy2@town.com</td>"),
+            ("phone", "(555) 555 5557</td>"),
+        ]
+        self.assert_response_contains_distinct_values(response, expected_other_employees_fields)
+
+        # count=1 as only one should exist in a table
+        self.assertContains(response, "Testy Tester</th>", count=1)
 
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
