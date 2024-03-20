@@ -112,7 +112,8 @@ html[data-theme="light"] {
     .change-list .usa-table thead th,
     body.dashboard,
     body.change-list,
-    body.change-form {
+    body.change-form,
+    .analytics {
         color: var(--body-fg);
     }
 }
@@ -304,7 +305,36 @@ input.admin-confirm-button {
     }
 }
 
-.django-admin-modal .usa-prose ul > li {
+.usa-button-group {
+    margin-left: -0.25rem!important;
+    padding-left: 0!important;
+    .usa-button-group__item {
+        list-style-type: none;
+        line-height: normal;
+    }
+    .button {
+        display: inline-block;
+        padding: 10px 8px;
+        line-height: normal;
+    }
+    .usa-icon {
+        top: 2px;
+    }
+    a.button:active, a.button:focus {
+        text-decoration: none;
+    }
+}
+
+.module--custom {
+    a {
+        font-size: 13px;
+        font-weight: 600;
+        border: solid 1px var(--darkened-bg);
+        background: var(--darkened-bg);
+    }
+}
+
+.usa-modal--django-admin .usa-prose ul > li {
     list-style-type: inherit;
     // Styling based off of the <p> styling in django admin
     line-height: 1.5;

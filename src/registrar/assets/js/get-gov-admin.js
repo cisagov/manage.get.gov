@@ -412,43 +412,6 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     viewLink.setAttribute('title', viewLink.getAttribute('title-template').replace('selected item', elementText));
 }
 
-/** An IIFE for admin in DjangoAdmin to listen to clicks on the growth report export button,
- * attach the seleted start and end dates to a url that'll trigger the view, and finally
- * redirect to that url.
-*/
-(function (){
-
-    // Get the current date in the format YYYY-MM-DD
-    let currentDate = new Date().toISOString().split('T')[0];
-
-    // Default the value of the start date input field to the current date
-    let startDateInput =document.getElementById('start');
-
-    // Default the value of the end date input field to the current date
-    let endDateInput =document.getElementById('end');
-
-    let exportGrowthReportButton = document.getElementById('exportLink');
-
-    if (exportGrowthReportButton) {
-        startDateInput.value = currentDate;
-        endDateInput.value = currentDate;
-
-        exportGrowthReportButton.addEventListener('click', function() {
-            // Get the selected start and end dates
-            let startDate = startDateInput.value;
-            let endDate = endDateInput.value;
-            let exportUrl = document.getElementById('exportLink').dataset.exportUrl;
-
-            // Build the URL with parameters
-            exportUrl += "?start_date=" + startDate + "&end_date=" + endDate;
-        
-            // Redirect to the export URL
-            window.location.href = exportUrl;
-        });
-    }
-
-})();
-
 /** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
  * status select amd to show/hide the rejection reason
 */

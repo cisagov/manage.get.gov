@@ -330,8 +330,9 @@ CSP_FORM_ACTION = allowed_sources
 
 # Google analytics requires that we relax our otherwise
 # strict CSP by allowing scripts to run from their domain
-# and inline with a nonce, as well as allowing connections back to their domain
-CSP_SCRIPT_SRC_ELEM = ["'self'", "https://www.googletagmanager.com/"]
+# and inline with a nonce, as well as allowing connections back to their domain.
+# Note: If needed, we can embed chart.js instead of using the CDN
+CSP_SCRIPT_SRC_ELEM = ["'self'", "https://www.googletagmanager.com/", "https://cdn.jsdelivr.net/npm/chart.js"]
 CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/"]
 CSP_INCLUDE_NONCE_IN = ["script-src-elem"]
 
