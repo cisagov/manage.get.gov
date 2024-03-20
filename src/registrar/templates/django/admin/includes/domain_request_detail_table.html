@@ -17,11 +17,28 @@
         <tr>
             <th class="padding-left-0" scope="row">Email</th>
             {% if user.email or user.contact.email %}
-                {% if user.contact.email %}
-                <td>{{ user.contact.email }}</td>
-                {% else %}
-                <td>{{ user.email }}</td>
-                {% endif %}
+                <td>
+                    <span>
+                        {% if user.contact.email %}
+                        {{ user.contact.email }}
+                        <input type="hidden" value="{{ user.contact.email }}" id="id_email">
+                        {% else %}
+                        {{ user.email }}
+                        <input type="hidden" value="{{ user.email }}">
+                        {% endif %}
+                        <button 
+                        class="usa-button usa-button--unstyled padding-left-2 usa-button__icon usa-button__clipboard" 
+                        type="button"
+                        >
+                            <svg 
+                            class="usa-icon" 
+                            >
+                                <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                            </svg>
+                        </button>
+                    </span>
+                </td>
+
             {% else %}
             <td>Nothing found</td>
             {% endif %}
