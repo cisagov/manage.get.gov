@@ -1194,31 +1194,6 @@ class TestDomainRequestAdmin(MockEppLib):
             # Test that approved domain exists and equals requested domain
             self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)
 
-    def assert_response_contains_distinct_values(self, response, expected_values):
-        """
-        Asserts that each specified value appears exactly once in the response.
-
-        This method iterates over a list of tuples, where each tuple contains a field name
-        and its expected value. It then performs an assertContains check for each value,
-        ensuring that each value appears exactly once in the response.
-
-        Parameters:
-        - response: The HttpResponse object to inspect.
-        - expected_values: A list of tuples, where each tuple contains:
-            - field: The name of the field (used for subTest identification).
-            - value: The expected value to check for in the response.
-
-        Example usage:
-        expected_values = [
-            ("title", "Treat inspector</td>"),
-            ("email", "meoward.jones@igorville.gov</td>"),
-        ]
-        self.assert_response_contains_distinct_values(response, expected_values)
-        """
-        for field, value in expected_values:
-            with self.subTest(field=field, expected_value=value):
-                self.assertContains(response, value, count=1)
-
     @less_console_noise_decorator
     def test_other_contacts_has_readonly_link(self):
         """Tests if the readonly other_contacts field has links"""
@@ -1271,6 +1246,31 @@ class TestDomainRequestAdmin(MockEppLib):
         # Check that the page contains the link we expect.
         expected_url = '<a href="city.com" class="padding-top-1 current-website__1">city.com</a>'
         self.assertContains(response, expected_url)
+
+    def assert_response_contains_distinct_values(self, response, expected_values):
+        """
+        Asserts that each specified value appears exactly once in the response.
+
+        This method iterates over a list of tuples, where each tuple contains a field name
+        and its expected value. It then performs an assertContains check for each value,
+        ensuring that each value appears exactly once in the response.
+
+        Parameters:
+        - response: The HttpResponse object to inspect.
+        - expected_values: A list of tuples, where each tuple contains:
+            - field: The name of the field (used for subTest identification).
+            - value: The expected value to check for in the response.
+
+        Example usage:
+        expected_values = [
+            ("title", "Treat inspector</td>"),
+            ("email", "meoward.jones@igorville.gov</td>"),
+        ]
+        self.assert_response_contains_distinct_values(response, expected_values)
+        """
+        for field, value in expected_values:
+            with self.subTest(field=field, expected_value=value):
+                self.assertContains(response, value, count=1)
 
     @less_console_noise_decorator
     def test_contact_fields_have_detail_table(self):

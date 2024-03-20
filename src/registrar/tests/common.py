@@ -734,7 +734,6 @@ def completed_domain_request(
     """A completed domain request."""
     if not user:
         user = get_user_model().objects.create(username="username" + str(uuid.uuid4())[:8])
-
     ao, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
