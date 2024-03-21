@@ -16,34 +16,49 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
         {% endif %}
     {% endblock fieldset_description %}
 
-    {% block fieldset_lines %}
-        {% for line in fieldset %}
-            <div class="form-row{% if line.fields|length == 1 and line.errors %} errors{% endif %}{% if not line.has_visible_field %} hidden{% endif %}{% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
-                {% if line.fields|length == 1 %}{{ line.errors }}{% else %}<div class="flex-container form-multiline">{% endif %}
-                {% for field in line %}
-                    <div>
-                        {% if not line.fields|length == 1 and not field.is_readonly %}{{ field.errors }}{% endif %}
-                            <div class="flex-container{% if not line.fields|length == 1 %} fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}{% if field.field.is_hidden %} hidden{% endif %}{% elif field.is_checkbox %} checkbox-row{% endif %}">
-                                {% if field.is_checkbox %}
-                                    {{ field.field }}{{ field.label_tag }}
+    {% for line in fieldset %}
+        <div class="form-row{% if line.fields|length == 1 and line.errors %} errors{% endif %}{% if not line.has_visible_field %} hidden{% endif %}{% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
+            {% if line.fields|length == 1 %}{{ line.errors }}{% else %}<div class="flex-container form-multiline">{% endif %}
+            {% for field in line %}
+                <div>
+                    {% if not line.fields|length == 1 and not field.is_readonly %}{{ field.errors }}{% endif %}
+                        <div class="flex-container{% if not line.fields|length == 1 %} fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}{% if field.field.is_hidden %} hidden{% endif %}{% elif field.is_checkbox %} checkbox-row{% endif %}">
+                            {% if field.is_checkbox %}
+                                {% block field_checkbox %}
+                                {{ field.field }}{{ field.label_tag }}
+                                {% endblock field_checkbox%}
+                            {% else %}
+                                {{ field.label_tag }}
+                                {% if field.is_readonly %}
+                                    {% block field_readonly %}
+                                    <div class="readonly">{{ field.contents }}</div>
+                                    {% endblock field_readonly%}
                                 {% else %}
-                                    {{ field.label_tag }}
-                                    {% if field.is_readonly %}
-                                        <div class="readonly">{{ field.contents }}</div>
-                                    {% else %}
-                                        {{ field.field }}
-                                    {% endif %}
+                                    {% block field_other %}
+                                    {{ field.field }}
+                                    {% endblock field_other%}
                                 {% endif %}
-                            </div>
-                        {% if field.field.help_text %}
-                            <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
-                                <div>{{ field.field.help_text|safe }}</div>
-                            </div>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-                {% if not line.fields|length == 1 %}</div>{% endif %}
-            </div>
-        {% endfor %}
-    {% endblock fieldset_lines %}
+                            {% endif %}
+                        </div>
+                    
+                    {% block before_help_text %}
+                        {# For templating purposes #}
+                    {% endblock before_help_text %}
+
+                    {% if field.field.help_text %}
+                        {% block help_text %}
+                        <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+                            <div>{{ field.field.help_text|safe }}</div>
+                        </div>
+                        {% endblock help_text %}
+                    {% endif %}
+
+                    {% block after_help_text %}
+                        {# For templating purposes #}
+                    {% endblock after_help_text %}
+                </div>
+            {% endfor %}
+            {% if not line.fields|length == 1 %}</div>{% endif %}
+        </div>
+    {% endfor %}
 </fieldset>

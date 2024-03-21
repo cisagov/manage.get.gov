@@ -913,6 +913,8 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # Table ordering
     ordering = ["domain__name"]
 
+    change_form_template = "django/admin/domain_information_change_form.html"
+
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 1 conditions that determine which fields are read-only:
