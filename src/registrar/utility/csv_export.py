@@ -254,6 +254,7 @@ def write_requests_csv(
 
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_requests, 1000)
+    total_body_rows = []
 
     for page_num in paginator.page_range:
         page = paginator.page(page_num)
@@ -267,10 +268,11 @@ def write_requests_csv(
                 # It indicates that DomainInformation.domain is None.
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
+        total_body_rows.extend(rows)
 
     if should_write_header:
         write_header(writer, columns)
-    writer.writerows(rows)
+    writer.writerows(total_body_rows)
 
 
 def export_data_type_to_csv(csv_file):
