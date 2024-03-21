@@ -536,6 +536,8 @@ class MyUserAdmin(BaseUserAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
     def get_search_results(self, request, queryset, search_term):
         """
         Override for get_search_results. This affects any upstream model using autocomplete_fields,
@@ -1807,6 +1809,8 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
     readonly_fields = [
         "requestor",
     ]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
     def truncated_notes(self, obj):
         # Truncate the 'notes' field to 50 characters
