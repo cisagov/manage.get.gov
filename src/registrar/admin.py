@@ -645,9 +645,7 @@ class ContactAdmin(ListHeaderAdmin):
     fieldsets = [
         (
             None,
-            {
-                "fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]
-            },
+            {"fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]},
         )
     ]
 
