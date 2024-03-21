@@ -1304,18 +1304,19 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain_request.requested_domain.name)
 
-        # Check that the modal has the right content
-        # Check for the header
-
         # == Check for the creator == #
 
         # Check for the right title, email, and phone number in the response.
         # We only need to check for the end tag
         # (Otherwise this test will fail if we change classes, etc)
+        expected_email = "meoward.jones@igorville.gov"
         expected_creator_fields = [
             # Field, expected value
             ("title", "Treat inspector</td>"),
-            ("email", "meoward.jones@igorville.gov</td>"),
+            ("email", f"{expected_email}</td>"),
+            # Check for the existence of the copy button input.
+            # Lets keep things simple to minimize future conflicts.
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
             ("phone", "(555) 123 12345</td>"),
         ]
         self.assert_response_contains_distinct_values(response, expected_creator_fields)
@@ -1324,20 +1325,24 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Meoward Jones")
 
         # == Check for the submitter == #
+        expected_email = "mayor@igorville.gov"
         expected_submitter_fields = [
             # Field, expected value
             ("title", "Admin Tester</td>"),
-            ("email", "mayor@igorville.gov</td>"),
+            ("email", f"{expected_email}</td>"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
             ("phone", "(555) 555 5556</td>"),
         ]
         self.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
 
         # == Check for the authorizing_official == #
+        expected_email = "testy@town.com"
         expected_ao_fields = [
             # Field, expected value
             ("title", "Chief Tester</td>"),
-            ("email", "testy@town.com</td>"),
+            ("email", f"{expected_email}</td>"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
             ("phone", "(555) 555 5555</td>"),
         ]
         self.assert_response_contains_distinct_values(response, expected_ao_fields)
@@ -1359,10 +1364,12 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Phone</th>", count=3)
 
         # == Test the other_employees field == #
+        expected_email = "testy@town.com"
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester</td>"),
-            ("email", "testy2@town.com</td>"),
+            ("email", f"{expected_email}</td>"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
             ("phone", "(555) 555 5557</td>"),
         ]
         self.assert_response_contains_distinct_values(response, expected_other_employees_fields)

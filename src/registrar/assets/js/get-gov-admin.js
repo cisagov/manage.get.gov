@@ -177,9 +177,10 @@ function openInNewTab(el, removeAttribute = false){
                 copyToClipboardAndChangeIcon(button);
             });
             
-            // Add a class that removes the outline style on click
+            // Add a class that adds the outline style on click
             button.addEventListener("mousedown", function() {
-                this.classList.remove("no-outline-on-click");
+                console.log(`applying mousedown on ${this} vs ${button}`);
+                this.classList.add("no-outline-on-click");
             });
             
             // But add it back in after the user clicked,

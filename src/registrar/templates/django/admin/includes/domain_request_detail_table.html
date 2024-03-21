@@ -13,34 +13,39 @@
             {% else %}
             <td>Nothing found</td>
             {% endif %}
+            {# Placeholder col for actions (like copy) or additional padding #}
+            <td></td>
         </tr>
         <tr>
             <th class="padding-left-0" scope="row">Email</th>
             {% if user.email or user.contact.email %}
+                {% if user.contact.email %}
+                <td>{{ user.contact.email }}</td>
+                {% else %}
+                <td>{{ user.email }}</td>
+                {% endif %}
+
                 <td>
-                    <span>
-                        {% if user.contact.email %}
-                        {{ user.contact.email }}
-                        <input type="hidden" value="{{ user.contact.email }}" id="id_email">
-                        {% else %}
-                        {{ user.email }}
-                        <input type="hidden" value="{{ user.email }}">
-                        {% endif %}
-                        <button 
-                        class="usa-button usa-button--unstyled padding-left-2 usa-button__icon usa-button__clipboard" 
-                        type="button"
+                    {% if user.contact.email %}
+                    <input class="dja-clipboard-input" type="hidden" value="{{ user.contact.email }}" id="id_email">
+                    {% else %}
+                    <input class="dja-clipboard-input" type="hidden" value="{{ user.email }}">
+                    {% endif %}
+                    <button 
+                    class="usa-button usa-button--unstyled usa-button__icon usa-button__clipboard" 
+                    type="button"
+                    >
+                        <svg 
+                        class="usa-icon" 
                         >
-                            <svg 
-                            class="usa-icon" 
-                            >
-                                <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
-                            </svg>
-                        </button>
-                    </span>
+                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                        </svg>
+                    </button>
                 </td>
 
             {% else %}
             <td>Nothing found</td>
+            <td></td>
             {% endif %}
         </tr>
         <tr>
@@ -54,6 +59,7 @@
             {% else %}
             <td>Nothing found</td>
             {% endif %}
+            <td></td>
         </tr>
     </tbody>
 </table>

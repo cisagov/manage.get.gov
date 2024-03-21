@@ -381,14 +381,19 @@ table.dja-user-detail-table {
 
     input {
         // Allow for padding around the copy button
-        padding-right: 35px;
+        padding-right: 35px !important;
         // Match the height of other inputs
-        min-height: 2.25rem;
+        min-height: 2.25rem !important;
     }
 
-    .no-outline-on-click:focus {
-        outline: none !important;
+}
+
+td.font-size-sm {
+    button.usa-button__icon {
+        font-size: 16px;
     }
 }
 
-
+.no-outline-on-click:focus {
+    outline: none !important;
+}

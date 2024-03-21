@@ -62,10 +62,13 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                     <tr data-contact-id="{{ contact.id }}" data-contact-url="{% url 'admin:registrar_contact_change' contact.id %}">
                                         <th scope="row">{{contact.first_name}} {{contact.last_name}}</th>
                                         <td>{{ contact.title }}</td>
-                                        <td>
-                                            <input type="hidden" value="{{ contact.email }}">
+                                        <td>{{ contact.email }}</td>
+                                        <td>{{ contact.phone }}</td>
+                                        {# Copy button for the email #}
+                                        <td class="font-size-sm">
+                                            <input class="dja-clipboard-input" type="hidden" value="{{ contact.email }}">
                                             <button 
-                                            class="usa-button usa-button--unstyled usa-button__icon usa-button__clipboard" 
+                                            class="usa-button usa-button--unstyled usa-button__icon usa-button__clipboard text-no-underline" 
                                             type="button"
                                             >
                                                 <svg 
@@ -73,11 +76,9 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                                 >
                                                     <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
                                                 </svg>
+                                                Copy email
                                             </button>
-                                            {{ contact.email }}
-
                                         </td>
-                                        <td>{{ contact.phone }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
