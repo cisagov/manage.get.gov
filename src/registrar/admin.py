@@ -911,6 +911,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
+        "other_contacts",
     ]
 
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
@@ -927,6 +928,8 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
     # Table ordering
     ordering = ["domain__name"]
+
+    change_form_template = "django/admin/domain_information_change_form.html"
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
