@@ -896,6 +896,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
+        "other_contacts",
     ]
 
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
