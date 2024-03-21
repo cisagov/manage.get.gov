@@ -831,7 +831,7 @@ class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermission
             return self.form_valid(form)
         else:
             # Produce an error message if the domain invatation status is RETRIEVED
-            messages.error(request, f"Invitation to {self.object.email} has already been retrieved")
+            messages.error(request, f"Invitation to {self.object.email} has already been retrieved.")
             return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
