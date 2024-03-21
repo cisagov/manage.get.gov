@@ -20,7 +20,8 @@ class FederalAgency(TimeStampedModel):
         return f"{self.agency}"
 
     def create_federal_agencies(apps, schema_editor):
-        """This method gets run from a data migration."""
+        """This method gets run from a data migration to prepopulate data
+        regarding federal agencies."""
 
         # Hard to pass self to these methods as the calls from migrations
         # are only expecting apps and schema_editor, so we'll just define
@@ -222,7 +223,5 @@ class FederalAgency(TimeStampedModel):
                     agency=agency,
                 )
                 logger.debug(agency + " added to record " + federal_agencies_list.agency)
-                federal_agencies_list.save()
-                logger.debug("Federal agency added to table " + federal_agencies_list.agency)
         except Exception as e:
             logger.error(f"Error creating federal agency: {e}")
