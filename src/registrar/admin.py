@@ -1019,7 +1019,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
-    change_form_template = "django/admin/domain_application_change_form.html"
+    change_form_template = "django/admin/domain_request_change_form.html"
 
     # Columns
     list_display = [
