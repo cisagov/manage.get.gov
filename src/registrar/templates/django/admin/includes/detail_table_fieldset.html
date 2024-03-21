@@ -51,6 +51,21 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                             <td>{{ contact.title }}</td>
                             <td>{{ contact.email }}</td>
                             <td>{{ contact.phone }}</td>
+                            {# Copy button for the email #}
+                            <td class="font-size-sm">
+                                <input class="dja-clipboard-input" type="hidden" value="{{ contact.email }}">
+                                <button 
+                                class="usa-button usa-button--unstyled usa-button__icon usa-button__clipboard text-no-underline" 
+                                type="button"
+                                >
+                                    <svg 
+                                    class="usa-icon" 
+                                    >
+                                        <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                                    </svg>
+                                    Copy email
+                                </button>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
