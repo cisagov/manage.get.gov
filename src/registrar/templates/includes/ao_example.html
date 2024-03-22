@@ -24,28 +24,28 @@
 
   {% endif %}
 
-{% elif organization_type == 'city' %}
+{% elif generic_org_type == 'city' %}
   <h3>Cities</h3>
   <p>Domain requests from cities must be authorized by someone in a role of significant, executive responsibility within the city (mayor, council president, city manager, township/village supervisor, select board chairperson, chief, senior technology officer, or equivalent).</p>
 
-{% elif organization_type == 'county' %}
+{% elif generic_org_type == 'county' %}
   <h3>Counties</h3>
   <p>Domain requests from counties must be authorized by the commission chair or someone in a role of significant, executive responsibility within the county (county judge, county mayor, parish/borough president, senior technology officer, or equivalent). Other county-level offices (county clerk, sheriff, county auditor, comptroller) may qualify, as well, in some instances.</p>
 
-{% elif organization_type == 'interstate' %}
+{% elif generic_org_type == 'interstate' %}
   <h3>Interstate organizations</h3>
   <p>Domain requests from interstate organizations must be authorized by someone in a role of significant, executive responsibility within the organization (president, director, chair, senior technology officer, or equivalent) or one of the state’s governors or CIOs.</p>
 
-{% elif organization_type == 'school_district' %}
+{% elif generic_org_type == 'school_district' %}
   <h3>School districts</h3>
   <p>Domain requests from school district governments must be authorized by someone in a role of significant, executive responsibility within the district (board chair, superintendent, senior technology officer, or equivalent).</p>
 
-{% elif organization_type == 'special_district' %}
+{% elif generic_org_type == 'special_district' %}
   <h3>Special districts</h3>
   <p>Domain requests from special districts must be authorized by someone in a role of significant, executive responsibility within the district (CEO, chair, executive director, senior technology officer, or equivalent).
 </p>
 
-{% elif organization_type == 'state_or_territory' %}
+{% elif generic_org_type == 'state_or_territory' %}
   <h3>U.S. states and territories</h3>
 
   <h4>States and territories: executive branch</h4>
@@ -54,7 +54,7 @@
   <h4>States and territories: judicial and legislative branches</h4>
   <p>Domain requests from state legislatures and courts must be authorized by an agency’s CIO or someone in a role of significant, executive responsibility within the agency.</p>
 
-{% elif organization_type == 'tribal' %}
+{% elif generic_org_type == 'tribal' %}
   <h3>Tribal governments</h3>
   <p>Domain requests from federally-recognized tribal governments must be authorized by the tribal leader the <a class="usa-link usa-link--external" rel="noopener noreferrer" target="_blank" href="https://www.bia.gov/service/tribal-leaders-directory">Bureau of Indian Affairs</a> recognizes.</p>
   <p>Domain requests from state-recognized tribal governments must be authorized by the tribal leader the individual state recognizes.</p>

@@ -52,7 +52,7 @@
   <div class="grid-col desktop:grid-offset-2 maxw-tablet">
     <h2 class="text-primary-darker"> Summary of your domain request </h2> 
     {% with heading_level='h3' %}
-    {% with org_type=DomainRequest.get_organization_type_display %}
+    {% with org_type=DomainRequest.get_generic_org_type_display %}
       {% include "includes/summary_item.html" with title='Type of organization' value=org_type heading_level=heading_level %}
     {% endwith %}
 

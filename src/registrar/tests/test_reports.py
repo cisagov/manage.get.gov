@@ -341,9 +341,9 @@ class ExportDataTest(MockDb, MockEppLib):
                 "State",
                 "Security contact email",
             ]
-            sort_fields = ["domain__name", "federal_agency", "organization_type"]
+            sort_fields = ["domain__name", "federal_agency", "generic_org_type"]
             filter_condition = {
-                "organization_type__icontains": "federal",
+                "generic_org_type__icontains": "federal",
                 "domain__state__in": [
                     Domain.State.READY,
                     Domain.State.DNS_NEEDED,

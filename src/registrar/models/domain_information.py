@@ -49,7 +49,7 @@ class DomainInformation(TimeStampedModel):
     )
 
     # ##### data fields from the initial form #####
-    organization_type = models.CharField(
+    generic_org_type = models.CharField(
         max_length=255,
         choices=OrganizationChoices.choices,
         null=True,

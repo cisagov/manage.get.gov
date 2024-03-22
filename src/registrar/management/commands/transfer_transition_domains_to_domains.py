@@ -332,7 +332,7 @@ class Command(BaseCommand):
         updated = False
 
         fields_to_update = [
-            "organization_type",
+            "generic_org_type",
             "federal_type",
             "federal_agency",
             "organization_name",
@@ -400,7 +400,7 @@ class Command(BaseCommand):
         if debug_on:
             logger.info(f"Contact created: {contact}")
 
-        org_type_current = transition_domain.organization_type
+        org_type_current = transition_domain.generic_org_type
         match org_type_current:
             case "Federal":
                 org_type = ("federal", "Federal")
@@ -431,7 +431,7 @@ class Command(BaseCommand):
         }
 
         if valid_org_type:
-            new_domain_info_data["organization_type"] = org_type[0]
+            new_domain_info_data["generic_org_type"] = org_type[0]
         elif debug_on:
             logger.debug(f"No org type found on {domain.name}")
 
