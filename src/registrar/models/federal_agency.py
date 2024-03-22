@@ -214,14 +214,10 @@ class FederalAgency(TimeStampedModel):
         ]
 
         FederalAgency = apps.get_model("registrar", "FederalAgency")
-
         logger.info("Creating federal agency table.")
 
         try:
-            for agency in AGENCIES:
-                federal_agencies_list, _ = FederalAgency.objects.get_or_create(
-                    agency=agency,
-                )
-                logger.debug(agency + " added to record " + federal_agencies_list.agency)
+            agencies = [FederalAgency(agency=agency) for agency in AGENCIES]
+            FederalAgency.objects.bulk_create(agencies)
         except Exception as e:
             logger.error(f"Error creating federal agency: {e}")
