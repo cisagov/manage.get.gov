@@ -9,6 +9,7 @@ from typing import Any
 def create_federal_agencies(apps, schema_editor) -> Any:
     FederalAgency.create_federal_agencies(apps, schema_editor)
 
+
 class Migration(migrations.Migration):
 
     dependencies = [
