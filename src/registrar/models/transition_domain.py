@@ -49,7 +49,7 @@ class TransitionDomain(TimeStampedModel):
         verbose_name="Processed",
         help_text="Indicates whether this TransitionDomain was already processed",
     )
-    organization_type = models.CharField(
+    generic_org_type = models.CharField(
         max_length=255,
         null=True,
         blank=True,
@@ -147,7 +147,7 @@ class TransitionDomain(TimeStampedModel):
             f"username: {self.username}, \n"
             f"status: {self.status}, \n"
             f"email sent: {self.email_sent}, \n"
-            f"organization type: {self.organization_type}, \n"
+            f"organization type: {self.generic_org_type}, \n"
             f"organization_name: {self.organization_name}, \n"
             f"federal_type: {self.federal_type}, \n"
             f"federal_agency: {self.federal_agency}, \n"

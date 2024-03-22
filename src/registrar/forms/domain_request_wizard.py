@@ -169,7 +169,7 @@ class RegistrarFormSet(forms.BaseFormSet):
 
 
 class OrganizationTypeForm(RegistrarForm):
-    organization_type = forms.ChoiceField(
+    generic_org_type = forms.ChoiceField(
         # use the long names in the domain request form
         choices=DomainRequest.OrganizationChoicesVerbose.choices,
         widget=forms.RadioSelect,

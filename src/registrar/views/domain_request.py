@@ -33,7 +33,7 @@ class Step(StrEnum):
     appear in the order they are defined. (Order matters.)
     """
 
-    ORGANIZATION_TYPE = "organization_type"
+    ORGANIZATION_TYPE = "generic_org_type"
     TRIBAL_GOVERNMENT = "tribal_government"
     ORGANIZATION_FEDERAL = "organization_federal"
     ORGANIZATION_ELECTION = "organization_election"
@@ -340,7 +340,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         Queries the DB for a domain request and returns a list of unlocked steps."""
         history_dict = {
-            "organization_type": self.domain_request.organization_type is not None,
+            "generic_org_type": self.domain_request.generic_org_type is not None,
             "tribal_government": self.domain_request.tribe_name is not None,
             "organization_federal": self.domain_request.federal_type is not None,
             "organization_election": self.domain_request.is_election_board is not None,
@@ -506,7 +506,7 @@ class AuthorizingOfficial(DomainRequestWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["organization_type"] = self.domain_request.organization_type
+        context["generic_org_type"] = self.domain_request.generic_org_type
         context["federal_type"] = self.domain_request.federal_type
         return context
 
@@ -522,7 +522,7 @@ class DotgovDomain(DomainRequestWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["organization_type"] = self.domain_request.organization_type
+        context["generic_org_type"] = self.domain_request.generic_org_type
         context["federal_type"] = self.domain_request.federal_type
         return context
 

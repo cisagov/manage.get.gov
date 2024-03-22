@@ -200,7 +200,7 @@ class LoadExtraTransitionDomain:
 
         updated_fields = [
             "organization_name",
-            "organization_type",
+            "generic_org_type",
             "federal_type",
             "federal_agency",
             "first_name",
@@ -412,7 +412,7 @@ class LoadExtraTransitionDomain:
         return transition_domain
 
     def parse_domain_type_data(self, domain_name, transition_domain: TransitionDomain) -> TransitionDomain:
-        """Grabs organization_type and federal_type from the parsed files
+        """Grabs generic_org_type and federal_type from the parsed files
         and associates it with a transition_domain object, then returns that object."""
         if not isinstance(transition_domain, TransitionDomain):
             raise ValueError("Not a valid object, must be TransitionDomain")
@@ -439,7 +439,7 @@ class LoadExtraTransitionDomain:
             raise ValueError("Found invalid data on DOMAIN_ADHOC")
 
         # Then, just grab the organization type.
-        new_organization_type = domain_type[0].strip()
+        new_generic_org_type = domain_type[0].strip()
 
         # Check if this domain_type is active or not.
         # If not, we don't want to add this.
@@ -455,8 +455,8 @@ class LoadExtraTransitionDomain:
 
         # Are we updating data that already exists,
         # or are we adding new data in its place?
-        organization_type_exists = (
-            transition_domain.organization_type is not None and transition_domain.organization_type.strip() != ""
+        generic_org_type_exists = (
+            transition_domain.generic_org_type is not None and transition_domain.generic_org_type.strip() != ""
         )
         federal_type_exists = (
             transition_domain.federal_type is not None and transition_domain.federal_type.strip() != ""
@@ -467,20 +467,20 @@ class LoadExtraTransitionDomain:
         is_federal = domain_type_length == 2
         if is_federal:
             new_federal_type = domain_type[1].strip()
-            transition_domain.organization_type = new_organization_type
+            transition_domain.generic_org_type = new_generic_org_type
             transition_domain.federal_type = new_federal_type
         else:
-            transition_domain.organization_type = new_organization_type
+            transition_domain.generic_org_type = new_generic_org_type
             transition_domain.federal_type = None
 
         # Logs if we either added to this property,
         # or modified it.
         self._add_or_change_message(
             EnumFilenames.DOMAIN_ADHOC,
-            "organization_type",
-            transition_domain.organization_type,
+            "generic_org_type",
+            transition_domain.generic_org_type,
             domain_name,
-            organization_type_exists,
+            generic_org_type_exists,
         )
 
         self._add_or_change_message(
