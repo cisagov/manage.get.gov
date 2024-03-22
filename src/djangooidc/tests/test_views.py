@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.test import Client, TestCase, RequestFactory
 from django.urls import reverse
 
-from djangooidc.exceptions import NoStateDefined, InternalError
+from djangooidc.exceptions import StateMismatch, InternalError
 from ..views import login_callback
 
 from .common import less_console_noise
@@ -129,21 +129,35 @@ class ViewsTest(TestCase):
                     self.assertContains(response, "Hi")
 
     def test_login_callback_with_no_session_state(self, mock_client):
-        """If the local session is None (ie the server restarted while user was logged out),
+        """If the local session does not match the OP session,
         we do not throw an exception. Rather, we attempt to login again."""
         with less_console_noise():
-            # MOCK
-            # mock the acr_value to some string
-            # mock the callback function to raise the NoStateDefined Exception
+            # MOCK get_default_acr_value and the callback to raise StateMismatch
+            # error when called
             mock_client.get_default_acr_value.side_effect = self.create_acr
-            mock_client.callback.side_effect = NoStateDefined()
-            # TEST
-            # test the login callback
+            mock_client.callback.side_effect = StateMismatch()
+            # TEST receiving a response from login.gov
             response = self.client.get(reverse("openid_login_callback"))
-            # ASSERTIONS
-            # assert that the user is redirected to the start of the login process
+            # ASSERT
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, "/")
+            # Check that the redirect_attempted flag is set in the session
+            self.assertTrue(self.client.session.get("redirect_attempted", False))
+
+    def test_login_callback_with_no_session_state_attempt_again_only_once(self, mock_client):
+        """We only attempt to relogin once. After that, it's the error page for you."""
+        with less_console_noise():
+            # MOCK get_default_acr_value, redirect_attempted to True and the callback
+            # to raise StateMismatch error when called
+            mock_client.get_default_acr_value.side_effect = self.create_acr
+            mock_client.callback.side_effect = StateMismatch()
+            session = self.client.session
+            session["redirect_attempted"] = True
+            session.save()
+            # TEST receiving a response from login.gov
+            response = self.client.get(reverse("openid_login_callback"))
+            # ASSERT
+            self.assertEqual(response.status_code, 401)
 
     def test_login_callback_reads_next(self, mock_client):
         """If the next value is set in the session, test that login_callback returns

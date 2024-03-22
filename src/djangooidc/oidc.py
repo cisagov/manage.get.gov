@@ -182,10 +182,20 @@ class Client(oic.Client):
 
         if authn_response["state"] != session.get("state", None):
             # this most likely means the user's Django session vanished
-            logger.error("Received state not the same as expected for %s" % state)
             if session.get("state", None) is None:
-                raise o_e.NoStateDefined()
-            raise o_e.AuthenticationFailed(locator=state)
+                logger.error(
+                    f"The OP state {state} does not match the session state. "
+                    f"The session state is None. "
+                    f"authn_response['state'] = {authn_response['state']} "
+                    f"session.get('state', None) = {session.get('state', None)}"
+                )
+            else:
+                logger.error(
+                    f"The OP state {state} does not match the session state. "
+                    f"authn_response['state'] = {authn_response['state']} "
+                    f"session.get('state', None) = {session.get('state', None)}"
+                )
+            raise o_e.StateMismatch()
 
         if self.behaviour.get("response_type") == "code":
             # need an access token to get user info (and to log the user out later)
