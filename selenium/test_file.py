@@ -7,10 +7,9 @@ from selenium.webdriver.support import expected_conditions as EC
 def init_webdriver(browser):
     if browser == 'chrome':
         webdriver_path = os.path.abspath("webdrivers/chromedriver_mac_arm64/chromedriver")
-        # /Users/rebeccahsieh/projects/CISA/manage.get.gov/webdrivers/chromedriver_mac_arm64
-        #/Users/rebeccahsieh/projects/CISA/manage.get.gov/webdrivers/chromedriver_mac_arm64/chromedriver.exe
+        # driver = webdriver.Chrome(executable_path=webdriver_path)
         print("!! webdriver path is ", webdriver_path)
-
+        # print("!! driver is", driver)
         # Initialize WebDriver with the absolute path
         # driver = webdriver.Chrome(webdriver_path)
         # print("!!", driver) 
