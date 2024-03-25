@@ -61,7 +61,6 @@
     function createComparativeColumnChart(canvasId, title, labelOne, labelTwo) {
         var canvas = document.getElementById(canvasId);
         if (!canvas) {
-            console.log("Could not find canvas")
             return
         }
 

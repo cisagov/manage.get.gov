@@ -347,29 +347,6 @@ input.admin-confirm-button {
     color: $dhs-blue-70;
 }
 
-.admin-icon-group {
-    position: relative;
-    display: flex;
-    align-items: center;
-
-    .usa-button__icon {
-        position: absolute;
-        right: 0;
-        height: 100%;
-    }
-
-    input {
-        // Allow for padding around the copy button
-        padding-right: 35px;
-        // Match the height of other inputs
-        min-height: 2.25rem;
-    }
-
-    .no-outline-on-click:focus {
-        outline: none !important;
-    }
-}
-
 details.dja-detail-table {
     display: inline-table;
     background-color: var(--body-bg);
@@ -383,39 +360,34 @@ details.dja-detail-table {
 
     td, th {
         padding-left: 12px;
+        border: none
     }
+
+    thead > tr > th {
+        border-radius: 4px;
+        border-top: none;
+        border-bottom: none;
+    }
+
 }
 
 table.dja-user-detail-table {
-    margin-left: 160px;
     tr {
         background-color: var(--body-bg);
     }
+
+    // Make the head of the user detail table "float"
+    thead > tr > th {
+        border-radius: 4px;
+        border-top: none;
+        border-bottom: none;
+    }
+
+    th, td {
+        border: none
+    }
+
 }
-
-.admin-icon-group {
-    position: relative;
-    display: flex;
-    align-items: center;
-
-    .usa-button__icon {
-        position: absolute;
-        right: 0;
-        height: 100%;
-    }
-
-    input {
-        // Allow for padding around the copy button
-        padding-right: 35px;
-        // Match the height of other inputs
-        min-height: 2.25rem;
-    }
-
-    .no-outline-on-click:focus {
-        outline: none !important;
-    }
-}
-
 
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;

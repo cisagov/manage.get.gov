@@ -1,9 +1,14 @@
 {% load i18n static %}
 
-<table class="dja-user-detail-table" {% if field_name %} id="id_detail_table__{{field_name}}" {% endif %}>
+<table class="dja-user-detail-table margin-top-1" {% if field_name %} id="id_detail_table__{{field_name}}" {% endif %}>
+    <thead>
+        <tr>
+            <th colspan="2">Contact details</th>
+        <tr>
+    </thead>
     <tbody>
         <tr>
-            <th class="padding-left-0" scope="row">Title</th>
+            <th scope="row">Title</th>
             {% if user.title or user.contact.title %}
                 {% if user.contact.title %}
                 <td>{{ user.contact.title }}</td>
@@ -15,27 +20,27 @@
             {% endif %}
         </tr>
         <tr>
-            <th class="padding-left-0" scope="row">Email</th>
+            <th class="padding-top-0" scope="row">Email</th>
             {% if user.email or user.contact.email %}
                 {% if user.contact.email %}
-                <td>{{ user.contact.email }}</td>
+                <td class="padding-top-0">{{ user.contact.email }}</td>
                 {% else %}
-                <td>{{ user.email }}</td>
+                <td class="padding-top-0">{{ user.email }}</td>
                 {% endif %}
             {% else %}
-            <td>Nothing found</td>
+            <td class="padding-top-0">Nothing found</td>
             {% endif %}
         </tr>
         <tr>
-            <th class="padding-left-0" scope="row">Phone</th>
+            <th class="padding-top-0" scope="row">Phone</th>
             {% if user.phone or user.contact.phone %}
                 {% if user.contact.phone %}
-                <td>{{ user.contact.phone }}</td>
+                <td class="padding-top-0">{{ user.contact.phone }}</td>
                 {% else %}
-                <td>{{ user.phone }}</td>
+                <td class="padding-top-0">{{ user.phone }}</td>
                 {% endif %}
             {% else %}
-            <td>Nothing found</td>
+            <td class="padding-top-0">Nothing found</td>
             {% endif %}
         </tr>
     </tbody>
