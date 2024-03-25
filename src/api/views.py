@@ -3,6 +3,7 @@
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url
@@ -130,3 +131,13 @@ def serve_file(file_name):
 
     response = HttpResponse(file)
     return response
+
+def login_gov_mock(request):
+    # Simulate login.gov response
+    data = {
+        "username": "mock_user",
+        "email": "mock@example.com",
+        "token": "mock_token",
+        # Add any other relevant data
+    }
+    return JsonResponse(data)

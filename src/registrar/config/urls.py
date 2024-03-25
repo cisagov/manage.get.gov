@@ -6,6 +6,7 @@ For more information see:
 
 from django.contrib import admin
 from django.urls import include, path
+from django.urls import path
 from django.views.generic import RedirectView
 
 from registrar import views
@@ -22,7 +23,7 @@ from registrar.views.admin_views import (
 
 from registrar.views.domain_request import Step
 from registrar.views.utility import always_404
-from api.views import available, get_current_federal, get_current_full
+from api.views import available, get_current_federal, get_current_full, login_gov_mock
 
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
@@ -193,6 +194,7 @@ urlpatterns = [
         views.DomainDeleteUserView.as_view(http_method_names=["post"]),
         name="domain-user-delete",
     ),
+    path('secure.login.gov/', login_gov_mock, name='login_gov_mock'),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error
