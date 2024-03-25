@@ -80,7 +80,7 @@ def parse_domain_row(columns, domain_info: DomainInformation, security_emails_di
     if security_email.lower() in invalid_emails:
         security_email = "(blank)"
 
-    if domain_info.federal_type:
+    if domain_info.federal_type and domain_info.generic_org_type == "federal":
         domain_type = f"{domain_info.get_generic_org_type_display()} - {domain_info.get_federal_type_display()}"
     else:
         domain_type = domain_info.get_generic_org_type_display()

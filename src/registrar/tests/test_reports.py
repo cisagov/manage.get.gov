@@ -259,7 +259,8 @@ class ExportDataTest(MockDb, MockEppLib):
                 "adomain2.gov,Interstate,(blank),Dns needed\n"
                 "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
                 "ddomain3.gov,Federal,Armed Forces Retirement Home,123@mail.gov,On hold,2023-05-25\n"
-                "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready"
+                "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready\n"
+                "zdomain12.govInterstateReady\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -321,6 +322,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
                 "cdomain1.gov,Federal - Executive,World War I Centennial Commission,Ready\n"
                 "ddomain3.gov,Federal,Armed Forces Retirement Home,On hold\n"
+                "zdomain12.govInterstateReady\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -461,6 +463,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "cdomain1.gov,Federal-Executive,World War I Centennial Commission,,,,Ready,\n"
                 "adomain10.gov,Federal,Armed Forces Retirement Home,,,,Ready,\n"
                 "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
+                "zdomain12.govInterstateReady\n"
                 "zdomain9.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
                 "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
                 "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
@@ -525,6 +528,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "cdomain1.gov,Ready,,Federal - Executive,World War I Centennial Commission,,,"
                 ", , , ,meoward@rocks.com,info@example.com,big_lebowski@dude.co\n"
                 "ddomain3.gov,On hold,,Federal,Armed Forces Retirement Home,,,, , , ,,\n"
+                "zdomain12.govReadyInterstatemeoward@rocks.com\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -558,11 +562,12 @@ class ExportDataTest(MockDb, MockEppLib):
                 "MANAGED DOMAINS COUNTS AT END DATE\n"
                 "Total,Federal,Interstate,State or territory,Tribal,County,City,"
                 "Special district,School district,Election office\n"
-                "2,2,0,0,0,0,0,0,0,2\n"
+                "3,2,1,0,0,0,0,0,0,2\n"
                 "\n"
                 "Domain name,Domain type,Domain manager email 1,Domain manager email 2,Domain manager email 3\n"
                 "cdomain11.govFederal-Executivemeoward@rocks.com\n"
                 "cdomain1.gov,Federal - Executive,meoward@rocks.com,info@example.com,big_lebowski@dude.co\n"
+                "zdomain12.govInterstatemeoward@rocks.com\n"
             )
 
             # Normalize line endings and remove commas,
@@ -682,12 +687,12 @@ class HelperFunctions(MockDb):
             }
             # Test with distinct
             managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition, True)
-            expected_content = [2, 2, 0, 0, 0, 0, 0, 0, 0, 2]
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 2]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
             # Test without distinct
             managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
-            expected_content = [2, 4, 0, 0, 0, 0, 0, 0, 0, 2]
+            expected_content = [3, 4, 1, 0, 0, 0, 0, 0, 0, 2]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
     def test_get_sliced_requests(self):
