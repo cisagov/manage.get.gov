@@ -1,5 +1,5 @@
 # This migration creates the create_full_access_group and create_cisa_analyst_group groups
-# It is dependent on 0079 (which populates ContentType and Permissions)
+# It is dependent on 0079 (which populates federal agencies)
 # If permissions on the groups need changing, edit CISA_ANALYST_GROUP_PERMISSIONS
 # in the user_group model then:
 # [NOT RECOMMENDED]
@@ -25,7 +25,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0079_federalagency"),
+        ("registrar", "0079_federalagency_v01"),
     ]
 
     operations = [
