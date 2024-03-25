@@ -44,6 +44,7 @@ class CsvReportsTest(MockDb):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
+                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
                 call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
@@ -65,6 +66,7 @@ class CsvReportsTest(MockDb):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
+                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
                 call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
@@ -255,6 +257,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "AO email,Security contact email,Status,Expiration date\n"
                 "adomain10.gov,Federal,Armed Forces Retirement Home,Ready\n"
                 "adomain2.gov,Interstate,(blank),Dns needed\n"
+                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
                 "ddomain3.gov,Federal,Armed Forces Retirement Home,123@mail.gov,On hold,2023-05-25\n"
                 "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready"
             )
@@ -315,6 +318,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Security contact email,Status\n"
                 "adomain10.gov,Federal,Armed Forces Retirement Home,Ready\n"
                 "adomain2.gov,Interstate,Dns needed\n"
+                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
                 "cdomain1.gov,Federal - Executive,World War I Centennial Commission,Ready\n"
                 "ddomain3.gov,Federal,Armed Forces Retirement Home,On hold\n"
             )
@@ -365,6 +369,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Domain name,Domain type,Agency,Organization name,City,"
                 "State,Security contact email\n"
                 "adomain10.gov,Federal,Armed Forces Retirement Home\n"
+                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommission\n"
                 "cdomain1.gov,Federal - Executive,World War I Centennial Commission\n"
                 "ddomain3.gov,Federal,Armed Forces Retirement Home\n"
             )
@@ -455,6 +460,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "State,Status,Expiration date\n"
                 "cdomain1.gov,Federal-Executive,World War I Centennial Commission,,,,Ready,\n"
                 "adomain10.gov,Federal,Armed Forces Retirement Home,,,,Ready,\n"
+                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
                 "zdomain9.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
                 "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
                 "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
@@ -515,6 +521,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Security contact email,Domain manager email 1,Domain manager email 2,Domain manager email 3\n"
                 "adomain10.gov,Ready,,Federal,Armed Forces Retirement Home,,,, , ,\n"
                 "adomain2.gov,Dns needed,,Interstate,,,,, , , ,meoward@rocks.com\n"
+                "cdomain11.govReadyFederal-ExecutiveWorldWarICentennialCommissionmeoward@rocks.com\n"
                 "cdomain1.gov,Ready,,Federal - Executive,World War I Centennial Commission,,,"
                 ", , , ,meoward@rocks.com,info@example.com,big_lebowski@dude.co\n"
                 "ddomain3.gov,On hold,,Federal,Armed Forces Retirement Home,,,, , , ,,\n"
@@ -551,9 +558,10 @@ class ExportDataTest(MockDb, MockEppLib):
                 "MANAGED DOMAINS COUNTS AT END DATE\n"
                 "Total,Federal,Interstate,State or territory,Tribal,County,City,"
                 "Special district,School district,Election office\n"
-                "1,1,0,0,0,0,0,0,0,1\n"
+                "2,2,0,0,0,0,0,0,0,2\n"
                 "\n"
                 "Domain name,Domain type,Domain manager email 1,Domain manager email 2,Domain manager email 3\n"
+                "cdomain11.govFederal-Executivemeoward@rocks.com\n"
                 "cdomain1.gov,Federal - Executive,meoward@rocks.com,info@example.com,big_lebowski@dude.co\n"
             )
 
@@ -674,12 +682,12 @@ class HelperFunctions(MockDb):
             }
             # Test with distinct
             managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition, True)
-            expected_content = [1, 1, 0, 0, 0, 0, 0, 0, 0, 1]
+            expected_content = [2, 2, 0, 0, 0, 0, 0, 0, 0, 2]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
             # Test without distinct
             managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
-            expected_content = [1, 3, 0, 0, 0, 0, 0, 0, 0, 1]
+            expected_content = [2, 4, 0, 0, 0, 0, 0, 0, 0, 2]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
     def test_get_sliced_requests(self):
