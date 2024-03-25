@@ -392,3 +392,52 @@ table.dja-user-detail-table {
 }
 
 
+
+details.dja-detail-table {
+    background-color: var(--darkened-bg);
+    display: inline-table;
+    .dja-details-summary {
+        color: var(--header-link-color);
+        background-color: var(--primary);
+    }
+    .dja-details-contents {
+        tr {
+            background-color: var(--darkened-bg);
+        }
+    }
+}
+
+table.dja-user-detail-table {
+    margin-left: 160px;
+    tr {
+        background-color: var(--body-bg);
+    }
+}
+
+.admin-icon-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .usa-button__icon {
+        position: absolute;
+        right: 0;
+        height: 100%;
+    }
+
+    input {
+        // Allow for padding around the copy button
+        padding-right: 35px;
+        // Match the height of other inputs
+        min-height: 2.25rem;
+    }
+
+    .no-outline-on-click:focus {
+        outline: none !important;
+    }
+}
+
+
+.errors span.select2-selection {
+    border: 1px solid var(--error-fg) !important;
+}

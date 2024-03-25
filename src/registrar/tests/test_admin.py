@@ -556,6 +556,24 @@ class TestDomainRequestAdminForm(TestCase):
             expected_choices = [("started", "Started"), ("submitted", "Submitted")]
             self.assertEqual(form.fields["status"].widget.choices, expected_choices)
 
+    def test_form_no_rejection_reason(self):
+        with less_console_noise():
+            # Create a form instance with the test domain request
+            form = DomainRequestAdminForm(instance=self.domain_request)
+
+            form = DomainRequestAdminForm(
+                instance=self.domain_request,
+                data={
+                    "status": DomainRequest.DomainRequestStatus.REJECTED,
+                    "rejection_reason": None,
+                },
+            )
+            self.assertFalse(form.is_valid())
+            self.assertIn("rejection_reason", form.errors)
+
+            rejection_reason = form.errors.get("rejection_reason")
+            self.assertEqual(rejection_reason, ["A rejection reason is required."])
+
     def test_form_choices_when_no_instance(self):
         with less_console_noise():
             # Create a form instance without an instance
