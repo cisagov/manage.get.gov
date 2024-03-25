@@ -81,9 +81,9 @@ def parse_domain_row(columns, domain_info: DomainInformation, security_emails_di
         security_email = "(blank)"
 
     if domain_info.federal_type:
-        domain_type = f"{domain_info.get_organization_type_display()} - {domain_info.get_federal_type_display()}"
+        domain_type = f"{domain_info.get_generic_org_type_display()} - {domain_info.get_federal_type_display()}"
     else:
-        domain_type = domain_info.get_organization_type_display()
+        domain_type = domain_info.get_generic_org_type_display()
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
@@ -217,9 +217,9 @@ def parse_request_row(columns, request: DomainRequest):
         requested_domain_name = request.requested_domain.name
 
     if request.federal_type:
-        request_type = f"{request.get_organization_type_display()} - {request.get_federal_type_display()}"
+        request_type = f"{request.get_generic_org_type_display()} - {request.get_federal_type_display()}"
     else:
-        request_type = request.get_organization_type_display()
+        request_type = request.get_generic_org_type_display()
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
@@ -295,7 +295,7 @@ def export_data_type_to_csv(csv_file):
 
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
-        "organization_type",
+        "generic_org_type",
         Coalesce("federal_type", Value("ZZZZZ")),
         "federal_agency",
         "domain__name",
@@ -328,7 +328,7 @@ def export_data_full_to_csv(csv_file):
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
-        "organization_type",
+        "generic_org_type",
         Coalesce("federal_type", Value("ZZZZZ")),
         "federal_agency",
         "domain__name",
@@ -361,13 +361,13 @@ def export_data_federal_to_csv(csv_file):
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
-        "organization_type",
+        "generic_org_type",
         Coalesce("federal_type", Value("ZZZZZ")),
         "federal_agency",
         "domain__name",
     ]
     filter_condition = {
-        "organization_type__icontains": "federal",
+        "generic_org_type__icontains": "federal",
         "domain__state__in": [
             Domain.State.READY,
             Domain.State.DNS_NEEDED,
@@ -468,23 +468,23 @@ def get_sliced_domains(filter_condition, distinct=False):
 
     # Round trip 2: Get counts for other slices
     if distinct:
-        organization_types_query = (
-            DomainInformation.objects.filter(**filter_condition).values_list("organization_type", flat=True).distinct()
+        generic_org_types_query = (
+            DomainInformation.objects.filter(**filter_condition).values_list("generic_org_type", flat=True).distinct()
         )
     else:
-        organization_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
-            "organization_type", flat=True
+        generic_org_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
+            "generic_org_type", flat=True
         )
-    organization_type_counts = Counter(organization_types_query)
+    generic_org_type_counts = Counter(generic_org_types_query)
 
-    federal = organization_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
-    interstate = organization_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
-    state_or_territory = organization_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
-    tribal = organization_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
-    county = organization_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
-    city = organization_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
-    special_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
-    school_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
+    federal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
+    interstate = generic_org_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
+    state_or_territory = generic_org_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
+    tribal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
+    county = generic_org_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
+    city = generic_org_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
+    special_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
+    school_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
 
     # Round trip 3
     election_board = DomainInformation.objects.filter(is_election_board=True, **filter_condition).distinct().count()
@@ -511,23 +511,23 @@ def get_sliced_requests(filter_condition, distinct=False):
 
     # Round trip 2: Get counts for other slices
     if distinct:
-        organization_types_query = (
-            DomainRequest.objects.filter(**filter_condition).values_list("organization_type", flat=True).distinct()
+        generic_org_types_query = (
+            DomainRequest.objects.filter(**filter_condition).values_list("generic_org_type", flat=True).distinct()
         )
     else:
-        organization_types_query = DomainRequest.objects.filter(**filter_condition).values_list(
-            "organization_type", flat=True
+        generic_org_types_query = DomainRequest.objects.filter(**filter_condition).values_list(
+            "generic_org_type", flat=True
         )
-    organization_type_counts = Counter(organization_types_query)
+    generic_org_type_counts = Counter(generic_org_types_query)
 
-    federal = organization_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
-    interstate = organization_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
-    state_or_territory = organization_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
-    tribal = organization_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
-    county = organization_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
-    city = organization_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
-    special_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
-    school_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
+    federal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
+    interstate = generic_org_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
+    state_or_territory = generic_org_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
+    tribal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
+    county = generic_org_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
+    city = generic_org_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
+    special_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
+    school_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
 
     # Round trip 3
     election_board = DomainRequest.objects.filter(is_election_board=True, **filter_condition).distinct().count()

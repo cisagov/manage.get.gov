@@ -1,7 +1,7 @@
 SUMMARY OF YOUR DOMAIN REQUEST
 
 Type of organization:
-{{ domain_request.get_organization_type_display }}
+{{ domain_request.get_generic_org_type_display }}
 {% if domain_request.show_organization_federal %}
 Federal government branch:
 {{ domain_request.get_federal_type_display }}

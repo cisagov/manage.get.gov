@@ -30,7 +30,7 @@ class DomainRequestFixture:
     # {
     #     "status": "started",
     #     "organization_name": "Example - Just started",
-    #     "organization_type": "federal",
+    #     "generic_org_type": "federal",
     #     "federal_agency": None,
     #     "federal_type": None,
     #     "address_line1": None,
@@ -98,7 +98,7 @@ class DomainRequestFixture:
     def _set_non_foreign_key_fields(cls, da: DomainRequest, app: dict):
         """Helper method used by `load`."""
         da.status = app["status"] if "status" in app else "started"
-        da.organization_type = app["organization_type"] if "organization_type" in app else "federal"
+        da.generic_org_type = app["generic_org_type"] if "generic_org_type" in app else "federal"
         da.federal_agency = (
             app["federal_agency"]
             if "federal_agency" in app

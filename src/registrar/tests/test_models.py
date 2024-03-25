@@ -101,7 +101,7 @@ class TestDomainRequest(TestCase):
             domain_request = DomainRequest.objects.create(
                 creator=user,
                 investigator=user,
-                organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+                generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
                 federal_type=DomainRequest.BranchChoices.EXECUTIVE,
                 is_election_board=False,
                 organization_name="Test",
@@ -129,7 +129,7 @@ class TestDomainRequest(TestCase):
             domain, _ = Domain.objects.get_or_create(name="igorville.gov")
             information = DomainInformation.objects.create(
                 creator=user,
-                organization_type=DomainInformation.OrganizationChoices.FEDERAL,
+                generic_org_type=DomainInformation.OrganizationChoices.FEDERAL,
                 federal_type=DomainInformation.BranchChoices.EXECUTIVE,
                 is_election_board=False,
                 organization_name="Test",

@@ -830,7 +830,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # Columns
     list_display = [
         "domain",
-        "organization_type",
+        "generic_org_type",
         "created_at",
         "submitter",
     ]
@@ -841,7 +841,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     ]
 
     # Filters
-    list_filter = ["organization_type"]
+    list_filter = ["generic_org_type"]
 
     # Search
     search_fields = [
@@ -858,7 +858,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "organization_type",
+                    "generic_org_type",
                     "is_election_board",
                     "federal_type",
                     "federal_agency",
@@ -1003,7 +1003,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     list_display = [
         "requested_domain",
         "status",
-        "organization_type",
+        "generic_org_type",
         "federal_type",
         "federal_agency",
         "organization_name",
@@ -1030,7 +1030,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     # Filters
     list_filter = (
         "status",
-        "organization_type",
+        "generic_org_type",
         "federal_type",
         ElectionOfficeFilter,
         "rejection_reason",
@@ -1068,7 +1068,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "organization_type",
+                    "generic_org_type",
                     "is_election_board",
                     "federal_type",
                     "federal_agency",
@@ -1401,7 +1401,7 @@ class DomainAdmin(ListHeaderAdmin):
     # Columns
     list_display = [
         "name",
-        "organization_type",
+        "generic_org_type",
         "federal_type",
         "federal_agency",
         "organization_name",
@@ -1426,10 +1426,10 @@ class DomainAdmin(ListHeaderAdmin):
     # in autocomplete_fields for domain
     ordering = ["name"]
 
-    def organization_type(self, obj):
-        return obj.domain_info.get_organization_type_display()
+    def generic_org_type(self, obj):
+        return obj.domain_info.get_generic_org_type_display()
 
-    organization_type.admin_order_field = "domain_info__organization_type"  # type: ignore
+    generic_org_type.admin_order_field = "domain_info__generic_org_type"  # type: ignore
 
     def federal_agency(self, obj):
         return obj.domain_info.federal_agency if obj.domain_info else None
@@ -1466,7 +1466,7 @@ class DomainAdmin(ListHeaderAdmin):
     state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
 
     # Filters
-    list_filter = ["domain_info__organization_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
+    list_filter = ["domain_info__generic_org_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."

@@ -397,7 +397,7 @@ class DomainRequest(TimeStampedModel):
     )
 
     # ##### data fields from the initial form #####
-    organization_type = models.CharField(
+    generic_org_type = models.CharField(
         max_length=255,
         # use the short names in Django admin
         choices=OrganizationChoices.choices,
@@ -886,12 +886,12 @@ class DomainRequest(TimeStampedModel):
 
     def show_organization_federal(self) -> bool:
         """Show this step if the answer to the first question was "federal"."""
-        user_choice = self.organization_type
+        user_choice = self.generic_org_type
         return user_choice == DomainRequest.OrganizationChoices.FEDERAL
 
     def show_tribal_government(self) -> bool:
         """Show this step if the answer to the first question was "tribal"."""
-        user_choice = self.organization_type
+        user_choice = self.generic_org_type
         return user_choice == DomainRequest.OrganizationChoices.TRIBAL
 
     def show_organization_election(self) -> bool:
@@ -900,7 +900,7 @@ class DomainRequest(TimeStampedModel):
         This shows for answers that aren't "Federal" or "Interstate".
         This also doesnt show if user selected "School District" as well (#524)
         """
-        user_choice = self.organization_type
+        user_choice = self.generic_org_type
         excluded = [
             DomainRequest.OrganizationChoices.FEDERAL,
             DomainRequest.OrganizationChoices.INTERSTATE,
@@ -910,7 +910,7 @@ class DomainRequest(TimeStampedModel):
 
     def show_about_your_organization(self) -> bool:
         """Show this step if this is a special district or interstate."""
-        user_choice = self.organization_type
+        user_choice = self.generic_org_type
         return user_choice in [
             DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
             DomainRequest.OrganizationChoices.INTERSTATE,
@@ -927,12 +927,12 @@ class DomainRequest(TimeStampedModel):
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
 
-        organization_type can be both null and blank,
+        generic_org_type can be both null and blank,
         """
-        if not self.organization_type:
-            # organization_type is either blank or None, can't answer
+        if not self.generic_org_type:
+            # generic_org_type is either blank or None, can't answer
             return None
-        if self.organization_type == DomainRequest.OrganizationChoices.FEDERAL:
+        if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
             return True
         return False
 
