@@ -9,7 +9,7 @@ from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
-from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -791,7 +791,7 @@ class DomainRequest(TimeStampedModel):
 
         # == Check that the domain_request is valid == #
         if Domain.objects.filter(name=self.requested_domain.name).exists():
-            raise FSMApplicationError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
+            raise FSMDomainRequestError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
 
         # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)

@@ -346,3 +346,7 @@ input.admin-confirm-button {
 .usa-summary-box__dhs-color {
     color: $dhs-blue-70;
 }
+
+.errors span.select2-selection {
+    border: 1px solid var(--error-fg) !important;
+}
