@@ -372,8 +372,17 @@ input.admin-confirm-button {
 
 details.dja-detail-table {
     display: inline-table;
+    background-color: var(--body-bg);
     .dja-details-summary {
         color: var(--header-link-color);
+    }
+
+    tr {
+        background-color: transparent;
+    }
+
+    td, th {
+        padding-left: 12px;
     }
 }
 
