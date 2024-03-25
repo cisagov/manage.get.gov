@@ -1,4 +1,4 @@
-import os
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -37,8 +37,11 @@ def test_click_button(browser):
     username_input.send_keys('mock@example.com')
     password_input = driver.find_element(By.NAME, "user[password]")
     password_input.send_keys('mock_token')
-    login_button = driver.find_element(By.id("login_button"))
+    login_button = driver.find_element(By.LINK_TEXT, "Sign in")
     login_button.click()
+    # time.sleep(100)
+    # WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.LINK_TEXT, "Manage your domains")))
+
     print("driver.title is", driver.title)
     # print("browser.title", str(browser.title))
 
