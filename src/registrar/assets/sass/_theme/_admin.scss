@@ -350,3 +350,35 @@ input.admin-confirm-button {
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;
 }
+
+// Sticky submit bar for domain requests on desktop
+@include at-media(desktop) {
+    .submit-row-wrapper {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        background: var(--darkened-bg);
+        border-top-left-radius: 6px;
+        transition: transform .2s ease-out;
+        .submit-row {
+            margin-bottom: 0;
+        }
+    }
+
+    .submit-row-wrapper.collapsed {
+        // translate3d is more performant than translateY
+        // https://stackoverflow.com/questions/22111256/translate3d-vs-translate-performance
+        transform: translate3d(0, 45px, 0);
+    }
+    .submit-row-toggle{
+        display: inline-block;
+        position: absolute;
+        top: -30px;
+        right: 0;
+        background: var(--darkened-bg);
+    }
+
+    #submitRowToggle {
+        color: var( --body-fg);
+    }
+}

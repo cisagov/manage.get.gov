@@ -92,5 +92,24 @@
             </button>
         </div>
 </div>
-{{ block.super }}
+
+<div class="submit-row-wrapper">
+    
+    <span class="submit-row-toggle padding-1 padding-right-2">
+        <button type="button" class="usa-button usa-button--unstyled" id="submitRowToggle">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#expand_more"></use>
+            </svg>
+            <span>Hide</span>
+        </button>
+    </span>
+
+    <p class="visible-desktop text-right margin-top-2 padding-right-2 float-right">
+        <strong>Requested domain:</strong> {{ original.requested_domain.name }}
+    </p>
+    {{ block.super }}
+</div>
+
+<span class="scroll-indicator"></span>
+
 {% endblock %}

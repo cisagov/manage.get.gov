@@ -2,6 +2,7 @@ from datetime import date
 from django.test import TestCase, RequestFactory, Client, override_settings
 from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
+from api.tests.common import less_console_noise_decorator
 from django_webtest import WebTest  # type: ignore
 from django.contrib import messages
 from django.urls import reverse
@@ -1210,6 +1211,28 @@ class TestDomainRequestAdmin(MockEppLib):
 
             # Test that approved domain exists and equals requested domain
             self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)
+
+    @less_console_noise_decorator
+    def test_sticky_submit_row_shows_requested_domain(self):
+        """Test that the change_form template contains a string indicative of the customization
+        of the sticky submit bar."""
+
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+        self.client.force_login(self.superuser)
+
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+
+        # Create a mock request
+        request = self.client.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+
+        # Since we're using client to mock the request, we can only test against
+        # non-interpolated values
+        expected_content = "<strong>Requested domain:</strong>"
+
+        self.assertContains(request, expected_content)
 
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():

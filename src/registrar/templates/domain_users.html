@@ -134,7 +134,7 @@
           <td data-label="Status">{{ invitation.status|title }}</td>
           <td>
             <form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
-              {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline" value="Cancel">
+              {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline cursor-pointer" value="Cancel">
             </form>
           </td>
         </tr>
