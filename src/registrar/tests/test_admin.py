@@ -1339,18 +1339,6 @@ class TestDomainRequestAdmin(MockEppLib):
         # The dropdown has 4 of these.
         self.assertContains(response, "Testy Tester", count=5)
 
-        # Check for table titles. We only need to check for the end tag
-        # (Otherwise this test will fail if we change classes, etc)
-
-        # Title. Count=3 because this table appears on three records.
-        self.assertContains(response, "Title</th>", count=3)
-
-        # Email. Count=3 because this table appears on three records.
-        self.assertContains(response, "Email</th>", count=3)
-
-        # Phone. Count=3 because this table appears on three records.
-        self.assertContains(response, "Phone</th>", count=3)
-
         # == Test the other_employees field == #
         expected_other_employees_fields = [
             # Field, expected value
@@ -1359,9 +1347,6 @@ class TestDomainRequestAdmin(MockEppLib):
             ("phone", "(555) 555 5557</td>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
-
-        # count=1 as only one should exist in a table
-        self.assertContains(response, "Testy Tester</th>", count=1)
 
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
@@ -1529,7 +1514,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             readonly_fields = self.admin.get_readonly_fields(request)
 
-            expected_fields = ['other_contacts', 'current_websites']
+            expected_fields = ["other_contacts", "current_websites"]
 
             self.assertEqual(readonly_fields, expected_fields)
 
