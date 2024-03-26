@@ -193,6 +193,7 @@ urlpatterns = [
         views.DomainDeleteUserView.as_view(http_method_names=["post"]),
         name="domain-user-delete",
     ),
+    path("", include("django_cypress.urls")),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

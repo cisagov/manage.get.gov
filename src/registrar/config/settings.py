@@ -146,6 +146,7 @@ INSTALLED_APPS = [
     # "puml_generator",
     # supports necessary headers for Django cross origin
     "corsheaders",
+    "django_cypress",
 ]
 
 # Middleware are routines for processing web requests.
@@ -637,6 +638,7 @@ SECURE_SSL_REDIRECT = True
 # which are possible even under many seemingly-safe
 # web server configurations.
 ALLOWED_HOSTS = [
+    "*",
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
