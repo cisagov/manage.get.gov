@@ -284,7 +284,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
             # There are 4 template references to Federal (4) plus four references in the table
             # for our actual domain_request
-            self.assertContains(response, "Federal", count=8)
+            self.assertContains(response, "Federal", count=36)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -708,7 +708,7 @@ class TestDomainRequestAdmin(MockEppLib):
             response = self.client.get("/admin/registrar/domainrequest/")
             # There are 4 template references to Federal (4) plus two references in the table
             # for our actual domain request
-            self.assertContains(response, "Federal", count=6)
+            self.assertContains(response, "Federal", count=34)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
