@@ -368,7 +368,7 @@ input.admin-confirm-button {
     .submit-row-wrapper.collapsed {
         // translate3d is more performant than translateY
         // https://stackoverflow.com/questions/22111256/translate3d-vs-translate-performance
-        transform: translate3d(0, 45px, 0);
+        transform: translate3d(0, 42px, 0);
     }
     .submit-row-toggle{
         display: inline-block;
