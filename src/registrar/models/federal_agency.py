@@ -220,4 +220,4 @@ class FederalAgency(TimeStampedModel):
             agencies = [FederalAgency(agency=agency) for agency in AGENCIES]
             FederalAgency.objects.bulk_create(agencies)
         except Exception as e:
-            logger.error(f"Error creating federal agency: {e}")
+            logger.error(f"Error creating federal agencies: {e}")
