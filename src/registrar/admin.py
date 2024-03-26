@@ -910,6 +910,9 @@ class DomainInformationAdmin(ListHeaderAdmin):
         ),
     ]
 
+    # Readonly fields for analysts and superusers
+    readonly_fields = ("other_contacts",)
+
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "creator",
@@ -1119,6 +1122,9 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
     ]
+
+    # Readonly fields for analysts and superusers
+    readonly_fields = ("other_contacts", "current_websites")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
