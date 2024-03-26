@@ -924,7 +924,6 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
-        "other_contacts",
     ]
 
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
@@ -1133,8 +1132,6 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "requested_domain",
         "approved_domain",
         "alternative_domains",
-        "other_contacts",
-        "current_websites",
         "purpose",
         "submitter",
         "no_other_contacts_rationale",
@@ -1310,7 +1307,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
             readonly_fields.extend([field.name for field in self.model._meta.fields])
             # Add the multi-select fields to readonly_fields:
             # Complex fields like ManyToManyField require special handling
-            readonly_fields.extend(["current_websites", "other_contacts", "alternative_domains"])
+            readonly_fields.extend(["alternative_domains"])
 
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
@@ -1421,7 +1418,6 @@ class DomainAdmin(ListHeaderAdmin):
             )
 
         def queryset(self, request, queryset):
-            logger.debug(self.value())
             if self.value() == "1":
                 return queryset.filter(domain_info__is_election_board=True)
             if self.value() == "0":

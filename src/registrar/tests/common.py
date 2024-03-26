@@ -204,7 +204,6 @@ class GenericTestHelper(TestCase):
             {"action": "delete_selected", "select_across": selected_across, "index": index, "_selected_action": "23"},
             follow=True,
         )
-        print(f"what is the response? {response}")
         return response
 
 

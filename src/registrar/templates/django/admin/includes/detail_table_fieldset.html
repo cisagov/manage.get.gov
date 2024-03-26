@@ -58,6 +58,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             {% for contact in all_contacts %}
                 <div class="flex-container">
                     <label aria-label="Other contact details"></label>
+                    <div class="display-none other-contact-id" data-contact-url="{% url 'admin:registrar_contact_change' contact.id %}"></div>
                     {% include "django/admin/includes/contact_detail_table.html" with user=contact field_name="other_contact" no_title_top_padding=field.is_readonly %}
                 </div>
         {% endfor %}

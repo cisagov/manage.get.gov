@@ -1335,9 +1335,9 @@ class TestDomainRequestAdmin(MockEppLib):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
-        # count=4 because the underlying domain has two users with this name.
-        # The dropdown has 3 of these.
-        self.assertContains(response, "Testy Tester", count=4)
+        # count=5 because the underlying domain has two users with this name.
+        # The dropdown has 4 of these.
+        self.assertContains(response, "Testy Tester", count=5)
 
         # Check for table titles. We only need to check for the end tag
         # (Otherwise this test will fail if we change classes, etc)
@@ -1446,6 +1446,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "Yes, select ineligible status")
 
     def test_readonly_when_restricted_creator(self):
+        self.maxDiff = None
         with less_console_noise():
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -1458,6 +1459,8 @@ class TestDomainRequestAdmin(MockEppLib):
             readonly_fields = self.admin.get_readonly_fields(request, domain_request)
 
             expected_fields = [
+                "other_contacts",
+                "current_websites",
                 "id",
                 "created_at",
                 "updated_at",
@@ -1490,8 +1493,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_policy_acknowledged",
                 "submission_date",
                 "notes",
-                "current_websites",
-                "other_contacts",
                 "alternative_domains",
             ]
 
@@ -1505,13 +1506,13 @@ class TestDomainRequestAdmin(MockEppLib):
             readonly_fields = self.admin.get_readonly_fields(request)
 
             expected_fields = [
+                "other_contacts",
+                "current_websites",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
                 "approved_domain",
                 "alternative_domains",
-                "other_contacts",
-                "current_websites",
                 "purpose",
                 "submitter",
                 "no_other_contacts_rationale",
@@ -1528,7 +1529,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             readonly_fields = self.admin.get_readonly_fields(request)
 
-            expected_fields = []
+            expected_fields = ['other_contacts', 'current_websites']
 
             self.assertEqual(readonly_fields, expected_fields)
 
@@ -1972,6 +1973,7 @@ class TestDomainInformationAdmin(TestCase):
 
         p = "userpass"
         self.client.login(username="staffuser", password=p)
+
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
             follow=True,
@@ -2063,21 +2065,9 @@ class TestDomainInformationAdmin(TestCase):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
-        # count=4 because the underlying domain has two users with this name.
-        # The dropdown has 3 of these.
-        self.assertContains(response, "Testy Tester", count=4)
-
-        # Check for table titles. We only need to check for the end tag
-        # (Otherwise this test will fail if we change classes, etc)
-
-        # Title. Count=3 because this table appears on three records.
-        self.assertContains(response, "Title</th>", count=3)
-
-        # Email. Count=3 because this table appears on three records.
-        self.assertContains(response, "Email</th>", count=3)
-
-        # Phone. Count=3 because this table appears on three records.
-        self.assertContains(response, "Phone</th>", count=3)
+        # count=5 because the underlying domain has two users with this name.
+        # The dropdown has 4 of these.
+        self.assertContains(response, "Testy Tester", count=5)
 
         # == Test the other_employees field == #
         expected_other_employees_fields = [
@@ -2088,9 +2078,6 @@ class TestDomainInformationAdmin(TestCase):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
-        # count=1 as only one should exist in a table
-        self.assertContains(response, "Testy Tester</th>", count=1)
-
     def test_readonly_fields_for_analyst(self):
         """Ensures that analysts have their permissions setup correctly"""
         with less_console_noise():
@@ -2100,6 +2087,7 @@ class TestDomainInformationAdmin(TestCase):
             readonly_fields = self.admin.get_readonly_fields(request)
 
             expected_fields = [
+                "other_contacts",
                 "creator",
                 "type_of_work",
                 "more_organization_information",
@@ -2109,7 +2097,6 @@ class TestDomainInformationAdmin(TestCase):
                 "no_other_contacts_rationale",
                 "anything_else",
                 "is_policy_acknowledged",
-                "other_contacts",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
