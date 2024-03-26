@@ -548,6 +548,12 @@ class MockDb(TestCase):
             state=Domain.State.READY,
             first_ready=timezone.make_aware(datetime.combine(date.today() + timedelta(days=1), datetime.min.time())),
         )
+        self.domain_11, _ = Domain.objects.get_or_create(
+            name="cdomain11.gov", state=Domain.State.READY, first_ready=timezone.now()
+        )
+        self.domain_12, _ = Domain.objects.get_or_create(
+            name="zdomain12.gov", state=Domain.State.READY, first_ready=timezone.now()
+        )
 
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
@@ -616,6 +622,20 @@ class MockDb(TestCase):
             federal_agency="Armed Forces Retirement Home",
             is_election_board=False,
         )
+        self.domain_information_11, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_11,
+            generic_org_type="federal",
+            federal_agency="World War I Centennial Commission",
+            federal_type="executive",
+            is_election_board=True,
+        )
+        self.domain_information_12, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_12,
+            generic_org_type="interstate",
+            is_election_board=False,
+        )
 
         meoward_user = get_user_model().objects.create(
             username="meoward_username", first_name="first_meoward", last_name="last_meoward", email="meoward@rocks.com"
@@ -639,6 +659,14 @@ class MockDb(TestCase):
 
         _, created = UserDomainRole.objects.get_or_create(
             user=meoward_user, domain=self.domain_2, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_11, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_12, role=UserDomainRole.Roles.MANAGER
         )
 
         with less_console_noise():

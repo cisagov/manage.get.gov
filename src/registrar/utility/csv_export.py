@@ -80,7 +80,7 @@ def parse_domain_row(columns, domain_info: DomainInformation, security_emails_di
     if security_email.lower() in invalid_emails:
         security_email = "(blank)"
 
-    if domain_info.federal_type:
+    if domain_info.federal_type and domain_info.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
         domain_type = f"{domain_info.get_generic_org_type_display()} - {domain_info.get_federal_type_display()}"
     else:
         domain_type = domain_info.get_generic_org_type_display()
@@ -469,16 +469,43 @@ def get_sliced_domains(filter_condition, distinct=False):
     domains_count = DomainInformation.objects.filter(**filter_condition).distinct().count()
 
     # Round trip 2: Get counts for other slices
+    # This will require either 8 filterd and distinct DB round trips,
+    # or 2 DB round trips plus iteration on domain_permissions for each domain
     if distinct:
-        generic_org_types_query = (
-            DomainInformation.objects.filter(**filter_condition).values_list("generic_org_type", flat=True).distinct()
+        generic_org_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
+            "domain_id", "generic_org_type"
         )
+        # Initialize Counter to store counts for each generic_org_type
+        generic_org_type_counts = Counter()
+
+        # Keep track of domains already counted
+        domains_counted = set()
+
+        # Iterate over distinct domains
+        for domain_id, generic_org_type in generic_org_types_query:
+            # Check if the domain has already been counted
+            if domain_id in domains_counted:
+                continue
+
+            # Get all permissions for the current domain
+            domain_permissions = DomainInformation.objects.filter(domain_id=domain_id, **filter_condition).values_list(
+                "domain__permissions", flat=True
+            )
+
+            # Check if the domain has multiple permissions
+            if len(domain_permissions) > 0:
+                # Mark the domain as counted
+                domains_counted.add(domain_id)
+
+            # Increment the count for the corresponding generic_org_type
+            generic_org_type_counts[generic_org_type] += 1
     else:
         generic_org_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
             "generic_org_type", flat=True
         )
-    generic_org_type_counts = Counter(generic_org_types_query)
+        generic_org_type_counts = Counter(generic_org_types_query)
 
+    # Extract counts for each generic_org_type
     federal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
     interstate = generic_org_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
     state_or_territory = generic_org_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
@@ -505,21 +532,16 @@ def get_sliced_domains(filter_condition, distinct=False):
     ]
 
 
-def get_sliced_requests(filter_condition, distinct=False):
+def get_sliced_requests(filter_condition):
     """Get filtered requests counts sliced by org type and election office."""
 
     # Round trip 1: Get distinct requests based on filter condition
     requests_count = DomainRequest.objects.filter(**filter_condition).distinct().count()
 
     # Round trip 2: Get counts for other slices
-    if distinct:
-        generic_org_types_query = (
-            DomainRequest.objects.filter(**filter_condition).values_list("generic_org_type", flat=True).distinct()
-        )
-    else:
-        generic_org_types_query = DomainRequest.objects.filter(**filter_condition).values_list(
-            "generic_org_type", flat=True
-        )
+    generic_org_types_query = DomainRequest.objects.filter(**filter_condition).values_list(
+        "generic_org_type", flat=True
+    )
     generic_org_type_counts = Counter(generic_org_types_query)
 
     federal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
