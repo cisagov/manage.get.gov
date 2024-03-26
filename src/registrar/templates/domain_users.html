@@ -135,7 +135,7 @@
           <td>
             {% if invitation.status == invitation.DomainInvitationStatus.INVITED %}
             <form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
-              {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline" value="Cancel">
+              {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline cursor-pointer" value="Cancel">
             </form>
             {% endif %}
           </td>

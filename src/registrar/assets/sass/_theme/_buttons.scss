@@ -138,6 +138,13 @@ a.usa-button--unstyled:visited {
   }
 }
 
+.usa-button--unstyled--white,
+.usa-button--unstyled--white:hover,
+.usa-button--unstyled--white:focus,
+.usa-button--unstyled--white:active {
+  color: color('white');
+}
+
 // Cancel button used on the
 // DNSSEC main page
 // We want to center this button on mobile
