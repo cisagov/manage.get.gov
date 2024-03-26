@@ -133,9 +133,11 @@
           <td data-sort-value="{{ invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.created_at|date }} </td>
           <td data-label="Status">{{ invitation.status|title }}</td>
           <td>
+            {% if invitation.status == invitation.DomainInvitationStatus.INVITED %}
             <form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
               {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline" value="Cancel">
             </form>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
