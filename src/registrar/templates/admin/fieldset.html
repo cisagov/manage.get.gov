@@ -6,17 +6,11 @@ It is not inherently customizable on its own, so we can modify this instead.
 https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/includes/fieldset.html
 {% endcomment %}
 <fieldset class="module aligned {{ fieldset.classes }}">
-    {# .gov override #}
-    {% block fieldset_title %}
-        {% if fieldset.name %}<h2>{{ fieldset.name }}</h2>{% endif %}
-    {% endblock fieldset_title %}
+    {% if fieldset.name %}<h2>{{ fieldset.name }}</h2>{% endif %}
 
-    {# .gov override #}
-    {% block fieldset_description %}
-        {% if fieldset.description %}
-            <div class="description">{{ fieldset.description|safe }}</div>
-        {% endif %}
-    {% endblock fieldset_description %}
+    {% if fieldset.description %}
+        <div class="description">{{ fieldset.description|safe }}</div>
+    {% endif %}
 
     {% for line in fieldset %}
         <div class="form-row{% if line.fields|length == 1 and line.errors %} errors{% endif %}{% if not line.has_visible_field %} hidden{% endif %}{% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
@@ -45,11 +39,6 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
                                 {% endif %}
                             {% endif %}
                         </div>
-                    
-                    {# .gov addition #}
-                    {% block before_help_text %}
-                        {# For templating purposes #}
-                    {% endblock before_help_text %}
 
                     {% if field.field.help_text %}
                         {# .gov override #}

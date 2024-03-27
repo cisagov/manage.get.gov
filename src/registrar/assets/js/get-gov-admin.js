@@ -175,10 +175,7 @@ function checkToListThenInitWidget(toListId, attempts) {
         document.addEventListener('DOMContentLoaded', function() {
             // Select all table rows that have a data-contact-id attribute
             let contactRows = document.querySelectorAll("tr[data-contact-url]");
-            console.log(`contact rows at this point: ${contactRows}`)
-            console.log(`length of ont ${contactRows.length}`)
             if (!contactRows || contactRows.length == 0) {
-                console.log("in if statement")
                 contactRows = document.querySelectorAll(".other-contact-id")
             }
             

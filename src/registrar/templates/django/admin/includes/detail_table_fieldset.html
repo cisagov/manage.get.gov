@@ -22,10 +22,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         </dt>
                         <dd>
                             <address>
-                                {% if  contact.get_formatted_name  %}<a href="{% url 'admin:registrar_contact_change' contact.id %}">{{ contact.get_formatted_name }}</a><br />{% else %}None<br />{% endif %}
-                                {% if  contact.title  %}{{ contact.title }}<br />{% else %}None<br />{% endif %}
-                                {% if  contact.email  %}{{ contact.email }}<br />{% else %}None<br />{% endif %}
-                                {% if  contact.phone  %}{{ contact.phone.as_national }}{% else %}None{% endif %}
+                                {% if contact.get_formatted_name %}<a href="{% url 'admin:registrar_contact_change' contact.id %}">{{ contact.get_formatted_name }}</a><br />{% else %}None<br />{% endif %}
+                                {% if contact.title %}{{ contact.title }}<br />{% else %}None<br />{% endif %}
+                                {% if contact.email %}{{ contact.email }}<br />{% else %}None<br />{% endif %}
+                                {% if contact.phone %}{{ contact.phone }}{% else %}None{% endif %}
                             </address>
                         </dd>
                     {% endfor %}

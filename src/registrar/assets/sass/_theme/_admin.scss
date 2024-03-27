@@ -354,6 +354,13 @@ details.dja-detail-table {
         color: var(--body-quiet-color);
     }
 
+    @media (max-width: 1024px){
+        .dja-detail-contents {
+            max-width: 400px !important;
+            overflow-x: scroll !important;
+        }
+    }
+
     tr {
         background-color: transparent;
     }
@@ -371,34 +378,18 @@ details.dja-detail-table {
 
 }
 
-table.dja-user-detail-table {
-    tr {
-        background-color: var(--body-bg);
+ul {
+    .padding-left-0__detail-list {
+        padding-left: 0 !important;
     }
 
-    // Make the head of the user detail table "float"
-    thead > tr > th {
-        border-radius: 4px;
-        border-top: none;
-        border-bottom: none;
+    .margin-left-0__detail-list {
+        margin-left: 0 !important;
     }
 
-    th, td {
-        border: none
+    .margin-top-neg-1__detail-list {
+        margin-top: -8px !important;
     }
-
-}
-
-ul.padding-left-0__detail-list {
-    padding-left: 0 !important;
-}
-
-ul.margin-left-0__detail-list {
-    margin-left: 0 !important;
-}
-
-ul.margin-top-neg-1__detail-list {
-    margin-top: -8px !important;
 }
 
 .dja-detail-list {
