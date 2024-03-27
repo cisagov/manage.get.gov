@@ -21,6 +21,8 @@
                         {% else %}
                             election office = Yes
                         {% endif %}
+                    {% elif filter_param.parameter_name == 'status__in' %}
+                        status in [{{ filter_param.parameter_value }}]
                     {% else %}
                         {{ filter_param.parameter_name }} = {{ filter_param.parameter_value }}
                     {% endif %}

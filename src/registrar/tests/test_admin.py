@@ -705,14 +705,25 @@ class TestDomainRequestAdmin(MockEppLib):
         with less_console_noise():
             self.client.force_login(self.superuser)
             completed_domain_request()
-            response = self.client.get("/admin/registrar/domainrequest/")
-            # There are 4 template references to Federal (4) plus two references in the table
-            # for our actual domain request
+            response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
+            # There are 2 template references to Federal (4) and two in the results data
+            # of the request
             self.assertContains(response, "Federal", count=6)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
             self.assertNotContains(response, "Federal: an agency of the U.S. government")
+
+    def test_default_status_in_domain_requests_list(self):
+        """
+        Make sure the default status in admin is selected on the domain requests list page
+        """
+        with less_console_noise():
+            self.client.force_login(self.superuser)
+            completed_domain_request()
+            response = self.client.get("/admin/registrar/domainrequest/")
+            # The results are filtered by "status in [submitted]"
+            self.assertContains(response, "status in [submitted]", count=1)
 
     def transition_state_and_send_email(self, domain_request, status, rejection_reason=None):
         """Helper method for the email test cases."""
@@ -1520,7 +1531,7 @@ class TestDomainRequestAdmin(MockEppLib):
             # Grab the current list of table filters
             readonly_fields = self.admin.get_list_filter(request)
             expected_fields = (
-                "status",
+                DomainRequestAdmin.StatusListFilter,
                 "generic_org_type",
                 "federal_type",
                 DomainRequestAdmin.ElectionOfficeFilter,
