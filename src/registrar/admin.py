@@ -1335,7 +1335,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         if not bool(request.GET) and request.path not in http_referer:
             # modify the GET of the request to set the selected filter
             modified_get = request.GET.copy()
-            modified_get["status__in"] = "submitted"
+            modified_get["status__in"] = "submitted,in review,action needed"
             request.GET = modified_get
         response = super().changelist_view(request, extra_context=extra_context)
         return response
