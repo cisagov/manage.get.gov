@@ -5,64 +5,78 @@
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endcomment %}
 {% block field_readonly %}
+    {% with all_contacts=original.other_contacts.all %}
     {% if field.field.name == "other_contacts" %}
-    <div class="readonly">
-        {% for contact in field.contents|split:", " %}
-            <a href="#" class="other-contact__{{forloop.counter}}">{{ contact }}</a>{% if not forloop.last %}, {% endif %}
-        {% endfor %}
-    </div>
-    {% elif field.field.name == "current_websites" %}
-    {% comment %}
-    The "website" model is essentially just a text field.
-    It is not useful to be redirected to the object definition,
-    rather it is more useful in this scenario to be redirected to the
-    actual website (as its just a plaintext string otherwise).
-
-    This ONLY applies to analysts. For superusers, its business as usual.
-    {% endcomment %}
-    <div class="readonly">
-    {% with total_websites=field.contents|split:", " %}
-    {% for website in total_websites %}
-        <a href="{{ website }}" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
-        {# Acts as a <br> #}
-        {% if total_websites|length < 5 %}
-        <div class="display-block margin-top-1"></div>
+        {% if all_contacts.count > 2 %}
+            <div class="readonly">
+                {% for contact in field.contents|split:", " %}
+                    <a href="#" class="other-contact__{{forloop.counter}}">{{ contact }}</a>{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="flex-container dja-detail-list">
+                <dl class="usa-list usa-list--unstyled margin-0 margin-top-1">
+                    {% for contact in all_contacts %}
+                        <dt class="{% if forloop.counter == 1%}margin-top-0{% endif %}">
+                            Organization contact {{forloop.counter}}
+                        </dt>
+                        <dd>
+                            <address>
+                                {% if  contact.get_formatted_name  %}<a href="{% url 'admin:registrar_contact_change' contact.id %}">{{ contact.get_formatted_name }}</a><br />{% else %}None<br />{% endif %}
+                                {% if  contact.title  %}{{ contact.title }}<br />{% else %}None<br />{% endif %}
+                                {% if  contact.email  %}{{ contact.email }}<br />{% else %}None<br />{% endif %}
+                                {% if  contact.phone  %}{{ contact.phone.as_national }}{% else %}None{% endif %}
+                            </address>
+                        </dd>
+                    {% endfor %}
+                </dl>
+            </div>
         {% endif %}
-    {% endfor %}
-    {% endwith %}
-    </div>
+    {% elif field.field.name == "current_websites" %}
+        {% comment %}
+        The "website" model is essentially just a text field.
+        It is not useful to be redirected to the object definition,
+        rather it is more useful in this scenario to be redirected to the
+        actual website (as its just a plaintext string otherwise).
+
+        This ONLY applies to analysts. For superusers, its business as usual.
+        {% endcomment %}
+        <div class="readonly">
+        {% with total_websites=field.contents|split:", " %}
+            {% for website in total_websites %}
+                <a href="{{ website }}" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
+                {# Acts as a <br> #}
+                {% if total_websites|length < 5 %}
+                <div class="display-block margin-top-1"></div>
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
+        </div>
     {% else %}
     <div class="readonly">{{ field.contents }}</div>
     {% endif %}
+    {% endwith %}
 {% endblock field_readonly %}
 
 {% block after_help_text %}
     {% if field.field.name == "creator" %}
         <div class="flex-container">
         <label aria-label="Creator contact details"></label>
-        {% include "django/admin/includes/contact_detail_table.html" with user=original.creator field_name="creator" no_title_top_padding=field.is_readonly %}
+        {% include "django/admin/includes/contact_detail_list.html" with user=original.creator field_name="creator" no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "submitter" %}
         <div class="flex-container">
         <label aria-label="Submitter contact details"></label>
-        {% include "django/admin/includes/contact_detail_table.html" with user=original.submitter field_name="submitter" no_title_top_padding=field.is_readonly %}
+        {% include "django/admin/includes/contact_detail_list.html" with user=original.submitter field_name="submitter" no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "authorizing_official" %}
         <div class="flex-container">
         <label aria-label="Authorizing official contact details"></label>
-        {% include "django/admin/includes/contact_detail_table.html" with user=original.authorizing_official field_name="authorizing_official" no_title_top_padding=field.is_readonly %}
+        {% include "django/admin/includes/contact_detail_list.html" with user=original.authorizing_official field_name="authorizing_official" no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "other_contacts" and original.other_contacts.all %}
         {% with all_contacts=original.other_contacts.all %}
-        {% if all_contacts.count == 1 %}
-            {% for contact in all_contacts %}
-                <div class="flex-container">
-                    <label aria-label="Other contact details"></label>
-                    <div class="display-none other-contact-id" data-contact-url="{% url 'admin:registrar_contact_change' contact.id %}"></div>
-                    {% include "django/admin/includes/contact_detail_table.html" with user=contact field_name="other_contact" no_title_top_padding=field.is_readonly %}
-                </div>
-        {% endfor %}
-        {% else %}
+        {% if all_contacts.count > 2 %}
             <details class="margin-top-1 dja-detail-table" aria-role="button">
                 <summary class="padding-1 padding-left-0 dja-details-summary">Details</summary>
                 <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">

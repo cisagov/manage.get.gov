@@ -389,6 +389,46 @@ table.dja-user-detail-table {
 
 }
 
+ul.padding-left-0__detail-list {
+    padding-left: 0 !important;
+}
+
+ul.margin-left-0__detail-list {
+    margin-left: 0 !important;
+}
+
+ul.margin-top-neg-1__detail-list {
+    margin-top: -8px !important;
+}
+
+.dja-detail-list {
+    dl {
+        padding-left: 0px !important;
+    }
+    // Mimic the normal label size
+    dt {
+        font-size: 0.8125rem;
+        color: var(--body-quiet-color);
+    }
+
+    address {
+        font-size: 0.8125rem;
+        color: var(--body-quiet-color);
+    }
+}
+
+// Mimic the normal label size
+@media (max-width: 1024px){
+    .dja-detail-list dt {
+        font-size: 0.875rem;
+        color: var(--body-quiet-color);
+    }
+    .dja-detail-list address {
+        font-size: 0.875rem;
+        color: var(--body-quiet-color);
+    }
+}
+
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;
 }

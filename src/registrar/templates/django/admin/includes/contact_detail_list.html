@@ -1,0 +1,47 @@
+{% load i18n static %}
+
+
+<ul class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} padding-top-0 padding-left-0__detail-list margin-left-0__detail-list" {% if field_name %} id="id_detail_list__{{field_name}}" {% endif %}>
+    {% if user.title or user.contact.title or user.email or user.contact.email or user.phone or user.contact.phone %}
+        {# Title #}
+        <li>
+            {% if user.title or user.contact.title %}
+                {% if user.contact.title %}
+                    {{ user.contact.title }}
+                {% else %}
+                    {{ user.title }}
+                {% endif %}
+            {% else %}
+                None
+            {% endif %}
+        </li>
+        {# Email #}
+        <li>
+            {% if user.email or user.contact.email %}
+                {% if user.contact.email %}
+                    {{ user.contact.email }}
+                {% else %}
+                    {{ user.email }}
+                {% endif %}
+            {% else %}
+                None
+            {% endif %}
+        </li>
+        {# Phone #}
+        <li>
+            {% if user.phone or user.contact.phone %}
+                {% if user.contact.phone %}
+                    {{ user.contact.phone.as_national }}
+                {% else %}
+                    {{ user.phone.as_national }}
+                {% endif %}
+            {% else %}
+            None
+            {% endif %}
+        </li>
+    {% else %}
+        <li>
+            No additional contact information found.
+        </li>
+    {% endif %}
+</ul>
