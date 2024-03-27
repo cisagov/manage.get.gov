@@ -899,7 +899,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
                     "about_your_organization",
-                ]
+                ],
             },
         ),
         (
@@ -921,7 +921,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
                     "city",
                     "zipcode",
                     "urbanization",
-                ]
+                ],
             },
         ),
     ]
@@ -1122,7 +1122,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
                     "about_your_organization",
-                ]
+                ],
             },
         ),
         (
@@ -1144,7 +1144,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
                     "city",
                     "zipcode",
                     "urbanization",
-                ]
+                ],
             },
         ),
     ]
