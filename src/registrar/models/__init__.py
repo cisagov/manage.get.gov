@@ -4,6 +4,7 @@ from .domain_request import DomainRequest
 from .domain_information import DomainInformation
 from .domain import Domain
 from .draft_domain import DraftDomain
+from .federal_agency import FederalAgency
 from .host_ip import HostIP
 from .host import Host
 from .domain_invitation import DomainInvitation
@@ -22,6 +23,7 @@ __all__ = [
     "Domain",
     "DraftDomain",
     "DomainInvitation",
+    "FederalAgency",
     "HostIP",
     "Host",
     "UserDomainRole",
@@ -39,6 +41,7 @@ auditlog.register(Domain)
 auditlog.register(DraftDomain)
 auditlog.register(DomainInvitation)
 auditlog.register(DomainInformation)
+auditlog.register(FederalAgency)
 auditlog.register(HostIP)
 auditlog.register(Host)
 auditlog.register(UserDomainRole)

@@ -284,7 +284,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
             # There are 4 template references to Federal (4) plus four references in the table
             # for our actual domain_request
-            self.assertContains(response, "Federal", count=8)
+            self.assertContains(response, "Federal", count=36)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -708,7 +708,7 @@ class TestDomainRequestAdmin(MockEppLib):
             response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
             # There are 2 template references to Federal (4) and two in the results data
             # of the request
-            self.assertContains(response, "Federal", count=6)
+            self.assertContains(response, "Federal", count=34)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -722,7 +722,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.client.force_login(self.superuser)
             completed_domain_request()
             response = self.client.get("/admin/registrar/domainrequest/")
-            # The results are filtered by "status in [submitted]"
+            # The results are filtered by "status in [submitted,in review,action needed]"
             self.assertContains(response, "status in [submitted,in review,action needed]", count=1)
 
     def transition_state_and_send_email(self, domain_request, status, rejection_reason=None):

@@ -1841,6 +1841,13 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
+class FederalAgencyAdmin(ListHeaderAdmin):
+    list_display = ["agency"]
+    search_fields = ["agency"]
+    search_help_text = "Search by agency name."
+    ordering = ["agency"]
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
@@ -1854,6 +1861,7 @@ admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
+admin.site.register(models.FederalAgency, FederalAgencyAdmin)
 # Host and HostIP removed from django admin because changes in admin
 # do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)
