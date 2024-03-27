@@ -3,6 +3,7 @@ import csv
 import logging
 from datetime import datetime
 from registrar.models.domain import Domain
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from django.utils import timezone
@@ -33,7 +34,7 @@ def get_domain_infos(filter_condition, sort_fields):
     """
     domain_infos = (
         DomainInformation.objects.select_related("domain", "authorizing_official")
-        .prefetch_related("domain__permissions")
+        .prefetch_related("domain__permissions", "domain__invitations")
         .filter(**filter_condition)
         .order_by(*sort_fields)
         .distinct()
@@ -154,6 +155,10 @@ def write_domains_csv(
 
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
 
+    # td_agencies = all_domain_infos.filter(domain__invitation__status='invited').annotate(invitations_count=Count('invitations')).values_list('domain_name', 'invitations_count').distinct()
+    # Create a dictionary mapping of domain_name to federal_agency
+    # td_dict = dict(td_agencies)
+    
     # Store all security emails to avoid epp calls or excessive filters
     sec_contact_ids = all_domain_infos.values_list("domain__security_contact_registry_id", flat=True)
 
@@ -164,6 +169,8 @@ def write_domains_csv(
 
     # The maximum amount of domain managers an account has
     # We get the max so we can set the column header accurately
+    max_dm_active = 0
+    max_dm_invited = 0
     max_dm_count = 0
     total_body_rows = []
 
@@ -172,15 +179,26 @@ def write_domains_csv(
         page = paginator.page(page_num)
         for domain_info in page.object_list:
 
-            # Get count of all the domain managers for an account
+            # Get max number of domain managers
             if get_domain_managers:
-                dm_count = domain_info.domain.permissions.count()
-                if dm_count > max_dm_count:
-                    max_dm_count = dm_count
+                dm_active = domain_info.domain.permissions.count()
+                if dm_active > max_dm_active:
+                    max_dm_active = dm_active
+
+                # Now let's get the domain managers who have not retrieved their invite yet
+                # Let's get the max number of whose
+                dm_invited = domain_info.domain.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED).count()
+                if dm_invited > max_dm_invited:
+                    max_dm_invited = dm_invited
+
+                if dm_active > max_dm_active or dm_invited > max_dm_invited:
+                    max_dm_count = max_dm_active + max_dm_invited
                     for i in range(1, max_dm_count + 1):
                         column_name = f"Domain manager email {i}"
+                        column2_name = f"DM{i} status"
                         if column_name not in columns:
                             columns.append(column_name)
+                            columns.append(column2_name)
 
             try:
                 row = parse_domain_row(columns, domain_info, security_emails_dict, get_domain_managers)
