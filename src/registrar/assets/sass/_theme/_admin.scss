@@ -378,18 +378,16 @@ details.dja-detail-table {
 
 }
 
-ul {
-    .padding-left-0__detail-list {
-        padding-left: 0 !important;
-    }
+ul.padding-left-0__detail-list {
+    padding-left: 0 !important;
+}
 
-    .margin-left-0__detail-list {
-        margin-left: 0 !important;
-    }
+ul.margin-left-0__detail-list {
+    margin-left: 0 !important;
+}
 
-    .margin-top-neg-1__detail-list {
-        margin-top: -8px !important;
-    }
+ul.margin-top-neg-1__detail-list {
+    margin-top: -8px !important;
 }
 
 .dja-detail-list {
