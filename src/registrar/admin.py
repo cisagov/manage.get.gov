@@ -885,6 +885,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "fields": [
                     "generic_org_type",
                     "is_election_board",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "federal_type",
                     "federal_agency",
                     "tribe_name",
@@ -900,6 +908,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "fields": [
                     "organization_name",
                     "state_territory",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "address_line1",
                     "address_line2",
                     "city",
@@ -1092,6 +1108,14 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "fields": [
                     "generic_org_type",
                     "is_election_board",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "federal_type",
                     "federal_agency",
                     "tribe_name",
@@ -1107,6 +1131,14 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "fields": [
                     "organization_name",
                     "state_territory",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "address_line1",
                     "address_line2",
                     "city",
