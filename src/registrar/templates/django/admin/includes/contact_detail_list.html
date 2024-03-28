@@ -1,42 +1,51 @@
 {% load i18n static %}
 
+<address class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} dja-address-contact-list">
 
-<ul class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} padding-top-0 padding-left-0__detail-list margin-left-0__detail-list" {% if field_name %} id="id_detail_list__{{field_name}}" {% endif %}>
+    {% if show_formatted_name %}
+        {% if contact.get_formatted_name %}
+            <a href="{% url 'admin:registrar_contact_change' user.id %}">{{ user.get_formatted_name }}</a><br />
+        {% else %}
+            None<br />
+        {% endif %}
+    {% endif %}
+
     {% if user.title or user.contact.title or user.email or user.contact.email or user.phone or user.contact.phone %}
         {# Title #}
         {% if user.title or user.contact.title %}
             {% if user.contact.title %}
-                <li>{{ user.contact.title }}</li>
+                {{ user.contact.title }}
             {% else %}
-                <li>{{ user.title }}</li>
+                {{ user.title }}
             {% endif %}
+            <br>
         {% else %}
-            <li>None</li>
+            None<br>
         {% endif %}
         {# Email #}
         {% if user.email or user.contact.email %}
             {% if user.contact.email %}
-                <li>{{ user.contact.email }}</li>
+                {{ user.contact.email }}
             {% else %}
-                <li>{{ user.email }}</li>
+                {{ user.email }}
             {% endif %}
+            <br>
         {% else %}
-            <li>None</li>
+            None<br>
         {% endif %}
 
         {# Phone #}
         {% if user.phone or user.contact.phone %}
-            {% if user.contact.phone %}</li>
-                <li>{{ user.contact.phone }}</li>
+            {% if user.contact.phone %}
+                {{ user.contact.phone }}
             {% else %}
-                <li>{{ user.phone }}</li>
+                {{ user.phone }}
             {% endif %}
+            <br>
         {% else %}
-            <li>None</li>
+            None<br>
         {% endif %}
     {% else %}
-        <li>
-            No additional contact information found.
-        </li>
+        No additional contact information found.
     {% endif %}
-</ul>
+</address>

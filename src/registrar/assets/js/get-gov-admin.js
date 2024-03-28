@@ -170,35 +170,6 @@ function checkToListThenInitWidget(toListId, attempts) {
     }
 }
 
-(function() {
-    function addUrlsToOtherContacts() {
-        document.addEventListener('DOMContentLoaded', function() {
-            // Select all table rows that have a data-contact-id attribute
-            let contactRows = document.querySelectorAll("tr[data-contact-url]");
-            if (!contactRows || contactRows.length == 0) {
-                contactRows = document.querySelectorAll(".other-contact-id")
-            }
-            
-            if (contactRows){
-                // Add a click event listener to each row
-                let index = 1;
-                contactRows.forEach(function(row) {
-                    let otherContactUrl = row.getAttribute("data-contact-url");
-                    if (otherContactUrl){
-                        let otherContact = document.querySelector(`.other-contact__${index}`);
-                        if (otherContact) {
-                            otherContact.href = otherContactUrl;
-                        }
-                    }
-                    index++;
-                });
-            }
-        });
-    }
-
-    addUrlsToOtherContacts()
-})();
-
 // Initialize the widget:
 //  add related buttons to the widget for edit, delete and view
 //  add event listeners on the from list, the to list, and selector buttons which either enable or disable the related buttons

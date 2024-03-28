@@ -351,6 +351,7 @@ details.dja-detail-table {
     display: inline-table;
     background-color: var(--body-bg);
     .dja-details-summary {
+        cursor: pointer;
         color: var(--body-quiet-color);
     }
 
@@ -378,21 +379,15 @@ details.dja-detail-table {
 
 }
 
-ul.padding-left-0__detail-list {
-    padding-left: 0 !important;
-}
 
-ul.margin-left-0__detail-list {
-    margin-left: 0 !important;
-}
-
-ul.margin-top-neg-1__detail-list {
+address.margin-top-neg-1__detail-list {
     margin-top: -8px !important;
 }
 
 .dja-detail-list {
     dl {
         padding-left: 0px !important;
+        margin-top: 5px !important;
     }
     // Mimic the normal label size
     dt {
@@ -404,6 +399,11 @@ ul.margin-top-neg-1__detail-list {
         font-size: 0.8125rem;
         color: var(--body-quiet-color);
     }
+}
+
+address.dja-address-contact-list {
+    font-size: 0.8125rem;
+    color: var(--body-quiet-color);
 }
 
 // Mimic the normal label size

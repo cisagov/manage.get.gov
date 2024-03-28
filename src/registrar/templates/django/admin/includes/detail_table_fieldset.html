@@ -9,24 +9,19 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% if field.field.name == "other_contacts" %}
         {% if all_contacts.count > 2 %}
             <div class="readonly">
-                {% for contact in field.contents|split:", " %}
-                    <a href="#" class="other-contact__{{forloop.counter}}">{{ contact }}</a>{% if not forloop.last %}, {% endif %}
+                {% for contact in all_contacts %}
+                    <a href="{% url 'admin:registrar_contact_change' contact.id %}">{{ contact.get_formatted_name }}</a>{% if not forloop.last %}, {% endif %}
                 {% endfor %}
             </div>
         {% else %}
             <div class="flex-container dja-detail-list">
-                <dl class="usa-list usa-list--unstyled margin-0 margin-top-1">
+                <dl class="usa-list usa-list--unstyled margin-0">
                     {% for contact in all_contacts %}
                         <dt class="{% if forloop.counter == 1%}margin-top-0{% endif %}">
                             Organization contact {{forloop.counter}}
                         </dt>
                         <dd>
-                            <address>
-                                {% if contact.get_formatted_name %}<a href="{% url 'admin:registrar_contact_change' contact.id %}">{{ contact.get_formatted_name }}</a><br />{% else %}None<br />{% endif %}
-                                {% if contact.title %}{{ contact.title }}<br />{% else %}None<br />{% endif %}
-                                {% if contact.email %}{{ contact.email }}<br />{% else %}None<br />{% endif %}
-                                {% if contact.phone %}{{ contact.phone }}{% else %}None{% endif %}
-                            </address>
+                            {% include "django/admin/includes/contact_detail_list.html" with user=contact show_formatted_name=True %}
                         </dd>
                     {% endfor %}
                 </dl>
@@ -52,6 +47,12 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             {% endfor %}
         {% endwith %}
         </div>
+    {% elif field.field.name == "alternative_domains" %}
+        <div class="readonly">
+            {% for alt_domain in original.alternative_domains.all %}
+                <a href="{% url 'admin:registrar_website_change' alt_domain.id %}">{{ alt_domain }}</a>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </div>
     {% else %}
     <div class="readonly">{{ field.contents }}</div>
     {% endif %}
@@ -62,17 +63,17 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% if field.field.name == "creator" %}
         <div class="flex-container">
         <label aria-label="Creator contact details"></label>
-        {% include "django/admin/includes/contact_detail_list.html" with user=original.creator field_name="creator" no_title_top_padding=field.is_readonly %}
+        {% include "django/admin/includes/contact_detail_list.html" with user=original.creator no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "submitter" %}
         <div class="flex-container">
         <label aria-label="Submitter contact details"></label>
-        {% include "django/admin/includes/contact_detail_list.html" with user=original.submitter field_name="submitter" no_title_top_padding=field.is_readonly %}
+        {% include "django/admin/includes/contact_detail_list.html" with user=original.submitter no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "authorizing_official" %}
         <div class="flex-container">
         <label aria-label="Authorizing official contact details"></label>
-        {% include "django/admin/includes/contact_detail_list.html" with user=original.authorizing_official field_name="authorizing_official" no_title_top_padding=field.is_readonly %}
+        {% include "django/admin/includes/contact_detail_list.html" with user=original.authorizing_official no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "other_contacts" and original.other_contacts.all %}
         {% with all_contacts=original.other_contacts.all %}
@@ -83,17 +84,13 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     <table>
                         <thead>
                             <tr>
-                                <th colspan="4">Contact information</th>
+                                <th colspan="4">Other contact information</th>
                             <tr>
                         </thead>
                         <tbody>
                             {% for contact in all_contacts %}
-                            {% comment %}
-                            Since we can't get the id from field, we can embed this information here.
-                            Then we can link these two fields using javascript.
-                            {% endcomment %}
-                            <tr data-contact-id="{{ contact.id }}" data-contact-url="{% url 'admin:registrar_contact_change' contact.id %}">
-                                <th class="padding-left-1" scope="row">{{contact.first_name}} {{contact.last_name}}</th>
+                            <tr>
+                                <th class="padding-left-1" scope="row">{{ contact.get_formatted_name }}</th>
                                 <td class="padding-left-1">{{ contact.title }}</td>
                                 <td class="padding-left-1">{{ contact.email }}</td>
                                 <td class="padding-left-1">{{ contact.phone }}</td>

@@ -1303,13 +1303,11 @@ class TestDomainRequestAdmin(MockEppLib):
         # == Check for the creator == #
 
         # Check for the right title, email, and phone number in the response.
-        # We only need to check for the end tag
-        # (Otherwise this test will fail if we change classes, etc)
         expected_creator_fields = [
             # Field, expected value
-            ("title", "Treat inspector</li>"),
-            ("email", "meoward.jones@igorville.gov</li>"),
-            ("phone", "(555) 123 12345</li>"),
+            ("title", "Treat inspector"),
+            ("email", "meoward.jones@igorville.gov"),
+            ("phone", "(555) 123 12345"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
 
@@ -1319,9 +1317,9 @@ class TestDomainRequestAdmin(MockEppLib):
         # == Check for the submitter == #
         expected_submitter_fields = [
             # Field, expected value
-            ("title", "Admin Tester</li>"),
-            ("email", "mayor@igorville.gov</li>"),
-            ("phone", "(555) 555 5556</li>"),
+            ("title", "Admin Tester"),
+            ("email", "mayor@igorville.gov"),
+            ("phone", "(555) 555 5556"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
@@ -1329,15 +1327,15 @@ class TestDomainRequestAdmin(MockEppLib):
         # == Check for the authorizing_official == #
         expected_ao_fields = [
             # Field, expected value
-            ("title", "Chief Tester</li>"),
-            ("email", "testy@town.com</li>"),
-            ("phone", "(555) 555 5555</li>"),
+            ("title", "Chief Tester"),
+            ("email", "testy@town.com"),
+            ("phone", "(555) 555 5555"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
-        # count=3 because the underlying domain has two users with this name.
-        # The dropdown has 2 of these.
-        self.assertContains(response, "Testy Tester", count=3)
+        # count=5 because the underlying domain has two users with this name.
+        # The dropdown has 3 of these.
+        self.assertContains(response, "Testy Tester", count=5)
 
         # == Test the other_employees field == #
         expected_other_employees_fields = [
@@ -2022,9 +2020,9 @@ class TestDomainInformationAdmin(TestCase):
         # (Otherwise this test will fail if we change classes, etc)
         expected_creator_fields = [
             # Field, expected value
-            ("title", "Treat inspector</li>"),
-            ("email", "meoward.jones@igorville.gov</li>"),
-            ("phone", "(555) 123 12345</li>"),
+            ("title", "Treat inspector"),
+            ("email", "meoward.jones@igorville.gov"),
+            ("phone", "(555) 123 12345"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
 
@@ -2034,9 +2032,9 @@ class TestDomainInformationAdmin(TestCase):
         # == Check for the submitter == #
         expected_submitter_fields = [
             # Field, expected value
-            ("title", "Admin Tester</li>"),
-            ("email", "mayor@igorville.gov</li>"),
-            ("phone", "(555) 555 5556</li>"),
+            ("title", "Admin Tester"),
+            ("email", "mayor@igorville.gov"),
+            ("phone", "(555) 555 5556"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
@@ -2044,15 +2042,15 @@ class TestDomainInformationAdmin(TestCase):
         # == Check for the authorizing_official == #
         expected_ao_fields = [
             # Field, expected value
-            ("title", "Chief Tester</li>"),
-            ("email", "testy@town.com</li>"),
-            ("phone", "(555) 555 5555</li>"),
+            ("title", "Chief Tester"),
+            ("email", "testy@town.com"),
+            ("phone", "(555) 555 5555"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
-        # count=3 because the underlying domain has two users with this name.
-        # The dropdown has 2 of these.
-        self.assertContains(response, "Testy Tester", count=3)
+        # count=5 because the underlying domain has two users with this name.
+        # The dropdown has 3 of these.
+        self.assertContains(response, "Testy Tester", count=5)
 
         # == Test the other_employees field == #
         expected_other_employees_fields = [

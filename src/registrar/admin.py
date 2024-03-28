@@ -1123,7 +1123,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "current_websites")
+    readonly_fields = ("other_contacts", "current_websites", "alternative_domains")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
