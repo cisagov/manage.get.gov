@@ -148,6 +148,41 @@ def _get_security_emails(sec_contact_ids):
     return security_emails_dict
 
 
+def update_columns_with_domain_managers(
+    domain_info, update_columns, columns, max_dm_active, max_dm_invited, max_dm_total
+):
+    """Helper function that works with 'global' variables set in write_domains_csv
+    Accepts:
+        domain_info -> Domains to parse
+        update_columns -> A control to make sure we only run the columns test and update when needed
+        columns -> The header cells in the csv that's under construction
+        max_dm_active -> Starts at 0 and gets updated and passed again through this method
+        max_dm_invited -> Starts at 0 and gets updated and passed again through this method
+        max_dm_total -> Starts at 0 and gets updated and passed again through this method
+    Returns:
+        Updated update_columns, columns, max_dm_active, max_dm_invited, max_dm_total"""
+
+    dm_active = domain_info.domain.permissions.count()
+    dm_invited = domain_info.domain.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED).count()
+
+    if dm_active > max_dm_active or dm_invited > max_dm_invited:
+        max_dm_active = max(dm_active, max_dm_active)
+        max_dm_invited = max(dm_invited, max_dm_invited)
+        max_dm_total = max_dm_active + max_dm_invited
+        update_columns = True
+
+    if update_columns:
+        for i in range(1, max_dm_total + 1):
+            column_name = f"Domain manager {i}"
+            column2_name = f"DM{i} status"
+            if column_name not in columns:
+                columns.append(column_name)
+                columns.append(column2_name)
+        update_columns = False
+
+    return update_columns, columns, max_dm_active, max_dm_invited, max_dm_total
+
+
 def write_domains_csv(
     writer,
     columns,
@@ -164,10 +199,6 @@ def write_domains_csv(
     """
 
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
-
-    # td_agencies = all_domain_infos.filter(domain__invitation__status='invited').annotate(invitations_count=Count('invitations')).values_list('domain_name', 'invitations_count').distinct()
-    # Create a dictionary mapping of domain_name to federal_agency
-    # td_dict = dict(td_agencies)
 
     # Store all security emails to avoid epp calls or excessive filters
     sec_contact_ids = all_domain_infos.values_list("domain__security_contact_registry_id", flat=True)
@@ -195,25 +226,11 @@ def write_domains_csv(
 
             # Get max number of domain managers
             if get_domain_managers:
-                dm_active = domain_info.domain.permissions.count()
-                dm_invited = domain_info.domain.invitations.filter(
-                    status=DomainInvitation.DomainInvitationStatus.INVITED
-                ).count()
-
-                if dm_active > max_dm_active or dm_invited > max_dm_invited:
-                    max_dm_active = max(dm_active, max_dm_active)
-                    max_dm_invited = max(dm_invited, max_dm_invited)
-                    max_dm_total = max_dm_active + max_dm_invited
-                    update_columns = True
-
-                if update_columns:
-                    for i in range(1, max_dm_total + 1):
-                        column_name = f"Domain manager {i}"
-                        column2_name = f"DM{i} status"
-                        if column_name not in columns:
-                            columns.append(column_name)
-                            columns.append(column2_name)
-                    update_columns = False
+                update_columns, columns, max_dm_active, max_dm_invited, max_dm_total = (
+                    update_columns_with_domain_managers(
+                        domain_info, update_columns, columns, max_dm_active, max_dm_invited, max_dm_total
+                    )
+                )
 
             try:
                 row = parse_domain_row(columns, domain_info, security_emails_dict, get_domain_managers)
