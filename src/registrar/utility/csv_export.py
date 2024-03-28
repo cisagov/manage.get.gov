@@ -105,12 +105,22 @@ def parse_domain_row(columns, domain_info: DomainInformation, security_emails_di
     }
 
     if get_domain_managers:
-        # Get each domain managers email and add to list
-        dm_emails = [dm.user.email for dm in domain.permissions.all()]
+        # Get lists of emails for active and invited domain managers
+        dm_active_emails = [dm.user.email for dm in domain.permissions.all()]
+        dm_invited_emails = [
+            invite.email for invite in domain.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)
+        ]
 
-        # Set up the "matching header" + row field data
-        for i, dm_email in enumerate(dm_emails, start=1):
-            FIELDS[f"Domain manager email {i}"] = dm_email
+        # Set up the "matching headers" + row field data for email and status
+        i = 0  # Declare i outside of the loop to avoid a reference before assignment in the second loop
+        for i, dm_email in enumerate(dm_active_emails, start=1):
+            FIELDS[f"Domain manager {i}"] = dm_email
+            FIELDS[f"DM{i} status"] = "R"
+
+        # Continue enumeration from where we left off and add data for invited domain managers
+        for j, dm_email in enumerate(dm_invited_emails, start=i + 1):
+            FIELDS[f"Domain manager {j}"] = dm_email
+            FIELDS[f"DM{j} status"] = "I"
 
     row = [FIELDS.get(column, "") for column in columns]
     return row
@@ -158,7 +168,7 @@ def write_domains_csv(
     # td_agencies = all_domain_infos.filter(domain__invitation__status='invited').annotate(invitations_count=Count('invitations')).values_list('domain_name', 'invitations_count').distinct()
     # Create a dictionary mapping of domain_name to federal_agency
     # td_dict = dict(td_agencies)
-    
+
     # Store all security emails to avoid epp calls or excessive filters
     sec_contact_ids = all_domain_infos.values_list("domain__security_contact_registry_id", flat=True)
 
@@ -167,11 +177,15 @@ def write_domains_csv(
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
 
-    # The maximum amount of domain managers an account has
-    # We get the max so we can set the column header accurately
+    # We get the number of domain managers (DMs) an the domain
+    # that has the most DMs so we can set the header row appropriately
     max_dm_active = 0
     max_dm_invited = 0
-    max_dm_count = 0
+    max_dm_total = 0
+    update_columns = False
+
+    # This var will live outside of the nested for loops to aggregate
+    # the data from those loops
     total_body_rows = []
 
     for page_num in paginator.page_range:
@@ -182,23 +196,24 @@ def write_domains_csv(
             # Get max number of domain managers
             if get_domain_managers:
                 dm_active = domain_info.domain.permissions.count()
-                if dm_active > max_dm_active:
-                    max_dm_active = dm_active
-
-                # Now let's get the domain managers who have not retrieved their invite yet
-                # Let's get the max number of whose
-                dm_invited = domain_info.domain.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED).count()
-                if dm_invited > max_dm_invited:
-                    max_dm_invited = dm_invited
+                dm_invited = domain_info.domain.invitations.filter(
+                    status=DomainInvitation.DomainInvitationStatus.INVITED
+                ).count()
 
                 if dm_active > max_dm_active or dm_invited > max_dm_invited:
-                    max_dm_count = max_dm_active + max_dm_invited
-                    for i in range(1, max_dm_count + 1):
-                        column_name = f"Domain manager email {i}"
+                    max_dm_active = max(dm_active, max_dm_active)
+                    max_dm_invited = max(dm_invited, max_dm_invited)
+                    max_dm_total = max_dm_active + max_dm_invited
+                    update_columns = True
+
+                if update_columns:
+                    for i in range(1, max_dm_total + 1):
+                        column_name = f"Domain manager {i}"
                         column2_name = f"DM{i} status"
                         if column_name not in columns:
                             columns.append(column_name)
                             columns.append(column2_name)
+                    update_columns = False
 
             try:
                 row = parse_domain_row(columns, domain_info, security_emails_dict, get_domain_managers)

@@ -478,7 +478,12 @@ class ExportDataTest(MockDb, MockEppLib):
 
     def test_export_domains_to_writer_domain_managers(self):
         """Test that export_domains_to_writer returns the
-        expected domain managers."""
+        expected domain managers.
+
+        An invited user, woofwardthethird, should also be pulled into this report.
+
+        squeaker@rocks.com is invited to domain2 (DNS_NEEDED) and domain10 (No managers).
+        She should show twice in this report but not in test_export_data_managed_domains_to_csv."""
 
         with less_console_noise():
             # Create a CSV file in memory
@@ -521,14 +526,16 @@ class ExportDataTest(MockDb, MockEppLib):
             expected_content = (
                 "Domain name,Status,Expiration date,Domain type,Agency,"
                 "Organization name,City,State,AO,AO email,"
-                "Security contact email,Domain manager email 1,Domain manager email 2,Domain manager email 3\n"
-                "adomain10.gov,Ready,,Federal,Armed Forces Retirement Home,,,, , ,\n"
-                "adomain2.gov,Dns needed,,Interstate,,,,, , , ,meoward@rocks.com\n"
-                "cdomain11.govReadyFederal-ExecutiveWorldWarICentennialCommissionmeoward@rocks.com\n"
+                "Security contact email,Domain manager 1,DM1 status,Domain manager 2,DM2 status,"
+                "Domain manager 3,DM3 status,Domain manager 4,DM4 status\n"
+                "adomain10.gov,Ready,,Federal,Armed Forces Retirement Home,,,, , ,squeaker@rocks.com, I\n"
+                "adomain2.gov,Dns needed,,Interstate,,,,, , , ,meoward@rocks.com, R,squeaker@rocks.com, I\n"
+                "cdomain11.govReadyFederal-ExecutiveWorldWarICentennialCommissionmeoward@rocks.comR\n"
                 "cdomain1.gov,Ready,,Federal - Executive,World War I Centennial Commission,,,"
-                ", , , ,meoward@rocks.com,info@example.com,big_lebowski@dude.co\n"
+                ", , , ,meoward@rocks.com,R,info@example.com,R,big_lebowski@dude.co,R,"
+                "woofwardthethird@rocks.com,I\n"
                 "ddomain3.gov,On hold,,Federal,Armed Forces Retirement Home,,,, , , ,,\n"
-                "zdomain12.govReadyInterstatemeoward@rocks.com\n"
+                "zdomain12.govReadyInterstatemeoward@rocks.comR\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -538,7 +545,9 @@ class ExportDataTest(MockDb, MockEppLib):
 
     def test_export_data_managed_domains_to_csv(self):
         """Test get counts for domains that have domain managers for two different dates,
-        get list of managed domains at end_date."""
+        get list of managed domains at end_date.
+
+        An invited user, woofwardthethird, should also be pulled into this report."""
 
         with less_console_noise():
             # Create a CSV file in memory
@@ -564,10 +573,12 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Special district,School district,Election office\n"
                 "3,2,1,0,0,0,0,0,0,2\n"
                 "\n"
-                "Domain name,Domain type,Domain manager email 1,Domain manager email 2,Domain manager email 3\n"
-                "cdomain11.govFederal-Executivemeoward@rocks.com\n"
-                "cdomain1.gov,Federal - Executive,meoward@rocks.com,info@example.com,big_lebowski@dude.co\n"
-                "zdomain12.govInterstatemeoward@rocks.com\n"
+                "Domain name,Domain type,Domain manager 1,DM1 status,Domain manager 2,DM2 status,"
+                "Domain manager 3,DM3 status,Domain manager 4,DM4 status\n"
+                "cdomain11.govFederal-Executivemeoward@rocks.com, R\n"
+                "cdomain1.gov,Federal - Executive,meoward@rocks.com,R,info@example.com,R,"
+                "big_lebowski@dude.co,R,woofwardthethird@rocks.com,I\n"
+                "zdomain12.govInterstatemeoward@rocks.com,R\n"
             )
 
             # Normalize line endings and remove commas,
