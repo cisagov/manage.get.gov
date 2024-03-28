@@ -966,6 +966,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
         title = "Status"
         parameter_name = "status__in"
 
+        template = "django/admin/multiple_choice_list_filter.html"
+        
         def lookups(self, request, model_admin):
             return DomainRequest.DomainRequestStatus.choices
 

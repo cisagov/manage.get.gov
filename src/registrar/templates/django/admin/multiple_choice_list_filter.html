@@ -1,0 +1,23 @@
+{% load i18n %}
+<h3>{% blocktrans with filter_title=title %} By {{ filter_title }} {% endblocktrans %}</h3>
+<ul class="mulitple-choice">
+{% for choice in choices %}
+    {% if choice.reset %}
+        <li{% if choice.selected %} class="selected"{% endif %}>
+            <a href="{{ choice.query_string|iriencode }}" title="{{ choice.display }}">{{ choice.display }}</a>
+        </li>
+    {% endif %}
+{% endfor %}
+{% for choice in choices %}
+    {% if not choice.reset %}
+        <li{% if choice.selected %} class="selected"{% endif %}>
+          {% if choice.selected and choice.exclude_query_string %}
+            <a class="choice-filter choice-filter--checked" href="{{ choice.exclude_query_string|iriencode }}">{{ choice.display }}</a>
+          {% endif %}
+          {% if not choice.selected and choice.include_query_string %}
+            <a class="choice-filter choice-filter--unchecked" href="{{ choice.include_query_string|iriencode }}">{{ choice.display }}</a>
+          {% endif %}
+        </li>
+    {% endif %}
+{% endfor %}
+</ul>

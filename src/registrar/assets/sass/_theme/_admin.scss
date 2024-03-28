@@ -350,3 +350,15 @@ input.admin-confirm-button {
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;
 }
+
+.choice-filter {
+    padding-left: 20px;
+}
+
+.choice-filter--checked {
+    background-image: url("/public/img/sprite.svg#check");
+}
+
+.choice-filter--unchecked {
+    background-image: url("/public/img/sprite.svg#check_box_outline_blank");
+}
