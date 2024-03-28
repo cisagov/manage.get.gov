@@ -1444,6 +1444,7 @@ class TestDomainRequestAdmin(MockEppLib):
             expected_fields = [
                 "other_contacts",
                 "current_websites",
+                "alternative_domains",
                 "id",
                 "created_at",
                 "updated_at",
@@ -1491,6 +1492,7 @@ class TestDomainRequestAdmin(MockEppLib):
             expected_fields = [
                 "other_contacts",
                 "current_websites",
+                "alternative_domains",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -1512,7 +1514,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             readonly_fields = self.admin.get_readonly_fields(request)
 
-            expected_fields = ["other_contacts", "current_websites"]
+            expected_fields = ["other_contacts", "current_websites", "alternative_domains",]
 
             self.assertEqual(readonly_fields, expected_fields)
 
