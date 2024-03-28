@@ -967,7 +967,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         parameter_name = "status__in"
 
         template = "django/admin/multiple_choice_list_filter.html"
-        
+
         def lookups(self, request, model_admin):
             return DomainRequest.DomainRequestStatus.choices
 
@@ -1336,7 +1336,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         # and the request is the initial request for this view
         if not bool(request.GET) and request.path not in http_referer:
             # modify the GET of the request to set the selected filter
-            modified_get = request.GET.copy()
+            modified_get = copy.deepcopy(request.GET)
             modified_get["status__in"] = "submitted,in review,action needed"
             request.GET = modified_get
         response = super().changelist_view(request, extra_context=extra_context)
