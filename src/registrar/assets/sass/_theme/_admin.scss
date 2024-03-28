@@ -404,6 +404,13 @@ address.margin-top-neg-1__detail-list {
 address.dja-address-contact-list {
     font-size: 0.8125rem;
     color: var(--body-quiet-color);
+    button.usa-button__clipboard-link {
+        font-size: 0.8125rem !important;
+    }
+}
+
+td button.usa-button__clipboard-link {
+    font-size: 0.8125rem !important;
 }
 
 // Mimic the normal label size
@@ -415,6 +422,14 @@ address.dja-address-contact-list {
     .dja-detail-list address {
         font-size: 0.875rem;
         color: var(--body-quiet-color);
+    }
+
+    address button.usa-button__clipboard-link {
+        font-size: 0.875rem !important;
+    }
+
+    td button.usa-button__clipboard-link {
+        font-size: 0.875rem !important;
     }
 }
 
@@ -442,8 +457,6 @@ address.dja-address-contact-list {
 
 }
 
-td.font-size-sm {
-    button.usa-button__icon {
-        font-size: 16px;
-    }
+.no-outline-on-click:focus {
+    outline: none !important;
 }

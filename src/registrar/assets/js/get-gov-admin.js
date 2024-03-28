@@ -140,6 +140,12 @@ function openInNewTab(el, removeAttribute = false){
 /** An IIFE for pages in DjangoAdmin that use a clipboard button
 */
 (function (){
+
+    function copyInnerTextToClipboard(elem) {
+        let text = elem.innerText
+        navigator.clipboard.writeText(text)
+    }
+
     function copyToClipboardAndChangeIcon(button) {
         // Assuming the input is the previous sibling of the button
         let input = button.previousElementSibling;
@@ -179,7 +185,6 @@ function openInNewTab(el, removeAttribute = false){
             
             // Add a class that adds the outline style on click
             button.addEventListener("mousedown", function() {
-                console.log(`applying mousedown on ${this} vs ${button}`);
                 this.classList.add("no-outline-on-click");
             });
             
@@ -192,7 +197,19 @@ function openInNewTab(el, removeAttribute = false){
         });
     }
 
+    function handleClipboardLinks() {
+        let emailButtons = document.querySelectorAll(".usa-button__clipboard-link");
+        if (emailButtons){
+            emailButtons.forEach((button) => {
+                button.addEventListener("click", ()=>{
+                    copyInnerTextToClipboard(button);
+                })
+            });
+        }
+    }
+
     handleClipboardButtons();
+    handleClipboardLinks();
 
 })();
 

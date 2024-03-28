@@ -92,7 +92,17 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                             <tr>
                                 <th class="padding-left-1" scope="row">{{ contact.get_formatted_name }}</th>
                                 <td class="padding-left-1">{{ contact.title }}</td>
-                                <td class="padding-left-1">{{ contact.email }}</td>
+                                <td class="padding-left-1">
+                                    <button class="usa-button usa-button--unstyled text-no-underline usa-button__clipboard-link" type="button">
+                                        {{ contact.email }}
+                                        <svg 
+                                        aria-hidden="true"
+                                        class="usa-icon display-none" 
+                                        >
+                                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#check"></use>
+                                        </svg>
+                                    </button>
+                                </td>
                                 <td class="padding-left-1">{{ contact.phone }}</td>
                             </tr>
                             {% endfor %}
