@@ -347,6 +347,77 @@ input.admin-confirm-button {
     color: $dhs-blue-70;
 }
 
+details.dja-detail-table {
+    display: inline-table;
+    background-color: var(--body-bg);
+    .dja-details-summary {
+        cursor: pointer;
+        color: var(--body-quiet-color);
+    }
+
+    @media (max-width: 1024px){
+        .dja-detail-contents {
+            max-width: 400px !important;
+            overflow-x: scroll !important;
+        }
+    }
+
+    tr {
+        background-color: transparent;
+    }
+
+    td, th {
+        padding-left: 12px;
+        border: none
+    }
+
+    thead > tr > th {
+        border-radius: 4px;
+        border-top: none;
+        border-bottom: none;
+    }
+
+}
+
+
+address.margin-top-neg-1__detail-list {
+    margin-top: -8px !important;
+}
+
+.dja-detail-list {
+    dl {
+        padding-left: 0px !important;
+        margin-top: 5px !important;
+    }
+    // Mimic the normal label size
+    dt {
+        font-size: 0.8125rem;
+        color: var(--body-quiet-color);
+    }
+
+    address {
+        font-size: 0.8125rem;
+        color: var(--body-quiet-color);
+    }
+}
+
+address.dja-address-contact-list {
+    font-size: 0.8125rem;
+    color: var(--body-quiet-color);
+}
+
+// Mimic the normal label size
+@media (max-width: 1024px){
+    .dja-detail-list dt {
+        font-size: 0.875rem;
+        color: var(--body-quiet-color);
+    }
+    .dja-detail-list address {
+        font-size: 0.875rem;
+        color: var(--body-quiet-color);
+    }
+}
+
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;
 }

@@ -910,6 +910,9 @@ class DomainInformationAdmin(ListHeaderAdmin):
         ),
     ]
 
+    # Readonly fields for analysts and superusers
+    readonly_fields = ("other_contacts",)
+
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "creator",
@@ -937,6 +940,8 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
     # Table ordering
     ordering = ["domain__name"]
+
+    change_form_template = "django/admin/domain_information_change_form.html"
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -1117,6 +1122,9 @@ class DomainRequestAdmin(ListHeaderAdmin):
         ),
     ]
 
+    # Readonly fields for analysts and superusers
+    readonly_fields = ("other_contacts", "current_websites", "alternative_domains")
+
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "creator",
@@ -1142,6 +1150,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
     # Table ordering
     ordering = ["requested_domain__name"]
+
+    change_form_template = "django/admin/domain_request_change_form.html"
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -1297,7 +1307,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
             readonly_fields.extend([field.name for field in self.model._meta.fields])
             # Add the multi-select fields to readonly_fields:
             # Complex fields like ManyToManyField require special handling
-            readonly_fields.extend(["current_websites", "other_contacts", "alternative_domains"])
+            readonly_fields.extend(["alternative_domains"])
 
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
@@ -1408,7 +1418,6 @@ class DomainAdmin(ListHeaderAdmin):
             )
 
         def queryset(self, request, queryset):
-            logger.debug(self.value())
             if self.value() == "1":
                 return queryset.filter(domain_info__is_election_board=True)
             if self.value() == "0":

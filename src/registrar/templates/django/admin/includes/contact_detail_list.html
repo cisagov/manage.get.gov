@@ -1,0 +1,51 @@
+{% load i18n static %}
+
+<address class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} dja-address-contact-list">
+
+    {% if show_formatted_name %}
+        {% if contact.get_formatted_name %}
+            <a href="{% url 'admin:registrar_contact_change' user.id %}">{{ user.get_formatted_name }}</a><br />
+        {% else %}
+            None<br />
+        {% endif %}
+    {% endif %}
+
+    {% if user.title or user.contact.title or user.email or user.contact.email or user.phone or user.contact.phone %}
+        {# Title #}
+        {% if user.title or user.contact.title %}
+            {% if user.contact.title %}
+                {{ user.contact.title }}
+            {% else %}
+                {{ user.title }}
+            {% endif %}
+            <br>
+        {% else %}
+            None<br>
+        {% endif %}
+        {# Email #}
+        {% if user.email or user.contact.email %}
+            {% if user.contact.email %}
+                {{ user.contact.email }}
+            {% else %}
+                {{ user.email }}
+            {% endif %}
+            <br>
+        {% else %}
+            None<br>
+        {% endif %}
+
+        {# Phone #}
+        {% if user.phone or user.contact.phone %}
+            {% if user.contact.phone %}
+                {{ user.contact.phone }}
+            {% else %}
+                {{ user.phone }}
+            {% endif %}
+            <br>
+        {% else %}
+            None<br>
+        {% endif %}
+    {% else %}
+        No additional contact information found.
+    {% endif %}
+</address>
