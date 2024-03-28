@@ -236,7 +236,7 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
 
         domain_info = self.get_domain_info_from_domain()
         invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]
-        is_federal_or_tribal = domain_info and (domain_info.organization_type in invalid_fields)
+        is_federal_or_tribal = domain_info and (domain_info.generic_org_type in invalid_fields)
 
         form_kwargs["disable_fields"] = is_federal_or_tribal
         return form_kwargs
@@ -244,7 +244,7 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
-        context["organization_type"] = self.object.domain_info.organization_type
+        context["generic_org_type"] = self.object.domain_info.generic_org_type
         return context
 
     def get_success_url(self):
@@ -821,6 +821,18 @@ class DomainAddUserView(DomainFormBaseView):
 # The workaround is to use SuccessMessageMixin first.
 class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermissionDeleteView):
     object: DomainInvitation  # workaround for type mismatch in DeleteView
+
+    def post(self, request, *args, **kwargs):
+        """Override post method in order to error in the case when the
+        domain invitation status is RETRIEVED"""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid() and self.object.status == self.object.DomainInvitationStatus.INVITED:
+            return self.form_valid(form)
+        else:
+            # Produce an error message if the domain invatation status is RETRIEVED
+            messages.error(request, f"Invitation to {self.object.email} has already been retrieved.")
+            return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.domain.id})

@@ -16,7 +16,7 @@ from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
-from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -133,6 +133,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         cleaned_data = super().clean()
         status = cleaned_data.get("status")
         investigator = cleaned_data.get("investigator")
+        rejection_reason = cleaned_data.get("rejection_reason")
 
         # Get the old status
         initial_status = self.initial.get("status", None)
@@ -153,7 +154,31 @@ class DomainRequestAdminForm(forms.ModelForm):
             # Will call "add_error" if any issues are found.
             self._check_for_valid_investigator(investigator)
 
+        # If the status is rejected, a rejection reason must exist
+        if status == DomainRequest.DomainRequestStatus.REJECTED:
+            self._check_for_valid_rejection_reason(rejection_reason)
+
         return cleaned_data
+
+    def _check_for_valid_rejection_reason(self, rejection_reason) -> bool:
+        """
+        Checks if the rejection_reason field is not none.
+        Adds form errors on failure.
+        """
+        is_valid = False
+
+        # Check if a rejection reason exists. Rejection is not possible without one.
+        error_message = None
+        if rejection_reason is None or rejection_reason == "":
+            # Lets grab the error message from a common location
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("rejection_reason", error_message)
+
+        return is_valid
 
     def _check_for_valid_investigator(self, investigator) -> bool:
         """
@@ -167,9 +192,9 @@ class DomainRequestAdminForm(forms.ModelForm):
         error_message = None
         if investigator is None:
             # Lets grab the error message from a common location
-            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
         elif not investigator.is_staff:
-            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
         else:
             is_valid = True
 
@@ -845,7 +870,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # Columns
     list_display = [
         "domain",
-        "organization_type",
+        "generic_org_type",
         "created_at",
         "submitter",
     ]
@@ -856,7 +881,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     ]
 
     # Filters
-    list_filter = ["organization_type"]
+    list_filter = ["generic_org_type"]
 
     # Search
     search_fields = [
@@ -873,7 +898,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "organization_type",
+                    "generic_org_type",
                     "is_election_board",
                     "federal_type",
                     "federal_agency",
@@ -1012,13 +1037,13 @@ class DomainRequestAdmin(ListHeaderAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
-    change_form_template = "django/admin/domain_application_change_form.html"
+    change_form_template = "django/admin/domain_request_change_form.html"
 
     # Columns
     list_display = [
         "requested_domain",
         "status",
-        "organization_type",
+        "generic_org_type",
         "federal_type",
         "federal_agency",
         "organization_name",
@@ -1045,7 +1070,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     # Filters
     list_filter = (
         "status",
-        "organization_type",
+        "generic_org_type",
         "federal_type",
         ElectionOfficeFilter,
         "rejection_reason",
@@ -1083,7 +1108,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "organization_type",
+                    "generic_org_type",
                     "is_election_board",
                     "federal_type",
                     "federal_agency",
@@ -1231,7 +1256,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
             # This condition should never be triggered.
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
             # because we clean up the rejection reason in the transition in the model.
-            error_message = "A rejection reason is required."
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
         else:
             # This is an fsm in model which will throw an error if the
             # transition condition is violated, so we roll back the
@@ -1240,11 +1265,11 @@ class DomainRequestAdmin(ListHeaderAdmin):
             obj.status = original_obj.status
 
             # Try to perform the status change.
-            # Catch FSMApplicationError's and return the message,
+            # Catch FSMDomainRequestError's and return the message,
             # as these are typically user errors.
             try:
                 selected_method()
-            except FSMApplicationError as err:
+            except FSMDomainRequestError as err:
                 logger.warning(f"An error encountered when trying to change status: {err}")
                 error_message = err.message
 
@@ -1418,7 +1443,7 @@ class DomainAdmin(ListHeaderAdmin):
     # Columns
     list_display = [
         "name",
-        "organization_type",
+        "generic_org_type",
         "federal_type",
         "federal_agency",
         "organization_name",
@@ -1443,10 +1468,10 @@ class DomainAdmin(ListHeaderAdmin):
     # in autocomplete_fields for domain
     ordering = ["name"]
 
-    def organization_type(self, obj):
-        return obj.domain_info.get_organization_type_display()
+    def generic_org_type(self, obj):
+        return obj.domain_info.get_generic_org_type_display()
 
-    organization_type.admin_order_field = "domain_info__organization_type"  # type: ignore
+    generic_org_type.admin_order_field = "domain_info__generic_org_type"  # type: ignore
 
     def federal_agency(self, obj):
         return obj.domain_info.federal_agency if obj.domain_info else None
@@ -1483,7 +1508,7 @@ class DomainAdmin(ListHeaderAdmin):
     state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
 
     # Filters
-    list_filter = ["domain_info__organization_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
+    list_filter = ["domain_info__generic_org_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
@@ -1822,6 +1847,13 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
+class FederalAgencyAdmin(ListHeaderAdmin):
+    list_display = ["agency"]
+    search_fields = ["agency"]
+    search_help_text = "Search by agency name."
+    ordering = ["agency"]
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
@@ -1835,6 +1867,7 @@ admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
+admin.site.register(models.FederalAgency, FederalAgencyAdmin)
 # Host and HostIP removed from django admin because changes in admin
 # do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)

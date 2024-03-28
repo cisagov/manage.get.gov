@@ -24,8 +24,8 @@
 
         {% if step == Step.ORGANIZATION_TYPE %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% if domain_request.organization_type is not None %}
-            {% with title=form_titles|get_item:step value=domain_request.get_organization_type_display|default:"Incomplete" %}
+          {% if domain_request.generic_org_type is not None %}
+            {% with title=form_titles|get_item:step value=domain_request.get_generic_org_type_display|default:"Incomplete" %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
             {% endwith %}
           {% else %}

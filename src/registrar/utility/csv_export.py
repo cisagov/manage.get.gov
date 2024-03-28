@@ -80,10 +80,10 @@ def parse_domain_row(columns, domain_info: DomainInformation, security_emails_di
     if security_email.lower() in invalid_emails:
         security_email = "(blank)"
 
-    if domain_info.federal_type:
-        domain_type = f"{domain_info.get_organization_type_display()} - {domain_info.get_federal_type_display()}"
+    if domain_info.federal_type and domain_info.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
+        domain_type = f"{domain_info.get_generic_org_type_display()} - {domain_info.get_federal_type_display()}"
     else:
-        domain_type = domain_info.get_organization_type_display()
+        domain_type = domain_info.get_generic_org_type_display()
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
@@ -217,9 +217,9 @@ def parse_request_row(columns, request: DomainRequest):
         requested_domain_name = request.requested_domain.name
 
     if request.federal_type:
-        request_type = f"{request.get_organization_type_display()} - {request.get_federal_type_display()}"
+        request_type = f"{request.get_generic_org_type_display()} - {request.get_federal_type_display()}"
     else:
-        request_type = request.get_organization_type_display()
+        request_type = request.get_generic_org_type_display()
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
@@ -254,6 +254,7 @@ def write_requests_csv(
 
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_requests, 1000)
+    total_body_rows = []
 
     for page_num in paginator.page_range:
         page = paginator.page(page_num)
@@ -267,10 +268,11 @@ def write_requests_csv(
                 # It indicates that DomainInformation.domain is None.
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
+        total_body_rows.extend(rows)
 
     if should_write_header:
         write_header(writer, columns)
-    writer.writerows(rows)
+    writer.writerows(total_body_rows)
 
 
 def export_data_type_to_csv(csv_file):
@@ -295,7 +297,7 @@ def export_data_type_to_csv(csv_file):
 
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
-        "organization_type",
+        "generic_org_type",
         Coalesce("federal_type", Value("ZZZZZ")),
         "federal_agency",
         "domain__name",
@@ -328,7 +330,7 @@ def export_data_full_to_csv(csv_file):
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
-        "organization_type",
+        "generic_org_type",
         Coalesce("federal_type", Value("ZZZZZ")),
         "federal_agency",
         "domain__name",
@@ -361,13 +363,13 @@ def export_data_federal_to_csv(csv_file):
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
-        "organization_type",
+        "generic_org_type",
         Coalesce("federal_type", Value("ZZZZZ")),
         "federal_agency",
         "domain__name",
     ]
     filter_condition = {
-        "organization_type__icontains": "federal",
+        "generic_org_type__icontains": "federal",
         "domain__state__in": [
             Domain.State.READY,
             Domain.State.DNS_NEEDED,
@@ -467,24 +469,51 @@ def get_sliced_domains(filter_condition, distinct=False):
     domains_count = DomainInformation.objects.filter(**filter_condition).distinct().count()
 
     # Round trip 2: Get counts for other slices
+    # This will require either 8 filterd and distinct DB round trips,
+    # or 2 DB round trips plus iteration on domain_permissions for each domain
     if distinct:
-        organization_types_query = (
-            DomainInformation.objects.filter(**filter_condition).values_list("organization_type", flat=True).distinct()
+        generic_org_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
+            "domain_id", "generic_org_type"
         )
-    else:
-        organization_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
-            "organization_type", flat=True
-        )
-    organization_type_counts = Counter(organization_types_query)
+        # Initialize Counter to store counts for each generic_org_type
+        generic_org_type_counts = Counter()
 
-    federal = organization_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
-    interstate = organization_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
-    state_or_territory = organization_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
-    tribal = organization_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
-    county = organization_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
-    city = organization_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
-    special_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
-    school_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
+        # Keep track of domains already counted
+        domains_counted = set()
+
+        # Iterate over distinct domains
+        for domain_id, generic_org_type in generic_org_types_query:
+            # Check if the domain has already been counted
+            if domain_id in domains_counted:
+                continue
+
+            # Get all permissions for the current domain
+            domain_permissions = DomainInformation.objects.filter(domain_id=domain_id, **filter_condition).values_list(
+                "domain__permissions", flat=True
+            )
+
+            # Check if the domain has multiple permissions
+            if len(domain_permissions) > 0:
+                # Mark the domain as counted
+                domains_counted.add(domain_id)
+
+            # Increment the count for the corresponding generic_org_type
+            generic_org_type_counts[generic_org_type] += 1
+    else:
+        generic_org_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
+            "generic_org_type", flat=True
+        )
+        generic_org_type_counts = Counter(generic_org_types_query)
+
+    # Extract counts for each generic_org_type
+    federal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
+    interstate = generic_org_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
+    state_or_territory = generic_org_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
+    tribal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
+    county = generic_org_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
+    city = generic_org_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
+    special_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
+    school_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
 
     # Round trip 3
     election_board = DomainInformation.objects.filter(is_election_board=True, **filter_condition).distinct().count()
@@ -503,31 +532,26 @@ def get_sliced_domains(filter_condition, distinct=False):
     ]
 
 
-def get_sliced_requests(filter_condition, distinct=False):
+def get_sliced_requests(filter_condition):
     """Get filtered requests counts sliced by org type and election office."""
 
     # Round trip 1: Get distinct requests based on filter condition
     requests_count = DomainRequest.objects.filter(**filter_condition).distinct().count()
 
     # Round trip 2: Get counts for other slices
-    if distinct:
-        organization_types_query = (
-            DomainRequest.objects.filter(**filter_condition).values_list("organization_type", flat=True).distinct()
-        )
-    else:
-        organization_types_query = DomainRequest.objects.filter(**filter_condition).values_list(
-            "organization_type", flat=True
-        )
-    organization_type_counts = Counter(organization_types_query)
+    generic_org_types_query = DomainRequest.objects.filter(**filter_condition).values_list(
+        "generic_org_type", flat=True
+    )
+    generic_org_type_counts = Counter(generic_org_types_query)
 
-    federal = organization_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
-    interstate = organization_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
-    state_or_territory = organization_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
-    tribal = organization_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
-    county = organization_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
-    city = organization_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
-    special_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
-    school_district = organization_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
+    federal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
+    interstate = generic_org_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
+    state_or_territory = generic_org_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
+    tribal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
+    county = generic_org_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
+    city = generic_org_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
+    special_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
+    school_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
 
     # Round trip 3
     election_board = DomainRequest.objects.filter(is_election_board=True, **filter_condition).distinct().count()

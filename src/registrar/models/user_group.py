@@ -71,6 +71,11 @@ class UserGroup(Group):
                 "model": "verifiedbystaff",
                 "permissions": ["add_verifiedbystaff", "change_verifiedbystaff", "delete_verifiedbystaff"],
             },
+            {
+                "app_label": "registrar",
+                "model": "federalagency",
+                "permissions": ["add_federalagency", "change_federalagency", "delete_federalagency"],
+            },
         ]
 
         # Avoid error: You can't execute queries until the end

@@ -665,6 +665,22 @@ class TestDomainManagers(TestDomainOverview):
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
 
+    def test_domain_invitation_cancel_retrieved_invitation(self):
+        """Posting to the delete view when invitation retrieved returns an error message"""
+        email_address = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(
+            domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
+        )
+        with less_console_noise():
+            response = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}), follow=True)
+            # Assert that an error message is displayed to the user
+            self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
+            # Assert that the Cancel link is not displayed
+            self.assertNotContains(response, "Cancel")
+        # Assert that the DomainInvitation is not deleted
+        self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
+        DomainInvitation.objects.filter(email=email_address).delete()
+
     def test_domain_invitation_cancel_no_permissions(self):
         """Posting to the delete view as a different user should fail."""
         email_address = "mayor@igorville.gov"
@@ -1051,7 +1067,7 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         """Tests that no edit can occur when the underlying domain is federal"""
 
         # Set the org type to federal
-        self.domain_information.organization_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.FEDERAL
         self.domain_information.save()
 
         # Add an AO. We can do this at the model level, just not the form level.
@@ -1107,7 +1123,7 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         """Tests that no edit can occur when the underlying domain is tribal"""
 
         # Set the org type to federal
-        self.domain_information.organization_type = DomainInformation.OrganizationChoices.TRIBAL
+        self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.TRIBAL
         self.domain_information.save()
 
         # Add an AO. We can do this at the model level, just not the form level.
@@ -1233,7 +1249,7 @@ class TestDomainOrganization(TestDomainOverview):
         # Set the current domain to a tribal organization with a preset value.
         # Save first, so we can test if saving is unaffected (it should be).
         tribal_org_type = DomainInformation.OrganizationChoices.TRIBAL
-        self.domain_information.organization_type = tribal_org_type
+        self.domain_information.generic_org_type = tribal_org_type
         self.domain_information.save()
         try:
             # Add an org name
@@ -1242,7 +1258,7 @@ class TestDomainOrganization(TestDomainOverview):
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
 
-        self.assertEqual(self.domain_information.organization_type, tribal_org_type)
+        self.assertEqual(self.domain_information.generic_org_type, tribal_org_type)
 
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
 
@@ -1290,7 +1306,7 @@ class TestDomainOrganization(TestDomainOverview):
         # Set the current domain to a tribal organization with a preset value.
         # Save first, so we can test if saving is unaffected (it should be).
         fed_org_type = DomainInformation.OrganizationChoices.FEDERAL
-        self.domain_information.organization_type = fed_org_type
+        self.domain_information.generic_org_type = fed_org_type
         self.domain_information.save()
         try:
             self.domain_information.federal_agency = "AMTRAK"
@@ -1298,7 +1314,7 @@ class TestDomainOrganization(TestDomainOverview):
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
 
-        self.assertEqual(self.domain_information.organization_type, fed_org_type)
+        self.assertEqual(self.domain_information.generic_org_type, fed_org_type)
 
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
 
@@ -1346,7 +1362,7 @@ class TestDomainOrganization(TestDomainOverview):
         # Set the current domain to a tribal organization with a preset value.
         # Save first, so we can test if saving is unaffected (it should be).
         federal_org_type = DomainInformation.OrganizationChoices.FEDERAL
-        self.domain_information.organization_type = federal_org_type
+        self.domain_information.generic_org_type = federal_org_type
         self.domain_information.save()
 
         old_federal_agency_value = ("AMTRAK", "AMTRAK")
@@ -1357,7 +1373,7 @@ class TestDomainOrganization(TestDomainOverview):
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
 
-        self.assertEqual(self.domain_information.organization_type, federal_org_type)
+        self.assertEqual(self.domain_information.generic_org_type, federal_org_type)
 
         new_value = ("Department of State", "Department of State")
         self.client.post(

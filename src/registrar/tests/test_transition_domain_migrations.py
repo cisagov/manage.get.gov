@@ -334,7 +334,7 @@ class TestOrganizationMigration(TestCase):
                 domain_name="fakewebsite2.gov",
                 status="on hold",
                 email_sent=True,
-                organization_type="Federal",
+                generic_org_type="Federal",
                 organization_name="Fanoodle",
                 federal_type="Executive",
                 federal_agency="Department of Commerce",
@@ -399,7 +399,7 @@ class TestOrganizationMigration(TestCase):
             ).get()
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
-                organization_type="federal",
+                generic_org_type="federal",
                 federal_agency="Department of Commerce",
                 federal_type="executive",
                 organization_name="Fanoodle",
@@ -454,7 +454,7 @@ class TestOrganizationMigration(TestCase):
             ).get()
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
-                organization_type="federal",
+                generic_org_type="federal",
                 federal_agency="Department of Commerce",
                 federal_type="executive",
                 organization_name="Fanoodle",
@@ -794,7 +794,7 @@ class TestMigrations(TestCase):
             # parsing right if we get a lot of data.
             anomaly = anomaly_domain_infos.get()
             self.assertEqual(anomaly.organization_name, "Flashdog")
-            self.assertEqual(anomaly.organization_type, None)
+            self.assertEqual(anomaly.generic_org_type, None)
             self.assertEqual(anomaly.federal_agency, None)
             self.assertEqual(anomaly.federal_type, None)
 
@@ -809,7 +809,7 @@ class TestMigrations(TestCase):
 
             fakewebsite = fakewebsite_domain_infos.get()
             self.assertEqual(fakewebsite.organization_name, "Fanoodle")
-            self.assertEqual(fakewebsite.organization_type, "federal")
+            self.assertEqual(fakewebsite.generic_org_type, "federal")
             self.assertEqual(fakewebsite.federal_agency, "Department of Commerce")
             self.assertEqual(fakewebsite.federal_type, "executive")
 

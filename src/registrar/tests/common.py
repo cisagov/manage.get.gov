@@ -372,7 +372,7 @@ class AuditedAdminMockData:
             purpose (str - optional): Sets a domains purpose
         Returns:
             Dictionary: {
-                organization_type: str,
+                generic_org_type: str,
                 federal_type: str,
                 purpose: str,
                 organization_name: str = "{} organization".format(item_name),
@@ -390,7 +390,7 @@ class AuditedAdminMockData:
         """  # noqa
         creator = self.dummy_user(item_name, "creator")
         common_args = dict(
-            organization_type=org_type,
+            generic_org_type=org_type,
             federal_type=federal_type,
             purpose=purpose,
             organization_name="{} organization".format(item_name),
@@ -572,72 +572,92 @@ class MockDb(TestCase):
             state=Domain.State.READY,
             first_ready=timezone.make_aware(datetime.combine(date.today() + timedelta(days=1), datetime.min.time())),
         )
+        self.domain_11, _ = Domain.objects.get_or_create(
+            name="cdomain11.gov", state=Domain.State.READY, first_ready=timezone.now()
+        )
+        self.domain_12, _ = Domain.objects.get_or_create(
+            name="zdomain12.gov", state=Domain.State.READY, first_ready=timezone.now()
+        )
 
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_1,
-            organization_type="federal",
+            generic_org_type="federal",
             federal_agency="World War I Centennial Commission",
             federal_type="executive",
             is_election_board=True,
         )
         self.domain_information_2, _ = DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain_2, organization_type="interstate", is_election_board=True
+            creator=self.user, domain=self.domain_2, generic_org_type="interstate", is_election_board=True
         )
         self.domain_information_3, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_3,
-            organization_type="federal",
+            generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
             is_election_board=True,
         )
         self.domain_information_4, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_4,
-            organization_type="federal",
+            generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
             is_election_board=True,
         )
         self.domain_information_5, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_5,
-            organization_type="federal",
+            generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
             is_election_board=False,
         )
         self.domain_information_6, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_6,
-            organization_type="federal",
+            generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
             is_election_board=False,
         )
         self.domain_information_7, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_7,
-            organization_type="federal",
+            generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
             is_election_board=False,
         )
         self.domain_information_8, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_8,
-            organization_type="federal",
+            generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
             is_election_board=False,
         )
         self.domain_information_9, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_9,
-            organization_type="federal",
+            generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
             is_election_board=False,
         )
         self.domain_information_10, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_10,
-            organization_type="federal",
+            generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
+            is_election_board=False,
+        )
+        self.domain_information_11, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_11,
+            generic_org_type="federal",
+            federal_agency="World War I Centennial Commission",
+            federal_type="executive",
+            is_election_board=True,
+        )
+        self.domain_information_12, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_12,
+            generic_org_type="interstate",
             is_election_board=False,
         )
 
@@ -663,6 +683,14 @@ class MockDb(TestCase):
 
         _, created = UserDomainRole.objects.get_or_create(
             user=meoward_user, domain=self.domain_2, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_11, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_12, role=UserDomainRole.Roles.MANAGER
         )
 
         with less_console_noise():
@@ -791,7 +819,7 @@ def completed_domain_request(
             is_staff=True,
         )
     domain_request_kwargs = dict(
-        organization_type="federal",
+        generic_org_type="federal",
         federal_type="executive",
         purpose="Purpose of the site",
         is_policy_acknowledged=True,

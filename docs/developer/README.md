@@ -250,7 +250,7 @@ type
 docker-compose run owasp
 ```
 
-# Images, stylesheets, and JavaScript
+## Images, stylesheets, and JavaScript
 
 We use the U.S. Web Design System (USWDS) for styling our applications.
 
@@ -262,7 +262,7 @@ Assets are stored in `registrar/assets` during development and served from `regi
 
 We utilize the [uswds-compile tool](https://designsystem.digital.gov/documentation/getting-started/developers/phase-two-compile/) from USWDS to compile and package USWDS assets.
 
-## Making and viewing style changes
+### Making and viewing style changes
 
 When you run `docker-compose up` the `node` service in the container will begin to watch for changes in the `registrar/assets` folder, and will recompile once any changes are made.
 
@@ -273,7 +273,11 @@ Within the `registrar/assets` folder, the `_theme` folder contains three files i
 
 You can also compile the **Sass** at any time using `npx gulp compile`. Similarly, you can copy over **other static assets** (images and javascript files), using `npx gulp copyAssets`.
 
-## Upgrading USWDS and other JavaScript packages
+### CSS class naming conventions
+
+We use the [CSS Block Element Modifier (BEM)](https://getbem.com/naming/) naming convention for our custom classes. This is in line with how USWDS [approaches](https://designsystem.digital.gov/whats-new/updates/2019/04/08/introducing-uswds-2-0/) their CSS class architecture and helps keep our code cohesive and readable.
+
+### Upgrading USWDS and other JavaScript packages
 
 Version numbers can be manually controlled in `package.json`. Edit that, if desired.
 

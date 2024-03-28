@@ -347,6 +347,32 @@ input.admin-confirm-button {
     color: $dhs-blue-70;
 }
 
+.admin-icon-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .usa-button__icon {
+        position: absolute;
+        right: 0;
+        height: 100%;
+    }
+
+    input {
+        // Allow for padding around the copy button
+        padding-right: 35px !important;
+        // Match the height of other inputs
+        min-height: 2.25rem !important;
+    }
+
+}
+
+td.font-size-sm {
+    button.usa-button__icon {
+        font-size: 16px;
+    }
+}
+
 details.dja-detail-table {
     background-color: var(--darkened-bg);
     display: inline-table;
@@ -396,4 +422,8 @@ td.font-size-sm {
 
 .no-outline-on-click:focus {
     outline: none !important;
+}
+
+.errors span.select2-selection {
+    border: 1px solid var(--error-fg) !important;
 }

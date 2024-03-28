@@ -101,16 +101,25 @@ def login_callback(request):
         if user:
             login(request, user)
             logger.info("Successfully logged in user %s" % user)
-            # Double login bug (1507)?
+            # Clear the flag if the exception is not caught
+            request.session.pop("redirect_attempted", None)
             return redirect(request.session.get("next", "/"))
         else:
             raise o_e.BannedUser()
-    except o_e.NoStateDefined as nsd_err:
-        # In the event that a user is in the middle of a login when the app is restarted,
-        # their session state will no longer be available, so redirect the user to the
-        # beginning of login process without raising an error to the user.
-        logger.warning(f"No State Defined: {nsd_err}")
-        return redirect(request.session.get("next", "/"))
+    except o_e.StateMismatch as nsd_err:
+        # Check if the redirect has already been attempted
+        if not request.session.get("redirect_attempted", False):
+            # Set the flag to indicate that the redirect has been attempted
+            request.session["redirect_attempted"] = True
+
+            # In the event of a state mismatch between OP and session, redirect the user to the
+            # beginning of login process without raising an error to the user. Attempt once.
+            logger.warning(f"No State Defined: {nsd_err}")
+            return redirect(request.session.get("next", "/"))
+        else:
+            # Clear the flag if the exception is not caught
+            request.session.pop("redirect_attempted", None)
+            return error_page(request, nsd_err)
     except Exception as err:
         return error_page(request, err)
 
