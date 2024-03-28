@@ -1297,17 +1297,16 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain_request.requested_domain.name)
 
-        # Check that the modal has the right content
-        # Check for the header
-
         # == Check for the creator == #
 
         # Check for the right title, email, and phone number in the response.
+        expected_email = "meoward.jones@igorville.gov"
         expected_creator_fields = [
             # Field, expected value
             ("title", "Treat inspector"),
             ("email", "meoward.jones@igorville.gov"),
             ("phone", "(555) 123 12345"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
 
@@ -1315,21 +1314,25 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Meoward Jones")
 
         # == Check for the submitter == #
+        expected_email = "mayor@igorville.gov"
         expected_submitter_fields = [
             # Field, expected value
             ("title", "Admin Tester"),
             ("email", "mayor@igorville.gov"),
             ("phone", "(555) 555 5556"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
 
         # == Check for the authorizing_official == #
+        expected_email = "testy@town.com"
         expected_ao_fields = [
             # Field, expected value
-            ("title", "Chief Tester"),
-            ("email", "testy@town.com"),
-            ("phone", "(555) 555 5555"),
+            ("title", "Chief Tester</td>"),
+            ("email", "testy@town.com</td>"),
+            ("phone", "(555) 555 5555</td>"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
@@ -1338,11 +1341,13 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Testy Tester", count=5)
 
         # == Test the other_employees field == #
+        expected_email = "testy@town.com"
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
             ("email", "testy2@town.com"),
             ("phone", "(555) 555 5557"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
@@ -2024,11 +2029,13 @@ class TestDomainInformationAdmin(TestCase):
         # Check for the right title, email, and phone number in the response.
         # We only need to check for the end tag
         # (Otherwise this test will fail if we change classes, etc)
+        expected_email = "meoward.jones@igorville.gov"
         expected_creator_fields = [
             # Field, expected value
             ("title", "Treat inspector"),
             ("email", "meoward.jones@igorville.gov"),
             ("phone", "(555) 123 12345"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
 
@@ -2036,21 +2043,25 @@ class TestDomainInformationAdmin(TestCase):
         self.assertContains(response, "Meoward Jones")
 
         # == Check for the submitter == #
+        expected_email = "mayor@igorville.gov"
         expected_submitter_fields = [
             # Field, expected value
             ("title", "Admin Tester"),
             ("email", "mayor@igorville.gov"),
             ("phone", "(555) 555 5556"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
 
         # == Check for the authorizing_official == #
+        expected_email = "testy@town.com"
         expected_ao_fields = [
             # Field, expected value
             ("title", "Chief Tester"),
             ("email", "testy@town.com"),
             ("phone", "(555) 555 5555"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
@@ -2059,11 +2070,13 @@ class TestDomainInformationAdmin(TestCase):
         self.assertContains(response, "Testy Tester", count=5)
 
         # == Test the other_employees field == #
+        expected_email = "testy@town.com"
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
             ("email", "testy2@town.com"),
             ("phone", "(555) 555 5557"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 

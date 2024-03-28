@@ -1,0 +1,8 @@
+{% extends 'admin/change_form.html' %}
+{% load i18n static %}
+
+{% block field_sets %}
+    {% for fieldset in adminform %}
+        {% include "django/admin/includes/email_clipboard_fieldset.html" %}
+    {% endfor %}
+{% endblock %}

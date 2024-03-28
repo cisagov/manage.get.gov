@@ -158,7 +158,7 @@ class GenericTestHelper(TestCase):
         Example Usage:
         ```
         self.assert_sort_helper(
-            self.factory, self.superuser, self.admin, self.url, DomainInformation, "1", ("domain__name",)
+            "1", ("domain__name",)
         )
         ```
 

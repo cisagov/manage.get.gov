@@ -404,6 +404,13 @@ address.margin-top-neg-1__detail-list {
 address.dja-address-contact-list {
     font-size: 0.8125rem;
     color: var(--body-quiet-color);
+    button.usa-button__clipboard-link {
+        font-size: 0.8125rem !important;
+    }
+}
+
+td button.usa-button__clipboard-link {
+    font-size: 0.8125rem !important;
 }
 
 // Mimic the normal label size
@@ -416,8 +423,40 @@ address.dja-address-contact-list {
         font-size: 0.875rem;
         color: var(--body-quiet-color);
     }
+
+    address button.usa-button__clipboard-link {
+        font-size: 0.875rem !important;
+    }
+
+    td button.usa-button__clipboard-link {
+        font-size: 0.875rem !important;
+    }
 }
 
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;
+}
+
+.admin-icon-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .usa-button__icon {
+        position: absolute;
+        right: 0;
+        height: 100%;
+    }
+
+    input {
+        // Allow for padding around the copy button
+        padding-right: 35px !important;
+        // Match the height of other inputs
+        min-height: 2.25rem !important;
+    }
+
+}
+
+.no-outline-on-click:focus {
+    outline: none !important;
 }

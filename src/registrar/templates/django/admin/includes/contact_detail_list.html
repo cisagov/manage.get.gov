@@ -25,9 +25,18 @@
         {# Email #}
         {% if user.email or user.contact.email %}
             {% if user.contact.email %}
+                <button 
+                class="usa-button usa-button--unstyled text-no-underline usa-button__clipboard-link" type="button"
+                >
                 {{ user.contact.email }}
+                </button>
             {% else %}
+                <button 
+                class="usa-button usa-button--unstyled text-no-underline usa-button__clipboard-link" 
+                type="button"
+                >
                 {{ user.email }}
+                </button>
             {% endif %}
             <br>
         {% else %}
