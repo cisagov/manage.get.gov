@@ -42,6 +42,7 @@ html[data-theme="light"] {
     --error-fg: #{$theme-color-error};
 
     --message-success-bg: #{$theme-color-success-lighter};
+    --checkbox-green: #{$theme-color-success-light};
     // $theme-color-warning-lighter - yellow-5
     --message-warning-bg: #faf3d1;
     --message-error-bg: #{$theme-color-error-lighter};
@@ -93,6 +94,7 @@ html[data-theme="light"] {
   
       --error-fg: #e35f5f;
       --message-success-bg: #006b1b;
+      --checkbox-green: #006b1b;
       --message-warning-bg: #583305;
       --message-error-bg: #570808;
   
@@ -352,13 +354,19 @@ input.admin-confirm-button {
 }
 
 .choice-filter {
+    position: relative;
     padding-left: 20px;
+    svg {
+        top: 4px;
+    }
 }
 
 .choice-filter--checked {
-    background-image: url("/public/img/sprite.svg#check");
-}
-
-.choice-filter--unchecked {
-    background-image: url("/public/img/sprite.svg#check_box_outline_blank");
+    svg:nth-child(1) {
+        background: var(--checkbox-green);
+        fill: var(--checkbox-green);
+    }
+    svg:nth-child(2) {
+        color: var(--body-loud-color);
+    }
 }
