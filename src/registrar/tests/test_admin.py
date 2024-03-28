@@ -1300,17 +1300,13 @@ class TestDomainRequestAdmin(MockEppLib):
         # == Check for the creator == #
 
         # Check for the right title, email, and phone number in the response.
-        # We only need to check for the end tag
-        # (Otherwise this test will fail if we change classes, etc)
         expected_email = "meoward.jones@igorville.gov"
         expected_creator_fields = [
             # Field, expected value
-            ("title", "Treat inspector</td>"),
-            ("email", f"{expected_email}</td>"),
-            # Check for the existence of the copy button input.
-            # Lets keep things simple to minimize future conflicts.
+            ("title", "Treat inspector"),
+            ("email", "meoward.jones@igorville.gov"),
+            ("phone", "(555) 123 12345"),
             ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
-            ("phone", "(555) 123 12345</td>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
 
@@ -1321,10 +1317,10 @@ class TestDomainRequestAdmin(MockEppLib):
         expected_email = "mayor@igorville.gov"
         expected_submitter_fields = [
             # Field, expected value
-            ("title", "Admin Tester</td>"),
-            ("email", f"{expected_email}</td>"),
+            ("title", "Admin Tester"),
+            ("email", "mayor@igorville.gov"),
+            ("phone", "(555) 555 5556"),
             ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
-            ("phone", "(555) 555 5556</td>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
@@ -1334,41 +1330,26 @@ class TestDomainRequestAdmin(MockEppLib):
         expected_ao_fields = [
             # Field, expected value
             ("title", "Chief Tester</td>"),
-            ("email", f"{expected_email}</td>"),
-            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
+            ("email", "testy@town.com</td>"),
             ("phone", "(555) 555 5555</td>"),
+            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
-        # count=4 because the underlying domain has two users with this name.
+        # count=5 because the underlying domain has two users with this name.
         # The dropdown has 3 of these.
-        self.assertContains(response, "Testy Tester", count=4)
-
-        # Check for table titles. We only need to check for the end tag
-        # (Otherwise this test will fail if we change classes, etc)
-
-        # Title. Count=3 because this table appears on three records.
-        self.assertContains(response, "Title</th>", count=3)
-
-        # Email. Count=3 because this table appears on three records.
-        self.assertContains(response, "Email</th>", count=3)
-
-        # Phone. Count=3 because this table appears on three records.
-        self.assertContains(response, "Phone</th>", count=3)
+        self.assertContains(response, "Testy Tester", count=5)
 
         # == Test the other_employees field == #
         expected_email = "testy@town.com"
         expected_other_employees_fields = [
             # Field, expected value
-            ("title", "Another Tester</td>"),
-            ("email", f"{expected_email}</td>"),
+            ("title", "Another Tester"),
+            ("email", "testy2@town.com"),
+            ("phone", "(555) 555 5557"),
             ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
-            ("phone", "(555) 555 5557</td>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
-
-        # count=1 as only one should exist in a table
-        self.assertContains(response, "Testy Tester</th>", count=1)
 
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
@@ -1453,6 +1434,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "Yes, select ineligible status")
 
     def test_readonly_when_restricted_creator(self):
+        self.maxDiff = None
         with less_console_noise():
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -1465,6 +1447,9 @@ class TestDomainRequestAdmin(MockEppLib):
             readonly_fields = self.admin.get_readonly_fields(request, domain_request)
 
             expected_fields = [
+                "other_contacts",
+                "current_websites",
+                "alternative_domains",
                 "id",
                 "created_at",
                 "updated_at",
@@ -1497,8 +1482,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_policy_acknowledged",
                 "submission_date",
                 "notes",
-                "current_websites",
-                "other_contacts",
                 "alternative_domains",
             ]
 
@@ -1512,13 +1495,14 @@ class TestDomainRequestAdmin(MockEppLib):
             readonly_fields = self.admin.get_readonly_fields(request)
 
             expected_fields = [
+                "other_contacts",
+                "current_websites",
+                "alternative_domains",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
                 "approved_domain",
                 "alternative_domains",
-                "other_contacts",
-                "current_websites",
                 "purpose",
                 "submitter",
                 "no_other_contacts_rationale",
@@ -1535,7 +1519,11 @@ class TestDomainRequestAdmin(MockEppLib):
 
             readonly_fields = self.admin.get_readonly_fields(request)
 
-            expected_fields = []
+            expected_fields = [
+                "other_contacts",
+                "current_websites",
+                "alternative_domains",
+            ]
 
             self.assertEqual(readonly_fields, expected_fields)
 
@@ -1979,6 +1967,7 @@ class TestDomainInformationAdmin(TestCase):
 
         p = "userpass"
         self.client.login(username="staffuser", password=p)
+
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
             follow=True,
@@ -2043,12 +2032,10 @@ class TestDomainInformationAdmin(TestCase):
         expected_email = "meoward.jones@igorville.gov"
         expected_creator_fields = [
             # Field, expected value
-            ("title", "Treat inspector</td>"),
-            ("email", f"{expected_email}</td>"),
-            # Check for the existence of the copy button input.
-            # Lets keep things simple to minimize future conflicts.
+            ("title", "Treat inspector"),
+            ("email", "meoward.jones@igorville.gov"),
+            ("phone", "(555) 123 12345"),
             ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
-            ("phone", "(555) 123 12345</td>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
 
@@ -2059,10 +2046,10 @@ class TestDomainInformationAdmin(TestCase):
         expected_email = "mayor@igorville.gov"
         expected_submitter_fields = [
             # Field, expected value
-            ("title", "Admin Tester</td>"),
-            ("email", f"{expected_email}</td>"),
+            ("title", "Admin Tester"),
+            ("email", "mayor@igorville.gov"),
+            ("phone", "(555) 555 5556"),
             ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
-            ("phone", "(555) 555 5556</td>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
@@ -2071,42 +2058,27 @@ class TestDomainInformationAdmin(TestCase):
         expected_email = "testy@town.com"
         expected_ao_fields = [
             # Field, expected value
-            ("title", "Chief Tester</td>"),
-            ("email", "testy@town.com</td>"),
+            ("title", "Chief Tester"),
+            ("email", "testy@town.com"),
+            ("phone", "(555) 555 5555"),
             ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
-            ("phone", "(555) 555 5555</td>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
-        # count=4 because the underlying domain has two users with this name.
+        # count=5 because the underlying domain has two users with this name.
         # The dropdown has 3 of these.
-        self.assertContains(response, "Testy Tester", count=4)
-
-        # Check for table titles. We only need to check for the end tag
-        # (Otherwise this test will fail if we change classes, etc)
-
-        # Title. Count=3 because this table appears on three records.
-        self.assertContains(response, "Title</th>", count=3)
-
-        # Email. Count=3 because this table appears on three records.
-        self.assertContains(response, "Email</th>", count=3)
-
-        # Phone. Count=3 because this table appears on three records.
-        self.assertContains(response, "Phone</th>", count=3)
+        self.assertContains(response, "Testy Tester", count=5)
 
         # == Test the other_employees field == #
         expected_email = "testy@town.com"
         expected_other_employees_fields = [
             # Field, expected value
-            ("title", "Another Tester</td>"),
-            ("email", f"{expected_email}</td>"),
+            ("title", "Another Tester"),
+            ("email", "testy2@town.com"),
+            ("phone", "(555) 555 5557"),
             ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
-            ("phone", "(555) 555 5557</td>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
-
-        # count=1 as only one should exist in a table
-        self.assertContains(response, "Testy Tester</th>", count=1)
 
     def test_readonly_fields_for_analyst(self):
         """Ensures that analysts have their permissions setup correctly"""
@@ -2117,6 +2089,7 @@ class TestDomainInformationAdmin(TestCase):
             readonly_fields = self.admin.get_readonly_fields(request)
 
             expected_fields = [
+                "other_contacts",
                 "creator",
                 "type_of_work",
                 "more_organization_information",
@@ -2126,7 +2099,6 @@ class TestDomainInformationAdmin(TestCase):
                 "no_other_contacts_rationale",
                 "anything_else",
                 "is_policy_acknowledged",
-                "other_contacts",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)

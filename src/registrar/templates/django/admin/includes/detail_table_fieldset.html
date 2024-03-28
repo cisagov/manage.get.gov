@@ -5,72 +5,102 @@
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endcomment %}
 {% block field_readonly %}
+    {% with all_contacts=original.other_contacts.all %}
     {% if field.field.name == "other_contacts" %}
-    <div class="readonly">
-        {% for contact in field.contents|split:", " %}
-            <a href="#" class="other-contact__{{forloop.counter}}">{{ contact }}</a>{% if not forloop.last %}, {% endif %}
-        {% endfor %}
-    </div>
+        {% if all_contacts.count > 2 %}
+            <div class="readonly">
+                {% for contact in all_contacts %}
+                    <a href="{% url 'admin:registrar_contact_change' contact.id %}">{{ contact.get_formatted_name }}</a>{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="flex-container dja-detail-list">
+                <dl class="usa-list usa-list--unstyled margin-0">
+                    {% for contact in all_contacts %}
+                        <dt class="{% if forloop.counter == 1%}margin-top-0{% endif %}">
+                            Organization contact {{forloop.counter}}
+                        </dt>
+                        <dd>
+                            {% include "django/admin/includes/contact_detail_list.html" with user=contact show_formatted_name=True %}
+                        </dd>
+                    {% endfor %}
+                </dl>
+            </div>
+        {% endif %}
     {% elif field.field.name == "current_websites" %}
-    {% comment %}
-    The "website" model is essentially just a text field.
-    It is not useful to be redirected to the object definition,
-    rather it is more useful in this scenario to be redirected to the
-    actual website (as its just a plaintext string otherwise).
+        {% comment %}
+        The "website" model is essentially just a text field.
+        It is not useful to be redirected to the object definition,
+        rather it is more useful in this scenario to be redirected to the
+        actual website (as its just a plaintext string otherwise).
 
-    This ONLY applies to analysts. For superusers, its business as usual.
-    {% endcomment %}
-    {% for website in field.contents|split:", " %}
-        <a href="{{ website }}" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
-    {% endfor %}
+        This ONLY applies to analysts. For superusers, its business as usual.
+        {% endcomment %}
+        <div class="readonly">
+        {% with total_websites=field.contents|split:", " %}
+            {% for website in total_websites %}
+                <a href="{{ website }}" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
+                {# Acts as a <br> #}
+                {% if total_websites|length < 5 %}
+                <div class="display-block margin-top-1"></div>
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
+        </div>
+    {% elif field.field.name == "alternative_domains" %}
+        <div class="readonly">
+            {% for alt_domain in original.alternative_domains.all %}
+                <a href="{% url 'admin:registrar_website_change' alt_domain.id %}">{{ alt_domain }}</a>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </div>
     {% else %}
     <div class="readonly">{{ field.contents }}</div>
     {% endif %}
+    {% endwith %}
 {% endblock field_readonly %}
 
 {% block after_help_text %}
     {% if field.field.name == "creator" %}
-        {% include "django/admin/includes/contact_detail_table.html" with user=original.creator field_name="creator" %}
+        <div class="flex-container">
+        <label aria-label="Creator contact details"></label>
+        {% include "django/admin/includes/contact_detail_list.html" with user=original.creator no_title_top_padding=field.is_readonly %}
+        </div>
     {% elif field.field.name == "submitter" %}
-        {% include "django/admin/includes/contact_detail_table.html" with user=original.submitter field_name="submitter" %}
+        <div class="flex-container">
+        <label aria-label="Submitter contact details"></label>
+        {% include "django/admin/includes/contact_detail_list.html" with user=original.submitter no_title_top_padding=field.is_readonly %}
+        </div>
     {% elif field.field.name == "authorizing_official" %}
-        {% include "django/admin/includes/contact_detail_table.html" with user=original.authorizing_official field_name="authorizing_official" %}
+        <div class="flex-container">
+        <label aria-label="Authorizing official contact details"></label>
+        {% include "django/admin/includes/contact_detail_list.html" with user=original.authorizing_official no_title_top_padding=field.is_readonly %}
+        </div>
     {% elif field.field.name == "other_contacts" and original.other_contacts.all %}
-        <details class="margin-top-1 dja-detail-table">
-            <summary class="padding-1 dja-details-summary">Details</summary>
-            <div class="grid-container padding-left-0 padding-right-0 dja-details-contents">
-                <table>
-                    <tbody>
-                        {% for contact in original.other_contacts.all %}
-                        {% comment %}
-                        Since we can't get the id from field, we can embed this information here.
-                        Then we can link these two fields using javascript.
-                        {% endcomment %}
-                        <tr data-contact-id="{{ contact.id }}" data-contact-url="{% url 'admin:registrar_contact_change' contact.id %}">
-                            <th scope="row">{{contact.first_name}} {{contact.last_name}}</th>
-                            <td>{{ contact.title }}</td>
-                            <td>{{ contact.email }}</td>
-                            <td>{{ contact.phone }}</td>
-                            {# Copy button for the email #}
-                            <td class="font-size-sm">
-                                <input class="dja-clipboard-input" type="hidden" value="{{ contact.email }}">
-                                <button 
-                                class="usa-button usa-button--unstyled usa-button__icon usa-button__clipboard text-no-underline" 
-                                type="button"
-                                >
-                                    <svg 
-                                    class="usa-icon" 
-                                    >
-                                        <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
-                                    </svg>
-                                    Copy email
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </details>
+        {% with all_contacts=original.other_contacts.all %}
+        {% if all_contacts.count > 2 %}
+            <details class="margin-top-1 dja-detail-table" aria-role="button" open>
+                <summary class="padding-1 padding-left-0 dja-details-summary">Details</summary>
+                <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th colspan="4">Other contact information</th>
+                            <tr>
+                        </thead>
+                        <tbody>
+                            {% for contact in all_contacts %}
+                            <tr>
+                                <th class="padding-left-1" scope="row">{{ contact.get_formatted_name }}</th>
+                                <td class="padding-left-1">{{ contact.title }}</td>
+                                <td class="padding-left-1">{{ contact.email }}</td>
+                                <td class="padding-left-1">{{ contact.phone }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        {% endif %}
+        {% endwith %}
     {% endif %}
 {% endblock after_help_text %}

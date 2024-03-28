@@ -4,8 +4,16 @@
 {% block field_sets %}
     {# Create an invisible <a> tag so that we can use a click event to toggle the modal. #}
     <a id="invisible-ineligible-modal-toggler" class="display-none" href="#toggle-set-ineligible" aria-controls="toggle-set-ineligible" data-open-modal></a>
+
     {% for fieldset in adminform %}
-        {% include "django/admin/includes/domain_request_fieldset.html" %}
+        {% comment %}
+        TODO: this will eventually need to be changed to something like this
+        if we ever want to customize this file:
+        {% include "django/admin/includes/domain_information_fieldset.html" %}
+
+        Use detail_table_fieldset as an example, or just extend it.
+        {% endcomment %}
+        {% include "django/admin/includes/detail_table_fieldset.html" %}
     {% endfor %}
 {% endblock %}
 
