@@ -1,4 +1,3 @@
-from collections import Counter
 import csv
 import logging
 from datetime import datetime
@@ -8,7 +7,7 @@ from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from django.utils import timezone
 from django.core.paginator import Paginator
-from django.db.models import F, Value, CharField
+from django.db.models import F, Value, CharField, Q, Count
 from django.db.models.functions import Concat, Coalesce
 
 from registrar.models.public_contact import PublicContact
@@ -54,7 +53,7 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos_cleaned
 
 
-def parse_domain_row(columns, domain_info: DomainInformation, security_emails_dict=None, get_domain_managers=False):
+def parse_domain_row(columns, domain_info: DomainInformation, security_emails_dict=None, get_domain_managers=False, invites_with_invited_status=None):
     """Given a set of columns, generate a new row from cleaned column data"""
 
     # Domain should never be none when parsing this information
@@ -108,7 +107,7 @@ def parse_domain_row(columns, domain_info: DomainInformation, security_emails_di
         # Get lists of emails for active and invited domain managers
         dm_active_emails = [dm.user.email for dm in domain.permissions.all()]
         dm_invited_emails = [
-            invite.email for invite in domain.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)
+            invite.email for invite in invites_with_invited_status.filter(domain=domain)
         ]
 
         # Set up the "matching headers" + row field data for email and status
@@ -149,32 +148,25 @@ def _get_security_emails(sec_contact_ids):
 
 
 def update_columns_with_domain_managers(
-    domain_info, update_columns, columns, max_dm_active, max_dm_invited, max_dm_total
+    domain_info,invites_with_invited_status, update_columns, columns, max_dm_total
 ):
     """Helper function that works with 'global' variables set in write_domains_csv
     Accepts:
         domain_info -> Domains to parse
         update_columns -> A control to make sure we only run the columns test and update when needed
         columns -> The header cells in the csv that's under construction
-        max_dm_active -> Starts at 0 and gets updated and passed again through this method
-        max_dm_invited -> Starts at 0 and gets updated and passed again through this method
         max_dm_total -> Starts at 0 and gets updated and passed again through this method
     Returns:
         Updated update_columns, columns, max_dm_active, max_dm_invited, max_dm_total"""
 
     dm_active = domain_info.domain.permissions.count()
-    dm_invited = domain_info.domain.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED).count()
+    dm_invited = invites_with_invited_status.filter(domain=domain_info.domain).count()
 
-    if dm_active > max_dm_active:
-        max_dm_active = max(dm_active, max_dm_active)
-        update_columns = True
-
-    if dm_invited > max_dm_invited:
-        max_dm_invited = max(dm_invited, max_dm_invited)
+    if dm_active + dm_invited > max_dm_total:
+        max_dm_total = dm_active + dm_invited
         update_columns = True
 
     if update_columns:
-        max_dm_total = max_dm_active + max_dm_invited
         for i in range(1, max_dm_total + 1):
             column_name = f"Domain manager {i}"
             column2_name = f"DM{i} status"
@@ -183,7 +175,7 @@ def update_columns_with_domain_managers(
                 columns.append(column2_name)
         update_columns = False
 
-    return update_columns, columns, max_dm_active, max_dm_invited, max_dm_total
+    return update_columns, columns, max_dm_total
 
 
 def write_domains_csv(
@@ -213,10 +205,18 @@ def write_domains_csv(
 
     # We get the number of domain managers (DMs) an the domain
     # that has the most DMs so we can set the header row appropriately
-    max_dm_active = 0
-    max_dm_invited = 0
+
     max_dm_total = 0
     update_columns = False
+    invites_with_invited_status=None
+
+    if get_domain_managers:
+        invites_with_invited_status = DomainInvitation.objects.filter(status=DomainInvitation.DomainInvitationStatus.INVITED).prefetch_related("domain")
+
+        # zander = DomainInformation.objects.filter(**filter_condition).annotate(invitations_count=Count('invitation', filter=Q(invitation__status='invited'))).values_list('domain_name', 'invitations_count')
+        # logger.info(f'zander {zander}')
+        # zander_dict = dict(zander)
+        # logger.info(f'zander_dict {zander_dict}')
 
     # This var will live outside of the nested for loops to aggregate
     # the data from those loops
@@ -229,14 +229,14 @@ def write_domains_csv(
 
             # Get max number of domain managers
             if get_domain_managers:
-                update_columns, columns, max_dm_active, max_dm_invited, max_dm_total = (
+                update_columns, columns, max_dm_total = (
                     update_columns_with_domain_managers(
-                        domain_info, update_columns, columns, max_dm_active, max_dm_invited, max_dm_total
+                        domain_info,invites_with_invited_status, update_columns, columns, max_dm_total
                     )
                 )
 
             try:
-                row = parse_domain_row(columns, domain_info, security_emails_dict, get_domain_managers)
+                row = parse_domain_row(columns, domain_info, security_emails_dict, get_domain_managers, invites_with_invited_status)
                 rows.append(row)
             except ValueError:
                 # This should not happen. If it does, just skip this row.
@@ -518,58 +518,23 @@ def get_sliced_domains(filter_condition, distinct=False):
     when a domain has more that one manager.
     """
 
-    # Round trip 1: Get distinct domain names based on filter condition
-    domains_count = DomainInformation.objects.filter(**filter_condition).distinct().count()
-
-    # Round trip 2: Get counts for other slices
-    # This will require either 8 filterd and distinct DB round trips,
-    # or 2 DB round trips plus iteration on domain_permissions for each domain
-    if distinct:
-        generic_org_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
-            "domain_id", "generic_org_type"
-        )
-        # Initialize Counter to store counts for each generic_org_type
-        generic_org_type_counts = Counter()
-
-        # Keep track of domains already counted
-        domains_counted = set()
-
-        # Iterate over distinct domains
-        for domain_id, generic_org_type in generic_org_types_query:
-            # Check if the domain has already been counted
-            if domain_id in domains_counted:
-                continue
-
-            # Get all permissions for the current domain
-            domain_permissions = DomainInformation.objects.filter(domain_id=domain_id, **filter_condition).values_list(
-                "domain__permissions", flat=True
-            )
-
-            # Check if the domain has multiple permissions
-            if len(domain_permissions) > 0:
-                # Mark the domain as counted
-                domains_counted.add(domain_id)
-
-            # Increment the count for the corresponding generic_org_type
-            generic_org_type_counts[generic_org_type] += 1
-    else:
-        generic_org_types_query = DomainInformation.objects.filter(**filter_condition).values_list(
-            "generic_org_type", flat=True
-        )
-        generic_org_type_counts = Counter(generic_org_types_query)
-
-    # Extract counts for each generic_org_type
-    federal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
-    interstate = generic_org_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
-    state_or_territory = generic_org_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
-    tribal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
-    county = generic_org_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
-    city = generic_org_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
-    special_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
-    school_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
-
-    # Round trip 3
-    election_board = DomainInformation.objects.filter(is_election_board=True, **filter_condition).distinct().count()
+    domains = DomainInformation.objects.all().filter(**filter_condition).distinct()
+    domains_count = domains.count()
+    federal = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
+    interstate = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.INTERSTATE).count()
+    state_or_territory = (
+        domains.filter(generic_org_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
+    )
+    tribal = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
+    county = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
+    city = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
+    special_district = (
+        domains.filter(generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+    )
+    school_district = (
+        domains.filter(generic_org_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    )
+    election_board = domains.filter(is_election_board=True).distinct().count()
 
     return [
         domains_count,
@@ -588,26 +553,23 @@ def get_sliced_domains(filter_condition, distinct=False):
 def get_sliced_requests(filter_condition):
     """Get filtered requests counts sliced by org type and election office."""
 
-    # Round trip 1: Get distinct requests based on filter condition
-    requests_count = DomainRequest.objects.filter(**filter_condition).distinct().count()
-
-    # Round trip 2: Get counts for other slices
-    generic_org_types_query = DomainRequest.objects.filter(**filter_condition).values_list(
-        "generic_org_type", flat=True
+    requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
+    requests_count = requests.count()
+    federal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
+    interstate = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.INTERSTATE).distinct().count()
+    state_or_territory = (
+        requests.filter(generic_org_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
     )
-    generic_org_type_counts = Counter(generic_org_types_query)
-
-    federal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.FEDERAL, 0)
-    interstate = generic_org_type_counts.get(DomainRequest.OrganizationChoices.INTERSTATE, 0)
-    state_or_territory = generic_org_type_counts.get(DomainRequest.OrganizationChoices.STATE_OR_TERRITORY, 0)
-    tribal = generic_org_type_counts.get(DomainRequest.OrganizationChoices.TRIBAL, 0)
-    county = generic_org_type_counts.get(DomainRequest.OrganizationChoices.COUNTY, 0)
-    city = generic_org_type_counts.get(DomainRequest.OrganizationChoices.CITY, 0)
-    special_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SPECIAL_DISTRICT, 0)
-    school_district = generic_org_type_counts.get(DomainRequest.OrganizationChoices.SCHOOL_DISTRICT, 0)
-
-    # Round trip 3
-    election_board = DomainRequest.objects.filter(is_election_board=True, **filter_condition).distinct().count()
+    tribal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
+    county = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
+    city = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
+    special_district = (
+        requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+    )
+    school_district = (
+        requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    )
+    election_board = requests.filter(is_election_board=True).distinct().count()
 
     return [
         requests_count,

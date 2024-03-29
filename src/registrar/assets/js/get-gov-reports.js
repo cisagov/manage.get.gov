@@ -117,8 +117,8 @@
 
     function initComparativeColumnCharts() {
         document.addEventListener("DOMContentLoaded", function () {
-            // createComparativeColumnChart("myChart1", "Managed domains", "Start Date", "End Date");
-            // createComparativeColumnChart("myChart2", "Unmanaged domains", "Start Date", "End Date");
+            createComparativeColumnChart("myChart1", "Managed domains", "Start Date", "End Date");
+            createComparativeColumnChart("myChart2", "Unmanaged domains", "Start Date", "End Date");
             createComparativeColumnChart("myChart3", "Deleted domains", "Start Date", "End Date");
             createComparativeColumnChart("myChart4", "Ready domains", "Start Date", "End Date");
             createComparativeColumnChart("myChart5", "Submitted requests", "Start Date", "End Date");
