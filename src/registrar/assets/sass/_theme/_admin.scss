@@ -423,7 +423,7 @@ address.dja-address-contact-list {
 }
 
 // Sticky submit bar for domain requests on desktop
-@include at-media(desktop) {
+@media screen and (min-width:768px) {
     .submit-row-wrapper {
         position: fixed;
         bottom: 0;
