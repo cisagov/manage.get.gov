@@ -451,7 +451,7 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
         // If it is, expand it.
         const targetElement = document.querySelector(".scroll-indicator");
         const options = {
-            threshold: 1 // Adjust the threshold as needed (1 indicates when the target element is fully visible)
+            threshold: 1
         };
         // Create a new Intersection Observer
         const observer = new IntersectionObserver((entries, observer) => {

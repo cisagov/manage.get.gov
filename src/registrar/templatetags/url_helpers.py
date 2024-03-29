@@ -26,6 +26,14 @@ def endswith(text, ends):
     return False
 
 
+@register.filter("split")
+def split_string(value, key):
+    """
+    Splits a given string
+    """
+    return value.split(key)
+
+
 @register.simple_tag
 def public_site_url(url_path):
     """Make a full URL for this path at our public site.

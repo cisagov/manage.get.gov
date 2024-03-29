@@ -665,6 +665,22 @@ class TestDomainManagers(TestDomainOverview):
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
 
+    def test_domain_invitation_cancel_retrieved_invitation(self):
+        """Posting to the delete view when invitation retrieved returns an error message"""
+        email_address = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(
+            domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
+        )
+        with less_console_noise():
+            response = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}), follow=True)
+            # Assert that an error message is displayed to the user
+            self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
+            # Assert that the Cancel link is not displayed
+            self.assertNotContains(response, "Cancel")
+        # Assert that the DomainInvitation is not deleted
+        self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
+        DomainInvitation.objects.filter(email=email_address).delete()
+
     def test_domain_invitation_cancel_no_permissions(self):
         """Posting to the delete view as a different user should fail."""
         email_address = "mayor@igorville.gov"

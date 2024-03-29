@@ -54,6 +54,7 @@
 
 })();
 
+
 /** An IIFE to initialize the analytics page
 */
 (function () {
