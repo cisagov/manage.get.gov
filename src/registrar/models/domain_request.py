@@ -100,8 +100,8 @@ class DomainRequest(TimeStampedModel):
     class OrganizationChoices(models.TextChoices):
         """
         Primary organization choices:
-        For use in django admin
-        Keys need to match OrganizationChoicesVerbose
+        For use in the request experience
+        Keys need to match OrganizationChoicesElectionOffice and OrganizationChoicesVerbose
         """
 
         FEDERAL = "federal", "Federal"
@@ -113,9 +113,38 @@ class DomainRequest(TimeStampedModel):
         SPECIAL_DISTRICT = "special_district", "Special district"
         SCHOOL_DISTRICT = "school_district", "School district"
 
+    class OrganizationChoicesElectionOffice(models.TextChoices):
+        """
+        Primary organization choices for Django admin:
+        Keys need to match OrganizationChoices and OrganizationChoicesVerbose.
+
+        The enums here come in two variants:
+        Regular (matches the choices from OrganizationChoices)
+        Election (Appends " - Election" to the string)
+
+        When adding the election variant, you must append "_election" to the end of the string.
+        """
+        # We can't inherit OrganizationChoices due to models.TextChoices being an enum.
+        # We can redefine these values instead.
+        FEDERAL = "federal", "Federal"
+        INTERSTATE = "interstate", "Interstate"
+        STATE_OR_TERRITORY = "state_or_territory", "State or territory"
+        TRIBAL = "tribal", "Tribal"
+        COUNTY = "county", "County"
+        CITY = "city", "City"
+        SPECIAL_DISTRICT = "special_district", "Special district"
+        SCHOOL_DISTRICT = "school_district", "School district"
+
+        # Election variants
+        STATE_OR_TERRITORY_ELECTION = "state_or_territory_election", "State or territory - Election"
+        TRIBAL_ELECTION = "tribal_election", "Tribal - Election"
+        COUNTY_ELECTION = "county_election", "County - Election"
+        CITY_ELECTION = "city_election", "City - Election"
+        SPECIAL_DISTRICT_ELECTION = "special_district_election", "Special district - Election"
+
     class OrganizationChoicesVerbose(models.TextChoices):
         """
-        Secondary organization choices
+        Tertiary organization choices
         For use in the domain request form and on the templates
         Keys need to match OrganizationChoices
         """
@@ -406,6 +435,14 @@ class DomainRequest(TimeStampedModel):
         help_text="Type of organization",
     )
 
+    organization_type = models.CharField(
+        max_length=255,
+        choices=OrganizationChoicesElectionOffice.choices,
+        null=True,
+        blank=True,
+        help_text="Type of organization - Election office",
+    )
+
     federally_recognized_tribe = models.BooleanField(
         null=True,
         help_text="Is the tribe federally recognized",
@@ -449,6 +486,7 @@ class DomainRequest(TimeStampedModel):
         help_text="Organization name",
         db_index=True,
     )
+
     address_line1 = models.CharField(
         null=True,
         blank=True,
@@ -525,6 +563,7 @@ class DomainRequest(TimeStampedModel):
         related_name="domain_request",
         on_delete=models.PROTECT,
     )
+
     alternative_domains = models.ManyToManyField(
         "registrar.Website",
         blank=True,
