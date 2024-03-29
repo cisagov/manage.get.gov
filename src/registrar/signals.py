@@ -48,9 +48,8 @@ def create_or_update_organization_type(sender, instance, **kwargs):
             # Since organization type is linked with generic_org_type and election board,
             # we have to update one or the other, not both.
             raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")    
-
-        # If no changes occurred, do nothing
-        if not instance.organization_type and not instance.generic_org_type:
+        elif not instance.organization_type and not instance.generic_org_type:
+            # Do values to update - do nothing
             return None
         # == Program flow will halt here if there is no reason to update == #
 
@@ -79,9 +78,8 @@ def create_or_update_organization_type(sender, instance, **kwargs):
             # Since organization type is linked with generic_org_type and election board,
             # we have to update one or the other, not both.
             raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
-
-        # If no changes occured, do nothing
-        if not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
+        elif not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
+            # Do values to update - do nothing
             return None
         # == Program flow will halt here if there is no reason to update == #
 
