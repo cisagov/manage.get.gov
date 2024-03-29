@@ -428,6 +428,7 @@ address.dja-address-contact-list {
         position: fixed;
         bottom: 0;
         right: 0;
+        left: 350px;
         background: var(--darkened-bg);
         border-top-left-radius: 6px;
         transition: transform .2s ease-out;
@@ -461,7 +462,7 @@ address.dja-address-contact-list {
     }
 }
 
-@media screen and (max-width:1199px) {
+@media screen and (max-width:1256px) {
     .submit-row {
         clear: both;
     }

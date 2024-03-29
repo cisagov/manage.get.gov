@@ -125,5 +125,6 @@
             createComparativeColumnChart("myChart6", "All requests", "Start Date", "End Date");
         });
     };
+
     initComparativeColumnCharts();
 })();
