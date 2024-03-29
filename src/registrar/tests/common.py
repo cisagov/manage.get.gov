@@ -116,6 +116,31 @@ class GenericTestHelper(TestCase):
         self.url = url
         self.client = client
 
+    def assert_response_contains_distinct_values(self, response, expected_values):
+        """
+        Asserts that each specified value appears exactly once in the response.
+
+        This method iterates over a list of tuples, where each tuple contains a field name
+        and its expected value. It then performs an assertContains check for each value,
+        ensuring that each value appears exactly once in the response.
+
+        Parameters:
+        - response: The HttpResponse object to inspect.
+        - expected_values: A list of tuples, where each tuple contains:
+            - field: The name of the field (used for subTest identification).
+            - value: The expected value to check for in the response.
+
+        Example usage:
+        expected_values = [
+            ("title", "Treat inspector</td>"),
+            ("email", "meoward.jones@igorville.gov</td>"),
+        ]
+        self.assert_response_contains_distinct_values(response, expected_values)
+        """
+        for field, value in expected_values:
+            with self.subTest(field=field, expected_value=value):
+                self.assertContains(response, value, count=1)
+
     def assert_table_sorted(self, o_index, sort_fields):
         """
         This helper function validates the sorting functionality of a Django Admin table view.
@@ -179,7 +204,6 @@ class GenericTestHelper(TestCase):
             {"action": "delete_selected", "select_across": selected_across, "index": index, "_selected_action": "23"},
             follow=True,
         )
-        print(f"what is the response? {response}")
         return response
 
 

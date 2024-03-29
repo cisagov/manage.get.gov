@@ -54,64 +54,77 @@
 
 })();
 
-document.addEventListener("DOMContentLoaded", function () {
-    createComparativeColumnChart("myChart1", "Managed domains", "Start Date", "End Date");
-    createComparativeColumnChart("myChart2", "Unmanaged domains", "Start Date", "End Date");
-    createComparativeColumnChart("myChart3", "Deleted domains", "Start Date", "End Date");
-    createComparativeColumnChart("myChart4", "Ready domains", "Start Date", "End Date");
-    createComparativeColumnChart("myChart5", "Submitted requests", "Start Date", "End Date");
-    createComparativeColumnChart("myChart6", "All requests", "Start Date", "End Date");
-});
 
-function createComparativeColumnChart(canvasId, title, labelOne, labelTwo) {
-    var canvas = document.getElementById(canvasId);
-    var ctx = canvas.getContext("2d");
+/** An IIFE to initialize the analytics page
+*/
+(function () {
+    function createComparativeColumnChart(canvasId, title, labelOne, labelTwo) {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            return
+        }
 
-    var listOne = JSON.parse(canvas.getAttribute('data-list-one'));
-    var listTwo = JSON.parse(canvas.getAttribute('data-list-two'));
+        var ctx = canvas.getContext("2d");
 
-    var data = {
-        labels: ["Total", "Federal", "Interstate", "State/Territory", "Tribal", "County", "City", "Special District", "School District", "Election Board"],
-        datasets: [
-            {
-                label: labelOne,
-                backgroundColor: "rgba(255, 99, 132, 0.2)",
-                borderColor: "rgba(255, 99, 132, 1)",
-                borderWidth: 1,
-                data: listOne,
+        var listOne = JSON.parse(canvas.getAttribute('data-list-one'));
+        var listTwo = JSON.parse(canvas.getAttribute('data-list-two'));
+
+        var data = {
+            labels: ["Total", "Federal", "Interstate", "State/Territory", "Tribal", "County", "City", "Special District", "School District", "Election Board"],
+            datasets: [
+                {
+                    label: labelOne,
+                    backgroundColor: "rgba(255, 99, 132, 0.2)",
+                    borderColor: "rgba(255, 99, 132, 1)",
+                    borderWidth: 1,
+                    data: listOne,
+                },
+                {
+                    label: labelTwo,
+                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    borderWidth: 1,
+                    data: listTwo,
+                },
+            ],
+        };
+
+        var options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: title
+                }
             },
-            {
-                label: labelTwo,
-                backgroundColor: "rgba(75, 192, 192, 0.2)",
-                borderColor: "rgba(75, 192, 192, 1)",
-                borderWidth: 1,
-                data: listTwo,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                },
             },
-        ],
+        };
+
+        new Chart(ctx, {
+            type: "bar",
+            data: data,
+            options: options,
+        });
+    }
+
+    function initComparativeColumnCharts() {
+        document.addEventListener("DOMContentLoaded", function () {
+            // createComparativeColumnChart("myChart1", "Managed domains", "Start Date", "End Date");
+            // createComparativeColumnChart("myChart2", "Unmanaged domains", "Start Date", "End Date");
+            createComparativeColumnChart("myChart3", "Deleted domains", "Start Date", "End Date");
+            createComparativeColumnChart("myChart4", "Ready domains", "Start Date", "End Date");
+            createComparativeColumnChart("myChart5", "Submitted requests", "Start Date", "End Date");
+            createComparativeColumnChart("myChart6", "All requests", "Start Date", "End Date");
+        });
     };
 
-    var options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top',
-            },
-            title: {
-                display: true,
-                text: title
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-            },
-        },
-    };
-
-    new Chart(ctx, {
-        type: "bar",
-        data: data,
-        options: options,
-    });
-}
+    initComparativeColumnCharts();
+})();

@@ -93,6 +93,12 @@ class UserFixture:
             "last_name": "Chin",
             "email": "szu.chin@associates.cisa.dhs.gov",
         },
+        {
+            "username": "012f844d-8a0f-4225-9d82-cbf87bff1d3e",
+            "first_name": "Riley",
+            "last_name": "Orr",
+            "email": "riley+320@truss.works",
+        },
     ]
 
     STAFF = [
@@ -168,6 +174,12 @@ class UserFixture:
             "first_name": "Alex-Analyst",
             "last_name": "Mcelya-Analyst",
             "email": "ALEXANDER.MCELYA@cisa.dhs.gov",
+        },
+        {
+            "username": "082a066f-e0a4-45f6-8672-4343a1208a36",
+            "first_name": "Riley-Analyst",
+            "last_name": "Orr-Analyst",
+            "email": "riley+321@truss.works",
         },
     ]
 
