@@ -381,4 +381,17 @@ input.admin-confirm-button {
     #submitRowToggle {
         color: var( --body-fg);
     }
+
+    .requested-domain-sticky {
+        max-width: 325px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+
+@media screen and (max-width:1199px) {
+    .submit-row {
+        clear: both;
+    }
 }
