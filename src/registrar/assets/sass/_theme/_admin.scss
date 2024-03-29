@@ -466,4 +466,9 @@ address.dja-address-contact-list {
     .submit-row {
         clear: both;
     }
+    .submit-row-wrapper.collapsed {
+        // translate3d is more performant than translateY
+        // https://stackoverflow.com/questions/22111256/translate3d-vs-translate-performance
+        transform: translate3d(0, 88px, 0);
+    }
 }
