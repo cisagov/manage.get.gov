@@ -165,13 +165,16 @@ def update_columns_with_domain_managers(
     dm_active = domain_info.domain.permissions.count()
     dm_invited = domain_info.domain.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED).count()
 
-    if dm_active > max_dm_active or dm_invited > max_dm_invited:
+    if dm_active > max_dm_active:
         max_dm_active = max(dm_active, max_dm_active)
+        update_columns = True
+
+    if dm_invited > max_dm_invited:
         max_dm_invited = max(dm_invited, max_dm_invited)
-        max_dm_total = max_dm_active + max_dm_invited
         update_columns = True
 
     if update_columns:
+        max_dm_total = max_dm_active + max_dm_invited
         for i in range(1, max_dm_total + 1):
             column_name = f"Domain manager {i}"
             column2_name = f"DM{i} status"
