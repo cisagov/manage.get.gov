@@ -883,6 +883,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
             "Type of organization",
             {
                 "fields": [
+                    "is_election_board",
                     "organization_type",
                     "federal_type",
                     "federal_agency",

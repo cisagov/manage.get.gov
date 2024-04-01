@@ -62,7 +62,15 @@ def create_or_update_organization_type(sender, instance, **kwargs):
 
         # == Init variables == #
         # Instance is already in the database, fetch its current state
-        current_instance = DomainRequest.objects.get(id=instance.id)
+        if isinstance(instance, DomainRequest):
+            current_instance = DomainRequest.objects.get(id=instance.id)
+        elif isinstance(instance, DomainInformation):
+            current_instance = DomainInformation.objects.get(id=instance.id)
+        else:
+            # This should never occur. But it never hurts to have this check anyway.
+            raise ValueError(
+                "create_or_update_organization_type() -> instance was not DomainRequest or DomainInformation"
+            )
 
         # Check the new and old values
         generic_org_type_changed = instance.generic_org_type != current_instance.generic_org_type

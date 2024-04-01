@@ -585,7 +585,7 @@ class MockDb(TestCase):
             generic_org_type="federal",
             federal_agency="World War I Centennial Commission",
             federal_type="executive",
-            is_election_board=True,
+            is_election_board=False,
         )
         self.domain_information_2, _ = DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain_2, generic_org_type="interstate", is_election_board=True
@@ -595,14 +595,14 @@ class MockDb(TestCase):
             domain=self.domain_3,
             generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=True,
+            is_election_board=False,
         )
         self.domain_information_4, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_4,
             generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=True,
+            is_election_board=False,
         )
         self.domain_information_5, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
@@ -652,7 +652,7 @@ class MockDb(TestCase):
             generic_org_type="federal",
             federal_agency="World War I Centennial Commission",
             federal_type="executive",
-            is_election_board=True,
+            is_election_board=False,
         )
         self.domain_information_12, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
