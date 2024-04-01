@@ -3,15 +3,16 @@ import logging
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 
-from .models import User, Contact, DomainRequest
+from .models import User, Contact, DomainRequest, DomainInformation
 
 
 logger = logging.getLogger(__name__)
 
 
 @receiver(pre_save, sender=DomainRequest)
+@receiver(pre_save, sender=DomainInformation)
 def create_or_update_organization_type(sender, instance, **kwargs):
-    """The organization_type field on DomainRequest is consituted from the
+    """The organization_type field on DomainRequest and DomainInformation is consituted from the
     generic_org_type and is_election_board fields. To keep the organization_type
     field up to date, we need to update it before save based off of those field
     values.
@@ -21,50 +22,67 @@ def create_or_update_organization_type(sender, instance, **kwargs):
     organization_type is set to a corresponding election variant. Otherwise, it directly
     mirrors the generic_org_type value.
     """
-    if not isinstance(instance, DomainRequest):
+    if not isinstance(instance, DomainRequest) and not isinstance(instance, DomainInformation):
         # I don't see how this could possibly happen - but its still a good check to have.
         # Lets force a fail condition rather than wait for one to happen, if this occurs.
-        raise ValueError("Type mismatch. The instance was not DomainRequest.")
+        raise ValueError("Type mismatch. The instance was not DomainRequest or DomainInformation.")
 
     # == Init variables == #
-    # We can't grab the election variant if it is in federal, interstate, or school_district.
-    # The "election variant" is just the org name, with " - Election" appended to the end.
-    # For example, "School district - Election".
-    invalid_types = [
-        DomainRequest.OrganizationChoices.FEDERAL,
-        DomainRequest.OrganizationChoices.INTERSTATE,
-        DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
-    ]
-
-    # TODO - maybe we need a check here for .filter then .get
     is_new_instance = instance.id is None
+    election_org_choices = DomainRequest.OrgChoicesElectionOffice
+    
+    # For any given organization type, return the "_election" variant.
+    # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
+    generic_org_to_org_map = election_org_choices.get_org_generic_to_org_election()
+
+    # For any given "_election" variant, return the base org type.
+    # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
+    election_org_to_generic_org_map = election_org_choices.get_org_election_to_org_generic()
 
     # A new record is added with organization_type not defined.
     # This happens from the regular domain request flow.
     if is_new_instance:
 
         # == Check for invalid conditions before proceeding == #
+        # Since organization type is linked with generic_org_type and election board,
+        # we have to update one or the other, not both.
         if instance.organization_type and instance.generic_org_type:
-            # Since organization type is linked with generic_org_type and election board,
-            # we have to update one or the other, not both.
-            raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")    
+            organization_type = str(instance.organization_type)
+            generic_org_type = str(instance.generic_org_type)
+
+            # We can only proceed if all values match (fixtures, load_from_da).
+            # Otherwise, we're overwriting data so lets forbid this.
+            if (
+                "_election" in organization_type != instance.is_election_board or
+                organization_type != generic_org_type
+                ):
+                message = (
+                    "Cannot add organization_type and generic_org_type simultaneously "
+                    "when generic_org_type, is_election_board, and organization_type values do not match."
+                )
+                raise ValueError(message) 
         elif not instance.organization_type and not instance.generic_org_type:
-            # Do values to update - do nothing
+            # No values to update - do nothing
             return None
         # == Program flow will halt here if there is no reason to update == #
 
         # == Update the linked values == #
-        # Find out which field needs updating
         organization_type_needs_update = instance.organization_type is None
         generic_org_type_needs_update = instance.generic_org_type is None
 
-        # Update that field
+        # If a field is none, it indicates (per prior checks) that the
+        # related field (generic org type <-> org type) has data and we should update according to that.
         if organization_type_needs_update:
-            _update_org_type_from_generic_org_and_election(instance, invalid_types)
+            _update_org_type_from_generic_org_and_election(instance)
         elif generic_org_type_needs_update:
             _update_generic_org_and_election_from_org_type(instance)
+        else:
+            # This indicates that all data already matches,
+            # so we should just do nothing because there is nothing to update.
+            pass
     else:
-
+        
+        # == Init variables == #
         # Instance is already in the database, fetch its current state
         current_instance = DomainRequest.objects.get(id=instance.id)
 
@@ -77,6 +95,7 @@ def create_or_update_organization_type(sender, instance, **kwargs):
         if organization_type_changed and (generic_org_type_changed or is_election_board_changed):
             # Since organization type is linked with generic_org_type and election board,
             # we have to update one or the other, not both.
+            # This will not happen in normal flow as it is not possible otherwise.
             raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
         elif not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
             # Do values to update - do nothing
@@ -90,28 +109,50 @@ def create_or_update_organization_type(sender, instance, **kwargs):
 
         # Update that field
         if organization_type_needs_update:
-            _update_org_type_from_generic_org_and_election(instance, invalid_types)
+            _update_org_type_from_generic_org_and_election(instance)
         elif generic_org_type_needs_update:
             _update_generic_org_and_election_from_org_type(instance)
 
-def _update_org_type_from_generic_org_and_election(instance, invalid_types):
-    # TODO handle if generic_org_type is None
-    if instance.generic_org_type not in invalid_types and instance.is_election_board:
-        instance.organization_type = f"{instance.generic_org_type}_election"
+def _update_org_type_from_generic_org_and_election(instance):
+    """Given a field values for generic_org_type and is_election_board, update the
+    organization_type field."""
+
+    # We convert to a string because the enum types are different.
+    generic_org_type = str(instance.generic_org_type)
+
+    # For any given organization type, return the "_election" variant.
+    # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
+    election_org_choices = DomainRequest.OrgChoicesElectionOffice
+    org_map = election_org_choices.get_org_generic_to_org_election()
+
+    # This essentially means: instance.generic_org_type not in invalid_types
+    if generic_org_type in org_map and instance.is_election_board:
+        instance.organization_type = org_map[generic_org_type]
     else:
-        instance.organization_type = str(instance.generic_org_type)
+        instance.organization_type = generic_org_type
 
 
 def _update_generic_org_and_election_from_org_type(instance):
-    """Given a value for organization_type, update the
-    generic_org_type and is_election_board values."""
-    # TODO find a better solution than this
+    """Given the field value for organization_type, update the
+    generic_org_type and is_election_board field."""
+
+    # We convert to a string because the enum types are different
+    # between OrgChoicesElectionOffice and OrganizationChoices.
+    # But their names are the same (for the most part).
     current_org_type = str(instance.organization_type)
-    if "_election" in current_org_type:
-        instance.generic_org_type = current_org_type.split("_election")[0]
+
+    # For any given organization type, return the generic variant.
+    # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
+    election_org_choices = DomainRequest.OrgChoicesElectionOffice
+    org_map = election_org_choices.get_org_election_to_org_generic()
+
+    # This essentially means: "_election" in current_org_type
+    if current_org_type in org_map:
+        new_org = org_map[current_org_type]
+        instance.generic_org_type = new_org
         instance.is_election_board = True
     else:
-        instance.organization_type = str(instance.generic_org_type)
+        instance.generic_org_type = current_org_type
         instance.is_election_board = False
 
 @receiver(post_save, sender=User)

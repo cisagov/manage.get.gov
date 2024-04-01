@@ -101,7 +101,7 @@ class DomainRequest(TimeStampedModel):
         """
         Primary organization choices:
         For use in the request experience
-        Keys need to match OrganizationChoicesElectionOffice and OrganizationChoicesVerbose
+        Keys need to match OrgChoicesElectionOffice and OrganizationChoicesVerbose
         """
 
         FEDERAL = "federal", "Federal"
@@ -113,7 +113,7 @@ class DomainRequest(TimeStampedModel):
         SPECIAL_DISTRICT = "special_district", "Special district"
         SCHOOL_DISTRICT = "school_district", "School district"
 
-    class OrganizationChoicesElectionOffice(models.TextChoices):
+    class OrgChoicesElectionOffice(models.TextChoices):
         """
         Primary organization choices for Django admin:
         Keys need to match OrganizationChoices and OrganizationChoicesVerbose.
@@ -141,6 +141,44 @@ class DomainRequest(TimeStampedModel):
         COUNTY_ELECTION = "county_election", "County - Election"
         CITY_ELECTION = "city_election", "City - Election"
         SPECIAL_DISTRICT_ELECTION = "special_district_election", "Special district - Election"
+
+        @classmethod
+        def get_org_election_to_org_generic(cls):
+            """
+            Creates and returns a dictionary mapping from election-specific organization
+            choice enums to their corresponding general organization choice enums.
+
+            If no such mapping exists, it is simple excluded from the map.
+            """
+            # This can be mapped automatically but its harder to read.
+            # For clarity reasons, we manually define this.
+            org_election_map = {
+                cls.STATE_OR_TERRITORY_ELECTION: cls.STATE_OR_TERRITORY,
+                cls.TRIBAL_ELECTION: cls.TRIBAL,
+                cls.COUNTY_ELECTION: cls.COUNTY,
+                cls.CITY_ELECTION: cls.CITY,
+                cls.SPECIAL_DISTRICT_ELECTION: cls.SPECIAL_DISTRICT,
+            }
+            return org_election_map
+        
+        @classmethod
+        def get_org_generic_to_org_election(cls):
+            """
+            Creates and returns a dictionary mapping from general organization
+            choice enums to their corresponding election-specific organization enums.
+
+            If no such mapping exists, it is simple excluded from the map.
+            """
+            # This can be mapped automatically but its harder to read.
+            # For clarity reasons, we manually define this.
+            org_election_map = {
+                cls.STATE_OR_TERRITORY: cls.STATE_OR_TERRITORY_ELECTION,
+                cls.TRIBAL: cls.TRIBAL_ELECTION,
+                cls.COUNTY: cls.COUNTY_ELECTION,
+                cls.CITY: cls.CITY_ELECTION,
+                cls.SPECIAL_DISTRICT: cls.SPECIAL_DISTRICT_ELECTION,
+            }
+            return org_election_map
 
     class OrganizationChoicesVerbose(models.TextChoices):
         """
@@ -435,9 +473,16 @@ class DomainRequest(TimeStampedModel):
         help_text="Type of organization",
     )
 
+    is_election_board = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Is your organization an election office?",
+    )
+
+    # TODO - Ticket #1911: stub this data from DomainRequest
     organization_type = models.CharField(
         max_length=255,
-        choices=OrganizationChoicesElectionOffice.choices,
+        choices=OrgChoicesElectionOffice.choices,
         null=True,
         blank=True,
         help_text="Type of organization - Election office",
@@ -472,12 +517,6 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Federal government branch",
-    )
-
-    is_election_board = models.BooleanField(
-        null=True,
-        blank=True,
-        help_text="Is your organization an election office?",
     )
 
     organization_name = models.CharField(

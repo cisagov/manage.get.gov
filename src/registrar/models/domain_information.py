@@ -54,7 +54,23 @@ class DomainInformation(TimeStampedModel):
         choices=OrganizationChoices.choices,
         null=True,
         blank=True,
-        help_text="Type of Organization",
+        help_text="Type of organization",
+    )
+
+    # TODO - Ticket #1911: stub this data from DomainRequest
+    is_election_board = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Is your organization an election office?",
+    )
+
+    # TODO - Ticket #1911: stub this data from DomainRequest
+    organization_type = models.CharField(
+        max_length=255,
+        choices=DomainRequest.OrgChoicesElectionOffice.choices,
+        null=True,
+        blank=True,
+        help_text="Type of organization - Election office",
     )
 
     federally_recognized_tribe = models.BooleanField(
