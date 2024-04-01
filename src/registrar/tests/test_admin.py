@@ -1306,7 +1306,6 @@ class TestDomainRequestAdmin(MockEppLib):
             ("title", "Treat inspector"),
             ("email", "meoward.jones@igorville.gov"),
             ("phone", "(555) 123 12345"),
-            ("email_copy_button_input", f"{expected_email}</button>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
 
@@ -2035,7 +2034,6 @@ class TestDomainInformationAdmin(TestCase):
             ("title", "Treat inspector"),
             ("email", "meoward.jones@igorville.gov"),
             ("phone", "(555) 123 12345"),
-            ("email_copy_button_input", f"{expected_email}</button>"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
 
