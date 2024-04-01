@@ -151,6 +151,8 @@ def _validate_new_instance(instance, election_org_to_generic_org_map, generic_or
     """
     Validates whether a new instance of DomainRequest or DomainInformation can proceed with the update
     based on the consistency between organization_type, generic_org_type, and is_election_board.
+
+    Returns a boolean determining if execution should proceed or not.
     """
 
     # We conditionally accept both of these values to exist simultaneously, as long as
@@ -168,8 +170,8 @@ def _validate_new_instance(instance, election_org_to_generic_org_map, generic_or
         is_election_type = "_election" in organization_type
         can_have_election_board = organization_type in generic_org_to_org_map
 
-        election_board_mismatch = is_election_type != instance.is_election_board and can_have_election_board
-        org_type_mismatch = mapped_org_type is not None and generic_org_type != mapped_org_type
+        election_board_mismatch = (is_election_type != instance.is_election_board) and can_have_election_board
+        org_type_mismatch = mapped_org_type is not None and (generic_org_type != mapped_org_type)
         if election_board_mismatch or org_type_mismatch:
             message = (
                 "Cannot add organization_type and generic_org_type simultaneously "
@@ -177,11 +179,11 @@ def _validate_new_instance(instance, election_org_to_generic_org_map, generic_or
             )
             raise ValueError(message)
 
-        should_proceed = True
-        return should_proceed
+        return True
+    elif not instance.organization_type and not instance.generic_org_type:
+        return False
     else:
-        should_proceed = not instance.organization_type and not instance.generic_org_type
-        return should_proceed
+        return True
 
 
 @receiver(post_save, sender=User)
