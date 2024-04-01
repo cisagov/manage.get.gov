@@ -76,7 +76,7 @@ def create_or_update_organization_type(sender, instance, **kwargs):
             # This will not happen in normal flow as it is not possible otherwise.
             raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
         elif not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
-            # Do values to update - do nothing
+            # No values to update - do nothing
             return None
         # == Program flow will halt here if there is no reason to update == #
 
