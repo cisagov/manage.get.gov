@@ -1324,7 +1324,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Testy2 Tester2")
 
         # == Check for the authorizing_official == #
-        expected_email = "testy@town.com"
+
         expected_ao_fields = [
             # Field, expected value
             ("title", "Chief Tester"),
@@ -1338,7 +1338,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Testy Tester", count=5)
 
         # == Test the other_employees field == #
-        expected_email = "testy@town.com"
+
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
@@ -2052,7 +2052,7 @@ class TestDomainInformationAdmin(TestCase):
         self.assertContains(response, "Testy2 Tester2")
 
         # == Check for the authorizing_official == #
-        expected_email = "testy@town.com"
+
         expected_ao_fields = [
             # Field, expected value
             ("title", "Chief Tester"),
@@ -2066,7 +2066,7 @@ class TestDomainInformationAdmin(TestCase):
         self.assertContains(response, "Testy Tester", count=5)
 
         # == Test the other_employees field == #
-        expected_email = "testy@town.com"
+
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
