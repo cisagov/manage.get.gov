@@ -62,3 +62,8 @@ def get_organization_long_name(generic_org_type):
         return "Error"
 
     return long_form_type
+
+
+@register.filter(name="has_permission")
+def has_permission(user, permission):
+    return user.has_perm(permission)

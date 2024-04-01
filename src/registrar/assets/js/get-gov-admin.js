@@ -422,7 +422,7 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
         // Add event listener to toggle the class and update content on click
         toggleButton.addEventListener('click', function() {
             // Toggle the 'collapsed' class on the bar
-            submitRowWrapper.classList.toggle('collapsed');
+            submitRowWrapper.classList.toggle('submit-row-wrapper--collapsed');
 
             // Get a reference to the span element inside the button
             const spanElement = this.querySelector('span');
@@ -458,7 +458,7 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     // Refresh reference to submit row wrapper and check if it's collapsed
-                    if (document.querySelector('.submit-row-wrapper').classList.contains('collapsed')) {
+                    if (document.querySelector('.submit-row-wrapper').classList.contains('submit-row-wrapper--collapsed')) {
                         toggleButton.click();
                     }
                 }

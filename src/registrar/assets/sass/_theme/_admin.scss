@@ -422,6 +422,15 @@ address.dja-address-contact-list {
     border: 1px solid var(--error-fg) !important;
 }
 
+@mixin submit-row-wrapper--collapsed-one-line(){
+    &.submit-row-wrapper--collapsed {
+     transform: translate3d(0, 42px, 0);
+    }
+    .submit-row {
+        clear: none;
+    }
+  }
+
 // Sticky submit bar for domain requests on desktop
 @media screen and (min-width:768px) {
     .submit-row-wrapper {
@@ -436,11 +445,16 @@ address.dja-address-contact-list {
             margin-bottom: 0;
         }
     }
-
-    .submit-row-wrapper.collapsed {
+    .submit-row-wrapper--collapsed {
         // translate3d is more performant than translateY
         // https://stackoverflow.com/questions/22111256/translate3d-vs-translate-performance
-        transform: translate3d(0, 42px, 0);
+        transform: translate3d(0, 88px, 0);
+    }
+    .submit-row-wrapper--collapsed-one-line {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+    .submit-row {
+        clear: both;
     }
     .submit-row-toggle{
         display: inline-block;
@@ -449,11 +463,9 @@ address.dja-address-contact-list {
         right: 0;
         background: var(--darkened-bg);
     }
-
     #submitRowToggle {
         color: var(--body-fg);
     }
-
     .requested-domain-sticky {
         max-width: 325px;
         overflow: hidden;
@@ -462,13 +474,14 @@ address.dja-address-contact-list {
     }
 }
 
-@media screen and (max-width:1256px) {
-    .submit-row {
-        clear: both;
+@media screen and (min-width:935px) {
+    .submit-row-wrapper--analyst-view {
+        @include submit-row-wrapper--collapsed-one-line();
     }
-    .submit-row-wrapper.collapsed {
-        // translate3d is more performant than translateY
-        // https://stackoverflow.com/questions/22111256/translate3d-vs-translate-performance
-        transform: translate3d(0, 88px, 0);
+}
+
+@media screen and (min-width:1256px) {
+    .submit-row-wrapper {
+        @include submit-row-wrapper--collapsed-one-line();
     }
 }
