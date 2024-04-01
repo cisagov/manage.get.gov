@@ -22,13 +22,8 @@ def create_or_update_organization_type(sender, instance, **kwargs):
     organization_type is set to a corresponding election variant. Otherwise, it directly
     mirrors the generic_org_type value.
     """
-    if not isinstance(instance, DomainRequest) and not isinstance(instance, DomainInformation):
-        # I don't see how this could possibly happen - but its still a good check to have.
-        # Lets force a fail condition rather than wait for one to happen, if this occurs.
-        raise ValueError("Type mismatch. The instance was not DomainRequest or DomainInformation.")
 
     # == Init variables == #
-    is_new_instance = instance.id is None
     election_org_choices = DomainRequest.OrgChoicesElectionOffice
 
     # For any given organization type, return the "_election" variant.
@@ -41,38 +36,13 @@ def create_or_update_organization_type(sender, instance, **kwargs):
 
     # A new record is added with organization_type not defined.
     # This happens from the regular domain request flow.
+    is_new_instance = instance.id is None
+
     if is_new_instance:
 
         # == Check for invalid conditions before proceeding == #
-        # Since organization type is linked with generic_org_type and election board,
-        # we have to update one or the other, not both.
-        if instance.organization_type and instance.generic_org_type:
-            organization_type = str(instance.organization_type)
-            # Strip "_election" if it exists
-            mapped_org_type = election_org_to_generic_org_map.get(organization_type)
-            generic_org_type = str(instance.generic_org_type)
-            should_proceed = True
-
-            # We can only proceed if all values match (fixtures, load_from_da).
-            # Otherwise, we're overwriting data so lets forbid this.
-            is_election_type = "_election" in organization_type
-            can_have_election_board = organization_type in generic_org_to_org_map
-            if is_election_type != instance.is_election_board and can_have_election_board:
-                # This means that there is a mismatch between the booleans
-                # (i.e. FEDERAL is not equal to is_election_board = True)
-                should_proceed = False
-            elif mapped_org_type is not None and generic_org_type != mapped_org_type:
-                # This means that there is as mismatch between the org types
-                should_proceed = False
-
-            if not should_proceed:
-                message = (
-                    "Cannot add organization_type and generic_org_type simultaneously "
-                    "when generic_org_type, is_election_board, and organization_type values do not match."
-                )
-                raise ValueError(message)
-        elif not instance.organization_type and not instance.generic_org_type:
-            # No values to update - do nothing
+        should_proceed = _validate_new_instance(instance, election_org_to_generic_org_map, generic_org_to_org_map)
+        if not should_proceed:
             return None
         # == Program flow will halt here if there is no reason to update == #
 
@@ -88,10 +58,6 @@ def create_or_update_organization_type(sender, instance, **kwargs):
             _update_generic_org_and_election_from_org_type(
                 instance, election_org_to_generic_org_map, generic_org_to_org_map
             )
-        else:
-            # This indicates that all data already matches,
-            # so we should just do nothing because there is nothing to update.
-            pass
     else:
 
         # == Init variables == #
@@ -148,7 +114,7 @@ def _update_org_type_from_generic_org_and_election(instance, org_map):
     if generic_org_type in org_map:
         # Swap to the election type if it is an election board. Otherwise, stick to the normal one.
         instance.organization_type = org_map[generic_org_type] if instance.is_election_board else generic_org_type
-    elif generic_org_type not in org_map:
+    else:
         # Election board should be reset to None if the record
         # can't have one. For example, federal.
         instance.organization_type = generic_org_type
@@ -179,6 +145,43 @@ def _update_generic_org_and_election_from_org_type(instance, election_org_map, g
             instance.is_election_board = False
         else:
             instance.is_election_board = None
+
+
+def _validate_new_instance(instance, election_org_to_generic_org_map, generic_org_to_org_map):
+    """
+    Validates whether a new instance of DomainRequest or DomainInformation can proceed with the update
+    based on the consistency between organization_type, generic_org_type, and is_election_board.
+    """
+
+    # We conditionally accept both of these values to exist simultaneously, as long as
+    # those values do not intefere with eachother.
+    # Because this condition can only be triggered through a dev (no user flow),
+    # we throw an error if an invalid state is found here.
+    if instance.organization_type and instance.generic_org_type:
+        generic_org_type = str(instance.generic_org_type)
+        organization_type = str(instance.organization_type)
+
+        # Strip "_election" if it exists
+        mapped_org_type = election_org_to_generic_org_map.get(organization_type)
+
+        # Do tests on the org update for election board changes.
+        is_election_type = "_election" in organization_type
+        can_have_election_board = organization_type in generic_org_to_org_map
+
+        election_board_mismatch = is_election_type != instance.is_election_board and can_have_election_board
+        org_type_mismatch = mapped_org_type is not None and generic_org_type != mapped_org_type
+        if election_board_mismatch or org_type_mismatch:
+            message = (
+                "Cannot add organization_type and generic_org_type simultaneously "
+                "when generic_org_type, is_election_board, and organization_type values do not match."
+            )
+            raise ValueError(message)
+
+        should_proceed = True
+        return should_proceed
+    else:
+        should_proceed = not instance.organization_type and not instance.generic_org_type
+        return should_proceed
 
 
 @receiver(post_save, sender=User)

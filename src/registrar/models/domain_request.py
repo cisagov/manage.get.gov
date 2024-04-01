@@ -124,6 +124,7 @@ class DomainRequest(TimeStampedModel):
 
         When adding the election variant, you must append "_election" to the end of the string.
         """
+
         # We can't inherit OrganizationChoices due to models.TextChoices being an enum.
         # We can redefine these values instead.
         FEDERAL = "federal", "Federal"
@@ -160,7 +161,7 @@ class DomainRequest(TimeStampedModel):
                 cls.SPECIAL_DISTRICT_ELECTION: cls.SPECIAL_DISTRICT,
             }
             return org_election_map
-        
+
         @classmethod
         def get_org_generic_to_org_election(cls):
             """
