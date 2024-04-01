@@ -1319,7 +1319,6 @@ class TestDomainRequestAdmin(MockEppLib):
             ("title", "Admin Tester"),
             ("email", "mayor@igorville.gov"),
             ("phone", "(555) 555 5556"),
-            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
@@ -1328,10 +1327,9 @@ class TestDomainRequestAdmin(MockEppLib):
         expected_email = "testy@town.com"
         expected_ao_fields = [
             # Field, expected value
-            ("title", "Chief Tester</td>"),
-            ("email", "testy@town.com</td>"),
-            ("phone", "(555) 555 5555</td>"),
-            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
+            ("title", "Chief Tester"),
+            ("email", "testy@town.com"),
+            ("phone", "(555) 555 5555"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
@@ -1346,9 +1344,11 @@ class TestDomainRequestAdmin(MockEppLib):
             ("title", "Another Tester"),
             ("email", "testy2@town.com"),
             ("phone", "(555) 555 5557"),
-            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
+
+        # Test for the copy link
+        self.assertContains(response, "usa-button__clipboard-link", count=4)
 
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
@@ -2047,7 +2047,6 @@ class TestDomainInformationAdmin(TestCase):
             ("title", "Admin Tester"),
             ("email", "mayor@igorville.gov"),
             ("phone", "(555) 555 5556"),
-            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
@@ -2059,7 +2058,6 @@ class TestDomainInformationAdmin(TestCase):
             ("title", "Chief Tester"),
             ("email", "testy@town.com"),
             ("phone", "(555) 555 5555"),
-            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
@@ -2074,9 +2072,11 @@ class TestDomainInformationAdmin(TestCase):
             ("title", "Another Tester"),
             ("email", "testy2@town.com"),
             ("phone", "(555) 555 5557"),
-            ("email_copy_button_input", f'<input class="dja-clipboard-input" type="hidden" value="{expected_email}"'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
+
+        # Test for the copy link
+        self.assertContains(response, "usa-button__clipboard-link", count=4)
 
     def test_readonly_fields_for_analyst(self):
         """Ensures that analysts have their permissions setup correctly"""
