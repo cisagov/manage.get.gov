@@ -488,3 +488,18 @@ address.dja-address-contact-list {
         @include submit-row-wrapper--collapsed-one-line();
     }
 }
+
+// Collapse button styles for fieldsets
+.module.collapse {
+    margin-top: -35px;
+    padding-top: 0;
+    border: none;
+    h2 {
+        background: none;
+        color: var(--body-fg)!important;
+        text-transform: none;
+    }
+    a {
+        color: var(--link-fg);
+    }
+}
