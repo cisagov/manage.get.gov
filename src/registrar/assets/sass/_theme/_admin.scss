@@ -421,3 +421,17 @@ address.dja-address-contact-list {
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;
 }
+
+.module.collapse {
+    margin-top: -35px;
+    padding-top: 0;
+    border: none;
+    h2 {
+        background: none;
+        color: var(--body-fg)!important;
+        text-transform: none;
+    }
+    a {
+        color: var(--link-fg);
+    }
+}
