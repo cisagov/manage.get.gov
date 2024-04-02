@@ -562,7 +562,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "MANAGED DOMAINS COUNTS AT END DATE\n"
                 "Total,Federal,Interstate,State or territory,Tribal,County,City,"
                 "Special district,School district,Election office\n"
-                "3,2,1,0,0,0,0,0,0,2\n"
+                "3,2,1,0,0,0,0,0,0,0\n"
                 "\n"
                 "Domain name,Domain type,Domain manager email 1,Domain manager email 2,Domain manager email 3\n"
                 "cdomain11.govFederal-Executivemeoward@rocks.com\n"

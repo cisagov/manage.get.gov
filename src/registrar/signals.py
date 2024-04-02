@@ -93,7 +93,7 @@ def create_or_update_organization_type(sender, instance, **kwargs):
         organization_type_needs_update = generic_org_type_changed or is_election_board_changed
         generic_org_type_needs_update = organization_type_changed
 
-        # Update that field
+        # Update the field
         if organization_type_needs_update:
             _update_org_type_from_generic_org_and_election(instance, generic_org_to_org_map)
         elif generic_org_type_needs_update:
