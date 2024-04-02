@@ -59,12 +59,15 @@ class ScriptDataHelper:
 
 class TerminalHelper:
     @staticmethod
-    def log_script_run_summary(to_update, failed_to_update, skipped, debug: bool):
+    def log_script_run_summary(to_update, failed_to_update, skipped, debug: bool, log_header=None):
         """Prints success, failed, and skipped counts, as well as
         all affected objects."""
         update_success_count = len(to_update)
         update_failed_count = len(failed_to_update)
         update_skipped_count = len(skipped)
+
+        if log_header is None:
+            log_header = "============= FINISHED ==============="
 
         # Prepare debug messages
         debug_messages = {
@@ -85,7 +88,7 @@ class TerminalHelper:
         if update_failed_count == 0 and update_skipped_count == 0:
             logger.info(
                 f"""{TerminalColors.OKGREEN}
-                ============= FINISHED ===============
+                {log_header}
                 Updated {update_success_count} entries
                 {TerminalColors.ENDC}
                 """
@@ -93,7 +96,7 @@ class TerminalHelper:
         elif update_failed_count == 0:
             logger.warning(
                 f"""{TerminalColors.YELLOW}
-                ============= FINISHED ===============
+                {log_header}
                 Updated {update_success_count} entries
                 ----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----
                 Skipped updating {update_skipped_count} entries
@@ -103,7 +106,7 @@ class TerminalHelper:
         else:
             logger.error(
                 f"""{TerminalColors.FAIL}
-                ============= FINISHED ===============
+                {log_header}
                 Updated {update_success_count} entries
                 ----- UPDATE FAILED -----
                 Failed to update {update_failed_count} entries,
