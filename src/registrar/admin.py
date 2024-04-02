@@ -1408,6 +1408,11 @@ class DomainInformationInline(admin.StackedInline):
         "submitter",
     ]
 
+    def has_change_permission(self, request, obj=None):
+        if request.user.has_perm("registrar.analyst_access_permission"):
+            return True
+        return super().has_change_permission(request, obj)
+
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
         behavior includes sorting of objects in lists as well as customizing helper text"""
