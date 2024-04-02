@@ -396,7 +396,6 @@ def export_data_type_to_csv(csv_file):
             Domain.State.READY,
             Domain.State.DNS_NEEDED,
             Domain.State.ON_HOLD,
-            Domain.State.UNKNOWN,
         ],
     }
     write_domains_csv(
