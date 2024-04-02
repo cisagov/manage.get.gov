@@ -1960,8 +1960,8 @@ class TestDomainInformationAdmin(TestCase):
         # Get the other contact
         other_contact = domain_info.other_contacts.all().first()
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
 
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
@@ -2005,8 +2005,8 @@ class TestDomainInformationAdmin(TestCase):
         domain_request.approve()
         domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
             follow=True,
