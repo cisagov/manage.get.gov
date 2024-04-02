@@ -108,7 +108,7 @@ def _update_org_type_from_generic_org_and_election(instance, org_map):
 
     # We convert to a string because the enum types are different.
     generic_org_type = str(instance.generic_org_type)
-    if generic_org_type not in generic_org_type:
+    if generic_org_type not in org_map:
         # Election board should always be reset to None if the record
         # can't have one. For example, federal.
         instance.is_election_board = None
