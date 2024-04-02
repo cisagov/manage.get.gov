@@ -422,6 +422,8 @@ address.dja-address-contact-list {
     border: 1px solid var(--error-fg) !important;
 }
 
+// Let's define this block of code once and use it for analysts over a certain screen size,
+// superusers over another screen size.
 @mixin submit-row-wrapper--collapsed-one-line(){
     &.submit-row-wrapper--collapsed {
      transform: translate3d(0, 42px, 0);
@@ -475,6 +477,7 @@ address.dja-address-contact-list {
 }
 
 @media screen and (min-width:935px) {
+    // Analyst only class
     .submit-row-wrapper--analyst-view {
         @include submit-row-wrapper--collapsed-one-line();
     }

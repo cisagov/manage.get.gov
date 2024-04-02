@@ -104,6 +104,7 @@
         </div>
 </div>
 
+{# submit-row-wrapper--analyst-view is a class that manages layout on certain screens for analysts only #}
 <div class="submit-row-wrapper{% if not request.user|has_permission:'registrar.full_access_permission' %} submit-row-wrapper--analyst-view{% endif %}">
     
     <span class="submit-row-toggle padding-1 padding-right-2 visible-desktop">

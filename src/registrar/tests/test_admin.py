@@ -1213,9 +1213,11 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)
 
     @less_console_noise_decorator
-    def test_sticky_submit_row_shows_requested_domain(self):
-        """Test that the change_form template contains a string indicative of the customization
-        of the sticky submit bar."""
+    def test_sticky_submit_row(self):
+        """Test that the change_form template contains strings indicative of the customization
+        of the sticky submit bar.
+
+        Also test that it does NOT contain a CSS class meant for analysts only when logged in as superuser."""
 
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -1233,6 +1235,35 @@ class TestDomainRequestAdmin(MockEppLib):
         expected_content = "<strong>Requested domain:</strong>"
         expected_content2 = '<span class="scroll-indicator"></span>'
         expected_content3 = '<div class="submit-row-wrapper">'
+        not_expected_content = "submit-row-wrapper--analyst-view>"
+        self.assertContains(request, expected_content)
+        self.assertContains(request, expected_content2)
+        self.assertContains(request, expected_content3)
+        self.assertNotContains(request, not_expected_content)
+
+    @less_console_noise_decorator
+    def test_sticky_submit_row_has_extra_class_for_analysts(self):
+        """Test that the change_form template contains strings indicative of the customization
+        of the sticky submit bar.
+
+        Also test that it DOES contain a CSS class meant for analysts only when logged in as analyst."""
+
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+        self.client.force_login(self.staffuser)
+
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+
+        # Create a mock request
+        request = self.client.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+
+        # Since we're using client to mock the request, we can only test against
+        # non-interpolated values
+        expected_content = "<strong>Requested domain:</strong>"
+        expected_content2 = '<span class="scroll-indicator"></span>'
+        expected_content3 = '<div class="submit-row-wrapper submit-row-wrapper--analyst-view">'
         self.assertContains(request, expected_content)
         self.assertContains(request, expected_content2)
         self.assertContains(request, expected_content3)
