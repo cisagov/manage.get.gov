@@ -307,7 +307,12 @@ class UserDeleteDomainRolePermission(PermissionsLoginMixin):
             domain=domain_pk,
             domain__permissions__user=self.request.user,
         ).exists()
-        if not has_delete_permission:
+
+        user_is_analyst_or_superuser = self.request.user.has_perm(
+            "registrar.analyst_access_permission"
+        ) or self.request.user.has_perm("registrar.full_access_permission")
+
+        if not (has_delete_permission or user_is_analyst_or_superuser):
             return False
 
         # Check if more than one manager exists on the domain.
