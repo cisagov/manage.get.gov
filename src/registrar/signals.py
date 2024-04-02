@@ -108,25 +108,18 @@ def _update_org_type_from_generic_org_and_election(instance, org_map):
 
     # We convert to a string because the enum types are different.
     generic_org_type = str(instance.generic_org_type)
-
-    # If the election board is none, then it tells us that it is an invalid field.
-    # Such as federal, interstate, or school_district.
-    if instance.is_election_board is None and generic_org_type not in org_map:
-        instance.organization_type = generic_org_type
-        return instance
-    elif instance.is_election_board is None and generic_org_type in org_map:
-        # This can only happen with manual data tinkering, which causes these to be out of sync.
-        instance.is_election_board = False
-        logger.warning("create_or_update_organization_type() -> is_election_board is out of sync. Updating value.")
-
-    if generic_org_type in org_map:
-        # Swap to the election type if it is an election board. Otherwise, stick to the normal one.
-        instance.organization_type = org_map[generic_org_type] if instance.is_election_board else generic_org_type
-    else:
-        # Election board should be reset to None if the record
+    if generic_org_type not in org_map:
+        # Election board should always be reset to None if the record
         # can't have one. For example, federal.
-        instance.organization_type = generic_org_type
         instance.is_election_board = None
+        instance.organization_type = generic_org_type
+    else:
+        # This can only happen with manual data tinkering, which causes these to be out of sync.
+        if instance.is_election_board is None:
+            logger.warning("create_or_update_organization_type() -> is_election_board is out of sync. Updating value.")
+            instance.is_election_board = False
+
+        instance.organization_type = org_map[generic_org_type] if instance.is_election_board else generic_org_type
 
 
 def _update_generic_org_and_election_from_org_type(instance, election_org_map, generic_org_map):
