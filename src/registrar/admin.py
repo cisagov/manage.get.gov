@@ -979,6 +979,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     """Custom domain requests admin class."""
 
     form = DomainRequestAdminForm
+    change_form_template = "django/admin/domain_request_change_form.html"
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
@@ -1039,8 +1040,6 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 return queryset.filter(is_election_board=True)
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
-
-    change_form_template = "django/admin/domain_request_change_form.html"
 
     # Columns
     list_display = [
