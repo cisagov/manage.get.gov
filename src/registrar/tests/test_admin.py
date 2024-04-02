@@ -1300,7 +1300,6 @@ class TestDomainRequestAdmin(MockEppLib):
         # == Check for the creator == #
 
         # Check for the right title, email, and phone number in the response.
-        expected_email = "meoward.jones@igorville.gov"
         expected_creator_fields = [
             # Field, expected value
             ("title", "Treat inspector"),
@@ -1313,7 +1312,6 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Meoward Jones")
 
         # == Check for the submitter == #
-        expected_email = "mayor@igorville.gov"
         expected_submitter_fields = [
             # Field, expected value
             ("title", "Admin Tester"),
@@ -2028,7 +2026,6 @@ class TestDomainInformationAdmin(TestCase):
         # Check for the right title, email, and phone number in the response.
         # We only need to check for the end tag
         # (Otherwise this test will fail if we change classes, etc)
-        expected_email = "meoward.jones@igorville.gov"
         expected_creator_fields = [
             # Field, expected value
             ("title", "Treat inspector"),
@@ -2041,7 +2038,6 @@ class TestDomainInformationAdmin(TestCase):
         self.assertContains(response, "Meoward Jones")
 
         # == Check for the submitter == #
-        expected_email = "mayor@igorville.gov"
         expected_submitter_fields = [
             # Field, expected value
             ("title", "Admin Tester"),
