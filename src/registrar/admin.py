@@ -900,13 +900,21 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "fields": [
                     "generic_org_type",
                     "is_election_board",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "federal_type",
                     "federal_agency",
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
                     "about_your_organization",
-                ]
+                ],
             },
         ),
         (
@@ -915,12 +923,20 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "fields": [
                     "organization_name",
                     "state_territory",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "address_line1",
                     "address_line2",
                     "city",
                     "zipcode",
                     "urbanization",
-                ]
+                ],
             },
         ),
     ]
@@ -1112,13 +1128,21 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "fields": [
                     "generic_org_type",
                     "is_election_board",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "federal_type",
                     "federal_agency",
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
                     "about_your_organization",
-                ]
+                ],
             },
         ),
         (
@@ -1127,12 +1151,20 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "fields": [
                     "organization_name",
                     "state_territory",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "address_line1",
                     "address_line2",
                     "city",
                     "zipcode",
                     "urbanization",
-                ]
+                ],
             },
         ),
     ]
