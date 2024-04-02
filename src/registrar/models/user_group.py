@@ -28,11 +28,6 @@ class UserGroup(Group):
             },
             {
                 "app_label": "registrar",
-                "model": "domaininformation",
-                "permissions": ["change_domaininformation"],
-            },
-            {
-                "app_label": "registrar",
                 "model": "domainrequest",
                 "permissions": ["change_domainrequest"],
             },
