@@ -107,7 +107,7 @@ def parse_domain_row(columns, domain_info: DomainInformation, security_emails_di
         # Get lists of emails for active and invited domain managers
         dm_active_emails = [dm.user.email for dm in domain.permissions.all()]
         dm_invited_emails = [
-            invite.email for invite in invites_with_invited_status.filter(domain=domain)
+            invite.email for invite in invites_with_invited_status if invite.domain_id == domain_info.domain_id
         ]
 
         # Set up the "matching headers" + row field data for email and status
@@ -160,7 +160,7 @@ def update_columns_with_domain_managers(
         Updated update_columns, columns, max_dm_active, max_dm_invited, max_dm_total"""
 
     dm_active = domain_info.domain.permissions.count()
-    dm_invited = invites_with_invited_status.filter(domain=domain_info.domain).count()
+    dm_invited = sum(1 for invite in invites_with_invited_status if invite.domain_id == domain_info.domain_id)
 
     if dm_active + dm_invited > max_dm_total:
         max_dm_total = dm_active + dm_invited
