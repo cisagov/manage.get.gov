@@ -476,6 +476,16 @@ address.dja-address-contact-list {
     }
 }
 
+.visible-768 {
+    display: none;
+}
+
+@media screen and (min-width:768px) {
+    .visible-768 {
+        display: block;
+    }
+}
+
 @media screen and (min-width:935px) {
     // Analyst only class
     .submit-row-wrapper--analyst-view {
