@@ -41,7 +41,7 @@
       </div>
     </div>
     <br>
-    <p> <b class="review__step__name">Last updated:</b> {{DomainRequest.updated_at|date:"F j, Y"}}</p>
+    <p><b class="review__step__name">Last updated:</b> {{DomainRequest.updated_at|date:"F j, Y"}}</p>
     <p>{% include "includes/domain_request.html" %}</p>
     <p><a href="{% url 'domain-request-withdraw-confirmation' pk=DomainRequest.id %}" class="usa-button usa-button--outline withdraw_outline">
       Withdraw request</a>
