@@ -11,6 +11,8 @@ from django.db.models import F, Value, CharField, Q, Count
 from django.db.models.functions import Concat, Coalesce
 
 from registrar.models.public_contact import PublicContact
+from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.utility.generic_helper import Timer
 from registrar.utility.enums import DefaultEmail
 
 logger = logging.getLogger(__name__)
@@ -33,7 +35,6 @@ def get_domain_infos(filter_condition, sort_fields):
     """
     domain_infos = (
         DomainInformation.objects.select_related("domain", "authorizing_official")
-        .prefetch_related("domain__permissions", "domain__invitations")
         .filter(**filter_condition)
         .order_by(*sort_fields)
         .distinct()
@@ -53,7 +54,7 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos_cleaned
 
 
-def parse_domain_row(columns, domain_info: DomainInformation, security_emails_dict=None, get_domain_managers=False, invites_with_invited_status=None):
+def parse_domain_row(columns, domain_info: DomainInformation, security_emails_dict=None, get_domain_managers=False, domain_invitation_emails=None, domain_permissions_emails=None):
     """Given a set of columns, generate a new row from cleaned column data"""
 
     # Domain should never be none when parsing this information
@@ -105,10 +106,9 @@ def parse_domain_row(columns, domain_info: DomainInformation, security_emails_di
 
     if get_domain_managers:
         # Get lists of emails for active and invited domain managers
-        dm_active_emails = [dm.user.email for dm in domain.permissions.all()]
-        dm_invited_emails = [
-            invite.email for invite in invites_with_invited_status.filter(domain=domain)
-        ]
+
+        dm_active_emails = domain_permissions_emails.get(domain_info.domain.name, [])
+        dm_invited_emails = domain_invitation_emails.get(domain_info.domain.name, [])
 
         # Set up the "matching headers" + row field data for email and status
         i = 0  # Declare i outside of the loop to avoid a reference before assignment in the second loop
@@ -148,7 +148,7 @@ def _get_security_emails(sec_contact_ids):
 
 
 def update_columns_with_domain_managers(
-    domain_info,invites_with_invited_status, update_columns, columns, max_dm_total
+    domain_info,domain_invitation_emails, domain_permissions_emails, update_columns, columns, max_dm_total
 ):
     """Helper function that works with 'global' variables set in write_domains_csv
     Accepts:
@@ -159,8 +159,25 @@ def update_columns_with_domain_managers(
     Returns:
         Updated update_columns, columns, max_dm_active, max_dm_invited, max_dm_total"""
 
-    dm_active = domain_info.domain.permissions.count()
-    dm_invited = invites_with_invited_status.filter(domain=domain_info.domain).count()
+    dm_active = 0
+    dm_invited = 0
+    try:
+        # logger.info(f'domain_invitation_emails {domain_invitation_emails[domain_info.domain.name]}')
+
+        # Get the list of invitation emails for the domain name if it exists, otherwise, return an empty list
+        invitation_emails = domain_invitation_emails.get(domain_info.domain.name, [])
+        # Count the number of invitation emails
+        dm_invited = len(invitation_emails)
+    except KeyError:
+        pass
+
+    try:
+        active_emails = domain_permissions_emails.get(domain_info.domain.name, [])
+        # Count the number of invitation emails
+        dm_active = len(active_emails)
+    except KeyError:
+        pass
+    
 
     if dm_active + dm_invited > max_dm_total:
         max_dm_total = dm_active + dm_invited
@@ -193,61 +210,80 @@ def write_domains_csv(
     should_write_header: Conditional bc export_data_domain_growth_to_csv calls write_body twice
     """
 
-    all_domain_infos = get_domain_infos(filter_condition, sort_fields)
+    with Timer():
+        all_domain_infos = get_domain_infos(filter_condition, sort_fields)
 
-    # Store all security emails to avoid epp calls or excessive filters
-    sec_contact_ids = all_domain_infos.values_list("domain__security_contact_registry_id", flat=True)
+        # Store all security emails to avoid epp calls or excessive filters
+        sec_contact_ids = all_domain_infos.values_list("domain__security_contact_registry_id", flat=True)
 
-    security_emails_dict = _get_security_emails(sec_contact_ids)
+        security_emails_dict = _get_security_emails(sec_contact_ids)
 
-    # Reduce the memory overhead when performing the write operation
-    paginator = Paginator(all_domain_infos, 1000)
+        # Reduce the memory overhead when performing the write operation
+        paginator = Paginator(all_domain_infos, 1000)
 
-    # We get the number of domain managers (DMs) an the domain
-    # that has the most DMs so we can set the header row appropriately
+        # We get the number of domain managers (DMs) an the domain
+        # that has the most DMs so we can set the header row appropriately
 
-    max_dm_total = 0
-    update_columns = False
-    invites_with_invited_status=None
+        max_dm_total = 0
+        update_columns = False
+        
+        invites_with_invited_status=None
+        domain_invitation_emails = {}
+        domain_permissions_emails = {}
 
-    if get_domain_managers:
-        invites_with_invited_status = DomainInvitation.objects.filter(status=DomainInvitation.DomainInvitationStatus.INVITED).prefetch_related("domain")
+        if get_domain_managers:
+            invites_with_invited_status = DomainInvitation.objects.filter(status=DomainInvitation.DomainInvitationStatus.INVITED).select_related("domain")
 
-        # zander = DomainInformation.objects.filter(**filter_condition).annotate(invitations_count=Count('invitation', filter=Q(invitation__status='invited'))).values_list('domain_name', 'invitations_count')
-        # logger.info(f'zander {zander}')
-        # zander_dict = dict(zander)
-        # logger.info(f'zander_dict {zander_dict}')
+            # Iterate through each domain invitation and populate the dictionary
+            for invite in invites_with_invited_status:
+                domain_name = invite.domain.name
+                email = invite.email
+                if domain_name not in domain_invitation_emails:
+                    domain_invitation_emails[domain_name] = []
+                domain_invitation_emails[domain_name].append(email)
 
-    # This var will live outside of the nested for loops to aggregate
-    # the data from those loops
-    total_body_rows = []
+            domain_permissions = UserDomainRole.objects.all()
 
-    for page_num in paginator.page_range:
-        rows = []
-        page = paginator.page(page_num)
-        for domain_info in page.object_list:
+            # Iterate through each domain invitation and populate the dictionary
+            for permission in domain_permissions:
+                domain_name = permission.domain.name
+                email = permission.user.email
+                if domain_name not in domain_permissions_emails:
+                    domain_permissions_emails[domain_name] = []
+                domain_permissions_emails[domain_name].append(email)
 
-            # Get max number of domain managers
-            if get_domain_managers:
-                update_columns, columns, max_dm_total = (
-                    update_columns_with_domain_managers(
-                        domain_info,invites_with_invited_status, update_columns, columns, max_dm_total
+            # logger.info(f'domain_invitation_emails {domain_invitation_emails}')
+
+        # This var will live outside of the nested for loops to aggregate
+        # the data from those loops
+        total_body_rows = []
+
+        for page_num in paginator.page_range:
+            rows = []
+            page = paginator.page(page_num)
+            for domain_info in page.object_list:
+
+                # Get max number of domain managers
+                if get_domain_managers:
+                    update_columns, columns, max_dm_total = (
+                        update_columns_with_domain_managers(
+                            domain_info, domain_invitation_emails,domain_permissions_emails, update_columns, columns, max_dm_total
+                        )
                     )
-                )
 
-            try:
-                row = parse_domain_row(columns, domain_info, security_emails_dict, get_domain_managers, invites_with_invited_status)
-                rows.append(row)
-            except ValueError:
-                # This should not happen. If it does, just skip this row.
-                # It indicates that DomainInformation.domain is None.
-                logger.error("csv_export -> Error when parsing row, domain was None")
-                continue
-        total_body_rows.extend(rows)
+                try:
+                    row = parse_domain_row(columns, domain_info, security_emails_dict, get_domain_managers, domain_invitation_emails,domain_permissions_emails)
+                    rows.append(row)
+                except ValueError:
+                    # This should not happen. If it does, just skip this row.
+                    # It indicates that DomainInformation.domain is None.
+                    logger.error("csv_export -> Error when parsing row, domain was None")
+                    continue
+            total_body_rows.extend(rows)
 
-    if should_write_header:
-        write_header(writer, columns)
-    writer.writerows(total_body_rows)
+        if should_write_header:
+            write_header(writer, columns)
+        writer.writerows(total_body_rows)
 
 
 def get_requests(filter_condition, sort_fields):
@@ -360,6 +396,7 @@ def export_data_type_to_csv(csv_file):
             Domain.State.READY,
             Domain.State.DNS_NEEDED,
             Domain.State.ON_HOLD,
+            Domain.State.UNKNOWN,
         ],
     }
     write_domains_csv(
