@@ -1056,6 +1056,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     # Columns
     list_display = [
         "requested_domain",
+        "submission_date",
         "status",
         "generic_org_type",
         "federal_type",
@@ -1064,7 +1065,6 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "submission_date",
         "submitter",
         "investigator",
     ]
@@ -1192,7 +1192,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
-    ordering = ["requested_domain__name"]
+    ordering = ["-submission_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
 
