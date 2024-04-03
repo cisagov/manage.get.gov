@@ -349,6 +349,77 @@ input.admin-confirm-button {
     color: $dhs-blue-70;
 }
 
+details.dja-detail-table {
+    display: inline-table;
+    background-color: var(--body-bg);
+    .dja-details-summary {
+        cursor: pointer;
+        color: var(--body-quiet-color);
+    }
+
+    @media (max-width: 1024px){
+        .dja-detail-contents {
+            max-width: 400px !important;
+            overflow-x: scroll !important;
+        }
+    }
+
+    tr {
+        background-color: transparent;
+    }
+
+    td, th {
+        padding-left: 12px;
+        border: none
+    }
+
+    thead > tr > th {
+        border-radius: 4px;
+        border-top: none;
+        border-bottom: none;
+    }
+
+}
+
+
+address.margin-top-neg-1__detail-list {
+    margin-top: -8px !important;
+}
+
+.dja-detail-list {
+    dl {
+        padding-left: 0px !important;
+        margin-top: 5px !important;
+    }
+    // Mimic the normal label size
+    dt {
+        font-size: 0.8125rem;
+        color: var(--body-quiet-color);
+    }
+
+    address {
+        font-size: 0.8125rem;
+        color: var(--body-quiet-color);
+    }
+}
+
+address.dja-address-contact-list {
+    font-size: 0.8125rem;
+    color: var(--body-quiet-color);
+}
+
+// Mimic the normal label size
+@media (max-width: 1024px){
+    .dja-detail-list dt {
+        font-size: 0.875rem;
+        color: var(--body-quiet-color);
+    }
+    .dja-detail-list address {
+        font-size: 0.875rem;
+        color: var(--body-quiet-color);
+    }
+}
+
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;
 }
@@ -368,5 +439,97 @@ input.admin-confirm-button {
     }
     svg:nth-child(2) {
         color: var(--body-loud-color);
+    }
+}
+
+// Let's define this block of code once and use it for analysts over a certain screen size,
+// superusers over another screen size.
+@mixin submit-row-wrapper--collapsed-one-line(){
+    &.submit-row-wrapper--collapsed {
+     transform: translate3d(0, 42px, 0);
+    }
+    .submit-row {
+        clear: none;
+    }
+  }
+
+// Sticky submit bar for domain requests on desktop
+@media screen and (min-width:768px) {
+    .submit-row-wrapper {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        left: 338px;
+        background: var(--darkened-bg);
+        border-top-left-radius: 6px;
+        transition: transform .2s ease-out;
+        .submit-row {
+            margin-bottom: 0;
+        }
+    }
+    .submit-row-wrapper--collapsed {
+        // translate3d is more performant than translateY
+        // https://stackoverflow.com/questions/22111256/translate3d-vs-translate-performance
+        transform: translate3d(0, 88px, 0);
+    }
+    .submit-row-wrapper--collapsed-one-line {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+    .submit-row {
+        clear: both;
+    }
+    .submit-row-toggle{
+        display: inline-block;
+        position: absolute;
+        top: -30px;
+        right: 0;
+        background: var(--darkened-bg);
+    }
+    #submitRowToggle {
+        color: var(--body-fg);
+    }
+    .requested-domain-sticky {
+        max-width: 325px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+
+.visible-768 {
+    display: none;
+}
+
+@media screen and (min-width:768px) {
+    .visible-768 {
+        display: block;
+    }
+}
+
+@media screen and (min-width:935px) {
+    // Analyst only class
+    .submit-row-wrapper--analyst-view {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+}
+
+@media screen and (min-width:1256px) {
+    .submit-row-wrapper {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+}
+
+// Collapse button styles for fieldsets
+.module.collapse {
+    margin-top: -35px;
+    padding-top: 0;
+    border: none;
+    h2 {
+        background: none;
+        color: var(--body-fg)!important;
+        text-transform: none;
+    }
+    a {
+        color: var(--link-fg);
     }
 }

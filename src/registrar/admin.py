@@ -886,13 +886,21 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "fields": [
                     "generic_org_type",
                     "is_election_board",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "federal_type",
                     "federal_agency",
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
                     "about_your_organization",
-                ]
+                ],
             },
         ),
         (
@@ -901,15 +909,26 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "fields": [
                     "organization_name",
                     "state_territory",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "address_line1",
                     "address_line2",
                     "city",
                     "zipcode",
                     "urbanization",
-                ]
+                ],
             },
         ),
     ]
+
+    # Readonly fields for analysts and superusers
+    readonly_fields = ("other_contacts",)
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -939,6 +958,8 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # Table ordering
     ordering = ["domain__name"]
 
+    change_form_template = "django/admin/domain_information_change_form.html"
+
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 1 conditions that determine which fields are read-only:
@@ -959,6 +980,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     """Custom domain requests admin class."""
 
     form = DomainRequestAdminForm
+    change_form_template = "django/admin/domain_request_change_form.html"
 
     class StatusListFilter(MultipleChoiceListFilter):
         """Custom status filter which is a multiple choice filter"""
@@ -1031,8 +1053,6 @@ class DomainRequestAdmin(ListHeaderAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
-    change_form_template = "django/admin/domain_request_change_form.html"
-
     # Columns
     list_display = [
         "requested_domain",
@@ -1104,13 +1124,21 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "fields": [
                     "generic_org_type",
                     "is_election_board",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "federal_type",
                     "federal_agency",
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
                     "about_your_organization",
-                ]
+                ],
             },
         ),
         (
@@ -1119,15 +1147,26 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "fields": [
                     "organization_name",
                     "state_territory",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
                     "address_line1",
                     "address_line2",
                     "city",
                     "zipcode",
                     "urbanization",
-                ]
+                ],
             },
         ),
     ]
+
+    # Readonly fields for analysts and superusers
+    readonly_fields = ("other_contacts", "current_websites", "alternative_domains")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1154,6 +1193,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
     # Table ordering
     ordering = ["requested_domain__name"]
+
+    change_form_template = "django/admin/domain_request_change_form.html"
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -1309,7 +1350,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
             readonly_fields.extend([field.name for field in self.model._meta.fields])
             # Add the multi-select fields to readonly_fields:
             # Complex fields like ManyToManyField require special handling
-            readonly_fields.extend(["current_websites", "other_contacts", "alternative_domains"])
+            readonly_fields.extend(["alternative_domains"])
 
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
@@ -1437,7 +1478,6 @@ class DomainAdmin(ListHeaderAdmin):
             )
 
         def queryset(self, request, queryset):
-            logger.debug(self.value())
             if self.value() == "1":
                 return queryset.filter(domain_info__is_election_board=True)
             if self.value() == "0":

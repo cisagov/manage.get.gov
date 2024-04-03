@@ -1,10 +1,21 @@
 {% extends 'admin/change_form.html' %}
+{% load custom_filters %}
 {% load i18n static %}
 
 {% block field_sets %}
     {# Create an invisible <a> tag so that we can use a click event to toggle the modal. #}
     <a id="invisible-ineligible-modal-toggler" class="display-none" href="#toggle-set-ineligible" aria-controls="toggle-set-ineligible" data-open-modal></a>
-    {{ block.super }}
+
+    {% for fieldset in adminform %}
+        {% comment %}
+        TODO: this will eventually need to be changed to something like this
+        if we ever want to customize this file:
+        {% include "django/admin/includes/domain_information_fieldset.html" %}
+
+        Use detail_table_fieldset as an example, or just extend it.
+        {% endcomment %}
+        {% include "django/admin/includes/detail_table_fieldset.html" %}
+    {% endfor %}
 {% endblock %}
 
 {% block submit_buttons_bottom %}
@@ -92,5 +103,25 @@
             </button>
         </div>
 </div>
-{{ block.super }}
+
+{# submit-row-wrapper--analyst-view is a class that manages layout on certain screens for analysts only #}
+<div class="submit-row-wrapper{% if not request.user|has_permission:'registrar.full_access_permission' %} submit-row-wrapper--analyst-view{% endif %}">
+    
+    <span class="submit-row-toggle padding-1 padding-right-2 visible-desktop">
+        <button type="button" class="usa-button usa-button--unstyled" id="submitRowToggle">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#expand_more"></use>
+            </svg>
+            <span>Hide</span>
+        </button>
+    </span>
+
+    <p class="text-right margin-top-2 padding-right-2 margin-bottom-0 requested-domain-sticky float-right visible-768">
+        <strong>Requested domain:</strong> {{ original.requested_domain.name }}
+    </p>
+    {{ block.super }}
+</div>
+
+<span class="scroll-indicator"></span>
+
 {% endblock %}
