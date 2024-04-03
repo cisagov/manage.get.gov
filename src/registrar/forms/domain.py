@@ -2,7 +2,7 @@
 
 import logging
 from django import forms
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
 from registrar.models import DomainRequest
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
@@ -15,7 +15,7 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
 )
-from django.core.validators import RegexValidator, MaxLengthValidator
+
 from ..models import Contact, DomainInformation, Domain
 from .common import (
     ALGORITHM_CHOICES,
@@ -204,8 +204,6 @@ class ContactForm(forms.ModelForm):
         # take off maxlength attribute for the phone number field
         # which interferes with out input_with_errors template tag
         self.fields["phone"].widget.attrs.pop("maxlength", None)
-        max = self.fields["email"].widget.attrs["maxlength"]
-        print(f"what is the max? {max}")
 
         for field_name in self.required:
             self.fields[field_name].required = True

@@ -75,15 +75,3 @@ error messages, if necessary.
 {% else %}
   </div>
 {% endif %}
-
-{% if widget.attrs.maxlength and show_max_length %}
-  <span
-    id="{{ widget.attrs.id }}__message"
-    class="usa-character-count__message"
-    aria-live="polite"
-  >
-    You can enter up to {{ widget.attrs.maxlength }} characters
-  </span>
-
-</div>
-{% endif %}
