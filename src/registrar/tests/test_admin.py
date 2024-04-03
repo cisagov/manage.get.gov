@@ -129,6 +129,49 @@ class TestDomainAdmin(MockEppLib, WebTest):
         )
         mock_add_message.assert_has_calls([expected_call], 1)
 
+    @less_console_noise_decorator
+    def test_analyst_can_see_inline_domain_information_in_domain_change_form(self):
+        """Tests if the analyst can still see the inline domain information form"""
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+        )
+
+        # Create a fake domain request
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+
+        # Creates a Domain and DomainInformation object
+        _domain_request.approve()
+
+        domain_information = DomainInformation.objects.filter(domain_request=_domain_request).get()
+        domain_information.organization_name = "MonkeySeeMonkeyDo"
+        domain_information.save()
+
+        # We use filter here rather than just domain_information.domain just to get the latest data.
+        domain = Domain.objects.filter(domain=domain_information.domain)
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+
+        # Check for one of the inline headers
+        expected_header = ".gov domain"
+        self.assertContains(response, expected_header)
+
+        # Test for data. We only need to test one since its all interconnected.
+        expected_organization_name = "MonkeySeeMonkeyDo"
+        self.assertContains(response, expected_organization_name)
+
     @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
     def test_extend_expiration_date_button_epp(self, mock_date_today):
         """
@@ -1981,6 +2024,44 @@ class TestDomainInformationAdmin(TestCase):
         # by checking for the end tag.
         expected_url = "Testy Tester</a>"
         self.assertContains(response, expected_url)
+
+    @less_console_noise_decorator
+    def test_analyst_cant_access_domain_information(self):
+        """Ensures that analysts can't directly access the DomainInformation page through /admin"""
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+        )
+
+        # Create a fake domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        domain_request.approve()
+        domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
+            follow=True,
+        )
+
+        # Make sure that we're denied access
+        self.assertEqual(response.status_code, 403)
+
+        # To make sure that its not a fluke, swap to an admin user
+        # and try to access the same page. This should succeed.
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_info.domain.name)
 
     @less_console_noise_decorator
     def test_contact_fields_have_detail_table(self):
