@@ -25,7 +25,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0080_create_groups_v10"),
+        ("registrar", "0080_create_groups_v09"),
     ]
 
     operations = [
