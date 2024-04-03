@@ -204,7 +204,6 @@ def build_dictionaries_for_domain_managers(dict_user_domain_roles, dict_domain_i
     """Helper function that builds dicts for invited users and active domain
     managers. We do so to avoid filtering within loops."""
 
-    user_domain_roles = None
     user_domain_roles = UserDomainRole.objects.all()
 
     # Iterate through each user domain role and populate the dictionary
