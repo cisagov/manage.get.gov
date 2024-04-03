@@ -56,7 +56,7 @@ def get_domain_infos(filter_condition, sort_fields):
 def parse_row_for_domain(
     columns,
     domain_info: DomainInformation,
-    dict_security_emails_dict=None,
+    dict_security_emails=None,
     should_get_domain_managers=False,
     dict_domain_invitations_with_invited_status=None,
     dict_user_domain_roles=None,
@@ -72,8 +72,8 @@ def parse_row_for_domain(
 
     # Grab the security email from a preset dictionary.
     # If nothing exists in the dictionary, grab from .contacts.
-    if dict_security_emails_dict is not None and domain.name in dict_security_emails_dict:
-        _email = dict_security_emails_dict.get(domain.name)
+    if dict_security_emails is not None and domain.name in dict_security_emails:
+        _email = dict_security_emails.get(domain.name)
         security_email = _email if _email is not None else " "
     else:
         # If the dictionary doesn't contain that data, lets filter for it manually.
@@ -135,7 +135,7 @@ def _get_security_emails(sec_contact_ids):
     """
     Retrieve security contact emails for the given security contact IDs.
     """
-    dict_security_emails_dict = {}
+    dict_security_emails = {}
     public_contacts = (
         PublicContact.objects.only("email", "domain__name")
         .select_related("domain")
@@ -145,12 +145,12 @@ def _get_security_emails(sec_contact_ids):
     # Populate a dictionary of domain names and their security contacts
     for contact in public_contacts:
         domain: Domain = contact.domain
-        if domain is not None and domain.name not in dict_security_emails_dict:
-            dict_security_emails_dict[domain.name] = contact.email
+        if domain is not None and domain.name not in dict_security_emails:
+            dict_security_emails[domain.name] = contact.email
         else:
             logger.warning("csv_export -> Domain was none for PublicContact")
 
-    return dict_security_emails_dict
+    return dict_security_emails
 
 
 def count_domain_managers(domain_name, dict_domain_invitations_with_invited_status, dict_user_domain_roles):
@@ -248,7 +248,7 @@ def write_csv_for_domains(
     # Retrieve domain information and all sec emails
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
     sec_contact_ids = all_domain_infos.values_list("domain__security_contact_registry_id", flat=True)
-    dict_security_emails_dict = _get_security_emails(sec_contact_ids)
+    dict_security_emails = _get_security_emails(sec_contact_ids)
     paginator = Paginator(all_domain_infos, 1000)
 
     # Initialize variables
@@ -283,7 +283,7 @@ def write_csv_for_domains(
                 row = parse_row_for_domain(
                     columns,
                     domain_info,
-                    dict_security_emails_dict,
+                    dict_security_emails,
                     should_get_domain_managers,
                     dict_domain_invitations_with_invited_status,
                     dict_user_domain_roles,
