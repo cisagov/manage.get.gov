@@ -788,7 +788,7 @@ class WebsiteAdmin(ListHeaderAdmin):
 
     def response_change(self, request, obj):
         """
-        Override to redirect admins back to the same page after saving.
+        Override to redirect users back to the same page after saving.
         """
         superuser_perm = request.user.has_perm("registrar.full_access_permission")
         analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
