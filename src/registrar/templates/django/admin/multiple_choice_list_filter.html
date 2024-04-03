@@ -1,0 +1,37 @@
+{% load i18n %}
+{% load static field_helpers url_helpers %}
+
+
+<h3>{% blocktrans with filter_title=title %} By {{ filter_title }} {% endblocktrans %}</h3>
+<ul class="mulitple-choice">
+{% for choice in choices %}
+    {% if choice.reset %}
+        <li{% if choice.selected %} class="selected"{% endif %}>
+            <a href="{{ choice.query_string|iriencode }}" title="{{ choice.display }}">{{ choice.display }}</a>
+        </li>
+    {% endif %}
+{% endfor %}
+{% for choice in choices %}
+    {% if not choice.reset %}
+        <li{% if choice.selected %} class="selected"{% endif %}>
+          {% if choice.selected and choice.exclude_query_string %}
+            <a class="choice-filter choice-filter--checked" href="{{ choice.exclude_query_string|iriencode }}">{{ choice.display }}
+              <svg class="usa-icon position-absolute z-0 left-0" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#check_box_outline_blank"></use>
+              </svg>
+              <svg class="usa-icon position-absolute z-100 left-0" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#check"></use>
+              </svg>
+            </a>
+          {% endif %}
+          {% if not choice.selected and choice.include_query_string %}
+            <a class="choice-filter" href="{{ choice.include_query_string|iriencode }}">{{ choice.display }}
+              <svg class="usa-icon position-absolute z-0 left-0" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#check_box_outline_blank"></use>
+              </svg>
+            </a>
+          {% endif %}
+        </li>
+    {% endif %}
+{% endfor %}
+</ul>
