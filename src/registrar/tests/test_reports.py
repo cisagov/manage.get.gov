@@ -9,10 +9,10 @@ from registrar.utility.csv_export import (
     export_data_unmanaged_domains_to_csv,
     get_sliced_domains,
     get_sliced_requests,
-    write_domains_csv,
+    write_csv_for_domains,
     get_default_start_date,
     get_default_end_date,
-    write_requests_csv,
+    write_csv_for_requests,
 )
 
 from django.core.management import call_command
@@ -242,7 +242,7 @@ class ExportDataTest(MockDb, MockEppLib):
             }
             self.maxDiff = None
             # Call the export functions
-            write_domains_csv(
+            write_csv_for_domains(
                 writer,
                 columns,
                 sort_fields,
@@ -273,7 +273,7 @@ class ExportDataTest(MockDb, MockEppLib):
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
             self.assertEqual(csv_content, expected_content)
 
-    def test_write_domains_csv(self):
+    def test_write_csv_for_domains(self):
         """Test that write_body returns the
         existing domain, test that sort by domain name works,
         test that filter works"""
@@ -309,7 +309,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 ],
             }
             # Call the export functions
-            write_domains_csv(
+            write_csv_for_domains(
                 writer,
                 columns,
                 sort_fields,
@@ -367,7 +367,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 ],
             }
             # Call the export functions
-            write_domains_csv(
+            write_csv_for_domains(
                 writer,
                 columns,
                 sort_fields,
@@ -448,7 +448,7 @@ class ExportDataTest(MockDb, MockEppLib):
             }
 
             # Call the export functions
-            write_domains_csv(
+            write_csv_for_domains(
                 writer,
                 columns,
                 sort_fields,
@@ -456,7 +456,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 should_get_domain_managers=False,
                 should_write_header=True,
             )
-            write_domains_csv(
+            write_csv_for_domains(
                 writer,
                 columns,
                 sort_fields_for_deleted_domains,
@@ -528,7 +528,7 @@ class ExportDataTest(MockDb, MockEppLib):
             }
             self.maxDiff = None
             # Call the export functions
-            write_domains_csv(
+            write_csv_for_domains(
                 writer,
                 columns,
                 sort_fields,
@@ -673,7 +673,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "submission_date__lte": self.end_date,
                 "submission_date__gte": self.start_date,
             }
-            write_requests_csv(writer, columns, sort_fields, filter_condition, should_write_header=True)
+            write_csv_for_requests(writer, columns, sort_fields, filter_condition, should_write_header=True)
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
