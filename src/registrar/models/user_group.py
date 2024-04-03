@@ -59,7 +59,7 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "user",
-                "permissions": ["analyst_access_permission", "change_user", "delete_user"],
+                "permissions": ["analyst_access_permission", "change_user"],
             },
             {
                 "app_label": "registrar",
