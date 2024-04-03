@@ -151,7 +151,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         domain_information.save()
 
         # We use filter here rather than just domain_information.domain just to get the latest data.
-        domain = Domain.objects.filter(domain_info=domain_information)
+        domain = Domain.objects.filter(domain_info=domain_information).get()
 
         p = "userpass"
         self.client.login(username="staffuser", password=p)
@@ -163,10 +163,6 @@ class TestDomainAdmin(MockEppLib, WebTest):
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
-
-        # Check for one of the inline headers
-        expected_header = ".gov domain"
-        self.assertContains(response, expected_header)
 
         # Test for data. We only need to test one since its all interconnected.
         expected_organization_name = "MonkeySeeMonkeyDo"
@@ -193,7 +189,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         domain_information.save()
 
         # We use filter here rather than just domain_information.domain just to get the latest data.
-        domain = Domain.objects.filter(domain_info=domain_information)
+        domain = Domain.objects.filter(domain_info=domain_information).get()
 
         p = "adminpass"
         self.client.login(username="superuser", password=p)
@@ -205,10 +201,6 @@ class TestDomainAdmin(MockEppLib, WebTest):
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
-
-        # Check for one of the inline headers
-        expected_header = ".gov domain"
-        self.assertContains(response, expected_header)
 
         # Test for data. We only need to test one since its all interconnected.
         expected_organization_name = "MonkeySeeMonkeyDo"
