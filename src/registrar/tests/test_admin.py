@@ -701,6 +701,84 @@ class TestDomainRequestAdmin(MockEppLib):
         )
         self.mock_client = MockSESClient()
 
+    @less_console_noise_decorator
+    def test_analyst_can_see_alternative_domain(self):
+        """Tests if an analyst can still see the alternative domain field"""
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+        )
+
+        # Create a fake domain request
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+
+        fake_website = Website.objects.create(website="thisisatest.gov")
+        _domain_request.alternative_domains.add(fake_website)
+        _domain_request.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, _domain_request.requested_domain.name)
+
+        # Test if the page has the alternative domain
+        self.assertContains(response, "thisisatest.gov")
+
+        # Check that the page contains the url we expect
+        expected_href = reverse("admin:registrar_website_change", args=[fake_website.id])
+        self.assertContains(response, expected_href)
+
+        # Navigate to the website to ensure that we can still edit it
+        response = self.client.get(
+            "/admin/registrar/website/{}/change/".format(fake_website.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "thisisatest.gov")
+
+    @less_console_noise_decorator
+    def test_analyst_can_see_current_websites(self):
+        """Tests if an analyst can still see current website field"""
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+        )
+
+        # Create a fake domain request
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+
+        fake_website = Website.objects.create(website="thisisatest.gov")
+        _domain_request.current_websites.add(fake_website)
+        _domain_request.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, _domain_request.requested_domain.name)
+
+        # Test if the page has the current website
+        self.assertContains(response, "thisisatest.gov")
+
     def test_domain_sortable(self):
         """Tests if the DomainRequest sorts by domain correctly"""
         with less_console_noise():

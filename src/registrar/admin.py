@@ -765,7 +765,7 @@ class WebsiteAdmin(ListHeaderAdmin):
         "website",
     ]
     search_help_text = "Search by website."
-    
+
     def get_model_perms(self, request):
         """
         Return empty perms dict thus hiding the model from admin index.
@@ -798,7 +798,9 @@ class WebsiteAdmin(ListHeaderAdmin):
         if analyst_perm and not superuser_perm:
             opts = obj._meta
             pk_value = obj._get_pk_val()
-            return HttpResponseRedirect(reverse('admin:%s_%s_change' % (opts.app_label, opts.model_name), args=(pk_value,)))
+            return HttpResponseRedirect(
+                reverse("admin:%s_%s_change" % (opts.app_label, opts.model_name), args=(pk_value,))
+            )
         return super().response_change(request, obj)
 
 
