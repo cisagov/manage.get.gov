@@ -15,7 +15,7 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
 )
-
+from django.core.validators import RegexValidator, MaxLengthValidator
 from ..models import Contact, DomainInformation, Domain
 from .common import (
     ALGORITHM_CHOICES,
@@ -31,7 +31,18 @@ logger = logging.getLogger(__name__)
 class DomainAddUserForm(forms.Form):
     """Form for adding a user to a domain."""
 
-    email = forms.EmailField(label="Email")
+    email = forms.EmailField(
+        label="Email",
+        max_length=254,
+        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
+        # This validator should exist in the event that a preexisting field is of invalid length
+        validators=[
+            MaxLengthValidator(
+                254,
+                message="Response must be less than 254 characters.",
+            )
+        ],
+    )
 
     def clean(self):
         """clean form data by lowercasing email"""
@@ -193,6 +204,8 @@ class ContactForm(forms.ModelForm):
         # take off maxlength attribute for the phone number field
         # which interferes with out input_with_errors template tag
         self.fields["phone"].widget.attrs.pop("maxlength", None)
+        max = self.fields["email"].widget.attrs["maxlength"]
+        print(f"what is the max? {max}")
 
         for field_name in self.required:
             self.fields[field_name].required = True
@@ -291,10 +304,18 @@ class DomainSecurityEmailForm(forms.Form):
 
     security_email = forms.EmailField(
         label="Security email (optional)",
+        max_length=254,
         required=False,
         error_messages={
             "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
         },
+        # This validator should exist in the event that a preexisting field is of invalid length
+        validators=[
+            MaxLengthValidator(
+                254,
+                message="Response must be less than 254 characters.",
+            )
+        ],
     )
 
 
