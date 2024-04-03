@@ -1394,7 +1394,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @transition(
         field="state",
-        source=[State.DNS_NEEDED, State.READY],
+        source=[State.UNKNOWN, State.DNS_NEEDED, State.READY],
         target=State.READY,
         # conditions=[dns_not_needed]
     )
