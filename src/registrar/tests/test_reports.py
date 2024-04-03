@@ -243,7 +243,12 @@ class ExportDataTest(MockDb, MockEppLib):
             self.maxDiff = None
             # Call the export functions
             write_domains_csv(
-                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+                writer,
+                columns,
+                sort_fields,
+                filter_condition,
+                should_get_domain_managers=False,
+                should_write_header=True,
             )
 
             # Reset the CSV file's position to the beginning
@@ -305,7 +310,12 @@ class ExportDataTest(MockDb, MockEppLib):
             }
             # Call the export functions
             write_domains_csv(
-                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+                writer,
+                columns,
+                sort_fields,
+                filter_condition,
+                should_get_domain_managers=False,
+                should_write_header=True,
             )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
@@ -358,7 +368,12 @@ class ExportDataTest(MockDb, MockEppLib):
             }
             # Call the export functions
             write_domains_csv(
-                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+                writer,
+                columns,
+                sort_fields,
+                filter_condition,
+                should_get_domain_managers=False,
+                should_write_header=True,
             )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
@@ -438,7 +453,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 columns,
                 sort_fields,
                 filter_condition,
-                get_domain_managers=False,
+                should_get_domain_managers=False,
                 should_write_header=True,
             )
             write_domains_csv(
@@ -446,7 +461,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 columns,
                 sort_fields_for_deleted_domains,
                 filter_conditions_for_deleted_domains,
-                get_domain_managers=False,
+                should_get_domain_managers=False,
                 should_write_header=False,
             )
             # Reset the CSV file's position to the beginning
@@ -514,7 +529,12 @@ class ExportDataTest(MockDb, MockEppLib):
             self.maxDiff = None
             # Call the export functions
             write_domains_csv(
-                writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True
+                writer,
+                columns,
+                sort_fields,
+                filter_condition,
+                should_get_domain_managers=True,
+                should_write_header=True,
             )
 
             # Reset the CSV file's position to the beginning
@@ -697,13 +717,8 @@ class HelperFunctions(MockDb):
                 "domain__first_ready__lte": self.end_date,
             }
             # Test with distinct
-            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition, True)
-            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 2]
-            self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
-
-            # Test without distinct
             managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
-            expected_content = [3, 4, 1, 0, 0, 0, 0, 0, 0, 2]
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 2]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
     def test_get_sliced_requests(self):
