@@ -65,6 +65,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         <label aria-label="Creator contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original.creator no_title_top_padding=field.is_readonly %}
         </div>
+        <div class="flex-container">
+            <label aria-label="User summary details"></label>
+            {% include "django/admin/includes/user_detail_list.html" with user=original.creator no_title_top_padding=field.is_readonly %}
+        </div>
     {% elif field.field.name == "submitter" %}
         <div class="flex-container">
         <label aria-label="Submitter contact details"></label>

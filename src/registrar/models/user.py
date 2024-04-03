@@ -67,6 +67,24 @@ class User(AbstractUser):
     def is_restricted(self):
         return self.status == self.RESTRICTED
 
+    def get_approved_domains_count(self):
+        """Return count of approved domains"""
+        allowed_states = ['unknown', 'dns needed', 'ready', 'on hold']
+        approved_domains_count = self.domains.filter(state__in=allowed_states).count()
+        return approved_domains_count
+    
+    def get_active_requests_count(self):
+        """Return count of active requests"""
+        allowed_states = ['submitted', 'in review', 'action needed']
+        active_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
+        return active_requests_count
+    
+    def get_rejected_requests_count(self):
+        """Return count of rejected or ineligible requests"""
+        allowed_states = ['rejected', 'ineligible']
+        rejected_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
+        return rejected_requests_count
+    
     @classmethod
     def needs_identity_verification(cls, email, uuid):
         """A method used by our oidc classes to test whether a user needs email/uuid verification
