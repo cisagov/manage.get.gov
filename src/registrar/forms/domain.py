@@ -33,6 +33,7 @@ class DomainAddUserForm(forms.Form):
 
     email = forms.EmailField(
         label="Email",
+        max_length=None,
         error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
         validators=[
             MaxLengthValidator(
@@ -300,6 +301,7 @@ class DomainSecurityEmailForm(forms.Form):
 
     security_email = forms.EmailField(
         label="Security email (optional)",
+        max_length=None,
         required=False,
         error_messages={
             "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),

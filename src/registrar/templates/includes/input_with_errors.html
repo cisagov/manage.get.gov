@@ -79,17 +79,7 @@ error messages, if necessary.
 {% if widget.attrs.maxlength %}
   <span
     id="{{ widget.attrs.id }}__message"
-    {% comment %}
-    Many USWDS scripts actually rely on this field existing when using maxlength (even when implied).
-    Without it, our javascript breaks as the base script they are using has poor error handling.
-    To maintain consistency and to avoid doing massive overrides, we can just simply hide this field.
-
-    This is a workaround but I would argue the tradeoff here makes sense.
-    {% endcomment %}
-    {% if not show_max_length %}
-    aria-hidden="true"
-    {% endif %}
-    class="usa-character-count__message {% if not show_max_length %} display-none {% endif %}"
+    class="usa-character-count__message"
     aria-live="polite"
   >
     You can enter up to {{ widget.attrs.maxlength }} characters
