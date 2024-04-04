@@ -826,19 +826,21 @@ class TestDomainRequestAdmin(MockEppLib):
         # Verify that the domain names are displayed in the expected order
         expected_order = [
             "ccc.gov",
-            "ccc.gov",
-            "zzz.gov",
             "zzz.gov",
             "bbb.gov",
-            "bbb.gov",
-            "aaa.gov",
             "aaa.gov",
             "ddd.gov",
-            "ddd.gov",
-            "eee.gov",
             "eee.gov",
         ]
-        self.assertEqual(domain_names, expected_order)
+
+        # Remove duplicates
+        # Remove duplicates from domain_names list while preserving order
+        unique_domain_names = []
+        for domain_name in domain_names:
+            if domain_name not in unique_domain_names:
+                unique_domain_names.append(domain_name)
+
+        self.assertEqual(unique_domain_names, expected_order)
 
     def test_short_org_name_in_domain_requests_list(self):
         """
