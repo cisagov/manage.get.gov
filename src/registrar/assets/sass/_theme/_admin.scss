@@ -578,6 +578,33 @@ address.dja-address-contact-list {
         display: inline-flex;
         padding-top: 4px;
         line-height: 14px;
+        color: var(--link-fg);
+    }
+}
+
+.usa-alert--slim.usa-alert--slim--dja-admin {
+    .usa-alert__body:before {
+        top: 0.4rem;
+        left: 10px
+    }
+    .usa-alert__body {
+        padding-left: 2.5rem;
+    }
+}
+@media (prefers-color-scheme: dark) {
+    .usa-alert--success.usa-alert--slim--dja-admin { 
+        border-left-color: var(--accent);
+        .usa-alert__body {
+            background-color: var(--darkened-bg);
+        }
+
+        .usa-alert__body:before {
+            background-color: var(--body-quiet-color);
+        }
+
+        p {
+            color: var(--body-quiet-color);
+        }
     }
 }
 

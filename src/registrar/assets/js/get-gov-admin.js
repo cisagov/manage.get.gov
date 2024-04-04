@@ -149,23 +149,49 @@ function openInNewTab(el, removeAttribute = false){
     function copyToClipboardAndChangeIcon(button) {
         // Assuming the input is the previous sibling of the button
         let input = button.previousElementSibling;
-        
+        let userId = input.getAttribute("user-id")
         // Copy input value to clipboard
         if (input) {
             navigator.clipboard.writeText(input.value).then(function() {
                 // Change the icon to a checkmark on successful copy
-                let buttonIcon = button .querySelector('.usa-button__clipboard use');
-                console.log(`what is the button icon ${buttonIcon}`)
+                let buttonIcon = button.querySelector('.usa-button__clipboard use');
                 if (buttonIcon) {
                     let currentHref = buttonIcon.getAttribute('xlink:href');
                     let baseHref = currentHref.split('#')[0];
 
                     // Append the new icon reference
                     buttonIcon.setAttribute('xlink:href', baseHref + '#check');
+
+                    // Find the nearest .admin-icon-group__success-dialog and update its classes
+                    let brElement = null
+                    let successDialog = document.querySelector(`#email-clipboard__success-dialog-${userId}`);
+                    if (successDialog) {
+                        successDialog.classList.remove('display-none');
+                        // Find the associated BR if it exists
+                        brElement = successDialog.nextElementSibling
+                    }
+                    
+                    // If the element directly below the success dialog is a br, hide it.
+                    // This is for dynamic styling reasons
+                    if (brElement && brElement.tagName === 'BR' && brElement.classList.contains('admin-icon-group__br')) {
+                        brElement.classList.add('display-none');
+                    }
+
                     setTimeout(function() {
                         // Change back to the copy icon
                         buttonIcon.setAttribute('xlink:href', currentHref); 
+
+                        // Hide the success dialog
+                        if (successDialog){
+                            successDialog.classList.add("display-none");
+                        }
+                        
+                        // Show the regular br
+                        if (brElement) {
+                            brElement.classList.remove("display-none");
+                        }
                     }, 1500);
+
                 }
 
             }).catch(function(error) {

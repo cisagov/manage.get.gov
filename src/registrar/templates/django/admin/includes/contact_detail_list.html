@@ -43,7 +43,7 @@
             {% else %}
                 {{ user.email }} | 
                 <div class="admin-icon-group admin-icon-group__clipboard-link">
-                    <input aria-hidden="true" class="display-none" value="{{ user.email }}" />
+                    <input user-id="{{ user.id }}" aria-hidden="true" class="display-none" value="{{ user.email }}" />
                     <button 
                     class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard text-no-underline" 
                     type="button"
@@ -56,8 +56,25 @@
                         Copy
                     </button>
                 </div>
+                <div
+                id="email-clipboard__success-dialog-{{ user.id }}" 
+                class="admin-icon-group__success-dialog 
+                display-none 
+                usa-alert 
+                usa-alert--success 
+                usa-alert--slim 
+                usa-alert--slim--dja-admin 
+                margin-top-1 
+                margin-bottom-1"
+                >
+                    <div class="usa-alert__body">
+                        <p class="usa-alert__text">
+                            Email copied to clipboard.
+                        </p>
+                    </div>
+                </div>
             {% endif %}
-            <br>
+            <br class="admin-icon-group__br">
         {% else %}
             None<br>
         {% endif %}
