@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @receiver(pre_save, sender=DomainRequest)
 @receiver(pre_save, sender=DomainInformation)
-def create_or_update_organization_type(sender, instance, **kwargs):
+def create_or_update_organization_type(sender, instance, return_instance=False, **kwargs):
     """The organization_type field on DomainRequest and DomainInformation is consituted from the
     generic_org_type and is_election_board fields. To keep the organization_type
     field up to date, we need to update it before save based off of those field
@@ -62,15 +62,7 @@ def create_or_update_organization_type(sender, instance, **kwargs):
 
         # == Init variables == #
         # Instance is already in the database, fetch its current state
-        if isinstance(instance, DomainRequest):
-            current_instance = DomainRequest.objects.get(id=instance.id)
-        elif isinstance(instance, DomainInformation):
-            current_instance = DomainInformation.objects.get(id=instance.id)
-        else:
-            # This should never occur. But it never hurts to have this check anyway.
-            raise ValueError(
-                "create_or_update_organization_type() -> instance was not DomainRequest or DomainInformation"
-            )
+        current_instance = sender.objects.get(id=instance.id)
 
         # Check the new and old values
         generic_org_type_changed = instance.generic_org_type != current_instance.generic_org_type
@@ -100,6 +92,9 @@ def create_or_update_organization_type(sender, instance, **kwargs):
             _update_generic_org_and_election_from_org_type(
                 instance, election_org_to_generic_org_map, generic_org_to_org_map
             )
+    
+    if return_instance:
+        return instance
 
 
 def _update_org_type_from_generic_org_and_election(instance, org_map):

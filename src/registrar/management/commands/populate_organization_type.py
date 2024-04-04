@@ -7,6 +7,7 @@ from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper, ScriptDataHelper
 from registrar.models import DomainInformation, DomainRequest, Domain
 from django.db import transaction
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,7 +45,6 @@ class Command(BaseCommand):
         if not os.path.isfile(domain_election_office_filename):
             raise argparse.ArgumentTypeError(f"Invalid file path '{domain_election_office_filename}'")
 
-        
         with open(domain_election_office_filename, "r") as file:
             for line in file:
                 # Remove any leading/trailing whitespace
@@ -53,8 +53,7 @@ class Command(BaseCommand):
                     self.domains_with_election_offices_set.add(domain)
 
         domain_requests = DomainRequest.objects.filter(
-            organization_type__isnull=True, 
-            requested_domain__name__isnull=False
+            organization_type__isnull=True, requested_domain__name__isnull=False
         )
 
         # Code execution will stop here if the user prompts "N"
@@ -94,14 +93,13 @@ class Command(BaseCommand):
         with transaction.atomic():
             for request in domain_requests:
                 try:
-                    # TODO - parse data from hfile ere
                     if request.generic_org_type is not None:
                         domain_name = request.requested_domain.name
                         request.is_election_board = domain_name in self.domains_with_election_offices_set
-                        request.save()
+                        request = create_or_update_organization_type(DomainRequest, request, return_instance=True)
                         self.request_to_update.append(request)
                         if debug:
-                            logger.info(f"Updated {request} => {request.organization_type}")
+                            logger.info(f"Updating {request} => {request.organization_type}")
                     else:
                         self.request_skipped.append(request)
                         if debug:
@@ -112,14 +110,16 @@ class Command(BaseCommand):
                     logger.error(f"{TerminalColors.FAIL}" f"Failed to update {request}" f"{TerminalColors.ENDC}")
 
         # Do a bulk update on the organization_type field
-        # ScriptDataHelper.bulk_update_fields(DomainRequest, self.request_to_update, ["is_election_board"])
+        ScriptDataHelper.bulk_update_fields(
+            DomainRequest, self.request_to_update, ["organization_type", "is_election_board", "generic_org_type"]
+        )
 
         # Log what happened
         log_header = "============= FINISHED UPDATE FOR DOMAINREQUEST ==============="
         TerminalHelper.log_script_run_summary(
             self.request_to_update, self.request_failed_to_update, self.request_skipped, debug, log_header
         )
-    
+
     def update_domain_informations(self, domain_informations, debug):
         with transaction.atomic():
             for info in domain_informations:
@@ -127,10 +127,10 @@ class Command(BaseCommand):
                     if info.generic_org_type is not None:
                         domain_name = info.domain.name
                         info.is_election_board = domain_name in self.domains_with_election_offices_set
-                        info.save()
+                        info = create_or_update_organization_type(DomainInformation, info, return_instance=True)
                         self.di_to_update.append(info)
                         if debug:
-                            logger.info(f"Updated {info} => {info.organization_type}")
+                            logger.info(f"Updating {info} => {info.organization_type}")
                     else:
                         self.di_skipped.append(info)
                         if debug:
@@ -141,11 +141,12 @@ class Command(BaseCommand):
                     logger.error(f"{TerminalColors.FAIL}" f"Failed to update {info}" f"{TerminalColors.ENDC}")
 
         # Do a bulk update on the organization_type field
-        # ScriptDataHelper.bulk_update_fields(DomainInformation, self.di_to_update, ["organization_type", "is_election_board", "generic_org_type"])
+        ScriptDataHelper.bulk_update_fields(
+            DomainInformation, self.di_to_update, ["organization_type", "is_election_board", "generic_org_type"]
+        )
 
         # Log what happened
         log_header = "============= FINISHED UPDATE FOR DOMAININFORMATION ==============="
         TerminalHelper.log_script_run_summary(
             self.di_to_update, self.di_failed_to_update, self.di_skipped, debug, log_header
         )
-
