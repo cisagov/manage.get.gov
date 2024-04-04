@@ -556,8 +556,39 @@ address.dja-address-contact-list {
         min-height: 2.25rem !important;
     }
 
+    button {
+        line-height: 15px;
+    }
+
+}
+
+.admin-icon-group.admin-icon-group__clipboard-link {
+    position: relative;
+    display: inline;
+    align-items: center;
+
+    .usa-button__icon {
+        position: absolute;
+        right: auto;
+        left: 4px;
+        height: 100%;
+    }
+    button {
+        font-size: unset !important;
+        display: inline-flex;
+        padding-top: 4px;
+        line-height: 14px;
+    }
 }
 
 .no-outline-on-click:focus {
     outline: none !important;
+}
+
+svg.no-pointer-events {
+    use {
+        // USWDS has weird interactions with SVGs regarding tooltips,
+        // and other components. In this event, we need to disable pointer interactions.
+        pointer-events: none;
+    }
 }

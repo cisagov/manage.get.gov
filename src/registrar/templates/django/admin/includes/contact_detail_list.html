@@ -25,18 +25,37 @@
         {# Email #}
         {% if user.email or user.contact.email %}
             {% if user.contact.email %}
-                <button 
-                class="usa-button usa-button--unstyled text-no-underline usa-button__clipboard-link" type="button"
-                >
-                {{ user.contact.email }}
-                </button>
+                {{ user.contact.email }} |
+                <div class="admin-icon-group admin-icon-group__clipboard-link">
+                    <input aria-hidden="true" class="display-none" value="{{ user.email }}" />
+                    <button 
+                    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard text-no-underline" 
+                    type="button"
+                    >
+                        <svg 
+                        class="usa-icon" 
+                        >
+                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
             {% else %}
-                <button 
-                class="usa-button usa-button--unstyled text-no-underline usa-button__clipboard-link" 
-                type="button"
-                >
-                {{ user.email }}
-                </button>
+                {{ user.email }} | 
+                <div class="admin-icon-group admin-icon-group__clipboard-link">
+                    <input aria-hidden="true" class="display-none" value="{{ user.email }}" />
+                    <button 
+                    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard text-no-underline" 
+                    type="button"
+                    >
+                        <svg 
+                        class="usa-icon" 
+                        >
+                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
             {% endif %}
             <br>
         {% else %}

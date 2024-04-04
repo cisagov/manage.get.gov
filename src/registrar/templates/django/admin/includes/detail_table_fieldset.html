@@ -84,7 +84,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     <table>
                         <thead>
                             <tr>
-                                <th colspan="4">Other contact information</th>
+                                <th colspan="5">Other contact information</th>
                             <tr>
                         </thead>
                         <tbody>
@@ -93,17 +93,24 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                 <th class="padding-left-1" scope="row">{{ contact.get_formatted_name }}</th>
                                 <td class="padding-left-1">{{ contact.title }}</td>
                                 <td class="padding-left-1">
-                                    <button class="usa-button usa-button--unstyled text-no-underline usa-button__clipboard-link" type="button">
-                                        {{ contact.email }}
-                                        <svg 
-                                        aria-hidden="true"
-                                        class="usa-icon display-none" 
-                                        >
-                                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#check"></use>
-                                        </svg>
-                                    </button>
+                                    {{ contact.email }}
+
                                 </td>
                                 <td class="padding-left-1">{{ contact.phone }}</td>
+                                <td class="padding-left-1">
+                                    <input aria-hidden="true" class="display-none" value="{{ contact.email }}" />
+                                    <button 
+                                    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard text-no-underline" 
+                                    type="button"
+                                    >
+                                        <svg 
+                                        class="usa-icon" 
+                                        >
+                                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                                        </svg>
+                                        Copy email
+                                    </button>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>

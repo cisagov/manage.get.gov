@@ -10,10 +10,14 @@ Template for an input field with a clipboard
     class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard" 
     type="button"
     >
+        <div class="usa-tooltip no-outline-on-click"
+        data-position="right"
+        title="Copy email">
         <svg 
-        class="usa-icon" 
+        class="usa-icon no-pointer-events"
         >
             <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
         </svg>
+        </div>
     </button>
 </div>

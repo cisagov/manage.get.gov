@@ -155,6 +155,7 @@ function openInNewTab(el, removeAttribute = false){
             navigator.clipboard.writeText(input.value).then(function() {
                 // Change the icon to a checkmark on successful copy
                 let buttonIcon = button .querySelector('.usa-button__clipboard use');
+                console.log(`what is the button icon ${buttonIcon}`)
                 if (buttonIcon) {
                     let currentHref = buttonIcon.getAttribute('xlink:href');
                     let baseHref = currentHref.split('#')[0];
