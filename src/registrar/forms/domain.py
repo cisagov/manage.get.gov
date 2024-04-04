@@ -36,8 +36,8 @@ class DomainAddUserForm(forms.Form):
         error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
         validators=[
             MaxLengthValidator(
-                254,
-                message="Response must be less than 254 characters.",
+                320,
+                message="Response must be less than 320 characters.",
             )
         ],
     )
@@ -306,8 +306,8 @@ class DomainSecurityEmailForm(forms.Form):
         },
         validators=[
             MaxLengthValidator(
-                254,
-                message="Response must be less than 254 characters.",
+                320,
+                message="Response must be less than 320 characters.",
             )
         ],
     )
