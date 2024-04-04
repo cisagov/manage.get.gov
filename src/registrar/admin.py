@@ -883,6 +883,8 @@ class DomainInformationAdmin(ListHeaderAdmin):
             "Type of organization",
             {
                 "fields": [
+                    "is_election_board",
+                    "generic_org_type",
                     "organization_type",
                 ]
             },
