@@ -74,11 +74,10 @@ class TestDomainAdmin(MockEppLib, WebTest):
         )
         super().setUp()
 
-    @skip("TODO for another ticket. This test case is grabbing old db data.")
     @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
     def test_extend_expiration_date_button(self, mock_date_today):
         """
-        Tests if extend_expiration_date button extends correctly
+        Tests if extend_expiration_date modal gives an accurate date
         """
 
         # Create a ready domain with a preset expiration date
@@ -105,17 +104,11 @@ class TestDomainAdmin(MockEppLib, WebTest):
             # Follow the response
             response = response.follow()
 
-        # refresh_from_db() does not work for objects with protected=True.
-        # https://github.com/viewflow/django-fsm/issues/89
-        new_domain = Domain.objects.get(id=domain.id)
-
-        # Check that the current expiration date is what we expect
-        self.assertEqual(new_domain.expiration_date, date(2025, 5, 25))
-
         # Assert that everything on the page looks correct
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
         self.assertContains(response, "Extend expiration date")
+        self.assertContains(response, "New expiration date: <b>May 25, 2025</b>")
 
         # Ensure the message we recieve is in line with what we expect
         expected_message = "Successfully extended the expiration date."
@@ -127,6 +120,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
             extra_tags="",
             fail_silently=False,
         )
+
         mock_add_message.assert_has_calls([expected_call], 1)
 
     @less_console_noise_decorator
