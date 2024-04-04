@@ -590,6 +590,12 @@ address.dja-address-contact-list {
     .usa-alert__body {
         padding-left: 2.5rem;
     }
+
+    .admin-icon-group__success-dialog--input {
+        .usa-alert__body {
+            padding-right: 53px !important;
+        }
+    }
 }
 @media (prefers-color-scheme: dark) {
     .usa-alert--success.usa-alert--slim--dja-admin { 
@@ -618,4 +624,8 @@ svg.no-pointer-events {
         // and other components. In this event, we need to disable pointer interactions.
         pointer-events: none;
     }
+}
+
+.dja-important__display-none {
+    display: none !important;
 }

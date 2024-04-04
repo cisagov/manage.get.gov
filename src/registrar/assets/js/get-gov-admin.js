@@ -163,9 +163,21 @@ function openInNewTab(el, removeAttribute = false){
                     buttonIcon.setAttribute('xlink:href', baseHref + '#check');
 
                     // Find the nearest .admin-icon-group__success-dialog and update its classes
+                    let parentFlexContainer = null
                     let brElement = null
-                    let successDialog = document.querySelector(`#email-clipboard__success-dialog-${userId}`);
+                    let successDialog = null
+                    if (userId) {
+                        successDialog = document.querySelector(`#email-clipboard__success-dialog-${userId}`);
+                    }else {
+                        successDialog = document.querySelector("#email-clipboard__success-dialog");
+                    }
+
                     if (successDialog) {
+                        if (!userId) {
+                            parentFlexContainer = successDialog.closest('.flex-container');
+                            // Flex container overrides display-none
+                            parentFlexContainer.classList.remove('dja-important__display-none');
+                        }
                         successDialog.classList.remove('display-none');
                         // Find the associated BR if it exists
                         brElement = successDialog.nextElementSibling
@@ -189,6 +201,10 @@ function openInNewTab(el, removeAttribute = false){
                         // Show the regular br
                         if (brElement) {
                             brElement.classList.remove("display-none");
+                        }
+
+                        if (parentFlexContainer) {
+                            parentFlexContainer.classList.add("dja-important__display-none");
                         }
                     }, 1500);
 
