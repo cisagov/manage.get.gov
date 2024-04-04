@@ -369,9 +369,7 @@ class AuthorizingOfficialForm(RegistrarForm):
     )
     email = forms.EmailField(
         label="Email",
-        max_length=254,
         error_messages={"invalid": ("Enter an email address in the required format, like name@example.com.")},
-        # This validator should exist in the event that a preexisting field is of invalid length
         validators=[
             MaxLengthValidator(
                 254,
@@ -574,9 +572,7 @@ class YourContactForm(RegistrarForm):
     )
     email = forms.EmailField(
         label="Email",
-        max_length=254,
         error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
-        # This validator should exist in the event that a preexisting field is of invalid length
         validators=[
             MaxLengthValidator(
                 254,
@@ -637,12 +633,10 @@ class OtherContactsForm(RegistrarForm):
     )
     email = forms.EmailField(
         label="Email",
-        max_length=254,
         error_messages={
             "required": ("Enter an email address in the required format, like name@example.com."),
             "invalid": ("Enter an email address in the required format, like name@example.com."),
         },
-        # This validator should exist in the event that a preexisting field is of invalid length
         validators=[
             MaxLengthValidator(
                 254,
