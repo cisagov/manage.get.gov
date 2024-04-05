@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @receiver(pre_save, sender=DomainRequest)
 @receiver(pre_save, sender=DomainInformation)
-def create_or_update_organization_type(sender, instance, return_instance=False, **kwargs):
+def create_or_update_organization_type(sender: DomainRequest | DomainInformation, instance, return_instance=False, **kwargs):
     """The organization_type field on DomainRequest and DomainInformation is consituted from the
     generic_org_type and is_election_board fields. To keep the organization_type
     field up to date, we need to update it before save based off of those field

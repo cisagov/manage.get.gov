@@ -27,6 +27,7 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
+from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 
 from django.utils.translation import gettext_lazy as _
 
@@ -980,6 +981,18 @@ class DomainRequestAdmin(ListHeaderAdmin):
     """Custom domain requests admin class."""
 
     form = DomainRequestAdminForm
+    change_form_template = "django/admin/domain_request_change_form.html"
+
+    class StatusListFilter(MultipleChoiceListFilter):
+        """Custom status filter which is a multiple choice filter"""
+
+        title = "Status"
+        parameter_name = "status__in"
+
+        template = "django/admin/multiple_choice_list_filter.html"
+
+        def lookups(self, request, model_admin):
+            return DomainRequest.DomainRequestStatus.choices
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
@@ -1041,8 +1054,6 @@ class DomainRequestAdmin(ListHeaderAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
-    change_form_template = "django/admin/domain_request_change_form.html"
-
     # Columns
     list_display = [
         "requested_domain",
@@ -1073,7 +1084,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
     # Filters
     list_filter = (
-        "status",
+        StatusListFilter,
         "generic_org_type",
         "federal_type",
         ElectionOfficeFilter,
@@ -1355,6 +1366,23 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "Cannot edit a domain request with a restricted creator.",
             )
 
+    def changelist_view(self, request, extra_context=None):
+        """
+        Override changelist_view to set the selected value of status filter.
+        """
+        # use http_referer in order to distinguish between request as a link from another page
+        # and request as a removal of all filters
+        http_referer = request.META.get("HTTP_REFERER", "")
+        # if there are no query parameters in the request
+        # and the request is the initial request for this view
+        if not bool(request.GET) and request.path not in http_referer:
+            # modify the GET of the request to set the selected filter
+            modified_get = copy.deepcopy(request.GET)
+            modified_get["status__in"] = "submitted,in review,action needed"
+            request.GET = modified_get
+        response = super().changelist_view(request, extra_context=extra_context)
+        return response
+
     def change_view(self, request, object_id, form_url="", extra_context=None):
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
@@ -1407,6 +1435,13 @@ class DomainInformationInline(admin.StackedInline):
         "domain",
         "submitter",
     ]
+
+    def has_change_permission(self, request, obj=None):
+        """Custom has_change_permission override so that we can specify that
+        analysts can edit this through this inline, but not through the model normally"""
+        if request.user.has_perm("registrar.analyst_access_permission"):
+            return True
+        return super().has_change_permission(request, obj)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
