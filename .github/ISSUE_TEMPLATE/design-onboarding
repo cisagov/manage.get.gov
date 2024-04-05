@@ -1,0 +1,56 @@
+---
+name: Design Onboarding
+about: Onboarding steps for designers.
+title: 'Designer Onboarding: GH_HANDLE'
+labels: design, onboarding
+assignees: katherineosos
+
+---
+
+# Designer Onboarding
+
+- Onboardee: _GH handle of person being onboarded_
+- Onboarder: _GH handle of onboard buddy_
+
+Read the .gov onboarding document
+Get access to Slack. Familiar yourself with the channels. Post a hi message in the disc channel.
+Get access to Google doc. Navigate through our documents. Find the design folders.
+Get access to our project on Github. Look at our project directories. Find our product repos. Find our Product backlog.
+Know who to ask for what -- know your team mates.
+Make sure you are invited to all our team meetings.
+Get an introduction on our application and the design process from Katherine, our Design lead.
+Understand the designer tools (Miro, Fisma, etc).
+Familiarize with our design guides (e.g., USWDS, 21st Century Integrated Digital Experience Act)
+Make a request to the dev lead to get your sandbox created and get access to /admin (added to fixatures).
+Look at get.gov. Test out manage.get.gov.
+Create your POM and present in the Team coffee.
+Schedule a meet-n-greet with Paul, our Product Manager to learn about our application.
+Schedule a meet-n-greet with Vicky, our Scrum master to get overview of our Scrum process, our backlog, how our sprint works and how to use your Scrum master to your advantage.
+Check up with your manager on your EOD clearance process.
+
+## Access
+
+### Steps for the onboardee
+- [ ] Setup [commit signing in Github](#setting-up-commit-signing) and with git locally.
+- [ ] [Create a cloud.gov account](https://cloud.gov/docs/getting-started/accounts/)
+- [ ] Email github@cisa.dhs.gov (cc: Cameron) to add you to the [CISA Github organization](https://github.com/getgov) and [.gov Team](https://github.com/orgs/cisagov/teams/gov).
+- [ ] Ensure you can login to your cloud.gov account via the CLI
+```bash
+cf login -a api.fr.cloud.gov  --sso
+```
+- [ ] Have an admin add you to cloud.gov org and set up your [sandbox developer space](#setting-up-developer-sandbox). Ensure you can deploy to your sandbox space.
+- [ ] Have an admin add you to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/).
+
+ **Note:** As mentioned in the [Login documentation](https://developers.login.gov/testing/), the sandbox Login account is different account from your regular, production Login account. If you have not created a Login account for the sandbox before, you will need to create a new account first.
+
+- [ ] Optional- add yourself as a codeowner if desired. See the [Developer readme](https://github.com/cisagov/getgov/blob/main/docs/developer/README.md) for how to do this and what it does.
+
+### Steps for the onboarder
+- [ ] Add the onboardee to cloud.gov org (cisa-dotgov) 
+- [ ] Setup a [developer specific space for the new developer](#setting-up-developer-sandbox)
+- [ ] Add the onboardee to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
+
+
+## Documents to Review
+
+- [ ] [Team Onboarding](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?usp=sharing)
