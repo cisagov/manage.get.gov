@@ -34,7 +34,6 @@ class TestGroups(TestCase):
             "view_logentry",
             "change_contact",
             "view_domain",
-            "change_domaininformation",
             "add_domaininvitation",
             "view_domaininvitation",
             "change_domainrequest",

@@ -9,10 +9,10 @@ from registrar.utility.csv_export import (
     export_data_unmanaged_domains_to_csv,
     get_sliced_domains,
     get_sliced_requests,
-    write_domains_csv,
+    write_csv_for_domains,
     get_default_start_date,
     get_default_end_date,
-    write_requests_csv,
+    write_csv_for_requests,
 )
 
 from django.core.management import call_command
@@ -242,8 +242,13 @@ class ExportDataTest(MockDb, MockEppLib):
             }
             self.maxDiff = None
             # Call the export functions
-            write_domains_csv(
-                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+            write_csv_for_domains(
+                writer,
+                columns,
+                sort_fields,
+                filter_condition,
+                should_get_domain_managers=False,
+                should_write_header=True,
             )
 
             # Reset the CSV file's position to the beginning
@@ -268,7 +273,7 @@ class ExportDataTest(MockDb, MockEppLib):
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
             self.assertEqual(csv_content, expected_content)
 
-    def test_write_domains_csv(self):
+    def test_write_csv_for_domains(self):
         """Test that write_body returns the
         existing domain, test that sort by domain name works,
         test that filter works"""
@@ -304,8 +309,13 @@ class ExportDataTest(MockDb, MockEppLib):
                 ],
             }
             # Call the export functions
-            write_domains_csv(
-                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+            write_csv_for_domains(
+                writer,
+                columns,
+                sort_fields,
+                filter_condition,
+                should_get_domain_managers=False,
+                should_write_header=True,
             )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
@@ -357,8 +367,13 @@ class ExportDataTest(MockDb, MockEppLib):
                 ],
             }
             # Call the export functions
-            write_domains_csv(
-                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+            write_csv_for_domains(
+                writer,
+                columns,
+                sort_fields,
+                filter_condition,
+                should_get_domain_managers=False,
+                should_write_header=True,
             )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
@@ -433,20 +448,20 @@ class ExportDataTest(MockDb, MockEppLib):
             }
 
             # Call the export functions
-            write_domains_csv(
+            write_csv_for_domains(
                 writer,
                 columns,
                 sort_fields,
                 filter_condition,
-                get_domain_managers=False,
+                should_get_domain_managers=False,
                 should_write_header=True,
             )
-            write_domains_csv(
+            write_csv_for_domains(
                 writer,
                 columns,
                 sort_fields_for_deleted_domains,
                 filter_conditions_for_deleted_domains,
-                get_domain_managers=False,
+                should_get_domain_managers=False,
                 should_write_header=False,
             )
             # Reset the CSV file's position to the beginning
@@ -478,7 +493,12 @@ class ExportDataTest(MockDb, MockEppLib):
 
     def test_export_domains_to_writer_domain_managers(self):
         """Test that export_domains_to_writer returns the
-        expected domain managers."""
+        expected domain managers.
+
+        An invited user, woofwardthethird, should also be pulled into this report.
+
+        squeaker@rocks.com is invited to domain2 (DNS_NEEDED) and domain10 (No managers).
+        She should show twice in this report but not in test_export_data_managed_domains_to_csv."""
 
         with less_console_noise():
             # Create a CSV file in memory
@@ -508,8 +528,13 @@ class ExportDataTest(MockDb, MockEppLib):
             }
             self.maxDiff = None
             # Call the export functions
-            write_domains_csv(
-                writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True
+            write_csv_for_domains(
+                writer,
+                columns,
+                sort_fields,
+                filter_condition,
+                should_get_domain_managers=True,
+                should_write_header=True,
             )
 
             # Reset the CSV file's position to the beginning
@@ -521,14 +546,16 @@ class ExportDataTest(MockDb, MockEppLib):
             expected_content = (
                 "Domain name,Status,Expiration date,Domain type,Agency,"
                 "Organization name,City,State,AO,AO email,"
-                "Security contact email,Domain manager email 1,Domain manager email 2,Domain manager email 3\n"
-                "adomain10.gov,Ready,,Federal,Armed Forces Retirement Home,,,, , ,\n"
-                "adomain2.gov,Dns needed,,Interstate,,,,, , , ,meoward@rocks.com\n"
-                "cdomain11.govReadyFederal-ExecutiveWorldWarICentennialCommissionmeoward@rocks.com\n"
+                "Security contact email,Domain manager 1,DM1 status,Domain manager 2,DM2 status,"
+                "Domain manager 3,DM3 status,Domain manager 4,DM4 status\n"
+                "adomain10.gov,Ready,,Federal,Armed Forces Retirement Home,,,, , ,squeaker@rocks.com, I\n"
+                "adomain2.gov,Dns needed,,Interstate,,,,, , , ,meoward@rocks.com, R,squeaker@rocks.com, I\n"
+                "cdomain11.govReadyFederal-ExecutiveWorldWarICentennialCommissionmeoward@rocks.comR\n"
                 "cdomain1.gov,Ready,,Federal - Executive,World War I Centennial Commission,,,"
-                ", , , ,meoward@rocks.com,info@example.com,big_lebowski@dude.co\n"
+                ", , , ,meoward@rocks.com,R,info@example.com,R,big_lebowski@dude.co,R,"
+                "woofwardthethird@rocks.com,I\n"
                 "ddomain3.gov,On hold,,Federal,Armed Forces Retirement Home,,,, , , ,,\n"
-                "zdomain12.govReadyInterstatemeoward@rocks.com\n"
+                "zdomain12.govReadyInterstatemeoward@rocks.comR\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -538,7 +565,9 @@ class ExportDataTest(MockDb, MockEppLib):
 
     def test_export_data_managed_domains_to_csv(self):
         """Test get counts for domains that have domain managers for two different dates,
-        get list of managed domains at end_date."""
+        get list of managed domains at end_date.
+
+        An invited user, woofwardthethird, should also be pulled into this report."""
 
         with less_console_noise():
             # Create a CSV file in memory
@@ -564,10 +593,12 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Special district,School district,Election office\n"
                 "3,2,1,0,0,0,0,0,0,0\n"
                 "\n"
-                "Domain name,Domain type,Domain manager email 1,Domain manager email 2,Domain manager email 3\n"
-                "cdomain11.govFederal-Executivemeoward@rocks.com\n"
-                "cdomain1.gov,Federal - Executive,meoward@rocks.com,info@example.com,big_lebowski@dude.co\n"
-                "zdomain12.govInterstatemeoward@rocks.com\n"
+                "Domain name,Domain type,Domain manager 1,DM1 status,Domain manager 2,DM2 status,"
+                "Domain manager 3,DM3 status,Domain manager 4,DM4 status\n"
+                "cdomain11.govFederal-Executivemeoward@rocks.com, R\n"
+                "cdomain1.gov,Federal - Executive,meoward@rocks.com,R,info@example.com,R,"
+                "big_lebowski@dude.co,R,woofwardthethird@rocks.com,I\n"
+                "zdomain12.govInterstatemeoward@rocks.com,R\n"
             )
 
             # Normalize line endings and remove commas,
@@ -642,7 +673,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "submission_date__lte": self.end_date,
                 "submission_date__gte": self.start_date,
             }
-            write_requests_csv(writer, columns, sort_fields, filter_condition, should_write_header=True)
+            write_csv_for_requests(writer, columns, sort_fields, filter_condition, should_write_header=True)
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -686,7 +717,7 @@ class HelperFunctions(MockDb):
                 "domain__first_ready__lte": self.end_date,
             }
             # Test with distinct
-            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition, True)
+            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
             expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 

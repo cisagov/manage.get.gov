@@ -146,6 +146,8 @@ INSTALLED_APPS = [
     # "puml_generator",
     # supports necessary headers for Django cross origin
     "corsheaders",
+    # library for multiple choice filters in django admin
+    "django_admin_multiple_choice_list_filter",
 ]
 
 # Middleware are routines for processing web requests.
