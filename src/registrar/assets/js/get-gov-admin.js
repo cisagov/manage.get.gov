@@ -169,7 +169,7 @@ function openInNewTab(el, removeAttribute = false){
                     setTimeout(function() {
                         // Change back to the copy icon
                         buttonIcon.setAttribute('xlink:href', currentHref); 
-                        if (button.classList.contains('usa-button')) {
+                        if (button.classList.contains('usa-button__small-text')) {
                             nearestSpan.innerText = "Copy email";
                         } else {
                             nearestSpan.innerText = "Copy";
