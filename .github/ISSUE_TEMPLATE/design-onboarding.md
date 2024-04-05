@@ -30,11 +30,11 @@ Check up with your manager on your EOD clearance process.
 
 ## Access
 Make sure you have access / been added to the following:
-- [] The [.gov team](https://github.com/orgs/cisagov/teams/gov) under cisagov on GitHub
-- [] [Slack](dhscisa.enterprise.slack.com), and added to the necessary channels
-- [] Google Drive Project folder
-- [] Figma
-- [] Team meetings
+- [ ] The [.gov team](https://github.com/orgs/cisagov/teams/gov) under cisagov on GitHub
+- [ ] [Slack](dhscisa.enterprise.slack.com), and added to the necessary channels
+- [ ] Google Drive Project folder
+- [ ] Figma
+- [ ] Team meetings
 
 ### Steps for the onboardee
 - [ ] 
