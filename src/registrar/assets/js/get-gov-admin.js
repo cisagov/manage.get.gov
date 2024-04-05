@@ -162,50 +162,14 @@ function openInNewTab(el, removeAttribute = false){
                     // Append the new icon reference
                     buttonIcon.setAttribute('xlink:href', baseHref + '#check');
 
-                    // Find the nearest .admin-icon-group__success-dialog and update its classes
-                    let parentFlexContainer = null
-                    let brElement = null
-                    let successDialog = null
-                    if (userId) {
-                        successDialog = document.querySelector(`#email-clipboard__success-dialog-${userId}`);
-                    }else {
-                        successDialog = document.querySelector("#email-clipboard__success-dialog");
-                    }
-
-                    if (successDialog) {
-                        if (!userId) {
-                            parentFlexContainer = successDialog.closest('.flex-container');
-                            // Flex container overrides display-none
-                            parentFlexContainer.classList.remove('dja-important__display-none');
-                        }
-                        successDialog.classList.remove('display-none');
-                        // Find the associated BR if it exists
-                        brElement = successDialog.nextElementSibling
-                    }
-                    
-                    // If the element directly below the success dialog is a br, hide it.
-                    // This is for dynamic styling reasons
-                    if (brElement && brElement.tagName === 'BR' && brElement.classList.contains('admin-icon-group__br')) {
-                        brElement.classList.add('display-none');
-                    }
+                    // Change the button text
+                    nearestSpan = button.querySelector("span")
+                    nearestSpan.innerText = "Copied to clipboard"
 
                     setTimeout(function() {
                         // Change back to the copy icon
                         buttonIcon.setAttribute('xlink:href', currentHref); 
-
-                        // Hide the success dialog
-                        if (successDialog){
-                            successDialog.classList.add("display-none");
-                        }
-                        
-                        // Show the regular br
-                        if (brElement) {
-                            brElement.classList.remove("display-none");
-                        }
-
-                        if (parentFlexContainer) {
-                            parentFlexContainer.classList.add("dja-important__display-none");
-                        }
+                        nearestSpan.innerText = "Copy"
                     }, 1500);
 
                 }

@@ -25,71 +25,11 @@
         {# Email #}
         {% if user.email or user.contact.email %}
             {% if user.contact.email %}
-                {{ user.contact.email }} |
-                <div class="admin-icon-group admin-icon-group__clipboard-link">
-                    <input user-id="{{ user.contact.id }}" aria-hidden="true" class="display-none" value="{{ user.contact.email }}" />
-                    <button 
-                    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard text-no-underline" 
-                    type="button"
-                    >
-                        <svg 
-                        class="usa-icon" 
-                        >
-                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
-                        </svg>
-                        Copy
-                    </button>
-                </div>
-                <div
-                id="email-clipboard__success-dialog-{{ user.contact.id }}" 
-                class="admin-icon-group__success-dialog 
-                display-none 
-                usa-alert 
-                usa-alert--success 
-                usa-alert--slim 
-                usa-alert--slim--dja-admin 
-                margin-top-1 
-                margin-bottom-1"
-                >
-                    <div class="usa-alert__body">
-                        <p class="usa-alert__text">
-                            Email copied to clipboard.
-                        </p>
-                    </div>
-                </div>
+                {{ user.contact.email }}
+                {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
             {% else %}
-                {{ user.email }} | 
-                <div class="admin-icon-group admin-icon-group__clipboard-link">
-                    <input user-id="{{ user.id }}" aria-hidden="true" class="display-none" value="{{ user.email }}" />
-                    <button 
-                    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard text-no-underline" 
-                    type="button"
-                    >
-                        <svg 
-                        class="usa-icon" 
-                        >
-                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
-                        </svg>
-                        Copy
-                    </button>
-                </div>
-                <div
-                id="email-clipboard__success-dialog-{{ user.id }}" 
-                class="admin-icon-group__success-dialog 
-                display-none 
-                usa-alert 
-                usa-alert--success 
-                usa-alert--slim 
-                usa-alert--slim--dja-admin 
-                margin-top-1 
-                margin-bottom-1"
-                >
-                    <div class="usa-alert__body">
-                        <p class="usa-alert__text">
-                            Email copied to clipboard.
-                        </p>
-                    </div>
-                </div>
+                {{ user.email }}
+                {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
             {% endif %}
             <br class="admin-icon-group__br">
         {% else %}

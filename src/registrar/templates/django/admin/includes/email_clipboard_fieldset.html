@@ -11,28 +11,3 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         {{ block.super }}
     {% endif %}
 {% endblock field_other %}
-
-{% block after_help_text %}
-    {% if field.field.name == "email" %}
-        <div class="flex-container dja-important__display-none">
-            <label aria-label="Clipboard"></label>
-            <div
-            id="email-clipboard__success-dialog" 
-            class="admin-icon-group__success-dialog 
-            admin-icon-group__success-dialog--input
-            display-none 
-            usa-alert
-            usa-alert--success 
-            usa-alert--slim 
-            usa-alert--slim--dja-admin 
-            margin-top-1"
-            >
-                <div class="usa-alert__body">
-                    <p class="usa-alert__text">
-                        Email copied to clipboard.
-                    </p>
-                </div>
-            </div>
-        </div>
-    {% endif %}
-{% endblock %}

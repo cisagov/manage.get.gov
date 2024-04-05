@@ -540,14 +540,8 @@ address.dja-address-contact-list {
 // Make the clipboard button "float" inside of the input box
 .admin-icon-group {
     position: relative;
-    display: flex;
+    display: inline;
     align-items: center;
-
-    .usa-button__icon {
-        position: absolute;
-        right: 0;
-        height: 100%;
-    }
 
     input {
         // Allow for padding around the copy button
@@ -557,7 +551,21 @@ address.dja-address-contact-list {
     }
 
     button {
-        line-height: 15px;
+        line-height: 14px;
+        width: max-content;
+        font-size: unset;
+        text-decoration: none !important;
+    }
+
+    @media (max-width: 1000px) {
+        button {
+            display: block;
+            padding-top: 8px;
+        }
+    }
+
+    span {
+        padding-left: 0.1rem;
     }
 
 }
@@ -566,6 +574,7 @@ address.dja-address-contact-list {
     position: relative;
     display: inline;
     align-items: center;
+    
 
     .usa-button__icon {
         position: absolute;
@@ -579,53 +588,12 @@ address.dja-address-contact-list {
         padding-top: 4px;
         line-height: 14px;
         color: var(--link-fg);
-    }
-}
-
-.usa-alert--slim.usa-alert--slim--dja-admin {
-    .usa-alert__body:before {
-        top: 0.4rem;
-        left: 10px
-    }
-    .usa-alert__body {
-        padding-left: 2.5rem;
-    }
-
-    .admin-icon-group__success-dialog--input {
-        .usa-alert__body {
-            padding-right: 53px !important;
-        }
-    }
-}
-@media (prefers-color-scheme: dark) {
-    .usa-alert--success.usa-alert--slim--dja-admin { 
-        border-left-color: var(--accent);
-        .usa-alert__body {
-            background-color: var(--darkened-bg);
-        }
-
-        .usa-alert__body:before {
-            background-color: var(--body-quiet-color);
-        }
-
-        p {
-            color: var(--body-quiet-color);
-        }
+        width: max-content;
+        font-size: unset;
+        text-decoration: none !important;
     }
 }
 
 .no-outline-on-click:focus {
     outline: none !important;
-}
-
-svg.no-pointer-events {
-    use {
-        // USWDS has weird interactions with SVGs regarding tooltips,
-        // and other components. In this event, we need to disable pointer interactions.
-        pointer-events: none;
-    }
-}
-
-.dja-important__display-none {
-    display: none !important;
 }
