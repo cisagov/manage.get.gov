@@ -170,7 +170,7 @@ function openInNewTab(el, removeAttribute = false){
                         // Change back to the copy icon
                         buttonIcon.setAttribute('xlink:href', currentHref); 
                         nearestSpan.innerText = "Copy"
-                    }, 1500);
+                    }, 2000);
 
                 }
 

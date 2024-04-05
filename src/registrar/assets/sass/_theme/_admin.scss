@@ -399,13 +399,13 @@ address.margin-top-neg-1__detail-list {
 }
 
 td button.usa-button__clipboard-link, address.dja-address-contact-list {
-    font-size: 0.8125rem !important;
+    font-size: unset;
 }
 
 address.dja-address-contact-list {
     color: var(--body-quiet-color);
     button.usa-button__clipboard-link {
-        font-size: 0.8125rem !important;
+        font-size: unset;
     }
 }
 
