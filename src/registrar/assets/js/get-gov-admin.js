@@ -164,11 +164,18 @@ function openInNewTab(el, removeAttribute = false){
 
                     // Change the button text
                     nearestSpan = button.querySelector("span")
+                    if (button.classList.contains('usa-button')) {
+                        nearestSpan.innerText = "Copy email";
+                    } else {
+                        nearestSpan.innerText = "Copy";
+                    }
                     nearestSpan.innerText = "Copied to clipboard"
 
                     setTimeout(function() {
                         // Change back to the copy icon
                         buttonIcon.setAttribute('xlink:href', currentHref); 
+                        usa-button__small
+                        if (button.classList.)
                         nearestSpan.innerText = "Copy"
                     }, 2000);
 

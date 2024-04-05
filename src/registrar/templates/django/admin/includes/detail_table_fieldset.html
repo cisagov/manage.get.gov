@@ -84,7 +84,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     <table>
                         <thead>
                             <tr>
-                                <th colspan="5">Other contact information</th>
+                                <th colspan="4">Other contact information</th>
                             <tr>
                         </thead>
                         <tbody>
@@ -97,10 +97,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
                                 </td>
                                 <td class="padding-left-1">{{ contact.phone }}</td>
-                                <td class="padding-left-1 font-size-small">
+                                <td class="padding-left-1 text-size-small">
                                     <input aria-hidden="true" class="display-none" value="{{ contact.email }}" />
                                     <button 
-                                    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard text-no-underline" 
+                                    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard usa-button__small-text text-no-underline" 
                                     type="button"
                                     >
                                         <svg 
@@ -108,7 +108,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                         >
                                             <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
                                         </svg>
-                                        <span>Copy</span>
+                                        <span>Copy email</span>
                                     </button>
                                 </td>
                             </tr>
