@@ -37,7 +37,6 @@ def create_or_update_organization_type(sender: DomainRequest | DomainInformation
     # A new record is added with organization_type not defined.
     # This happens from the regular domain request flow.
     is_new_instance = instance.id is None
-
     if is_new_instance:
 
         # == Check for invalid conditions before proceeding == #
@@ -54,7 +53,7 @@ def create_or_update_organization_type(sender: DomainRequest | DomainInformation
         # related field (generic org type <-> org type) has data and we should update according to that.
         if organization_type_needs_update:
             _update_org_type_from_generic_org_and_election(instance, generic_org_to_org_map)
-        elif generic_org_type_needs_update:
+        elif generic_org_type_needs_update and instance.organization_type is not None:
             _update_generic_org_and_election_from_org_type(
                 instance, election_org_to_generic_org_map, generic_org_to_org_map
             )
@@ -63,12 +62,12 @@ def create_or_update_organization_type(sender: DomainRequest | DomainInformation
         # == Init variables == #
         # Instance is already in the database, fetch its current state
         current_instance = sender.objects.get(id=instance.id)
-
+        print(f"what is the current instance? {current_instance.__dict__}")
         # Check the new and old values
         generic_org_type_changed = instance.generic_org_type != current_instance.generic_org_type
         is_election_board_changed = instance.is_election_board != current_instance.is_election_board
         organization_type_changed = instance.organization_type != current_instance.organization_type
-
+        print(f"whats changing? generic {generic_org_type_changed} vs election {is_election_board_changed} vs org {organization_type_changed}")
         # == Check for invalid conditions before proceeding == #
         if organization_type_changed and (generic_org_type_changed or is_election_board_changed):
             # Since organization type is linked with generic_org_type and election board,
@@ -88,7 +87,7 @@ def create_or_update_organization_type(sender: DomainRequest | DomainInformation
         # Update the field
         if organization_type_needs_update:
             _update_org_type_from_generic_org_and_election(instance, generic_org_to_org_map)
-        elif generic_org_type_needs_update:
+        elif generic_org_type_needs_update and instance.organization_type is not None:
             _update_generic_org_and_election_from_org_type(
                 instance, election_org_to_generic_org_map, generic_org_to_org_map
             )
@@ -114,13 +113,13 @@ def _update_org_type_from_generic_org_and_election(instance, org_map):
             logger.warning("create_or_update_organization_type() -> is_election_board is out of sync. Updating value.")
             instance.is_election_board = False
 
-        instance.organization_type = org_map[generic_org_type] if instance.is_election_board else generic_org_type
+        instance.organization_type = org_map.get(generic_org_type) if instance.is_election_board else generic_org_type
 
 
 def _update_generic_org_and_election_from_org_type(instance, election_org_map, generic_org_map):
     """Given the field value for organization_type, update the
     generic_org_type and is_election_board field."""
-
+    
     # We convert to a string because the enum types are different
     # between OrgChoicesElectionOffice and OrganizationChoices.
     # But their names are the same (for the most part).

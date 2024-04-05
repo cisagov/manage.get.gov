@@ -90,24 +90,30 @@ class Command(BaseCommand):
         self.update_domain_informations(domain_infos, debug)
 
     def update_domain_requests(self, domain_requests, debug):
-        with transaction.atomic():
-            for request in domain_requests:
-                try:
-                    if request.generic_org_type is not None:
-                        domain_name = request.requested_domain.name
-                        request.is_election_board = domain_name in self.domains_with_election_offices_set
-                        request = create_or_update_organization_type(DomainRequest, request, return_instance=True)
-                        self.request_to_update.append(request)
-                        if debug:
-                            logger.info(f"Updating {request} => {request.organization_type}")
-                    else:
+        for request in domain_requests:
+            try:
+                if request.generic_org_type is not None:
+                    domain_name = request.requested_domain.name
+                    request.is_election_board = domain_name in self.domains_with_election_offices_set
+                    new_request = create_or_update_organization_type(DomainRequest, request, return_instance=True)
+                    print(f"what is the new request? {new_request}")
+                    if not new_request:
                         self.request_skipped.append(request)
-                        if debug:
-                            logger.warning(f"Skipped updating {request}. No generic_org_type was found.")
-                except Exception as err:
-                    self.request_failed_to_update.append(request)
-                    logger.error(err)
-                    logger.error(f"{TerminalColors.FAIL}" f"Failed to update {request}" f"{TerminalColors.ENDC}")
+                        logger.warning(f"Skipped updating {request}. No changes to be made.")
+                    else:
+                        request = new_request
+                        self.request_to_update.append(request)
+
+                    if debug:
+                        logger.info(f"Updating {request} => {request.organization_type}")
+                else:
+                    self.request_skipped.append(request)
+                    if debug:
+                        logger.warning(f"Skipped updating {request}. No generic_org_type was found.")
+            except Exception as err:
+                self.request_failed_to_update.append(request)
+                logger.error(err)
+                logger.error(f"{TerminalColors.FAIL}" f"Failed to update {request}" f"{TerminalColors.ENDC}")
 
         # Do a bulk update on the organization_type field
         ScriptDataHelper.bulk_update_fields(
@@ -121,24 +127,23 @@ class Command(BaseCommand):
         )
 
     def update_domain_informations(self, domain_informations, debug):
-        with transaction.atomic():
-            for info in domain_informations:
-                try:
-                    if info.generic_org_type is not None:
-                        domain_name = info.domain.name
-                        info.is_election_board = domain_name in self.domains_with_election_offices_set
-                        info = create_or_update_organization_type(DomainInformation, info, return_instance=True)
-                        self.di_to_update.append(info)
-                        if debug:
-                            logger.info(f"Updating {info} => {info.organization_type}")
-                    else:
-                        self.di_skipped.append(info)
-                        if debug:
-                            logger.warning(f"Skipped updating {info}. No generic_org_type was found.")
-                except Exception as err:
-                    self.di_failed_to_update.append(info)
-                    logger.error(err)
-                    logger.error(f"{TerminalColors.FAIL}" f"Failed to update {info}" f"{TerminalColors.ENDC}")
+        for info in domain_informations:
+            try:
+                if info.generic_org_type is not None:
+                    domain_name = info.domain.name
+                    info.is_election_board = domain_name in self.domains_with_election_offices_set
+                    info = create_or_update_organization_type(DomainInformation, info, return_instance=True)
+                    self.di_to_update.append(info)
+                    if debug:
+                        logger.info(f"Updating {info} => {info.organization_type}")
+                else:
+                    self.di_skipped.append(info)
+                    if debug:
+                        logger.warning(f"Skipped updating {info}. No generic_org_type was found.")
+            except Exception as err:
+                self.di_failed_to_update.append(info)
+                logger.error(err)
+                logger.error(f"{TerminalColors.FAIL}" f"Failed to update {info}" f"{TerminalColors.ENDC}")
 
         # Do a bulk update on the organization_type field
         ScriptDataHelper.bulk_update_fields(
