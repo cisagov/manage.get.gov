@@ -1,12 +1,22 @@
 {% load i18n static %}
 
-<address class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} dja-address-contact-list">
+{% with approved_domains_count=user.get_approved_domains_count %}
+    {% with active_requests_count=user.get_active_requests_count %}
+        {% with rejected_requests_count=user.get_rejected_requests_count %}
+            {% with ineligible_requests_count=user.get_ineligible_requests_count %}
+                <ul>
 
-    {# Approved domains #}
-    Approved domains: {{ user.get_approved_domains_count }}<br>
-    {# Active requests #}
-    Active requests: {{ user.get_active_requests_count }}<br>
-    {# Rejected or ineligible requests #}
-    Rejected or ineligible: {{ user.get_rejected_requests_count }}<br>
-    
-</address>
+                    {# Approved domains #}
+                    <li>Approved domains: {{ approved_domains_count }}</li>
+                    {# Active requests #}
+                    <li>Active requests: {{ active_requests_count }}</li>
+                    {# Rejected requests #}
+                    <li>Rejected requests: {{ rejected_requests_count }}</li>
+                    {# Ineligible requests #}
+                    <li>Ineligible requests: {{ ineligible_requests_count }}</li>
+                    
+                </ul>
+            {% endwith %}
+        {% endwith %}
+    {% endwith %}
+{% endwith %}

@@ -80,10 +80,12 @@ class User(AbstractUser):
         return active_requests_count
     
     def get_rejected_requests_count(self):
-        """Return count of rejected or ineligible requests"""
-        allowed_states = ['rejected', 'ineligible']
-        rejected_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
-        return rejected_requests_count
+        """Return count of rejected requests"""
+        return self.domain_requests_created.filter(status='rejected').count()
+
+    def get_ineligible_requests_count(self):
+        """Return count of ineligible requests"""
+        return self.domain_requests_created.filter(status='ineligible').count()
     
     @classmethod
     def needs_identity_verification(cls, email, uuid):
