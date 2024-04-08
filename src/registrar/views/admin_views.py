@@ -49,8 +49,8 @@ class AnalyticsView(View):
             "domain__permissions__isnull": False,
             "domain__first_ready__lte": end_date_formatted,
         }
-        managed_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_managed_domains_start_date, True)
-        managed_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_managed_domains_end_date, True)
+        managed_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_managed_domains_start_date)
+        managed_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_managed_domains_end_date)
 
         filter_unmanaged_domains_start_date = {
             "domain__permissions__isnull": True,
@@ -60,10 +60,8 @@ class AnalyticsView(View):
             "domain__permissions__isnull": True,
             "domain__first_ready__lte": end_date_formatted,
         }
-        unmanaged_domains_sliced_at_start_date = csv_export.get_sliced_domains(
-            filter_unmanaged_domains_start_date, True
-        )
-        unmanaged_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_unmanaged_domains_end_date, True)
+        unmanaged_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_unmanaged_domains_start_date)
+        unmanaged_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_unmanaged_domains_end_date)
 
         filter_ready_domains_start_date = {
             "domain__state__in": [models.Domain.State.READY],
