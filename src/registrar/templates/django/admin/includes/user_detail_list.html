@@ -5,7 +5,7 @@
         {% with rejected_requests_count=user.get_rejected_requests_count %}
             {% with ineligible_requests_count=user.get_ineligible_requests_count %}
                 {% if approved_domains_count|add:active_requests_count|add:rejected_requests_count|add:ineligible_requests_count > 0 %}
-                    <ul>
+                    <ul class="dja-status-list">
                         {% if approved_domains_count > 0 %}
                             {# Approved domains #}
                             <li>Approved domains: {{ approved_domains_count }}</li>

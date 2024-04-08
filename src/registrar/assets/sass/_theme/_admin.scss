@@ -435,3 +435,14 @@ address.dja-address-contact-list {
         color: var(--link-fg);
     }
 }
+
+.dja-status-list {
+    border-top: solid 1px var(--border-color);
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    padding-top: 15px;
+    li {
+        line-height: 1.15;
+        font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif !important;
+    }
+}
