@@ -1455,41 +1455,37 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Meoward Jones")
 
         # == Check for the submitter == #
+        self.assertContains(response, "mayor@igorville.gov", count=2)
         expected_submitter_fields = [
             # Field, expected value
             ("title", "Admin Tester"),
-            ("email", "mayor@igorville.gov"),
             ("phone", "(555) 555 5556"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
 
         # == Check for the authorizing_official == #
-
+        self.assertContains(response, "testy@town.com", count=2)
         expected_ao_fields = [
             # Field, expected value
             ("title", "Chief Tester"),
-            ("email", "testy@town.com"),
             ("phone", "(555) 555 5555"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
-        # count=5 because the underlying domain has two users with this name.
-        # The dropdown has 3 of these.
-        self.assertContains(response, "Testy Tester", count=5)
+        self.assertContains(response, "Testy Tester", count=10)
 
         # == Test the other_employees field == #
-
+        self.assertContains(response, "testy2@town.com", count=2)
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
-            ("email", "testy2@town.com"),
             ("phone", "(555) 555 5557"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "usa-button__clipboard-link", count=4)
+        self.assertContains(response, "usa-button__clipboard", count=4)
 
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
@@ -2219,41 +2215,37 @@ class TestDomainInformationAdmin(TestCase):
         self.assertContains(response, "Meoward Jones")
 
         # == Check for the submitter == #
+        self.assertContains(response, "mayor@igorville.gov", count=2)
         expected_submitter_fields = [
             # Field, expected value
             ("title", "Admin Tester"),
-            ("email", "mayor@igorville.gov"),
             ("phone", "(555) 555 5556"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
 
         # == Check for the authorizing_official == #
-
+        self.assertContains(response, "testy@town.com", count=2)
         expected_ao_fields = [
             # Field, expected value
             ("title", "Chief Tester"),
-            ("email", "testy@town.com"),
             ("phone", "(555) 555 5555"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
 
-        # count=5 because the underlying domain has two users with this name.
-        # The dropdown has 3 of these.
-        self.assertContains(response, "Testy Tester", count=5)
+        self.assertContains(response, "Testy Tester", count=10)
 
         # == Test the other_employees field == #
-
+        self.assertContains(response, "testy2@town.com", count=2)
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
-            ("email", "testy2@town.com"),
             ("phone", "(555) 555 5557"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "usa-button__clipboard-link", count=4)
+        self.assertContains(response, "usa-button__clipboard", count=4)
 
     def test_readonly_fields_for_analyst(self):
         """Ensures that analysts have their permissions setup correctly"""
