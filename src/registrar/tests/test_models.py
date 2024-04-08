@@ -1004,6 +1004,8 @@ class TestUser(TestCase):
         Domain.objects.all().delete()
         DomainInvitation.objects.all().delete()
         DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DraftDomain.objects.all().delete()
         TransitionDomain.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
@@ -1059,6 +1061,81 @@ class TestUser(TestCase):
                 # if check_domain_invitations_on_login properly matches exactly one
                 # Domain Invitation, then save routine should be called exactly once
                 save_mock.assert_called_once()
+
+    def test_approved_domains_count(self):
+        """Test that the correct approved domain count is returned for a user"""
+        # with no associated approved domains, expect this to return 0
+        self.assertEquals(self.user.get_approved_domains_count(), 0)
+        # with one approved domain, expect this to return 1
+        UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        self.assertEquals(self.user.get_approved_domains_count(), 1)
+        # with one approved domain, expect this to return 1 (domain2 is deleted, so not considered approved)
+        domain2, _ = Domain.objects.get_or_create(name="igorville2.gov", state=Domain.State.DELETED)
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain2, role=UserDomainRole.Roles.MANAGER)
+        self.assertEquals(self.user.get_approved_domains_count(), 1)
+        # with two approved domains, expect this to return 2
+        domain3, _ = Domain.objects.get_or_create(name="igorville3.gov", state=Domain.State.DNS_NEEDED)
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain3, role=UserDomainRole.Roles.MANAGER)
+        self.assertEquals(self.user.get_approved_domains_count(), 2)
+        # with three approved domains, expect this to return 3
+        domain4, _ = Domain.objects.get_or_create(name="igorville4.gov", state=Domain.State.ON_HOLD)
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain4, role=UserDomainRole.Roles.MANAGER)
+        self.assertEquals(self.user.get_approved_domains_count(), 3)
+        # with four approved domains, expect this to return 4
+        domain5, _ = Domain.objects.get_or_create(name="igorville5.gov", state=Domain.State.READY)
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain5, role=UserDomainRole.Roles.MANAGER)
+        self.assertEquals(self.user.get_approved_domains_count(), 4)
+
+    def test_active_requests_count(self):
+        """Test that the correct active domain requests count is returned for a user"""
+        # with no associated active requests, expect this to return 0
+        self.assertEquals(self.user.get_active_requests_count(), 0)
+        # with one active request, expect this to return 1
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
+        DomainRequest.objects.create(
+            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.SUBMITTED
+        )
+        self.assertEquals(self.user.get_active_requests_count(), 1)
+        # with two active requests, expect this to return 2
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville2.gov")
+        DomainRequest.objects.create(
+            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.IN_REVIEW
+        )
+        self.assertEquals(self.user.get_active_requests_count(), 2)
+        # with three active requests, expect this to return 3
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville3.gov")
+        DomainRequest.objects.create(
+            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.ACTION_NEEDED
+        )
+        self.assertEquals(self.user.get_active_requests_count(), 3)
+        # with three active requests, expect this to return 3 (STARTED is not considered active)
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville4.gov")
+        DomainRequest.objects.create(
+            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.STARTED
+        )
+        self.assertEquals(self.user.get_active_requests_count(), 3)
+
+    def test_rejected_requests_count(self):
+        """Test that the correct rejected domain requests count is returned for a user"""
+        # with no associated rejected requests, expect this to return 0
+        self.assertEquals(self.user.get_rejected_requests_count(), 0)
+        # with one rejected request, expect this to return 1
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
+        DomainRequest.objects.create(
+            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.REJECTED
+        )
+        self.assertEquals(self.user.get_rejected_requests_count(), 1)
+
+    def test_ineligible_requests_count(self):
+        """Test that the correct ineligible domain requests count is returned for a user"""
+        # with no associated ineligible requests, expect this to return 0
+        self.assertEquals(self.user.get_ineligible_requests_count(), 0)
+        # with one ineligible request, expect this to return 1
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
+        DomainRequest.objects.create(
+            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.INELIGIBLE
+        )
+        self.assertEquals(self.user.get_ineligible_requests_count(), 1)
 
 
 class TestContact(TestCase):
