@@ -2,7 +2,7 @@
 
 // Only apply this custom wrapping to desktop
 @include at-media(desktop) {
-  .usa-tooltip__body {
+  .usa-tooltip--registrar .usa-tooltip__body {
     width: 350px;
     white-space: normal;
     text-align: center;
@@ -10,7 +10,7 @@
 }
 
 @include at-media(tablet) {
-  .usa-tooltip__body {
+  .usa-tooltip--registrar .usa-tooltip__body {
     width: 250px !important;
     white-space: normal !important;
     text-align: center !important;
@@ -18,7 +18,7 @@
 }
 
 @include at-media(mobile) {
-  .usa-tooltip__body {
+  .usa-tooltip--registrar .usa-tooltip__body {
     width: 250px !important;
     white-space: normal !important;
     text-align: center !important;

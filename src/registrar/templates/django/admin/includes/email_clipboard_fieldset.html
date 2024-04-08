@@ -1,0 +1,13 @@
+{% extends "django/admin/includes/detail_table_fieldset.html" %}
+
+{% comment %}
+This is using a custom implementation fieldset.html (see admin/fieldset.html)
+{% endcomment %}
+
+{% block field_other %}
+    {% if field.field.name == "email" %}
+        {% include "admin/input_with_clipboard.html" with field=field.field %}
+    {% else %}
+        {{ block.super }}
+    {% endif %}
+{% endblock field_other %}

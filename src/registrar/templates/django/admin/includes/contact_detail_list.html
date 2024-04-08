@@ -26,10 +26,12 @@
         {% if user.email or user.contact.email %}
             {% if user.contact.email %}
                 {{ user.contact.email }}
+                {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
             {% else %}
                 {{ user.email }}
+                {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
             {% endif %}
-            <br>
+            <br class="admin-icon-group__br">
         {% else %}
             None<br>
         {% endif %}
