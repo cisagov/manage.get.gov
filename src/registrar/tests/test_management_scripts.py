@@ -149,15 +149,13 @@ class TestPopulateOrganizationType(MockEppLib):
         self.assert_expected_org_values_on_request_and_info(city_request, city_info, expected_values)
 
     def test_request_and_info_federal(self):
-        """Tests what happens to a federal domain with is_election_board=True (which should be reverted to None)"""
+        """Tests what happens to a federal domain after the script is run (should be unchanged)"""
         federal_request = self.domain_request_1
         federal_info = self.domain_info_1
 
         # Make sure that all data is correct before proceeding.
         # Since the presave fixture is in effect, we should expect that
         # is_election_board is equal to none, even though we tried to define it as "True"
-        # TODO - either add some logging if this happens or a ValueError in the original ticket.
-        # Or FSM? Probably FSM. 
         expected_values = {
             'is_election_board': None,
             'generic_org_type': DomainRequest.OrganizationChoices.FEDERAL,
