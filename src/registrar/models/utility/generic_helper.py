@@ -41,6 +41,7 @@ class CreateOrUpdateOrganizationTypeHelper:
     """
     A helper that manages the "organization_type" field in DomainRequest and DomainInformation
     """
+
     def __init__(self, sender, instance, generic_org_to_org_map, election_org_to_generic_org_map):
         # The "model type"
         self.sender = sender
@@ -67,7 +68,7 @@ class CreateOrUpdateOrganizationTypeHelper:
             self._handle_new_instance()
         else:
             self._handle_existing_instance()
-        
+
         return self.instance
 
     def _handle_new_instance(self):
@@ -87,7 +88,7 @@ class CreateOrUpdateOrganizationTypeHelper:
             self._update_org_type_from_generic_org_and_election()
         elif generic_org_type_needs_update:
             self._update_generic_org_and_election_from_org_type()
-        
+
         # Update the field
         self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
 
@@ -123,7 +124,7 @@ class CreateOrUpdateOrganizationTypeHelper:
     def _update_fields(self, organization_type_needs_update, generic_org_type_needs_update):
         """
         Validates the conditions for updating organization and generic organization types.
-        
+
         Raises:
             ValueError: If both organization_type_needs_update and generic_org_type_needs_update are True,
                         indicating an attempt to update both fields simultaneously, which is not allowed.
@@ -133,7 +134,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         # this restraint.
         if organization_type_needs_update and generic_org_type_needs_update:
             raise ValueError("Cannot update both org type and generic org type at the same time.")
-        
+
         if organization_type_needs_update:
             self._update_org_type_from_generic_org_and_election()
         elif generic_org_type_needs_update:
@@ -162,12 +163,14 @@ class CreateOrUpdateOrganizationTypeHelper:
         else:
             # This can only happen with manual data tinkering, which causes these to be out of sync.
             if self.instance.is_election_board is None:
-                logger.warning("create_or_update_organization_type() -> is_election_board is out of sync. Updating value.")
+                logger.warning(
+                    "create_or_update_organization_type() -> is_election_board is out of sync. Updating value."
+                )
                 self.instance.is_election_board = False
 
             if self.instance.is_election_board:
-                self.instance.organization_type = self.generic_org_to_org_map[generic_org_type]  
-            else: 
+                self.instance.organization_type = self.generic_org_to_org_map[generic_org_type]
+            else:
                 self.instance.organization_type = generic_org_type
 
     def _update_generic_org_and_election_from_org_type(self):
@@ -242,4 +245,3 @@ class CreateOrUpdateOrganizationTypeHelper:
             return False
         else:
             return True
-
