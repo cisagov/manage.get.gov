@@ -1,5 +1,5 @@
 # This migration creates the create_full_access_group and create_cisa_analyst_group groups
-# It is dependent on 0037 (which also updates user role permissions)
+# It is dependent on 0035 (which populates ContentType and Permissions)
 # If permissions on the groups need changing, edit CISA_ANALYST_GROUP_PERMISSIONS
 # in the user_group model then:
 # [NOT RECOMMENDED]
