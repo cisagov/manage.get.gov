@@ -7,12 +7,7 @@ logger = logging.getLogger(__name__)
 class UserGroup(Group):
     """
     UserGroup sets read and write permissions for superusers (who have full access)
-    and analysts. To update analyst permissions do the following:
-    1. Make desired changes to analyst group permissions in user_group.py.
-    2. Follow the steps in 0037_create_groups_v01.py to create a duplicate
-    migration for the updated user group permissions.
-    3. To migrate locally, run docker-compose up. To migrate on a sandbox,
-    push the new migration onto your sandbox before migrating.
+    and analysts. For more details, see the dev docs for user-permissions.
     """
 
     class Meta:
