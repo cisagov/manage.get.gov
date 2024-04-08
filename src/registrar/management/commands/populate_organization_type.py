@@ -1,12 +1,10 @@
 import argparse
 import logging
 import os
-from registrar.signals import create_or_update_organization_type
 from typing import List
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper, ScriptDataHelper
-from registrar.models import DomainInformation, DomainRequest, Domain
-from django.db import transaction
+from registrar.models import DomainInformation, DomainRequest
 
 logger = logging.getLogger(__name__)
 
@@ -95,12 +93,8 @@ class Command(BaseCommand):
                 if request.generic_org_type is not None:
                     domain_name = request.requested_domain.name
                     request.is_election_board = domain_name in self.domains_with_election_offices_set
-                    if not new_request:
-                        self.request_skipped.append(request)
-                        logger.warning(f"Skipped updating {request}. No changes to be made.")
-                    else:
-                        request = new_request
-                        self.request_to_update.append(request)
+                    request.sync_organization_type()
+                    self.request_to_update.append(request)
 
                     if debug:
                         logger.info(f"Updating {request} => {request.organization_type}")
@@ -130,6 +124,7 @@ class Command(BaseCommand):
                 if info.generic_org_type is not None:
                     domain_name = info.domain.name
                     info.is_election_board = domain_name in self.domains_with_election_offices_set
+                    info = info.sync_organization_type()
                     self.di_to_update.append(info)
                     if debug:
                         logger.info(f"Updating {info} => {info.organization_type}")

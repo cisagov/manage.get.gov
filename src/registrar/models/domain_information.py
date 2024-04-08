@@ -236,8 +236,11 @@ class DomainInformation(TimeStampedModel):
         except Exception:
             return ""
 
-    def save(self, *args, **kwargs):
-        """Save override for custom properties"""
+    def sync_organization_type(self):
+        """
+        Updates the organization_type (without saving) to match
+        the is_election_board and generic_organization_type fields.
+        """
 
         # Define mappings between generic org and election org.
         # These have to be defined here, as you'd get a cyclical import error
@@ -262,6 +265,12 @@ class DomainInformation(TimeStampedModel):
 
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
+
+        return self
+
+    def save(self, *args, **kwargs):
+        """Save override for custom properties"""
+        self.sync_organization_type()
         super().save(*args, **kwargs)
 
     @classmethod

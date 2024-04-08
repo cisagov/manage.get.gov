@@ -49,6 +49,7 @@ class ScriptDataHelper:
         Usage:
             bulk_update_fields(Domain, page.object_list, ["first_ready"])
         """
+        logger.info(f"{TerminalColors.YELLOW} Bulk updating fields... {TerminalColors.ENDC}")
         # Create a Paginator object. Bulk_update on the full dataset
         # is too memory intensive for our current app config, so we can chunk this data instead.
         paginator = Paginator(update_list, batch_size)
