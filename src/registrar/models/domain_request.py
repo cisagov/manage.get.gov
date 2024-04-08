@@ -100,7 +100,7 @@ class DomainRequest(TimeStampedModel):
     class OrganizationChoices(models.TextChoices):
         """
         Primary organization choices:
-        For use in the request experience
+        For use in the domain request experience
         Keys need to match OrgChoicesElectionOffice and OrganizationChoicesVerbose
         """
 

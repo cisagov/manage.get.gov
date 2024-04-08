@@ -1588,6 +1588,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
+                "generic_org_type",
+                "is_election_board",
                 "id",
                 "created_at",
                 "updated_at",
@@ -1637,6 +1639,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
+                "generic_org_type",
+                "is_election_board",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -1662,6 +1666,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
+                "generic_org_type",
+                "is_election_board",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
@@ -2259,6 +2265,8 @@ class TestDomainInformationAdmin(TestCase):
 
             expected_fields = [
                 "other_contacts",
+                "generic_org_type",
+                "is_election_board",
                 "creator",
                 "type_of_work",
                 "more_organization_information",
