@@ -103,7 +103,16 @@ def _update_org_type_from_generic_org_and_election(instance, org_map):
     if generic_org_type not in org_map:
         # Election board should always be reset to None if the record
         # can't have one. For example, federal.
-        instance.is_election_board = None
+        if instance.is_election_board is not None:
+            # This maintains data consistency.
+            # There is no avenue for this to occur in the UI,
+            # as such - this can only occur if the object is initialized in this way.
+            # Or if there are pre-existing data.
+            logger.warning(
+                "create_or_update_organization_type() -> is_election_board "
+                f"cannot exist for {generic_org_type}. Setting to None."
+            )
+            instance.is_election_board = None
         instance.organization_type = generic_org_type
     else:
         # This can only happen with manual data tinkering, which causes these to be out of sync.
@@ -137,6 +146,14 @@ def _update_generic_org_and_election_from_org_type(instance, election_org_map, g
         if current_org_type in generic_org_map:
             instance.is_election_board = False
         else:
+            # This maintains data consistency.
+            # There is no avenue for this to occur in the UI,
+            # as such - this can only occur if the object is initialized in this way.
+            # Or if there are pre-existing data.
+            logger.warning(
+                "create_or_update_organization_type() -> is_election_board "
+                f"cannot exist for {current_org_type}. Setting to None."
+            )
             instance.is_election_board = None
 
 
