@@ -95,8 +95,6 @@ class Command(BaseCommand):
                 if request.generic_org_type is not None:
                     domain_name = request.requested_domain.name
                     request.is_election_board = domain_name in self.domains_with_election_offices_set
-                    new_request = create_or_update_organization_type(DomainRequest, request, return_instance=True)
-                    print(f"what is the new request? {new_request}")
                     if not new_request:
                         self.request_skipped.append(request)
                         logger.warning(f"Skipped updating {request}. No changes to be made.")
@@ -132,7 +130,6 @@ class Command(BaseCommand):
                 if info.generic_org_type is not None:
                     domain_name = info.domain.name
                     info.is_election_board = domain_name in self.domains_with_election_offices_set
-                    info = create_or_update_organization_type(DomainInformation, info, return_instance=True)
                     self.di_to_update.append(info)
                     if debug:
                         logger.info(f"Updating {info} => {info.organization_type}")
