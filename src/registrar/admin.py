@@ -1192,6 +1192,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
+    # NOTE: This impacts the select2 dropdowns (combobox)
+    # Currentl, there's only one for requests on DomainInfo
     ordering = ["-submission_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
