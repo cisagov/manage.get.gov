@@ -9,6 +9,7 @@ from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
+from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 
 from .utility.time_stamped_model import TimeStampedModel
@@ -100,7 +101,7 @@ class DomainRequest(TimeStampedModel):
     class OrganizationChoices(models.TextChoices):
         """
         Primary organization choices:
-        For use in the request experience
+        For use in the domain request experience
         Keys need to match OrgChoicesElectionOffice and OrganizationChoicesVerbose
         """
 
@@ -664,6 +665,34 @@ class DomainRequest(TimeStampedModel):
         blank=True,
         help_text="Notes about this request",
     )
+
+    def save(self, *args, **kwargs):
+        """Save override for custom properties"""
+
+        # Define mappings between generic org and election org.
+        # These have to be defined here, as you'd get a cyclical import error
+        # otherwise.
+
+        # For any given organization type, return the "_election" variant.
+        # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
+        generic_org_map = self.OrgChoicesElectionOffice.get_org_generic_to_org_election()
+
+        # For any given "_election" variant, return the base org type.
+        # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
+        election_org_map = self.OrgChoicesElectionOffice.get_org_election_to_org_generic()
+
+        # Manages the "organization_type" variable and keeps in sync with
+        # "is_election_office" and "generic_organization_type"
+        org_type_helper = CreateOrUpdateOrganizationTypeHelper(
+            sender=self.__class__,
+            instance=self,
+            generic_org_to_org_map=generic_org_map,
+            election_org_to_generic_org_map=election_org_map,
+        )
+
+        # Actually updates the organization_type field
+        org_type_helper.create_or_update_organization_type()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         try:

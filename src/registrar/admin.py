@@ -899,8 +899,8 @@ class DomainInformationAdmin(ListHeaderAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "is_election_board",
                     "generic_org_type",
+                    "is_election_board",
                     "organization_type",
                 ]
             },
@@ -944,7 +944,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts",)
+    readonly_fields = ("other_contacts", "generic_org_type", "is_election_board")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1138,6 +1138,8 @@ class DomainRequestAdmin(ListHeaderAdmin):
             "Type of organization",
             {
                 "fields": [
+                    "generic_org_type",
+                    "is_election_board",
                     "organization_type",
                 ]
             },
@@ -1181,7 +1183,13 @@ class DomainRequestAdmin(ListHeaderAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "current_websites", "alternative_domains")
+    readonly_fields = (
+        "other_contacts",
+        "current_websites",
+        "alternative_domains",
+        "generic_org_type",
+        "is_election_board",
+    )
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
