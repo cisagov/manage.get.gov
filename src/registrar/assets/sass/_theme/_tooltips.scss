@@ -1,0 +1,26 @@
+@use "uswds-core" as *;
+
+// Only apply this custom wrapping to desktop
+@include at-media(desktop) {
+  .usa-tooltip--registrar .usa-tooltip__body {
+    width: 350px;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@include at-media(tablet) {
+  .usa-tooltip--registrar .usa-tooltip__body {
+    width: 250px !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+}
+
+@include at-media(mobile) {
+  .usa-tooltip--registrar .usa-tooltip__body {
+    width: 250px !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+}

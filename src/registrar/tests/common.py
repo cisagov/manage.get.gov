@@ -158,7 +158,7 @@ class GenericTestHelper(TestCase):
         Example Usage:
         ```
         self.assert_sort_helper(
-            self.factory, self.superuser, self.admin, self.url, DomainInformation, "1", ("domain__name",)
+            "1", ("domain__name",)
         )
         ```
 
@@ -693,6 +693,24 @@ class MockDb(TestCase):
             user=meoward_user, domain=self.domain_12, role=UserDomainRole.Roles.MANAGER
         )
 
+        _, created = DomainInvitation.objects.get_or_create(
+            email=meoward_user.email, domain=self.domain_1, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
+        )
+
+        _, created = DomainInvitation.objects.get_or_create(
+            email="woofwardthethird@rocks.com",
+            domain=self.domain_1,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        _, created = DomainInvitation.objects.get_or_create(
+            email="squeaker@rocks.com", domain=self.domain_2, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+
+        _, created = DomainInvitation.objects.get_or_create(
+            email="squeaker@rocks.com", domain=self.domain_10, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+
         with less_console_noise():
             self.domain_request_1 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED, name="city1.gov"
@@ -722,6 +740,7 @@ class MockDb(TestCase):
         DomainRequest.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
+        DomainInvitation.objects.all().delete()
 
 
 def mock_user():

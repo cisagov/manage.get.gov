@@ -42,6 +42,7 @@ html[data-theme="light"] {
     --error-fg: #{$theme-color-error};
 
     --message-success-bg: #{$theme-color-success-lighter};
+    --checkbox-green: #{$theme-color-success-light};
     // $theme-color-warning-lighter - yellow-5
     --message-warning-bg: #faf3d1;
     --message-error-bg: #{$theme-color-error-lighter};
@@ -93,6 +94,7 @@ html[data-theme="light"] {
   
       --error-fg: #e35f5f;
       --message-success-bg: #006b1b;
+      --checkbox-green: #006b1b;
       --message-warning-bg: #583305;
       --message-error-bg: #570808;
   
@@ -390,38 +392,136 @@ address.margin-top-neg-1__detail-list {
         margin-top: 5px !important;
     }
     // Mimic the normal label size
-    dt {
-        font-size: 0.8125rem;
-        color: var(--body-quiet-color);
-    }
-
-    address {
+    address, dt {
         font-size: 0.8125rem;
         color: var(--body-quiet-color);
     }
 }
 
+td button.usa-button__clipboard-link, address.dja-address-contact-list {
+    font-size: unset;
+}
+
 address.dja-address-contact-list {
-    font-size: 0.8125rem;
     color: var(--body-quiet-color);
+    button.usa-button__clipboard-link {
+        font-size: unset;
+    }
 }
 
 // Mimic the normal label size
 @media (max-width: 1024px){
-    .dja-detail-list dt {
+    .dja-detail-list dt, .dja-detail-list address {
         font-size: 0.875rem;
         color: var(--body-quiet-color);
     }
-    .dja-detail-list address {
-        font-size: 0.875rem;
-        color: var(--body-quiet-color);
+
+    address button.usa-button__clipboard-link, td button.usa-button__clipboard-link {
+        font-size: 0.875rem !important;
     }
+
 }
 
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;
 }
 
+.choice-filter {
+    position: relative;
+    padding-left: 20px;
+    svg {
+        top: 4px;
+    }
+}
+
+.choice-filter--checked {
+    svg:nth-child(1) {
+        background: var(--checkbox-green);
+        fill: var(--checkbox-green);
+    }
+    svg:nth-child(2) {
+        color: var(--body-loud-color);
+    }
+}
+
+// Let's define this block of code once and use it for analysts over a certain screen size,
+// superusers over another screen size.
+@mixin submit-row-wrapper--collapsed-one-line(){
+    &.submit-row-wrapper--collapsed {
+     transform: translate3d(0, 42px, 0);
+    }
+    .submit-row {
+        clear: none;
+    }
+  }
+
+// Sticky submit bar for domain requests on desktop
+@media screen and (min-width:768px) {
+    .submit-row-wrapper {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        left: 338px;
+        background: var(--darkened-bg);
+        border-top-left-radius: 6px;
+        transition: transform .2s ease-out;
+        .submit-row {
+            margin-bottom: 0;
+        }
+    }
+    .submit-row-wrapper--collapsed {
+        // translate3d is more performant than translateY
+        // https://stackoverflow.com/questions/22111256/translate3d-vs-translate-performance
+        transform: translate3d(0, 88px, 0);
+    }
+    .submit-row-wrapper--collapsed-one-line {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+    .submit-row {
+        clear: both;
+    }
+    .submit-row-toggle{
+        display: inline-block;
+        position: absolute;
+        top: -30px;
+        right: 0;
+        background: var(--darkened-bg);
+    }
+    #submitRowToggle {
+        color: var(--body-fg);
+    }
+    .requested-domain-sticky {
+        max-width: 325px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+
+.visible-768 {
+    display: none;
+}
+
+@media screen and (min-width:768px) {
+    .visible-768 {
+        display: block;
+    }
+}
+
+@media screen and (min-width:935px) {
+    // Analyst only class
+    .submit-row-wrapper--analyst-view {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+}
+
+@media screen and (min-width:1256px) {
+    .submit-row-wrapper {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+}
+
+// Collapse button styles for fieldsets
 .module.collapse {
     margin-top: -35px;
     padding-top: 0;
@@ -445,4 +545,69 @@ address.dja-address-contact-list {
         line-height: 1.15;
         font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif !important;
     }
+}
+
+// Make the clipboard button "float" inside of the input box
+.admin-icon-group {
+    position: relative;
+    display: inline;
+    align-items: center;
+
+    input {
+        // Allow for padding around the copy button
+        padding-right: 35px !important;
+        // Match the height of other inputs
+        min-height: 2.25rem !important;
+    }
+
+    button {
+        line-height: 14px;
+        width: max-content;
+        font-size: unset;
+        text-decoration: none !important;
+    }
+
+    @media (max-width: 1000px) {
+        button {
+            display: block;
+            padding-top: 8px;
+        }
+    }
+
+    span {
+        padding-left: 0.1rem;
+    }
+
+}
+
+.admin-icon-group.admin-icon-group__clipboard-link {
+    position: relative;
+    display: inline;
+    align-items: center;
+    
+
+    .usa-button__icon {
+        position: absolute;
+        right: auto;
+        left: 4px;
+        height: 100%;
+    }
+    button {
+        font-size: unset !important;
+        display: inline-flex;
+        padding-top: 4px;
+        line-height: 14px;
+        color: var(--link-fg);
+        width: max-content;
+        font-size: unset;
+        text-decoration: none !important;
+    }
+}
+
+.no-outline-on-click:focus {
+    outline: none !important;
+}
+
+.usa-button__small-text {
+    font-size: small;
 }

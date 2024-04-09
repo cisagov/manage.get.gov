@@ -27,6 +27,7 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
+from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 
 from django.utils.translation import gettext_lazy as _
 
@@ -561,6 +562,8 @@ class MyUserAdmin(BaseUserAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
     def get_search_results(self, request, queryset, search_term):
         """
         Override for get_search_results. This affects any upstream model using autocomplete_fields,
@@ -664,6 +667,17 @@ class ContactAdmin(ListHeaderAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
+
+    fieldsets = [
+        (
+            None,
+            {"fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]},
+        )
+    ]
+
+    autocomplete_fields = ["user"]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -846,6 +860,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     # error.
     readonly_fields = ["status"]
 
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
 
 class DomainInformationAdmin(ListHeaderAdmin):
     """Customize domain information admin class."""
@@ -979,6 +995,18 @@ class DomainRequestAdmin(ListHeaderAdmin):
     """Custom domain requests admin class."""
 
     form = DomainRequestAdminForm
+    change_form_template = "django/admin/domain_request_change_form.html"
+
+    class StatusListFilter(MultipleChoiceListFilter):
+        """Custom status filter which is a multiple choice filter"""
+
+        title = "Status"
+        parameter_name = "status__in"
+
+        template = "django/admin/multiple_choice_list_filter.html"
+
+        def lookups(self, request, model_admin):
+            return DomainRequest.DomainRequestStatus.choices
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
@@ -1040,11 +1068,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
-    change_form_template = "django/admin/domain_request_change_form.html"
-
     # Columns
     list_display = [
         "requested_domain",
+        "submission_date",
         "status",
         "generic_org_type",
         "federal_type",
@@ -1053,7 +1080,6 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "submission_date",
         "submitter",
         "investigator",
     ]
@@ -1072,7 +1098,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
 
     # Filters
     list_filter = (
-        "status",
+        StatusListFilter,
         "generic_org_type",
         "federal_type",
         ElectionOfficeFilter,
@@ -1181,7 +1207,9 @@ class DomainRequestAdmin(ListHeaderAdmin):
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
-    ordering = ["requested_domain__name"]
+    # NOTE: This impacts the select2 dropdowns (combobox)
+    # Currentl, there's only one for requests on DomainInfo
+    ordering = ["-submission_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
 
@@ -1355,6 +1383,23 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "Cannot edit a domain request with a restricted creator.",
             )
 
+    def changelist_view(self, request, extra_context=None):
+        """
+        Override changelist_view to set the selected value of status filter.
+        """
+        # use http_referer in order to distinguish between request as a link from another page
+        # and request as a removal of all filters
+        http_referer = request.META.get("HTTP_REFERER", "")
+        # if there are no query parameters in the request
+        # and the request is the initial request for this view
+        if not bool(request.GET) and request.path not in http_referer:
+            # modify the GET of the request to set the selected filter
+            modified_get = copy.deepcopy(request.GET)
+            modified_get["status__in"] = "submitted,in review,action needed"
+            request.GET = modified_get
+        response = super().changelist_view(request, extra_context=extra_context)
+        return response
+
     def change_view(self, request, object_id, form_url="", extra_context=None):
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
@@ -1375,6 +1420,8 @@ class TransitionDomainAdmin(ListHeaderAdmin):
 
     search_fields = ["username", "domain_name"]
     search_help_text = "Search by user or domain name."
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
 
 class DomainInformationInline(admin.StackedInline):
@@ -1407,6 +1454,13 @@ class DomainInformationInline(admin.StackedInline):
         "domain",
         "submitter",
     ]
+
+    def has_change_permission(self, request, obj=None):
+        """Custom has_change_permission override so that we can specify that
+        analysts can edit this through this inline, but not through the model normally"""
+        if request.user.has_perm("registrar.analyst_access_permission"):
+            return True
+        return super().has_change_permission(request, obj)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
@@ -1835,6 +1889,13 @@ class DraftDomainAdmin(ListHeaderAdmin):
     ordering = ["name"]
 
 
+class PublicContactAdmin(ListHeaderAdmin):
+    """Custom PublicContact admin class."""
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+    autocomplete_fields = ["domain"]
+
+
 class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
@@ -1842,6 +1903,8 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
     readonly_fields = [
         "requestor",
     ]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
     def truncated_notes(self, obj):
         # Truncate the 'notes' field to 50 characters
@@ -1880,7 +1943,7 @@ admin.site.register(models.FederalAgency, FederalAgencyAdmin)
 # do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
-admin.site.register(models.PublicContact, AuditedAdmin)
+admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
