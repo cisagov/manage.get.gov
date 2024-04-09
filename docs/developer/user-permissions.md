@@ -19,6 +19,18 @@ role or set of permissions that they have. We use a `UserDomainRole`
 `User.domains` many-to-many relationship that works through the
 `UserDomainRole` link table.
 
+## Migrating changes to Analyst Permissions model
+Analysts are allowed a certain set of read/write registrar permissions. 
+Setting user permissions requires a migration to change the UserGroup 
+and Permission models, which requires us to manually make a migration 
+file for user permission changes. 
+To update analyst permissions do the following:
+1. Make desired changes to analyst group permissions in user_group.py.
+2. Follow the steps in the migration file0037_create_groups_v01.py to 
+create a duplicate migration for the updated user group permissions.
+3. To migrate locally, run docker-compose up. To migrate on a sandbox,
+push the new migration onto your sandbox before migrating.
+
 ## Permission decorator
 
 The Django objects that need to be permission controlled are various views.

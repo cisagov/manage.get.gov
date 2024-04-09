@@ -98,6 +98,8 @@ class DomainRequestFixture:
     def _set_non_foreign_key_fields(cls, da: DomainRequest, app: dict):
         """Helper method used by `load`."""
         da.status = app["status"] if "status" in app else "started"
+
+        # TODO for a future ticket: Allow for more than just "federal" here
         da.generic_org_type = app["generic_org_type"] if "generic_org_type" in app else "federal"
         da.federal_agency = (
             app["federal_agency"]
@@ -234,9 +236,6 @@ class DomainFixture(DomainRequestFixture):
                 creator=user, status=DomainRequest.DomainRequestStatus.IN_REVIEW
             ).last()
             logger.debug(f"Approving {domain_request} for {user}")
-
-            # We don't want fixtures sending out real emails to
-            # fake email addresses, so we just skip that and log it instead
 
             # All approvals require an investigator, so if there is none,
             # assign one.

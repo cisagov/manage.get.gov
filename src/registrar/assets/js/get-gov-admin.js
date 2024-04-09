@@ -137,6 +137,94 @@ function openInNewTab(el, removeAttribute = false){
     prepareDjangoAdmin();
 })();
 
+/** An IIFE for pages in DjangoAdmin that use a clipboard button
+*/
+(function (){
+
+    function copyInnerTextToClipboard(elem) {
+        let text = elem.innerText
+        navigator.clipboard.writeText(text)
+    }
+
+    function copyToClipboardAndChangeIcon(button) {
+        // Assuming the input is the previous sibling of the button
+        let input = button.previousElementSibling;
+        let userId = input.getAttribute("user-id")
+        // Copy input value to clipboard
+        if (input) {
+            navigator.clipboard.writeText(input.value).then(function() {
+                // Change the icon to a checkmark on successful copy
+                let buttonIcon = button.querySelector('.usa-button__clipboard use');
+                if (buttonIcon) {
+                    let currentHref = buttonIcon.getAttribute('xlink:href');
+                    let baseHref = currentHref.split('#')[0];
+
+                    // Append the new icon reference
+                    buttonIcon.setAttribute('xlink:href', baseHref + '#check');
+
+                    // Change the button text
+                    nearestSpan = button.querySelector("span")
+                    nearestSpan.innerText = "Copied to clipboard"
+
+                    setTimeout(function() {
+                        // Change back to the copy icon
+                        buttonIcon.setAttribute('xlink:href', currentHref); 
+                        if (button.classList.contains('usa-button__small-text')) {
+                            nearestSpan.innerText = "Copy email";
+                        } else {
+                            nearestSpan.innerText = "Copy";
+                        }
+                    }, 2000);
+
+                }
+
+            }).catch(function(error) {
+                console.error('Clipboard copy failed', error);
+            });
+        }
+    }
+    
+    function handleClipboardButtons() {
+        clipboardButtons = document.querySelectorAll(".usa-button__clipboard")
+        clipboardButtons.forEach((button) => {
+
+            // Handle copying the text to your clipboard,
+            // and changing the icon.
+            button.addEventListener("click", ()=>{
+                copyToClipboardAndChangeIcon(button);
+            });
+            
+            // Add a class that adds the outline style on click
+            button.addEventListener("mousedown", function() {
+                this.classList.add("no-outline-on-click");
+            });
+            
+            // But add it back in after the user clicked,
+            // for accessibility reasons (so we can still tab, etc)
+            button.addEventListener("blur", function() {
+                this.classList.remove("no-outline-on-click");
+            });
+
+        });
+    }
+
+    function handleClipboardLinks() {
+        let emailButtons = document.querySelectorAll(".usa-button__clipboard-link");
+        if (emailButtons){
+            emailButtons.forEach((button) => {
+                button.addEventListener("click", ()=>{
+                    copyInnerTextToClipboard(button);
+                })
+            });
+        }
+    }
+
+    handleClipboardButtons();
+    handleClipboardLinks();
+
+})();
+
+
 /**
  * An IIFE to listen to changes on filter_horizontal and enable or disable the change/delete/view buttons as applicable
  *
