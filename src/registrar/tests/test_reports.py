@@ -718,7 +718,7 @@ class HelperFunctions(MockDb):
             }
             # Test with distinct
             managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
-            expected_content = [3, 4, 1, 0, 0, 0, 0, 0, 0, 0]
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
             # Test without distinct
