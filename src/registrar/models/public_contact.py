@@ -69,7 +69,11 @@ class PublicContact(TimeStampedModel):
     pc = models.CharField(null=False, help_text="Contact's postal code")
     cc = models.CharField(null=False, help_text="Contact's country code")
     email = models.EmailField(null=False, help_text="Contact's email address")
-    voice = models.CharField(null=False, help_text="Contact's phone number. Must be in ITU.E164.2005 format")
+    voice = models.CharField(
+        null=False, 
+        help_text="Contact's phone number. Must be in ITU.E164.2005 format",
+        max_length=320,
+    )
     fax = models.CharField(
         null=True,
         blank=True,

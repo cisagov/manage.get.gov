@@ -314,8 +314,8 @@ class DomainSecurityEmailForm(forms.Form):
         },
         validators=[
             MaxLengthValidator(
-                254,
-                message="Response must be less than 254 characters.",
+                320,
+                message="Response must be less than 320 characters.",
             )
         ],
     )
