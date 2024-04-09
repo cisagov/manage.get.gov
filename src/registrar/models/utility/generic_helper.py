@@ -189,7 +189,7 @@ class CreateOrUpdateOrganizationTypeHelper:
             new_org = election_org_map[current_org_type]
             self.instance.generic_org_type = new_org
             self.instance.is_election_board = True
-        elif self.instance.generic_org_type is not None:
+        elif self.instance.organization_type is not None:
             self.instance.generic_org_type = current_org_type
 
             # This basically checks if the given org type
