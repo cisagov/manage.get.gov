@@ -591,7 +591,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "MANAGED DOMAINS COUNTS AT END DATE\n"
                 "Total,Federal,Interstate,State or territory,Tribal,County,City,"
                 "Special district,School district,Election office\n"
-                "3,2,1,0,0,0,0,0,0,2\n"
+                "3,2,1,0,0,0,0,0,0,0\n"
                 "\n"
                 "Domain name,Domain type,Domain manager 1,DM1 status,Domain manager 2,DM2 status,"
                 "Domain manager 3,DM3 status,Domain manager 4,DM4 status\n"
@@ -718,7 +718,12 @@ class HelperFunctions(MockDb):
             }
             # Test with distinct
             managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
-            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 2]
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
+            self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
+
+            # Test without distinct
+            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
     def test_get_sliced_requests(self):

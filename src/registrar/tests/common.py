@@ -585,7 +585,7 @@ class MockDb(TestCase):
             generic_org_type="federal",
             federal_agency="World War I Centennial Commission",
             federal_type="executive",
-            is_election_board=True,
+            is_election_board=False,
         )
         self.domain_information_2, _ = DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain_2, generic_org_type="interstate", is_election_board=True
@@ -595,14 +595,14 @@ class MockDb(TestCase):
             domain=self.domain_3,
             generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=True,
+            is_election_board=False,
         )
         self.domain_information_4, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_4,
             generic_org_type="federal",
             federal_agency="Armed Forces Retirement Home",
-            is_election_board=True,
+            is_election_board=False,
         )
         self.domain_information_5, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
@@ -652,7 +652,7 @@ class MockDb(TestCase):
             generic_org_type="federal",
             federal_agency="World War I Centennial Commission",
             federal_type="executive",
-            is_election_board=True,
+            is_election_board=False,
         )
         self.domain_information_12, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
@@ -801,6 +801,9 @@ def completed_domain_request(
     submitter=False,
     name="city.gov",
     investigator=None,
+    generic_org_type="federal",
+    is_election_board=False,
+    organization_type=None,
 ):
     """A completed domain request."""
     if not user:
@@ -838,7 +841,8 @@ def completed_domain_request(
             is_staff=True,
         )
     domain_request_kwargs = dict(
-        generic_org_type="federal",
+        generic_org_type=generic_org_type,
+        is_election_board=is_election_board,
         federal_type="executive",
         purpose="Purpose of the site",
         is_policy_acknowledged=True,
@@ -858,6 +862,9 @@ def completed_domain_request(
         domain_request_kwargs["about_your_organization"] = "e-Government"
     if has_anything_else:
         domain_request_kwargs["anything_else"] = "There is more"
+
+    if organization_type:
+        domain_request_kwargs["organization_type"] = organization_type
 
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
