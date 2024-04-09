@@ -14,35 +14,28 @@ assignees: katherineosos
 
 Welcome to the .gov team! We're excited to have you here. Please follow the steps below to get everything set up. An onboarding buddy will help grant you access to all the tools and platforms we use. If you haven't been assigned an onboarding buddy, let us know in the #dotgov-disco channel. 
 
-Read the .gov onboarding document
-Get access to Slack. Familiar yourself with the channels. Post a hi message in the disc channel.
-Get access to Google doc. Navigate through our documents. Find the design folders.
-Get access to our project on Github. Look at our project directories. Find our product repos. Find our Product backlog.
-Know who to ask for what -- know your team mates.
-Make sure you are invited to all our team meetings.
-Get an introduction on our application and the design process from Katherine, our Design lead.
-Understand the designer tools (Miro, Fisma, etc).
-Familiarize with our design guides (e.g., USWDS, 21st Century Integrated Digital Experience Act)
-Make a request to the dev lead to get your sandbox created and get access to /admin (added to fixatures).
-Look at get.gov. Test out manage.get.gov.
-Create your POM and present in the Team coffee.
-Schedule a meet-n-greet with Paul, our Product Manager to learn about our application.
-Schedule a meet-n-greet with Vicky, our Scrum master to get overview of our Scrum process, our backlog, how our sprint works and how to use your Scrum master to your advantage.
-Check up with your manager on your EOD clearance process.
-
 ## Onboardee
 
 ### Steps for the onboardee
 - [ ] Read the [.gov onboarding doc](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?usp=sharing) thoroughly.
-- [ ] Accept Slack invitation and fill out your profile.
+- [ ] Accept an invitation to our Slack workspace and fill out your profile.
   - [ ] For our Slack profile names, we usually follow the naming convention of `Firstname Lastname (Org, State, pronouns)`. 
       Example: Katherine Osos (Truss, MN, she/her)
   - [ ] Make sure you have been added to the necessary [channels](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.li3lqcygw8ax) and familiarize yourself with them.
+- [ ] Create a [Google workspace enterprise account](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.xowzg9w0qlis) for CISA.
 - [ ] Get access to our [Project Folder](https://drive.google.com/drive/folders/1qkoFQBlzXA7axi9CZ_OBhlJqRcqlNfpW?usp=drive_link) on Google Drive.
   - [ ] Explore the folders and docs. Designers interface with the Product Design, Content, and Research folders most often.
 - [ ] Make sure you have been invited to our [team meetings](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.h62kzew057p1) on Google Meet.
-- [ ] Get access to our design tools: [Figma](https://www.figma.com/files/1287135731043703282/team/1299882813146449644), Miro
-- [ ] Follow the steps in [Preparing for your sandbox](####preparing-for-your-sandbox) section below.
+- [ ] Review our [design tools](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.aprurp3z4gmv).
+- [ ] Accept invitation to our [Figma workspace](https://www.figma.com/files/1287135731043703282/team/1299882813146449644).
+- [ ] Follow the steps in [Preparing for your sandbox](#preparing-for-your-sandbox) section below.
+- [ ] Schedule coffee chats with Design Lead, other designers, scrum master, and product manager ([team directory](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.1vq6r8e52e9f)).
+- [ ] Look over [recommended reading](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.7ox9ee7v5q5n) and [relevant links](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.d9pac1gc751t).
+- [ ] Fill out your own Personal Operating Manual (POM) on the [team norming board](https://miro.com/app/board/uXjVMxMu1SA=/). Present it on the next team coffee meeting. 
+- [ ] FOR FEDERAL EMPLOYEES: Check in with your manager on the CISA onboarding process and getting your PIV card.
+- [ ] FOR CONTRACTORS: Check with your manager on your EOD clearance process.
+- [ ] OPTIONAL: Request access to our [analytics tools](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.9q334hs4lbks). 
+
 
 #### Preparing for your sandbox
 - [ ] Create two identity sandbox accounts, this is login.gov’s test environment
@@ -80,8 +73,13 @@ By following the steps, you should have access / been added to the following:
 - [ ] [.gov team on Figma](https://www.figma.com/files/1287135731043703282/team/1299882813146449644) (as an editor if you have a license)
 - [ ] [Team meetings](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.h62kzew057p1)
 
+
 ## Onboarder
 
 ### Steps for the onboarder
-- [ ] Setup a [sandbox] for the onboardee (#setting-up-developer-sandbox)
-- [ ] Add the onboardee to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
+- [ ] Make sure onboardee is given an invitation to our Slack workspace
+- [ ] Add onboardee to dotgov Slack channels
+- [ ] Once onboardee has a Google workspace enterprise account, add onboardee to Project Folder as an editor
+- [ ] Once onboardee has been granted a Figma license, add them as an editor to the Figma team workspace
+- [ ] Add onboardee to our team meetings
+- [ ] If applicable, invite onboardee to Google Analytics, Google Search Console, and Search.gov console
