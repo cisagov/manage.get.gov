@@ -40,6 +40,7 @@ class Contact(TimeStampedModel):
         null=True,
         blank=True,
         db_index=True,
+        max_length=320,
     )
     phone = PhoneNumberField(
         null=True,
