@@ -149,7 +149,7 @@ class Command(BaseCommand):
             self.di_to_update, self.di_failed_to_update, self.di_skipped, debug, log_header
         )
 
-    def sync_organization_type(self, sender, instance, force_update=False):
+    def sync_organization_type(self, sender, instance):
         """
         Updates the organization_type (without saving) to match
         the is_election_board and generic_organization_type fields.
@@ -176,5 +176,5 @@ class Command(BaseCommand):
             election_org_to_generic_org_map=election_org_map,
         )
 
-        instance = org_type_helper.create_or_update_organization_type(force_update)
+        instance = org_type_helper.create_or_update_organization_type()
         return instance
