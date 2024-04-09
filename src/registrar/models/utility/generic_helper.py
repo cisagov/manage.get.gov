@@ -189,7 +189,7 @@ class CreateOrUpdateOrganizationTypeHelper:
             new_org = election_org_map[current_org_type]
             self.instance.generic_org_type = new_org
             self.instance.is_election_board = True
-        else:
+        elif self.instance.generic_org_type is not None:
             self.instance.generic_org_type = current_org_type
 
             # This basically checks if the given org type
@@ -207,6 +207,12 @@ class CreateOrUpdateOrganizationTypeHelper:
                     f"cannot exist for {current_org_type}. Setting to None."
                 )
                 self.instance.is_election_board = None
+        else:
+            # if self.instance.organization_type is set to None, then this means
+            # we should clear the related fields.
+            # This will not occur if it just is None (i.e. default), only if it is set to be so.
+            self.instance.is_election_board = None
+            self.instance.generic_org_type = None
 
     def _validate_new_instance(self):
         """
