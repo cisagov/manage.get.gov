@@ -61,16 +61,15 @@ Check up with your manager on your EOD clearance process.
       - Go to the provided link. Click the Run Workflow dropdown
       - Select your sandbox environment (your initials).
       - Then click the green “Run workflow” button
-   - [ ] Your sandbox makes the app available online, and everyone should be able to access your sandbox once it is made. See the [sandbox section of the onboarding doc](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.cdlfxamcvus5), your sandbox url will be in this format: https://getgov-<ENV>.app.cloud.gov/ where ENV refers to your initials.
-   - [ ] Make sure to check that you can log into your sandbox with the identity sandbox login credentials you made. 
-Request access to /admin (also known as “add to fixtures”)
-Follow the steps in the developer readme for adding yourself to admin
-When you get to the last step about editing the code you can instead share the ID you found in the previous step with someone on the development team
-OPTIONAL: Request an “analyst” account by using your second identity sandbox credential 
-This account will allow you to see what an analyst sees when they log in to the application
-Use whichever identity sandbox account you did not use when requesting /admin access and follow the developer readme for creating an analyst account
-Tip: You can add a ‘+1’ to the end of your gmail account to create a “new” email address that can be used for making a new Login.gov account (example: “orginalemailaddress+1@gmail.com”). Everything will still go to the same email without needing to make a new one.
-Just like with /admin, in the last step about editing the code you can instead share the ID you found in the previous step with someone on the development team
+   - [ ] Your sandbox makes the app available online, and everyone should be able to access your sandbox once it is made. See the [sandbox section of the onboarding doc](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.cdlfxamcvus5), your sandbox url will be in this format: `https://getgov-<ENV>.app.cloud.gov/` where ENV refers to your initials.
+   - [ ] Make sure to check that you can log into your sandbox with the identity sandbox login credentials you made.
+- [ ] Request access to /admin (also known as “add to fixtures”)
+  - [ ] Follow the steps in the [developer readme for adding yourself to admin](https://github.com/cisagov/getgov/blob/main/docs/developer/README.md#adding-user-to-admin)
+    - When you get to the last step about editing the code, you can instead share the ID you found in the previous step with someone on the development team.
+- [ ] OPTIONAL: Request an “analyst” account by using your second identity sandbox credential 
+  - This account will allow you to see what an analyst sees when they log in to the application
+  - Use whichever identity sandbox account you did not use when requesting /admin access and follow the [developer readme for creating an analyst account](https://github.com/cisagov/getgov/blob/main/docs/developer/README.md#adding-an-analyst-to-admin)
+    - Just like with /admin, in the last step about editing the code you can instead share the ID you found in the previous step with someone on the development team
 
 
 ### Access
