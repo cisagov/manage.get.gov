@@ -1,4 +1,6 @@
-from datetime import date
+from datetime import date, datetime
+from django.utils import timezone
+import re
 from django.test import TestCase, RequestFactory, Client, override_settings
 from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
@@ -716,7 +718,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.test_helper.assert_table_sorted("-1", ("-requested_domain__name",))
 
     def test_submitter_sortable(self):
-        """Tests if the DomainRequest sorts by domain correctly"""
+        """Tests if the DomainRequest sorts by submitter correctly"""
         with less_console_noise():
             p = "adminpass"
             self.client.login(username="superuser", password=p)
@@ -747,7 +749,7 @@ class TestDomainRequestAdmin(MockEppLib):
             )
 
     def test_investigator_sortable(self):
-        """Tests if the DomainRequest sorts by domain correctly"""
+        """Tests if the DomainRequest sorts by investigator correctly"""
         with less_console_noise():
             p = "adminpass"
             self.client.login(username="superuser", password=p)
@@ -760,7 +762,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             # Assert that our sort works correctly
             self.test_helper.assert_table_sorted(
-                "6",
+                "12",
                 (
                     "investigator__first_name",
                     "investigator__last_name",
@@ -769,12 +771,76 @@ class TestDomainRequestAdmin(MockEppLib):
 
             # Assert that sorting in reverse works correctly
             self.test_helper.assert_table_sorted(
-                "-6",
+                "-12",
                 (
                     "-investigator__first_name",
                     "-investigator__last_name",
                 ),
             )
+
+    @less_console_noise_decorator
+    def test_default_sorting_in_domain_requests_list(self):
+        """
+        Make sure the default sortin in on the domain requests list page is reverse submission_date
+        then alphabetical requested_domain
+        """
+
+        # Create domain requests with different names
+        domain_requests = [
+            completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, name=name)
+            for name in ["ccc.gov", "bbb.gov", "eee.gov", "aaa.gov", "zzz.gov", "ddd.gov"]
+        ]
+
+        domain_requests[0].submission_date = timezone.make_aware(datetime(2024, 10, 16))
+        domain_requests[1].submission_date = timezone.make_aware(datetime(2001, 10, 16))
+        domain_requests[2].submission_date = timezone.make_aware(datetime(1980, 10, 16))
+        domain_requests[3].submission_date = timezone.make_aware(datetime(1998, 10, 16))
+        domain_requests[4].submission_date = timezone.make_aware(datetime(2013, 10, 16))
+        domain_requests[5].submission_date = timezone.make_aware(datetime(1980, 10, 16))
+
+        # Save the modified domain requests to update their attributes in the database
+        for domain_request in domain_requests:
+            domain_request.save()
+
+        # Refresh domain request objects from the database to reflect the changes
+        domain_requests = [DomainRequest.objects.get(pk=domain_request.pk) for domain_request in domain_requests]
+
+        # Login as superuser and retrieve the domain request list page
+        self.client.force_login(self.superuser)
+        response = self.client.get("/admin/registrar/domainrequest/")
+
+        # Check that the response is successful
+        self.assertEqual(response.status_code, 200)
+
+        # Extract the domain names from the response content using regex
+        domain_names_match = re.findall(r"(\w+\.gov)</a>", response.content.decode("utf-8"))
+
+        logger.info(f"domain_names_match {domain_names_match}")
+
+        # Verify that domain names are found
+        self.assertTrue(domain_names_match)
+
+        # Extract the domain names
+        domain_names = [match for match in domain_names_match]
+
+        # Verify that the domain names are displayed in the expected order
+        expected_order = [
+            "ccc.gov",
+            "zzz.gov",
+            "bbb.gov",
+            "aaa.gov",
+            "ddd.gov",
+            "eee.gov",
+        ]
+
+        # Remove duplicates
+        # Remove duplicates from domain_names list while preserving order
+        unique_domain_names = []
+        for domain_name in domain_names:
+            if domain_name not in unique_domain_names:
+                unique_domain_names.append(domain_name)
+
+        self.assertEqual(unique_domain_names, expected_order)
 
     def test_short_org_name_in_domain_requests_list(self):
         """
