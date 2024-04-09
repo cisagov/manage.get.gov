@@ -5,6 +5,7 @@ from typing import List
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper, ScriptDataHelper
 from registrar.models import DomainInformation, DomainRequest
+from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ class Command(BaseCommand):
                 if request.generic_org_type is not None:
                     domain_name = request.requested_domain.name
                     request.is_election_board = domain_name in self.domains_with_election_offices_set
-                    request.sync_organization_type()
+                    request = self.sync_organization_type(DomainRequest, request)
                     self.request_to_update.append(request)
 
                     if debug:
@@ -124,7 +125,7 @@ class Command(BaseCommand):
                 if info.generic_org_type is not None:
                     domain_name = info.domain.name
                     info.is_election_board = domain_name in self.domains_with_election_offices_set
-                    info = info.sync_organization_type()
+                    info = self.sync_organization_type(DomainInformation, info)
                     self.di_to_update.append(info)
                     if debug:
                         logger.info(f"Updating {info} => {info.organization_type}")
@@ -147,3 +148,33 @@ class Command(BaseCommand):
         TerminalHelper.log_script_run_summary(
             self.di_to_update, self.di_failed_to_update, self.di_skipped, debug, log_header
         )
+
+    def sync_organization_type(self, sender, instance, force_update=False):
+        """
+        Updates the organization_type (without saving) to match
+        the is_election_board and generic_organization_type fields.
+        """
+
+        # Define mappings between generic org and election org.
+        # These have to be defined here, as you'd get a cyclical import error
+        # otherwise.
+
+        # For any given organization type, return the "_election" variant.
+        # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
+        generic_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_generic_to_org_election()
+
+        # For any given "_election" variant, return the base org type.
+        # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
+        election_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_election_to_org_generic()
+
+        # Manages the "organization_type" variable and keeps in sync with
+        # "is_election_office" and "generic_organization_type"
+        org_type_helper = CreateOrUpdateOrganizationTypeHelper(
+            sender=sender,
+            instance=instance,
+            generic_org_to_org_map=generic_org_map,
+            election_org_to_generic_org_map=election_org_map,
+        )
+
+        instance = org_type_helper.create_or_update_organization_type(force_update)
+        return instance
