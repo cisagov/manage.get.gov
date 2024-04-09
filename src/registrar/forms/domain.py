@@ -182,6 +182,7 @@ class ContactForm(forms.ModelForm):
     """Form for updating contacts."""
 
     email = forms.EmailField(max_length=None)
+
     class Meta:
         model = Contact
         fields = ["first_name", "middle_name", "last_name", "title", "email", "phone"]
