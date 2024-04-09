@@ -1,7 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from registrar.models import Contact, DomainRequest, Domain, DomainInformation
-from registrar.tests.common import completed_domain_request
+from registrar.models import Contact
 
 
 class TestUserPostSave(TestCase):
