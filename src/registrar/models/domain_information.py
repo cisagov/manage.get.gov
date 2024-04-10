@@ -62,6 +62,7 @@ class DomainInformation(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
+        verbose_name="Election office",
         help_text="Is your organization an election office?",
     )
 
@@ -121,13 +122,13 @@ class DomainInformation(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Street address",
-        verbose_name="Street address",
+        verbose_name="Address line 1",
     )
     address_line2 = models.CharField(
         null=True,
         blank=True,
         help_text="Street address line 2 (optional)",
-        verbose_name="Street address line 2 (optional)",
+        verbose_name="Address line 2",
     )
     city = models.CharField(
         null=True,
@@ -139,21 +140,22 @@ class DomainInformation(TimeStampedModel):
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
+        verbose_name="State / territory",
         help_text="State, territory, or military post",
-        verbose_name="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
         help_text="Zip code",
+        verbose_name="Zip code",
         db_index=True,
     )
     urbanization = models.CharField(
         null=True,
         blank=True,
         help_text="Urbanization (required for Puerto Rico only)",
-        verbose_name="Urbanization (required for Puerto Rico only)",
+        verbose_name="Urbanization",
     )
 
     about_your_organization = models.TextField(
@@ -177,6 +179,7 @@ class DomainInformation(TimeStampedModel):
         null=True,
         # Access this information via Domain as "domain.domain_info"
         related_name="domain_info",
+        verbose_name="Domain request",
         help_text="Domain to which this information belongs",
     )
 

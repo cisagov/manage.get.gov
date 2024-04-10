@@ -550,12 +550,14 @@ class DomainRequest(TimeStampedModel):
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
+        verbose_name="State / territory",
         help_text="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
+        verbose_name="Zip code",
         help_text="Zip code",
         db_index=True,
     )

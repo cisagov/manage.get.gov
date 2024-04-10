@@ -11,8 +11,8 @@ class UserGroup(Group):
     """
 
     class Meta:
-        verbose_name = "User group"
-        verbose_name_plural = "User groups"
+        verbose_name = "Group"
+        verbose_name_plural = "Groups"
 
     def create_cisa_analyst_group(apps, schema_editor):
         """This method gets run from a data migration."""

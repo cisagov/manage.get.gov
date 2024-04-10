@@ -26,7 +26,7 @@ class TransitionDomain(TimeStampedModel):
     domain_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Domain name",
+        verbose_name="Domain",
     )
     status = models.CharField(
         max_length=255,
@@ -83,8 +83,8 @@ class TransitionDomain(TimeStampedModel):
     first_name = models.CharField(
         null=True,
         blank=True,
-        help_text="First name",
-        verbose_name="first name / given name",
+        help_text="First name / given name",
+        verbose_name="First name",
         db_index=True,
     )
     middle_name = models.CharField(
@@ -100,6 +100,7 @@ class TransitionDomain(TimeStampedModel):
     title = models.CharField(
         null=True,
         blank=True,
+        verbose_name="Title / role",
         help_text="Title",
     )
     email = models.EmailField(
@@ -126,12 +127,14 @@ class TransitionDomain(TimeStampedModel):
         max_length=2,
         null=True,
         blank=True,
+        verbose_name="State / territory",
         help_text="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
+        verbose_name="Zip code",
         help_text="Zip code",
         db_index=True,
     )
