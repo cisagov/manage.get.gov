@@ -562,6 +562,8 @@ class MyUserAdmin(BaseUserAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
     def get_search_results(self, request, queryset, search_term):
         """
         Override for get_search_results. This affects any upstream model using autocomplete_fields,
@@ -665,6 +667,17 @@ class ContactAdmin(ListHeaderAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
+
+    fieldsets = [
+        (
+            None,
+            {"fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]},
+        )
+    ]
+
+    autocomplete_fields = ["user"]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -884,6 +897,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     # error.
     readonly_fields = ["status"]
 
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
 
 class DomainInformationAdmin(ListHeaderAdmin):
     """Customize domain information admin class."""
@@ -923,6 +938,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "fields": [
                     "generic_org_type",
                     "is_election_board",
+                    "organization_type",
                 ]
             },
         ),
@@ -965,7 +981,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts",)
+    readonly_fields = ("other_contacts", "generic_org_type", "is_election_board")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1093,6 +1109,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
     # Columns
     list_display = [
         "requested_domain",
+        "submission_date",
         "status",
         "generic_org_type",
         "federal_type",
@@ -1101,7 +1118,6 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "submission_date",
         "submitter",
         "investigator",
     ]
@@ -1161,6 +1177,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "fields": [
                     "generic_org_type",
                     "is_election_board",
+                    "organization_type",
                 ]
             },
         ),
@@ -1203,7 +1220,13 @@ class DomainRequestAdmin(ListHeaderAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "current_websites", "alternative_domains")
+    readonly_fields = (
+        "other_contacts",
+        "current_websites",
+        "alternative_domains",
+        "generic_org_type",
+        "is_election_board",
+    )
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1229,7 +1252,9 @@ class DomainRequestAdmin(ListHeaderAdmin):
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
-    ordering = ["requested_domain__name"]
+    # NOTE: This impacts the select2 dropdowns (combobox)
+    # Currentl, there's only one for requests on DomainInfo
+    ordering = ["-submission_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
 
@@ -1440,6 +1465,8 @@ class TransitionDomainAdmin(ListHeaderAdmin):
 
     search_fields = ["username", "domain_name"]
     search_help_text = "Search by user or domain name."
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
 
 class DomainInformationInline(admin.StackedInline):
@@ -1947,6 +1974,13 @@ class DraftDomainAdmin(ListHeaderAdmin):
         return super().response_change(request, obj)
 
 
+class PublicContactAdmin(ListHeaderAdmin):
+    """Custom PublicContact admin class."""
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+    autocomplete_fields = ["domain"]
+
+
 class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
@@ -1954,6 +1988,8 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
     readonly_fields = [
         "requestor",
     ]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
     def truncated_notes(self, obj):
         # Truncate the 'notes' field to 50 characters
@@ -1992,7 +2028,7 @@ admin.site.register(models.FederalAgency, FederalAgencyAdmin)
 # do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
-admin.site.register(models.PublicContact, AuditedAdmin)
+admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)

@@ -1,0 +1,39 @@
+{% load i18n static %}
+
+{% comment %}
+Template for an input field with a clipboard
+{% endcomment %}
+
+{% if not invisible_input_field %}
+<div class="admin-icon-group">
+    {{ field }}
+    <button 
+    class="usa-button usa-button--unstyled padding-left-1 usa-button__icon usa-button__clipboard" 
+    type="button"
+    >
+        <div class="no-outline-on-click">
+            <svg 
+            class="usa-icon"
+            >
+                <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+            </svg>
+            <span>Copy</span>
+        </div>
+    </button>
+</div>
+{% else %}
+<div class="admin-icon-group admin-icon-group__clipboard-link">
+    <input aria-hidden="true" class="display-none" value="{{ field.email }}" />
+    <button 
+    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard text-no-underline" 
+    type="button"
+    >
+        <svg 
+        class="usa-icon" 
+        >
+            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+        </svg>
+        <span class="padding-left-05">Copy</span>
+    </button>
+</div>
+{% endif %}

@@ -92,8 +92,25 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                             <tr>
                                 <th class="padding-left-1" scope="row">{{ contact.get_formatted_name }}</th>
                                 <td class="padding-left-1">{{ contact.title }}</td>
-                                <td class="padding-left-1">{{ contact.email }}</td>
+                                <td class="padding-left-1">
+                                    {{ contact.email }}
+
+                                </td>
                                 <td class="padding-left-1">{{ contact.phone }}</td>
+                                <td class="padding-left-1 text-size-small">
+                                    <input aria-hidden="true" class="display-none" value="{{ contact.email }}" />
+                                    <button 
+                                    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard usa-button__small-text text-no-underline" 
+                                    type="button"
+                                    >
+                                        <svg 
+                                        class="usa-icon" 
+                                        >
+                                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                                        </svg>
+                                        <span>Copy email</span>
+                                    </button>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
