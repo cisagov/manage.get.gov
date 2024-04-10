@@ -569,23 +569,25 @@ def get_sliced_domains(filter_condition):
     """
     return get_org_type_counts(DomainInformation, filter_condition)
 
+
 def get_sliced_requests(filter_condition):
     """Get filtered requests counts sliced by org type and election office."""
     return get_org_type_counts(DomainRequest, filter_condition)
 
+
 def get_org_type_counts(model_class, filter_condition):
     """Returns a list of counts for each org type"""
-    
+
     # Count all org types, such as federal
     dynamic_count_dict = {}
     for choice in DomainRequest.OrganizationChoices:
         choice_name = f"{choice}_count"
         dynamic_count_dict[choice_name] = _org_type_count_query_builder(choice)
-    
+
     # Static counts
     static_count_dict = {
         # Count all distinct records
-        "total_count": Count('id'),
+        "total_count": Count("id"),
         # Count all election boards
         "election_board_count": Count(Case(When(is_election_board=True, then=1))),
     }
@@ -598,31 +600,32 @@ def get_org_type_counts(model_class, filter_condition):
     aggregates = model_queryset.aggregate(**merged_count_dict)
 
     # This can be automated but for the sake of readability, this is fixed for now.
-    # To automate this would also mean the added benefit of 
+    # To automate this would also mean the added benefit of
     # auto-updating (automatically adds new org types) charts,
     # but that requires an upstream refactor.
     return [
         # Total number of records
-        aggregates['total_count'],
+        aggregates["total_count"],
         # Number of records with org type FEDERAL
-        aggregates['federal_count'],
+        aggregates["federal_count"],
         # Number of records with org type INTERSTATE
-        aggregates['interstate_count'],
+        aggregates["interstate_count"],
         # Number of records with org type STATE_OR_TERRITORY
-        aggregates['state_or_territory_count'],
+        aggregates["state_or_territory_count"],
         # Number of records for TRIBAL
-        aggregates['tribal_count'],
+        aggregates["tribal_count"],
         # Number of records for COUNTY
-        aggregates['county_count'],
+        aggregates["county_count"],
         # Number of records for CITY
-        aggregates['city_count'],
+        aggregates["city_count"],
         # Number of records for SPECIAL_DISTRICT
-        aggregates['special_district_count'],
+        aggregates["special_district_count"],
         # Number of records for SCHOOL_DISTRICT
-        aggregates['school_district_count'],
+        aggregates["school_district_count"],
         # Number of records for ELECTION_BOARD
-        aggregates['election_board_count'],
+        aggregates["election_board_count"],
     ]
+
 
 def _org_type_count_query_builder(generic_org_type):
     """
@@ -634,6 +637,7 @@ def _org_type_count_query_builder(generic_org_type):
     it is more efficient to do these once in the DB rather than multiple times (as each count consitutes a call)
     """
     return Count(Case(When(generic_org_type=generic_org_type, then=1)))
+
 
 def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
     """Get counts for domains that have domain managers for two different dates,
