@@ -9,7 +9,7 @@ our `user_group` model and run in a migration.
 
 For more details, refer to the [user group model](../../src/registrar/models/user_group.py).
 
-## Adding a user as analyst or granting full access via django-admin
+## Adding a user as analyst or granting full access via django-admin (/admin)
 
 If a new team member has joined, then they will need to be granted analyst (`cisa_analysts_group`) or full access (`full_access_group`) permissions in order to view the admin pages. These admin pages are the ones found at manage.get.gov/admin.
 To do this, do the following:
@@ -21,7 +21,7 @@ To do this, do the following:
 5. (Optional) If the user needs access to django admin (such as an analyst), then you will also need to make sure "Staff Status" is checked. This can be found in the same `User Permissions` section right below the checkbox for `Active`.
 6. Click `Save` to apply all changes.
 
-## Removing a user group permission via django-admin
+## Removing a user group permission via django-admin (/admin)
 
 If an employee was given the wrong permissions or has had a change in roles that subsequently requires a permission change, then their permissions should be updated in django-admin. Much like in the previous section you can accomplish this by doing the following:
 
