@@ -25,7 +25,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0081_create_groups_v10"),
+        ("registrar", "0083_alter_contact_email_alter_publiccontact_email"),
     ]
 
     operations = [
