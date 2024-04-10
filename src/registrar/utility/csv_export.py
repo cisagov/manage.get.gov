@@ -89,9 +89,9 @@ def parse_row_for_domain(
         security_email = "(blank)"
 
     if domain_info.federal_type and domain_info.organization_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
-        domain_type = f"{domain_info.organization_type} - {domain_info.get_federal_type_display()}"
+        domain_type = f"{domain_info.get_organization_type_display()} - {domain_info.get_federal_type_display()}"
     else:
-        domain_type = domain_info.organization_type
+        domain_type = domain_info.get_organization_type_display()
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
@@ -320,9 +320,9 @@ def parse_row_for_requests(columns, request: DomainRequest):
         requested_domain_name = request.requested_domain.name
 
     if request.federal_type:
-        request_type = f"{request.organization_type} - {request.get_federal_type_display()}"
+        request_type = f"{request.get_organization_type_display()} - {request.get_federal_type_display()}"
     else:
-        request_type = request.organization_type
+        request_type = request.get_organization_type_display()
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
