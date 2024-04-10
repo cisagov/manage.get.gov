@@ -1,7 +1,7 @@
 from datetime import date
 import logging
 import copy
-
+from django.forms.models import BaseInlineFormSet
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
@@ -69,7 +69,6 @@ class DomainInformationInlineForm(forms.ModelForm):
         widgets = {
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
         }
-        template = "django/admin/domain_information_change_form.html"
 
 
 class DomainRequestAdminForm(forms.ModelForm):
@@ -1442,7 +1441,6 @@ class DomainInformationInline(admin.StackedInline):
 
     form = DomainInformationInlineForm
     model = models.DomainInformation
-    template = "django/admin/domain_information_inline_change_form.html"
 
     fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
     # remove .gov domain from fieldset
@@ -1450,7 +1448,8 @@ class DomainInformationInline(admin.StackedInline):
         if title == ".gov domain":
             del fieldsets[index]
             break
-
+    
+    readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
     # to activate the edit/delete/view buttons
@@ -1616,7 +1615,7 @@ class DomainAdmin(ListHeaderAdmin):
         """Custom changeform implementation to pass in context information"""
         if extra_context is None:
             extra_context = {}
-
+        extra_context["original_object"] = self.model.objects.get(pk=object_id)
         # Pass in what the an extended expiration date would be for the expiration date modal
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)

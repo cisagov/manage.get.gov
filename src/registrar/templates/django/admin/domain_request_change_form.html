@@ -14,7 +14,7 @@
 
         Use detail_table_fieldset as an example, or just extend it.
         {% endcomment %}
-        {% include "django/admin/includes/detail_table_fieldset.html" %}
+        {% include "django/admin/includes/detail_table_fieldset.html" with original_object=original %}
     {% endfor %}
 {% endblock %}
 

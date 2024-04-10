@@ -36,6 +36,12 @@
     {{ block.super }}
 {% endblock %}
 
+{% block inline_field_sets %}
+    {% for inline_admin_formset in inline_admin_formsets %}
+        {% include "django/admin/includes/domain_information_inline_change_form.html" with original_object=original.domain_info%}
+    {% endfor %}
+{% endblock %}
+
 {% block submit_buttons_bottom %}
     {% comment %}
     Modals behave very weirdly in django admin.
