@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from registrar.models.domain import Domain
 from registrar.models.domain_invitation import DomainInvitation
-from django.db.models import Case, When, Count, Value
+from django.db.models import Case, When, Count
 from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from django.utils import timezone
