@@ -392,32 +392,34 @@ address.margin-top-neg-1__detail-list {
         margin-top: 5px !important;
     }
     // Mimic the normal label size
-    dt {
-        font-size: 0.8125rem;
-        color: var(--body-quiet-color);
-    }
-
-    address {
+    address, dt {
         font-size: 0.8125rem;
         color: var(--body-quiet-color);
     }
 }
 
+td button.usa-button__clipboard-link, address.dja-address-contact-list {
+    font-size: unset;
+}
+
 address.dja-address-contact-list {
-    font-size: 0.8125rem;
     color: var(--body-quiet-color);
+    button.usa-button__clipboard-link {
+        font-size: unset;
+    }
 }
 
 // Mimic the normal label size
 @media (max-width: 1024px){
-    .dja-detail-list dt {
+    .dja-detail-list dt, .dja-detail-list address {
         font-size: 0.875rem;
         color: var(--body-quiet-color);
     }
-    .dja-detail-list address {
-        font-size: 0.875rem;
-        color: var(--body-quiet-color);
+
+    address button.usa-button__clipboard-link, td button.usa-button__clipboard-link {
+        font-size: 0.875rem !important;
     }
+
 }
 
 .errors span.select2-selection {
@@ -532,4 +534,70 @@ address.dja-address-contact-list {
     a {
         color: var(--link-fg);
     }
+}
+
+
+// Make the clipboard button "float" inside of the input box
+.admin-icon-group {
+    position: relative;
+    display: inline;
+    align-items: center;
+
+    input {
+        // Allow for padding around the copy button
+        padding-right: 35px !important;
+        // Match the height of other inputs
+        min-height: 2.25rem !important;
+    }
+
+    button {
+        line-height: 14px;
+        width: max-content;
+        font-size: unset;
+        text-decoration: none !important;
+    }
+
+    @media (max-width: 1000px) {
+        button {
+            display: block;
+            padding-top: 8px;
+        }
+    }
+
+    span {
+        padding-left: 0.1rem;
+    }
+
+}
+
+.admin-icon-group.admin-icon-group__clipboard-link {
+    position: relative;
+    display: inline;
+    align-items: center;
+    
+
+    .usa-button__icon {
+        position: absolute;
+        right: auto;
+        left: 4px;
+        height: 100%;
+    }
+    button {
+        font-size: unset !important;
+        display: inline-flex;
+        padding-top: 4px;
+        line-height: 14px;
+        color: var(--link-fg);
+        width: max-content;
+        font-size: unset;
+        text-decoration: none !important;
+    }
+}
+
+.no-outline-on-click:focus {
+    outline: none !important;
+}
+
+.usa-button__small-text {
+    font-size: small;
 }

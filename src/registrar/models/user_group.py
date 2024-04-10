@@ -5,6 +5,11 @@ logger = logging.getLogger(__name__)
 
 
 class UserGroup(Group):
+    """
+    UserGroup sets read and write permissions for superusers (who have full access)
+    and analysts. For more details, see the dev docs for user-permissions.
+    """
+
     class Meta:
         verbose_name = "User group"
         verbose_name_plural = "User groups"
