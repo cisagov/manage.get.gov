@@ -580,10 +580,68 @@ class OtherContacts(DomainRequestWizard):
             all_forms_valid = False
         return all_forms_valid
 
+#DONE-NL: rename this to "Additional Details" (note: this is a find-replace job. VS will not refactor properly)
+class AdditionalDetails(DomainRequestWizard):
 
-class AnythingElse(DomainRequestWizard):
-    template_name = "domain_request_anything_else.html"
-    forms = [forms.AnythingElseForm]
+    # TODO-NL: Delete this old (original code for anything else)
+    # template_name = "domain_request_anything_else.html"
+    # forms = [forms.AdditionalDetailsForm]
+
+    template_name = "domain_request_additional_details.html"
+    # OLD:  forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
+    # TODO-NL: (refactor) -- move form hookups into respective areas
+    forms = [forms.CisaRepresentativeYesNoForm, forms.CisaRepresentativeForm, forms.AdditionalDetailsYesNoForm, forms.AdditionalDetailsForm]
+
+    # TODO-NL: (refactor) -- move validation into respective areas
+    def is_valid(self, forms: list) -> bool:
+
+        # Validate Cisa Representative
+        """Overrides default behavior defined in DomainRequestWizard.
+        Depending on value in yes_no forms, marks corresponding data
+        for deletion. Then validates all forms.
+        """
+        cisa_representative_email_yes_no_form = forms[0]
+        cisa_representative_email_form = forms[1]
+        anything_else_yes_no_form = forms[2]
+        anything_else_form = forms[3]
+
+        # ------- Validate cisa representative ------- 
+        cisa_rep_portion_is_valid = True
+        # test first for yes_no_form validity
+        if cisa_representative_email_yes_no_form.is_valid():
+            # test for existing data
+            if not cisa_representative_email_yes_no_form.cleaned_data.get("has_cisa_representative"):
+                # mark the cisa_representative_email_form for deletion
+                cisa_representative_email_form.mark_form_for_deletion()
+            else:
+                cisa_rep_portion_is_valid = cisa_representative_email_form.is_valid()
+        else:
+            # if yes no form is invalid, no choice has been made
+            # mark the cisa_representative_email_form for deletion
+            cisa_representative_email_form.mark_form_for_deletion()
+            cisa_rep_portion_is_valid = False
+
+        
+        # ------- Validate anything else -------
+        anything_else_portion_is_valid = True
+        # test first for yes_no_form validity
+        if anything_else_yes_no_form.is_valid():
+            # test for existing data
+            if not anything_else_yes_no_form.cleaned_data.get("has_anything_else_text"):
+                # mark the anything_else_form for deletion
+                anything_else_form.mark_form_for_deletion()
+            else:
+                anything_else_portion_is_valid = cisa_representative_email_form.is_valid()
+        else:
+            # if yes no form is invalid, no choice has been made
+            # mark the anything_else_form for deletion
+            anything_else_form.mark_form_for_deletion()
+            anything_else_portion_is_valid = False
+
+
+        # ------- Return combined validation result -------
+        all_forms_valid = cisa_rep_portion_is_valid and anything_else_portion_is_valid
+        return all_forms_valid
 
 
 class Requirements(DomainRequestWizard):

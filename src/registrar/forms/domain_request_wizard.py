@@ -757,28 +757,15 @@ OtherContactsFormSet = forms.formset_factory(
     formset=BaseOtherContactsFormSet,
 )
 
-
-class NoOtherContactsForm(RegistrarForm):
-    no_other_contacts_rationale = forms.CharField(
-        required=True,
-        # label has to end in a space to get the label_suffix to show
-        label=("No other employees rationale"),
-        widget=forms.Textarea(),
-        validators=[
-            MaxLengthValidator(
-                1000,
-                message="Response must be less than 1000 characters.",
-            )
-        ],
-        error_messages={"required": ("Rationale for no other employees is required.")},
-    )
-
+class BaseDeletableRegistrarForm(RegistrarForm):
+    """Adds special validation and delete functionality.
+    Used by forms that are tied to a Yes/No form."""
     def __init__(self, *args, **kwargs):
         self.form_data_marked_for_deletion = False
         super().__init__(*args, **kwargs)
 
     def mark_form_for_deletion(self):
-        """Marks no_other_contacts form for deletion.
+        """Marks this form for deletion.
         This changes behavior of validity checks and to_database
         methods."""
         self.form_data_marked_for_deletion = True
@@ -822,8 +809,53 @@ class NoOtherContactsForm(RegistrarForm):
                 setattr(obj, name, value)
         obj.save()
 
+class NoOtherContactsForm(BaseDeletableRegistrarForm):
+    no_other_contacts_rationale = forms.CharField(
+        required=True,
+        # label has to end in a space to get the label_suffix to show
+        label=("No other employees rationale"),
+        widget=forms.Textarea(),
+        validators=[
+            MaxLengthValidator(
+                1000,
+                message="Response must be less than 1000 characters.",
+            )
+        ],
+        error_messages={"required": ("Rationale for no other employees is required.")},
+    )
 
-class AnythingElseForm(RegistrarForm):
+class CisaRepresentativeForm(BaseDeletableRegistrarForm):
+    cisa_representative_email = forms.EmailField(
+        required=False,
+        label="Are you working with a CISA representative?", #TODO-NL: (design check) - is this the right label?
+    )
+
+class CisaRepresentativeYesNoForm(RegistrarForm):
+    def __init__(self, *args, **kwargs):
+        """Extend the initialization of the form from RegistrarForm __init__"""
+        super().__init__(*args, **kwargs)
+        # set the initial value based on attributes of domain request
+        if self.domain_request:
+            if self.domain_request.has_cisa_representative():
+                initial_value = True
+            else:
+                initial_value = False
+        else:
+            # No pre-selection for new domain requests
+            initial_value = None
+
+        self.fields["has_cisa_representative"] = forms.TypedChoiceField(
+            coerce=lambda x: x.lower() == "true" if x is not None else None,  # coerce strings to bool, excepting None
+            choices=((True, "Yes"), (False, "No")),
+            initial=initial_value,
+            widget=forms.RadioSelect,
+            error_messages={
+                "required": "This question is required.", 
+            },
+        )
+
+
+class AdditionalDetailsForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=False,
         label="Anything else?",
@@ -836,6 +868,29 @@ class AnythingElseForm(RegistrarForm):
         ],
     )
 
+class AdditionalDetailsYesNoForm(RegistrarForm):
+    def __init__(self, *args, **kwargs):
+        """Extend the initialization of the form from RegistrarForm __init__"""
+        super().__init__(*args, **kwargs)
+        # set the initial value based on attributes of domain request
+        if self.domain_request:
+            if self.domain_request.has_anything_else_text():
+                initial_value = True
+            else:
+                initial_value = False
+        else:
+            # No pre-selection for new domain requests
+            initial_value = None
+
+        self.fields["has_anything_else_text"] = forms.TypedChoiceField(
+            coerce=lambda x: x.lower() == "true" if x is not None else None,  # coerce strings to bool, excepting None
+            choices=((True, "Yes"), (False, "No")),
+            initial=initial_value,
+            widget=forms.RadioSelect,
+            error_messages={
+                "required": "This question is required.", #TODO-NL: (design check) - is this required?
+            },
+        )
 
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(

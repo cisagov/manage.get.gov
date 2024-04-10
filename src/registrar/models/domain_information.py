@@ -198,6 +198,12 @@ class DomainInformation(TimeStampedModel):
         help_text="Anything else?",
     )
 
+    cisa_representative_email = models.EmailField(
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
     is_policy_acknowledged = models.BooleanField(
         null=True,
         blank=True,
