@@ -2,7 +2,7 @@
 
 import logging
 from django import forms
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
 from registrar.models import DomainRequest
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
@@ -31,7 +31,17 @@ logger = logging.getLogger(__name__)
 class DomainAddUserForm(forms.Form):
     """Form for adding a user to a domain."""
 
-    email = forms.EmailField(label="Email")
+    email = forms.EmailField(
+        label="Email",
+        max_length=None,
+        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
+        validators=[
+            MaxLengthValidator(
+                320,
+                message="Response must be less than 320 characters.",
+            )
+        ],
+    )
 
     def clean(self):
         """clean form data by lowercasing email"""
@@ -171,6 +181,8 @@ NameserverFormset = formset_factory(
 class ContactForm(forms.ModelForm):
     """Form for updating contacts."""
 
+    email = forms.EmailField(max_length=None)
+
     class Meta:
         model = Contact
         fields = ["first_name", "middle_name", "last_name", "title", "email", "phone"]
@@ -193,6 +205,10 @@ class ContactForm(forms.ModelForm):
         # take off maxlength attribute for the phone number field
         # which interferes with out input_with_errors template tag
         self.fields["phone"].widget.attrs.pop("maxlength", None)
+
+        # Define a custom validator for the email field with a custom error message
+        email_max_length_validator = MaxLengthValidator(320, message="Response must be less than 320 characters.")
+        self.fields["email"].validators.append(email_max_length_validator)
 
         for field_name in self.required:
             self.fields[field_name].required = True
@@ -291,10 +307,17 @@ class DomainSecurityEmailForm(forms.Form):
 
     security_email = forms.EmailField(
         label="Security email (optional)",
+        max_length=None,
         required=False,
         error_messages={
             "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
         },
+        validators=[
+            MaxLengthValidator(
+                320,
+                message="Response must be less than 320 characters.",
+            )
+        ],
     )
 
 
