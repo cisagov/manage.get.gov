@@ -1614,7 +1614,7 @@ class DomainAdmin(ListHeaderAdmin):
         """Custom changeform implementation to pass in context information"""
         if extra_context is None:
             extra_context = {}
-        extra_context["original_object"] = self.model.objects.get(pk=object_id)
+
         # Pass in what the an extended expiration date would be for the expiration date modal
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
