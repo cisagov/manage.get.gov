@@ -586,3 +586,47 @@ Example: `cf ssh getgov-za`
 |   | Parameter                  | Description                                                                 |
 |:-:|:-------------------------- |:----------------------------------------------------------------------------|
 | 1 | **debug**                  | Increases logging detail. Defaults to False.                                |
+
+
+## Populate First Ready
+This section outlines how to run the `populate_organization_type` script.
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py populate_organization_type {domain_election_office_filename} --debug```
+
+- The domain_election_office_filename file must adhere to this format:
+    - example.gov\
+    example2.gov\
+    example3.gov
+
+Example: 
+`./manage.py populate_organization_type migrationdata/election-domains.csv --debug`
+
+### Running locally
+```docker-compose exec app ./manage.py populate_organization_type {domain_election_office_filename} --debug```
+
+Example (assuming that this is being ran from src/): 
+`docker-compose exec app ./manage.py populate_organization_type migrationdata/election-domains.csv --debug`
+
+##### Required parameters
+|   | Parameter                           | Description                                                        |
+|:-:|:------------------------------------|:-------------------------------------------------------------------|
+| 1 | **domain_election_office_filename** | A file containing every domain that is an election office.
+
+##### Optional parameters
+|   | Parameter                  | Description                                                                 |
+|:-:|:-------------------------- |:----------------------------------------------------------------------------|
+| 1 | **debug**                  | Increases logging detail. Defaults to False.    

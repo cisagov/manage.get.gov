@@ -33,7 +33,7 @@ class Command(BaseCommand):
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
         parser.add_argument(
             "domain_election_office_filename",
-            help=("A JSON file that holds the location and filenames" "of all the data files used for migrations"),
+            help=("A file that contains" " all the domains that are election offices."),
         )
 
     def handle(self, domain_election_office_filename, **kwargs):
