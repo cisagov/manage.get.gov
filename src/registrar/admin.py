@@ -1,7 +1,6 @@
 from datetime import date
 import logging
 import copy
-from django.forms.models import BaseInlineFormSet
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
@@ -1448,7 +1447,7 @@ class DomainInformationInline(admin.StackedInline):
         if title == ".gov domain":
             del fieldsets[index]
             break
-    
+
     readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
