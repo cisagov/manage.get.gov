@@ -69,6 +69,7 @@ class DomainInformationInlineForm(forms.ModelForm):
         widgets = {
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
         }
+        template = "django/admin/domain_information_change_form.html"
 
 
 class DomainRequestAdminForm(forms.ModelForm):
@@ -1440,8 +1441,8 @@ class DomainInformationInline(admin.StackedInline):
     from DomainInformationAdmin"""
 
     form = DomainInformationInlineForm
-
     model = models.DomainInformation
+    template = "django/admin/domain_information_inline_change_form.html"
 
     fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
     # remove .gov domain from fieldset
