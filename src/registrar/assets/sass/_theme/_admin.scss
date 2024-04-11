@@ -539,10 +539,11 @@ address.dja-address-contact-list {
 .dja-status-list {
     border-top: solid 1px var(--border-color);
     margin-left: 0 !important;
+    margin-top: 10px;
     padding-left: 0 !important;
-    padding-top: 15px;
+    padding-top: 10px;
     li {
-        line-height: 1.15;
+        line-height: 1.5;
         font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif !important;
     }
 }
