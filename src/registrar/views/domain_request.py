@@ -45,7 +45,7 @@ class Step(StrEnum):
     PURPOSE = "purpose"
     YOUR_CONTACT = "your_contact"
     OTHER_CONTACTS = "other_contacts"
-    ANYTHING_ELSE = "anything_else"
+    ADDITIONAL_DETAILS = "anything_else"
     REQUIREMENTS = "requirements"
     REVIEW = "review"
 
@@ -91,7 +91,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.PURPOSE: _("Purpose of your domain"),
         Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
-        Step.ANYTHING_ELSE: _("Anything else?"),
+        Step.ADDITIONAL_DETAILS: _("Additional Details"),
         Step.REQUIREMENTS: _("Requirements for operating a .gov domain"),
         Step.REVIEW: _("Review and submit your domain request"),
     }
@@ -366,7 +366,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 or self.domain_request.no_other_contacts_rationale is not None
             ),
             "anything_else": (
-                self.domain_request.anything_else is not None or self.domain_request.is_policy_acknowledged is not None
+                (self.domain_request.anything_else is not None and self.domain_request.cisa_representative_email) or self.domain_request.is_policy_acknowledged is not None
             ),
             "requirements": self.domain_request.is_policy_acknowledged is not None,
             "review": self.domain_request.is_policy_acknowledged is not None,
