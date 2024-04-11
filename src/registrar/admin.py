@@ -1,6 +1,7 @@
 from datetime import date
 import logging
 import copy
+
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
@@ -1436,9 +1437,16 @@ class DomainInformationInline(admin.StackedInline):
     We had issues inheriting from both StackedInline
     and the source DomainInformationAdmin since these
     classes conflict, so we'll just pull what we need
-    from DomainInformationAdmin"""
+    from DomainInformationAdmin
+
+    Note that `template` cannot be set through this function,
+    due to how admin.StackedInline behaves.
+
+    See `domain_change_form.html` for more information.
+    """
 
     form = DomainInformationInlineForm
+
     model = models.DomainInformation
 
     fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
