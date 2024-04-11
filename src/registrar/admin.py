@@ -805,15 +805,13 @@ class WebsiteAdmin(ListHeaderAdmin):
         """
         superuser_perm = request.user.has_perm("registrar.full_access_permission")
         analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-
+        return_path = request.GET.get('return_path')
         # Don't redirect to the website page on save if the user is an analyst.
-        # Rather, just redirect back to the same change page.
-        if analyst_perm and not superuser_perm:
-            opts = obj._meta
-            pk_value = obj._get_pk_val()
-            return HttpResponseRedirect(
-                reverse("admin:%s_%s_change" % (opts.app_label, opts.model_name), args=(pk_value,))
-            )
+        # Rather, just redirect back to the originating page.
+        if (analyst_perm and not superuser_perm) and return_path:
+            # Redirect to the return path if it exists
+            return HttpResponseRedirect(return_path)
+
         return super().response_change(request, obj)
 
 

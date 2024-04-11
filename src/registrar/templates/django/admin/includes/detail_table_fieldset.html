@@ -49,9 +49,11 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         </div>
     {% elif field.field.name == "alternative_domains" %}
         <div class="readonly">
+            {% with current_path=request.get_full_path %}
             {% for alt_domain in original.alternative_domains.all %}
-                <a href="{% url 'admin:registrar_website_change' alt_domain.id %}">{{ alt_domain }}</a>{% if not forloop.last %}, {% endif %}
+                <a href="{% url 'admin:registrar_website_change' alt_domain.id %}?{{ 'return_path='|add:current_path }}">{{ alt_domain }}</a>{% if not forloop.last %}, {% endif %}
             {% endfor %}
+            {% endwith %}
         </div>
     {% else %}
     <div class="readonly">{{ field.contents }}</div>
