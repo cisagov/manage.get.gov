@@ -1686,6 +1686,27 @@ class Domain(TimeStampedModel, DomainHelper):
             else:
                 logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
 
+    def _fix_unknown_state(self):
+        # if no security contact exists, make it
+        #PublicContact.ContactTypeChoices.SECURITY
+        if not PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY, domain=self.id).exists():
+            security_contact = self.get_default_security_contact()
+            security_contact.save()
+        # if no technical contact exists, make it
+        if not PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.TECHNICAL, domain=self.id).exists():
+            technical_contact = self.get_default_technical_contact()
+            technical_contact.save()
+        # if no registrant contact exists, make it
+        if not PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE, domain=self.id).exists():
+            administrative_contact = self.get_default_administrative_contact()
+            administrative_contact.save()
+        # leave a comment to mention why we don't need registrant
+        self.dns_needed_from_unknown()
+        # if len(self.nameservers) > 2: -> set into ready state
+        if len(self.nameservers) > 2:
+                self.ready()
+                self.save()
+    
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:
@@ -1700,6 +1721,9 @@ class Domain(TimeStampedModel, DomainHelper):
             self._update_dates(cleaned)
 
             self._cache = cleaned
+            # Somehow the state got into the edge case of UNKNOWN, and we want to remedy it
+            if self.State.UNKNOWN:
+                self._fix_unknown_state(cleaned)
 
         except RegistryError as e:
             logger.error(e)

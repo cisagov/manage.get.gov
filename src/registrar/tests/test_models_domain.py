@@ -309,6 +309,88 @@ class TestDomainCache(MockEppLib):
                 )
             self.assertEqual(context.exception.code, desired_error)
 
+    def test_fix_unknown_state(self, mock_filter):
+        with less_console_noise():
+            '''
+            1. Create a domain (check if will need to do that mock info domain thing)
+            Set that into an unknown state?
+            2. Do we want to set having no security/technical/admin contacts? Or maybe we have only one that doesn't exist
+            3. Have an assert at the end to check for all 3 of the contacts (this should already be a test mapping to public contact above?)
+            4. Check after function is called that it's in dns_needed state OR ready state?
+            '''
+            # domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            # # The contact list will initially contain objects of type 'DomainContact'
+            # # this is then transformed into PublicContact, and cache should NOT
+            # # hold onto the DomainContact object
+            # expectedUnfurledContactsList = [
+            #     common.DomainContact(contact="123", type="security"),
+            # ]
+            # expectedContactsDict = {
+            #     PublicContact.ContactTypeChoices.ADMINISTRATIVE: None,
+            #     PublicContact.ContactTypeChoices.SECURITY: "123",
+            #     PublicContact.ContactTypeChoices.TECHNICAL: None,
+            # }
+            # expectedHostsDict = {
+            #     "name": self.mockDataInfoDomain.hosts[0],
+            #     "addrs": [],  # should return empty bc fake.host.com is not a subdomain of igorville.gov
+            #     "cr_date": self.mockDataInfoHosts.cr_date,
+            # }
+
+            # # this can be changed when the getter for contacts is implemented
+            # domain._get_property("contacts")
+
+            # # check domain info is still correct and not overridden
+            # self.assertEqual(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
+            # self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
+
+            # # check contacts
+            # self.assertEqual(domain._cache["_contacts"], self.mockDataInfoDomain.contacts)
+            # # The contact list should not contain what is sent by the registry by default,
+            # # as _fetch_cache will transform the type to PublicContact
+            # self.assertNotEqual(domain._cache["contacts"], expectedUnfurledContactsList)
+            # self.assertEqual(domain._cache["contacts"], expectedContactsDict)
+
+            # # get and check hosts is set correctly
+            # domain._get_property("hosts")
+            # self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+            # self.assertEqual(domain._cache["contacts"], expectedContactsDict)
+            # # invalidate cache
+            # domain._cache = {}
+
+            # # get host
+            # domain._get_property("hosts")
+            # # Should return empty bc fake.host.com is not a subdomain of igorville.gov
+            # self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+
+            # get contacts
+            domain._get_property("contacts")
+            self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+            self.assertEqual(domain._cache["contacts"], expectedContactsDict)
+        # # Mocking PublicContact.objects.filter().exists()
+
+        # # Simulate no existing security contact
+        # mock_filter.return_value.exists.side_effect = [False, True, False]
+        # mock_get_default_security_contact = MagicMock()
+        # mock_get_default_technical_contact = MagicMock()
+        # mock_get_default_administrative_contact = MagicMock()
+
+        # with patch.object(self.domain, 'get_default_security_contact', return_value=mock_get_default_security_contact), \
+        #      patch.object(self.domain, 'get_default_technical_contact', return_value=mock_get_default_technical_contact), \
+        #      patch.object(self.domain, 'get_default_administrative_contact', return_value=mock_get_default_administrative_contact), \
+        #      patch.object(self.domain, 'dns_needed_from_unknown'), \
+        #      patch.object(self.domain, 'ready'), \
+        #      patch.object(self.domain, 'save') as mock_save:
+
+        #     # Call the method to test
+        #     self.domain._fix_unknown_state()
+
+        #     # Assertions
+        #     mock_get_default_security_contact.assert_called_once()
+        #     mock_get_default_technical_contact.assert_not_called()
+        #     mock_get_default_administrative_contact.assert_called_once()
+        #     self.domain.dns_needed_from_unknown.assert_called_once()
+        #     self.domain.ready.assert_called_once()
+        #     mock_save.assert_called_once()
 
 class TestDomainCreation(MockEppLib):
     """Rule: An approved domain request must result in a domain"""
