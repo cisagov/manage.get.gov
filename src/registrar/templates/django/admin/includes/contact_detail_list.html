@@ -1,6 +1,6 @@
 {% load i18n static %}
 
-<address class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} dja-address-contact-list">
+<address class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} {% if user.title or user.contact.title or user.email or user.contact.email or user.phone or user.contact.phone %}margin-bottom-1{% endif %} dja-address-contact-list">
 
     {% if show_formatted_name %}
         {% if contact.get_formatted_name %}
