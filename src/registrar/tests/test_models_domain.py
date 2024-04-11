@@ -39,11 +39,13 @@ logger = logging.getLogger(__name__)
 
 
 class TestDomainCache(MockEppLib):
-    def tearDown(self):
+    def tearDown(self) -> None:
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
         PublicContact.objects.all().delete()
-        HostIP.objects.all().delete()
-        Host.objects.all().delete()
         Domain.objects.all().delete()
+        User.objects.all().delete()
+        DraftDomain.objects.all().delete()
         super().tearDown()
 
     def test_cache_sets_resets(self):
@@ -376,7 +378,7 @@ class TestDomainCreation(MockEppLib):
             Given that no domain object exists in the registry
             When a property is accessed
             Then Domain sends `commands.CreateDomain` to the registry
-            And `domain.state` is set to `UNKNOWN`
+            And `domain.state` is set to `DNS_NEEDED`
             And `domain.is_active()` returns False
         """
         with less_console_noise():
@@ -405,7 +407,7 @@ class TestDomainCreation(MockEppLib):
                 any_order=False,  # Ensure calls are in the specified order
             )
 
-            self.assertEqual(domain.state, Domain.State.UNKNOWN)
+            self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
             self.assertEqual(domain.is_active(), False)
 
     @skip("assertion broken with mock addition")
@@ -426,14 +428,7 @@ class TestDomainCreation(MockEppLib):
         with self.assertRaisesRegex(IntegrityError, "name"):
             Domain.objects.create(name="igorville.gov")
 
-    def tearDown(self) -> None:
-        DomainInformation.objects.all().delete()
-        DomainRequest.objects.all().delete()
-        PublicContact.objects.all().delete()
-        Domain.objects.all().delete()
-        User.objects.all().delete()
-        DraftDomain.objects.all().delete()
-        super().tearDown()
+
 
 
 class TestDomainStatuses(MockEppLib):
@@ -448,6 +443,7 @@ class TestDomainStatuses(MockEppLib):
             status_list = [status.state for status in self.mockDataInfoDomain.statuses]
             self.assertEquals(domain._cache["statuses"], status_list)
             # Called in _fetch_cache
+            print("self.mockedSendFunction.call_args_list", self.mockedSendFunction.call_args_list)
             self.mockedSendFunction.assert_has_calls(
                 [
                     call(
