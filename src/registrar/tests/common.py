@@ -1261,29 +1261,6 @@ class MockEppLib(TestCase):
         ],
     )
 
-    readyDomain = fakedEppObject(
-        "readydomain.com",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
-        contacts=[
-            common.DomainContact(
-                contact="securityContact",
-                type=PublicContact.ContactTypeChoices.SECURITY,
-            ),
-            common.DomainContact(
-                contact="technicalContact",
-                type=PublicContact.ContactTypeChoices.TECHNICAL,
-            ),
-            common.DomainContact(
-                contact="adminContact",
-                type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
-            ),
-        ],
-        hosts=[
-            "ns1.readydomain.com",
-            "ns2.readydomain.com",
-        ],
-    )
-
     infoDomainCheckHostIPCombo = fakedEppObject(
         "nameserversubdomain.gov",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
@@ -1495,7 +1472,6 @@ class MockEppLib(TestCase):
             "adomain2.gov": (self.InfoDomainWithVerisignSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
             "justnameserver.com": (self.justNameserver, None),
-            "readydomain.com": (self.readyDomain, None),
             "meoward.gov": (self.mockDataInfoDomainSubdomain, None),
             "meow.gov": (self.mockDataInfoDomainSubdomainAndIPAddress, None),
             "fakemeow.gov": (self.mockDataInfoDomainNotSubdomainNoIP, None),
