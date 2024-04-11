@@ -27,6 +27,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 </dl>
             </div>
         {% endif %}
+    {% elif field.field.name == "requested_domain" %}
+        {% with current_path=request.get_full_path %}
+        <a class="margin-top-05 padding-top-05" href="{% url 'admin:registrar_draftdomain_change' original.requested_domain.id %}?{{ 'return_path='|add:current_path }}">{{ original.requested_domain }}</a>
+        {% endwith%}
     {% elif field.field.name == "current_websites" %}
         {% comment %}
         The "website" model is essentially just a text field.
