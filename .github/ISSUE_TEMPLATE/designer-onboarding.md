@@ -26,7 +26,7 @@ Welcome to the .gov team! We're excited to have you here. Please follow the step
 - [ ] FOR FEDERAL EMPLOYEES: Create a [Google workspace enterprise account](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.xowzg9w0qlis) for CISA.
 - [ ] Get access to our [Project Folder](https://drive.google.com/drive/folders/1qkoFQBlzXA7axi9CZ_OBhlJqRcqlNfpW?usp=drive_link) on Google Drive.
   - [ ] Explore the folders and docs. Designers interface with the Product Design, Content, and Research folders most often.
-- [ ] Make sure you have been invited to our [team meetings](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.h62kzew057p1) on Google Meet.
+- [ ] Make sure you have been invited to our [team meetings](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.emgtp2hgvabr) on Google Meet.
 - [ ] Review our [design tools](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.aprurp3z4gmv).
 - [ ] Accept invitation to our [Figma workspace](https://www.figma.com/files/1287135731043703282/team/1299882813146449644).
 - [ ] Follow the steps in [preparing for your sandbox](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.au66hq5e0l8s) section on the onboarding doc.
@@ -54,7 +54,7 @@ By following the steps, you should have access / been added to the following:
 ### Steps for the onboarder
 - [ ] Make sure onboardee is given an invitation to our Slack workspace
 - [ ] Add onboardee to dotgov Slack channels
-- [ ] Add onboardee is added to Project Folder as a "Contributor" (or if you do not have permissions, confirm with Cameron)
+- [ ] Add onboardee to Project Folder as a "Contributor" (or if you do not have permissions, confirm with Cameron)
   - If onboardee if a federal employee, add them as a "Content Manager" instead
 - [ ] Once onboardee has been granted a Figma license, add them as an editor to the Figma team workspace, Otherwise, you can add them as a viewer in the meantime. 
 - [ ] Add onboardee to our team meetings
