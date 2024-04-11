@@ -766,3 +766,54 @@ function toggleTwoDomElements(ele1, ele2, index) {
   }
 })();
 
+
+/**
+ * An IIFE that listens to the nameservers form fields and triggers a delete field when a repeatable form is blank, there are at least 2 other filled forms and we focus out of a field
+ *
+ */
+(function namerserversFormListener(fieldset) {
+  // Cheaper test
+  let isNameserversForm = document.querySelector(".nameservers-form");
+
+  function handleInputChange(currentInput, repeatableForm) {
+
+    // Get the other input in repeatableForm
+    let inputs = repeatableForm.querySelectorAll(".usa-class");
+    let otherInput = Array.from(inputs).find(input => input !== currentInput);
+    let nonBlankCount = 0;
+
+    inputs.forEach(function (input) {
+      if (input.value != '') {
+        // Exit out of this function if the input is blank on blur AND the sister input does not contain a value
+        nonBlankCount++;
+      }
+    });
+    
+    if (nonBlankCount >= 2 && currentInput.value === '' && otherInput.value === '') {
+      currentInput.addEventListener('blur', function () {
+        // removeForm(repeatableForm);
+        console.log('should remove');
+        // Remove the blur event listener
+        currentInput.removeEventListener('blur', blurHandler);
+      });
+    }
+
+    currentInput.removeEventListener('blur', blurHandler);
+  
+  }
+
+  if (isNameserversForm) {
+    let repeatableForms = document.querySelectorAll(".repeatable-form");
+
+    // Add event listener to each field
+    repeatableForms.forEach(function (repeatableForm) {
+      // get child inputs with class .usa-class
+      let inputs = repeatableForm.querySelectorAll(".usa-class");
+
+      inputs.forEach(function (input) {
+        input.addEventListener('change', handleInputChange(input, repeatableForm));
+      });
+    });
+
+  }
+})();
