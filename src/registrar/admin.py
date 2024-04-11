@@ -1627,12 +1627,8 @@ class DomainAdmin(ListHeaderAdmin):
                 # No expiration date was found. Return none.
                 extra_context["extended_expiration_date"] = None
                 return super().changeform_view(request, object_id, form_url, extra_context)
-
-            if curr_exp_date < date.today():
-                extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
-            else:
-                new_date = domain.registry_expiration_date + relativedelta(years=years_to_extend_by)
-                extra_context["extended_expiration_date"] = new_date
+            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
+            extra_context["extended_expiration_date"] = new_date
         else:
             extra_context["extended_expiration_date"] = None
 
