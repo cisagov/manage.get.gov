@@ -1686,27 +1686,42 @@ class Domain(TimeStampedModel, DomainHelper):
             else:
                 logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
 
-    def _fix_unknown_state(self):
-        # if no security contact exists, make it
-        #PublicContact.ContactTypeChoices.SECURITY
-        if not PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY, domain=self.id).exists():
+    def _fix_unknown_state(self, cleaned):
+        try:
+            self._add_missing_contacts(cleaned)
+        except Exception as e:
+            logger.error(
+                "%s couldn't _add_missing_contacts, error was %s."
+                "Domain will still be in UNKNOWN state." % (self.name, e)
+            )
+        if len(self.nameservers) >= 2:
+            self.ready()
+            self.save()
+
+    @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
+    def _add_missing_contacts(self, cleaned):
+        """
+        This function aims to add contacts (SECURITY, TECHNICAL, and/or ADMINISTRATIVE)
+        if they are missing, AND switch the state to DNS_NEEDED from UNKNOWN (if it
+        is in an UNKNOWN state, that is an error state)
+        Note: The transition state change happens at the end of the function
+        """
+        if not PublicContact.objects.filter(
+            contact_type=PublicContact.ContactTypeChoices.SECURITY, domain=self.id
+        ).exists():
             security_contact = self.get_default_security_contact()
             security_contact.save()
-        # if no technical contact exists, make it
-        if not PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.TECHNICAL, domain=self.id).exists():
+        if not PublicContact.objects.filter(
+            contact_type=PublicContact.ContactTypeChoices.TECHNICAL, domain=self.id
+        ).exists():
             technical_contact = self.get_default_technical_contact()
             technical_contact.save()
-        # if no registrant contact exists, make it
-        if not PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE, domain=self.id).exists():
+        if not PublicContact.objects.filter(
+            contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE, domain=self.id
+        ).exists():
             administrative_contact = self.get_default_administrative_contact()
             administrative_contact.save()
-        # leave a comment to mention why we don't need registrant
-        self.dns_needed_from_unknown()
-        # if len(self.nameservers) > 2: -> set into ready state
-        if len(self.nameservers) > 2:
-                self.ready()
-                self.save()
-    
+
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:
@@ -1721,10 +1736,9 @@ class Domain(TimeStampedModel, DomainHelper):
             self._update_dates(cleaned)
 
             self._cache = cleaned
-            # Somehow the state got into the edge case of UNKNOWN, and we want to remedy it
-            if self.State.UNKNOWN:
-                self._fix_unknown_state(cleaned)
 
+            if self.state == self.State.UNKNOWN:
+                self._fix_unknown_state(cleaned)
         except RegistryError as e:
             logger.error(e)
 
