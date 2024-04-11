@@ -1,9 +1,9 @@
 {% load static url_helpers %}
 
-{# TODO (future ticket?): create a template that allows us to easily display nested forms.  
+<!-- TODO (future ticket?): create a template that allows us to easily display nested forms.  
 It is a little complex because we will have to formulate how to aggregate form pairings. 
 (eg. yes/no radio forms plus the information they toggle need to be linked somehow 
-and condense down into one subsection)}
+and condense down into one subsection) -->
 
 <section class="summary-item margin-top-3">
     <hr class="" aria-hidden="true" />
@@ -19,7 +19,7 @@ and condense down into one subsection)}
         Additional Details
         </h2>
       
-        {% if domainRequest %}
+        {% if domainRequest is not none %}
         <dl class="usa-list usa-list--unstyled margin-top-0">
             <dt>
             CISA regions representative

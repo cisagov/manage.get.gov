@@ -644,12 +644,14 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Anything else?",
+        verbose_name="Additional Details",
     )
 
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
         db_index=True,
+        verbose_name="CISA region representative",
     )
 
     is_policy_acknowledged = models.BooleanField(
@@ -1045,6 +1047,9 @@ class DomainRequest(TimeStampedModel):
     def has_cisa_representative(self) -> bool:
         """Does this domain request have cisa representative?"""
         return self.cisa_representative_email != "" and self.cisa_representative_email is not None
+    
+    def has_additional_details(self) -> bool:
+        return self.has_anything_else_text() or self.has_cisa_representative()
 
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
