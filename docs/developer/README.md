@@ -79,7 +79,6 @@ The endpoint /admin can be used to view and manage site content, including but n
 
 While on production (the sandbox referred to as `stable`), an existing analyst or full-access user typically grants access /admin as part of onboarding ([see these instructions](../django-admin/roles.md)), doing this for all development sandboxes is very time consuming. Instead, to get access to /admin on all development sandboxes and when developing code locally, refer to the following sections depending on what level of user access you desire.
 
-Note: this process where a team member gets analyst/superuser permission on all non-production sandboxes is often called "Adding to fixtures".
 
 ### Adding full-access user to /admin
 
@@ -88,7 +87,7 @@ Note: this process where a team member gets analyst/superuser permission on all 
 1. Login via login.gov
 2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that your UUID is not authorized (it shows a very long string, this is your UUID). Copy that UUID for use in 4.
-4. (Designers)- message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Please see the "Adding an Analyst to /admin" section below to complete similiar steps if you also desire an `analyst` user account. Engineers will handle the remaining steps for designers, stop here.
+4. (Designers) Message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Please see the "Adding an Analyst to /admin" section below to complete similiar steps if you also desire an `analyst` user account. Engineers will handle the remaining steps for designers, stop here.
 
 (Engineers) In src/registrar/fixtures_users.py add to the `ADMINS` list in that file by adding your UUID as your username along with your first and last name. See below:
 
@@ -103,8 +102,8 @@ Note: this process where a team member gets analyst/superuser permission on all 
  ]
 ```
 
-5. (Engineer only) In the browser, navigate to /admin. To verify that all is working correctly, under "domain requests" you should see fake domains with various fake statuses.
-6. (Engineer only) Add an optional email key/value pair
+5. (Engineers) In the browser, navigate to /admin. To verify that all is working correctly, under "domain requests" you should see fake domains with various fake statuses.
+6. (Engineers) Add an optional email key/value pair
 
 ### Adding an analyst-level user to /admin
 Analysts are a variant of the admin role with limited permissions. The process for adding an Analyst is much the same as adding an admin:
@@ -112,9 +111,9 @@ Analysts are a variant of the admin role with limited permissions. The process f
 1. Login via login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
 2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4 (this will be a different UUID than the one obtained from creating an admin)
-4. (Designers)- message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Please see the "Adding an Analyst to /admin" section below to complete similiar steps if you also desire an `analyst` user account. Engineers will handle the remaining steps for designers, stop here.
+4. (Designers) Message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Engineers will handle the remaining steps for designers, stop here.
 
-(Engineers) In src/registrar/fixtures_users.py add to the `STAFF` list in that file by adding your UUID as your username along with your first and last name. See below:
+5. (Engineers) In src/registrar/fixtures_users.py add to the `STAFF` list in that file by adding your UUID as your username along with your first and last name. See below:
 
 ```
  STAFF = [
@@ -127,8 +126,8 @@ Analysts are a variant of the admin role with limited permissions. The process f
  ]
 ```
 
-5. (Engineer only) In the browser, navigate to /admin. To verify that all is working correctly, verify that you can only see a sub-section of the modules and some are set to view-only.
-6. (Engineer only) Add an optional email key/value pair
+5. (Engineers) In the browser, navigate to /admin. To verify that all is working correctly, verify that you can only see a sub-section of the modules and some are set to view-only.
+6. (Engineers) Add an optional email key/value pair
 
 Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name, or use a completely different first/last name to avoid confusion. Example: `Bob-Analyst`
 
