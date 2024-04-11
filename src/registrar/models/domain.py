@@ -1701,7 +1701,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
     def _add_missing_contacts(self, cleaned):
         """
-        This function aims to add contacts (SECURITY, TECHNICAL, and/or ADMINISTRATIVE)
+        _add_missing_contacts: Add contacts (SECURITY, TECHNICAL, and/or ADMINISTRATIVE)
         if they are missing, AND switch the state to DNS_NEEDED from UNKNOWN (if it
         is in an UNKNOWN state, that is an error state)
         Note: The transition state change happens at the end of the function
