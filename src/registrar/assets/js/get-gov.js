@@ -788,17 +788,20 @@ function toggleTwoDomElements(ele1, ele2, index) {
         nonBlankCount++;
       }
     });
+
+    // Define the blur handler function outside of the conditional statement
+    const blurHandler = function () {
+      // removeForm(repeatableForm);
+      console.log('should remove');
+    };
     
     if (nonBlankCount >= 2 && currentInput.value === '' && otherInput.value === '') {
-      currentInput.addEventListener('blur', function () {
-        // removeForm(repeatableForm);
-        console.log('should remove');
-        // Remove the blur event listener
-        currentInput.removeEventListener('blur', blurHandler);
-      });
+      // Add the blur event listener when the conditions are met
+      currentInput.addEventListener('blur', blurHandler);
+    } else {
+      // One of the conditions is no longer true, so remove the event listener
+      currentInput.removeEventListener('blur', blurHandler);
     }
-
-    currentInput.removeEventListener('blur', blurHandler);
   
   }
 
