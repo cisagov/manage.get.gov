@@ -144,9 +144,9 @@ class Command(BaseCommand):
 
     def update_domain_informations(self, domain_informations, debug):
         """
-        Updates the organization_type for a list of DomainInformation objects using the `sync_organization_type` function.
+        Updates the organization_type for a list of DomainInformation objects
+        using the `sync_organization_type` function.
         Results are then logged.
-        Debug mode provides detailed logging.
         """
         for info in domain_informations:
             try:
