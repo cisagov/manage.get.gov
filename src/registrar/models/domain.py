@@ -1688,6 +1688,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _fix_unknown_state(self, cleaned):
         try:
+            print("!! In _fix_unknown_state -> running _add_missing_contacts function")
             self._add_missing_contacts(cleaned)
         except Exception as e:
             logger.error(
@@ -1695,6 +1696,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 "Domain will still be in UNKNOWN state." % (self.name, e)
             )
         if len(self.nameservers) >= 2:
+            print("!! In _fix_unknown_state -> more than 2 nameservers so we in ready state")
             self.ready()
             self.save()
 
@@ -1706,6 +1708,7 @@ class Domain(TimeStampedModel, DomainHelper):
         is in an UNKNOWN state, that is an error state)
         Note: The transition state change happens at the end of the function
         """
+        print("!! In _add_missing_contacts function")
         if not PublicContact.objects.filter(
             contact_type=PublicContact.ContactTypeChoices.SECURITY, domain=self.id
         ).exists():
@@ -1721,6 +1724,7 @@ class Domain(TimeStampedModel, DomainHelper):
         ).exists():
             administrative_contact = self.get_default_administrative_contact()
             administrative_contact.save()
+        print("!! End of _add_missing_contacts function and changing to DNS_NEEDED")
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
@@ -1738,6 +1742,7 @@ class Domain(TimeStampedModel, DomainHelper):
             self._cache = cleaned
 
             if self.state == self.State.UNKNOWN:
+                print("!! In _fetch_cache bc it has an unknown state")
                 self._fix_unknown_state(cleaned)
         except RegistryError as e:
             logger.error(e)
