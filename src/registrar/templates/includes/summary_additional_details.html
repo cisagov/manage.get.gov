@@ -1,0 +1,50 @@
+{% load static url_helpers %}
+
+{# TODO (future ticket?): create a template that allows us to easily display nested forms.  
+It is a little complex because we will have to formulate how to aggregate form pairings. 
+(eg. yes/no radio forms plus the information they toggle need to be linked somehow 
+and condense down into one subsection)}
+
+<section class="summary-item margin-top-3">
+    <hr class="" aria-hidden="true" />
+    <div class="display-flex flex-justify">
+      <div>
+        <h2
+        class="summary-item__title
+              font-sans-md
+              text-primary-dark text-semibold
+              margin-top-0 margin-bottom-05
+              padding-right-1"
+        >
+        Additional Details
+        </h2>
+      
+        {% if domainRequest %}
+        <dl class="usa-list usa-list--unstyled margin-top-0">
+            <dt>
+            CISA regions representative
+            </dt>
+            <dd>
+                {% if domainRequest.has_cisa_representative %}
+                    domainRequest.cisa_representative_email
+                {% else %}
+                    (none)
+                {% endif %}
+            </dd>
+            <dt>
+            Anything else
+            </dt>
+            <dd>
+                {% if domainRequest.has_anything_else_text %}
+                    domainRequest.anything_else
+                {% else %}
+                    No
+                {% endif %}
+            </dd>
+        </dl>
+        {% else %}
+        ERROR Please contact technical support/dev
+        {% endif %}
+      </div> 
+    </div>
+  </section>

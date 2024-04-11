@@ -115,8 +115,8 @@
     {% else %}
       {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level %}
     {% endif %}
-    
-    {% include "includes/summary_item.html" with title='Anything else?' value=DomainRequest.anything_else|default:"No" heading_level=heading_level %}
+
+    {% include "includes/summary_additional_details.html" with domainRequest=DomainRequest %}
 
   {% endwith %}
   </div>

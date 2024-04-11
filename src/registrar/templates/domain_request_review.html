@@ -156,10 +156,7 @@
 
 
         {% if step == Step.ADDITIONAL_DETAILS %}
-          {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% with title=form_titles|get_item:step value=domain_request.anything_else|default:"No" %}
-            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
-          {% endwith %}
+          {% include "includes/summary_additional_details.html" with domainRequest=DomainRequest %}
         {% endif %}
 
 
