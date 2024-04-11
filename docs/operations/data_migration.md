@@ -588,7 +588,7 @@ Example: `cf ssh getgov-za`
 | 1 | **debug**                  | Increases logging detail. Defaults to False.                                |
 
 
-## Populate First Ready
+## Populate Organization type
 This section outlines how to run the `populate_organization_type` script.
 
 ### Running on sandboxes
