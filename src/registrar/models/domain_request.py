@@ -1037,14 +1037,14 @@ class DomainRequest(TimeStampedModel):
     def has_other_contacts(self) -> bool:
         """Does this domain request have other contacts listed?"""
         return self.other_contacts.exists()
-    
+
     def has_anything_else_text(self) -> bool:
         """Does this domain request have an 'anything else?' entry"""
-        return self.anything_else != "" and self.anything_else != None #TODO-NL: how to handle falsy strings again?
-    
+        return self.anything_else != "" and self.anything_else is not None
+
     def has_cisa_representative(self) -> bool:
         """Does this domain request have cisa representative?"""
-        return self.cisa_representative_email != "" and self.cisa_representative_email != None
+        return self.cisa_representative_email != "" and self.cisa_representative_email is not None
 
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?

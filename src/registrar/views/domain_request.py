@@ -366,7 +366,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 or self.domain_request.no_other_contacts_rationale is not None
             ),
             "anything_else": (
-                (self.domain_request.anything_else is not None and self.domain_request.cisa_representative_email) or self.domain_request.is_policy_acknowledged is not None
+                (self.domain_request.anything_else is not None and self.domain_request.cisa_representative_email)
+                or self.domain_request.is_policy_acknowledged is not None
             ),
             "requirements": self.domain_request.is_policy_acknowledged is not None,
             "review": self.domain_request.is_policy_acknowledged is not None,
@@ -580,7 +581,8 @@ class OtherContacts(DomainRequestWizard):
             all_forms_valid = False
         return all_forms_valid
 
-#DONE-NL: rename this to "Additional Details" (note: this is a find-replace job. VS will not refactor properly)
+
+# DONE-NL: rename this to "Additional Details" (note: this is a find-replace job. VS will not refactor properly)
 class AdditionalDetails(DomainRequestWizard):
 
     # TODO-NL: Delete this old (original code for anything else)
@@ -590,7 +592,12 @@ class AdditionalDetails(DomainRequestWizard):
     template_name = "domain_request_additional_details.html"
     # OLD:  forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
     # TODO-NL: (refactor) -- move form hookups into respective areas
-    forms = [forms.CisaRepresentativeYesNoForm, forms.CisaRepresentativeForm, forms.AdditionalDetailsYesNoForm, forms.AdditionalDetailsForm]
+    forms = [
+        forms.CisaRepresentativeYesNoForm,
+        forms.CisaRepresentativeForm,
+        forms.AdditionalDetailsYesNoForm,
+        forms.AdditionalDetailsForm,
+    ]
 
     # TODO-NL: (refactor) -- move validation into respective areas
     def is_valid(self, forms: list) -> bool:
@@ -605,7 +612,7 @@ class AdditionalDetails(DomainRequestWizard):
         anything_else_yes_no_form = forms[2]
         anything_else_form = forms[3]
 
-        # ------- Validate cisa representative ------- 
+        # ------- Validate cisa representative -------
         cisa_rep_portion_is_valid = True
         # test first for yes_no_form validity
         if cisa_representative_email_yes_no_form.is_valid():
@@ -621,7 +628,6 @@ class AdditionalDetails(DomainRequestWizard):
             cisa_representative_email_form.mark_form_for_deletion()
             cisa_rep_portion_is_valid = False
 
-        
         # ------- Validate anything else -------
         anything_else_portion_is_valid = True
         # test first for yes_no_form validity
@@ -637,7 +643,6 @@ class AdditionalDetails(DomainRequestWizard):
             # mark the anything_else_form for deletion
             anything_else_form.mark_form_for_deletion()
             anything_else_portion_is_valid = False
-
 
         # ------- Return combined validation result -------
         all_forms_valid = cisa_rep_portion_is_valid and anything_else_portion_is_valid

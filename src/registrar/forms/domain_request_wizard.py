@@ -778,9 +778,11 @@ OtherContactsFormSet = forms.formset_factory(
     formset=BaseOtherContactsFormSet,
 )
 
+
 class BaseDeletableRegistrarForm(RegistrarForm):
     """Adds special validation and delete functionality.
     Used by forms that are tied to a Yes/No form."""
+
     def __init__(self, *args, **kwargs):
         self.form_data_marked_for_deletion = False
         super().__init__(*args, **kwargs)
@@ -830,6 +832,7 @@ class BaseDeletableRegistrarForm(RegistrarForm):
                 setattr(obj, name, value)
         obj.save()
 
+
 class NoOtherContactsForm(BaseDeletableRegistrarForm):
     no_other_contacts_rationale = forms.CharField(
         required=True,
@@ -845,11 +848,13 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
         error_messages={"required": ("Rationale for no other employees is required.")},
     )
 
+
 class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     cisa_representative_email = forms.EmailField(
         required=False,
-        label="Are you working with a CISA representative?", #TODO-NL: (design check) - is this the right label?
+        label="Are you working with a CISA representative?",  # TODO-NL: (design check) - is this the right label?
     )
+
 
 class CisaRepresentativeYesNoForm(RegistrarForm):
     def __init__(self, *args, **kwargs):
@@ -871,7 +876,7 @@ class CisaRepresentativeYesNoForm(RegistrarForm):
             initial=initial_value,
             widget=forms.RadioSelect,
             error_messages={
-                "required": "This question is required.", 
+                "required": "This question is required.",
             },
         )
 
@@ -888,6 +893,7 @@ class AdditionalDetailsForm(BaseDeletableRegistrarForm):
             )
         ],
     )
+
 
 class AdditionalDetailsYesNoForm(RegistrarForm):
     def __init__(self, *args, **kwargs):
@@ -909,9 +915,10 @@ class AdditionalDetailsYesNoForm(RegistrarForm):
             initial=initial_value,
             widget=forms.RadioSelect,
             error_messages={
-                "required": "This question is required.", #TODO-NL: (design check) - is this required?
+                "required": "This question is required.",  # TODO-NL: (design check) - is this required?
             },
         )
+
 
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
