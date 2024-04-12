@@ -181,6 +181,9 @@ class BaseNameserverFormset(forms.BaseFormSet):
         for index, form in enumerate(self.forms):
             if form.cleaned_data:
                 value = form.cleaned_data["server"]
+                # We need to make sure not to trigger the duplicate error in case the first and second nameservers are empty
+                # If there are enough records in the formset, that error is an unecessary blocker. If there aren't, the required
+                # error will block the submit.
                 if value in data and not (form.cleaned_data.get("server", "").strip() == '' and index == 1):
                     form.add_error(
                         "server",
