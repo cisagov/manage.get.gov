@@ -36,26 +36,6 @@
     {{ block.super }}
 {% endblock %}
 
-{% comment %}
-The custom inline definition MUST be passed in this way.
-This is because we can't pass in additional context information from this scope
-unless by overriding a bunch of base formset functions. 
-In this version of Django, inlines are handled much differently on the backend when there isn't a clear
-reason as to why. It appears to be that they simply haven't been updated for a while.
-
-Alternatively, we could create a second "duplicate" detail_table_fieldset.html file (or many if statements),
-but we lose out on centralizing all this logic inside of one file. The tradeoff here seems to be between
-code duplication vs not overriding the default.
-
-As a consequence, this means that we can't override the template on this inline by 
-passing in template="path/to/file". We get much more control this way.
-{% endcomment %}
-{% block inline_field_sets %}
-    {% for inline_admin_formset in inline_admin_formsets %}
-        {% include "django/admin/includes/domain_info_inline_stacked.html" with original_object=original.domain_info%}
-    {% endfor %}
-{% endblock %}
-
 {% block submit_buttons_bottom %}
     {% comment %}
     Modals behave very weirdly in django admin.

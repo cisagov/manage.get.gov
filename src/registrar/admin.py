@@ -1438,15 +1438,10 @@ class DomainInformationInline(admin.StackedInline):
     and the source DomainInformationAdmin since these
     classes conflict, so we'll just pull what we need
     from DomainInformationAdmin
-
-    Note that `template` cannot be set through this function,
-    due to how admin.StackedInline behaves.
-
-    See `domain_change_form.html` for more information.
     """
 
     form = DomainInformationInlineForm
-
+    template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
 
     fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
@@ -1623,11 +1618,14 @@ class DomainAdmin(ListHeaderAdmin):
         if extra_context is None:
             extra_context = {}
 
-        # Pass in what the an extended expiration date would be for the expiration date modal
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
-            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
 
+            # Use in the custom contact view
+            extra_context["original_object"] = domain.domain_info
+
+            # Pass in what the an extended expiration date would be for the expiration date modal
+            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
             try:
                 curr_exp_date = domain.registry_expiration_date
             except KeyError:
