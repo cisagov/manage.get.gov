@@ -530,7 +530,7 @@ function hideDeletedForms() {
   let isDotgovDomain = document.querySelector(".dotgov-domain-form");
   // The Nameservers formset features 2 required and 11 optionals
   if (isNameserversForm) {
-    cloneIndex = 2;
+    cloneIndex = 0;
     formLabel = "Name server";
   // DNSSEC: DS Data
   } else if (isDsDataForm) {
@@ -630,6 +630,13 @@ function hideDeletedForms() {
           
         } else if (input.type === "checkbox" || input.type === "radio") {
           input.checked = false; // Uncheck checkboxes and radios
+        }
+
+        if (isNameserversForm) {
+          let currentInput = input;
+          let newFormInputs = newForm.querySelectorAll(".usa-input");
+          let otherInput = Array.from(newFormInputs).find(input => input !== currentInput);
+          currentInput.addEventListener('input', () => handleInputChange(currentInput, otherInput));
         }
       });
 
@@ -767,6 +774,56 @@ function toggleTwoDomElements(ele1, ele2, index) {
 })();
 
 
+function onBlurHandler(e) {
+  console.log('invoke onBlurHandler');
+  removeForm(e, "Name server", true, document.querySelector("#add-form"), "form");
+}
+
+function onKeydownHandler(e, input) {
+  if (e.key === 'Enter') {
+    // Trigger blur event on the currently focused input
+    input.blur();
+  }
+}
+
+function handleInputChange(currentInput, otherInput) {
+
+  // Let's see how many filled-in reapeatable-form we have
+  let nonBlankCount = 0;
+  let repeatableForms = document.querySelectorAll(".repeatable-form");
+
+  repeatableForms.forEach(function (repeatableForm) {
+    let inputs = repeatableForm.querySelectorAll(".usa-input");
+    let input_1 = inputs[0];
+    let input_2 = inputs[1];
+
+    if (input_1.value !== '' || input_2.value !== '') {
+      nonBlankCount++;
+    }
+  });
+  
+  console.log('nonBlankCount ' + nonBlankCount)
+  console.log('currentInput ' + currentInput.value)
+  console.log('otherInput ' + otherInput.value)
+
+  // If there are enough filled forms and both input in our current form are blanked out, listen to blur
+  // Remove the form on blur
+  if (nonBlankCount >= 2 && currentInput.value === '' && otherInput.value === '') {
+    console.log('add blur listener')
+    currentInput.addEventListener('blur', onBlurHandler);
+    currentInput.addEventListener('keydown', (event) => {
+      onKeydownHandler(currentInput, event);
+    });
+  } else {
+    // One of the conditions is no longer true, so remove the event listener
+    console.log('remove blur listener');
+    currentInput.removeEventListener('blur', onBlurHandler);
+    currentInput.removeEventListener('keydown', (event) => {
+      onKeydownHandler(currentInput, event);
+    });
+  }
+}
+
 /**
  * An IIFE that listens to the nameservers form fields and triggers a delete field when a repeatable form is blank, there are at least 2 other filled forms and we focus out of a field
  *
@@ -774,47 +831,21 @@ function toggleTwoDomElements(ele1, ele2, index) {
 (function namerserversFormListener(fieldset) {
   // Cheaper test
   let isNameserversForm = document.querySelector(".nameservers-form");
-
-  function handleInputChange(currentInput, repeatableForm) {
-
-    // Get the other input in repeatableForm
-    let inputs = repeatableForm.querySelectorAll(".usa-class");
-    let otherInput = Array.from(inputs).find(input => input !== currentInput);
-    let nonBlankCount = 0;
-
-    inputs.forEach(function (input) {
-      if (input.value != '') {
-        // Exit out of this function if the input is blank on blur AND the sister input does not contain a value
-        nonBlankCount++;
-      }
-    });
-
-    // Define the blur handler function outside of the conditional statement
-    const blurHandler = function () {
-      // removeForm(repeatableForm);
-      console.log('should remove');
-    };
-    
-    if (nonBlankCount >= 2 && currentInput.value === '' && otherInput.value === '') {
-      // Add the blur event listener when the conditions are met
-      currentInput.addEventListener('blur', blurHandler);
-    } else {
-      // One of the conditions is no longer true, so remove the event listener
-      currentInput.removeEventListener('blur', blurHandler);
-    }
-  
-  }
+  let nameserverSubmit = document.querySelector("#nameserverSubmit")
 
   if (isNameserversForm) {
     let repeatableForms = document.querySelectorAll(".repeatable-form");
 
-    // Add event listener to each field
     repeatableForms.forEach(function (repeatableForm) {
-      // get child inputs with class .usa-class
-      let inputs = repeatableForm.querySelectorAll(".usa-class");
 
-      inputs.forEach(function (input) {
-        input.addEventListener('change', handleInputChange(input, repeatableForm));
+      // get inputs for this repeatable-form
+      let inputs = repeatableForm.querySelectorAll(".usa-input");
+
+      inputs.forEach(function (currentInput) {
+        // Makes sense to grab this guy here for passing to handleInputChange
+        let otherInput = Array.from(inputs).find(input => input !== currentInput);
+
+        currentInput.addEventListener('input', () => handleInputChange(currentInput, otherInput));
       });
     });
 

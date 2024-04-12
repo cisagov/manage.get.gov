@@ -145,12 +145,22 @@ class DomainNameserverForm(forms.Form):
 
 
 class BaseNameserverFormset(forms.BaseFormSet):
+
     def clean(self):
         """
         Check for duplicate entries in the formset.
         """
         if any(self.errors):
             # Don't bother validating the formset unless each form is valid on its own
+            print(f'self.errors {self.errors}')
+
+            # loop through the errors
+            # If errors[0] or errors[1] = At least two name servers are required
+                # loop through the forms. Are there at least 2 servers with value not None
+                    # remove the At least two name servers are required error(s)
+                    # form.errors.pop(server, "required")
+
+
             return
 
         data = []
