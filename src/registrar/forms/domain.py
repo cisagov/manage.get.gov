@@ -83,24 +83,33 @@ class DomainNameserverForm(forms.Form):
         # after clean_fields.  it is used to determine form level errors.
         # is_valid is typically called from view during a post
         cleaned_data = super().clean()
+
         self.clean_empty_strings(cleaned_data)
+
         server = cleaned_data.get("server", "")
-        # remove ANY spaces in the server field
-        server = server.replace(" ", "")
-        # lowercase the server
-        server = server.lower()
+        server = server.replace(" ", "").lower()
         cleaned_data["server"] = server
-        ip = cleaned_data.get("ip", None)
-        # remove ANY spaces in the ip field
+
+        ip = cleaned_data.get("ip", "")
         ip = ip.replace(" ", "")
         cleaned_data["ip"] = ip
+
         domain = cleaned_data.get("domain", "")
 
         ip_list = self.extract_ip_list(ip)
 
-        # validate if the form has a server or an ip
+        # Capture the server_value
+        server_value = self.cleaned_data["server"]
+
+        # Validate if the form has a server or an ip
         if (ip and ip_list) or server:
             self.validate_nameserver_ip_combo(domain, server, ip_list)
+
+        # Re-set the server value:
+        # add_error which is called on validate_nameserver_ip_combo will clean-up (delete) any invalid data.
+        # We need that data because we need to know the total server entries (even if invalid) in the formset
+        # clean method where we determine whether a blank first and/or second entry should throw a required error.
+        self.cleaned_data["server"] = server_value
 
         return cleaned_data
 
@@ -149,6 +158,19 @@ class BaseNameserverFormset(forms.BaseFormSet):
         """
         Check for duplicate entries in the formset.
         """
+
+        # Check if there are at least two valid servers
+        valid_servers_count = sum(
+            1 for form in self.forms if form.cleaned_data.get("server") and form.cleaned_data.get("server").strip()
+        )
+        if valid_servers_count >= 2:
+            # If there are, remove the "At least two name servers are required" error from each form
+            # This will allow for successful submissions when the first or second entries are blanked
+            # but there are enough entries total
+            for form in self.forms:
+                if form.errors.get("server") == ["At least two name servers are required."]:
+                    form.errors.pop("server")
+
         if any(self.errors):
             # Don't bother validating the formset unless each form is valid on its own
             return

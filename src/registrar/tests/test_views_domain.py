@@ -974,6 +974,68 @@ class TestDomainNameservers(TestDomainOverview):
         page = result.follow()
         self.assertContains(page, "The name servers for this domain have been updated")
 
+    def test_domain_nameservers_can_blank_out_first_or_second_one_if_enough_entries(self):
+        """Nameserver form submits successfully with 2 valid inputs, even if the first or
+        second entries are blanked out.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+
+        nameserver1 = ""
+        nameserver2 = "ns2.igorville.gov"
+        nameserver3 = "ns3.igorville.gov"
+        valid_ip = ""
+        valid_ip_2 = "128.0.0.2"
+        valid_ip_3 = "128.0.0.3"
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-0-ip"] = valid_ip
+        nameservers_page.form["form-1-server"] = nameserver2
+        nameservers_page.form["form-1-ip"] = valid_ip_2
+        nameservers_page.form["form-2-server"] = nameserver3
+        nameservers_page.form["form-2-ip"] = valid_ip_3
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+
+        # form submission was a successful post, response should be a 302
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page = result.follow()
+        self.assertContains(nameservers_page, "The name servers for this domain have been updated")
+
+        nameserver1 = "ns1.igorville.gov"
+        nameserver2 = ""
+        nameserver3 = "ns3.igorville.gov"
+        valid_ip = "128.0.0.1"
+        valid_ip_2 = ""
+        valid_ip_3 = "128.0.0.3"
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-0-ip"] = valid_ip
+        nameservers_page.form["form-1-server"] = nameserver2
+        nameservers_page.form["form-1-ip"] = valid_ip_2
+        nameservers_page.form["form-2-server"] = nameserver3
+        nameservers_page.form["form-2-ip"] = valid_ip_3
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+
+        # form submission was a successful post, response should be a 302
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page = result.follow()
+        self.assertContains(nameservers_page, "The name servers for this domain have been updated")
+
     def test_domain_nameservers_form_invalid(self):
         """Nameserver form does not submit with invalid data.
 
