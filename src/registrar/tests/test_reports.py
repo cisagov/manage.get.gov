@@ -263,7 +263,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "adomain10.gov,Federal,Armed Forces Retirement Home,Ready\n"
                 "adomain2.gov,Interstate,(blank),Dns needed\n"
                 "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
-                "ddomain3.gov,Federal,Armed Forces Retirement Home,123@mail.gov,On hold,2023-05-25\n"
+                "ddomain3.gov,Federal,Armed Forces Retirement Home,security@mail.gov,On hold,2023-05-25\n"
                 "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready\n"
                 "zdomain12.govInterstateReady\n"
             )

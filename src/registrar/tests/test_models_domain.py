@@ -99,7 +99,7 @@ class TestDomainCache(MockEppLib):
     def test_cache_nested_elements_not_subdomain(self):
         """Cache works correctly with the nested objects cache and hosts"""
         with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            domain, _ = Domain.objects.get_or_create(name="igorville.gov", state=Domain.State.DNS_NEEDED)
             # The contact list will initially contain objects of type 'DomainContact'
             # this is then transformed into PublicContact, and cache should NOT
             # hold onto the DomainContact object
@@ -203,7 +203,7 @@ class TestDomainCache(MockEppLib):
     def test_map_epp_contact_to_public_contact(self):
         # Tests that the mapper is working how we expect
         with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="registry.gov")
+            domain, _ = Domain.objects.get_or_create(name="registry.gov", state=Domain.state.DNS_NEEDED)
             security = PublicContact.ContactTypeChoices.SECURITY
             mapped = domain.map_epp_contact_to_public_contact(
                 self.mockDataInfoContact,
@@ -1033,7 +1033,7 @@ class TestRegistrantContacts(MockEppLib):
             And the field `disclose` is set to true for DF.EMAIL
         """
         with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            domain, _ = Domain.objects.get_or_create(name="igorville.gov", domain=Domain.State.DNS_NEEDED)
             expectedSecContact = PublicContact.get_default_security()
             expectedSecContact.domain = domain
             expectedSecContact.email = "123@mail.gov"
@@ -2166,7 +2166,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                         ),
                         cleaned=True,
                     ),
-                    call(commands.InfoHost(name='fake.host.com'), cleaned=True),
+                    call(commands.InfoHost(name="fake.host.com"), cleaned=True),
                     call(
                         commands.UpdateDomain(
                             name="dnssec-dsdata.gov",
