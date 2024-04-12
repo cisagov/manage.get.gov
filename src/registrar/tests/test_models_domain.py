@@ -2166,6 +2166,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                         ),
                         cleaned=True,
                     ),
+                    call(commands.InfoHost(name='fake.host.com'), cleaned=True),
                     call(
                         commands.UpdateDomain(
                             name="dnssec-dsdata.gov",

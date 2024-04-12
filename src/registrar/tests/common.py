@@ -977,7 +977,20 @@ class MockEppLib(TestCase):
     mockDataInfoDomain = fakedEppObject(
         "fakePw",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
-        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+                contacts=[
+            common.DomainContact(
+                contact="securityContact",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            ),
+            common.DomainContact(
+                contact="technicalContact",
+                type=PublicContact.ContactTypeChoices.TECHNICAL,
+            ),
+            common.DomainContact(
+                contact="adminContact",
+                type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            ),
+        ],
         hosts=["fake.host.com"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
