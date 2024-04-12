@@ -332,11 +332,11 @@ class TestDomainCache(MockEppLib):
             we resolve that UNKNOWN state to DNS_NEEDED because it has 1 nameserver.
         Note:
             * Default state when you do get_or_create is UNKNOWN
-            * dnssec-none.gov has 1 nameservers which is why we are using it
-            * dnssec-none.gov already has a security contact (1) hence 2 count
+            * defaulttechnical.gov has 1 nameservers which is why we are using it
+            * defaulttechnical.gov already has a security contact (1) hence 2 count
         """
         with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
+            domain, _ = Domain.objects.get_or_create(name="defaulttechnical.gov")
             _ = domain.nameservers
             self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
             self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 2)
@@ -2022,10 +2022,34 @@ class TestRegistrantDNSSEC(MockEppLib):
                         ),
                         cleaned=True,
                     ),
+                    # NO idea why it even thought parenthesis and things align it still says it's not aligned and I can't run
+                    # the test or do python black on it and I even changed it from ' to "
+                    # call(commands.CreateContact(id="FrNNrxFmxjIxnTjt", postal_info=PostalInfo(name="Program Manager", addr=ContactAddr(street=["4200 Wilson Blvd.", None, None], city="Arlington", pc="22201", cc="US", sp="VA"),
+                    # org="Cybersecurity and Infrastructure Security Agency", type="loc"),
+                    # email="dotgov@cisa.dhs.gov", voice="+1.8882820870", fax=None, auth_info=ContactAuthInfo(pw="2fooBAR123fooBaz"),
+                    # disclose=Disclose(flag=False, fields={<DiscloseField.EMAIL: "email">}, types=None),
+                    # vat=None, ident=None, notify_email=None), cleaned=True),
                 ]
             )
             self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
             patcher.stop()
+
+        """
+        Expected: [call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+        call(UpdateDomain(name='dnssec-dsdata.gov', add=[], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True)]
+        Actual: [call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+        call(CreateContact(id='FrNNrxFmxjIxnTjt', postal_info=PostalInfo(name='Program Manager', addr=ContactAddr(street=['4200 Wilson Blvd.', None, None], city='Arlington', pc='22201', cc='US', sp='VA'), org='Cybersecurity and Infrastructure Security Agency', type='loc'), email='dotgov@cisa.dhs.gov', voice='+1.8882820870', fax=None, auth_info=ContactAuthInfo(pw='2fooBAR123fooBaz'), disclose=Disclose(flag=False, fields={<DiscloseField.EMAIL: 'email'>}, types=None), vat=None, ident=None, notify_email=None), cleaned=True),
+        call(UpdateDomain(name='dnssec-dsdata.gov', add=[DomainContact(contact='FrNNrxFmxjIxnTjt', type=PublicContact.ContactTypeChoices.ADMINISTRATIVE)], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+        call(CreateContact(id='FrYW5fsm0uFDsOtz', postal_info=PostalInfo(name='Registry Customer Service', addr=ContactAddr(street=['4200 Wilson Blvd.', None, None], city='Arlington', pc='22201', cc='US', sp='VA'), org='Cybersecurity and Infrastructure Security Agency', type='loc'), email='dotgov@cisa.dhs.gov', voice='+1.8882820870', fax=None, auth_info=ContactAuthInfo(pw='2fooBAR123fooBaz'), disclose=Disclose(flag=False, fields={<DiscloseField.EMAIL: 'email'>}, types=None), vat=None, ident=None, notify_email=None), cleaned=True),
+        call(UpdateDomain(name='dnssec-dsdata.gov', add=[DomainContact(contact='FrYW5fsm0uFDsOtz', type=PublicContact.ContactTypeChoices.TECHNICAL)], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+        call(InfoHost(name='fake.host.com'), cleaned=True),
+        call(UpdateDomain(name='dnssec-dsdata.gov', add=[], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True)]
+        """
 
     def test_user_adds_dnssec_data_multiple_dsdata(self):
         """
