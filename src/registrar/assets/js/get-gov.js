@@ -767,10 +767,10 @@ function toggleTwoDomElements(ele1, ele2, index) {
 })();
 
 /**
- * An IIFE that listens to the other contacts radio form on DAs and toggles the contacts/no other contacts forms 
+ * An IIFE that disables the delete buttons on nameserver forms on page load if < 3 forms
  *
  */
-(function otherContactsFormListener() {
+(function nameserversFormListener() {
   let isNameserversForm = document.querySelector(".nameservers-form");
   if (isNameserversForm) {
     let forms = document.querySelectorAll(".repeatable-form");
