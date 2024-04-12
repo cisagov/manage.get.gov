@@ -805,14 +805,19 @@ class WebsiteAdmin(ListHeaderAdmin):
         """
         superuser_perm = request.user.has_perm("registrar.full_access_permission")
         analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-        return_path = request.GET.get('return_path')
+        return_path = request.GET.get("return_path")
+
+        # First, call the super method to perform the standard operations and capture the response
+        response = super().response_change(request, obj)
+
         # Don't redirect to the website page on save if the user is an analyst.
         # Rather, just redirect back to the originating page.
         if (analyst_perm and not superuser_perm) and return_path:
             # Redirect to the return path if it exists
             return HttpResponseRedirect(return_path)
 
-        return super().response_change(request, obj)
+        # If no redirection is needed, return the original response
+        return response
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin):
@@ -1960,14 +1965,19 @@ class DraftDomainAdmin(ListHeaderAdmin):
         """
         superuser_perm = request.user.has_perm("registrar.full_access_permission")
         analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-        return_path = request.GET.get('return_path')
+        return_path = request.GET.get("return_path")
+
+        # First, call the super method to perform the standard operations and capture the response
+        response = super().response_change(request, obj)
+
         # Don't redirect to the website page on save if the user is an analyst.
         # Rather, just redirect back to the originating page.
         if (analyst_perm and not superuser_perm) and return_path:
             # Redirect to the return path if it exists
             return HttpResponseRedirect(return_path)
 
-        return super().response_change(request, obj)
+        # If no redirection is needed, return the original response
+        return response
 
 
 class PublicContactAdmin(ListHeaderAdmin):
