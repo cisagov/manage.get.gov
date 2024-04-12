@@ -39,13 +39,11 @@ logger = logging.getLogger(__name__)
 
 
 class TestDomainCache(MockEppLib):
-    def tearDown(self) -> None:
-        DomainInformation.objects.all().delete()
-        DomainRequest.objects.all().delete()
+    def tearDown(self):
         PublicContact.objects.all().delete()
+        HostIP.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
-        User.objects.all().delete()
-        DraftDomain.objects.all().delete()
         super().tearDown()
 
     def test_cache_sets_resets(self):
@@ -318,13 +316,14 @@ class TestDomainCache(MockEppLib):
             we resolve that UNKNOWN state to READY because it has 2 nameservers.
         Note:
             * Default state when you do get_or_create is UNKNOWN
-            * readydomain.com has 2 nameservers which is why we are using it
+            * justnameserver.com has 2 nameservers which is why we are using it
+            * justnameserver.com also has all 3 contacts hence 0 count
         """
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="justnameserver.com")
             _ = domain.nameservers
             self.assertEqual(domain.state, Domain.State.READY)
-            self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 3)
+            self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 0)
 
     def test_fix_unknown_to_dns_needed_state(self):
         """
@@ -334,12 +333,13 @@ class TestDomainCache(MockEppLib):
         Note:
             * Default state when you do get_or_create is UNKNOWN
             * dnssec-none.gov has 1 nameservers which is why we are using it
+            * dnssec-none.gov already has a security contact (1) hence 2 count
         """
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
             _ = domain.nameservers
             self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
-            self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 3)
+            self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 2)
 
 
 class TestDomainCreation(MockEppLib):
@@ -427,8 +427,6 @@ class TestDomainCreation(MockEppLib):
         Domain.objects.create(name="igorville.gov")
         with self.assertRaisesRegex(IntegrityError, "name"):
             Domain.objects.create(name="igorville.gov")
-
-
 
 
 class TestDomainStatuses(MockEppLib):

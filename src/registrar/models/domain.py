@@ -1712,15 +1712,14 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         print("!! GOT INTO _add_missing_contacts ")
 
-        missingAdmin=True
-        missingSecurity=True
-        missingTech=True
-        print("self._cache is ", self._cache)
+        missingAdmin = True
+        missingSecurity = True
+        missingTech = True
+        print("cleaned ", cleaned)
 
-        print("self._cache[_contacts] is", self._cache.get("_contacts"))
-        if len(self._cache.get("_contacts")) < 3:
+        if len(cleaned.get("_contacts")) < 3:
             print("!! GOT INTO _add_missing_contacts -> in if statement")
-            for contact in self._cache["_contacts"]:
+            for contact in cleaned.get("_contacts"):
                 # this means we see it
                 if contact.type == "admin":
                     missingAdmin = False
@@ -1728,7 +1727,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     missingSecurity = False
                 if contact.type == "tech":
                     missingTech = False
-        
+
             # we are only creating if it doesn't exist so we don't overwrite
             if missingAdmin:
                 administrative_contact = self.get_default_administrative_contact()
@@ -1741,22 +1740,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 technical_contact.save()
 
         print("!! GOT INTO _add_missing_contacts -> if statement finished ")
-
-            # if not PublicContact.objects.filter(
-            #     contact_type=PublicContact.ContactTypeChoices.SECURITY, domain=self.id
-            # ).exists():
-            #     security_contact = self.get_default_security_contact()
-            #     security_contact.save()
-            # if not PublicContact.objects.filter(
-            #     contact_type=PublicContact.ContactTypeChoices.TECHNICAL, domain=self.id
-            # ).exists():
-            #     technical_contact = self.get_default_technical_contact()
-            #     technical_contact.save()
-            # if not PublicContact.objects.filter(
-            #     contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE, domain=self.id
-            # ).exists():
-            #     administrative_contact = self.get_default_administrative_contact()
-            #     administrative_contact.save()
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
