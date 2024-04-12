@@ -536,6 +536,18 @@ address.dja-address-contact-list {
     }
 }
 
+.dja-status-list {
+    border-top: solid 1px var(--border-color);
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    padding-top: 10px;
+    li {
+        line-height: 1.5;
+        font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif !important;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
 
 // Make the clipboard button "float" inside of the input box
 .admin-icon-group {

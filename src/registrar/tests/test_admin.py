@@ -1676,6 +1676,10 @@ class TestDomainRequestAdmin(MockEppLib):
         # Test for the copy link
         self.assertContains(response, "usa-button__clipboard", count=4)
 
+        # Test that Creator counts display properly
+        self.assertNotContains(response, "Approved domains")
+        self.assertContains(response, "Active requests")
+
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
             # make sure there is no user with this email
