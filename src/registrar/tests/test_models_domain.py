@@ -510,7 +510,7 @@ class TestDomainStatuses(MockEppLib):
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
         Host.objects.all().delete()
-        Domain.objects.all().delete()        
+        Domain.objects.all().delete()
         super().tearDown()
 
 

@@ -19,7 +19,17 @@ from registrar.admin import (
     UserDomainRoleAdmin,
     VerifiedByStaffAdmin,
 )
-from registrar.models import Domain, DomainRequest, DomainInformation, User, DomainInvitation, Contact, PublicContact, Host, Website
+from registrar.models import (
+    Domain,
+    DomainRequest,
+    DomainInformation,
+    User,
+    DomainInvitation,
+    Contact,
+    PublicContact,
+    Host,
+    Website,
+)
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
@@ -619,6 +629,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         User.objects.all().delete()
+
 
 class TestDomainRequestAdminForm(TestCase):
     def setUp(self):
