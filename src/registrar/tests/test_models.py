@@ -1137,6 +1137,16 @@ class TestUser(TestCase):
         )
         self.assertEquals(self.user.get_ineligible_requests_count(), 1)
 
+    def test_has_contact_info(self):
+        """Test that has_contact_info properly returns"""
+        # test with a user with contact info defined
+        self.assertTrue(self.user.has_contact_info())
+        # test with a user without contact info defined
+        self.user.contact.title = None
+        self.user.contact.email = None
+        self.user.contact.phone = None
+        self.assertFalse(self.user.has_contact_info())
+
 
 class TestContact(TestCase):
     def setUp(self):
@@ -1238,3 +1248,13 @@ class TestContact(TestCase):
         # test for a contact which is assigned as an authorizing official on a domain request
         self.assertFalse(self.contact_as_ao.has_more_than_one_join("authorizing_official"))
         self.assertTrue(self.contact_as_ao.has_more_than_one_join("submitted_domain_requests"))
+
+    def test_has_contact_info(self):
+        """Test that has_contact_info properly returns"""
+        # test with a contact with contact info defined
+        self.assertTrue(self.contact.has_contact_info())
+        # test with a contact without contact info defined
+        self.contact.title = None
+        self.contact.email = None
+        self.contact.phone = None
+        self.assertFalse(self.contact.has_contact_info())

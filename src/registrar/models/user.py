@@ -93,12 +93,7 @@ class User(AbstractUser):
         return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.INELIGIBLE).count()
 
     def has_contact_info(self):
-        has_contact_info = (
-            self.contact.title or
-            self.email.title or
-            self.contact.phone
-        )
-        return has_contact_info
+        return bool(self.contact.title or self.contact.email or self.contact.phone)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
