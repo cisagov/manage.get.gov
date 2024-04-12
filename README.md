@@ -4,7 +4,7 @@ The .gov domain helps U.S.-based government organizations gain public trust by b
 
 ## Onboarding
 
-For new members of the @cisagov/dotgov team looking to contribute to the registrar, please open an [onboarding ticket](https://github.com/cisagov/getgov/issues/new?assignees=loganmeetsworld&labels=dev%2C+onboarding&template=developer-onboarding.md&title=Developer+Onboarding%3A+GH_HANDLE). 
+For new members of the @cisagov/dotgov team looking to contribute to the registrar, please open a [developer onboarding ticket](https://github.com/cisagov/getgov/issues/new?assignees=loganmeetsworld&labels=dev%2C+onboarding&template=developer-onboarding.md&title=Developer+Onboarding%3A+GH_HANDLE) or a [designer onboarding ticket](https://github.com/cisagov/getgov/issues/new?assignees=loganmeetsworld&labels=design%2C+onboarding&template=designer-onboarding.md&title=Designer+Onboarding%3A+GH_HANDLE). 
 
 ## Code
 
