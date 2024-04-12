@@ -2039,22 +2039,22 @@ class TestRegistrantDNSSEC(MockEppLib):
             self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
             patcher.stop()
 
-        """
-        Expected: [call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
-        call(UpdateDomain(name='dnssec-dsdata.gov', add=[], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
-        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
-        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True)]
-        Actual: [call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
-        call(CreateContact(id='FrNNrxFmxjIxnTjt', postal_info=PostalInfo(name='Program Manager', addr=ContactAddr(street=['4200 Wilson Blvd.', None, None], city='Arlington', pc='22201', cc='US', sp='VA'), org='Cybersecurity and Infrastructure Security Agency', type='loc'), email='dotgov@cisa.dhs.gov', voice='+1.8882820870', fax=None, auth_info=ContactAuthInfo(pw='2fooBAR123fooBaz'), disclose=Disclose(flag=False, fields={<DiscloseField.EMAIL: 'email'>}, types=None), vat=None, ident=None, notify_email=None), cleaned=True),
-        call(UpdateDomain(name='dnssec-dsdata.gov', add=[DomainContact(contact='FrNNrxFmxjIxnTjt', type=PublicContact.ContactTypeChoices.ADMINISTRATIVE)], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
-        call(CreateContact(id='FrYW5fsm0uFDsOtz', postal_info=PostalInfo(name='Registry Customer Service', addr=ContactAddr(street=['4200 Wilson Blvd.', None, None], city='Arlington', pc='22201', cc='US', sp='VA'), org='Cybersecurity and Infrastructure Security Agency', type='loc'), email='dotgov@cisa.dhs.gov', voice='+1.8882820870', fax=None, auth_info=ContactAuthInfo(pw='2fooBAR123fooBaz'), disclose=Disclose(flag=False, fields={<DiscloseField.EMAIL: 'email'>}, types=None), vat=None, ident=None, notify_email=None), cleaned=True),
-        call(UpdateDomain(name='dnssec-dsdata.gov', add=[DomainContact(contact='FrYW5fsm0uFDsOtz', type=PublicContact.ContactTypeChoices.TECHNICAL)], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
-        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
-        call(InfoHost(name='fake.host.com'), cleaned=True),
-        call(UpdateDomain(name='dnssec-dsdata.gov', add=[], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
-        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
-        call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True)]
-        """
+            """
+            Expected: [call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+            call(UpdateDomain(name='dnssec-dsdata.gov', add=[], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+            call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+            call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True)]
+            Actual: [call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+            call(CreateContact(id='FrNNrxFmxjIxnTjt', postal_info=PostalInfo(name='Program Manager', addr=ContactAddr(street=['4200 Wilson Blvd.', None, None], city='Arlington', pc='22201', cc='US', sp='VA'), org='Cybersecurity and Infrastructure Security Agency', type='loc'), email='dotgov@cisa.dhs.gov', voice='+1.8882820870', fax=None, auth_info=ContactAuthInfo(pw='2fooBAR123fooBaz'), disclose=Disclose(flag=False, fields={<DiscloseField.EMAIL: 'email'>}, types=None), vat=None, ident=None, notify_email=None), cleaned=True),
+            call(UpdateDomain(name='dnssec-dsdata.gov', add=[DomainContact(contact='FrNNrxFmxjIxnTjt', type=PublicContact.ContactTypeChoices.ADMINISTRATIVE)], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+            call(CreateContact(id='FrYW5fsm0uFDsOtz', postal_info=PostalInfo(name='Registry Customer Service', addr=ContactAddr(street=['4200 Wilson Blvd.', None, None], city='Arlington', pc='22201', cc='US', sp='VA'), org='Cybersecurity and Infrastructure Security Agency', type='loc'), email='dotgov@cisa.dhs.gov', voice='+1.8882820870', fax=None, auth_info=ContactAuthInfo(pw='2fooBAR123fooBaz'), disclose=Disclose(flag=False, fields={<DiscloseField.EMAIL: 'email'>}, types=None), vat=None, ident=None, notify_email=None), cleaned=True),
+            call(UpdateDomain(name='dnssec-dsdata.gov', add=[DomainContact(contact='FrYW5fsm0uFDsOtz', type=PublicContact.ContactTypeChoices.TECHNICAL)], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+            call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+            call(InfoHost(name='fake.host.com'), cleaned=True),
+            call(UpdateDomain(name='dnssec-dsdata.gov', add=[], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+            call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True),
+            call(InfoDomain(name='dnssec-dsdata.gov', auth_info=None), cleaned=True)]
+            """
 
     def test_user_adds_dnssec_data_multiple_dsdata(self):
         """
