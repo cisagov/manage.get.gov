@@ -428,6 +428,14 @@ class TestDomainCreation(MockEppLib):
         with self.assertRaisesRegex(IntegrityError, "name"):
             Domain.objects.create(name="igorville.gov")
 
+    def tearDown(self) -> None:
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        PublicContact.objects.all().delete()
+        Domain.objects.all().delete()
+        User.objects.all().delete()
+        DraftDomain.objects.all().delete()
+        super().tearDown()
 
 class TestDomainStatuses(MockEppLib):
     """Domain statuses are set by the registry"""
