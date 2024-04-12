@@ -1685,6 +1685,61 @@ class Domain(TimeStampedModel, DomainHelper):
             else:
                 logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
 
+    def _fix_unknown_state(self, cleaned):
+        # print("!! GOT INTO _fix_unknown_state")
+
+        try:
+            self._add_missing_contacts(cleaned)
+
+        except Exception as e:
+            logger.error(
+                "%s couldn't _add_missing_contacts, error was %s."
+                "Domain will still be in UNKNOWN state." % (self.name, e)
+            )
+        if len(self.nameservers) >= 2:
+            # print("!! GOT INTO _fix_unknown_state -> have 2 or more nameserver so ready state")
+            self.ready()
+            self.save()
+
+    @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
+    def _add_missing_contacts(self, cleaned):
+        """
+        _add_missing_contacts: Add contacts (SECURITY, TECHNICAL, and/or ADMINISTRATIVE)
+        if they are missing, AND switch the state to DNS_NEEDED from UNKNOWN (if it
+        is in an UNKNOWN state, that is an error state)
+        Note: The transition state change happens at the end of the function
+        """
+        # print("!! GOT INTO _add_missing_contacts ")
+
+        missingAdmin = True
+        missingSecurity = True
+        missingTech = True
+        # print("cleaned ", cleaned)
+
+        if len(cleaned.get("_contacts")) < 3:
+            # print("!! GOT INTO _add_missing_contacts -> in if statement")
+            for contact in cleaned.get("_contacts"):
+                # this means we see it
+                if contact.type == "admin":
+                    missingAdmin = False
+                if contact.type == "security":
+                    missingSecurity = False
+                if contact.type == "tech":
+                    missingTech = False
+
+            # we are only creating if it doesn't exist so we don't overwrite
+            if missingAdmin:
+                administrative_contact = self.get_default_administrative_contact()
+                administrative_contact.save()
+            if missingSecurity:
+                security_contact = self.get_default_security_contact()
+                security_contact.save()
+            if missingTech:
+                technical_contact = self.get_default_technical_contact()
+                technical_contact.save()
+
+        # print("!! GOT INTO _add_missing_contacts -> if statement finished ")
+
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:
@@ -1692,6 +1747,10 @@ class Domain(TimeStampedModel, DomainHelper):
             cache = self._extract_data_from_response(data_response)
             cleaned = self._clean_cache(cache, data_response)
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
+
+            if self.state == self.State.UNKNOWN:
+                # print("!! GOT INTO if self.state == self.State.UNKNOWN: ")
+                self._fix_unknown_state(cleaned)
             if fetch_hosts:
                 self._update_hosts_and_ips_in_db(cleaned)
             if fetch_contacts:

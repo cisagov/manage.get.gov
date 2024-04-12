@@ -309,6 +309,38 @@ class TestDomainCache(MockEppLib):
                 )
             self.assertEqual(context.exception.code, desired_error)
 
+    def test_fix_unknown_to_ready_state(self):
+        """
+        Scenario: A error occurred and the domain's state is in UNKONWN
+            which shouldn't happen. The biz logic and test is to make sure
+            we resolve that UNKNOWN state to READY because it has 2 nameservers.
+        Note:
+            * Default state when you do get_or_create is UNKNOWN
+            * justnameserver.com has 2 nameservers which is why we are using it
+            * justnameserver.com also has all 3 contacts hence 0 count
+        """
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="justnameserver.com")
+            _ = domain.nameservers
+            self.assertEqual(domain.state, Domain.State.READY)
+            self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 0)
+
+    def test_fix_unknown_to_dns_needed_state(self):
+        """
+        Scenario: A error occurred and the domain's state is in UNKONWN
+            which shouldn't happen. The biz logic and test is to make sure
+            we resolve that UNKNOWN state to DNS_NEEDED because it has 1 nameserver.
+        Note:
+            * Default state when you do get_or_create is UNKNOWN
+            * defaulttechnical.gov has 1 nameservers which is why we are using it
+            * defaulttechnical.gov already has a security contact (1) hence 2 count
+        """
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="defaulttechnical.gov")
+            _ = domain.nameservers
+            self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
+            self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 2)
+
 
 class TestDomainCreation(MockEppLib):
     """Rule: An approved domain request must result in a domain"""
@@ -346,7 +378,7 @@ class TestDomainCreation(MockEppLib):
             Given that no domain object exists in the registry
             When a property is accessed
             Then Domain sends `commands.CreateDomain` to the registry
-            And `domain.state` is set to `UNKNOWN`
+            And `domain.state` is set to `DNS_NEEDED`
             And `domain.is_active()` returns False
         """
         with less_console_noise():
@@ -375,7 +407,7 @@ class TestDomainCreation(MockEppLib):
                 any_order=False,  # Ensure calls are in the specified order
             )
 
-            self.assertEqual(domain.state, Domain.State.UNKNOWN)
+            self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
             self.assertEqual(domain.is_active(), False)
 
     @skip("assertion broken with mock addition")
@@ -485,6 +517,7 @@ class TestDomainStatuses(MockEppLib):
 
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
@@ -624,6 +657,7 @@ class TestRegistrantContacts(MockEppLib):
         self.domain._invalidate_cache()
         self.domain_contact._invalidate_cache()
         PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
 
     def test_no_security_email(self):
@@ -1847,6 +1881,8 @@ class TestRegistrantDNSSEC(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov")
 
     def tearDown(self):
+        PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
