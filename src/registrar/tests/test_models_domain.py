@@ -1873,9 +1873,9 @@ class TestRegistrantDNSSEC(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov")
 
     def tearDown(self):
+        PublicContact.objects.all().delete()
         Host.objects.all().delete()
         Domain.objects.all().delete()
-        PublicContact.objects.all().delete()
 
         super().tearDown()
 
