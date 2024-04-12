@@ -1687,7 +1687,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
 
     def _fix_unknown_state(self, cleaned):
-        print("!! GOT INTO _fix_unknown_state")
+        # print("!! GOT INTO _fix_unknown_state")
 
         try:
             self._add_missing_contacts(cleaned)
@@ -1698,7 +1698,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 "Domain will still be in UNKNOWN state." % (self.name, e)
             )
         if len(self.nameservers) >= 2:
-            print("!! GOT INTO _fix_unknown_state -> have 2 or more nameserver so ready state")
+            # print("!! GOT INTO _fix_unknown_state -> have 2 or more nameserver so ready state")
             self.ready()
             self.save()
 
@@ -1710,15 +1710,15 @@ class Domain(TimeStampedModel, DomainHelper):
         is in an UNKNOWN state, that is an error state)
         Note: The transition state change happens at the end of the function
         """
-        print("!! GOT INTO _add_missing_contacts ")
+        # print("!! GOT INTO _add_missing_contacts ")
 
         missingAdmin = True
         missingSecurity = True
         missingTech = True
-        print("cleaned ", cleaned)
+        # print("cleaned ", cleaned)
 
         if len(cleaned.get("_contacts")) < 3:
-            print("!! GOT INTO _add_missing_contacts -> in if statement")
+            # print("!! GOT INTO _add_missing_contacts -> in if statement")
             for contact in cleaned.get("_contacts"):
                 # this means we see it
                 if contact.type == "admin":
@@ -1739,7 +1739,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 technical_contact = self.get_default_technical_contact()
                 technical_contact.save()
 
-        print("!! GOT INTO _add_missing_contacts -> if statement finished ")
+        # print("!! GOT INTO _add_missing_contacts -> if statement finished ")
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
@@ -1750,7 +1750,7 @@ class Domain(TimeStampedModel, DomainHelper):
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
 
             if self.state == self.State.UNKNOWN:
-                print("!! GOT INTO if self.state == self.State.UNKNOWN: ")
+                # print("!! GOT INTO if self.state == self.State.UNKNOWN: ")
                 self._fix_unknown_state(cleaned)
             if fetch_hosts:
                 self._update_hosts_and_ips_in_db(cleaned)
