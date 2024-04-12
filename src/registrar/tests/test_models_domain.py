@@ -1875,6 +1875,8 @@ class TestRegistrantDNSSEC(MockEppLib):
     def tearDown(self):
         Host.objects.all().delete()
         Domain.objects.all().delete()
+        PublicContact.objects.all().delete()
+
         super().tearDown()
 
     def test_user_adds_dnssec_data(self):
