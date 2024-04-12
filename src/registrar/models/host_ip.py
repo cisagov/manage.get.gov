@@ -20,6 +20,7 @@ class HostIP(TimeStampedModel):
         blank=False,
         default=None,  # prevent saving without a value
         validators=[validate_ipv46_address],
+        verbose_name="IP address",
         help_text="IP address",
     )
 

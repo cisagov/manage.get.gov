@@ -478,6 +478,7 @@ class DomainRequest(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
+        verbose_name="Election office",
         help_text="Is your organization an election office?",
     )
 
@@ -659,6 +660,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         default=None,
+        verbose_name="Submitted at",
         help_text="Date submitted",
     )
 
