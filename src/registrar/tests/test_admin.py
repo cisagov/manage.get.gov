@@ -25,6 +25,7 @@ from registrar.models import (
     Domain,
     DomainRequest,
     DomainInformation,
+    DraftDomain,
     User,
     DomainInvitation,
     Contact,

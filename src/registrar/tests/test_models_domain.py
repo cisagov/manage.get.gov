@@ -432,6 +432,7 @@ class TestDomainCreation(MockEppLib):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()
         DraftDomain.objects.all().delete()
