@@ -92,6 +92,14 @@ class User(AbstractUser):
         """Return count of ineligible requests"""
         return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.INELIGIBLE).count()
 
+    def has_contact_info(self):
+        has_contact_info = (
+            self.contact.title or
+            self.email.title or
+            self.contact.phone
+        )
+        return has_contact_info
+
     @classmethod
     def needs_identity_verification(cls, email, uuid):
         """A method used by our oidc classes to test whether a user needs email/uuid verification
