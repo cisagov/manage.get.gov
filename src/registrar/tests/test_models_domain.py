@@ -509,7 +509,8 @@ class TestDomainStatuses(MockEppLib):
 
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
-        Domain.objects.all().delete()
+        Host.objects.all().delete()
+        Domain.objects.all().delete()        
         super().tearDown()
 
 
@@ -648,6 +649,7 @@ class TestRegistrantContacts(MockEppLib):
         self.domain._invalidate_cache()
         self.domain_contact._invalidate_cache()
         PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
 
     def test_no_security_email(self):
@@ -1871,6 +1873,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov")
 
     def tearDown(self):
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
