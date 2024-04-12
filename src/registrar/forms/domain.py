@@ -178,10 +178,10 @@ class BaseNameserverFormset(forms.BaseFormSet):
         data = []
         duplicates = []
 
-        for form in self.forms:
+        for index, form in enumerate(self.forms):
             if form.cleaned_data:
                 value = form.cleaned_data["server"]
-                if value in data:
+                if value in data and not (form.cleaned_data.get("server", "").strip() == '' and index == 1):
                     form.add_error(
                         "server",
                         NameserverError(code=nsErrorCodes.DUPLICATE_HOST, nameserver=value),

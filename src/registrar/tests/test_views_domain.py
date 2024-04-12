@@ -5,7 +5,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from .common import MockSESClient, create_user  # type: ignore
+from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -727,7 +727,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertContains(home_page, self.domain.name)
 
 
-class TestDomainNameservers(TestDomainOverview):
+class TestDomainNameservers(TestDomainOverview, MockEppLib):
     def test_domain_nameservers(self):
         """Can load domain's nameservers page."""
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
@@ -1023,6 +1023,57 @@ class TestDomainNameservers(TestDomainOverview):
         nameservers_page.form["form-1-ip"] = valid_ip_2
         nameservers_page.form["form-2-server"] = nameserver3
         nameservers_page.form["form-2-ip"] = valid_ip_3
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+
+        # form submission was a successful post, response should be a 302
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page = result.follow()
+        self.assertContains(nameservers_page, "The name servers for this domain have been updated")
+
+    @skip('wip')
+    def test_domain_nameservers_can_blank_out_first_and_second_one_if_enough_entries(self):
+        """Nameserver form submits successfully with 2 valid inputs, even if the first and
+        second entries are blanked out.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+
+        # Submit a formset with 3 valid forms
+        # The returned page (after the redirect) will have 4 forms that we can use to test
+        # our use case.
+
+
+        infoDomainFourHosts, _ = Domain.objects.get_or_create(name="fournameserversDomain.gov", state=Domain.State.READY)
+        UserDomainRole.objects.get_or_create(user=self.user, domain=infoDomainFourHosts)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=infoDomainFourHosts)
+        self.client.force_login(self.user)
+
+        nameserver1 = ""
+        nameserver2 = ""
+        nameserver3 = "ns3.igorville.gov"
+        nameserver4 = "ns4.igorville.gov"
+        valid_ip = ""
+        valid_ip_2 = ""
+        valid_ip_3 = "128.0.0.3"
+        valid_ip_4 = "128.0.0.4"
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": infoDomainFourHosts.id}))
+        print(nameservers_page.content.decode('utf-8'))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-0-ip"] = valid_ip
+        nameservers_page.form["form-1-server"] = nameserver2
+        nameservers_page.form["form-1-ip"] = valid_ip_2
+        nameservers_page.form["form-2-server"] = nameserver3
+        nameservers_page.form["form-2-ip"] = valid_ip_3
+        nameservers_page.form["form-3-server"] = nameserver4
+        nameservers_page.form["form-3-ip"] = valid_ip_4
         with less_console_noise():  # swallow log warning message
             result = nameservers_page.form.submit()
 
