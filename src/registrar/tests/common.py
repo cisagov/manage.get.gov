@@ -1059,8 +1059,12 @@ class MockEppLib(TestCase):
         ex_date=date(2023, 11, 15),
     )
     mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
-        "123", "123@mail.gov", datetime(2023, 5, 25, 19, 45, 35), "lastPw"
+        id="SECURITY", email="security@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
     )
+    mockDataSecurityContact = mockDataInfoDomain.dummyInfoContactResultData(
+        id="SECURITY", email="security@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
+    )
+    print("!! mockDataInfoContact is", mockDataInfoContact)
     InfoDomainWithContacts = fakedEppObject(
         "fakepw",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
@@ -1497,6 +1501,7 @@ class MockEppLib(TestCase):
             "fakemeow.gov": (self.mockDataInfoDomainNotSubdomainNoIP, None),
             "subdomainwoip.gov": (self.mockDataInfoDomainSubdomainNoIP, None),
             "ddomain3.gov": (self.InfoDomainWithContacts, None),
+            "igorville.gov": (self.InfoDomainWithContacts, None),
         }
 
         # Retrieve the corresponding values from the dictionary
@@ -1509,8 +1514,6 @@ class MockEppLib(TestCase):
 
     def mockInfoContactCommands(self, _request, cleaned):
         mocked_result: info.InfoContactResultData
-
-        print("!!! _request is ", _request)
 
         # For testing contact types
         match getattr(_request, "id", None):
