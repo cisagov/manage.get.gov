@@ -545,7 +545,6 @@ class MockDb(TestCase):
         self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
         self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
-        self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
         self.domain_5, _ = Domain.objects.get_or_create(
             name="bdomain5.gov", state=Domain.State.DELETED, deleted=timezone.make_aware(datetime(2023, 11, 1))
         )
@@ -977,7 +976,7 @@ class MockEppLib(TestCase):
     mockDataInfoDomain = fakedEppObject(
         "fakePw",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
-                contacts=[
+        contacts=[
             common.DomainContact(
                 contact="securityContact",
                 type=PublicContact.ContactTypeChoices.SECURITY,
@@ -1085,6 +1084,7 @@ class MockEppLib(TestCase):
             common.Status(state="inactive", description="", lang="en"),
         ],
         registrant="regContact",
+        ex_date=date(2023, 11, 15),
     )
 
     InfoDomainWithDefaultSecurityContact = fakedEppObject(
@@ -1496,6 +1496,7 @@ class MockEppLib(TestCase):
             "meow.gov": (self.mockDataInfoDomainSubdomainAndIPAddress, None),
             "fakemeow.gov": (self.mockDataInfoDomainNotSubdomainNoIP, None),
             "subdomainwoip.gov": (self.mockDataInfoDomainSubdomainNoIP, None),
+            "ddomain3.gov": (self.InfoDomainWithContacts, None),
         }
 
         # Retrieve the corresponding values from the dictionary
@@ -1508,6 +1509,8 @@ class MockEppLib(TestCase):
 
     def mockInfoContactCommands(self, _request, cleaned):
         mocked_result: info.InfoContactResultData
+
+        print("!!! _request is ", _request)
 
         # For testing contact types
         match getattr(_request, "id", None):

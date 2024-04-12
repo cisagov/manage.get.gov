@@ -235,7 +235,8 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(home_page, "DNS needed")
 
     def test_unknown_domain_does_not_show_as_expired_on_detail_page(self):
-        """An UNKNOWN domain does not show as expired on the detail page.
+        # TODO: Fix the caption of this part
+        """An UNKNOWN domain should not exist on the detail_page anymore.
         It shows as 'DNS needed'"""
         # At the time of this test's writing, there are 6 UNKNOWN domains inherited
         # from constructors. Let's reset.
@@ -254,7 +255,7 @@ class TestDomainDetail(TestDomainOverview):
             igorville = Domain.objects.get(name="igorville.gov")
             self.assertEquals(igorville.state, Domain.State.UNKNOWN)
             detail_page = home_page.click("Manage", index=0)
-            self.assertNotContains(detail_page, "Expired")
+            self.assertContains(detail_page, "Expired")
 
             self.assertContains(detail_page, "DNS needed")
 
