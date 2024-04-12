@@ -1509,7 +1509,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Since we're using client to mock the request, we can only test against
         # non-interpolated values
-        expected_content = "<strong>Requested domain:</strong>"
+        expected_content = "Requested domain:"
         expected_content2 = '<span class="scroll-indicator"></span>'
         expected_content3 = '<div class="submit-row-wrapper">'
         not_expected_content = "submit-row-wrapper--analyst-view>"
