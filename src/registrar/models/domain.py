@@ -992,20 +992,19 @@ class Domain(TimeStampedModel, DomainHelper):
         blank=False,
         default=None,  # prevent saving without a value
         unique=True,
-        help_text="Fully qualified domain name",
     )
 
     state = FSMField(
         max_length=21,
         choices=State.choices,
         default=State.UNKNOWN,
-        protected=True,  # cannot change state directly, particularly in Django admin
-        help_text="Very basic info about the lifecycle of this domain object",
+        # cannot change state directly, particularly in Django admin
+        protected=True,
     )
 
     expiration_date = DateField(
         null=True,
-        help_text=("Duplication of registry's expiration date saved for ease of reporting"),
+        help_text=("Date the domain expires in the registry"),
     )
 
     security_contact_registry_id = TextField(
@@ -1017,13 +1016,13 @@ class Domain(TimeStampedModel, DomainHelper):
     deleted = DateField(
         null=True,
         editable=False,
-        help_text="Deleted at date",
+        help_text="Will appear blank unless the domain is in \"deleted\" state",
     )
 
     first_ready = DateField(
         null=True,
         editable=False,
-        help_text="The last time this domain moved into the READY state",
+        help_text="Date when this domain first moved into \"ready\" state; date will never change",
     )
 
     def isActive(self):
