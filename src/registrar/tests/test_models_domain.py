@@ -215,7 +215,7 @@ class TestDomainCache(MockEppLib):
                 domain=domain,
                 contact_type=security,
                 registry_id="123",
-                email="123@mail.gov",
+                email="security@mail.gov",
                 voice="+1.8882820870",
                 fax="+1-212-9876543",
                 pw="lastPw",
@@ -1036,7 +1036,7 @@ class TestRegistrantContacts(MockEppLib):
             domain, _ = Domain.objects.get_or_create(name="igorville.gov", state=Domain.State.DNS_NEEDED)
             expectedSecContact = PublicContact.get_default_security()
             expectedSecContact.domain = domain
-            expectedSecContact.email = "123@mail.gov"
+            expectedSecContact.email = "security@mail.gov"
             domain.security_contact = expectedSecContact
             expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
@@ -2014,6 +2014,13 @@ class TestRegistrantDNSSEC(MockEppLib):
                         ),
                         cleaned=True,
                     ),
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-dsdata.gov",
+                        ),
+                        cleaned=True,
+                    ),
+                    call(commands.InfoHost(name="fake.host.com"), cleaned=True),
                     call(
                         commands.UpdateDomain(
                             name="dnssec-dsdata.gov",

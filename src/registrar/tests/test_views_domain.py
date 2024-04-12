@@ -257,7 +257,7 @@ class TestDomainDetail(TestDomainOverview):
             detail_page = home_page.click("Manage", index=0)
             self.assertContains(detail_page, "Expired")
 
-            self.assertContains(detail_page, "DNS needed")
+            self.assertNotContains(detail_page, "DNS needed")
 
     def test_domain_detail_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
