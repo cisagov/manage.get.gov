@@ -776,7 +776,7 @@ function toggleTwoDomElements(ele1, ele2, index) {
     let forms = document.querySelectorAll(".repeatable-form");
     if (forms.length < 3) {
       // Hide the delete buttons on the 2 nameservers
-      forms.forEach((form, index) => {
+      forms.forEach((form) => {
         Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
           deleteButton.setAttribute("disabled", "true");
         });
