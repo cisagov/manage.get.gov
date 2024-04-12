@@ -63,6 +63,7 @@ class Domain(TimeStampedModel, DomainHelper):
     F) Created is _not_ the same as active aka live on the internet.
     G) Activation is controlled by the registry. It will happen automatically when the
        domain meets the required checks.
+    H) Hello World
     """
 
     def __init__(self, *args, **kwargs):
