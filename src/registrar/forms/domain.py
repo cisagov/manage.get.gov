@@ -99,7 +99,7 @@ class DomainNameserverForm(forms.Form):
         ip_list = self.extract_ip_list(ip)
 
         # Capture the server_value
-        server_value = self.cleaned_data["server"]
+        server_value = self.cleaned_data.get("server")
 
         # Validate if the form has a server or an ip
         if (ip and ip_list) or server:
