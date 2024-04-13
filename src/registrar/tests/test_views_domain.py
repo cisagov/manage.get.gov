@@ -71,11 +71,14 @@ class TestWithDomainPermissions(TestWithUser):
         # that inherit this setUp
         self.domain_dnssec_none, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
 
+        self.domain_with_four_nameservers, _ = Domain.objects.get_or_create(name="fournameserversDomain.gov")
+
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_four_nameservers)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
@@ -96,6 +99,11 @@ class TestWithDomainPermissions(TestWithUser):
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_dnssec_none,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_with_four_nameservers,
             role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
@@ -1036,7 +1044,6 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page = result.follow()
         self.assertContains(nameservers_page, "The name servers for this domain have been updated")
 
-    @skip('wip')
     def test_domain_nameservers_can_blank_out_first_and_second_one_if_enough_entries(self):
         """Nameserver form submits successfully with 2 valid inputs, even if the first and
         second entries are blanked out.
@@ -1044,28 +1051,27 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         Uses self.app WebTest because we need to interact with forms.
         """
 
-        # Submit a formset with 3 valid forms
-        # The returned page (after the redirect) will have 4 forms that we can use to test
-        # our use case.
-
-
-        infoDomainFourHosts, _ = Domain.objects.get_or_create(name="fournameserversDomain.gov", state=Domain.State.READY)
-        UserDomainRole.objects.get_or_create(user=self.user, domain=infoDomainFourHosts)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=infoDomainFourHosts)
-        self.client.force_login(self.user)
-
+        # We need to start with a domain with 4 nameservers otherwise the formset in the test environment
+        # will only have 3 forms
         nameserver1 = ""
         nameserver2 = ""
         nameserver3 = "ns3.igorville.gov"
         nameserver4 = "ns4.igorville.gov"
         valid_ip = ""
         valid_ip_2 = ""
-        valid_ip_3 = "128.0.0.3"
-        valid_ip_4 = "128.0.0.4"
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": infoDomainFourHosts.id}))
-        print(nameservers_page.content.decode('utf-8'))
+        valid_ip_3 = ""
+        valid_ip_4 = ""
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain_with_four_nameservers.id})
+        )
+
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Minimal check to ensure the form is loaded correctly
+        self.assertEqual(nameservers_page.form["form-0-server"].value, "ns1.my-nameserver-1.com")
+        self.assertEqual(nameservers_page.form["form-3-server"].value, "ns1.explosive-chicken-nuggets.com")
+
         nameservers_page.form["form-0-server"] = nameserver1
         nameservers_page.form["form-0-ip"] = valid_ip
         nameservers_page.form["form-1-server"] = nameserver2
@@ -1081,7 +1087,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain_with_four_nameservers.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
