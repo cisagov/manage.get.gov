@@ -1058,9 +1058,9 @@ class MockEppLib(TestCase):
         ],
         ex_date=date(2023, 11, 15),
     )
-    # mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
-    #     id="SECURITY", email="security@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
-    # )
+    mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
+        id="123", email="123@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
+    )
     mockDataSecurityContact = mockDataInfoDomain.dummyInfoContactResultData(
         id="securityContact", email="security@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
     )
