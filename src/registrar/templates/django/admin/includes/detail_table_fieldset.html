@@ -27,6 +27,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 </dl>
             </div>
         {% endif %}
+    {% elif field.field.name == "requested_domain" %}
+        {% with current_path=request.get_full_path %}
+        <a class="margin-top-05 padding-top-05" href="{% url 'admin:registrar_draftdomain_change' original.requested_domain.id %}?{{ 'return_path='|add:current_path }}">{{ original.requested_domain }}</a>
+        {% endwith%}
     {% elif field.field.name == "current_websites" %}
         {% comment %}
         The "website" model is essentially just a text field.
@@ -49,9 +53,11 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         </div>
     {% elif field.field.name == "alternative_domains" %}
         <div class="readonly">
+            {% with current_path=request.get_full_path %}
             {% for alt_domain in original_object.alternative_domains.all %}
-                <a href="{% url 'admin:registrar_website_change' alt_domain.id %}">{{ alt_domain }}</a>{% if not forloop.last %}, {% endif %}
+                <a href="{% url 'admin:registrar_website_change' alt_domain.id %}?{{ 'return_path='|add:current_path }}">{{ alt_domain }}</a>{% if not forloop.last %}, {% endif %}
             {% endfor %}
+            {% endwith %}
         </div>
     {% else %}
     <div class="readonly">{{ field.contents }}</div>
@@ -64,6 +70,14 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         <div class="flex-container">
         <label aria-label="Creator contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
+        </div>
+        <div class="flex-container">
+            <label aria-label="User summary details"></label>
+            {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
+        </div>
+        <div class="flex-container">
+            <label aria-label="User summary details"></label>
+            {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "submitter" %}
         <div class="flex-container">

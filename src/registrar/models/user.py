@@ -9,6 +9,7 @@ from .domain_invitation import DomainInvitation
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
+from .domain_request import DomainRequest
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -66,6 +67,33 @@ class User(AbstractUser):
 
     def is_restricted(self):
         return self.status == self.RESTRICTED
+
+    def get_approved_domains_count(self):
+        """Return count of approved domains"""
+        allowed_states = [Domain.State.UNKNOWN, Domain.State.DNS_NEEDED, Domain.State.READY, Domain.State.ON_HOLD]
+        approved_domains_count = self.domains.filter(state__in=allowed_states).count()
+        return approved_domains_count
+
+    def get_active_requests_count(self):
+        """Return count of active requests"""
+        allowed_states = [
+            DomainRequest.DomainRequestStatus.SUBMITTED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+        ]
+        active_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
+        return active_requests_count
+
+    def get_rejected_requests_count(self):
+        """Return count of rejected requests"""
+        return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.REJECTED).count()
+
+    def get_ineligible_requests_count(self):
+        """Return count of ineligible requests"""
+        return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.INELIGIBLE).count()
+
+    def has_contact_info(self):
+        return bool(self.contact.title or self.contact.email or self.contact.phone)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
