@@ -661,7 +661,7 @@ class ContactAdmin(ListHeaderAdmin):
     search_fields = ["email", "first_name", "last_name"]
     search_help_text = "Search by firstname, lastname or email."
     list_display = [
-        "contact",
+        "name",
         "email",
     ]
     # this ordering effects the ordering of results
@@ -679,10 +679,10 @@ class ContactAdmin(ListHeaderAdmin):
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
 
-    # We name the custom prop 'contact' because linter
+    # We name the custom prop 'name' because linter
     # is not allowing a short_description attr on it
     # This gets around the linter limitation, for now.
-    def contact(self, obj: models.Contact):
+    def name(self, obj: models.Contact):
         """Duplicate the contact _str_"""
         if obj.first_name or obj.last_name:
             return obj.get_formatted_name()
@@ -693,7 +693,7 @@ class ContactAdmin(ListHeaderAdmin):
         else:
             return ""
 
-    contact.admin_order_field = "first_name"  # type: ignore
+    name.admin_order_field = "first_name"  # type: ignore
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
