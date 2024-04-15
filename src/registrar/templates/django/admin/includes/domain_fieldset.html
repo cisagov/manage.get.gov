@@ -2,11 +2,12 @@
 {% load static url_helpers %}
 
 
-{# .gov override #}
 {% block help_text %}
     {% if field.field.name == "state" %}
         <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+            {# .gov override #}
             <div>{{ state_help_message }}</div>
+            {# end of .gov override #}
         </div>
     {% endif %}
 {% endblock help_text %}
