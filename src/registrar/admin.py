@@ -51,9 +51,9 @@ class MyUserAdminForm(UserChangeForm):
     def __init__(self, *args, **kwargs):
         """Custom init to modify the user form"""
         super(MyUserAdminForm, self).__init__(*args, **kwargs)
-        self.override_base_help_texts()
+        self._override_base_help_texts()
 
-    def override_base_help_texts(self):
+    def _override_base_help_texts(self):
         """
         Used to override pre-existing help texts in AbstractUser.
         This is done to avoid modifying the base AbstractUser class.
@@ -63,14 +63,13 @@ class MyUserAdminForm(UserChangeForm):
         password = self.fields.get("password")
 
         if is_superuser is not None:
-            is_superuser.help_text = (
-                "For development purposes only; provides superuser access on the database level."
-            )
+            is_superuser.help_text = "For development purposes only; provides superuser access on the database level."
 
         if is_staff is not None:
             is_staff.help_text = "Designates whether the user can log in to this admin site."
 
         if password is not None:
+            # Link is copied from the base implementation of UserChangeForm.
             link = f"../../{self.instance.pk}/password/"
             password.help_text = (
                 "Raw passwords are not stored, so they will not display here. "
