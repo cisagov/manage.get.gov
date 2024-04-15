@@ -33,7 +33,7 @@ class User(AbstractUser):
         default=None,  # Set the default value to None
         null=True,  # Allow the field to be null
         blank=True,  # Allow the field to be blank
-        verbose_name="User status",
+        verbose_name="user status",
     )
 
     domains = models.ManyToManyField(
