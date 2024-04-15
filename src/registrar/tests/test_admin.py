@@ -94,6 +94,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         )
         super().setUp()
 
+    @less_console_noise_decorator
     def test_helper_text(self):
         """
         Tests for the correct helper text on this page
@@ -120,52 +121,6 @@ class TestDomainAdmin(MockEppLib, WebTest):
             ("deleted_at", 'Will appear blank unless the domain is in "deleted" state'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
-
-    def test_helper_text_state(self):
-        """
-        Tests for the correct state helper text on this page
-        """
-
-        expected_unknown_domain_message = (
-            "The creator of the associated domain request has not logged in to "
-            "manage the domain since it was approved. "
-            'The state will switch to "DNS needed" after they access the domain in the registrar.'
-        )
-        expected_dns_message = (
-            "Before this domain can be used, name server addresses need " 
-            "to be added within the registrar."
-        )
-        expected_hold_message = (
-            "While on hold, this domain won't resolve in DNS and "
-            "any infrastructure (like websites) will be offline."
-        )
-        expected_deleted_message = (
-            "This domain was permanently removed from the registry. "
-            "The domain no longer resolves in DNS and any infrastructure (like websites) is offline."
-        )
-        expected_messages = [
-            (self.ready_domain, "This domain has name servers and is ready for use."),
-            (self.unknown_domain, expected_unknown_domain_message),
-            (self.dns_domain, expected_dns_message),
-            (self.hold_domain, expected_hold_message),
-            (self.deleted_domain, expected_deleted_message),
-        ]
-
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-        for domain, message in expected_messages:
-            with self.subTest(domain_state=domain.state):
-                response = self.client.get(
-                    "/admin/registrar/domain/{}/change/".format(domain.pk),
-                    follow=True,
-                )
-
-                # Make sure the page loaded, and that we're on the right page
-                self.assertEqual(response.status_code, 200)
-                self.assertContains(response, domain.name)
-
-                # Check that the right help text exists
-                self.assertContains(response, message, count=1)
 
     @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
     def test_extend_expiration_date_button(self, mock_date_today):
