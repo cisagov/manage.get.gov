@@ -1951,6 +1951,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # Does the item we're grabbing match
         # what we have in our DB?
         if existing_contact.email != public_contact.email or existing_contact.registry_id != public_contact.registry_id:
+            print("******* IN IF STATEMENT!!!!! ***********")
             existing_contact.delete()
             public_contact.save()
             logger.warning("Requested PublicContact is out of sync " "with DB.")

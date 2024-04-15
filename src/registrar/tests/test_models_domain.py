@@ -213,14 +213,16 @@ class TestDomainCache(MockEppLib):
                 self.mockDataSecurityContact.id,
                 security,
             )
-            print("self.mockDataInfoContact.id is", self.mockDataInfoContact.id)
+            # print("self.mockDataInfoContact.id is", self.mockDataInfoContact.id)
+            print("self.mockDataSecurityContact", self.mockDataSecurityContact)
             print("self.mockDataSecurityContact.id is", self.mockDataSecurityContact.id)
+            print("mapped is", mapped)
 
             # id and registry_id are the same thing
             expected_contact = PublicContact(
                 domain=domain,
                 contact_type=security,
-                registry_id="SECURITY",  # self.mockDataInfoContact.id
+                registry_id="securityContact",  # self.mockDataInfoContact.id
                 email="security@mail.gov",
                 voice="+1.8882820870",
                 fax="+1-212-9876543",
@@ -253,7 +255,7 @@ class TestDomainCache(MockEppLib):
 
             """
             !!! db_object is Registry Customer Service <123@mail.gov>id: 123 type: security
-            !!! in_db is Registry Customer Service <security@mail.gov>id: securityContact type: security
+            !!! in_db is Registry Customer Service <123@mail.gov>id: securityContact type: security
             """
             print("!!! domain.security_contact.registry_id ", domain.security_contact.registry_id)
             print("!!! db_object is", db_object)
