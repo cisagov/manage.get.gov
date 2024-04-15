@@ -779,6 +779,46 @@ class WebsiteAdmin(ListHeaderAdmin):
     ]
     search_help_text = "Search by website."
 
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return {}
+        return super().get_model_perms(request)
+
+    def has_change_permission(self, request, obj=None):
+        """
+        Allow analysts to access the change form directly via URL.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return True
+        return super().has_change_permission(request, obj)
+
+    def response_change(self, request, obj):
+        """
+        Override to redirect users back to the previous page after saving.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        return_path = request.GET.get("return_path")
+
+        # First, call the super method to perform the standard operations and capture the response
+        response = super().response_change(request, obj)
+
+        # Don't redirect to the website page on save if the user is an analyst.
+        # Rather, just redirect back to the originating page.
+        if (analyst_perm and not superuser_perm) and return_path:
+            # Redirect to the return path if it exists
+            return HttpResponseRedirect(return_path)
+
+        # If no redirection is needed, return the original response
+        return response
+
 
 class UserDomainRoleAdmin(ListHeaderAdmin):
     """Custom user domain role admin class."""
@@ -1466,7 +1506,10 @@ class DomainInformationInline(admin.StackedInline):
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
         analysts can edit this through this inline, but not through the model normally"""
-        if request.user.has_perm("registrar.analyst_access_permission"):
+
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
             return True
         return super().has_change_permission(request, obj)
 
@@ -1891,6 +1934,46 @@ class DraftDomainAdmin(ListHeaderAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["name"]
+
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return {}
+        return super().get_model_perms(request)
+
+    def has_change_permission(self, request, obj=None):
+        """
+        Allow analysts to access the change form directly via URL.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return True
+        return super().has_change_permission(request, obj)
+
+    def response_change(self, request, obj):
+        """
+        Override to redirect users back to the previous page after saving.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        return_path = request.GET.get("return_path")
+
+        # First, call the super method to perform the standard operations and capture the response
+        response = super().response_change(request, obj)
+
+        # Don't redirect to the website page on save if the user is an analyst.
+        # Rather, just redirect back to the originating page.
+        if (analyst_perm and not superuser_perm) and return_path:
+            # Redirect to the return path if it exists
+            return HttpResponseRedirect(return_path)
+
+        # If no redirection is needed, return the original response
+        return response
 
 
 class PublicContactAdmin(ListHeaderAdmin):

@@ -56,6 +56,7 @@ By following the steps, you should have access / been added to the following:
 - [ ] Add onboardee to dotgov Slack channels
 - [ ] Add onboardee to Project Folder as a "Contributor" (or if you do not have permissions, confirm with Cameron)
   - If onboardee if a federal employee, add them as a "Content Manager" instead
-- [ ] Once onboardee has been granted a Figma license, add them as an editor to the Figma team workspace, Otherwise, you can add them as a viewer in the meantime. 
+- [ ] Coordinate with Cameron to grant onboardee a Figma license
+- [ ] Add onboardee as an editor to the Figma team workspace, If they do not have a license (yet), you can add them as a viewer. 
 - [ ] Add onboardee to our team meetings
 - [ ] If applicable, invite onboardee to Google Analytics, Google Search Console, and Search.gov console
