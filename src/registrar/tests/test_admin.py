@@ -18,6 +18,7 @@ from registrar.admin import (
     AuditedAdmin,
     ContactAdmin,
     DomainInformationAdmin,
+    MyHostAdmin,
     UserDomainRoleAdmin,
     VerifiedByStaffAdmin,
 )
@@ -30,6 +31,7 @@ from registrar.models import (
     Contact,
     Website,
     DraftDomain,
+    Host,
 )
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
@@ -74,6 +76,13 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.app.set_user(self.superuser.username)
         self.client.force_login(self.superuser)
 
+        # Add domain data
+        self.ready_domain, _ = Domain.objects.get_or_create(name="fakeready.gov", state=Domain.State.READY)
+        self.unknown_domain, _ = Domain.objects.get_or_create(name="fakeunknown.gov", state=Domain.State.UNKNOWN)
+        self.dns_domain, _ = Domain.objects.get_or_create(name="fakedns.gov", state=Domain.State.DNS_NEEDED)
+        self.hold_domain, _ = Domain.objects.get_or_create(name="fakehold.gov", state=Domain.State.ON_HOLD)
+        self.deleted_domain, _ = Domain.objects.get_or_create(name="fakedeleted.gov", state=Domain.State.DELETED)
+
         # Contains some test tools
         self.test_helper = GenericTestHelper(
             factory=self.factory,
@@ -84,6 +93,79 @@ class TestDomainAdmin(MockEppLib, WebTest):
             client=self.client,
         )
         super().setUp()
+
+    def test_helper_text(self):
+        """
+        Tests for the correct helper text on this page
+        """
+
+        # Create a ready domain with a preset expiration date
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+
+        # These should exist in the response
+        expected_values = [
+            ("expiration_date", "Date the domain expires in the registry"),
+            ("first_ready_at", 'Date when this domain first moved into "ready" state; date will never change'),
+            ("deleted_at", 'Will appear blank unless the domain is in "deleted" state')
+        ]
+        self.test_helper.assert_response_contains_distinct_values(response, expected_values)
+
+    def test_helper_text_state(self):
+        """
+        Tests for the correct state helper text on this page
+        """
+
+        expected_unknown_domain_message = (
+            "The creator of the associated domain request has not logged in to "
+            "manage the domain since it was approved. "
+            'The state will switch to "DNS needed" after they access the domain in the registrar.'
+        )
+        expected_dns_message = (
+            "Before this domain can be used, name server addresses need "
+            "to be added within the registrar."
+        )
+        expected_hold_message = (
+            "While on hold, this domain won't resolve in DNS and "
+            "any infrastructure (like websites) will be offline.",
+        )
+        expected_deleted_message = (
+            "This domain was permanently removed from the registry. "
+            "The domain no longer resolves in DNS and any infrastructure (like websites) is offline.",
+        )
+        expected_messages = [
+            (self.ready_domain, "This domain has name servers and is ready for use."),
+            (self.unknown_domain, expected_unknown_domain_message),
+            (self.dns_domain, expected_dns_message),
+            (self.hold_domain, expected_hold_message),
+            (self.deleted_domain, expected_deleted_message),
+        ]
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        for domain, message in expected_messages:
+            with self.subTest(domain_state=domain.state):
+                response = self.client.get(
+                    "/admin/registrar/domain/{}/change/".format(domain.pk),
+                    follow=True,
+                )
+
+                # Make sure the page loaded, and that we're on the right page
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, domain.name)
+
+                # Check that the right help text exists
+                self.assertContains(response, message, count=1)
 
     @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
     def test_extend_expiration_date_button(self, mock_date_today):
@@ -705,6 +787,38 @@ class TestDomainRequestAdmin(MockEppLib):
             model=DomainRequest,
         )
         self.mock_client = MockSESClient()
+
+    def test_helper_text(self):
+        """
+        Tests for the correct helper text on this page
+        """
+
+        # Create a fake domain request and domain
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # These should exist in the response
+        expected_values = [
+            ("creator", "Person who submitted the domain request; will not receive email updates"),
+            ("submitter", 'Person listed under "your contact information" in the request form; will receive email updates'),
+            ("approved_domain", 'Domain associated with this request; will be blank until request is approved'),
+            ("no_other_contacts_rationale", "Required if creator does not list other employees"),
+            ("alternative_domains", "Other domain names the creator provided for consideration"),
+            ("no_other_contacts_rationale", "Required if creator does not list other employees"),
+            ("Urbanization", "Required for Puerto Rico only")
+        ]
+        self.test_helper.assert_response_contains_distinct_values(response, expected_values)
+
 
     @less_console_noise_decorator
     def test_analyst_can_see_and_edit_alternative_domain(self):
@@ -2237,6 +2351,53 @@ class DomainInvitationAdminTest(TestCase):
             self.assertContains(response, retrieved_html, count=1)
 
 
+
+class TestHostAdmin(TestCase):
+    def setUp(self):
+        """Setup environment for a mock admin user"""
+        super().setUp()
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.admin = MyHostAdmin(model=Host, admin_site=self.site)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url="/admin/registrar/Host/",
+            model=Host,
+        )
+    
+    def tearDown(self):
+        super().tearDown()
+        Host.objects.all().delete()
+        Domain.objects.all().delete()
+
+    def test_helper_text(self):
+        """
+        Tests for the correct helper text on this page
+        """
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        # Create a fake host
+        host, _ = Host.objects.get_or_create(name="ns1.test.gov", domain=domain)
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/host/{}/change/".format(host.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
+
+        # These should exist in the response
+        expected_values = [
+            ("domain", "Domain associated with this host"),
+        ]
+        self.test_helper.assert_response_contains_distinct_values(response, expected_values)
+
 class TestDomainInformationAdmin(TestCase):
     def setUp(self):
         """Setup environment for a mock admin user"""
@@ -2288,6 +2449,37 @@ class TestDomainInformationAdmin(TestCase):
         Domain.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+    def test_helper_text(self):
+        """
+        Tests for the correct helper text on this page
+        """
+
+        # Create a fake domain request and domain
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        domain_request.approve()
+        domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_info.domain.name)
+
+        # These should exist in the response
+        expected_values = [
+            ("creator", "Person who submitted the domain request"),
+            ("submitter", 'Person listed under "your contact information" in the request form'),
+            ("domain_request", 'Request associated with this domain'),
+            ("no_other_contacts_rationale", "Required if creator does not list other employees"),
+            ("urbanization", "Required for Puerto Rico only")
+        ]
+        self.test_helper.assert_response_contains_distinct_values(response, expected_values)
 
     @less_console_noise_decorator
     def test_other_contacts_has_readonly_link(self):

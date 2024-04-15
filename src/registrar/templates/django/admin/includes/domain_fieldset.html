@@ -3,11 +3,11 @@
 
 
 {% block help_text %}
-    {% if field.field.name == "state" %}
-        <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
-            {# .gov override #}
-            <div>{{ state_help_message }}</div>
-            {# end of .gov override #}
-        </div>
-    {% endif %}
+    <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+        {% if field.field.name == "state" %}
+        <div>{{ state_help_message }}</div>
+        {% else %}
+        <div>{{ field.field.help_text|safe }}</div>
+        {% endif %}
+    </div>
 {% endblock help_text %}
