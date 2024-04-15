@@ -160,7 +160,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return help_texts.get(state, "")
 
         @classmethod
-        def get_admin_help_text(cls, state) -> str:
+        def get_admin_help_text(cls, state):
             """Returns a help message for a desired state for /admin. If none is found, an empty string is returned"""
             admin_help_texts = {
                 # For now, unknown has the same message as DNS_NEEDED
