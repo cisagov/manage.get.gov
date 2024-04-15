@@ -683,6 +683,7 @@ class ContactAdmin(ListHeaderAdmin):
     def user_exists(self, obj):
         """Check if the Contact has a related User"""
         return obj.user is not None
+
     user_exists.boolean = True
     user_exists.short_description = "Is user"
 
