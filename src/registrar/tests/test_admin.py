@@ -1678,6 +1678,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "purpose",
                 "no_other_contacts_rationale",
                 "anything_else",
+                "cisa_representative_email",
                 "is_policy_acknowledged",
                 "submission_date",
                 "notes",

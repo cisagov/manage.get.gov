@@ -221,6 +221,7 @@ class DomainInformation(TimeStampedModel):
         blank=True,
         db_index=True,
         verbose_name="CISA region representative",
+        max_length=320,
     )
 
     is_policy_acknowledged = models.BooleanField(

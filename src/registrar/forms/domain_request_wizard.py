@@ -851,8 +851,16 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
 
 class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     cisa_representative_email = forms.EmailField(
-        required=False,
-        label="Are you working with a CISA representative?",  # TODO-NL: (design check) - is this the right label?
+        required=True,
+        max_length=None,
+        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
+        label="Your representative’s email",
+        validators=[
+            MaxLengthValidator(
+                320,
+                message="Response must be less than 320 characters.",
+            )
+        ],
     )
 
 
