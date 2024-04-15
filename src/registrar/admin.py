@@ -1664,8 +1664,9 @@ class DomainAdmin(ListHeaderAdmin):
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
 
-            # Use in the custom contact view
-            extra_context["original_object"] = domain.domain_info
+            # Used in the custom contact view
+            if domain is not None and hasattr(domain, "domain_info"):
+                extra_context["original_object"] = domain.domain_info
 
             # Pass in what the an extended expiration date would be for the expiration date modal
             years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
