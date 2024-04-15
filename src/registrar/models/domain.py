@@ -159,6 +159,32 @@ class Domain(TimeStampedModel, DomainHelper):
 
             return help_texts.get(state, "")
 
+        @classmethod
+        def get_admin_help_text(cls, state) -> str:
+            """Returns a help message for a desired state for /admin. If none is found, an empty string is returned"""
+            admin_help_texts = {
+                # For now, unknown has the same message as DNS_NEEDED
+                cls.UNKNOWN: (
+                    "The creator of the associated domain request has not logged in to "
+                    "manage the domain since it was approved. "
+                    'The state will switch to "DNS needed" after they access the domain in the registrar.'
+                ),
+                cls.DNS_NEEDED: (
+                    "Before this domain can be used, name server addresses need to be added within the registrar."
+                ),
+                cls.READY: "This domain has name servers and is ready for use.",
+                cls.ON_HOLD: (
+                    "While on hold, this domain won't resolve in DNS and "
+                    "any infrastructure (like websites) will be offline.",
+                ),
+                cls.DELETED: (
+                    "This domain was permanently removed from the registry. "
+                    "The domain no longer resolves in DNS and any infrastructure (like websites) is offline.",
+                ),
+            }
+
+            return admin_help_texts.get(state, "")
+
     class Cache(property):
         """
         Python descriptor to turn class methods into properties.
@@ -1000,6 +1026,9 @@ class Domain(TimeStampedModel, DomainHelper):
         default=State.UNKNOWN,
         # cannot change state directly, particularly in Django admin
         protected=True,
+        # This must be defined for custom state help messages,
+        # as otherwise the view will purge the help field as it does not exist.
+        help_text=" ",
     )
 
     expiration_date = DateField(

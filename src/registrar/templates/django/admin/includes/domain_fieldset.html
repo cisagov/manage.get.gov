@@ -1,0 +1,12 @@
+{% extends "admin/fieldset.html" %}
+{% load static url_helpers %}
+
+
+{# .gov override #}
+{% block help_text %}
+    {% if field.field.name == "state" %}
+        <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+            <div>{{ state_help_message }}</div>
+        </div>
+    {% endif %}
+{% endblock help_text %}

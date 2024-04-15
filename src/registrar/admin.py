@@ -1690,20 +1690,26 @@ class DomainAdmin(ListHeaderAdmin):
         # Pass in what the an extended expiration date would be for the expiration date modal
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
-            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
-
-            try:
-                curr_exp_date = domain.registry_expiration_date
-            except KeyError:
-                # No expiration date was found. Return none.
-                extra_context["extended_expiration_date"] = None
-                return super().changeform_view(request, object_id, form_url, extra_context)
-            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
-            extra_context["extended_expiration_date"] = new_date
-        else:
-            extra_context["extended_expiration_date"] = None
+            extra_context = self._set_expiration_date_context(domain, extra_context)
+            extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
 
         return super().changeform_view(request, object_id, form_url, extra_context)
+
+    def _set_expiration_date_context(self, domain, extra_context):
+        """Given a domain, calculate the an extended expiration date
+        from the current registry expiration date."""
+        years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
+
+        try:
+            curr_exp_date = domain.registry_expiration_date
+        except KeyError:
+            # No expiration date was found. Return none.
+            extra_context["extended_expiration_date"] = None
+        else:
+            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
+            extra_context["extended_expiration_date"] = new_date
+
+        return extra_context
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
