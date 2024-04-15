@@ -175,7 +175,7 @@ class DomainInformation(TimeStampedModel):
         blank=True,
         related_name="submitted_domain_requests_information",
         on_delete=models.PROTECT,
-        help_text="Person listed under \"your contact information\" in the request form",
+        help_text='Person listed under "your contact information" in the request form',
     )
 
     purpose = models.TextField(

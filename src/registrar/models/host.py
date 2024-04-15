@@ -27,7 +27,7 @@ class Host(TimeStampedModel):
         "registrar.Domain",
         on_delete=models.PROTECT,
         related_name="host",  # access this Host via the Domain as `domain.host`
-        help_text="Domain associated with this hosts",
+        help_text="Domain associated with this host",
     )
 
     def __str__(self):

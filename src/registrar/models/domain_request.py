@@ -606,7 +606,7 @@ class DomainRequest(TimeStampedModel):
         blank=True,
         related_name="submitted_domain_requests",
         on_delete=models.PROTECT,
-        help_text="Person listed under \"your contact information\" in the request form; will receive email updates"
+        help_text='Person listed under "your contact information" in the request form; will receive email updates',
     )
 
     purpose = models.TextField(

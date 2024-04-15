@@ -1016,13 +1016,13 @@ class Domain(TimeStampedModel, DomainHelper):
     deleted = DateField(
         null=True,
         editable=False,
-        help_text="Will appear blank unless the domain is in \"deleted\" state",
+        help_text='Will appear blank unless the domain is in "deleted" state',
     )
 
     first_ready = DateField(
         null=True,
         editable=False,
-        help_text="Date when this domain first moved into \"ready\" state; date will never change",
+        help_text='Date when this domain first moved into "ready" state; date will never change',
     )
 
     def isActive(self):
