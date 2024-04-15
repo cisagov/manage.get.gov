@@ -235,7 +235,6 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(home_page, "DNS needed")
 
     def test_unknown_domain_does_not_show_as_expired_on_detail_page(self):
-        # TODO: Fix the caption of this part
         """An UNKNOWN domain should not exist on the detail_page anymore.
         It shows as 'DNS needed'"""
         # At the time of this test's writing, there are 6 UNKNOWN domains inherited
