@@ -1714,7 +1714,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(cleaned.get("_contacts")) < 3:
             for contact in cleaned.get("_contacts"):
                 if contact.type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
-                    mitestssingAdmin = False
+                    missingAdmin = False
                 if contact.type == PublicContact.ContactTypeChoices.SECURITY:
                     missingSecurity = False
                 if contact.type == PublicContact.ContactTypeChoices.TECHNICAL:
