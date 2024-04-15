@@ -48,6 +48,35 @@ class MyUserAdminForm(UserChangeForm):
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
         }
 
+    def __init__(self, *args, **kwargs):
+        """Custom init to modify the user form"""
+        super(MyUserAdminForm, self).__init__(*args, **kwargs)
+        self.override_base_help_texts()
+
+    def override_base_help_texts(self):
+        """
+        Used to override pre-existing help texts in AbstractUser.
+        This is done to avoid modifying the base AbstractUser class.
+        """
+        is_superuser = self.fields.get("is_superuser")
+        is_staff = self.fields.get("is_staff")
+        password = self.fields.get("password")
+
+        if is_superuser is not None:
+            is_superuser.help_text = (
+                "For development purposes only; provides superuser access on the database level."
+            )
+
+        if is_staff is not None:
+            is_staff.help_text = "Designates whether the user can log in to this admin site."
+
+        if password is not None:
+            link = f"../../{self.instance.pk}/password/"
+            password.help_text = (
+                "Raw passwords are not stored, so they will not display here. "
+                f'You can change the password using <a href="{link}">this form</a>.'
+            )
+
 
 class DomainInformationAdminForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
