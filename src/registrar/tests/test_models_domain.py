@@ -129,8 +129,6 @@ class TestDomainCache(MockEppLib):
             # The contact list should not contain what is sent by the registry by default,
             # as _fetch_cache will transform the type to PublicContact
             self.assertNotEqual(domain._cache["contacts"], expectedUnfurledContactsList)
-            # print("!!! domain._cache[contacts] is", domain._cache["contacts"])
-            # print("!!! expectedContactsDict is", expectedContactsDict)
 
             self.assertEqual(domain._cache["contacts"], expectedContactsDict)
 
@@ -213,16 +211,12 @@ class TestDomainCache(MockEppLib):
                 self.mockDataSecurityContact.id,
                 security,
             )
-            # print("self.mockDataInfoContact.id is", self.mockDataInfoContact.id)
-            print("self.mockDataSecurityContact", self.mockDataSecurityContact)
-            print("self.mockDataSecurityContact.id is", self.mockDataSecurityContact.id)
-            print("mapped is", mapped)
 
-            # id and registry_id are the same thing
+            # id, registry_id, and contact are the same thing
             expected_contact = PublicContact(
                 domain=domain,
                 contact_type=security,
-                registry_id="securityContact",  # self.mockDataInfoContact.id
+                registry_id="securityContact",
                 email="security@mail.gov",
                 voice="+1.8882820870",
                 fax="+1-212-9876543",
@@ -240,8 +234,6 @@ class TestDomainCache(MockEppLib):
             # two duplicate objects. We would expect
             # these not to have the same state.
             expected_contact._state = mapped._state
-            print("!!! expected_contact._state is", expected_contact.__dict__)
-            print("!!! mapped.__dict__ is", mapped.__dict__)
             # Mapped object is what we expect
             self.assertEqual(mapped.__dict__, expected_contact.__dict__)
 
@@ -253,13 +245,6 @@ class TestDomainCache(MockEppLib):
                 contact_type=security,
             ).get()
 
-            """
-            !!! db_object is Registry Customer Service <123@mail.gov>id: 123 type: security
-            !!! in_db is Registry Customer Service <123@mail.gov>id: securityContact type: security
-            """
-            print("!!! domain.security_contact.registry_id ", domain.security_contact.registry_id)
-            print("!!! db_object is", db_object)
-            print("!!! in_db is", in_db)
             # DB Object is the same as the mapped object
             self.assertEqual(db_object, in_db)
             domain.security_contact = in_db
@@ -337,6 +322,7 @@ class TestDomainCache(MockEppLib):
         """
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="justnameserver.com")
+            # trigger the getter
             _ = domain.nameservers
             self.assertEqual(domain.state, Domain.State.READY)
             self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 0)
