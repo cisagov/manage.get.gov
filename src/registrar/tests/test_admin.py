@@ -132,15 +132,16 @@ class TestDomainAdmin(MockEppLib, WebTest):
             'The state will switch to "DNS needed" after they access the domain in the registrar.'
         )
         expected_dns_message = (
-            "Before this domain can be used, name server addresses need " "to be added within the registrar."
+            "Before this domain can be used, name server addresses need " 
+            "to be added within the registrar."
         )
         expected_hold_message = (
             "While on hold, this domain won't resolve in DNS and "
-            "any infrastructure (like websites) will be offline.",
+            "any infrastructure (like websites) will be offline."
         )
         expected_deleted_message = (
             "This domain was permanently removed from the registry. "
-            "The domain no longer resolves in DNS and any infrastructure (like websites) is offline.",
+            "The domain no longer resolves in DNS and any infrastructure (like websites) is offline."
         )
         expected_messages = [
             (self.ready_domain, "This domain has name servers and is ready for use."),

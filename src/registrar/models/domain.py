@@ -175,11 +175,11 @@ class Domain(TimeStampedModel, DomainHelper):
                 cls.READY: "This domain has name servers and is ready for use.",
                 cls.ON_HOLD: (
                     "While on hold, this domain won't resolve in DNS and "
-                    "any infrastructure (like websites) will be offline.",
+                    "any infrastructure (like websites) will be offline."
                 ),
                 cls.DELETED: (
                     "This domain was permanently removed from the registry. "
-                    "The domain no longer resolves in DNS and any infrastructure (like websites) is offline.",
+                    "The domain no longer resolves in DNS and any infrastructure (like websites) is offline."
                 ),
             }
 
