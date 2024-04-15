@@ -663,6 +663,7 @@ class ContactAdmin(ListHeaderAdmin):
     list_display = [
         "contact",
         "email",
+        "user_exists",
     ]
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
@@ -678,6 +679,12 @@ class ContactAdmin(ListHeaderAdmin):
     autocomplete_fields = ["user"]
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    def user_exists(self, obj):
+        """Check if the Contact has a related User"""
+        return obj.user is not None
+    user_exists.boolean = True
+    user_exists.short_description = "Is user"
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
