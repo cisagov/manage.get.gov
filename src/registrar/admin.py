@@ -290,6 +290,13 @@ class CustomLogEntryAdmin(LogEntryAdmin):
         # Return the field value without a link
         return f"{obj.content_type} - {obj.object_repr}"
 
+    # We name the custom prop 'created_at' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    @admin.display(description=_("Created at"))
+    def created(self, obj):
+        return obj.timestamp
+
     search_help_text = "Search by resource, changes, or user."
 
     change_form_template = "admin/change_form_no_submit.html"
