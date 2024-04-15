@@ -1631,6 +1631,7 @@ class DomainAdmin(ListHeaderAdmin):
 
     city.admin_order_field = "domain_info__city"  # type: ignore
 
+    @admin.display(description=_("State / territory"))
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
 
