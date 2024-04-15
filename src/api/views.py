@@ -72,7 +72,7 @@ def check_domain_available(domain):
     given domain doesn't end with .gov, ".gov" is added when looking for
     a match. If check fails, throws a RegistryError.
     """
-    return True
+
     Domain = apps.get_model("registrar.Domain")
 
     if domain.endswith(".gov"):
