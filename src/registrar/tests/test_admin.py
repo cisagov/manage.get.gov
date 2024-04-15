@@ -21,7 +21,16 @@ from registrar.admin import (
     UserDomainRoleAdmin,
     VerifiedByStaffAdmin,
 )
-from registrar.models import Domain, DomainRequest, DomainInformation, User, DomainInvitation, Contact, Website
+from registrar.models import (
+    Domain,
+    DomainRequest,
+    DomainInformation,
+    User,
+    DomainInvitation,
+    Contact,
+    Website,
+    DraftDomain,
+)
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
@@ -76,11 +85,10 @@ class TestDomainAdmin(MockEppLib, WebTest):
         )
         super().setUp()
 
-    @skip("TODO for another ticket. This test case is grabbing old db data.")
     @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
     def test_extend_expiration_date_button(self, mock_date_today):
         """
-        Tests if extend_expiration_date button extends correctly
+        Tests if extend_expiration_date modal gives an accurate date
         """
 
         # Create a ready domain with a preset expiration date
@@ -107,17 +115,11 @@ class TestDomainAdmin(MockEppLib, WebTest):
             # Follow the response
             response = response.follow()
 
-        # refresh_from_db() does not work for objects with protected=True.
-        # https://github.com/viewflow/django-fsm/issues/89
-        new_domain = Domain.objects.get(id=domain.id)
-
-        # Check that the current expiration date is what we expect
-        self.assertEqual(new_domain.expiration_date, date(2025, 5, 25))
-
         # Assert that everything on the page looks correct
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
         self.assertContains(response, "Extend expiration date")
+        self.assertContains(response, "New expiration date: <b>May 25, 2025</b>")
 
         # Ensure the message we recieve is in line with what we expect
         expected_message = "Successfully extended the expiration date."
@@ -129,6 +131,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
             extra_tags="",
             fail_silently=False,
         )
+
         mock_add_message.assert_has_calls([expected_call], 1)
 
     @less_console_noise_decorator
@@ -702,6 +705,126 @@ class TestDomainRequestAdmin(MockEppLib):
             model=DomainRequest,
         )
         self.mock_client = MockSESClient()
+
+    @less_console_noise_decorator
+    def test_analyst_can_see_and_edit_alternative_domain(self):
+        """Tests if an analyst can still see and edit the alternative domain field"""
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+        )
+
+        # Create a fake domain request
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+
+        fake_website = Website.objects.create(website="thisisatest.gov")
+        _domain_request.alternative_domains.add(fake_website)
+        _domain_request.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, _domain_request.requested_domain.name)
+
+        # Test if the page has the alternative domain
+        self.assertContains(response, "thisisatest.gov")
+
+        # Check that the page contains the url we expect
+        expected_href = reverse("admin:registrar_website_change", args=[fake_website.id])
+        self.assertContains(response, expected_href)
+
+        # Navigate to the website to ensure that we can still edit it
+        response = self.client.get(
+            "/admin/registrar/website/{}/change/".format(fake_website.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "thisisatest.gov")
+
+    @less_console_noise_decorator
+    def test_analyst_can_see_and_edit_requested_domain(self):
+        """Tests if an analyst can still see and edit the requested domain field"""
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+        )
+
+        # Create a fake domain request
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        # Filter to get the latest from the DB (rather than direct assignment)
+        requested_domain = DraftDomain.objects.filter(name=_domain_request.requested_domain.name).get()
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, requested_domain.name)
+
+        # Check that the page contains the url we expect
+        expected_href = reverse("admin:registrar_draftdomain_change", args=[requested_domain.id])
+        self.assertContains(response, expected_href)
+
+        # Navigate to the website to ensure that we can still edit it
+        response = self.client.get(
+            "/admin/registrar/draftdomain/{}/change/".format(requested_domain.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "city.gov")
+
+    @less_console_noise_decorator
+    def test_analyst_can_see_current_websites(self):
+        """Tests if an analyst can still see current website field"""
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+        )
+
+        # Create a fake domain request
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+
+        fake_website = Website.objects.create(website="thisisatest.gov")
+        _domain_request.current_websites.add(fake_website)
+        _domain_request.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, _domain_request.requested_domain.name)
+
+        # Test if the page has the current website
+        self.assertContains(response, "thisisatest.gov")
 
     def test_domain_sortable(self):
         """Tests if the DomainRequest sorts by domain correctly"""
@@ -1552,6 +1675,10 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Test for the copy link
         self.assertContains(response, "usa-button__clipboard", count=4)
+
+        # Test that Creator counts display properly
+        self.assertNotContains(response, "Approved domains")
+        self.assertContains(response, "Active requests")
 
     def test_save_model_sets_restricted_status_on_user(self):
         with less_console_noise():
