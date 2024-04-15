@@ -1172,7 +1172,17 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale", "cisa_representative_email"]}),
+        (
+            "Contacts",
+            {
+                "fields": [
+                    "authorizing_official",
+                    "other_contacts",
+                    "no_other_contacts_rationale",
+                    "cisa_representative_email",
+                ]
+            },
+        ),
         ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
         (
             "Type of organization",
