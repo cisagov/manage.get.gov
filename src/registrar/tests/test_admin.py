@@ -117,7 +117,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         expected_values = [
             ("expiration_date", "Date the domain expires in the registry"),
             ("first_ready_at", 'Date when this domain first moved into "ready" state; date will never change'),
-            ("deleted_at", 'Will appear blank unless the domain is in "deleted" state')
+            ("deleted_at", 'Will appear blank unless the domain is in "deleted" state'),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
 
@@ -132,8 +132,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
             'The state will switch to "DNS needed" after they access the domain in the registrar.'
         )
         expected_dns_message = (
-            "Before this domain can be used, name server addresses need "
-            "to be added within the registrar."
+            "Before this domain can be used, name server addresses need " "to be added within the registrar."
         )
         expected_hold_message = (
             "While on hold, this domain won't resolve in DNS and "
@@ -810,15 +809,17 @@ class TestDomainRequestAdmin(MockEppLib):
         # These should exist in the response
         expected_values = [
             ("creator", "Person who submitted the domain request; will not receive email updates"),
-            ("submitter", 'Person listed under "your contact information" in the request form; will receive email updates'),
-            ("approved_domain", 'Domain associated with this request; will be blank until request is approved'),
+            (
+                "submitter",
+                'Person listed under "your contact information" in the request form; will receive email updates',
+            ),
+            ("approved_domain", "Domain associated with this request; will be blank until request is approved"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
             ("alternative_domains", "Other domain names the creator provided for consideration"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
-            ("Urbanization", "Required for Puerto Rico only")
+            ("Urbanization", "Required for Puerto Rico only"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
-
 
     @less_console_noise_decorator
     def test_analyst_can_see_and_edit_alternative_domain(self):
@@ -2351,7 +2352,6 @@ class DomainInvitationAdminTest(TestCase):
             self.assertContains(response, retrieved_html, count=1)
 
 
-
 class TestHostAdmin(TestCase):
     def setUp(self):
         """Setup environment for a mock admin user"""
@@ -2368,7 +2368,7 @@ class TestHostAdmin(TestCase):
             url="/admin/registrar/Host/",
             model=Host,
         )
-    
+
     def tearDown(self):
         super().tearDown()
         Host.objects.all().delete()
@@ -2397,6 +2397,7 @@ class TestHostAdmin(TestCase):
             ("domain", "Domain associated with this host"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
+
 
 class TestDomainInformationAdmin(TestCase):
     def setUp(self):
@@ -2475,9 +2476,9 @@ class TestDomainInformationAdmin(TestCase):
         expected_values = [
             ("creator", "Person who submitted the domain request"),
             ("submitter", 'Person listed under "your contact information" in the request form'),
-            ("domain_request", 'Request associated with this domain'),
+            ("domain_request", "Request associated with this domain"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
-            ("urbanization", "Required for Puerto Rico only")
+            ("urbanization", "Required for Puerto Rico only"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
 
@@ -2825,7 +2826,7 @@ class UserDomainRoleAdminTest(TestCase):
             self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
 
 
-class ListHeaderAdminTest(TestCase):
+class TestListHeaderAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.factory = RequestFactory()
@@ -2898,10 +2899,38 @@ class ListHeaderAdminTest(TestCase):
         User.objects.all().delete()
 
 
-class MyUserAdminTest(TestCase):
+class TestMyUserAdmin(TestCase):
     def setUp(self):
         admin_site = AdminSite()
         self.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+        self.test_helper = GenericTestHelper(admin=self.admin)
+
+    def test_helper_text(self):
+        """
+        Tests for the correct helper text on this page
+        """
+        user = create_user()
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/user/{}/change/".format(user.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
+
+        # These should exist in the response
+        expected_values = [
+            ("password", "Raw passwords are not stored, so they will not display here."),
+            ("status", 'Users in "restricted" status cannot make updates in the registrar or start a new request.'),
+            ("is_staff", "Designates whether the user can log in to this admin site"),
+            ("is_superuser", "For development purposes only; provides superuser access on the database level"),
+        ]
+        self.test_helper.assert_response_contains_distinct_values(response, expected_values)
 
     def test_list_display_without_username(self):
         with less_console_noise():
@@ -3417,10 +3446,42 @@ class ContactAdminTest(TestCase):
         User.objects.all().delete()
 
 
-class VerifiedByStaffAdminTestCase(TestCase):
+class TestVerifiedByStaffAdmin(TestCase):
     def setUp(self):
+        super().setUp()
+        self.site = AdminSite()
         self.superuser = create_superuser()
+        self.admin = VerifiedByStaffAdmin(model=VerifiedByStaff, admin_site=self.site)
         self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.test_helper = GenericTestHelper(admin=self.admin)
+
+    def tearDown(self):
+        super().tearDown()
+        VerifiedByStaff.objects.all().delete()
+        User.objects.all().delete()
+
+    def test_helper_text(self):
+        """
+        Tests for the correct helper text on this page
+        """
+        vip_instance, _ = VerifiedByStaff.objects.get_or_create(email="test@example.com", notes="Test Notes")
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/verifiedbystaff/{}/change/".format(vip_instance.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
+
+        # These should exist in the response
+        expected_values = [
+            ("requestor", "Person who verified this user"),
+        ]
+        self.test_helper.assert_response_contains_distinct_values(response, expected_values)
 
     def test_save_model_sets_user_field(self):
         with less_console_noise():
