@@ -1686,6 +1686,13 @@ class Domain(TimeStampedModel, DomainHelper):
                 logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
 
     def _fix_unknown_state(self, cleaned):
+        """
+        _fix_unknown_state: Calls _add_missing_contacts_if_unknown
+        to add contacts in as needed (or return an error). Otherwise
+        if we are able to add contacts and the state is out of UNKNOWN
+        and (and should be into DNS_NEEDED), we double check the
+        current state and # of nameservers and update the state from there
+        """
         try:
             self._add_missing_contacts_if_unknown(cleaned)
 
@@ -1694,7 +1701,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 "%s couldn't _add_missing_contacts_if_unknown, error was %s."
                 "Domain will still be in UNKNOWN state." % (self.name, e)
             )
-        if len(self.nameservers) >= 2:
+        if len(self.nameservers) >= 2 and (self.state != self.State.READY):
             self.ready()
             self.save()
 

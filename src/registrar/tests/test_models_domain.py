@@ -339,6 +339,7 @@ class TestDomainCache(MockEppLib):
         """
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="defaulttechnical.gov")
+            # trigger the getter
             _ = domain.nameservers
             self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
             self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 2)
