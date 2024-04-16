@@ -366,7 +366,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_details_form = additional_details_page.forms[0]
 
         # load inputs with test data
-        
+
         additional_details_form["additional_details-has_cisa_representative"] = "True"
         additional_details_form["additional_details-has_anything_else_text"] = "True"
         additional_details_form["additional_details-cisa_representative_email"] = "FakeEmail@gmail.com"
