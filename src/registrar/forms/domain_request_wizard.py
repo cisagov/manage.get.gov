@@ -864,13 +864,19 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     )
 
 
-class CisaRepresentativeYesNoForm(RegistrarForm):
+class BaseYesNoForm(RegistrarForm):
+    """Used for forms with a yes/no form with a hidden input on toggle"""
+
+    form_is_checked = None
+    typed_choice_field_name = None
+
     def __init__(self, *args, **kwargs):
         """Extend the initialization of the form from RegistrarForm __init__"""
         super().__init__(*args, **kwargs)
+
         # set the initial value based on attributes of domain request
         if self.domain_request:
-            if self.domain_request.has_cisa_representative():
+            if self.form_is_checked:
                 initial_value = True
             else:
                 initial_value = False
@@ -878,8 +884,8 @@ class CisaRepresentativeYesNoForm(RegistrarForm):
             # No pre-selection for new domain requests
             initial_value = None
 
-        self.fields["has_cisa_representative"] = forms.TypedChoiceField(
-            coerce=lambda x: x.lower() == "true" if x is not None else None,  # coerce strings to bool, excepting None
+        self.fields[self.typed_choice_field_name] = forms.TypedChoiceField(
+            coerce=lambda x: x.lower() == "true" if x is not None else None,
             choices=((True, "Yes"), (False, "No")),
             initial=initial_value,
             widget=forms.RadioSelect,
@@ -887,6 +893,16 @@ class CisaRepresentativeYesNoForm(RegistrarForm):
                 "required": "This question is required.",
             },
         )
+
+
+class CisaRepresentativeYesNoForm(BaseYesNoForm):
+    """Yes/no toggle for the CISA regions question on additional details"""
+
+    # Note that these can be set in __init__ if you need more fine-grained control
+    form_is_checked = property(
+        lambda self: self.domain_request.has_cisa_representative() if self.domain_request else False
+    )
+    typed_choice_field_name = "has_cisa_representative"
 
 
 class AdditionalDetailsForm(BaseDeletableRegistrarForm):
@@ -903,29 +919,14 @@ class AdditionalDetailsForm(BaseDeletableRegistrarForm):
     )
 
 
-class AdditionalDetailsYesNoForm(RegistrarForm):
-    def __init__(self, *args, **kwargs):
-        """Extend the initialization of the form from RegistrarForm __init__"""
-        super().__init__(*args, **kwargs)
-        # set the initial value based on attributes of domain request
-        if self.domain_request:
-            if self.domain_request.has_anything_else_text():
-                initial_value = True
-            else:
-                initial_value = False
-        else:
-            # No pre-selection for new domain requests
-            initial_value = None
+class AdditionalDetailsYesNoForm(BaseYesNoForm):
+    """Yes/no toggle for the anything else question on additional details"""
 
-        self.fields["has_anything_else_text"] = forms.TypedChoiceField(
-            coerce=lambda x: x.lower() == "true" if x is not None else None,  # coerce strings to bool, excepting None
-            choices=((True, "Yes"), (False, "No")),
-            initial=initial_value,
-            widget=forms.RadioSelect,
-            error_messages={
-                "required": "This question is required.",  # TODO-NL: (design check) - is this required?
-            },
-        )
+    # Note that these can be set in __init__ if you need more fine-grained control
+    form_is_checked = property(
+        lambda self: self.domain_request.has_anything_else_text() if self.domain_request else False
+    )
+    typed_choice_field_name = "has_anything_else_text"
 
 
 class RequirementsForm(RegistrarForm):
