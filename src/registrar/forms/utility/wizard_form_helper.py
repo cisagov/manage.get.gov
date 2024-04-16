@@ -159,6 +159,60 @@ class RegistrarFormSet(forms.BaseFormSet):
         return on_fetch(getattr(obj, join).order_by("created_at"))  # order matters
 
 
+class BaseDeletableRegistrarForm(RegistrarForm):
+    """Adds special validation and delete functionality.
+    Used by forms that are tied to a Yes/No form."""
+
+    def __init__(self, *args, **kwargs):
+        self.form_data_marked_for_deletion = False
+        super().__init__(*args, **kwargs)
+
+    def mark_form_for_deletion(self):
+        """Marks this form for deletion.
+        This changes behavior of validity checks and to_database
+        methods."""
+        self.form_data_marked_for_deletion = True
+
+    def clean(self):
+        """
+        This method overrides the default behavior for forms.
+        This cleans the form after field validation has already taken place.
+        In this override, remove errors associated with the form if form data
+        is marked for deletion.
+        """
+
+        if self.form_data_marked_for_deletion:
+            # clear any errors raised by the form fields
+            # (before this clean() method is run, each field
+            # performs its own clean, which could result in
+            # errors that we wish to ignore at this point)
+            #
+            # NOTE: we cannot just clear() the errors list.
+            # That causes problems.
+            for field in self.fields:
+                if field in self.errors:
+                    del self.errors[field]
+
+        return self.cleaned_data
+
+    def to_database(self, obj):
+        """
+        This method overrides the behavior of RegistrarForm.
+        If form data is marked for deletion, set relevant fields
+        to None before saving.
+        Do nothing if form is not valid.
+        """
+        if not self.is_valid():
+            return
+        if self.form_data_marked_for_deletion:
+            for field_name, _ in self.fields.items():
+                setattr(obj, field_name, None)
+        else:
+            for name, value in self.cleaned_data.items():
+                setattr(obj, name, value)
+        obj.save()
+
+
 class BaseYesNoForm(RegistrarForm):
     """
     Base class used for forms with a yes/no form with a hidden input on toggle.

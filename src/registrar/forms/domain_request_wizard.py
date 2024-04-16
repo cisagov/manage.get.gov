@@ -7,7 +7,12 @@ from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 
-from registrar.forms.utility.wizard_form_helper import RegistrarForm, RegistrarFormSet, BaseYesNoForm
+from registrar.forms.utility.wizard_form_helper import (
+    RegistrarForm,
+    RegistrarFormSet,
+    BaseYesNoForm,
+    BaseDeletableRegistrarForm,
+)
 from registrar.models import Contact, DomainRequest, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
@@ -620,60 +625,6 @@ OtherContactsFormSet = forms.formset_factory(
     validate_min=True,
     formset=BaseOtherContactsFormSet,
 )
-
-
-class BaseDeletableRegistrarForm(RegistrarForm):
-    """Adds special validation and delete functionality.
-    Used by forms that are tied to a Yes/No form."""
-
-    def __init__(self, *args, **kwargs):
-        self.form_data_marked_for_deletion = False
-        super().__init__(*args, **kwargs)
-
-    def mark_form_for_deletion(self):
-        """Marks this form for deletion.
-        This changes behavior of validity checks and to_database
-        methods."""
-        self.form_data_marked_for_deletion = True
-
-    def clean(self):
-        """
-        This method overrides the default behavior for forms.
-        This cleans the form after field validation has already taken place.
-        In this override, remove errors associated with the form if form data
-        is marked for deletion.
-        """
-
-        if self.form_data_marked_for_deletion:
-            # clear any errors raised by the form fields
-            # (before this clean() method is run, each field
-            # performs its own clean, which could result in
-            # errors that we wish to ignore at this point)
-            #
-            # NOTE: we cannot just clear() the errors list.
-            # That causes problems.
-            for field in self.fields:
-                if field in self.errors:
-                    del self.errors[field]
-
-        return self.cleaned_data
-
-    def to_database(self, obj):
-        """
-        This method overrides the behavior of RegistrarForm.
-        If form data is marked for deletion, set relevant fields
-        to None before saving.
-        Do nothing if form is not valid.
-        """
-        if not self.is_valid():
-            return
-        if self.form_data_marked_for_deletion:
-            for field_name, _ in self.fields.items():
-                setattr(obj, field_name, None)
-        else:
-            for name, value in self.cleaned_data.items():
-                setattr(obj, name, value)
-        obj.save()
 
 
 class NoOtherContactsForm(BaseDeletableRegistrarForm):
