@@ -662,7 +662,7 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
     """Yes/no toggle for the CISA regions question on additional details"""
 
     # Note that these can be set as functions/init if you need more fine-grained control
-    form_is_checked = property(lambda self: self.domain_request.has_cisa_representative())
+    form_is_checked = property(lambda self: self.domain_request.has_cisa_representative())  # type: ignore
     field_name = "has_cisa_representative"
 
 
@@ -683,8 +683,8 @@ class AdditionalDetailsForm(BaseDeletableRegistrarForm):
 class AdditionalDetailsYesNoForm(BaseYesNoForm):
     """Yes/no toggle for the anything else question on additional details"""
 
-    # Note that these can be set as functions/init if you need more fine-grained control
-    form_is_checked = property(lambda self: self.domain_request.has_anything_else_text())
+    # Note that these can be set as functions/init if you need more fine-grained control.
+    form_is_checked = property(lambda self: self.domain_request.has_anything_else_text())  # type: ignore
     field_name = "has_anything_else_text"
 
 
