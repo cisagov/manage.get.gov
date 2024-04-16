@@ -568,6 +568,7 @@ class MyUserAdmin(BaseUserAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
+    search_help_text = "Search by first name, last name, or email."
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
 
@@ -658,7 +659,7 @@ class MyHostAdmin(AuditedAdmin):
     """Custom host admin class to use our inlines."""
 
     search_fields = ["name", "domain__name"]
-    search_help_text = "Search by domain or hostname."
+    search_help_text = "Search by domain or host name."
     inlines = [HostIPInline]
 
 
@@ -666,7 +667,7 @@ class ContactAdmin(ListHeaderAdmin):
     """Custom contact admin class to add search."""
 
     search_fields = ["email", "first_name", "last_name"]
-    search_help_text = "Search by firstname, lastname or email."
+    search_help_text = "Search by first name, last name or email."
     list_display = [
         "name",
         "email",
@@ -858,7 +859,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
         "domain__name",
         "role",
     ]
-    search_help_text = "Search by firstname, lastname, email, domain, or role."
+    search_help_text = "Search by first name, last name, email, domain, or role."
 
     autocomplete_fields = ["user", "domain"]
 
