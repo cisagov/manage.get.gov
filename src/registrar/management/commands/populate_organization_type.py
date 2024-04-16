@@ -121,7 +121,7 @@ class Command(BaseCommand):
                     if request.requested_domain is not None and request.requested_domain.name is not None:
                         domain_name = request.requested_domain.name
 
-                    request_is_approved = request.state == DomainRequest.DomainRequestStatus.APPROVED
+                    request_is_approved = request.status == DomainRequest.DomainRequestStatus.APPROVED
                     if request_is_approved and domain_name is not None:
                         request.is_election_board = domain_name in self.domains_with_election_boards_set
 
