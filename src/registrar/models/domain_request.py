@@ -550,7 +550,7 @@ class DomainRequest(TimeStampedModel):
     urbanization = models.CharField(
         null=True,
         blank=True,
-        help_text="Required for Puetro Rico only",
+        help_text="Required for Puerto Rico only",
     )
 
     about_your_organization = models.TextField(

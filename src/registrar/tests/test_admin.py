@@ -122,6 +122,40 @@ class TestDomainAdmin(MockEppLib, WebTest):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
 
+    @less_console_noise_decorator
+    def test_helper_text_state(self):
+        """
+        Tests for the correct state helper text on this page
+        """
+
+        # We don't need to check for all text content, just a portion of it
+        expected_unknown_domain_message = "The creator of the associated domain request has not logged in to"
+        expected_dns_message = "Before this domain can be used, name server addresses need"
+        expected_hold_message = "While on hold, this domain"
+        expected_deleted_message = "This domain was permanently removed from the registry."
+        expected_messages = [
+            (self.ready_domain, "This domain has name servers and is ready for use."),
+            (self.unknown_domain, expected_unknown_domain_message),
+            (self.dns_domain, expected_dns_message),
+            (self.hold_domain, expected_hold_message),
+            (self.deleted_domain, expected_deleted_message),
+        ]
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        for domain, message in expected_messages:
+            with self.subTest(domain_state=domain.state):
+                response = self.client.get(
+                    "/admin/registrar/domain/{}/change/".format(domain.id),
+                )
+
+                # Make sure the page loaded, and that we're on the right page
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, domain.name)
+
+                # Check that the right help text exists
+                self.assertContains(response, message)
+
     @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
     def test_extend_expiration_date_button(self, mock_date_today):
         """
@@ -743,6 +777,7 @@ class TestDomainRequestAdmin(MockEppLib):
         )
         self.mock_client = MockSESClient()
 
+    @less_console_noise_decorator
     def test_helper_text(self):
         """
         Tests for the correct helper text on this page
@@ -2330,6 +2365,7 @@ class TestHostAdmin(TestCase):
         Host.objects.all().delete()
         Domain.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_helper_text(self):
         """
         Tests for the correct helper text on this page
@@ -2407,6 +2443,7 @@ class TestDomainInformationAdmin(TestCase):
         Contact.objects.all().delete()
         User.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_helper_text(self):
         """
         Tests for the correct helper text on this page
@@ -2863,6 +2900,11 @@ class TestMyUserAdmin(TestCase):
         self.superuser = create_superuser()
         self.test_helper = GenericTestHelper(admin=self.admin)
 
+    def tearDown(self):
+        super().tearDown()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
     def test_helper_text(self):
         """
         Tests for the correct helper text on this page
@@ -2908,8 +2950,9 @@ class TestMyUserAdmin(TestCase):
     def test_get_fieldsets_superuser(self):
         with less_console_noise():
             request = self.client.request().wsgi_request
-            request.user = create_superuser()
+            request.user = self.superuser
             fieldsets = self.admin.get_fieldsets(request)
+
             expected_fieldsets = super(MyUserAdmin, self.admin).get_fieldsets(request)
             self.assertEqual(fieldsets, expected_fieldsets)
 
@@ -2925,9 +2968,6 @@ class TestMyUserAdmin(TestCase):
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
             )
             self.assertEqual(fieldsets, expected_fieldsets)
-
-    def tearDown(self):
-        User.objects.all().delete()
 
 
 class AuditedAdminTest(TestCase):
@@ -3417,6 +3457,7 @@ class TestVerifiedByStaffAdmin(TestCase):
         VerifiedByStaff.objects.all().delete()
         User.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_helper_text(self):
         """
         Tests for the correct helper text on this page
