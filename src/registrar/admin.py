@@ -686,6 +686,7 @@ class ContactAdmin(ListHeaderAdmin):
 
     user_exists.boolean = True  # type: ignore
     user_exists.short_description = "Is user"  # type: ignore
+    user_exists.admin_order_field = 'user'  # type: ignore
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
