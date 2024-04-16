@@ -118,10 +118,7 @@ class Command(BaseCommand):
             try:
                 if request.generic_org_type is not None:
                     domain_name = None
-                    if (
-                        request.requested_domain is not None and
-                        request.requested_domain.name is not None
-                    ):
+                    if request.requested_domain is not None and request.requested_domain.name is not None:
                         domain_name = request.requested_domain.name
 
                     request_is_approved = request.state == DomainRequest.DomainRequestStatus.APPROVED
@@ -195,7 +192,7 @@ class Command(BaseCommand):
         ScriptDataHelper.bulk_update_fields(
             DomainInformation, self.di_to_update, ["organization_type", "is_election_board", "generic_org_type"]
         )
-        
+
         # Log what happened
         log_header = "============= FINISHED UPDATE FOR DOMAININFORMATION ==============="
         TerminalHelper.log_script_run_summary(

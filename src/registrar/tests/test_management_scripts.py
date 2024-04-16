@@ -98,7 +98,7 @@ class TestPopulateOrganizationType(MockEppLib):
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
             return_value=True,
         ):
-            call_command("populate_organization_type", "registrar/tests/data/fake_election_domains.csv", debug=True)
+            call_command("populate_organization_type", "registrar/tests/data/fake_election_domains.csv")
 
     def assert_expected_org_values_on_request_and_info(
         self,
@@ -118,7 +118,7 @@ class TestPopulateOrganizationType(MockEppLib):
 
             expected_values (dict): Container for what we expect is_electionboard, generic_org_type,
             and organization_type to be on DomainRequest and DomainInformation.
-                Example:         
+                Example:
                 expected_values = {
                     "is_election_board": False,
                     "generic_org_type": DomainRequest.OrganizationChoices.CITY,
