@@ -497,8 +497,8 @@ class MyUserAdmin(BaseUserAdmin):
     # Renames inherited AbstractUser label 'email_address to 'email'
     def formfield_for_dbfield(self, dbfield, **kwargs):
         field = super().formfield_for_dbfield(dbfield, **kwargs)
-        if dbfield.name == 'email':
-            field.label = 'Email'
+        if dbfield.name == "email":
+            field.label = "Email"
         return field
 
     # Renames inherited AbstractUser column name 'email_address to 'email'
@@ -2036,19 +2036,15 @@ class FederalAgencyAdmin(ListHeaderAdmin):
 class UserGroupAdmin(AuditedAdmin):
     """Overwrite the generated UserGroup admin class"""
 
-    list_display = [
-        "user_group"
-    ]
+    list_display = ["user_group"]
 
-    fieldsets = (
-        (None, {'fields': ('name', 'permissions')}),
-    )
+    fieldsets = ((None, {"fields": ("name", "permissions")}),)
 
     def formfield_for_dbfield(self, dbfield, **kwargs):
         field = super().formfield_for_dbfield(dbfield, **kwargs)
-        if dbfield.name == 'name':
-            field.label = 'Group name'
-        if dbfield.name == 'permissions':
+        if dbfield.name == "name":
+            field.label = "Group name"
+        if dbfield.name == "permissions":
             field.label = "User permissions"
         return field
 
@@ -2058,6 +2054,7 @@ class UserGroupAdmin(AuditedAdmin):
     @admin.display(description=_("Group"))
     def user_group(self, obj):
         return obj.name
+
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
