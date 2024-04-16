@@ -485,7 +485,7 @@ class MyUserAdmin(BaseUserAdmin):
 
     list_display = (
         "username",
-        "email",
+        "overridden_email_field",
         "first_name",
         "last_name",
         # Group is a custom property defined within this file,
@@ -493,6 +493,18 @@ class MyUserAdmin(BaseUserAdmin):
         "group",
         "status",
     )
+
+    # Renames inherited AbstractUser label 'email_address to 'email'
+    def formfield_for_dbfield(self, dbfield, **kwargs):
+        field = super().formfield_for_dbfield(dbfield, **kwargs)
+        if dbfield.name == 'email':
+            field.label = 'Email'
+        return field
+
+    # Renames inherited AbstractUser column name 'email_address to 'email'
+    @admin.display(description=_("Email"))
+    def overridden_email_field(self, obj):
+        return obj.email
 
     fieldsets = (
         (
@@ -2021,13 +2033,39 @@ class FederalAgencyAdmin(ListHeaderAdmin):
     ordering = ["agency"]
 
 
+class UserGroupAdmin(AuditedAdmin):
+    """Overwrite the generated UserGroup admin class"""
+
+    list_display = [
+        "user_group"
+    ]
+
+    fieldsets = (
+        (None, {'fields': ('name', 'permissions')}),
+    )
+
+    def formfield_for_dbfield(self, dbfield, **kwargs):
+        field = super().formfield_for_dbfield(dbfield, **kwargs)
+        if dbfield.name == 'name':
+            field.label = 'Group name'
+        if dbfield.name == 'permissions':
+            field.label = "User permissions"
+        return field
+
+    # We name the custom prop 'Group' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    @admin.display(description=_("Group"))
+    def user_group(self, obj):
+        return obj.name
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
 # Unregister the built-in Group model
 admin.site.unregister(Group)
 # Register UserGroup
-admin.site.register(models.UserGroup)
+admin.site.register(models.UserGroup, UserGroupAdmin)
 admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
