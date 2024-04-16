@@ -18,6 +18,6 @@ class DraftDomain(TimeStampedModel, DomainHelper):
         max_length=253,
         blank=False,
         default=None,  # prevent saving without a value
-        verbose_name="Requested domain",
+        verbose_name="requested domain",
         help_text="Fully qualified domain name",
     )
