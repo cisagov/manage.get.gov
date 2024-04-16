@@ -585,13 +585,8 @@ class OtherContacts(DomainRequestWizard):
 # DONE-NL: rename this to "Additional Details" (note: this is a find-replace job. VS will not refactor properly)
 class AdditionalDetails(DomainRequestWizard):
 
-    # TODO-NL: Delete this old (original code for anything else)
-    # template_name = "domain_request_anything_else.html"
-    # forms = [forms.AdditionalDetailsForm]
-
     template_name = "domain_request_additional_details.html"
-    # OLD:  forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
-    # TODO-NL: (refactor) -- move form hookups into respective areas
+
     forms = [
         forms.CisaRepresentativeYesNoForm,
         forms.CisaRepresentativeForm,
@@ -599,7 +594,6 @@ class AdditionalDetails(DomainRequestWizard):
         forms.AdditionalDetailsForm,
     ]
 
-    # TODO-NL: (refactor) -- move validation into respective areas
     def is_valid(self, forms: list) -> bool:
 
         # Validate Cisa Representative
@@ -637,7 +631,7 @@ class AdditionalDetails(DomainRequestWizard):
                 # mark the anything_else_form for deletion
                 anything_else_form.mark_form_for_deletion()
             else:
-                anything_else_portion_is_valid = cisa_representative_email_form.is_valid()
+                anything_else_portion_is_valid = anything_else_form.is_valid()
         else:
             # if yes no form is invalid, no choice has been made
             # mark the anything_else_form for deletion
