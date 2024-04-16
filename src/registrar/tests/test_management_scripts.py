@@ -107,9 +107,23 @@ class TestPopulateOrganizationType(MockEppLib):
         expected_values: dict,
     ):
         """
-        This is a a helper function that ensures that:
+        This is a helper function that tests the following conditions:
         1. DomainRequest and DomainInformation (on given objects) are equivalent
         2. That generic_org_type, is_election_board, and organization_type are equal to passed in values
+
+        Args:
+            domain_request (DomainRequest): The DomainRequest object to test
+
+            domain_info (DomainInformation): The DomainInformation object to test
+
+            expected_values (dict): Container for what we expect is_electionboard, generic_org_type,
+            and organization_type to be on DomainRequest and DomainInformation.
+                Example:         
+                expected_values = {
+                    "is_election_board": False,
+                    "generic_org_type": DomainRequest.OrganizationChoices.CITY,
+                    "organization_type": DomainRequest.OrgChoicesElectionOffice.CITY,
+                }
         """
 
         # Test domain request
@@ -124,8 +138,23 @@ class TestPopulateOrganizationType(MockEppLib):
             self.assertEqual(domain_info.is_election_board, expected_values["is_election_board"])
             self.assertEqual(domain_info.organization_type, expected_values["organization_type"])
 
+    def do_nothing(self):
+        """Does nothing for mocking purposes"""
+        pass
+
     def test_request_and_info_city_not_in_csv(self):
-        """Tests what happens to a city domain that is not defined in the CSV"""
+        """
+        Tests what happens to a city domain that is not defined in the CSV.
+
+        Scenario: A domain request (of type city) is made that is not defined in the CSV file.
+            When a domain request is made for a city that is not listed in the CSV,
+            Then the `is_election_board` value should remain False,
+                and the `generic_org_type` and `organization_type` should both be `city`.
+
+        Expected Result: The `is_election_board` and `generic_org_type` attributes should be unchanged.
+        The `organization_type` field should now be `city`.
+        """
+
         city_request = self.domain_request_2
         city_info = self.domain_request_2
 
@@ -149,7 +178,17 @@ class TestPopulateOrganizationType(MockEppLib):
         self.assert_expected_org_values_on_request_and_info(city_request, city_info, expected_values)
 
     def test_request_and_info_federal(self):
-        """Tests what happens to a federal domain after the script is run (should be unchanged)"""
+        """
+        Tests what happens to a federal domain after the script is run (should be unchanged).
+
+        Scenario: A domain request (of type federal) is processed after running the populate_organization_type script.
+            When a federal domain request is made,
+            Then the `is_election_board` value should remain None,
+                and the `generic_org_type` and `organization_type` fields should both be `federal`.
+
+        Expected Result: The `is_election_board` and `generic_org_type` attributes should be unchanged.
+        The `organization_type` field should now be `federal`.
+        """
         federal_request = self.domain_request_1
         federal_info = self.domain_info_1
 
@@ -171,10 +210,6 @@ class TestPopulateOrganizationType(MockEppLib):
 
         # All values should be the same
         self.assert_expected_org_values_on_request_and_info(federal_request, federal_info, expected_values)
-
-    def do_nothing(self):
-        """Does nothing for mocking purposes"""
-        pass
 
     def test_request_and_info_tribal_add_election_office(self):
         """

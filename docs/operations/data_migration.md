@@ -591,7 +591,7 @@ Example: `cf ssh getgov-za`
 ## Populate Organization type
 This section outlines how to run the `populate_organization_type` script. 
 The script is used to update the organization_type field on DomainRequest and DomainInformation when it is None.
-That data are synthesized from the generic_org_type field and the is_election_board field
+That data are synthesized from the generic_org_type field and the is_election_board field by concatenating " - Elections" on the end of generic_org_type string if is_elections_board is True.
 
 ### Running on sandboxes
 
@@ -614,7 +614,7 @@ Example: `cf ssh getgov-za`
 ```/tmp/lifecycle/shell```
 
 #### Step 4: Running the script
-```./manage.py populate_organization_type {domain_election_board_filename} --debug```
+```./manage.py populate_organization_type {domain_election_board_filename}```
 
 - The domain_election_board_filename file must adhere to this format:
     - example.gov\
@@ -622,7 +622,7 @@ Example: `cf ssh getgov-za`
     example3.gov
 
 Example: 
-`./manage.py populate_organization_type migrationdata/election-domains.csv --debug`
+`./manage.py populate_organization_type migrationdata/election-domains.csv`
 
 ### Running locally
 
@@ -632,18 +632,13 @@ After downloading this file, place it in `src/migrationdata`
 
 
 #### Step 2: Running the script
-```docker-compose exec app ./manage.py populate_organization_type {domain_election_board_filename} --debug```
+```docker-compose exec app ./manage.py populate_organization_type {domain_election_board_filename}```
 
 Example (assuming that this is being ran from src/): 
-`docker-compose exec app ./manage.py populate_organization_type migrationdata/election-domains.csv --debug`
+`docker-compose exec app ./manage.py populate_organization_type migrationdata/election-domains.csv`
 
 
 ### Required parameters
 |   | Parameter                           | Description                                                        |
 |:-:|:------------------------------------|:-------------------------------------------------------------------|
 | 1 | **domain_election_board_filename** | A file containing every domain that is an election office.
-
-### Optional parameters
-|   | Parameter                  | Description                                                                 |
-|:-:|:-------------------------- |:----------------------------------------------------------------------------|
-| 1 | **debug**                  | Increases logging detail. Defaults to False.    
