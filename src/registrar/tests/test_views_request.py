@@ -356,33 +356,39 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(other_contacts_result.status_code, 302)
-        self.assertEqual(other_contacts_result["Location"], "/request/anything_else/")
+        self.assertEqual(other_contacts_result["Location"], "/request/additional_details/")
         num_pages_tested += 1
 
-        # ---- ANYTHING ELSE PAGE  ----
+        # ---- ADDITIONAL DETAILS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        anything_else_page = other_contacts_result.follow()
-        anything_else_form = anything_else_page.forms[0]
+        additional_details_page = other_contacts_result.follow()
+        additional_details_form = additional_details_page.forms[0]
 
-        anything_else_form["anything_else-anything_else"] = "Nothing else."
+        # load inputs with test data
+        
+        additional_details_form["additional_details-has_cisa_representative"] = "True"
+        additional_details_form["additional_details-has_anything_else_text"] = "True"
+        additional_details_form["additional_details-cisa_representative_email"] = "FakeEmail@gmail.com"
+        additional_details_form["additional_details-anything_else"] = "Nothing else."
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        anything_else_result = anything_else_form.submit()
+        additional_details_result = additional_details_form.submit()
         # validate that data from this step are being saved
         domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.cisa_representative_email, "FakeEmail@gmail.com")
         self.assertEqual(domain_request.anything_else, "Nothing else.")
         # the post request should return a redirect to the next form in
         # the domain request page
-        self.assertEqual(anything_else_result.status_code, 302)
-        self.assertEqual(anything_else_result["Location"], "/request/requirements/")
+        self.assertEqual(additional_details_result.status_code, 302)
+        self.assertEqual(additional_details_result["Location"], "/request/requirements/")
         num_pages_tested += 1
 
         # ---- REQUIREMENTS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        requirements_page = anything_else_result.follow()
+        requirements_page = additional_details_result.follow()
         requirements_form = requirements_page.forms[0]
 
         requirements_form["requirements-is_policy_acknowledged"] = True
@@ -434,6 +440,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Another Tester")
         self.assertContains(review_page, "testy2@town.com")
         self.assertContains(review_page, "(201) 555-5557")
+        self.assertContains(review_page, "FakeEmail@gmail.com")
         self.assertContains(review_page, "Nothing else.")
 
         # We can't test the modal itself as it relies on JS for init and triggering,

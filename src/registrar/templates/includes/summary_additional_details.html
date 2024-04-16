@@ -26,7 +26,7 @@ and condense down into one subsection) -->
             </dt>
             <dd>
                 {% if domainRequest.has_cisa_representative %}
-                    domainRequest.cisa_representative_email
+                    {{domainRequest.cisa_representative_email}}
                 {% else %}
                     (none)
                 {% endif %}
@@ -36,7 +36,7 @@ and condense down into one subsection) -->
             </dt>
             <dd>
                 {% if domainRequest.has_anything_else_text %}
-                    domainRequest.anything_else
+                    {{domainRequest.anything_else}}
                 {% else %}
                     No
                 {% endif %}

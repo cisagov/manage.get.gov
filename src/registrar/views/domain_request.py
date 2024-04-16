@@ -45,7 +45,7 @@ class Step(StrEnum):
     PURPOSE = "purpose"
     YOUR_CONTACT = "your_contact"
     OTHER_CONTACTS = "other_contacts"
-    ADDITIONAL_DETAILS = "anything_else"
+    ADDITIONAL_DETAILS = "additional_details"
     REQUIREMENTS = "requirements"
     REVIEW = "review"
 
@@ -365,7 +365,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 self.domain_request.other_contacts.exists()
                 or self.domain_request.no_other_contacts_rationale is not None
             ),
-            "anything_else": (
+            "additional_details": (
                 (self.domain_request.anything_else is not None and self.domain_request.cisa_representative_email)
                 or self.domain_request.is_policy_acknowledged is not None
             ),
