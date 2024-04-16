@@ -786,7 +786,7 @@ function hideDeletedForms() {
  *
  */
 (function anythingElseFormListener() {
-  HookupYesNoListener("anything_else-has_anything_else_text",'anything-else', null)
+  HookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null)
 })();
 
 
@@ -795,5 +795,5 @@ function hideDeletedForms() {
  *
  */
 (function cisaRepresentativesFormListener() {
-  HookupYesNoListener("anything_else-has_cisa_representative",'cisa-representative', null)
+  HookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null)
 })();
