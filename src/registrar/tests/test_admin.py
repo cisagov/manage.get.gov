@@ -86,7 +86,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         super().setUp()
 
     @less_console_noise_decorator
-    def test_contact_fields_have_detail_table(self):
+    def test_contact_fields_on_domain_change_form_have_detail_table(self):
         """Tests if the contact fields have the detail table which displays title, email, and phone"""
 
         # Create fake creator
