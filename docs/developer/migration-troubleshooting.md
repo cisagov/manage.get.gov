@@ -129,7 +129,7 @@ If you see `django.db.migrations.exceptions.InconsistentMigrationHistory` error,
 [ ] 0057_other_migration
 [x] 0058_some_other_migration
 
-1. Go to `database-access.md` to see the commands on how to access a certain table in the database.
+1. Go to [database-access.md](../database-access.md#access-certain-table-in-the-database) to see the commands on how to access a certain table in the database.
 2. In this case, we want to remove the migration "history" from the `django_migrations` table
 3. Once you are in the `cgaws....` table, select the `django_migrations` table with the command `SELECT * FROM django_migrations;`
 4. Find the id of the "history" you want to delete. In this example, the id would be 58.
