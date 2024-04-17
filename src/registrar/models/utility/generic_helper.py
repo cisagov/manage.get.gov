@@ -65,7 +65,7 @@ class CreateOrUpdateOrganizationTypeHelper:
             try to update the organization_type field (or related fields) anyway.
             This is done by invoking the new instance handler.
 
-            Use to force org type to be updated to the correct value even 
+            Use to force org type to be updated to the correct value even
             if no other changes were made (including is_election).
         """
 
