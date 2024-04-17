@@ -46,55 +46,78 @@ class CreateOrUpdateOrganizationTypeHelper:
         # The "model type"
         self.sender = sender
         self.instance = instance
-        self.generic_org_to_org_map = generic_org_to_org_map
-        self.election_org_to_generic_org_map = election_org_to_generic_org_map
+        self.generic_org_map = generic_org_to_org_map
+        self.election_org_map = election_org_to_generic_org_map
 
     def create_or_update_organization_type(self):
         """The organization_type field on DomainRequest and DomainInformation is consituted from the
         generic_org_type and is_election_board fields. To keep the organization_type
         field up to date, we need to update it before save based off of those field
         values.
-
-        If the instance is marked as an election board and the generic_org_type is not
-        one of the excluded types (FEDERAL, INTERSTATE, SCHOOL_DISTRICT), the
-        organization_type is set to a corresponding election variant. Otherwise, it directly
-        mirrors the generic_org_type value.
         """
-
         # A new record is added with organization_type not defined.
         # This happens from the regular domain request flow.
         is_new_instance = self.instance.id is None
         if is_new_instance:
-            self._handle_new_instance()
+            self.handle_new_instance()
         else:
-            self._handle_existing_instance()
+            self.handle_existing_instance(force_update)
 
         return self.instance
 
-    def _handle_new_instance(self):
-        # == Check for invalid conditions before proceeding == #
-        should_proceed = self._validate_new_instance()
-        if not should_proceed:
-            return None
-        # == Program flow will halt here if there is no reason to update == #
+    def handle_new_instance(self):
+        """
+        If we're creating a new record, try to sync the
+        organization_type, generic_org_type, and is_election_board fields.
+        """
+        org_type_is_none = self.instance.organization_type is None
+        generic_org_type_is_none = self.instance.generic_org_type is None
+        both_none = org_type_is_none and generic_org_type_is_none
+        both_not_none = not org_type_is_none and not generic_org_type_is_none
 
-        # == Update the linked values == #
-        organization_type_needs_update = self.instance.organization_type is None
-        generic_org_type_needs_update = self.instance.generic_org_type is None
+        # We cannot update both fields at the same time.
+        # And we also cannot update no fields at all.
+        one_or_the_other = (both_none and both_not_none)
+        if one_or_the_other:
+            should_proceed = True
+        elif both_none:
+            should_proceed = False
+        elif not both_none:
+            should_proceed = self._check_new_instance_values()
 
-        # If a field is none, it indicates (per prior checks) that the
-        # related field (generic org type <-> org type) has data and we should update according to that.
-        if organization_type_needs_update:
-            self._update_org_type_from_generic_org_and_election()
-        elif generic_org_type_needs_update:
-            self._update_generic_org_and_election_from_org_type()
+        if should_proceed:
+            self._update_fields(org_type_is_none, generic_org_type_is_none)
+        else:
+            logger.debug("handle_new_instance() -> Skipping org update for new instance")
 
-        # Update the field
-        self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
+    def handle_existing_instance(self, force_update_when_no_are_changes_found=False):
+        """
+        If we're updating a record, try to sync the
+        organization_type, generic_org_type, and is_election_board fields.
+        """
+        # Check the new and old values
+        generic_org_changed, election_board_changed, org_type_changed = self._get_changed_fields()
 
-    def _handle_existing_instance(self):
-        # == Init variables == #
-        # Instance is already in the database, fetch its current state
+        organization_type_needs_update = generic_org_changed or election_board_changed
+        generic_org_type_needs_update = org_type_changed
+
+        both_need_update = generic_org_type_needs_update and organization_type_needs_update
+        both_dont_need_update = not generic_org_type_needs_update and not organization_type_needs_update
+
+        if both_need_update:
+            raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
+        elif both_dont_need_update:
+            if force_update_when_no_are_changes_found:
+                self.handle_new_instance()
+            else:
+                logger.debug(f"handle_existing_instance() -> No changes made.")
+        else:
+            self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
+
+    def _get_changed_fields(self):
+        """
+        Compare what is changing from the old instance to the new one
+        """
         current_instance = self.sender.objects.get(id=self.instance.id)
 
         # Check the new and old values
@@ -102,24 +125,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         is_election_board_changed = self.instance.is_election_board != current_instance.is_election_board
         organization_type_changed = self.instance.organization_type != current_instance.organization_type
 
-        # == Check for invalid conditions before proceeding == #
-        if organization_type_changed and (generic_org_type_changed or is_election_board_changed):
-            # Since organization type is linked with generic_org_type and election board,
-            # we have to update one or the other, not both.
-            # This will not happen in normal flow as it is not possible otherwise.
-            raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
-        elif not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
-            # No values to update - do nothing
-            return None
-        # == Program flow will halt here if there is no reason to update == #
-
-        # == Update the linked values == #
-        # Find out which field needs updating
-        organization_type_needs_update = generic_org_type_changed or is_election_board_changed
-        generic_org_type_needs_update = organization_type_changed
-
-        # Update the field
-        self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
+        return (generic_org_type_changed, is_election_board_changed, organization_type_changed)
 
     def _update_fields(self, organization_type_needs_update, generic_org_type_needs_update):
         """
@@ -129,16 +135,14 @@ class CreateOrUpdateOrganizationTypeHelper:
             ValueError: If both organization_type_needs_update and generic_org_type_needs_update are True,
                         indicating an attempt to update both fields simultaneously, which is not allowed.
         """
-        # We shouldn't update both of these at the same time.
-        # It is more useful to have these as seperate variables, but it does impose
-        # this restraint.
         if organization_type_needs_update and generic_org_type_needs_update:
             raise ValueError("Cannot update both org type and generic org type at the same time.")
-
-        if organization_type_needs_update:
+        elif organization_type_needs_update:
             self._update_org_type_from_generic_org_and_election()
         elif generic_org_type_needs_update:
             self._update_generic_org_and_election_from_org_type()
+        else:
+            logger.debug(f"_update_fields() -> No fields to update.")
 
     def _update_org_type_from_generic_org_and_election(self):
         """Given a field values for generic_org_type and is_election_board, update the
@@ -146,32 +150,20 @@ class CreateOrUpdateOrganizationTypeHelper:
 
         # We convert to a string because the enum types are different.
         generic_org_type = str(self.instance.generic_org_type)
-        if generic_org_type not in self.generic_org_to_org_map:
-            # Election board should always be reset to None if the record
-            # can't have one. For example, federal.
-            if self.instance.is_election_board is not None:
-                # This maintains data consistency.
-                # There is no avenue for this to occur in the UI,
-                # as such - this can only occur if the object is initialized in this way.
-                # Or if there are pre-existing data.
-                logger.warning(
-                    "create_or_update_organization_type() -> is_election_board "
-                    f"cannot exist for {generic_org_type}. Setting to None."
-                )
-                self.instance.is_election_board = None
-            self.instance.organization_type = generic_org_type
-        else:
-            # This can only happen with manual data tinkering, which causes these to be out of sync.
+        can_have_election_board = generic_org_type in self.generic_org_map
+
+        new_org = generic_org_type
+        if can_have_election_board:
             if self.instance.is_election_board is None:
-                logger.warning(
-                    "create_or_update_organization_type() -> is_election_board is out of sync. Updating value."
-                )
                 self.instance.is_election_board = False
 
-            if self.instance.is_election_board:
-                self.instance.organization_type = self.generic_org_to_org_map[generic_org_type]
-            else:
-                self.instance.organization_type = generic_org_type
+            if self.instance.is_election_board is True:
+                new_org = self.generic_org_map[generic_org_type]
+
+        elif self.instance.is_election_board is not None:
+            self.instance.is_election_board = None
+
+        self.instance.organization_type = new_org
 
     def _update_generic_org_and_election_from_org_type(self):
         """Given the field value for organization_type, update the
@@ -180,74 +172,51 @@ class CreateOrUpdateOrganizationTypeHelper:
         # We convert to a string because the enum types are different
         # between OrgChoicesElectionOffice and OrganizationChoices.
         # But their names are the same (for the most part).
-        current_org_type = str(self.instance.organization_type)
-        election_org_map = self.election_org_to_generic_org_map
-        generic_org_map = self.generic_org_to_org_map
+        current_org = str(self.instance.organization_type)
+        has_election_board = current_org in self.election_org_map
+        can_have_election_board = current_org in self.generic_org_map
 
-        # This essentially means: "_election" in current_org_type.
-        if current_org_type in election_org_map:
-            new_org = election_org_map[current_org_type]
-            self.instance.generic_org_type = new_org
-            self.instance.is_election_board = True
-        elif self.instance.organization_type is not None:
-            self.instance.generic_org_type = current_org_type
-
-            # This basically checks if the given org type
-            # can even have an election board in the first place.
-            # For instance, federal cannot so is_election_board = None
-            if current_org_type in generic_org_map:
-                self.instance.is_election_board = False
-            else:
-                # This maintains data consistency.
-                # There is no avenue for this to occur in the UI,
-                # as such - this can only occur if the object is initialized in this way.
-                # Or if there are pre-existing data.
-                logger.warning(
-                    "create_or_update_organization_type() -> is_election_board "
-                    f"cannot exist for {current_org_type}. Setting to None."
-                )
-                self.instance.is_election_board = None
-        else:
-            # if self.instance.organization_type is set to None, then this means
-            # we should clear the related fields.
-            # This will not occur if it just is None (i.e. default), only if it is set to be so.
-            self.instance.is_election_board = None
+        if self.instance.organization_type is None:
             self.instance.generic_org_type = None
+        else:
+            new_org = current_org
+            if has_election_board:
+                new_org = self.election_org_map[current_org]
 
-    def _validate_new_instance(self):
+            self.instance.generic_org_type = new_org
+
+        self.instance.is_election_board = (
+            has_election_board if can_have_election_board else None
+        )
+
+    def _check_new_instance_values(self) -> bool:
+        """ 
+        Checks to see if we can add generic_org_type, organization_type, and is_election_board
+        simultaneously.
+        Returns true if we can. 
+        Otherwise, raise a ValueError.
         """
-        Validates whether a new instance of DomainRequest or DomainInformation can proceed with the update
-        based on the consistency between organization_type, generic_org_type, and is_election_board.
+        org_type = str(self.instance.organization_type)
 
-        Returns a boolean determining if execution should proceed or not.
-        """
+        # Strip "_election" from organization_type if it exists
+        cleaned_org_type = self.election_org_map.get(org_type)
+        org_out_of_sync = str(self.instance.generic_org_type) != cleaned_org_type
 
-        # We conditionally accept both of these values to exist simultaneously, as long as
-        # those values do not intefere with eachother.
-        # Because this condition can only be triggered through a dev (no user flow),
-        # we throw an error if an invalid state is found here.
-        if self.instance.organization_type and self.instance.generic_org_type:
-            generic_org_type = str(self.instance.generic_org_type)
-            organization_type = str(self.instance.organization_type)
+        is_election_type = "_election" in org_type
+        election_type_out_of_sync = is_election_type != self.instance.is_election_board
+        can_have_election_board = org_type in self.generic_org_map
 
-            # Strip "_election" if it exists
-            mapped_org_type = self.election_org_to_generic_org_map.get(organization_type)
-
-            # Do tests on the org update for election board changes.
-            is_election_type = "_election" in organization_type
-            can_have_election_board = organization_type in self.generic_org_to_org_map
-
-            election_board_mismatch = (is_election_type != self.instance.is_election_board) and can_have_election_board
-            org_type_mismatch = mapped_org_type is not None and (generic_org_type != mapped_org_type)
-            if election_board_mismatch or org_type_mismatch:
-                message = (
-                    "Cannot add organization_type and generic_org_type simultaneously "
-                    "when generic_org_type, is_election_board, and organization_type values do not match."
-                )
-                raise ValueError(message)
-
-            return True
-        elif not self.instance.organization_type and not self.instance.generic_org_type:
-            return False
+        if org_out_of_sync and cleaned_org_type is not None:
+            message = (
+                "Cannot add organization_type and generic_org_type simultaneously. "
+                "generic_org_type and organization_type fields do not match (would override data)."
+            )
+            raise ValueError(message)
+        elif election_type_out_of_sync and can_have_election_board:
+            message = (
+                "Cannot add organization_type and is_election_board simultaneously. "
+                "is_election_board fields do not match (would override data)."
+            )
+            raise ValueError(message)
         else:
             return True
