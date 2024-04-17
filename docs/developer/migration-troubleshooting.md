@@ -132,7 +132,8 @@ If you see `django.db.migrations.exceptions.InconsistentMigrationHistory` error,
 1. Go to [database-access.md](../database-access.md#access-certain-table-in-the-database) to see the commands on how to access a certain table in the database.
 2. In this case, we want to remove the migration "history" from the `django_migrations` table
 3. Once you are in the `cgaws....` table, select the `django_migrations` table with the command `SELECT * FROM django_migrations;`
-4. Find the id of the "history" you want to delete. In this example, the id would be 58.
-5. Run `DELETE FROM django_migrations WHERE id=58;` where 58 is an example id as seen above.
-6. Go to your shell and run `./manage.py showmigrations` to make sure your migrations are now back to the right state
+4. Find the id of the "history" you want to delete. This will be the one in the far left column. For this example, let's pretend the id is 101.
+5. Run `DELETE FROM django_migrations WHERE id=101;` where 101 is an example id as seen above.
+6. Go to your shell and run `./manage.py showmigrations` to make sure your migrations are now back to the right state. Most likely you will show several unapplied migrations.
+7. If you still have unapplied migrations, run `./manage.py migrate`. If an error occurs saying one has already been applied, fake that particular migration `./manage.py migrate --fake model_name_here migration_number` and then run the normal `./manage.py migrate` command to then apply those migrations that come after the one that threw the error.
 
