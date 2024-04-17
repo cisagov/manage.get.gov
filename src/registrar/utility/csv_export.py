@@ -602,7 +602,6 @@ def get_sliced_domains(filter_condition):
 
 def get_sliced_requests(filter_condition):
     """Get filtered requests counts sliced by org type and election office."""
-    
     requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
     requests_count = requests.count()
     federal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
@@ -633,6 +632,7 @@ def get_sliced_requests(filter_condition):
         school_district,
         election_board,
     ]
+
 
 def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
     """Get counts for domains that have domain managers for two different dates,
