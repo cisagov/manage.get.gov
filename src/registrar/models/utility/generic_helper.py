@@ -49,7 +49,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         self.generic_org_to_org_map = generic_org_to_org_map
         self.election_org_to_generic_org_map = election_org_to_generic_org_map
 
-    def create_or_update_organization_type(self, force_update = False):
+    def create_or_update_organization_type(self, force_update=False):
         """The organization_type field on DomainRequest and DomainInformation is consituted from the
         generic_org_type and is_election_board fields. To keep the organization_type
         field up to date, we need to update it before save based off of those field
@@ -97,7 +97,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         # Update the field
         self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
 
-    def _handle_existing_instance(self, force_update_when_no_are_changes_found = False):
+    def _handle_existing_instance(self, force_update_when_no_are_changes_found=False):
         # == Init variables == #
         # Instance is already in the database, fetch its current state
         current_instance = self.sender.objects.get(id=self.instance.id)
