@@ -449,12 +449,13 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    # TODO: Confirm if we want federal_agency or just agency
-    federal_agency = models.ForeignKey(
+    updated_federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
         help_text="Associated federal agency",
         unique=False,
+        blank=True,
+        null=True,
     )
 
     # This is the domain request user who created this domain request. The contact
