@@ -567,77 +567,72 @@ def get_sliced_domains(filter_condition):
     Pass distinct=True when filtering by permissions so we do not to count multiples
     when a domain has more that one manager.
     """
-    return get_org_type_counts(DomainInformation, filter_condition)
+
+    domains = DomainInformation.objects.all().filter(**filter_condition).distinct()
+    domains_count = domains.count()
+    federal = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
+    interstate = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.INTERSTATE).count()
+    state_or_territory = (
+        domains.filter(generic_org_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
+    )
+    tribal = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
+    county = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
+    city = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
+    special_district = (
+        domains.filter(generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+    )
+    school_district = (
+        domains.filter(generic_org_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    )
+    election_board = domains.filter(is_election_board=True).distinct().count()
+
+    return [
+        domains_count,
+        federal,
+        interstate,
+        state_or_territory,
+        tribal,
+        county,
+        city,
+        special_district,
+        school_district,
+        election_board,
+    ]
 
 
 def get_sliced_requests(filter_condition):
     """Get filtered requests counts sliced by org type and election office."""
-    return get_org_type_counts(DomainRequest, filter_condition)
+    
+    requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
+    requests_count = requests.count()
+    federal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
+    interstate = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.INTERSTATE).distinct().count()
+    state_or_territory = (
+        requests.filter(generic_org_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
+    )
+    tribal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
+    county = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
+    city = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
+    special_district = (
+        requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+    )
+    school_district = (
+        requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+    )
+    election_board = requests.filter(is_election_board=True).distinct().count()
 
-
-def get_org_type_counts(model_class, filter_condition):
-    """Returns a list of counts for each org type"""
-
-    # Count all org types, such as federal
-    dynamic_count_dict = {}
-    for choice in DomainRequest.OrganizationChoices:
-        choice_name = f"{choice}_count"
-        dynamic_count_dict[choice_name] = _org_type_count_query_builder(choice)
-
-    # Static counts
-    static_count_dict = {
-        # Count all distinct records
-        "total_count": Count("id"),
-        # Count all election boards
-        "election_board_count": Count(Case(When(is_election_board=True, then=1))),
-    }
-
-    # Merge static counts with dynamic organization type counts
-    merged_count_dict = {**static_count_dict, **dynamic_count_dict}
-
-    # Perform a single query with conditional aggregation
-    model_queryset = model_class.objects.filter(**filter_condition).distinct()
-    aggregates = model_queryset.aggregate(**merged_count_dict)
-
-    # This can be automated but for the sake of readability, this is fixed for now.
-    # To automate this would also mean the added benefit of
-    # auto-updating (automatically adds new org types) charts,
-    # but that requires an upstream refactor.
     return [
-        # Total number of records
-        aggregates["total_count"],
-        # Number of records with org type FEDERAL
-        aggregates["federal_count"],
-        # Number of records with org type INTERSTATE
-        aggregates["interstate_count"],
-        # Number of records with org type STATE_OR_TERRITORY
-        aggregates["state_or_territory_count"],
-        # Number of records for TRIBAL
-        aggregates["tribal_count"],
-        # Number of records for COUNTY
-        aggregates["county_count"],
-        # Number of records for CITY
-        aggregates["city_count"],
-        # Number of records for SPECIAL_DISTRICT
-        aggregates["special_district_count"],
-        # Number of records for SCHOOL_DISTRICT
-        aggregates["school_district_count"],
-        # Number of records for ELECTION_BOARD
-        aggregates["election_board_count"],
+        requests_count,
+        federal,
+        interstate,
+        state_or_territory,
+        tribal,
+        county,
+        city,
+        special_district,
+        school_district,
+        election_board,
     ]
-
-
-def _org_type_count_query_builder(generic_org_type):
-    """
-    Returns an expression that counts the number of a given generic_org_type.
-    On the backend (the DB), this returns an array of "1" which is then counted by the expression.
-    Used within an .aggregate call, but this essentially performs the same as queryset.count()
-
-    We use this as opposed to queryset.count() because when this operation is repeated multiple times,
-    it is more efficient to do these once in the DB rather than multiple times (as each count consitutes a call)
-    """
-    return Count(Case(When(generic_org_type=generic_org_type, then=1)))
-
 
 def export_data_managed_domains_to_csv(csv_file, start_date, end_date):
     """Get counts for domains that have domain managers for two different dates,
