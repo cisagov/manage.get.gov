@@ -675,7 +675,7 @@ class DomainRequest(TimeStampedModel):
         # These have to be defined here, as you'd get a cyclical import error
         # otherwise.
 
-        # For any given organization type, return the "_election" variant.
+        # For any given organization type, return the "_ELECTION" enum equivalent.
         # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
         generic_org_map = self.OrgChoicesElectionOffice.get_org_generic_to_org_election()
 

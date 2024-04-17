@@ -530,7 +530,7 @@ function hideDeletedForms() {
   let isDotgovDomain = document.querySelector(".dotgov-domain-form");
   // The Nameservers formset features 2 required and 11 optionals
   if (isNameserversForm) {
-    cloneIndex = 2;
+    // cloneIndex = 2;
     formLabel = "Name server";
   // DNSSEC: DS Data
   } else if (isDsDataForm) {
@@ -766,3 +766,21 @@ function toggleTwoDomElements(ele1, ele2, index) {
   }
 })();
 
+/**
+ * An IIFE that disables the delete buttons on nameserver forms on page load if < 3 forms
+ *
+ */
+(function nameserversFormListener() {
+  let isNameserversForm = document.querySelector(".nameservers-form");
+  if (isNameserversForm) {
+    let forms = document.querySelectorAll(".repeatable-form");
+    if (forms.length < 3) {
+      // Hide the delete buttons on the 2 nameservers
+      forms.forEach((form) => {
+        Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
+          deleteButton.setAttribute("disabled", "true");
+        });
+      });
+    }
+  }
+})();

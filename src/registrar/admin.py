@@ -663,6 +663,7 @@ class ContactAdmin(ListHeaderAdmin):
     list_display = [
         "contact",
         "email",
+        "user_exists",
     ]
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
@@ -678,6 +679,13 @@ class ContactAdmin(ListHeaderAdmin):
     autocomplete_fields = ["user"]
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    def user_exists(self, obj):
+        """Check if the Contact has a related User"""
+        return "Yes" if obj.user is not None else "No"
+
+    user_exists.short_description = "Is user"  # type: ignore
+    user_exists.admin_order_field = "user"  # type: ignore
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -778,6 +786,46 @@ class WebsiteAdmin(ListHeaderAdmin):
         "website",
     ]
     search_help_text = "Search by website."
+
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return {}
+        return super().get_model_perms(request)
+
+    def has_change_permission(self, request, obj=None):
+        """
+        Allow analysts to access the change form directly via URL.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return True
+        return super().has_change_permission(request, obj)
+
+    def response_change(self, request, obj):
+        """
+        Override to redirect users back to the previous page after saving.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        return_path = request.GET.get("return_path")
+
+        # First, call the super method to perform the standard operations and capture the response
+        response = super().response_change(request, obj)
+
+        # Don't redirect to the website page on save if the user is an analyst.
+        # Rather, just redirect back to the originating page.
+        if (analyst_perm and not superuser_perm) and return_path:
+            # Redirect to the return path if it exists
+            return HttpResponseRedirect(return_path)
+
+        # If no redirection is needed, return the original response
+        return response
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin):
@@ -1395,12 +1443,36 @@ class DomainRequestAdmin(ListHeaderAdmin):
         """
         Override changelist_view to set the selected value of status filter.
         """
+        # there are two conditions which should set the default selected filter:
+        # 1 - there are no query parameters in the request and the request is the
+        #     initial request for this view
+        # 2 - there are no query parameters in the request and the referring url is
+        #     the change view for a domain request
+        should_apply_default_filter = False
         # use http_referer in order to distinguish between request as a link from another page
         # and request as a removal of all filters
         http_referer = request.META.get("HTTP_REFERER", "")
         # if there are no query parameters in the request
-        # and the request is the initial request for this view
-        if not bool(request.GET) and request.path not in http_referer:
+        if not bool(request.GET):
+            # if the request is the initial request for this view
+            if request.path not in http_referer:
+                should_apply_default_filter = True
+            # elif the request is a referral from changelist view or from
+            # domain request change view
+            elif request.path in http_referer:
+                # find the index to determine the referring url after the path
+                index = http_referer.find(request.path)
+                # Check if there is a character following the path in http_referer
+                next_char_index = index + len(request.path)
+                if index + next_char_index < len(http_referer):
+                    next_char = http_referer[next_char_index]
+
+                    # Check if the next character is a digit, if so, this indicates
+                    # a change view for domain request
+                    if next_char.isdigit():
+                        should_apply_default_filter = True
+
+        if should_apply_default_filter:
             # modify the GET of the request to set the selected filter
             modified_get = copy.deepcopy(request.GET)
             modified_get["status__in"] = "submitted,in review,action needed"
@@ -1466,7 +1538,10 @@ class DomainInformationInline(admin.StackedInline):
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
         analysts can edit this through this inline, but not through the model normally"""
-        if request.user.has_perm("registrar.analyst_access_permission"):
+
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
             return True
         return super().has_change_permission(request, obj)
 
@@ -1627,12 +1702,8 @@ class DomainAdmin(ListHeaderAdmin):
                 # No expiration date was found. Return none.
                 extra_context["extended_expiration_date"] = None
                 return super().changeform_view(request, object_id, form_url, extra_context)
-
-            if curr_exp_date < date.today():
-                extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
-            else:
-                new_date = domain.registry_expiration_date + relativedelta(years=years_to_extend_by)
-                extra_context["extended_expiration_date"] = new_date
+            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
+            extra_context["extended_expiration_date"] = new_date
         else:
             extra_context["extended_expiration_date"] = None
 
@@ -1895,6 +1966,46 @@ class DraftDomainAdmin(ListHeaderAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["name"]
+
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return {}
+        return super().get_model_perms(request)
+
+    def has_change_permission(self, request, obj=None):
+        """
+        Allow analysts to access the change form directly via URL.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return True
+        return super().has_change_permission(request, obj)
+
+    def response_change(self, request, obj):
+        """
+        Override to redirect users back to the previous page after saving.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        return_path = request.GET.get("return_path")
+
+        # First, call the super method to perform the standard operations and capture the response
+        response = super().response_change(request, obj)
+
+        # Don't redirect to the website page on save if the user is an analyst.
+        # Rather, just redirect back to the originating page.
+        if (analyst_perm and not superuser_perm) and return_path:
+            # Redirect to the return path if it exists
+            return HttpResponseRedirect(return_path)
+
+        # If no redirection is needed, return the original response
+        return response
 
 
 class PublicContactAdmin(ListHeaderAdmin):

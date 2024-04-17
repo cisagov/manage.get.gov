@@ -98,7 +98,7 @@ class TestPopulateOrganizationType(MockEppLib):
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
             return_value=True,
         ):
-            call_command("populate_organization_type", "registrar/tests/data/fake_election_domains.csv", debug=True)
+            call_command("populate_organization_type", "registrar/tests/data/fake_election_domains.csv")
 
     def assert_expected_org_values_on_request_and_info(
         self,
@@ -107,9 +107,23 @@ class TestPopulateOrganizationType(MockEppLib):
         expected_values: dict,
     ):
         """
-        This is a a helper function that ensures that:
+        This is a helper function that tests the following conditions:
         1. DomainRequest and DomainInformation (on given objects) are equivalent
         2. That generic_org_type, is_election_board, and organization_type are equal to passed in values
+
+        Args:
+            domain_request (DomainRequest): The DomainRequest object to test
+
+            domain_info (DomainInformation): The DomainInformation object to test
+
+            expected_values (dict): Container for what we expect is_electionboard, generic_org_type,
+            and organization_type to be on DomainRequest and DomainInformation.
+                Example:
+                expected_values = {
+                    "is_election_board": False,
+                    "generic_org_type": DomainRequest.OrganizationChoices.CITY,
+                    "organization_type": DomainRequest.OrgChoicesElectionOffice.CITY,
+                }
         """
 
         # Test domain request
@@ -124,8 +138,23 @@ class TestPopulateOrganizationType(MockEppLib):
             self.assertEqual(domain_info.is_election_board, expected_values["is_election_board"])
             self.assertEqual(domain_info.organization_type, expected_values["organization_type"])
 
+    def do_nothing(self):
+        """Does nothing for mocking purposes"""
+        pass
+
     def test_request_and_info_city_not_in_csv(self):
-        """Tests what happens to a city domain that is not defined in the CSV"""
+        """
+        Tests what happens to a city domain that is not defined in the CSV.
+
+        Scenario: A domain request (of type city) is made that is not defined in the CSV file.
+            When a domain request is made for a city that is not listed in the CSV,
+            Then the `is_election_board` value should remain False,
+                and the `generic_org_type` and `organization_type` should both be `city`.
+
+        Expected Result: The `is_election_board` and `generic_org_type` attributes should be unchanged.
+        The `organization_type` field should now be `city`.
+        """
+
         city_request = self.domain_request_2
         city_info = self.domain_request_2
 
@@ -149,7 +178,17 @@ class TestPopulateOrganizationType(MockEppLib):
         self.assert_expected_org_values_on_request_and_info(city_request, city_info, expected_values)
 
     def test_request_and_info_federal(self):
-        """Tests what happens to a federal domain after the script is run (should be unchanged)"""
+        """
+        Tests what happens to a federal domain after the script is run (should be unchanged).
+
+        Scenario: A domain request (of type federal) is processed after running the populate_organization_type script.
+            When a federal domain request is made,
+            Then the `is_election_board` value should remain None,
+                and the `generic_org_type` and `organization_type` fields should both be `federal`.
+
+        Expected Result: The `is_election_board` and `generic_org_type` attributes should be unchanged.
+        The `organization_type` field should now be `federal`.
+        """
         federal_request = self.domain_request_1
         federal_info = self.domain_info_1
 
@@ -171,10 +210,6 @@ class TestPopulateOrganizationType(MockEppLib):
 
         # All values should be the same
         self.assert_expected_org_values_on_request_and_info(federal_request, federal_info, expected_values)
-
-    def do_nothing(self):
-        """Does nothing for mocking purposes"""
-        pass
 
     def test_request_and_info_tribal_add_election_office(self):
         """
@@ -216,11 +251,14 @@ class TestPopulateOrganizationType(MockEppLib):
 
         self.assert_expected_org_values_on_request_and_info(tribal_request, tribal_info, expected_values)
 
-    def test_request_and_info_tribal_remove_election_office(self):
+    def test_request_and_info_tribal_doesnt_remove_election_office(self):
         """
-        Tests if a tribal domain in the election csv changes organization_type to TRIBAL
-        when it used to be TRIBAL - ELECTION
-        for the domain request and the domain info
+        Tests if a tribal domain in the election csv changes organization_type to TRIBAL_ELECTION
+        when the is_election_board is True, and generic_org_type is Tribal when it is not
+        present in the CSV.
+
+        To avoid overwriting data, the script should not set any domain specified as
+        an election_office (that doesn't exist in the CSV) to false.
         """
 
         # Set org type fields to none to mimic an environment without this data
@@ -252,10 +290,10 @@ class TestPopulateOrganizationType(MockEppLib):
         except Exception as e:
             self.fail(f"Could not run populate_organization_type script. Failed with exception: {e}")
 
-        # Because we don't define this in the "csv", we expect that is election board will switch to False,
-        # and organization_type will now be tribal
-        expected_values["is_election_board"] = False
-        expected_values["organization_type"] = DomainRequest.OrgChoicesElectionOffice.TRIBAL
+        # If we don't define this in the "csv", but the value was already true,
+        # we expect that is election board will stay True, and the org type will be tribal,
+        # and organization_type will now be tribal_election
+        expected_values["organization_type"] = DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
         tribal_election_request.refresh_from_db()
         tribal_election_info.refresh_from_db()
         self.assert_expected_org_values_on_request_and_info(

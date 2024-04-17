@@ -94,6 +94,9 @@ class Contact(TimeStampedModel):
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
         return " ".join(names) if names else "Unknown"
 
+    def has_contact_info(self):
+        return bool(self.title or self.email or self.phone)
+
     def save(self, *args, **kwargs):
         # Call the parent class's save method to perform the actual save
         super().save(*args, **kwargs)

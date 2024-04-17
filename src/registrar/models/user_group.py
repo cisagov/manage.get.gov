@@ -43,11 +43,6 @@ class UserGroup(Group):
             },
             {
                 "app_label": "registrar",
-                "model": "draftdomain",
-                "permissions": ["change_draftdomain"],
-            },
-            {
-                "app_label": "registrar",
                 "model": "user",
                 "permissions": ["analyst_access_permission", "change_user"],
             },
@@ -55,11 +50,6 @@ class UserGroup(Group):
                 "app_label": "registrar",
                 "model": "domaininvitation",
                 "permissions": ["add_domaininvitation", "view_domaininvitation"],
-            },
-            {
-                "app_label": "registrar",
-                "model": "website",
-                "permissions": ["change_website"],
             },
             {
                 "app_label": "registrar",
