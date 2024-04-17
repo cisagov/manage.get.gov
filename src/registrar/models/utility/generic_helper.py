@@ -71,7 +71,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         if is_new_instance:
             self.handle_new_instance()
         else:
-            self._handle_existing_instance(force_update)
+            self.handle_existing_instance(force_update)
 
         return self.instance
 
@@ -124,9 +124,10 @@ class CreateOrUpdateOrganizationTypeHelper:
         else:
             self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
 
-    def _handle_existing_instance(self, force_update_when_no_are_changes_found=False):
-        # == Init variables == #
-        # Instance is already in the database, fetch its current state
+    def _get_changed_fields(self):
+        """
+        Compare what is changing from the old instance to the new one
+        """
         current_instance = self.sender.objects.get(id=self.instance.id)
 
         # Check the new and old values
@@ -134,26 +135,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         is_election_board_changed = self.instance.is_election_board != current_instance.is_election_board
         organization_type_changed = self.instance.organization_type != current_instance.organization_type
 
-        # == Check for invalid conditions before proceeding == #
-        if organization_type_changed and (generic_org_type_changed or is_election_board_changed):
-            # Since organization type is linked with generic_org_type and election board,
-            # we have to update one or the other, not both.
-            # This will not happen in normal flow as it is not possible otherwise.
-            raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
-        elif not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
-            # No changes found
-            if force_update_when_no_are_changes_found:
-                # If we want to force an update anyway, we can treat this record like
-                # its a new one in that we check for "None" values rather than changes.
-                self._handle_new_instance()
-        else:
-            # == Update the linked values == #
-            # Find out which field needs updating
-            organization_type_needs_update = generic_org_type_changed or is_election_board_changed
-            generic_org_type_needs_update = organization_type_changed
-
-            # Update the field
-            self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
+        return (generic_org_type_changed, is_election_board_changed, organization_type_changed)
 
     def _update_fields(self, organization_type_needs_update, generic_org_type_needs_update):
         """
