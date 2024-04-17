@@ -1455,8 +1455,9 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 # find the index to determine the referring url after the path
                 index = http_referer.find(request.path)
                 # Check if there is a character following the path in http_referer
-                if index + len(request.path) < len(http_referer):
-                    next_char = http_referer[index + len(request.path)]
+                next_char_index = index + len(request.path)
+                if index + next_char_index < len(http_referer):
+                    next_char = http_referer[next_char_index]
 
                     # Check if the next character is a digit, if so, this indicates
                     # a change view for domain request
