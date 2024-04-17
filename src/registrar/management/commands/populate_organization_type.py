@@ -122,11 +122,10 @@ class Command(BaseCommand):
                         domain_name = request.requested_domain.name
 
                     request_is_approved = request.status == DomainRequest.DomainRequestStatus.APPROVED
-                    if request_is_approved and domain_name is not None:
+                    if request_is_approved and domain_name is not None and not request.is_election_board:
                         request.is_election_board = domain_name in self.domains_with_election_boards_set
 
                     self.sync_organization_type(DomainRequest, request)
-
                     self.request_to_update.append(request)
                     logger.info(f"Updating {request} => {request.organization_type}")
                 else:
@@ -235,4 +234,4 @@ class Command(BaseCommand):
             election_org_to_generic_org_map=election_org_map,
         )
 
-        org_type_helper.create_or_update_organization_type()
+        org_type_helper.create_or_update_organization_type(force_update=True)

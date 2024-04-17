@@ -49,7 +49,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         self.generic_org_to_org_map = generic_org_to_org_map
         self.election_org_to_generic_org_map = election_org_to_generic_org_map
 
-    def create_or_update_organization_type(self):
+    def create_or_update_organization_type(self, force_update = False):
         """The organization_type field on DomainRequest and DomainInformation is consituted from the
         generic_org_type and is_election_board fields. To keep the organization_type
         field up to date, we need to update it before save based off of those field
@@ -59,6 +59,11 @@ class CreateOrUpdateOrganizationTypeHelper:
         one of the excluded types (FEDERAL, INTERSTATE, SCHOOL_DISTRICT), the
         organization_type is set to a corresponding election variant. Otherwise, it directly
         mirrors the generic_org_type value.
+
+        args:
+            force_update (bool): If an existing instance has no values to change,
+            try to update the organization_type field (or related fields) anyway.
+            This is done by invoking the new instance handler.
         """
 
         # A new record is added with organization_type not defined.
@@ -67,7 +72,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         if is_new_instance:
             self._handle_new_instance()
         else:
-            self._handle_existing_instance()
+            self._handle_existing_instance(force_update)
 
         return self.instance
 
@@ -92,7 +97,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         # Update the field
         self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
 
-    def _handle_existing_instance(self):
+    def _handle_existing_instance(self, force_update_when_no_are_changes_found = False):
         # == Init variables == #
         # Instance is already in the database, fetch its current state
         current_instance = self.sender.objects.get(id=self.instance.id)
@@ -109,17 +114,19 @@ class CreateOrUpdateOrganizationTypeHelper:
             # This will not happen in normal flow as it is not possible otherwise.
             raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
         elif not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
-            # No values to update - do nothing
-            return None
-        # == Program flow will halt here if there is no reason to update == #
+            # No changes found
+            if force_update_when_no_are_changes_found:
+                # If we want to force an update anyway, we can treat this record like
+                # its a new one in that we check for "None" values rather than changes.
+                self._handle_new_instance()
+        else:
+            # == Update the linked values == #
+            # Find out which field needs updating
+            organization_type_needs_update = generic_org_type_changed or is_election_board_changed
+            generic_org_type_needs_update = organization_type_changed
 
-        # == Update the linked values == #
-        # Find out which field needs updating
-        organization_type_needs_update = generic_org_type_changed or is_election_board_changed
-        generic_org_type_needs_update = organization_type_changed
-
-        # Update the field
-        self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
+            # Update the field
+            self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
 
     def _update_fields(self, organization_type_needs_update, generic_org_type_needs_update):
         """

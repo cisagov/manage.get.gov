@@ -251,11 +251,14 @@ class TestPopulateOrganizationType(MockEppLib):
 
         self.assert_expected_org_values_on_request_and_info(tribal_request, tribal_info, expected_values)
 
-    def test_request_and_info_tribal_remove_election_office(self):
+    def test_request_and_info_tribal_doesnt_remove_election_office(self):
         """
-        Tests if a tribal domain in the election csv changes organization_type to TRIBAL
-        when it used to be TRIBAL - ELECTION
-        for the domain request and the domain info
+        Tests if a tribal domain in the election csv changes organization_type to TRIBAL_ELECTION
+        when the is_election_board is True, and generic_org_type is Tribal when it is not
+        present in the CSV.
+
+        To avoid overwriting data, the script should not set any domain specified as
+        an election_office (that doesn't exist in the CSV) to false.
         """
 
         # Set org type fields to none to mimic an environment without this data
@@ -287,10 +290,10 @@ class TestPopulateOrganizationType(MockEppLib):
         except Exception as e:
             self.fail(f"Could not run populate_organization_type script. Failed with exception: {e}")
 
-        # Because we don't define this in the "csv", we expect that is election board will switch to False,
-        # and organization_type will now be tribal
-        expected_values["is_election_board"] = False
-        expected_values["organization_type"] = DomainRequest.OrgChoicesElectionOffice.TRIBAL
+        # If we don't define this in the "csv", but the value was already true,
+        # we expect that is election board will stay True, and the org type will be tribal,
+        # and organization_type will now be tribal_election
+        expected_values["organization_type"] = DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
         tribal_election_request.refresh_from_db()
         tribal_election_info.refresh_from_db()
         self.assert_expected_org_values_on_request_and_info(
