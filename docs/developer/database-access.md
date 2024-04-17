@@ -56,6 +56,13 @@ cf ssh getgov-ENVIRONMENT
 ./manage.py dumpdata
 ```
 
+## Access certain table in the database
+1. `cf connect-to-service getgov-ENVIRONMENT getgov-ENVIRONMENT-database` gets you into whichever environments database you'd like
+2. `\c [table name here that starts cgaws];` connects to the [cgaws...etc] table
+3. `\dt` retrieves information about that table and displays it
+4. Make sure the table you are looking for exists. For this example, we are looking for `django_migrations`
+5. Run `SELECT * FROM django_migrations` to see everything that's in it!
+
 ## Dropping and re-creating the database
 
 For your sandbox environment, it might be necessary to start the database over from scratch.

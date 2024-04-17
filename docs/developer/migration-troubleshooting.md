@@ -121,3 +121,18 @@ https://cisa-corp.slack.com/archives/C05BGB4L5NF/p1697810600723069
 2. `./manage.py migrate model_name_here file_name_WITH_create` (run the last data creation migration AND ONLY THAT ONE)
 3. `./manage.py migrate --fake model_name_here most_recent_file_name` (fake migrate the last migration in the migration list)
 4. `./manage.py load` (rerun fixtures)
+
+### Scenario 9: Inconsistent Migration History
+If you see `django.db.migrations.exceptions.InconsistentMigrationHistory` error, or when you run `./manage.py showmigrations` it looks like:
+
+[x] 0056_example_migration
+[ ] 0057_other_migration
+[x] 0058_some_other_migration
+
+1. Go to `database-access.md` to see the commands on how to access a certain table in the database.
+2. In this case, we want to remove the migration "history" from the `django_migrations` table
+3. Once you are in the `cgaws....` table, select the `django_migrations` table with the command `SELECT * FROM djangomigrations;`
+4. Find the id of the "history" you want to delete. In this example, the id would be 58.
+5. Run `DELETE FROM django_migrations WHERE id=58;` where 58 is an example id as seen above.
+6. Go to your shell and run `./manage.py showmigrations` to make sure your migrations are now back to the right state
+
