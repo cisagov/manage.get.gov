@@ -180,7 +180,6 @@ class DomainInformation(TimeStampedModel):
         null=True,
         # Access this information via Domain as "domain.domain_info"
         related_name="domain_info",
-        verbose_name="domain request",
         help_text="Domain to which this information belongs",
     )
 
