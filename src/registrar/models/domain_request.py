@@ -675,14 +675,16 @@ class DomainRequest(TimeStampedModel):
         help_text="Notes about this request",
     )
 
-    def save(self, *args, **kwargs):
-        """Save override for custom properties"""
-
+    def sync_organization_type(self):
+        """
+        Updates the organization_type (without saving) to match
+        the is_election_board and generic_organization_type fields.
+        """
         # Define mappings between generic org and election org.
         # These have to be defined here, as you'd get a cyclical import error
         # otherwise.
 
-        # For any given organization type, return the "_election" variant.
+        # For any given organization type, return the "_ELECTION" enum equivalent.
         # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
         generic_org_map = self.OrgChoicesElectionOffice.get_org_generic_to_org_election()
 
@@ -701,6 +703,10 @@ class DomainRequest(TimeStampedModel):
 
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
+
+    def save(self, *args, **kwargs):
+        """Save override for custom properties"""
+        self.sync_organization_type()
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -663,6 +663,7 @@ class ContactAdmin(ListHeaderAdmin):
     list_display = [
         "contact",
         "email",
+        "user_exists",
     ]
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
@@ -678,6 +679,13 @@ class ContactAdmin(ListHeaderAdmin):
     autocomplete_fields = ["user"]
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    def user_exists(self, obj):
+        """Check if the Contact has a related User"""
+        return "Yes" if obj.user is not None else "No"
+
+    user_exists.short_description = "Is user"  # type: ignore
+    user_exists.admin_order_field = "user"  # type: ignore
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -1445,12 +1453,36 @@ class DomainRequestAdmin(ListHeaderAdmin):
         """
         Override changelist_view to set the selected value of status filter.
         """
+        # there are two conditions which should set the default selected filter:
+        # 1 - there are no query parameters in the request and the request is the
+        #     initial request for this view
+        # 2 - there are no query parameters in the request and the referring url is
+        #     the change view for a domain request
+        should_apply_default_filter = False
         # use http_referer in order to distinguish between request as a link from another page
         # and request as a removal of all filters
         http_referer = request.META.get("HTTP_REFERER", "")
         # if there are no query parameters in the request
-        # and the request is the initial request for this view
-        if not bool(request.GET) and request.path not in http_referer:
+        if not bool(request.GET):
+            # if the request is the initial request for this view
+            if request.path not in http_referer:
+                should_apply_default_filter = True
+            # elif the request is a referral from changelist view or from
+            # domain request change view
+            elif request.path in http_referer:
+                # find the index to determine the referring url after the path
+                index = http_referer.find(request.path)
+                # Check if there is a character following the path in http_referer
+                next_char_index = index + len(request.path)
+                if index + next_char_index < len(http_referer):
+                    next_char = http_referer[next_char_index]
+
+                    # Check if the next character is a digit, if so, this indicates
+                    # a change view for domain request
+                    if next_char.isdigit():
+                        should_apply_default_filter = True
+
+        if should_apply_default_filter:
             # modify the GET of the request to set the selected filter
             modified_get = copy.deepcopy(request.GET)
             modified_get["status__in"] = "submitted,in review,action needed"
@@ -1487,10 +1519,11 @@ class DomainInformationInline(admin.StackedInline):
     We had issues inheriting from both StackedInline
     and the source DomainInformationAdmin since these
     classes conflict, so we'll just pull what we need
-    from DomainInformationAdmin"""
+    from DomainInformationAdmin
+    """
 
     form = DomainInformationInlineForm
-
+    template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
 
     fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
@@ -1500,10 +1533,8 @@ class DomainInformationInline(admin.StackedInline):
             del fieldsets[index]
             break
 
+    readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
-    # to activate the edit/delete/view buttons
-    filter_horizontal = ("other_contacts",)
 
     autocomplete_fields = [
         "creator",
@@ -1669,11 +1700,15 @@ class DomainAdmin(ListHeaderAdmin):
         if extra_context is None:
             extra_context = {}
 
-        # Pass in what the an extended expiration date would be for the expiration date modal
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
-            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
 
+            # Used in the custom contact view
+            if domain is not None and hasattr(domain, "domain_info"):
+                extra_context["original_object"] = domain.domain_info
+
+            # Pass in what the an extended expiration date would be for the expiration date modal
+            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
             try:
                 curr_exp_date = domain.registry_expiration_date
             except KeyError:

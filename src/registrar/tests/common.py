@@ -1152,6 +1152,18 @@ class MockEppLib(TestCase):
         ],
     )
 
+    infoDomainFourHosts = fakedEppObject(
+        "fournameserversDomain.gov",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+            "ns1.explosive-chicken-nuggets.com",
+        ],
+    )
+
     infoDomainNoHost = fakedEppObject(
         "my-nameserver.gov",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
@@ -1452,7 +1464,9 @@ class MockEppLib(TestCase):
                 )
 
     def mockInfoDomainCommands(self, _request, cleaned):
-        request_name = getattr(_request, "name", None)
+        request_name = getattr(_request, "name", None).lower()
+
+        print(request_name)
 
         # Define a dictionary to map request names to data and extension values
         request_mappings = {
@@ -1474,7 +1488,8 @@ class MockEppLib(TestCase):
             "nameserverwithip.gov": (self.infoDomainHasIP, None),
             "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
             "freeman.gov": (self.InfoDomainWithContacts, None),
-            "threenameserversDomain.gov": (self.infoDomainThreeHosts, None),
+            "threenameserversdomain.gov": (self.infoDomainThreeHosts, None),
+            "fournameserversdomain.gov": (self.infoDomainFourHosts, None),
             "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
             "adomain2.gov": (self.InfoDomainWithVerisignSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
