@@ -680,9 +680,8 @@ class AdditionalDetailsForm(BaseDeletableRegistrarForm):
             )
         ],
         error_messages={
-            "required":  (
-                "Provide additional details you’d like us to know. "
-                "If you have nothing to add, select “No.”"
+            "required": (
+                "Provide additional details you’d like us to know. " "If you have nothing to add, select “No.”"
             )
         },
     )

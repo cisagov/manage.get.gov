@@ -738,11 +738,9 @@ class DomainRequest(TimeStampedModel):
             self.has_cisa_representative = (
                 self.cisa_representative_email != "" and self.cisa_representative_email is not None
             )
-        
+
         if self.anything_else is not None:
-            self.has_anything_else_text = (
-                self.anything_else != "" and self.anything_else is not None
-            )
+            self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 
     def __str__(self):
         try:
