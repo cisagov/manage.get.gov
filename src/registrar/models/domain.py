@@ -992,6 +992,7 @@ class Domain(TimeStampedModel, DomainHelper):
         blank=False,
         default=None,  # prevent saving without a value
         unique=True,
+        verbose_name="domain",
         help_text="Fully qualified domain name",
     )
 
@@ -1000,6 +1001,7 @@ class Domain(TimeStampedModel, DomainHelper):
         choices=State.choices,
         default=State.UNKNOWN,
         protected=True,  # cannot change state directly, particularly in Django admin
+        verbose_name="domain state",
         help_text="Very basic info about the lifecycle of this domain object",
     )
 
@@ -1017,12 +1019,14 @@ class Domain(TimeStampedModel, DomainHelper):
     deleted = DateField(
         null=True,
         editable=False,
+        verbose_name="deleted on",
         help_text="Deleted at date",
     )
 
     first_ready = DateField(
         null=True,
         editable=False,
+        verbose_name="first ready on",
         help_text="The last time this domain moved into the READY state",
     )
 
