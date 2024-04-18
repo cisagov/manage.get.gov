@@ -1509,10 +1509,11 @@ class DomainInformationInline(admin.StackedInline):
     We had issues inheriting from both StackedInline
     and the source DomainInformationAdmin since these
     classes conflict, so we'll just pull what we need
-    from DomainInformationAdmin"""
+    from DomainInformationAdmin
+    """
 
     form = DomainInformationInlineForm
-
+    template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
 
     fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
@@ -1522,10 +1523,8 @@ class DomainInformationInline(admin.StackedInline):
             del fieldsets[index]
             break
 
+    readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
-    # to activate the edit/delete/view buttons
-    filter_horizontal = ("other_contacts",)
 
     autocomplete_fields = [
         "creator",
@@ -1691,11 +1690,15 @@ class DomainAdmin(ListHeaderAdmin):
         if extra_context is None:
             extra_context = {}
 
-        # Pass in what the an extended expiration date would be for the expiration date modal
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
-            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
 
+            # Used in the custom contact view
+            if domain is not None and hasattr(domain, "domain_info"):
+                extra_context["original_object"] = domain.domain_info
+
+            # Pass in what the an extended expiration date would be for the expiration date modal
+            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
             try:
                 curr_exp_date = domain.registry_expiration_date
             except KeyError:

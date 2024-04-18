@@ -85,6 +85,78 @@ class TestDomainAdmin(MockEppLib, WebTest):
         )
         super().setUp()
 
+    @less_console_noise_decorator
+    def test_contact_fields_on_domain_change_form_have_detail_table(self):
+        """Tests if the contact fields in the inlined Domain information have the detail table
+        which displays title, email, and phone"""
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+        )
+
+        # Due to the relation between User <==> Contact,
+        # the underlying contact has to be modified this way.
+        _creator.contact.email = "meoward.jones@igorville.gov"
+        _creator.contact.phone = "(555) 123 12345"
+        _creator.contact.title = "Treat inspector"
+        _creator.contact.save()
+
+        # Create a fake domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        domain_request.approve()
+        _domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
+        domain = Domain.objects.filter(domain_info=_domain_info).get()
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+
+        # Check that the fields have the right values.
+        # == Check for the creator == #
+
+        # Check for the right title, email, and phone number in the response.
+        # We only need to check for the end tag
+        # (Otherwise this test will fail if we change classes, etc)
+        self.assertContains(response, "Treat inspector")
+        self.assertContains(response, "meoward.jones@igorville.gov")
+        self.assertContains(response, "(555) 123 12345")
+
+        # Check for the field itself
+        self.assertContains(response, "Meoward Jones")
+
+        # == Check for the submitter == #
+        self.assertContains(response, "mayor@igorville.gov")
+
+        self.assertContains(response, "Admin Tester")
+        self.assertContains(response, "(555) 555 5556")
+        self.assertContains(response, "Testy2 Tester2")
+
+        # == Check for the authorizing_official == #
+        self.assertContains(response, "testy@town.com")
+        self.assertContains(response, "Chief Tester")
+        self.assertContains(response, "(555) 555 5555")
+
+        # Includes things like readonly fields
+        self.assertContains(response, "Testy Tester")
+
+        # == Test the other_employees field == #
+        self.assertContains(response, "testy2@town.com")
+        self.assertContains(response, "Another Tester")
+        self.assertContains(response, "(555) 555 5557")
+
+        # Test for the copy link
+        self.assertContains(response, "usa-button__clipboard")
+
     @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
     def test_extend_expiration_date_button(self, mock_date_today):
         """
