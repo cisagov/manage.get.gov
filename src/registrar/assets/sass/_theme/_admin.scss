@@ -495,6 +495,8 @@ address.dja-address-contact-list {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
+        font-size: medium;
+        padding-top: 3px !important;
     }
 }
 
@@ -505,6 +507,7 @@ address.dja-address-contact-list {
 @media screen and (min-width:768px) {
     .visible-768 {
         display: block;
+        padding-top: 0;
     }
 }
 
