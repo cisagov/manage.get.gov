@@ -1493,9 +1493,6 @@ class DomainInformationInline(admin.StackedInline):
 
     readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
-    # to activate the edit/delete/view buttons
-    filter_horizontal = ("other_contacts",)
 
     autocomplete_fields = [
         "creator",
