@@ -87,10 +87,10 @@ def parse_row_for_domain(
     if security_email.lower() in invalid_emails:
         security_email = "(blank)"
 
-    if domain_info.federal_type and domain_info.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
-        domain_type = f"{domain_info.get_generic_org_type_display()} - {domain_info.get_federal_type_display()}"
+    if domain_info.federal_type and domain_info.organization_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
+        domain_type = f"{domain_info.get_organization_type_display()} - {domain_info.get_federal_type_display()}"
     else:
-        domain_type = domain_info.get_generic_org_type_display()
+        domain_type = domain_info.get_organization_type_display()
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
@@ -319,9 +319,9 @@ def parse_row_for_requests(columns, request: DomainRequest):
         requested_domain_name = request.requested_domain.name
 
     if request.federal_type:
-        request_type = f"{request.get_generic_org_type_display()} - {request.get_federal_type_display()}"
+        request_type = f"{request.get_organization_type_display()} - {request.get_federal_type_display()}"
     else:
-        request_type = request.get_generic_org_type_display()
+        request_type = request.get_organization_type_display()
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
@@ -399,7 +399,7 @@ def export_data_type_to_csv(csv_file):
 
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
-        "generic_org_type",
+        "organization_type",
         Coalesce("federal_type", Value("ZZZZZ")),
         "federal_agency",
         "domain__name",
@@ -432,7 +432,7 @@ def export_data_full_to_csv(csv_file):
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
-        "generic_org_type",
+        "organization_type",
         Coalesce("federal_type", Value("ZZZZZ")),
         "federal_agency",
         "domain__name",
@@ -465,13 +465,13 @@ def export_data_federal_to_csv(csv_file):
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
-        "generic_org_type",
+        "organization_type",
         Coalesce("federal_type", Value("ZZZZZ")),
         "federal_agency",
         "domain__name",
     ]
     filter_condition = {
-        "generic_org_type__icontains": "federal",
+        "organization_type__icontains": "federal",
         "domain__state__in": [
             Domain.State.READY,
             Domain.State.DNS_NEEDED,
@@ -601,7 +601,6 @@ def get_sliced_domains(filter_condition):
 
 def get_sliced_requests(filter_condition):
     """Get filtered requests counts sliced by org type and election office."""
-
     requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
     requests_count = requests.count()
     federal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
