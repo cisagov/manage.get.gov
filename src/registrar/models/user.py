@@ -1,3 +1,4 @@
+from enum import Enum
 import logging
 
 from django.contrib.auth.models import AbstractUser
@@ -23,6 +24,16 @@ class User(AbstractUser):
     but can be customized later.
     """
 
+    class VerificationTypeChoices(models.TextChoices):
+        """
+        Users achieve access to our system in a few different ways.
+        These choices reflect those pathways.
+        """
+        GRANDFATHERED = "grandfathered", "Legacy user"
+        VERIFIED_BY_STAFF = "verified_by_staff", "Verified by staff"
+        REGULAR = "regular", "Verified by Login.gov"
+        INVITED = "invited", "Invited by a domain manager"
+
     # #### Constants for choice fields ####
     RESTRICTED = "restricted"
     STATUS_CHOICES = ((RESTRICTED, RESTRICTED),)
@@ -46,6 +57,13 @@ class User(AbstractUser):
         blank=True,
         help_text="Phone",
         db_index=True,
+    )
+
+    verification_type = models.CharField(
+        choices=VerificationTypeChoices,
+        null=True,
+        blank=True,
+        help_text="The means through which this user was verified",
     )
 
     def __str__(self):
@@ -95,6 +113,22 @@ class User(AbstractUser):
     def has_contact_info(self):
         return bool(self.contact.title or self.contact.email or self.contact.phone)
 
+    
+    @classmethod
+    def get_existing_user_from_uuid(cls, uuid):
+        existing_user = None
+        try:
+            existing_user = cls.objects.get(username=uuid)
+            if existing_user and UserDomainRole.objects.filter(user=existing_user).exists():
+                return (False, existing_user)
+        except cls.DoesNotExist:
+            # Do nothing when the user is not found, as we're checking for existence.
+            pass
+        except Exception as err:
+            raise err
+        
+        return (True, existing_user)
+
     @classmethod
     def needs_identity_verification(cls, email, uuid):
         """A method used by our oidc classes to test whether a user needs email/uuid verification
@@ -102,33 +136,52 @@ class User(AbstractUser):
 
         # An existing user who is a domain manager of a domain (that is,
         # they have an entry in UserDomainRole for their User)
-        try:
-            existing_user = cls.objects.get(username=uuid)
-            if existing_user and UserDomainRole.objects.filter(user=existing_user).exists():
-                return False
-        except cls.DoesNotExist:
-            # Do nothing when the user is not found, as we're checking for existence.
-            pass
-        except Exception as err:
-            raise err
+        user_exists, existing_user = cls.existing_user(uuid)
+        if not user_exists:
+            return False
 
-        # A new incoming user who is a domain manager for one of the domains
-        # that we inputted from Verisign (that is, their email address appears
-        # in the username field of a TransitionDomain)
+        # The user needs identity verification if they don't meet
+        # any special criteria, i.e. we are validating them "regularly"
+        existing_user.verification_type = cls.get_verification_type_from_email(email)
+        return existing_user.verification_type == cls.VerificationTypeChoices.REGULAR
+
+    @classmethod
+    def get_verification_type_from_email(cls, email, invitation_status=DomainInvitation.DomainInvitationStatus.INVITED):
+        """Retrieves the verification type based off of a provided email address"""
+        
+        verification_type = None
         if TransitionDomain.objects.filter(username=email).exists():
-            return False
+            # A new incoming user who is a domain manager for one of the domains
+            # that we inputted from Verisign (that is, their email address appears
+            # in the username field of a TransitionDomain)
+            verification_type = cls.VerificationTypeChoices.GRANDFATHERED
+        elif VerifiedByStaff.objects.filter(email=email).exists():
+            # New users flagged by Staff to bypass ial2
+            verification_type = cls.VerificationTypeChoices.VERIFIED_BY_STAFF
+        elif DomainInvitation.objects.filter(email=email, status=invitation_status).exists():
+                # A new incoming user who is being invited to be a domain manager (that is,
+            # their email address is in DomainInvitation for an invitation that is not yet "retrieved").
+            verification_type = cls.VerificationTypeChoices.INVITED
+        else:
+            verification_type = cls.VerificationTypeChoices.REGULAR
+        
+        return verification_type
 
-        # New users flagged by Staff to bypass ial2
-        if VerifiedByStaff.objects.filter(email=email).exists():
-            return False
+    def user_verification_type(self, check_if_user_exists=False):
+        if self.verification_type is None:
+            # Would need to check audit log
+            retrieved = DomainInvitation.DomainInvitationStatus.RETRIEVED
+            user_exists, _ = self.existing_user(self.username)
+            verification_type = self.get_verification_type_from_email(self.email, invitation_status=retrieved)
 
-        # A new incoming user who is being invited to be a domain manager (that is,
-        # their email address is in DomainInvitation for an invitation that is not yet "retrieved").
-        invited = DomainInvitation.DomainInvitationStatus.INVITED
-        if DomainInvitation.objects.filter(email=email, status=invited).exists():
-            return False
-
-        return True
+            # This should check if the type is unknown, use check_if_user_exists?
+            if verification_type == self.VerificationTypeChoices.REGULAR and not user_exists:
+                raise ValueError(f"No verification_type was found for {self} with id: {self.pk}")
+            else:
+                self.verification_type = verification_type
+                return self.verification_type
+        else:
+            return self.verification_type
 
     def check_domain_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any domain
