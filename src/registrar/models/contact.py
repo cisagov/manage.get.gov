@@ -18,7 +18,7 @@ class Contact(TimeStampedModel):
     first_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="First name",
+        verbose_name="first name",
         db_index=True,
     )
     middle_name = models.CharField(
