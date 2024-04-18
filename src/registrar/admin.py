@@ -879,7 +879,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
         "domain__name",
         "role",
     ]
-    search_help_text = "Search by first name, last name, email, domain, or role."
+    search_help_text = "Search by first name, last name, email, or domain."
 
     autocomplete_fields = ["user", "domain"]
 
