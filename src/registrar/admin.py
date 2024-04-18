@@ -1987,9 +1987,7 @@ class DraftDomainAdmin(ListHeaderAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["name"]
-    list_display = [
-        "name"
-    ]
+    list_display = ["name"]
 
     @admin.display(description=_("Requested domain"))
     def name(self, obj):
