@@ -263,6 +263,8 @@ class BaseYesNoForm(RegistrarForm):
             },
         )
 
+        print(f"wjat are the error messages? {choice_field.error_messages}")
+
         return choice_field
 
     def get_initial_value(self):

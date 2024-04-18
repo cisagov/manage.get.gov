@@ -647,7 +647,6 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     cisa_representative_email = forms.EmailField(
         required=True,
         max_length=None,
-        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
         label="Your representative’s email",
         validators=[
             MaxLengthValidator(
@@ -655,14 +654,17 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
                 message="Response must be less than 320 characters.",
             )
         ],
+        error_messages={
+            "invalid": ("Enter your email address in the required format, like name@example.com."),
+            "required": ("Enter the email address of your CISA regional representative."),
+        },
     )
 
 
 class CisaRepresentativeYesNoForm(BaseYesNoForm):
     """Yes/no toggle for the CISA regions question on additional details"""
 
-    # Note that these can be set as functions/init if you need more fine-grained control
-    form_is_checked = property(lambda self: self.domain_request.has_cisa_representative())  # type: ignore
+    form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)
     field_name = "has_cisa_representative"
 
 
@@ -677,6 +679,12 @@ class AdditionalDetailsForm(BaseDeletableRegistrarForm):
                 message="Response must be less than 2000 characters.",
             )
         ],
+        error_messages={
+            "required":  (
+                "Provide additional details you’d like us to know. "
+                "If you have nothing to add, select “No.”"
+            )
+        },
     )
 
 
@@ -684,7 +692,7 @@ class AdditionalDetailsYesNoForm(BaseYesNoForm):
     """Yes/no toggle for the anything else question on additional details"""
 
     # Note that these can be set as functions/init if you need more fine-grained control.
-    form_is_checked = property(lambda self: self.domain_request.has_anything_else_text())  # type: ignore
+    form_is_checked = property(lambda self: self.domain_request.has_anything_else_text)  # type: ignore
     field_name = "has_anything_else_text"
 
 
