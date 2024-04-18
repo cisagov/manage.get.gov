@@ -644,7 +644,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Anything else?",
-        verbose_name="Additional Details",
+        verbose_name="Additional details",
     )
 
     cisa_representative_email = models.EmailField(

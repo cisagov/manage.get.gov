@@ -91,7 +91,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.PURPOSE: _("Purpose of your domain"),
         Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
-        Step.ADDITIONAL_DETAILS: _("Additional Details"),
+        Step.ADDITIONAL_DETAILS: _("Additional details"),
         Step.REQUIREMENTS: _("Requirements for operating a .gov domain"),
         Step.REVIEW: _("Review and submit your domain request"),
     }
@@ -582,7 +582,6 @@ class OtherContacts(DomainRequestWizard):
         return all_forms_valid
 
 
-# DONE-NL: rename this to "Additional Details" (note: this is a find-replace job. VS will not refactor properly)
 class AdditionalDetails(DomainRequestWizard):
 
     template_name = "domain_request_additional_details.html"
