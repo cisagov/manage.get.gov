@@ -28,13 +28,13 @@ class Contact(TimeStampedModel):
     last_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Last Name",
+        verbose_name="last name",
         db_index=True,
     )
     title = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Title / role",
+        verbose_name="title / role",
     )
     email = models.EmailField(
         null=True,
