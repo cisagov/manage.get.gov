@@ -857,6 +857,8 @@ def completed_domain_request(
         creator=user,
         status=status,
         investigator=investigator,
+        has_cisa_representative=False,
+        has_anything_else_text=False,
     )
     if has_about_your_organization:
         domain_request_kwargs["about_your_organization"] = "e-Government"

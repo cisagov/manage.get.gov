@@ -219,7 +219,6 @@ class DomainInformation(TimeStampedModel):
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        db_index=True,
         verbose_name="CISA region representative",
         max_length=320,
     )

@@ -724,14 +724,26 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
 
-    def test_yes_no_form_inits_blank_for_new_domain_request(self):
+    def test_yes_no_contact_form_inits_blank_for_new_domain_request(self):
         """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
         other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
 
-    def test_yes_no_form_inits_yes_for_domain_request_with_other_contacts(self):
+    def test_yes_no_additional_form_inits_blank_for_new_domain_request(self):
+        """On the Additional Details page, the yes/no form gets initialized with nothing selected for
+        new domain requests"""
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        self.assertEquals(additional_form["additional_details-has_cisa_representative"].value, None)
+
+        # Check the anything else yes/no field
+        self.assertEquals(additional_form["additional_details-has_anything_else_text"].value, None)
+
+    def test_yes_no_contact_form_inits_yes_for_domain_request_with_other_contacts(self):
         """On the Other Contacts page, the yes/no form gets initialized with YES selected if the
         domain request has other contacts"""
         # Domain Request has other contacts by default
@@ -750,6 +762,38 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+
+    def test_yes_no_additional_form_inits_yes_for_cisa_representative_and_anything_else(self):
+        """On the Additional Details page, the yes/no form gets initialized with YES selected
+        for both yes/no radios if the domain request has a value for cisa_representative and
+        anything_else"""
+
+        domain_request = completed_domain_request(user=self.user, has_anything_else=True)
+        domain_request.cisa_representative_email="test@igorville.gov"
+        domain_request.anything_else="1234"
+        domain_request.save()
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
+        self.assertEquals(yes_no_cisa, True)
+
+        # Check the anything else yes/no field
+        yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
+        self.assertEquals(yes_no_anything_else, True)
 
     def test_yes_no_form_inits_no_for_domain_request_with_no_other_contacts_rationale(self):
         """On the Other Contacts page, the yes/no form gets initialized with NO selected if the

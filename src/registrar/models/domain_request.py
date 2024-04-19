@@ -659,7 +659,6 @@ class DomainRequest(TimeStampedModel):
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        db_index=True,
         verbose_name="CISA region representative",
         max_length=320,
     )
@@ -739,7 +738,7 @@ class DomainRequest(TimeStampedModel):
                 self.cisa_representative_email != "" and self.cisa_representative_email is not None
             )
 
-        if self.anything_else is not None:
+        if self.has_anything_else_text is not None:
             self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 
     def __str__(self):
