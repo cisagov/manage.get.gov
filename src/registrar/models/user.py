@@ -168,20 +168,10 @@ class User(AbstractUser):
         return verification_type
 
     def set_user_verification_type(self):
-        if self.verification_type is None:
-            # Would need to check audit log
-            retrieved = DomainInvitation.DomainInvitationStatus.RETRIEVED
-            user_exists = self.existing_user(self.username)
-            verification_type = self.get_verification_type_from_email(self.email, invitation_status=retrieved)
-
-            # This should check if the type is unknown, use check_if_user_exists?
-            if verification_type == self.VerificationTypeChoices.REGULAR and not user_exists:
-                raise ValueError(f"No verification_type was found for {self} with id: {self.pk}")
-            else:
-                self.verification_type = verification_type
-                return self.verification_type
-        else:
-            return self.verification_type
+        # Would need to check audit log
+        retrieved = DomainInvitation.DomainInvitationStatus.RETRIEVED
+        verification_type = self.get_verification_type_from_email(self.email, invitation_status=retrieved)
+        self.verification_type = verification_type
 
     def check_domain_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any domain

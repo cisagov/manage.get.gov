@@ -99,8 +99,11 @@ def login_callback(request):
             return CLIENT.create_authn_request(request.session)
         user = authenticate(request=request, **userinfo)
         if user:
-            # Set the verification type
-            user.set_user_verification_type()
+            # Set the verification type if it doesn't already exist
+            if not user.verification_type:
+                user.set_user_verification_type()
+                user.save()
+
             login(request, user)
             logger.info("Successfully logged in user %s" % user)
 
