@@ -60,7 +60,7 @@ class User(AbstractUser):
     )
 
     verification_type = models.CharField(
-        choices=VerificationTypeChoices,
+        choices=VerificationTypeChoices.choices,
         null=True,
         blank=True,
         help_text="The means through which this user was verified",
@@ -115,19 +115,19 @@ class User(AbstractUser):
 
     
     @classmethod
-    def get_existing_user_from_uuid(cls, uuid):
+    def existing_user(cls, uuid):
         existing_user = None
         try:
             existing_user = cls.objects.get(username=uuid)
             if existing_user and UserDomainRole.objects.filter(user=existing_user).exists():
-                return (False, existing_user)
+                return False
         except cls.DoesNotExist:
             # Do nothing when the user is not found, as we're checking for existence.
             pass
         except Exception as err:
             raise err
         
-        return (True, existing_user)
+        return True
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
@@ -136,14 +136,14 @@ class User(AbstractUser):
 
         # An existing user who is a domain manager of a domain (that is,
         # they have an entry in UserDomainRole for their User)
-        user_exists, existing_user = cls.existing_user(uuid)
+        user_exists = cls.existing_user(uuid)
         if not user_exists:
             return False
 
         # The user needs identity verification if they don't meet
         # any special criteria, i.e. we are validating them "regularly"
-        existing_user.verification_type = cls.get_verification_type_from_email(email)
-        return existing_user.verification_type == cls.VerificationTypeChoices.REGULAR
+        verification_type = cls.get_verification_type_from_email(email)
+        return verification_type == cls.VerificationTypeChoices.REGULAR
 
     @classmethod
     def get_verification_type_from_email(cls, email, invitation_status=DomainInvitation.DomainInvitationStatus.INVITED):
@@ -167,11 +167,11 @@ class User(AbstractUser):
         
         return verification_type
 
-    def user_verification_type(self, check_if_user_exists=False):
+    def set_user_verification_type(self):
         if self.verification_type is None:
             # Would need to check audit log
             retrieved = DomainInvitation.DomainInvitationStatus.RETRIEVED
-            user_exists, _ = self.existing_user(self.username)
+            user_exists = self.existing_user(self.username)
             verification_type = self.get_verification_type_from_email(self.email, invitation_status=retrieved)
 
             # This should check if the type is unknown, use check_if_user_exists?

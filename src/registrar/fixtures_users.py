@@ -6,6 +6,7 @@ from registrar.models import (
     User,
     UserGroup,
 )
+from registrar.models.verified_by_staff import VerifiedByStaff
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -187,6 +188,9 @@ class UserFixture:
         logger.info(f"Going to load {len(users)} users in group {group_name}")
         for user_data in users:
             try:
+
+                # TODO - Add the fixture user to the VerifiedByStaff table
+                # (To track how this user was verified)
                 user, _ = User.objects.get_or_create(username=user_data["username"])
                 user.is_superuser = False
                 user.first_name = user_data["first_name"]

@@ -99,8 +99,11 @@ def login_callback(request):
             return CLIENT.create_authn_request(request.session)
         user = authenticate(request=request, **userinfo)
         if user:
+            # Set the verification type
+            user.set_user_verification_type()
             login(request, user)
             logger.info("Successfully logged in user %s" % user)
+
             # Clear the flag if the exception is not caught
             request.session.pop("redirect_attempted", None)
             return redirect(request.session.get("next", "/"))
