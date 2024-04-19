@@ -113,10 +113,13 @@ class User(AbstractUser):
     def has_contact_info(self):
         return bool(self.contact.title or self.contact.email or self.contact.phone)
 
-    
     @classmethod
-    def existing_user(cls, uuid):
-        existing_user = None
+    def needs_identity_verification(cls, email, uuid):
+        """A method used by our oidc classes to test whether a user needs email/uuid verification
+        or the full identity PII verification"""
+
+        # An existing user who is a domain manager of a domain (that is,
+        # they have an entry in UserDomainRole for their User)
         try:
             existing_user = cls.objects.get(username=uuid)
             if existing_user and UserDomainRole.objects.filter(user=existing_user).exists():
@@ -126,24 +129,21 @@ class User(AbstractUser):
             pass
         except Exception as err:
             raise err
-        
-        return True
 
-    @classmethod
-    def needs_identity_verification(cls, email, uuid):
-        """A method used by our oidc classes to test whether a user needs email/uuid verification
-        or the full identity PII verification"""
-
-        # An existing user who is a domain manager of a domain (that is,
-        # they have an entry in UserDomainRole for their User)
-        user_exists = cls.existing_user(uuid)
-        if not user_exists:
-            return False
+        # We can't set the verification type here because the user may not
+        # always exist at this point. We do it down the line.
+        verification_type = cls.get_verification_type_from_email(email)
 
         # The user needs identity verification if they don't meet
         # any special criteria, i.e. we are validating them "regularly"
-        verification_type = cls.get_verification_type_from_email(email)
-        return verification_type == cls.VerificationTypeChoices.REGULAR
+        needs_verification = verification_type == cls.VerificationTypeChoices.REGULAR
+        return needs_verification
+
+    def set_user_verification_type(self):
+        # Would need to check audit log
+        retrieved = DomainInvitation.DomainInvitationStatus.RETRIEVED
+        verification_type = self.get_verification_type_from_email(self.email, invitation_status=retrieved)
+        self.verification_type = verification_type
 
     @classmethod
     def get_verification_type_from_email(cls, email, invitation_status=DomainInvitation.DomainInvitationStatus.INVITED):
@@ -166,12 +166,6 @@ class User(AbstractUser):
             verification_type = cls.VerificationTypeChoices.REGULAR
         
         return verification_type
-
-    def set_user_verification_type(self):
-        # Would need to check audit log
-        retrieved = DomainInvitation.DomainInvitationStatus.RETRIEVED
-        verification_type = self.get_verification_type_from_email(self.email, invitation_status=retrieved)
-        self.verification_type = verification_type
 
     def check_domain_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any domain
