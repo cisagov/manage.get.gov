@@ -449,6 +449,15 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
+    updated_federal_agency = models.ForeignKey(
+        "registrar.FederalAgency",
+        on_delete=models.PROTECT,
+        help_text="Associated federal agency",
+        unique=False,
+        blank=True,
+        null=True,
+    )
+
     # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
@@ -478,6 +487,7 @@ class DomainRequest(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
+        verbose_name="election office",
         help_text="Is your organization an election office?",
     )
 
@@ -550,12 +560,14 @@ class DomainRequest(TimeStampedModel):
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
+        verbose_name="state / territory",
         help_text="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
+        verbose_name="zip code",
         help_text="Zip code",
         db_index=True,
     )
@@ -683,6 +695,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         default=None,
+        verbose_name="submitted at",
         help_text="Date submitted",
     )
 

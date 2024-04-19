@@ -18,7 +18,7 @@ class Contact(TimeStampedModel):
     first_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="first name / given name",
+        verbose_name="first name",
         db_index=True,
     )
     middle_name = models.CharField(
@@ -28,13 +28,13 @@ class Contact(TimeStampedModel):
     last_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="last name / family name",
+        verbose_name="last name",
         db_index=True,
     )
     title = models.CharField(
         null=True,
         blank=True,
-        verbose_name="title or role in your organization",
+        verbose_name="title / role",
     )
     email = models.EmailField(
         null=True,
