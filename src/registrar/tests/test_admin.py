@@ -25,11 +25,13 @@ from registrar.models import (
     Domain,
     DomainRequest,
     DomainInformation,
+    DraftDomain,
     User,
     DomainInvitation,
     Contact,
+    PublicContact,
+    Host,
     Website,
-    DraftDomain,
 )
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
@@ -690,6 +692,8 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
     def tearDown(self):
         super().tearDown()
+        PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
