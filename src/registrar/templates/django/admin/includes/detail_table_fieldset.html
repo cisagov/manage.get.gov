@@ -67,7 +67,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block after_help_text %}
     {% if field.field.name == "creator" %}
-        <div class="flex-container">
+        <div class="flex-container tablet:margin-top-1">
         <label aria-label="Creator contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original.creator no_title_top_padding=field.is_readonly %}
         </div>

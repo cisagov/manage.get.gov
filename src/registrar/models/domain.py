@@ -163,7 +163,6 @@ class Domain(TimeStampedModel, DomainHelper):
         def get_admin_help_text(cls, state):
             """Returns a help message for a desired state for /admin. If none is found, an empty string is returned"""
             admin_help_texts = {
-                # For now, unknown has the same message as DNS_NEEDED
                 cls.UNKNOWN: (
                     "The creator of the associated domain request has not logged in to "
                     "manage the domain since it was approved. "
