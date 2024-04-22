@@ -14,6 +14,7 @@ from registrar.models import (
     TransitionDomain,
     DomainInformation,
     UserDomainRole,
+    FederalAgency,
 )
 from registrar.models.public_contact import PublicContact
 
@@ -743,3 +744,71 @@ class TestDiscloseEmails(MockEppLib):
                     )
                 ]
             )
+
+
+class TestRenamingFederalAgency(MockEppLib):
+    def setUp(self):
+        super().setUp()
+
+        # Get the domain requests
+        self.domain_request_1 = completed_domain_request(
+            name="stitches.gov",
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            is_election_board=True,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            federal_agency="U.S. Peace Corps",
+        )
+        self.outdated_federal_agency = FederalAgency.objects.get_or_create(agency="U.S. Peace Corps")
+        self.corrected_federal_agency = FederalAgency.objects.get_or_create(agency="Peace Corps")
+
+        # Approve all three requests
+        self.domain_request_1.approve()
+
+        # Get the domains
+        self.domain_1 = Domain.objects.get(name="stitches.gov")
+
+        # Get the domain infos
+        self.domain_info_1 = DomainInformation.objects.get(domain=self.domain_1)
+
+    def tearDown(self):
+        super().tearDown()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Domain.objects.all().delete()
+
+    def run_populate_domain_updated_federal_agency(self):
+        """
+        This method executes the populate_domain_updated_federal_agency command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the populate_domain_updated_federal_agency command.
+        """
+        # with less_console_noise():
+        print("!! We are in run_populate_domain_updated_federal_agency")
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("populate_domain_updated_federal_agency")
+
+    def test_domain_information_renaming_federal_agency_success(self):
+        """
+        1. Domain Information Update an outdated Federal Agency
+        2. Domain Information should error out on null Update a Federal Agency that doesn't exist (should error out)
+        2a. Domain Request should just skip? (maybe)
+        3. Domain Request Updating a Null Federal Agency make sure it's updated to Non-Federal Agency
+        TODO: Have a todo for the next ticket pt 3 to remove the tests here RIP
+        """
+
+        # Test case #1
+        self.run_populate_domain_updated_federal_agency()
+        print("!! self.domain_info_1 is", self.domain_info_1)
+        print("!! self.domain_info_1 dictionary is", self.domain_info_1.__dict__)
+
+        previous_federal_agency_name = self.domain_info_1.federal_agency
+        updated_federal_agency_name = self.domain_info_1.updated_federal_agency
+        print("!! previous_federal_agency_name is ", previous_federal_agency_name)
+        print("!! updated_federal_agency_name is ", updated_federal_agency_name)
+
+        self.assertEqual(previous_federal_agency_name, "U.S. Peace Corps")
+        self.assertEqual(updated_federal_agency_name, "Peace Corps")

@@ -26,6 +26,7 @@ from registrar.models import (
     DomainInformation,
     PublicContact,
     Domain,
+    FederalAgency,
 )
 from epplibwrapper import (
     commands,
@@ -803,6 +804,8 @@ def completed_domain_request(
     generic_org_type="federal",
     is_election_board=False,
     organization_type=None,
+    federal_agency=None,
+    updated_federal_agency=None,
 ):
     """A completed domain request."""
     if not user:
@@ -839,6 +842,8 @@ def completed_domain_request(
             last_name="Bob",
             is_staff=True,
         )
+    if not updated_federal_agency:
+        updated_federal_agency, _ = FederalAgency.objects.get_or_create(agency="Stitches Is The Best")
     domain_request_kwargs = dict(
         generic_org_type=generic_org_type,
         is_election_board=is_election_board,
@@ -856,6 +861,8 @@ def completed_domain_request(
         creator=user,
         status=status,
         investigator=investigator,
+        federal_agency=federal_agency,
+        updated_federal_agency=updated_federal_agency,
     )
     if has_about_your_organization:
         domain_request_kwargs["about_your_organization"] = "e-Government"
@@ -864,7 +871,10 @@ def completed_domain_request(
 
     if organization_type:
         domain_request_kwargs["organization_type"] = organization_type
-
+    # if federal_agency:
+    #     domain_request_kwargs["federal_agency"] = federal_agency
+    # if updated_federal_agency:
+    #     domain_request_kwargs["updated_federal_agency"] = updated_federal_agency
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
     if has_other_contacts:
