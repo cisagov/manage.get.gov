@@ -232,7 +232,7 @@ class DomainInformation(TimeStampedModel):
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        verbose_name="CISA region representative",
+        verbose_name="CISA regional representative",
         max_length=320,
     )
 
