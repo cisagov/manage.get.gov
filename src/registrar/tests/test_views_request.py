@@ -1016,7 +1016,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
 
         self.assertEqual(domain_request.has_anything_else_text, None)
-        self.assertEqual(domain_request.has_additional_details, None)
+        self.assertEqual(domain_request.has_cisa_representative, None)
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))

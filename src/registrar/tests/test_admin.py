@@ -1923,6 +1923,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "no_other_contacts_rationale",
                 "anything_else",
                 "is_policy_acknowledged",
+                "cisa_representative_email",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
