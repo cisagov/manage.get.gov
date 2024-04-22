@@ -33,8 +33,6 @@ from registrar.models import (
     PublicContact,
     Host,
     Website,
-    DraftDomain,
-    Host,
 )
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
