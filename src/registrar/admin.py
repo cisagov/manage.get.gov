@@ -1005,7 +1005,9 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "classes": ["collapse"],
                 "fields": [
                     "federal_type",
-                    "federal_agency",
+                    # "updated_federal_agency",
+                    # Above field commented out so it won't display
+                    "federal_agency",  # TODO: remove later
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
@@ -1252,7 +1254,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "classes": ["collapse"],
                 "fields": [
                     "federal_type",
-                    "federal_agency",
+                    # "updated_federal_agency",
+                    # Above field commented out so it won't display
+                    "federal_agency",  # TODO: remove later
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",

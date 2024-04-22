@@ -449,6 +449,15 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
+    updated_federal_agency = models.ForeignKey(
+        "registrar.FederalAgency",
+        on_delete=models.PROTECT,
+        help_text="Associated federal agency",
+        unique=False,
+        blank=True,
+        null=True,
+    )
+
     # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
