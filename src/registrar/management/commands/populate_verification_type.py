@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class Command(ScriptTemplate):
     help = "Loops through each valid User object and updates its verification_type value"
 
-    def handle(self):
+    def handle(self, **kwargs):
         """Loops through each valid User object and updates its verification_type value"""
         filter_condition = {
             "verification_type__isnull": True
