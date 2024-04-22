@@ -9,7 +9,7 @@ cfenv = "*"
 django-cors-headers = "*"
 pycryptodomex = "*"
 django-allow-cidr = "*"
-django-auditlog = "*"
+django-auditlog = "2.3.0"
 django-csp = "*"
 environs = {extras=["django"]}
 Faker = "*"
@@ -21,7 +21,7 @@ whitenoise = "*"
 django-widget-tweaks = "*"
 cachetools = "*"
 requests = "*"
-django-fsm = "*"
+django-fsm = "2.8.1"
 django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
 boto3 = "*"
 typing-extensions ='*'
