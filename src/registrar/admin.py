@@ -979,7 +979,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "classes": ["collapse"],
                 "fields": [
                     "federal_type",
-                    # "updated_federal_agency",
+                    "updated_federal_agency",
                     # Above field commented out so it won't display
                     "federal_agency",  # TODO: remove later
                     "tribe_name",
@@ -1220,7 +1220,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "classes": ["collapse"],
                 "fields": [
                     "federal_type",
-                    # "updated_federal_agency",
+                    "updated_federal_agency",
                     # Above field commented out so it won't display
                     "federal_agency",  # TODO: remove later
                     "tribe_name",
