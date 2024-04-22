@@ -664,7 +664,7 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
 class CisaRepresentativeYesNoForm(BaseYesNoForm):
     """Yes/no toggle for the CISA regions question on additional details"""
 
-    form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)
+    form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)  # type: ignore
     field_name = "has_cisa_representative"
 
 
