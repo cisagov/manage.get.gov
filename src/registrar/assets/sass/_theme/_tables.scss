@@ -56,22 +56,6 @@
 .dotgov-table {
   width: 100%;
 
-  a {
-    display: flex;
-    align-items: flex-start;
-    color: color('primary');
-
-    &:visited {
-      color: color('primary');
-    }
-
-    .usa-icon {
-      // align icon with x height
-      margin-top: units(0.5);
-      margin-right: units(0.5);
-    }
-  }
-
   th[data-sortable]:not([aria-sort]) .usa-table__header__button {
     right: auto;
   }
