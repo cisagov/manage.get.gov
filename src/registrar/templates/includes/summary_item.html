@@ -42,6 +42,10 @@
                   </dd>
                 {% endfor %}
                 </dl>
+            {% elif custom_text_for_value_none %}
+              <p>
+                {{ custom_text_for_value_none }}
+              </p>
             {% else %}
               <p>
                   None
@@ -95,6 +99,8 @@
       <p class="margin-top-0 margin-bottom-0">
         {% if value %}
           {{ value }}
+        {% elif custom_text_for_value_none %}
+          {{ custom_text_for_value_none }}
         {% else %}
           None
         {% endif %}

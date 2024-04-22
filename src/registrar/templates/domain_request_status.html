@@ -116,17 +116,17 @@
       {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level %}
     {% endif %}
 
-    {% if DomainRequest.has_cisa_representative or domain_request.has_anything_else_text %}
-        {% include "includes/summary_item.html" with title='Additional details' sub_header_text='CISA regions representative' value=domain_request.cisa_representative_email heading_level=heading_level %}
-
-        <h3 class="register-form-review-header">Anything else</h3>
-        <ul class="usa-list usa-list--unstyled margin-top-0">
-          {% if domain_request.has_anything_else_text %}
-            {{domain_request.anything_else}}
-          {% else %}
+    {# We always show this field even if None #}
+    {% if DomainRequest %}
+      {% include "includes/summary_item.html" with title='Additional details' sub_header_text='CISA regions representative' value=DomainRequest.cisa_representative_email custom_text_for_value_none='No' heading_level=heading_level %}
+      <h3 class="register-form-review-header">Anything else</h3>
+      <ul class="usa-list usa-list--unstyled margin-top-0">
+        {% if DomainRequest.anything_else %}
+          {{DomainRequest.anything_else}}
+        {% else %}
           No
-          {% endif %}
-        </ul>
+        {% endif %}
+      </ul>
     {% endif %}
 
   {% endwith %}
