@@ -188,9 +188,6 @@ class UserFixture:
         logger.info(f"Going to load {len(users)} users in group {group_name}")
         for user_data in users:
             try:
-
-                # TODO - Add the fixture user to the VerifiedByStaff table
-                # (To track how this user was verified)
                 user, _ = User.objects.get_or_create(username=user_data["username"])
                 user.is_superuser = False
                 user.first_name = user_data["first_name"]
@@ -199,6 +196,10 @@ class UserFixture:
                     user.email = user_data["email"]
                 user.is_staff = True
                 user.is_active = True
+                # This verification type will get reverted to "regular" (or whichever is applicables)
+                # once the user logs in for the first time (as they then got verified through different means).
+                # In the meantime, we can still describe how the user got here in the first place.
+                user.verification_type = User.VerificationTypeChoices.FIXTURE_USER
                 group = UserGroup.objects.get(name=group_name)
                 user.groups.add(group)
                 user.save()

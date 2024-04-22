@@ -33,6 +33,10 @@ class User(AbstractUser):
         VERIFIED_BY_STAFF = "verified_by_staff", "Verified by staff"
         REGULAR = "regular", "Verified by Login.gov"
         INVITED = "invited", "Invited by a domain manager"
+        # We need a type for fixture users (rather than using verified by staff)
+        # because those users still do get "verified" through normal means 
+        # after they login.
+        FIXTURE_USER = "fixture_user", "Created by fixtures"
 
     # #### Constants for choice fields ####
     RESTRICTED = "restricted"

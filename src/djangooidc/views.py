@@ -99,8 +99,16 @@ def login_callback(request):
             return CLIENT.create_authn_request(request.session)
         user = authenticate(request=request, **userinfo)
         if user:
-            # Set the verification type if it doesn't already exist
-            if not user.verification_type:
+
+            # Fixture users kind of exist in a superposition of verification types,
+            # because while the system "verified" them, if they login,
+            # we don't know how the user themselves was verified through login.gov until
+            # they actually try logging in. This edge-case only matters in non-production environments.
+            fixture_user = User.VerificationTypeChoices.FIXTURE_USER
+            is_fixture_user = user.verification_type and user.verification_type == fixture_user
+
+            # Set the verification type if it doesn't already exist or if its a fixture user
+            if not user.verification_type or is_fixture_user:
                 user.set_user_verification_type()
                 user.save()
 
