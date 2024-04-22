@@ -745,12 +745,22 @@ class DomainRequest(TimeStampedModel):
         """Some yes/no forms use a db field to track whether it was checked or not.
         We handle that here for def save().
         """
+
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.cisa_representative_email is not None:
+            self.has_cisa_representative = self.cisa_representative_email != ""
+
         # This check is required to ensure that the form doesn't start out checked
         if self.has_cisa_representative is not None:
             self.has_cisa_representative = (
                 self.cisa_representative_email != "" and self.cisa_representative_email is not None
             )
 
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.anything_else is not None:
+            self.has_anything_else_text = self.anything_else != ""
+
+        # This check is required to ensure that the form doesn't start out checked.
         if self.has_anything_else_text is not None:
             self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 
