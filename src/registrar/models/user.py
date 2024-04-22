@@ -28,6 +28,13 @@ class User(AbstractUser):
         """
         Users achieve access to our system in a few different ways.
         These choices reflect those pathways.
+
+        Overview of verification types:
+        - GRANDFATHERED: User exists in the `TransitionDomain` table
+        - VERIFIED_BY_STAFF: User exists in the `VerifiedByStaff` table
+        - INVITED: User exists in the `DomainInvitation` table
+        - REGULAR: User was verified through IAL2
+        - FIXTURE_USER: User was created by fixtures
         """
 
         GRANDFATHERED = "grandfathered", "Legacy user"
@@ -146,9 +153,23 @@ class User(AbstractUser):
         return needs_verification
 
     def set_user_verification_type(self):
-        # Would need to check audit log
+        """
+        Given pre-existing data from TransitionDomain, VerifiedByStaff, and DomainInvitation,
+        set the verification "type" defined in VerificationTypeChoices.
+        """
         retrieved = DomainInvitation.DomainInvitationStatus.RETRIEVED
         verification_type = self.get_verification_type_from_email(self.email, invitation_status=retrieved)
+
+        # An existing user may have been invited to a domain after they got verified.
+        # We need to check for this condition.
+        if verification_type == User.VerificationTypeChoices.INVITED:
+            invitation = DomainInvitation.objects.filter(email=self.email, status=retrieved).order_by("created_at").first()
+
+            # If you joined BEFORE the oldest invitation was created, then you were verified normally.
+            # (See logic in get_verification_type_from_email)
+            if self.date_joined < invitation.created_at:
+                verification_type = User.VerificationTypeChoices.REGULAR
+
         self.verification_type = verification_type
 
     @classmethod
