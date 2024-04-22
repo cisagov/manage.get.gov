@@ -213,17 +213,21 @@ function HookupYesNoListener(radioButtonName, elementIdToShowIfYes, elementIdToS
     // Check if the element exists before accessing its value
     let selectedValue = radioButtonChecked ? radioButtonChecked.value : null;
 
-    switch (selectedValue) {
-      case 'True':
-        toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 1);
-        break;
+    if (elementIdToShowIfYes && elementIdToShowIfNo){
+      switch (selectedValue) {
+        case 'True':
+          toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 1);
+          break;
 
-      case 'False':
-        toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 2);
-        break;
+        case 'False':
+          toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 2);
+          break;
 
-      default:
-        toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 0);
+        default:
+          toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 0);
+      }
+    }else {
+      console.log("No elements to show")
     }
   }
 
