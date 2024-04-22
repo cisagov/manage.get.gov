@@ -1037,8 +1037,9 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # We expect to see this twice for both fields
-        self.assertContains(response, "This question is required.", count=2)
+        # We expect to see this twice for both fields. This results in a count of 4
+        # due to screen reader information / html.
+        self.assertContains(response, "This question is required.", count=4)
 
     def test_submitting_other_contacts_deletes_no_other_contacts_rationale(self):
         """When a user submits the Other Contacts form with other contacts selected, the domain request's

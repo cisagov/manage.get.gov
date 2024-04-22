@@ -1103,7 +1103,14 @@ class DomainRequest(TimeStampedModel):
         return self.other_contacts.exists()
 
     def has_additional_details(self) -> bool:
-        return self.has_anything_else_text() or self.has_cisa_representative
+        """Combines the has_anything_else_text and has_cisa_representative fields,
+        then returns if this domain request has either of them."""
+        # Split out for linter
+        has_details = False
+        if self.has_anything_else_text or self.has_cisa_representative:
+            has_details = True
+
+        return has_details
 
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
