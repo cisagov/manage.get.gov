@@ -64,8 +64,7 @@ class ScriptTemplate(BaseCommand):
     Contains common script actions for our scripts which can be prefilled as templates.
     """
 
-    @staticmethod
-    def mass_populate_field(sender, filter_conditions, fields_to_update):
+    def mass_populate_field(self, sender, filter_conditions, fields_to_update):
         """Loops through each valid "sender" object - specified by filter_conditions - and 
         updates fields defined by fields_to_update using populate_function.
 
@@ -90,7 +89,7 @@ class ScriptTemplate(BaseCommand):
         failed_to_update: List[sender] = []
         for updated_object in objects:
             try:
-                ScriptTemplate.populate_field(updated_object)
+                self.populate_field(updated_object)
                 to_update.append(updated_object)
             except Exception as err:
                 to_update.append(updated_object)
@@ -102,9 +101,8 @@ class ScriptTemplate(BaseCommand):
 
         # Log what happened
         TerminalHelper.log_script_run_summary(to_update, failed_to_update, skipped=[], debug=True)
-    
-    @staticmethod
-    def populate_field(field_to_update):
+
+    def populate_field(self, field_to_update):
         """Defines how we update each field. Must be defined before using mass_populate_field."""
         raise NotImplementedError("This method should be implemented by the child class.")
 

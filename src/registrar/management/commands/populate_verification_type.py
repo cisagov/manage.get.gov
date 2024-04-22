@@ -15,7 +15,7 @@ class Command(ScriptTemplate):
         filter_condition = {
             "verification_type__isnull": True
         }
-        ScriptTemplate.mass_populate_field(User, filter_condition, ["verification_type"])
+        self.mass_populate_field(User, filter_condition, ["verification_type"])
     
     def populate_field(self, field_to_update):
         """Defines how we update the verification_type field"""
