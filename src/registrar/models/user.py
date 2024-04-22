@@ -29,12 +29,13 @@ class User(AbstractUser):
         Users achieve access to our system in a few different ways.
         These choices reflect those pathways.
         """
+
         GRANDFATHERED = "grandfathered", "Legacy user"
         VERIFIED_BY_STAFF = "verified_by_staff", "Verified by staff"
         REGULAR = "regular", "Verified by Login.gov"
         INVITED = "invited", "Invited by a domain manager"
         # We need a type for fixture users (rather than using verified by staff)
-        # because those users still do get "verified" through normal means 
+        # because those users still do get "verified" through normal means
         # after they login.
         FIXTURE_USER = "fixture_user", "Created by fixtures"
 
@@ -153,7 +154,7 @@ class User(AbstractUser):
     @classmethod
     def get_verification_type_from_email(cls, email, invitation_status=DomainInvitation.DomainInvitationStatus.INVITED):
         """Retrieves the verification type based off of a provided email address"""
-        
+
         verification_type = None
         if TransitionDomain.objects.filter(username=email).exists():
             # A new incoming user who is a domain manager for one of the domains
@@ -164,12 +165,12 @@ class User(AbstractUser):
             # New users flagged by Staff to bypass ial2
             verification_type = cls.VerificationTypeChoices.VERIFIED_BY_STAFF
         elif DomainInvitation.objects.filter(email=email, status=invitation_status).exists():
-                # A new incoming user who is being invited to be a domain manager (that is,
+            # A new incoming user who is being invited to be a domain manager (that is,
             # their email address is in DomainInvitation for an invitation that is not yet "retrieved").
             verification_type = cls.VerificationTypeChoices.INVITED
         else:
             verification_type = cls.VerificationTypeChoices.REGULAR
-        
+
         return verification_type
 
     def check_domain_invitations_on_login(self):

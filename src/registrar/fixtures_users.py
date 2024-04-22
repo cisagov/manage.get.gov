@@ -6,7 +6,7 @@ from registrar.models import (
     User,
     UserGroup,
 )
-from registrar.models.verified_by_staff import VerifiedByStaff
+
 
 fake = Faker()
 logger = logging.getLogger(__name__)
