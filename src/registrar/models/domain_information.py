@@ -29,7 +29,17 @@ class DomainInformation(TimeStampedModel):
 
     BranchChoices = DomainRequest.BranchChoices
 
+    # TODO for #1975: Delete this after we run the new migration
     AGENCY_CHOICES = DomainRequest.AGENCY_CHOICES
+
+    updated_federal_agency = models.ForeignKey(
+        "registrar.FederalAgency",
+        on_delete=models.PROTECT,
+        help_text="Associated federal agency",
+        unique=False,
+        blank=True,
+        null=True,
+    )
 
     # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
@@ -63,6 +73,7 @@ class DomainInformation(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
+        verbose_name="election office",
     )
 
     # TODO - Ticket #1911: stub this data from DomainRequest
@@ -103,6 +114,7 @@ class DomainInformation(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
+        verbose_name="election office",
         help_text="Is your organization an election office?",
     )
 
@@ -114,12 +126,12 @@ class DomainInformation(TimeStampedModel):
     address_line1 = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Street address",
+        verbose_name="address line 1",
     )
     address_line2 = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Street address line 2 (optional)",
+        verbose_name="address line 2",
     )
     city = models.CharField(
         null=True,
@@ -130,19 +142,20 @@ class DomainInformation(TimeStampedModel):
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
-        verbose_name="State, territory, or military post",
+        verbose_name="state / territory",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
         db_index=True,
+        verbose_name="zip code",
     )
     urbanization = models.CharField(
         null=True,
         blank=True,
         help_text="Required for Puerto Rico only",
-        verbose_name="Urbanization (required for Puerto Rico only)",
+        verbose_name="urbanization",
     )
 
     about_your_organization = models.TextField(
@@ -222,14 +235,17 @@ class DomainInformation(TimeStampedModel):
         except Exception:
             return ""
 
-    def save(self, *args, **kwargs):
-        """Save override for custom properties"""
+    def sync_organization_type(self):
+        """
+        Updates the organization_type (without saving) to match
+        the is_election_board and generic_organization_type fields.
+        """
 
         # Define mappings between generic org and election org.
         # These have to be defined here, as you'd get a cyclical import error
         # otherwise.
 
-        # For any given organization type, return the "_election" variant.
+        # For any given organization type, return the "_ELECTION" enum equivalent.
         # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
         generic_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_generic_to_org_election()
 
@@ -248,6 +264,12 @@ class DomainInformation(TimeStampedModel):
 
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
+
+        return self
+
+    def save(self, *args, **kwargs):
+        """Save override for custom properties"""
+        self.sync_organization_type()
         super().save(*args, **kwargs)
 
     @classmethod

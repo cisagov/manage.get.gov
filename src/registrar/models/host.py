@@ -21,6 +21,7 @@ class Host(TimeStampedModel):
         blank=False,
         default=None,  # prevent saving without a value
         unique=False,
+        verbose_name="host name",
     )
 
     domain = models.ForeignKey(

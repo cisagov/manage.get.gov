@@ -5,7 +5,7 @@
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endcomment %}
 {% block field_readonly %}
-    {% with all_contacts=original.other_contacts.all %}
+    {% with all_contacts=original_object.other_contacts.all %}
     {% if field.field.name == "other_contacts" %}
         {% if all_contacts.count > 2 %}
             <div class="readonly">
@@ -54,7 +54,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% elif field.field.name == "alternative_domains" %}
         <div class="readonly">
             {% with current_path=request.get_full_path %}
-            {% for alt_domain in original.alternative_domains.all %}
+            {% for alt_domain in original_object.alternative_domains.all %}
                 <a href="{% url 'admin:registrar_website_change' alt_domain.id %}?{{ 'return_path='|add:current_path }}">{{ alt_domain }}</a>{% if not forloop.last %}, {% endif %}
             {% endfor %}
             {% endwith %}
@@ -69,24 +69,21 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% if field.field.name == "creator" %}
         <div class="flex-container tablet:margin-top-1">
         <label aria-label="Creator contact details"></label>
-        {% include "django/admin/includes/contact_detail_list.html" with user=original.creator no_title_top_padding=field.is_readonly %}
+            {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
         </div>
-        <div class="flex-container">
-            <label aria-label="User summary details"></label>
-            {% include "django/admin/includes/user_detail_list.html" with user=original.creator no_title_top_padding=field.is_readonly %}
-        </div>
+        {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
     {% elif field.field.name == "submitter" %}
         <div class="flex-container">
         <label aria-label="Submitter contact details"></label>
-        {% include "django/admin/includes/contact_detail_list.html" with user=original.submitter no_title_top_padding=field.is_readonly %}
+        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.submitter no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "authorizing_official" %}
         <div class="flex-container">
         <label aria-label="Authorizing official contact details"></label>
-        {% include "django/admin/includes/contact_detail_list.html" with user=original.authorizing_official no_title_top_padding=field.is_readonly %}
+        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.authorizing_official no_title_top_padding=field.is_readonly %}
         </div>
-    {% elif field.field.name == "other_contacts" and original.other_contacts.all %}
-        {% with all_contacts=original.other_contacts.all %}
+    {% elif field.field.name == "other_contacts" and original_object.other_contacts.all %}
+        {% with all_contacts=original_object.other_contacts.all %}
         {% if all_contacts.count > 2 %}
             <details class="margin-top-1 dja-detail-table" aria-role="button" open>
                 <summary class="padding-1 padding-left-0 dja-details-summary">Details</summary>
@@ -104,7 +101,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                 <td class="padding-left-1">{{ contact.title }}</td>
                                 <td class="padding-left-1">
                                     {{ contact.email }}
-
                                 </td>
                                 <td class="padding-left-1">{{ contact.phone }}</td>
                                 <td class="padding-left-1 text-size-small">

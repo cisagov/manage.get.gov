@@ -1017,6 +1017,8 @@ class Domain(TimeStampedModel, DomainHelper):
         blank=False,
         default=None,  # prevent saving without a value
         unique=True,
+        help_text="Fully qualified domain name",
+        verbose_name="domain",
     )
 
     state = FSMField(
@@ -1028,6 +1030,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # This must be defined for custom state help messages,
         # as otherwise the view will purge the help field as it does not exist.
         help_text=" ",
+        verbose_name="domain state",
     )
 
     expiration_date = DateField(
@@ -1045,12 +1048,14 @@ class Domain(TimeStampedModel, DomainHelper):
         null=True,
         editable=False,
         help_text='Will appear blank unless the domain is in "deleted" state',
+        verbose_name="deleted on",
     )
 
     first_ready = DateField(
         null=True,
         editable=False,
         help_text='Date when this domain first moved into "ready" state; date will never change',
+        verbose_name="first ready on",
     )
 
     def isActive(self):
@@ -1712,6 +1717,59 @@ class Domain(TimeStampedModel, DomainHelper):
             else:
                 logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
 
+    def _fix_unknown_state(self, cleaned):
+        """
+        _fix_unknown_state: Calls _add_missing_contacts_if_unknown
+        to add contacts in as needed (or return an error). Otherwise
+        if we are able to add contacts and the state is out of UNKNOWN
+        and (and should be into DNS_NEEDED), we double check the
+        current state and # of nameservers and update the state from there
+        """
+        try:
+            self._add_missing_contacts_if_unknown(cleaned)
+
+        except Exception as e:
+            logger.error(
+                "%s couldn't _add_missing_contacts_if_unknown, error was %s."
+                "Domain will still be in UNKNOWN state." % (self.name, e)
+            )
+        if len(self.nameservers) >= 2 and (self.state != self.State.READY):
+            self.ready()
+            self.save()
+
+    @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
+    def _add_missing_contacts_if_unknown(self, cleaned):
+        """
+        _add_missing_contacts_if_unknown: Add contacts (SECURITY, TECHNICAL, and/or ADMINISTRATIVE)
+        if they are missing, AND switch the state to DNS_NEEDED from UNKNOWN (if it
+        is in an UNKNOWN state, that is an error state)
+        Note: The transition state change happens at the end of the function
+        """
+
+        missingAdmin = True
+        missingSecurity = True
+        missingTech = True
+
+        if len(cleaned.get("_contacts")) < 3:
+            for contact in cleaned.get("_contacts"):
+                if contact.type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
+                    missingAdmin = False
+                if contact.type == PublicContact.ContactTypeChoices.SECURITY:
+                    missingSecurity = False
+                if contact.type == PublicContact.ContactTypeChoices.TECHNICAL:
+                    missingTech = False
+
+            # We are only creating if it doesn't exist so we don't overwrite
+            if missingAdmin:
+                administrative_contact = self.get_default_administrative_contact()
+                administrative_contact.save()
+            if missingSecurity:
+                security_contact = self.get_default_security_contact()
+                security_contact.save()
+            if missingTech:
+                technical_contact = self.get_default_technical_contact()
+                technical_contact.save()
+
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:
@@ -1719,6 +1777,9 @@ class Domain(TimeStampedModel, DomainHelper):
             cache = self._extract_data_from_response(data_response)
             cleaned = self._clean_cache(cache, data_response)
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
+
+            if self.state == self.State.UNKNOWN:
+                self._fix_unknown_state(cleaned)
             if fetch_hosts:
                 self._update_hosts_and_ips_in_db(cleaned)
             if fetch_contacts:

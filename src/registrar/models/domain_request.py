@@ -449,6 +449,15 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
+    updated_federal_agency = models.ForeignKey(
+        "registrar.FederalAgency",
+        on_delete=models.PROTECT,
+        help_text="Associated federal agency",
+        unique=False,
+        blank=True,
+        null=True,
+    )
+
     # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
@@ -478,6 +487,7 @@ class DomainRequest(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
+        verbose_name="election office",
     )
 
     # TODO - Ticket #1911: stub this data from DomainRequest
@@ -540,11 +550,13 @@ class DomainRequest(TimeStampedModel):
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
+        verbose_name="state / territory",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
+        verbose_name="zip code",
         db_index=True,
     )
     urbanization = models.CharField(
@@ -643,6 +655,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         default=None,
+        verbose_name="submitted at",
         help_text="Date submitted",
     )
 
@@ -651,14 +664,16 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    def save(self, *args, **kwargs):
-        """Save override for custom properties"""
-
+    def sync_organization_type(self):
+        """
+        Updates the organization_type (without saving) to match
+        the is_election_board and generic_organization_type fields.
+        """
         # Define mappings between generic org and election org.
         # These have to be defined here, as you'd get a cyclical import error
         # otherwise.
 
-        # For any given organization type, return the "_election" variant.
+        # For any given organization type, return the "_ELECTION" enum equivalent.
         # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
         generic_org_map = self.OrgChoicesElectionOffice.get_org_generic_to_org_election()
 
@@ -677,6 +692,10 @@ class DomainRequest(TimeStampedModel):
 
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
+
+    def save(self, *args, **kwargs):
+        """Save override for custom properties"""
+        self.sync_organization_type()
         super().save(*args, **kwargs)
 
     def __str__(self):
