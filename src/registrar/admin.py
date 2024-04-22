@@ -28,10 +28,18 @@ from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
+from import_export import resources
+from import_export.admin import ImportExportModelAdmin
 
 from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
+
+
+class UserResource(resources.ModelResource):
+
+    class Meta:
+        model = models.User
 
 
 class MyUserAdminForm(UserChangeForm):
@@ -468,8 +476,10 @@ class UserContactInline(admin.StackedInline):
     model = models.Contact
 
 
-class MyUserAdmin(BaseUserAdmin):
+class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     """Custom user admin class to use our inlines."""
+
+    resource_classes = [UserResource]
 
     form = MyUserAdminForm
 
@@ -848,8 +858,16 @@ class WebsiteAdmin(ListHeaderAdmin):
         return response
 
 
-class UserDomainRoleAdmin(ListHeaderAdmin):
+class UserDomainRoleResource(resources.ModelResource):
+
+    class Meta:
+        model = models.UserDomainRole
+
+
+class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom user domain role admin class."""
+
+    resource_classes = [UserDomainRoleResource]
 
     class Meta:
         """Contains meta information about this class"""
@@ -931,8 +949,16 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/email_clipboard_change_form.html"
 
 
-class DomainInformationAdmin(ListHeaderAdmin):
+class DomainInformationResource(resources.ModelResource):
+
+    class Meta:
+        model = models.DomainInformation
+
+
+class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Customize domain information admin class."""
+
+    resource_classes = [DomainInformationResource]
 
     form = DomainInformationAdminForm
 
@@ -1060,8 +1086,16 @@ class DomainInformationAdmin(ListHeaderAdmin):
         return readonly_fields  # Read-only fields for analysts
 
 
-class DomainRequestAdmin(ListHeaderAdmin):
+class DomainRequestResource(resources.ModelResource):
+
+    class Meta:
+        model = models.DomainRequest
+
+
+class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom domain requests admin class."""
+
+    resource_classes = [DomainRequestResource]
 
     form = DomainRequestAdminForm
     change_form_template = "django/admin/domain_request_change_form.html"
@@ -1590,9 +1624,17 @@ class DomainInformationInline(admin.StackedInline):
         return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
 
 
-class DomainAdmin(ListHeaderAdmin):
+class DomainResource(resources.ModelResource):
+
+    class Meta:
+        model = models.Domain
+
+
+class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom domain admin class to add extra buttons."""
 
+    resource_classes = [DomainResource]
+    
     class ElectionOfficeFilter(admin.SimpleListFilter):
         """Define a custom filter for is_election_board"""
 
