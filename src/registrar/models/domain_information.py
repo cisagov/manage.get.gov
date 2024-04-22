@@ -29,7 +29,17 @@ class DomainInformation(TimeStampedModel):
 
     BranchChoices = DomainRequest.BranchChoices
 
+    # TODO for #1975: Delete this after we run the new migration
     AGENCY_CHOICES = DomainRequest.AGENCY_CHOICES
+
+    updated_federal_agency = models.ForeignKey(
+        "registrar.FederalAgency",
+        on_delete=models.PROTECT,
+        help_text="Associated federal agency",
+        unique=False,
+        blank=True,
+        null=True,
+    )
 
     # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
@@ -62,6 +72,7 @@ class DomainInformation(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
+        verbose_name="election office",
         help_text="Is your organization an election office?",
     )
 
@@ -108,6 +119,7 @@ class DomainInformation(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
+        verbose_name="election office",
         help_text="Is your organization an election office?",
     )
 
@@ -121,13 +133,13 @@ class DomainInformation(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Street address",
-        verbose_name="Street address",
+        verbose_name="address line 1",
     )
     address_line2 = models.CharField(
         null=True,
         blank=True,
         help_text="Street address line 2 (optional)",
-        verbose_name="Street address line 2 (optional)",
+        verbose_name="address line 2",
     )
     city = models.CharField(
         null=True,
@@ -139,21 +151,22 @@ class DomainInformation(TimeStampedModel):
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
+        verbose_name="state / territory",
         help_text="State, territory, or military post",
-        verbose_name="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
         help_text="Zip code",
+        verbose_name="zip code",
         db_index=True,
     )
     urbanization = models.CharField(
         null=True,
         blank=True,
         help_text="Urbanization (required for Puerto Rico only)",
-        verbose_name="Urbanization (required for Puerto Rico only)",
+        verbose_name="urbanization",
     )
 
     about_your_organization = models.TextField(

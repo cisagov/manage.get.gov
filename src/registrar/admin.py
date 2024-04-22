@@ -290,6 +290,13 @@ class CustomLogEntryAdmin(LogEntryAdmin):
         # Return the field value without a link
         return f"{obj.content_type} - {obj.object_repr}"
 
+    # We name the custom prop 'created_at' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    @admin.display(description=_("Created at"))
+    def created(self, obj):
+        return obj.timestamp
+
     search_help_text = "Search by resource, changes, or user."
 
     change_form_template = "admin/change_form_no_submit.html"
@@ -478,7 +485,7 @@ class MyUserAdmin(BaseUserAdmin):
 
     list_display = (
         "username",
-        "email",
+        "overridden_email_field",
         "first_name",
         "last_name",
         # Group is a custom property defined within this file,
@@ -486,6 +493,18 @@ class MyUserAdmin(BaseUserAdmin):
         "group",
         "status",
     )
+
+    # Renames inherited AbstractUser label 'email_address to 'email'
+    def formfield_for_dbfield(self, dbfield, **kwargs):
+        field = super().formfield_for_dbfield(dbfield, **kwargs)
+        if dbfield.name == "email":
+            field.label = "Email"
+        return field
+
+    # Renames inherited AbstractUser column name 'email_address to 'email'
+    @admin.display(description=_("Email"))
+    def overridden_email_field(self, obj):
+        return obj.email
 
     fieldsets = (
         (
@@ -563,6 +582,7 @@ class MyUserAdmin(BaseUserAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
+    search_help_text = "Search by first name, last name, or email."
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
 
@@ -656,7 +676,7 @@ class MyHostAdmin(AuditedAdmin):
     """Custom host admin class to use our inlines."""
 
     search_fields = ["name", "domain__name"]
-    search_help_text = "Search by domain or hostname."
+    search_help_text = "Search by domain or host name."
     inlines = [HostIPInline]
 
 
@@ -664,9 +684,9 @@ class ContactAdmin(ListHeaderAdmin):
     """Custom contact admin class to add search."""
 
     search_fields = ["email", "first_name", "last_name"]
-    search_help_text = "Search by firstname, lastname or email."
+    search_help_text = "Search by first name, last name or email."
     list_display = [
-        "contact",
+        "name",
         "email",
         "user_exists",
     ]
@@ -695,7 +715,7 @@ class ContactAdmin(ListHeaderAdmin):
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
     # This gets around the linter limitation, for now.
-    def contact(self, obj: models.Contact):
+    def name(self, obj: models.Contact):
         """Duplicate the contact _str_"""
         if obj.first_name or obj.last_name:
             return obj.get_formatted_name()
@@ -706,7 +726,7 @@ class ContactAdmin(ListHeaderAdmin):
         else:
             return ""
 
-    contact.admin_order_field = "first_name"  # type: ignore
+    name.admin_order_field = "first_name"  # type: ignore
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -864,7 +884,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
         "domain__name",
         "role",
     ]
-    search_help_text = "Search by firstname, lastname, email, domain, or role."
+    search_help_text = "Search by first name, last name, email, or domain."
 
     autocomplete_fields = ["user", "domain"]
 
@@ -964,7 +984,9 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "classes": ["collapse"],
                 "fields": [
                     "federal_type",
-                    "federal_agency",
+                    # "updated_federal_agency",
+                    # Above field commented out so it won't display
+                    "federal_agency",  # TODO: remove later
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
@@ -1203,7 +1225,9 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "classes": ["collapse"],
                 "fields": [
                     "federal_type",
-                    "federal_agency",
+                    # "updated_federal_agency",
+                    # Above field commented out so it won't display
+                    "federal_agency",  # TODO: remove later
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
@@ -1660,6 +1684,7 @@ class DomainAdmin(ListHeaderAdmin):
 
     city.admin_order_field = "domain_info__city"  # type: ignore
 
+    @admin.display(description=_("State / territory"))
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
 
@@ -1974,6 +1999,11 @@ class DraftDomainAdmin(ListHeaderAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["name"]
+    list_display = ["name"]
+
+    @admin.display(description=_("Requested domain"))
+    def name(self, obj):
+        return obj.name
 
     def get_model_perms(self, request):
         """
@@ -2052,13 +2082,36 @@ class FederalAgencyAdmin(ListHeaderAdmin):
     ordering = ["agency"]
 
 
+class UserGroupAdmin(AuditedAdmin):
+    """Overwrite the generated UserGroup admin class"""
+
+    list_display = ["user_group"]
+
+    fieldsets = ((None, {"fields": ("name", "permissions")}),)
+
+    def formfield_for_dbfield(self, dbfield, **kwargs):
+        field = super().formfield_for_dbfield(dbfield, **kwargs)
+        if dbfield.name == "name":
+            field.label = "Group name"
+        if dbfield.name == "permissions":
+            field.label = "User permissions"
+        return field
+
+    # We name the custom prop 'Group' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    @admin.display(description=_("Group"))
+    def user_group(self, obj):
+        return obj.name
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
 # Unregister the built-in Group model
 admin.site.unregister(Group)
 # Register UserGroup
-admin.site.register(models.UserGroup)
+admin.site.register(models.UserGroup, UserGroupAdmin)
 admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
