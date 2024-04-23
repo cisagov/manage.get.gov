@@ -3039,7 +3039,7 @@ class TestMyUserAdmin(TestCase):
             request.user = create_user()
             fieldsets = self.admin.get_fieldsets(request)
             expected_fieldsets = (
-                (None, {"fields": ("password", "status")}),
+                (None, {"fields": ("status")}),
                 ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
                 ("Permissions", {"fields": ("is_active", "groups")}),
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
