@@ -496,7 +496,7 @@ class DomainRequest(TimeStampedModel):
         choices=OrgChoicesElectionOffice.choices,
         null=True,
         blank=True,
-        help_text="\"Election\" appears after the org type if it's an election office.",
+        help_text='"Election" appears after the org type if it\'s an election office.',
     )
 
     federally_recognized_tribe = models.BooleanField(
