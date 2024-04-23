@@ -12,11 +12,12 @@ class Command(ScriptTemplate):
 
     def handle(self, **kwargs):
         """Loops through each valid User object and updates its verification_type value"""
-        filter_condition = {
-            "verification_type__isnull": True
-        }
+        filter_condition = {"verification_type__isnull": True}
         self.mass_populate_field(User, filter_condition, ["verification_type"])
-    
+
     def populate_field(self, field_to_update):
         """Defines how we update the verification_type field"""
         field_to_update.set_user_verification_type()
+        logger.info(
+            f"{TerminalColors.OKCYAN}Updating {field_to_update} => {field_to_update.verification_type}{TerminalColors.OKCYAN}"
+        )

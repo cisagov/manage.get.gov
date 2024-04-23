@@ -65,7 +65,7 @@ class ScriptTemplate(BaseCommand):
     """
 
     def mass_populate_field(self, sender, filter_conditions, fields_to_update):
-        """Loops through each valid "sender" object - specified by filter_conditions - and 
+        """Loops through each valid "sender" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using populate_function.
 
         You must define populate_field before you can use this function.

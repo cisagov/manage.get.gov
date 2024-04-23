@@ -14,8 +14,9 @@ from registrar.models import (
     TransitionDomain,
     DomainInformation,
     UserDomainRole,
+    VerifiedByStaff,
+    PublicContact,
 )
-from registrar.models.public_contact import PublicContact
 
 from django.core.management import call_command
 from unittest.mock import patch, call
@@ -23,6 +24,94 @@ from epplibwrapper import commands, common
 
 from .common import MockEppLib, less_console_noise, completed_domain_request
 from api.tests.common import less_console_noise_decorator
+
+
+class TestPopulateVerificationType(MockEppLib):
+    """Tests for the populate_organization_type script"""
+
+    def setUp(self):
+        """Creates a fake domain object"""
+        super().setUp()
+
+        # Get the domain requests
+        self.domain_request_1 = completed_domain_request(
+            name="lasers.gov",
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            is_election_board=True,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+
+        # Approve the request
+        self.domain_request_1.approve()
+
+        # Get the domains
+        self.domain_1 = Domain.objects.get(name="lasers.gov")
+
+        # Get users
+        self.regular_user, _ = User.objects.get_or_create(username="testuser@igormail.gov")
+
+        vip, _ = VerifiedByStaff.objects.get_or_create(email="vipuser@igormail.gov")
+        self.verified_by_staff_user, _ = User.objects.get_or_create(username="vipuser@igormail.gov")
+
+        grandfathered, _ = TransitionDomain.objects.get_or_create(
+            username="grandpa@igormail.gov", domain_name=self.domain_1.name
+        )
+        self.grandfathered_user, _ = User.objects.get_or_create(username="grandpa@igormail.gov")
+
+        invited, _ = DomainInvitation.objects.get_or_create(email="invited@igormail.gov", domain=self.domain_1)
+        self.invited_user, _ = User.objects.get_or_create(username="invited@igormail.gov")
+
+        self.untouched_user, _ = User.objects.get_or_create(
+            username="iaminvincible@igormail.gov", verification_type=User.VerificationTypeChoices.GRANDFATHERED
+        )
+
+    def tearDown(self):
+        """Deletes all DB objects related to migrations"""
+        super().tearDown()
+
+        # Delete domains and related information
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        User.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
+
+    @less_console_noise_decorator
+    def run_populate_verification_type(self):
+        """
+        This method executes the populate_organization_type command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the populate_organization_type command with the specified arguments.
+        """
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("populate_verification_type")
+
+    @less_console_noise_decorator
+    def test_verification_type_script_populates_data(self):
+        """Ensures that the verification type script actually populates data"""
+
+        # Run the script
+        self.run_populate_verification_type()
+
+        # Scripts don't work as we'd expect in our test environment, we need to manually
+        # trigger the refresh event
+        self.regular_user.refresh_from_db()
+        self.grandfathered_user.refresh_from_db()
+        self.invited_user.refresh_from_db()
+        self.verified_by_staff_user.refresh_from_db()
+        self.untouched_user.refresh_from_db()
+
+        # Test all users
+        self.assertEqual(self.regular_user.verification_type, User.VerificationTypeChoices.REGULAR)
+        self.assertEqual(self.grandfathered_user.verification_type, User.VerificationTypeChoices.GRANDFATHERED)
+        self.assertEqual(self.invited_user.verification_type, User.VerificationTypeChoices.INVITED)
+        self.assertEqual(self.verified_by_staff_user.verification_type, User.VerificationTypeChoices.VERIFIED_BY_STAFF)
+        self.assertEqual(self.untouched_user.verification_type, User.VerificationTypeChoices.GRANDFATHERED)
 
 
 class TestPopulateOrganizationType(MockEppLib):
