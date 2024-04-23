@@ -82,7 +82,7 @@ class DomainInformation(TimeStampedModel):
         choices=DomainRequest.OrgChoicesElectionOffice.choices,
         null=True,
         blank=True,
-        help_text="Type of organization - Election office",
+        help_text="\"Election\" appears after the org type if it's an election office.",
     )
 
     federally_recognized_tribe = models.BooleanField(
@@ -115,7 +115,6 @@ class DomainInformation(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name="election office",
-        help_text="Is your organization an election office?",
     )
 
     organization_name = models.CharField(
