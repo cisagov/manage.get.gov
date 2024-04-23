@@ -1750,7 +1750,7 @@ class DomainAdmin(ListHeaderAdmin):
                 extra_context["original_object"] = domain.domain_info
 
             extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
-            extra_context["domain_state"] = domain.state
+            extra_context["domain_state"] = domain.get_state_display()
 
             # Pass in what the an extended expiration date would be for the expiration date modal
             self._set_expiration_date_context(domain, extra_context)
