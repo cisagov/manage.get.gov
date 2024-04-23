@@ -3,6 +3,7 @@ import logging
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
 
 from registrar.models.user_domain_role import UserDomainRole
 
@@ -177,7 +178,7 @@ class User(AbstractUser):
         """Retrieves the verification type based off of a provided email address"""
 
         verification_type = None
-        if TransitionDomain.objects.filter(username=email).exists():
+        if TransitionDomain.objects.filter(Q(username=email) | Q(email=email)).exists():
             # A new incoming user who is a domain manager for one of the domains
             # that we inputted from Verisign (that is, their email address appears
             # in the username field of a TransitionDomain)
