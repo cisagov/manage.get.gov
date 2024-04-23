@@ -278,7 +278,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """Get or set the `ex_date` element from the registry.
         Additionally, _get_property updates the expiration date in the registrar"""
         try:
-            return self._get_property("ex_date")
+            return self._get_property("ex_date", False)
         except Exception as e:
             # exception raised during the save to registrar
             logger.error(f"error updating expiration date in registrar: {e}")
@@ -1770,7 +1770,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 technical_contact = self.get_default_technical_contact()
                 technical_contact.save()
 
-    def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
+    def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False, fix_unknown=True):
         """Contact registry for info about a domain."""
         try:
             data_response = self._get_or_create_domain()
@@ -1778,7 +1778,7 @@ class Domain(TimeStampedModel, DomainHelper):
             cleaned = self._clean_cache(cache, data_response)
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
 
-            if self.state == self.State.UNKNOWN:
+            if self.state == self.State.UNKNOWN and fix_unknown:
                 self._fix_unknown_state(cleaned)
             if fetch_hosts:
                 self._update_hosts_and_ips_in_db(cleaned)
@@ -2008,12 +2008,13 @@ class Domain(TimeStampedModel, DomainHelper):
         """Remove cache data when updates are made."""
         self._cache = {}
 
-    def _get_property(self, property):
+    def _get_property(self, property, fix_unknown=True):
         """Get some piece of info about a domain."""
         if property not in self._cache:
             self._fetch_cache(
                 fetch_hosts=(property == "hosts"),
                 fetch_contacts=(property == "contacts"),
+                fix_unknown=fix_unknown,
             )
 
         if property in self._cache:

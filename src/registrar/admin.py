@@ -561,7 +561,7 @@ class MyUserAdmin(BaseUserAdmin):
     analyst_fieldsets = (
         (
             None,
-            {"fields": ("password", "status")},
+            {"fields": ("status")},
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
@@ -587,7 +587,6 @@ class MyUserAdmin(BaseUserAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "password",
         "Personal Info",
         "first_name",
         "last_name",
