@@ -561,7 +561,7 @@ class MyUserAdmin(BaseUserAdmin):
     analyst_fieldsets = (
         (
             None,
-            {"fields": ("status")},
+            {"fields": ("status",)},
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
