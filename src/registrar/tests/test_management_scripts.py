@@ -58,11 +58,19 @@ class TestPopulateVerificationType(MockEppLib):
         )
         self.grandfathered_user, _ = User.objects.get_or_create(username="grandpa@igormail.gov")
 
-        invited, _ = DomainInvitation.objects.get_or_create(email="invited@igormail.gov", domain=self.domain_1)
+        invited, _ = DomainInvitation.objects.get_or_create(
+            email="invited@igormail.gov", domain=self.domain_1, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
+        )
         self.invited_user, _ = User.objects.get_or_create(username="invited@igormail.gov")
 
         self.untouched_user, _ = User.objects.get_or_create(
             username="iaminvincible@igormail.gov", verification_type=User.VerificationTypeChoices.GRANDFATHERED
+        )
+
+        # Fixture users should be untouched by the script. These will auto update once the
+        # user logs in / creates an account.
+        self.fixture_user, _ = User.objects.get_or_create(
+            username="fixture@igormail.gov", verification_type=User.VerificationTypeChoices.FIXTURE_USER
         )
 
     def tearDown(self):
@@ -112,6 +120,7 @@ class TestPopulateVerificationType(MockEppLib):
         self.assertEqual(self.invited_user.verification_type, User.VerificationTypeChoices.INVITED)
         self.assertEqual(self.verified_by_staff_user.verification_type, User.VerificationTypeChoices.VERIFIED_BY_STAFF)
         self.assertEqual(self.untouched_user.verification_type, User.VerificationTypeChoices.GRANDFATHERED)
+        self.assertEqual(self.fixture_user.verification_type, User.VerificationTypeChoices.FIXTURE_USER)
 
 
 class TestPopulateOrganizationType(MockEppLib):

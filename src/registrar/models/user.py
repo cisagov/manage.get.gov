@@ -158,7 +158,7 @@ class User(AbstractUser):
         Given pre-existing data from TransitionDomain, VerifiedByStaff, and DomainInvitation,
         set the verification "type" defined in VerificationTypeChoices.
         """
-        email_or_username = self.email or self.username
+        email_or_username = self.email if self.email else self.username
         retrieved = DomainInvitation.DomainInvitationStatus.RETRIEVED
         verification_type = self.get_verification_type_from_email(email_or_username, invitation_status=retrieved)
 
@@ -173,7 +173,7 @@ class User(AbstractUser):
 
             # If you joined BEFORE the oldest invitation was created, then you were verified normally.
             # (See logic in get_verification_type_from_email)
-            if self.date_joined < invitation.created_at:
+            if invitation is not None and self.date_joined < invitation.created_at:
                 verification_type = User.VerificationTypeChoices.REGULAR
 
         self.verification_type = verification_type
