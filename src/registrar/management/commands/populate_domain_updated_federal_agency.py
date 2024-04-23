@@ -20,8 +20,7 @@ class Command(BaseCommand):
     # Deprecated federal agency names mapped to designated replacements {old_value, new value}
     rename_deprecated_federal_agency = {
         "Appraisal Subcommittee": "Appraisal Subcommittee of the Federal Financial Institutions Examination Council",
-        "Barry Goldwater Scholarship and Excellence in Education Program":
-        "Barry Goldwater Scholarship and Excellence in Education Foundation",
+        "Barry Goldwater Scholarship and Excellence in Education Program": "Barry Goldwater Scholarship and Excellence in Education Foundation",  # noqa
         "Federal Reserve System": "Federal Reserve Board of Governors",
         "Harry S Truman Scholarship Foundation": "Harry S. Truman Scholarship Foundation",
         "Japan-US Friendship Commission": "Japan-U.S. Friendship Commission",
