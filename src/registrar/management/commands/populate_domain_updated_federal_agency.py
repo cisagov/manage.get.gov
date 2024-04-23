@@ -5,7 +5,6 @@ within Domain Information and Domain Requests
 """
 
 import logging
-import copy
 
 from django.core.management import BaseCommand
 from registrar.models import DomainInformation, DomainRequest, FederalAgency
@@ -21,7 +20,8 @@ class Command(BaseCommand):
     # Deprecated federal agency names mapped to designated replacements {old_value, new value}
     rename_deprecated_federal_agency = {
         "Appraisal Subcommittee": "Appraisal Subcommittee of the Federal Financial Institutions Examination Council",
-        "Barry Goldwater Scholarship and Excellence in Education Program": "Barry Goldwater Scholarship and Excellence in Education Foundation",
+        "Barry Goldwater Scholarship and Excellence in Education Program":
+        "Barry Goldwater Scholarship and Excellence in Education Foundation",
         "Federal Reserve System": "Federal Reserve Board of Governors",
         "Harry S Truman Scholarship Foundation": "Harry S. Truman Scholarship Foundation",
         "Japan-US Friendship Commission": "Japan-U.S. Friendship Commission",
@@ -66,7 +66,8 @@ class Command(BaseCommand):
                 domain_info.updated_federal_agency = federal_agency_row
                 domain_infos_to_update.append(domain_info)
                 logger.info(
-                    f"DomainInformation {domain_info} updated_federal_agency set to: {domain_info.updated_federal_agency}"
+                    f"DomainInformation {domain_info} updated_federal_agency set to:"
+                    f"{domain_info.updated_federal_agency}"
                 )
             except Exception as err:
                 logger.info(f"DomainInformation for {domain_info} failed to update updated_federal_agency: {err}")
@@ -83,7 +84,8 @@ class Command(BaseCommand):
                     domain_request.updated_federal_agency = federal_agency_row
                     domain_requests_to_update.append(domain_request)
                     logger.info(
-                        f"DomainRequest {domain_request} updated_federal_agency set to: {domain_request.updated_federal_agency}"
+                        f"DomainRequest {domain_request} updated_federal_agency set to:"
+                        f"{domain_request.updated_federal_agency}"
                     )
             except Exception as err:
                 logger.info(f"DomainRequest for {domain_request} failed to update updated_federal_agency: {err}")
@@ -98,7 +100,8 @@ class Command(BaseCommand):
         logger.info(f"{len(domain_requests_to_update)} DomainRequest rows updated update_federal_agency.")
         logger.info(f"{len(domain_requests_skipped)} DomainRequest rows with null federal_agency skipped.")
         logger.info(
-            f"{len(domain_requests_with_errors)} DomainRequest rows errored when updating update_federal_agency.\n{domain_requests_with_errors}"
+            f"{len(domain_requests_with_errors)} DomainRequest rows errored when updating update_federal_agency."
+            f"{domain_requests_with_errors}"
         )
 
     def find_federal_agency_row(self, domain_object):

@@ -26,7 +26,6 @@ from registrar.models import (
     DomainInformation,
     PublicContact,
     Domain,
-    FederalAgency,
 )
 from epplibwrapper import (
     commands,

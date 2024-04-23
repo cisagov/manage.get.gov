@@ -14,7 +14,6 @@ from registrar.models import (
     TransitionDomain,
     DomainInformation,
     UserDomainRole,
-    FederalAgency,
 )
 from registrar.models.public_contact import PublicContact
 
