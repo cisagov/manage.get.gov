@@ -2,6 +2,12 @@
 {% load static url_helpers %}
 
 
+{% block field_readonly %}
+    {% if field.field.name == "state" %}
+    <div class="readonly">{{ domain_state }}</div>
+    {% endif %}
+{% endblock %}
+
 {% block help_text %}
     <div class="help margin-bottom-1" {% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
         {% if field.field.name == "state" %}

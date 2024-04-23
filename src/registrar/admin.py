@@ -1749,12 +1749,11 @@ class DomainAdmin(ListHeaderAdmin):
             if domain is not None and hasattr(domain, "domain_info"):
                 extra_context["original_object"] = domain.domain_info
 
-            logger.info(f"changeform_view() -> state is {domain.state}")
             extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
-            logger.info(f"changeform_view() -> state is now {domain.state}")
+            extra_context["domain_state"] = domain.state
+
             # Pass in what the an extended expiration date would be for the expiration date modal
             self._set_expiration_date_context(domain, extra_context)
-            logger.info(f"changeform_view() -> state is now actually {domain.state}")
 
         return super().changeform_view(request, object_id, form_url, extra_context)
 
