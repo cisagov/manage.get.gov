@@ -790,6 +790,7 @@ def create_ready_domain():
     return domain
 
 
+# TODO in 1793: Remove the federal agency/updated federal agency fields
 def completed_domain_request(
     has_other_contacts=True,
     has_current_website=True,
@@ -842,8 +843,7 @@ def completed_domain_request(
             last_name="Bob",
             is_staff=True,
         )
-    if not updated_federal_agency:
-        updated_federal_agency, _ = FederalAgency.objects.get_or_create(agency="Stitches Is The Best")
+
     domain_request_kwargs = dict(
         generic_org_type=generic_org_type,
         is_election_board=is_election_board,
@@ -871,10 +871,6 @@ def completed_domain_request(
 
     if organization_type:
         domain_request_kwargs["organization_type"] = organization_type
-    # if federal_agency:
-    #     domain_request_kwargs["federal_agency"] = federal_agency
-    # if updated_federal_agency:
-    #     domain_request_kwargs["updated_federal_agency"] = updated_federal_agency
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
     if has_other_contacts:

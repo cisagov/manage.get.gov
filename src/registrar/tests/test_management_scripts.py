@@ -746,7 +746,8 @@ class TestDiscloseEmails(MockEppLib):
             )
 
 
-class TestRenamingFederalAgency(MockEppLib):
+# TODO in #1793: Remove this whole test class
+class TestRenamingFederalAgency(TestCase):
     def setUp(self):
         super().setUp()
 
@@ -758,17 +759,35 @@ class TestRenamingFederalAgency(MockEppLib):
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
             federal_agency="U.S. Peace Corps",
         )
-        self.outdated_federal_agency = FederalAgency.objects.get_or_create(agency="U.S. Peace Corps")
-        self.corrected_federal_agency = FederalAgency.objects.get_or_create(agency="Peace Corps")
+        self.domain_request_2 = completed_domain_request(
+            name="fadoesntexist.gov",
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            is_election_board=True,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            federal_agency="MEOWARDRULES",
+        )
+        self.domain_request_3 = completed_domain_request(
+            name="nullfederalagency.gov",
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            is_election_board=True,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            federal_agency=None,
+        )
 
         # Approve all three requests
         self.domain_request_1.approve()
+        self.domain_request_2.approve()
+        self.domain_request_3.approve()
 
         # Get the domains
         self.domain_1 = Domain.objects.get(name="stitches.gov")
+        self.domain_2 = Domain.objects.get(name="fadoesntexist.gov")
+        self.domain_3 = Domain.objects.get(name="nullfederalagency.gov")
 
         # Get the domain infos
         self.domain_info_1 = DomainInformation.objects.get(domain=self.domain_1)
+        self.domain_info_2 = DomainInformation.objects.get(domain=self.domain_2)
+        self.domain_info_3 = DomainInformation.objects.get(domain=self.domain_3)
 
     def tearDown(self):
         super().tearDown()
@@ -783,32 +802,65 @@ class TestRenamingFederalAgency(MockEppLib):
         The 'call_command' function from Django's management framework is then used to
         execute the populate_domain_updated_federal_agency command.
         """
-        # with less_console_noise():
-        print("!! We are in run_populate_domain_updated_federal_agency")
-        with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-            return_value=True,
-        ):
-            call_command("populate_domain_updated_federal_agency")
+        with less_console_noise():
+            with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                return_value=True,
+            ):
+                call_command("populate_domain_updated_federal_agency")
 
     def test_domain_information_renaming_federal_agency_success(self):
         """
-        1. Domain Information Update an outdated Federal Agency
-        2. Domain Information should error out on null Update a Federal Agency that doesn't exist (should error out)
-        2a. Domain Request should just skip? (maybe)
-        3. Domain Request Updating a Null Federal Agency make sure it's updated to Non-Federal Agency
-        TODO: Have a todo for the next ticket pt 3 to remove the tests here RIP
+        Domain Information updates successfully for an "outdated" Federal Agency
         """
 
-        # Test case #1
         self.run_populate_domain_updated_federal_agency()
-        print("!! self.domain_info_1 is", self.domain_info_1)
-        print("!! self.domain_info_1 dictionary is", self.domain_info_1.__dict__)
+
+        self.domain_info_1.refresh_from_db()
 
         previous_federal_agency_name = self.domain_info_1.federal_agency
-        updated_federal_agency_name = self.domain_info_1.updated_federal_agency
-        print("!! previous_federal_agency_name is ", previous_federal_agency_name)
-        print("!! updated_federal_agency_name is ", updated_federal_agency_name)
+        updated_federal_agency_name = self.domain_info_1.updated_federal_agency.agency
 
         self.assertEqual(previous_federal_agency_name, "U.S. Peace Corps")
         self.assertEqual(updated_federal_agency_name, "Peace Corps")
+
+    def test_domain_information_does_not_exist(self):
+        """
+        Update a Federal Agency that doesn't exist
+        (should return None bc the Federal Agency didn't exist before)
+        """
+
+        self.run_populate_domain_updated_federal_agency()
+
+        self.domain_info_2.refresh_from_db()
+
+        self.assertEqual(self.domain_info_2.updated_federal_agency, None)
+
+    def test_domain_request_is_skipped(self):
+        """
+        Update a Domain Request that doesn't exist
+        (should return None bc the Federal Agency didn't exist before)
+        """
+
+        # Test case #2
+        self.run_populate_domain_updated_federal_agency()
+
+        self.domain_request_2.refresh_from_db()
+
+        self.assertEqual(self.domain_request_2.updated_federal_agency, None)
+
+    def test_domain_information_updating_null_federal_agency_to_non_federal_agency(self):
+        """
+        Updating a Domain Information that was previously None
+        to Non-Federal Agency
+        """
+
+        self.run_populate_domain_updated_federal_agency()
+
+        self.domain_info_3.refresh_from_db()
+
+        previous_federal_agency_name = self.domain_info_3.federal_agency
+        updated_federal_agency_name = self.domain_info_3.updated_federal_agency.agency
+
+        self.assertEqual(previous_federal_agency_name, None)
+        self.assertEqual(updated_federal_agency_name, "Non-Federal Agency")

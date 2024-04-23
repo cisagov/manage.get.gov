@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Transfers Domain Request and Domain Information federal agency field from string to FederalAgency object"
 
-    # Deprecated federal agency names mapped to designated replacements
+    # Deprecated federal agency names mapped to designated replacements {old_value, new value}
     rename_deprecated_federal_agency = {
         "Appraisal Subcommittee": "Appraisal Subcommittee of the Federal Financial Institutions Examination Council",
         "Barry Goldwater Scholarship and Excellence in Education Program": "Barry Goldwater Scholarship and Excellence in Education Foundation",
