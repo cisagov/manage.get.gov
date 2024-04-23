@@ -782,7 +782,8 @@ if DEBUG:
     }
 
 # From https://django-auditlog.readthedocs.io/en/latest/upgrade.html
-# Run cf run-task getgov-<> --wait --command 'python manage.py auditlogmigratejson --traceback' --name auditlogmigratejson
+# Run:
+# cf run-task getgov-<> --wait --command 'python manage.py auditlogmigratejson --traceback' --name auditlogmigratejson
 # on our staging and stable, then remove these 2 variables or set to False
 AUDITLOG_TWO_STEP_MIGRATION = True
 
