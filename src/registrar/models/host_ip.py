@@ -21,12 +21,11 @@ class HostIP(TimeStampedModel):
         default=None,  # prevent saving without a value
         validators=[validate_ipv46_address],
         verbose_name="IP address",
-        help_text="IP address",
     )
 
     host = models.ForeignKey(
         "registrar.Host",
         on_delete=models.PROTECT,
         related_name="ip",  # access this HostIP via the Host as `host.ip`
-        help_text="Host to which this IP address belongs",
+        help_text="IP associated with this host",
     )
