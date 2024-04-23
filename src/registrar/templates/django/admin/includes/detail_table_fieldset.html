@@ -65,6 +65,13 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% endwith %}
 {% endblock field_readonly %}
 
+{% block help_text %}
+    <div class="help margin-bottom-1" {% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+        <div>{{ field.field.help_text|safe }}</div>
+    </div>
+{% endblock help_text %}
+
+
 {% block after_help_text %}
     {% if field.field.name == "creator" %}
         <div class="flex-container tablet:margin-top-1">
