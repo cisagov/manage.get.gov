@@ -5,6 +5,8 @@
 {% block field_readonly %}
     {% if field.field.name == "state" %}
     <div class="readonly">{{ domain_state }}</div>
+    {% else %}
+    <div class="readonly">{{ field.contents }}</div>
     {% endif %}
 {% endblock %}
 
