@@ -979,6 +979,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "classes": ["collapse"],
                 "fields": [
                     "federal_type",
+                    # TODO 1975 BEFORE MERGING: COMMENT BELOW OUT
                     "updated_federal_agency",
                     # Above field commented out so it won't display
                     "federal_agency",  # TODO: remove later
@@ -1220,6 +1221,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "classes": ["collapse"],
                 "fields": [
                     "federal_type",
+                    # TODO 1975 BEFORE MERGING: COMMENT BELOW OUT
                     "updated_federal_agency",
                     # Above field commented out so it won't display
                     "federal_agency",  # TODO: remove later
