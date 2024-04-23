@@ -1779,8 +1779,7 @@ class Domain(TimeStampedModel, DomainHelper):
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
 
             if self.state == self.State.UNKNOWN:
-                # self._fix_unknown_state(cleaned)
-                pass
+                self._fix_unknown_state(cleaned)
             if fetch_hosts:
                 self._update_hosts_and_ips_in_db(cleaned)
             if fetch_contacts:
