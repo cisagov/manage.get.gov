@@ -464,6 +464,7 @@ class DomainRequest(TimeStampedModel):
         "registrar.User",
         on_delete=models.PROTECT,
         related_name="domain_requests_created",
+        help_text="Person who submitted the domain request; will not receive email updates",
     )
 
     investigator = models.ForeignKey(
@@ -481,14 +482,12 @@ class DomainRequest(TimeStampedModel):
         choices=OrganizationChoices.choices,
         null=True,
         blank=True,
-        help_text="Type of organization",
     )
 
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
         verbose_name="election office",
-        help_text="Is your organization an election office?",
     )
 
     # TODO - Ticket #1911: stub this data from DomainRequest
@@ -497,30 +496,26 @@ class DomainRequest(TimeStampedModel):
         choices=OrgChoicesElectionOffice.choices,
         null=True,
         blank=True,
-        help_text="Type of organization - Election office",
+        help_text='"Election" appears after the org type if it\'s an election office.',
     )
 
     federally_recognized_tribe = models.BooleanField(
         null=True,
-        help_text="Is the tribe federally recognized",
     )
 
     state_recognized_tribe = models.BooleanField(
         null=True,
-        help_text="Is the tribe recognized by a state",
     )
 
     tribe_name = models.CharField(
         null=True,
         blank=True,
-        help_text="Name of tribe",
     )
 
     federal_agency = models.CharField(
         choices=AGENCY_CHOICES,
         null=True,
         blank=True,
-        help_text="Federal agency",
     )
 
     federal_type = models.CharField(
@@ -528,32 +523,27 @@ class DomainRequest(TimeStampedModel):
         choices=BranchChoices.choices,
         null=True,
         blank=True,
-        help_text="Federal government branch",
     )
 
     organization_name = models.CharField(
         null=True,
         blank=True,
-        help_text="Organization name",
         db_index=True,
     )
 
     address_line1 = models.CharField(
         null=True,
         blank=True,
-        help_text="Street address",
         verbose_name="Address line 1",
     )
     address_line2 = models.CharField(
         null=True,
         blank=True,
-        help_text="Street address line 2 (optional)",
         verbose_name="Address line 2",
     )
     city = models.CharField(
         null=True,
         blank=True,
-        help_text="City",
     )
     state_territory = models.CharField(
         max_length=2,
@@ -561,26 +551,23 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name="state / territory",
-        help_text="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
         verbose_name="zip code",
-        help_text="Zip code",
         db_index=True,
     )
     urbanization = models.CharField(
         null=True,
         blank=True,
-        help_text="Urbanization (required for Puerto Rico only)",
+        help_text="Required for Puerto Rico only",
     )
 
     about_your_organization = models.TextField(
         null=True,
         blank=True,
-        help_text="Information about your organization",
     )
 
     authorizing_official = models.ForeignKey(
@@ -603,7 +590,7 @@ class DomainRequest(TimeStampedModel):
         "Domain",
         null=True,
         blank=True,
-        help_text="The approved domain",
+        help_text="Domain associated with this request; will be blank until request is approved",
         related_name="domain_request",
         on_delete=models.SET_NULL,
     )
@@ -612,7 +599,6 @@ class DomainRequest(TimeStampedModel):
         "DraftDomain",
         null=True,
         blank=True,
-        help_text="The requested domain",
         related_name="domain_request",
         on_delete=models.PROTECT,
     )
@@ -621,6 +607,7 @@ class DomainRequest(TimeStampedModel):
         "registrar.Website",
         blank=True,
         related_name="alternatives+",
+        help_text="Other domain names the creator provided for consideration",
     )
 
     # This is the contact information provided by the domain requestor. The
@@ -631,12 +618,12 @@ class DomainRequest(TimeStampedModel):
         blank=True,
         related_name="submitted_domain_requests",
         on_delete=models.PROTECT,
+        help_text='Person listed under "your contact information" in the request form; will receive email updates',
     )
 
     purpose = models.TextField(
         null=True,
         blank=True,
-        help_text="Purpose of your domain",
     )
 
     other_contacts = models.ManyToManyField(
@@ -649,13 +636,12 @@ class DomainRequest(TimeStampedModel):
     no_other_contacts_rationale = models.TextField(
         null=True,
         blank=True,
-        help_text="Reason for listing no additional contacts",
+        help_text="Required if creator does not list other employees",
     )
 
     anything_else = models.TextField(
         null=True,
         blank=True,
-        help_text="Anything else?",
     )
 
     is_policy_acknowledged = models.BooleanField(
@@ -676,7 +662,6 @@ class DomainRequest(TimeStampedModel):
     notes = models.TextField(
         null=True,
         blank=True,
-        help_text="Notes about this request",
     )
 
     def sync_organization_type(self):
