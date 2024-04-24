@@ -1,19 +1,25 @@
 @use "uswds-core" as *;
 
-p, .dotgov-table {
+.dotgov-table {
     a {
         display: flex;
         align-items: flex-start;
         color: color('primary');
 
-        .usa-icon {
-            // align icon with x height
-            margin-top: units(0.5);
-            margin-right: units(0.5);
+        &:visited {
+            color: color('primary');   
         }
     }
 }
 
-.dotgov-table a:visited {
-    color: color('primary');
+a {
+
+    // display: flex;
+    //     align-items: flex-start;
+
+    .usa-icon {
+        // align icon with x height
+        margin-top: units(0.5);
+        margin-right: units(0.5);
+    }
 }
