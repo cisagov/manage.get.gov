@@ -4,25 +4,9 @@
     <h1>{{ title }}</h1>
 
     {# Adds a model description #}
-    {# TODO - this should be stored in context or something, not here. Make this a function. #}
-    {% if opts.model_name == 'domainrequest' %}
-        <p class="django-admin__model-description text-normal">
-            This table contains all domain requests that have been started within the registrar and the status of those requests. 
-            Updating values here will immediately update the corresponding values that users see in the registrar. 
-            Once a domain request has been adjudicated, the details of that request should not be modified. 
-            To update attributes (like an organization’s name) after a domain’s approval, go to <a href="#">Domains</a>. 
-            Similar fields display on each Domain page, but edits made there will not affect the corresponding domain request.
-        </p>
-    {% elif opts.model_name == 'contact' %}
-        <p class="django-admin__model-description text-normal">
-            Contacts include anyone who has access to the registrar (known as “users”) and anyone listed in a domain request, 
-            including other employees and authorizing officials. 
-            Only contacts who have access to the registrar will have a corresponding record within the <a href="#">Users</a> table.
-            <br>
-            Updating someone’s contact information here will not affect that person’s Login.gov information.
-        </p>
-    {% elif opts.model_name == 'domaininformation' %}
-    {% endif %}
+    <p class="django-admin__model-description text-normal">
+        {{ model_description|safe }}
+    </p>
 
     <h2>
         {{ cl.result_count }} 

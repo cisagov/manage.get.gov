@@ -382,6 +382,49 @@ class AdminSortFields:
 class AuditedAdmin(admin.ModelAdmin):
     """Custom admin to make auditing easier."""
 
+    # TODO - move this into a helper somewhere, maybe an enum?
+    model_descriptions = {
+        'domainrequest': (
+            "This table contains all domain requests that have been started within the registrar and the "
+            "status of those requests. "
+            "Updating values here will immediately update the corresponding values that users see in the registrar. " 
+            "Once a domain request has been adjudicated, the details of that request should not be modified. "
+            "To update attributes (like an organization’s name) after a domain’s approval, go to <a href=\"#\">Domains</a>. " 
+            "Similar fields display on each Domain page, but edits made there will not affect the corresponding domain request."
+        ),
+        "contact": (
+            "Contacts include anyone who has access to the registrar (known as “users”) and anyone listed in a domain request, " 
+            "including other employees and authorizing officials. "
+            "Only contacts who have access to the registrar will have a corresponding record within the "
+            "<a href=\"#\">Users</a> table."
+            # TODO - change this
+            "<br><br>"
+            "Updating someone’s contact information here will not affect that person’s Login.gov information."
+        ),
+        "domaininformation": (
+            "Domain information represents the basic metadata for an approved domain and "
+            "the organization that manages it. "
+            "It does not include any information specific to the registry (DNS name servers, security email). "
+            "Registry-related information can be managed within the <a href=\"#\">Domains</a> table. "
+            "Updating values here will immediately update the corresponding values that users see in the registrar."
+            # TODO - change this
+            "<br></br>"
+            "Domain information is similar to <a href=\"#\">Domain requests</a>, and the fields are nearly identical," 
+            "but edits made to one are not made to the other." 
+            "Domain information exists so we don’t modify details of an approved request after "
+            "adjudication (since a domain request should be maintained as-adjudicated for records retention purposes). "
+            "Entries are created here upon approval of a domain request. "
+        )
+    }
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        model_name = self.model._meta.model_name
+        if model_name in self.model_descriptions:
+            extra_context['model_description'] = self.model_descriptions[model_name]
+
+        return super().changelist_view(request, extra_context=extra_context)
+
     def history_view(self, request, object_id, extra_context=None):
         """On clicking 'History', take admin to the auditlog view for an object."""
         return HttpResponseRedirect(
