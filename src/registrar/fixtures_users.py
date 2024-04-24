@@ -98,7 +98,7 @@ class UserFixture:
             "first_name": "Christina",
             "last_name": "Burnett",
             "email": "christina.burnett@cisa.dhs.gov",
-        }, 
+        },
         {
             "username": "012f844d-8a0f-4225-9d82-cbf87bff1d3e",
             "first_name": "Riley",
