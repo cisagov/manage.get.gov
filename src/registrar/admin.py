@@ -1001,9 +1001,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
                     # "updated_federal_agency",
@@ -1026,9 +1027,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",
@@ -1242,9 +1244,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
                     # "updated_federal_agency",
@@ -1267,9 +1270,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",

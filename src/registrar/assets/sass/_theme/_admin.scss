@@ -525,17 +525,25 @@ address.dja-address-contact-list {
 }
 
 // Collapse button styles for fieldsets
-.module.collapse {
+.module.collapse--dotgov {
     margin-top: -35px;
     padding-top: 0;
     border: none;
-    h2 {
+    button {
         background: none;
-        color: var(--body-fg)!important;
         text-transform: none;
-    }
-    a {
         color: var(--link-fg);
+        margin-top: 8px;
+        margin-left: 10px;
+        span {
+            text-decoration: underline;
+        }
+    }
+}
+.collapse--dotgov.collapsed .collapse-toggle--dotgov  {
+    display: inline-block!important;
+    * {
+        display: inline-block;
     }
 }
 
