@@ -181,6 +181,7 @@ class UserFixture:
             "last_name": "Burnett-Analyst",
             "email": "christina.burnett@gwe.cisa.dhs.gov",
         },
+        {
             "username": "d9839768-0c17-4fa2-9c8e-36291eef5c11",
             "first_name": "Alex-Analyst",
             "last_name": "Mcelya-Analyst",
