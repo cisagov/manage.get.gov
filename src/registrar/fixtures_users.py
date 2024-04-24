@@ -93,7 +93,7 @@ class UserFixture:
             "email": "szu.chin@associates.cisa.dhs.gov",
         },
         {
-            "username": "1ca4fc9a-9358-4518-b4eb-cad7a96c05b8",
+            "username": "66bb1a5a-a091-4d7f-a6cf-4d772b4711c7",
             "first_name": "Christina",
             "last_name": "Burnett",
             "email": "christina.burnett@cisa.dhs.gov",
