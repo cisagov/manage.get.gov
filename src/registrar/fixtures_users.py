@@ -168,6 +168,12 @@ class UserFixture:
             "last_name": "Chin-Analyst",
             "email": "szu.chin@ecstech.com",
         },
+        {
+            "username": "22f88aa5-3b54-4b1f-9c57-201fb02ddba7",
+            "first_name": "Christina-Analyst",
+            "last_name": "Burnett-Analyst",
+            "email": "christina.burnett@gwe.cisa.dhs.gov",
+        },
     ]
 
     def load_users(cls, users, group_name):
