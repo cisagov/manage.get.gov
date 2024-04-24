@@ -617,3 +617,11 @@ address.dja-address-contact-list {
 .usa-button__small-text {
     font-size: small;
 }
+
+p.django-admin__model-description{
+    color: var(--primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+}
