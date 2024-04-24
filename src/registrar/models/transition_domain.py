@@ -20,13 +20,13 @@ class TransitionDomain(TimeStampedModel):
     username = models.CharField(
         null=False,
         blank=False,
-        verbose_name="Username",
+        verbose_name="username",
         help_text="Username - this will be an email address",
     )
     domain_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Domain name",
+        verbose_name="domain",
     )
     status = models.CharField(
         max_length=255,
@@ -34,7 +34,7 @@ class TransitionDomain(TimeStampedModel):
         blank=True,
         default=StatusChoices.READY,
         choices=StatusChoices.choices,
-        verbose_name="Status",
+        verbose_name="status",
         help_text="domain status during the transfer",
     )
     email_sent = models.BooleanField(
@@ -46,10 +46,10 @@ class TransitionDomain(TimeStampedModel):
     processed = models.BooleanField(
         null=False,
         default=True,
-        verbose_name="Processed",
+        verbose_name="processed",
         help_text="Indicates whether this TransitionDomain was already processed",
     )
-    organization_type = models.CharField(
+    generic_org_type = models.CharField(
         max_length=255,
         null=True,
         blank=True,
@@ -83,8 +83,8 @@ class TransitionDomain(TimeStampedModel):
     first_name = models.CharField(
         null=True,
         blank=True,
-        help_text="First name",
-        verbose_name="first name / given name",
+        help_text="First name / given name",
+        verbose_name="first name",
         db_index=True,
     )
     middle_name = models.CharField(
@@ -100,6 +100,7 @@ class TransitionDomain(TimeStampedModel):
     title = models.CharField(
         null=True,
         blank=True,
+        verbose_name="title / role",
         help_text="Title",
     )
     email = models.EmailField(
@@ -126,12 +127,14 @@ class TransitionDomain(TimeStampedModel):
         max_length=2,
         null=True,
         blank=True,
+        verbose_name="state / territory",
         help_text="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
+        verbose_name="zip code",
         help_text="Zip code",
         db_index=True,
     )
@@ -147,7 +150,7 @@ class TransitionDomain(TimeStampedModel):
             f"username: {self.username}, \n"
             f"status: {self.status}, \n"
             f"email sent: {self.email_sent}, \n"
-            f"organization type: {self.organization_type}, \n"
+            f"organization type: {self.generic_org_type}, \n"
             f"organization_name: {self.organization_name}, \n"
             f"federal_type: {self.federal_type}, \n"
             f"federal_agency: {self.federal_agency}, \n"

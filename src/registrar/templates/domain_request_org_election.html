@@ -1,0 +1,23 @@
+{% extends 'domain_request_form.html' %}
+{% load field_helpers %}
+
+{% block form_instructions %}
+  
+
+  <p>An election office is a government entity whose primary responsibility is overseeing elections and/or conducting voter registration. If your organization is an election office, we'll prioritize your request.</p>
+
+  <h2>Is your organization an election office?</h2>
+
+  <p>Answer “yes” only if the <em>main purpose</em> of your organization is to serve as an election office.</p>
+
+{% endblock %}
+
+{% block form_required_fields_help_text %}
+{# commented out so it does not appear on this page #}
+{% endblock %}
+
+{% block form_fields %}
+  {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+    {% input_with_errors forms.0.is_election_board %}
+  {% endwith %}
+{% endblock %}

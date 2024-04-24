@@ -1,10 +1,11 @@
 from datetime import date
 import logging
+import copy
 
 from django import forms
-from django.db.models.functions import Concat, Coalesce
 from django.db.models import Value, CharField, Q
-from django.http import HttpResponse, HttpResponseRedirect
+from django.db.models.functions import Concat, Coalesce
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
@@ -14,8 +15,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
-from registrar.utility import csv_export
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -26,6 +27,7 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
+from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 
 from django.utils.translation import gettext_lazy as _
 
@@ -45,6 +47,34 @@ class MyUserAdminForm(UserChangeForm):
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
         }
+
+    def __init__(self, *args, **kwargs):
+        """Custom init to modify the user form"""
+        super(MyUserAdminForm, self).__init__(*args, **kwargs)
+        self._override_base_help_texts()
+
+    def _override_base_help_texts(self):
+        """
+        Used to override pre-existing help texts in AbstractUser.
+        This is done to avoid modifying the base AbstractUser class.
+        """
+        is_superuser = self.fields.get("is_superuser")
+        is_staff = self.fields.get("is_staff")
+        password = self.fields.get("password")
+
+        if is_superuser is not None:
+            is_superuser.help_text = "For development purposes only; provides superuser access on the database level."
+
+        if is_staff is not None:
+            is_staff.help_text = "Designates whether the user can log in to this admin site."
+
+        if password is not None:
+            # Link is copied from the base implementation of UserChangeForm.
+            link = f"../../{self.instance.pk}/password/"
+            password.help_text = (
+                "Raw passwords are not stored, so they will not display here. "
+                f'You can change the password using <a href="{link}">this form</a>.'
+            )
 
 
 class DomainInformationAdminForm(forms.ModelForm):
@@ -69,12 +99,12 @@ class DomainInformationInlineForm(forms.ModelForm):
         }
 
 
-class DomainApplicationAdminForm(forms.ModelForm):
+class DomainRequestAdminForm(forms.ModelForm):
     """Custom form to limit transitions to available transitions.
     This form utilizes the custom widget for its class's ManyToMany UIs."""
 
     class Meta:
-        model = models.DomainApplication
+        model = models.DomainRequest
         fields = "__all__"
         widgets = {
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
@@ -85,25 +115,122 @@ class DomainApplicationAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        application = kwargs.get("instance")
-        if application and application.pk:
-            current_state = application.status
+        domain_request = kwargs.get("instance")
+        if domain_request and domain_request.pk:
+            current_state = domain_request.status
 
             # first option in status transitions is current state
-            available_transitions = [(current_state, application.get_status_display())]
+            available_transitions = [(current_state, domain_request.get_status_display())]
 
-            transitions = get_available_FIELD_transitions(
-                application, models.DomainApplication._meta.get_field("status")
-            )
+            if domain_request.investigator is not None:
+                transitions = get_available_FIELD_transitions(
+                    domain_request, models.DomainRequest._meta.get_field("status")
+                )
+            else:
+                transitions = self.get_custom_field_transitions(
+                    domain_request, models.DomainRequest._meta.get_field("status")
+                )
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target.label))
 
             # only set the available transitions if the user is not restricted
-            # from editing the domain application; otherwise, the form will be
+            # from editing the domain request; otherwise, the form will be
             # readonly and the status field will not have a widget
-            if not application.creator.is_restricted():
+            if not domain_request.creator.is_restricted():
                 self.fields["status"].widget.choices = available_transitions
+
+    def get_custom_field_transitions(self, instance, field):
+        """Custom implementation of get_available_FIELD_transitions
+        in the FSM. Allows us to still display fields filtered out by a condition."""
+        curr_state = field.get_state(instance)
+        transitions = field.transitions[instance.__class__]
+
+        for name, transition in transitions.items():
+            meta = transition._django_fsm
+            if meta.has_transition(curr_state):
+                yield meta.get_transition(curr_state)
+
+    def clean(self):
+        """
+        Override of the default clean on the form.
+        This is so we can inject custom form-level error messages.
+        """
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        status = cleaned_data.get("status")
+        investigator = cleaned_data.get("investigator")
+        rejection_reason = cleaned_data.get("rejection_reason")
+
+        # Get the old status
+        initial_status = self.initial.get("status", None)
+
+        # We only care about investigator when in these statuses
+        checked_statuses = [
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.INELIGIBLE,
+        ]
+
+        # If a status change occured, check for validity
+        if status != initial_status and status in checked_statuses:
+            # Checks the "investigators" field for validity.
+            # That field must obey certain conditions when an domain request is approved.
+            # Will call "add_error" if any issues are found.
+            self._check_for_valid_investigator(investigator)
+
+        # If the status is rejected, a rejection reason must exist
+        if status == DomainRequest.DomainRequestStatus.REJECTED:
+            self._check_for_valid_rejection_reason(rejection_reason)
+
+        return cleaned_data
+
+    def _check_for_valid_rejection_reason(self, rejection_reason) -> bool:
+        """
+        Checks if the rejection_reason field is not none.
+        Adds form errors on failure.
+        """
+        is_valid = False
+
+        # Check if a rejection reason exists. Rejection is not possible without one.
+        error_message = None
+        if rejection_reason is None or rejection_reason == "":
+            # Lets grab the error message from a common location
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("rejection_reason", error_message)
+
+        return is_valid
+
+    def _check_for_valid_investigator(self, investigator) -> bool:
+        """
+        Checks if the investigator field is not none, and is staff.
+        Adds form errors on failure.
+        """
+
+        is_valid = False
+
+        # Check if an investigator is assigned. No approval is possible without one.
+        error_message = None
+        if investigator is None:
+            # Lets grab the error message from a common location
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
+        elif not investigator.is_staff:
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("investigator", error_message)
+
+        return is_valid
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
@@ -191,6 +318,13 @@ class CustomLogEntryAdmin(LogEntryAdmin):
         # Return the field value without a link
         return f"{obj.content_type} - {obj.object_repr}"
 
+    # We name the custom prop 'created_at' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    @admin.display(description=_("Created at"))
+    def created(self, obj):
+        return obj.timestamp
+
     search_help_text = "Search by resource, changes, or user."
 
     change_form_template = "admin/change_form_no_submit.html"
@@ -218,8 +352,8 @@ class AdminSortFields:
         "alternative_domains": (Website, "website"),
         # == DraftDomain == #
         "requested_domain": (DraftDomain, "name"),
-        # == DomainApplication == #
-        "domain_application": (DomainApplication, "requested_domain__name"),
+        # == DomainRequest == #
+        "domain_request": (DomainRequest, "requested_domain__name"),
         # == Domain == #
         "domain": (Domain, "name"),
         "approved_domain": (Domain, "name"),
@@ -379,7 +513,7 @@ class MyUserAdmin(BaseUserAdmin):
 
     list_display = (
         "username",
-        "email",
+        "overridden_email_field",
         "first_name",
         "last_name",
         # Group is a custom property defined within this file,
@@ -387,6 +521,18 @@ class MyUserAdmin(BaseUserAdmin):
         "group",
         "status",
     )
+
+    # Renames inherited AbstractUser label 'email_address to 'email'
+    def formfield_for_dbfield(self, dbfield, **kwargs):
+        field = super().formfield_for_dbfield(dbfield, **kwargs)
+        if dbfield.name == "email":
+            field.label = "Email"
+        return field
+
+    # Renames inherited AbstractUser column name 'email_address to 'email'
+    @admin.display(description=_("Email"))
+    def overridden_email_field(self, obj):
+        return obj.email
 
     fieldsets = (
         (
@@ -415,7 +561,7 @@ class MyUserAdmin(BaseUserAdmin):
     analyst_fieldsets = (
         (
             None,
-            {"fields": ("password", "status")},
+            {"fields": ("status",)},
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
@@ -441,7 +587,6 @@ class MyUserAdmin(BaseUserAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "password",
         "Personal Info",
         "first_name",
         "last_name",
@@ -462,11 +607,14 @@ class MyUserAdmin(BaseUserAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
+    search_help_text = "Search by first name, last name, or email."
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
     def get_search_results(self, request, queryset, search_term):
         """
         Override for get_search_results. This affects any upstream model using autocomplete_fields,
-        such as DomainApplication. This is because autocomplete_fields uses an API call to fetch data,
+        such as DomainRequest. This is because autocomplete_fields uses an API call to fetch data,
         and this fetch comes from this method.
         """
         # Custom filtering logic
@@ -480,13 +628,13 @@ class MyUserAdmin(BaseUserAdmin):
         request_get = request.GET
 
         # The request defines model name and field name.
-        # For instance, model_name could be "DomainApplication"
+        # For instance, model_name could be "DomainRequest"
         # and field_name could be "investigator".
         model_name = request_get.get("model_name", None)
         field_name = request_get.get("field_name", None)
 
         # Make sure we're only modifying requests from these models.
-        models_to_target = {"domainapplication"}
+        models_to_target = {"domainrequest"}
         if model_name in models_to_target:
             # Define rules per field
             match field_name:
@@ -550,7 +698,7 @@ class MyHostAdmin(AuditedAdmin):
     """Custom host admin class to use our inlines."""
 
     search_fields = ["name", "domain__name"]
-    search_help_text = "Search by domain or hostname."
+    search_help_text = "Search by domain or host name."
     inlines = [HostIPInline]
 
 
@@ -558,19 +706,38 @@ class ContactAdmin(ListHeaderAdmin):
     """Custom contact admin class to add search."""
 
     search_fields = ["email", "first_name", "last_name"]
-    search_help_text = "Search by firstname, lastname or email."
+    search_help_text = "Search by first name, last name or email."
     list_display = [
-        "contact",
+        "name",
         "email",
+        "user_exists",
     ]
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
+    fieldsets = [
+        (
+            None,
+            {"fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]},
+        )
+    ]
+
+    autocomplete_fields = ["user"]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    def user_exists(self, obj):
+        """Check if the Contact has a related User"""
+        return "Yes" if obj.user is not None else "No"
+
+    user_exists.short_description = "Is user"  # type: ignore
+    user_exists.admin_order_field = "user"  # type: ignore
+
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
     # This gets around the linter limitation, for now.
-    def contact(self, obj: models.Contact):
+    def name(self, obj: models.Contact):
         """Duplicate the contact _str_"""
         if obj.first_name or obj.last_name:
             return obj.get_formatted_name()
@@ -581,7 +748,7 @@ class ContactAdmin(ListHeaderAdmin):
         else:
             return ""
 
-    contact.admin_order_field = "first_name"  # type: ignore
+    name.admin_order_field = "first_name"  # type: ignore
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -667,6 +834,46 @@ class WebsiteAdmin(ListHeaderAdmin):
     ]
     search_help_text = "Search by website."
 
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return {}
+        return super().get_model_perms(request)
+
+    def has_change_permission(self, request, obj=None):
+        """
+        Allow analysts to access the change form directly via URL.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return True
+        return super().has_change_permission(request, obj)
+
+    def response_change(self, request, obj):
+        """
+        Override to redirect users back to the previous page after saving.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        return_path = request.GET.get("return_path")
+
+        # First, call the super method to perform the standard operations and capture the response
+        response = super().response_change(request, obj)
+
+        # Don't redirect to the website page on save if the user is an analyst.
+        # Rather, just redirect back to the originating page.
+        if (analyst_perm and not superuser_perm) and return_path:
+            # Redirect to the return path if it exists
+            return HttpResponseRedirect(return_path)
+
+        # If no redirection is needed, return the original response
+        return response
+
 
 class UserDomainRoleAdmin(ListHeaderAdmin):
     """Custom user domain role admin class."""
@@ -699,7 +906,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
         "domain__name",
         "role",
     ]
-    search_help_text = "Search by firstname, lastname, email, domain, or role."
+    search_help_text = "Search by first name, last name, email, or domain."
 
     autocomplete_fields = ["user", "domain"]
 
@@ -748,6 +955,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     # error.
     readonly_fields = ["status"]
 
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
 
 class DomainInformationAdmin(ListHeaderAdmin):
     """Customize domain information admin class."""
@@ -757,7 +966,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # Columns
     list_display = [
         "domain",
-        "organization_type",
+        "generic_org_type",
         "created_at",
         "submitter",
     ]
@@ -768,7 +977,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     ]
 
     # Filters
-    list_filter = ["organization_type"]
+    list_filter = ["generic_org_type"]
 
     # Search
     search_fields = [
@@ -777,20 +986,34 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "domain_application", "notes"]}),
+        (None, {"fields": ["creator", "submitter", "domain_request", "notes"]}),
+        (".gov domain", {"fields": ["domain"]}),
+        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Background info", {"fields": ["anything_else"]}),
         (
             "Type of organization",
             {
                 "fields": [
+                    "generic_org_type",
+                    "is_election_board",
                     "organization_type",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "federal_type",
+                    # "updated_federal_agency",
+                    # Above field commented out so it won't display
+                    "federal_agency",  # TODO: remove later
+                    "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
-                    "tribe_name",
-                    "federal_agency",
-                    "federal_type",
-                    "is_election_board",
                     "about_your_organization",
-                ]
+                ],
             },
         ),
         (
@@ -798,29 +1021,27 @@ class DomainInformationAdmin(ListHeaderAdmin):
             {
                 "fields": [
                     "organization_name",
-                    "address_line1",
-                    "address_line2",
-                    "city",
                     "state_territory",
-                    "zipcode",
-                    "urbanization",
                 ]
             },
         ),
-        ("Authorizing official", {"fields": ["authorizing_official"]}),
-        (".gov domain", {"fields": ["domain"]}),
-        ("Your contact information", {"fields": ["submitter"]}),
-        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
         (
-            "No other employees from your organization?",
-            {"fields": ["no_other_contacts_rationale"]},
-        ),
-        ("Anything else?", {"fields": ["anything_else"]}),
-        (
-            "Requirements for operating a .gov domain",
-            {"fields": ["is_policy_acknowledged"]},
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "zipcode",
+                    "urbanization",
+                ],
+            },
         ),
     ]
+
+    # Readonly fields for analysts and superusers
+    readonly_fields = ("other_contacts", "generic_org_type", "is_election_board")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -828,7 +1049,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "type_of_work",
         "more_organization_information",
         "domain",
-        "domain_application",
+        "domain_request",
         "submitter",
         "no_other_contacts_rationale",
         "anything_else",
@@ -841,7 +1062,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
     autocomplete_fields = [
         "creator",
-        "domain_application",
+        "domain_request",
         "authorizing_official",
         "domain",
         "submitter",
@@ -849,6 +1070,8 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
     # Table ordering
     ordering = ["domain__name"]
+
+    change_form_template = "django/admin/domain_information_change_form.html"
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -866,10 +1089,22 @@ class DomainInformationAdmin(ListHeaderAdmin):
         return readonly_fields  # Read-only fields for analysts
 
 
-class DomainApplicationAdmin(ListHeaderAdmin):
-    """Custom domain applications admin class."""
+class DomainRequestAdmin(ListHeaderAdmin):
+    """Custom domain requests admin class."""
 
-    form = DomainApplicationAdminForm
+    form = DomainRequestAdminForm
+    change_form_template = "django/admin/domain_request_change_form.html"
+
+    class StatusListFilter(MultipleChoiceListFilter):
+        """Custom status filter which is a multiple choice filter"""
+
+        title = "Status"
+        parameter_name = "status__in"
+
+        template = "django/admin/multiple_choice_list_filter.html"
+
+        def lookups(self, request, model_admin):
+            return DomainRequest.DomainRequestStatus.choices
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
@@ -884,7 +1119,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             """
             # Select all investigators that are staff, then order by name and email
             privileged_users = (
-                DomainApplication.objects.select_related("investigator")
+                DomainRequest.objects.select_related("investigator")
                 .filter(investigator__is_staff=True)
                 .order_by("investigator__first_name", "investigator__last_name", "investigator__email")
             )
@@ -934,15 +1169,15 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Columns
     list_display = [
         "requested_domain",
+        "submission_date",
         "status",
-        "organization_type",
+        "generic_org_type",
         "federal_type",
         "federal_agency",
         "organization_name",
         "custom_election_board",
         "city",
         "state_territory",
-        "created_at",
         "submitter",
         "investigator",
     ]
@@ -961,8 +1196,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Filters
     list_filter = (
-        "status",
-        "organization_type",
+        StatusListFilter,
+        "generic_org_type",
         "federal_type",
         ElectionOfficeFilter,
         "rejection_reason",
@@ -979,20 +1214,47 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     fieldsets = [
-        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
+        (
+            None,
+            {
+                "fields": [
+                    "status",
+                    "rejection_reason",
+                    "investigator",
+                    "creator",
+                    "submitter",
+                    "approved_domain",
+                    "notes",
+                ]
+            },
+        ),
+        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
+        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
         (
             "Type of organization",
             {
                 "fields": [
+                    "generic_org_type",
+                    "is_election_board",
                     "organization_type",
+                ]
+            },
+        ),
+        (
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "federal_type",
+                    # "updated_federal_agency",
+                    # Above field commented out so it won't display
+                    "federal_agency",  # TODO: remove later
+                    "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
-                    "tribe_name",
-                    "federal_agency",
-                    "federal_type",
-                    "is_election_board",
                     "about_your_organization",
-                ]
+                ],
             },
         ),
         (
@@ -1000,31 +1262,33 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             {
                 "fields": [
                     "organization_name",
-                    "address_line1",
-                    "address_line2",
-                    "city",
                     "state_territory",
-                    "zipcode",
-                    "urbanization",
                 ]
             },
         ),
-        ("Authorizing official", {"fields": ["authorizing_official"]}),
-        ("Current websites", {"fields": ["current_websites"]}),
-        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        ("Purpose of your domain", {"fields": ["purpose"]}),
-        ("Your contact information", {"fields": ["submitter"]}),
-        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
         (
-            "No other employees from your organization?",
-            {"fields": ["no_other_contacts_rationale"]},
-        ),
-        ("Anything else?", {"fields": ["anything_else"]}),
-        (
-            "Requirements for operating a .gov domain",
-            {"fields": ["is_policy_acknowledged"]},
+            "More details",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "zipcode",
+                    "urbanization",
+                ],
+            },
         ),
     ]
+
+    # Readonly fields for analysts and superusers
+    readonly_fields = (
+        "other_contacts",
+        "current_websites",
+        "alternative_domains",
+        "generic_org_type",
+        "is_election_board",
+    )
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1050,90 +1314,155 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
-    ordering = ["requested_domain__name"]
+    # NOTE: This impacts the select2 dropdowns (combobox)
+    # Currentl, there's only one for requests on DomainInfo
+    ordering = ["-submission_date", "requested_domain__name"]
+
+    change_form_template = "django/admin/domain_request_change_form.html"
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
-        if obj and obj.creator.status != models.User.RESTRICTED:
-            if change:  # Check if the application is being edited
-                # Get the original application from the database
-                original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+        """Custom save_model definition that handles edge cases"""
 
-                if (
-                    obj
-                    and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
-                    and obj.status != models.DomainApplication.ApplicationStatus.APPROVED
-                    and not obj.domain_is_not_active()
-                ):
-                    # If an admin tried to set an approved application to
-                    # another status and the related domain is already
-                    # active, shortcut the action and throw a friendly
-                    # error message. This action would still not go through
-                    # shortcut or not as the rules are duplicated on the model,
-                    # but the error would be an ugly Django error screen.
+        # == Check that the obj is in a valid state == #
 
-                    # Clear the success message
-                    messages.set_level(request, messages.ERROR)
+        # If obj is none, something went very wrong.
+        # The form should have blocked this, so lets forbid it.
+        if not obj:
+            logger.error(f"Invalid value for obj ({obj})")
+            messages.set_level(request, messages.ERROR)
+            messages.error(
+                request,
+                "Could not save DomainRequest. Something went wrong.",
+            )
+            return None
 
-                    messages.error(
-                        request,
-                        "This action is not permitted. The domain is already active.",
-                    )
-
-                elif (
-                    obj
-                    and obj.status == models.DomainApplication.ApplicationStatus.REJECTED
-                    and not obj.rejection_reason
-                ):
-                    # This condition should never be triggered.
-                    # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
-                    # because we clean up the rejection reason in the transition in the model.
-
-                    # Clear the success message
-                    messages.set_level(request, messages.ERROR)
-
-                    messages.error(
-                        request,
-                        "A rejection reason is required.",
-                    )
-
-                else:
-                    if obj.status != original_obj.status:
-                        status_method_mapping = {
-                            models.DomainApplication.ApplicationStatus.STARTED: None,
-                            models.DomainApplication.ApplicationStatus.SUBMITTED: obj.submit,
-                            models.DomainApplication.ApplicationStatus.IN_REVIEW: obj.in_review,
-                            models.DomainApplication.ApplicationStatus.ACTION_NEEDED: obj.action_needed,
-                            models.DomainApplication.ApplicationStatus.APPROVED: obj.approve,
-                            models.DomainApplication.ApplicationStatus.WITHDRAWN: obj.withdraw,
-                            models.DomainApplication.ApplicationStatus.REJECTED: obj.reject,
-                            models.DomainApplication.ApplicationStatus.INELIGIBLE: (obj.reject_with_prejudice),
-                        }
-                        selected_method = status_method_mapping.get(obj.status)
-                        if selected_method is None:
-                            logger.warning("Unknown status selected in django admin")
-                        else:
-                            # This is an fsm in model which will throw an error if the
-                            # transition condition is violated, so we roll back the
-                            # status to what it was before the admin user changed it and
-                            # let the fsm method set it.
-                            obj.status = original_obj.status
-                            selected_method()
-
-                    super().save_model(request, obj, form, change)
-        else:
+        # If the user is restricted or we're saving an invalid model,
+        # forbid this action.
+        if not obj or obj.creator.status == models.User.RESTRICTED:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
 
             messages.error(
                 request,
-                "This action is not permitted for applications with a restricted creator.",
+                "This action is not permitted for domain requests with a restricted creator.",
             )
+
+            return None
+
+        # == Check if we're making a change or not == #
+
+        # If we're not making a change (adding a record), run save model as we do normally
+        if not change:
+            return super().save_model(request, obj, form, change)
+
+        # == Handle non-status changes == #
+
+        # Get the original domain request from the database.
+        original_obj = models.DomainRequest.objects.get(pk=obj.pk)
+        if obj.status == original_obj.status:
+            # If the status hasn't changed, let the base function take care of it
+            return super().save_model(request, obj, form, change)
+
+        # == Handle status changes == #
+
+        # Run some checks on the current object for invalid status changes
+        obj, should_save = self._handle_status_change(request, obj, original_obj)
+
+        # We should only save if we don't display any errors in the step above.
+        if should_save:
+            return super().save_model(request, obj, form, change)
+
+    def _handle_status_change(self, request, obj, original_obj):
+        """
+        Checks for various conditions when a status change is triggered.
+        In the event that it is valid, the status will be mapped to
+        the appropriate method.
+
+        In the event that we should not status change, an error message
+        will be displayed.
+
+        Returns a tuple: (obj: DomainRequest, should_proceed: bool)
+        """
+
+        should_proceed = True
+        error_message = None
+
+        # Get the method that should be run given the status
+        selected_method = self.get_status_method_mapping(obj)
+        if selected_method is None:
+            logger.warning("Unknown status selected in django admin")
+
+            # If the status is not mapped properly, saving could cause
+            # weird issues down the line. Instead, we should block this.
+            should_proceed = False
+            return should_proceed
+
+        request_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+        if request_is_not_approved and not obj.domain_is_not_active():
+            # If an admin tried to set an approved domain request to
+            # another status and the related domain is already
+            # active, shortcut the action and throw a friendly
+            # error message. This action would still not go through
+            # shortcut or not as the rules are duplicated on the model,
+            # but the error would be an ugly Django error screen.
+            error_message = "This action is not permitted. The domain is already active."
+        elif obj.status == models.DomainRequest.DomainRequestStatus.REJECTED and not obj.rejection_reason:
+            # This condition should never be triggered.
+            # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
+            # because we clean up the rejection reason in the transition in the model.
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
+        else:
+            # This is an fsm in model which will throw an error if the
+            # transition condition is violated, so we roll back the
+            # status to what it was before the admin user changed it and
+            # let the fsm method set it.
+            obj.status = original_obj.status
+
+            # Try to perform the status change.
+            # Catch FSMDomainRequestError's and return the message,
+            # as these are typically user errors.
+            try:
+                selected_method()
+            except FSMDomainRequestError as err:
+                logger.warning(f"An error encountered when trying to change status: {err}")
+                error_message = err.message
+
+        if error_message is not None:
+            # Clear the success message
+            messages.set_level(request, messages.ERROR)
+            # Display the error
+            messages.error(
+                request,
+                error_message,
+            )
+
+            # If an error message exists, we shouldn't proceed
+            should_proceed = False
+
+        return (obj, should_proceed)
+
+    def get_status_method_mapping(self, domain_request):
+        """Returns what method should be ran given an domain request object"""
+        # Define a per-object mapping
+        status_method_mapping = {
+            models.DomainRequest.DomainRequestStatus.STARTED: None,
+            models.DomainRequest.DomainRequestStatus.SUBMITTED: domain_request.submit,
+            models.DomainRequest.DomainRequestStatus.IN_REVIEW: domain_request.in_review,
+            models.DomainRequest.DomainRequestStatus.ACTION_NEEDED: domain_request.action_needed,
+            models.DomainRequest.DomainRequestStatus.APPROVED: domain_request.approve,
+            models.DomainRequest.DomainRequestStatus.WITHDRAWN: domain_request.withdraw,
+            models.DomainRequest.DomainRequestStatus.REJECTED: domain_request.reject,
+            models.DomainRequest.DomainRequestStatus.INELIGIBLE: (domain_request.reject_with_prejudice),
+        }
+
+        # Grab the method
+        return status_method_mapping.get(domain_request.status, None)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the application creator's status, so
+        admin user permissions and the domain request creator's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
@@ -1145,7 +1474,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             readonly_fields.extend([field.name for field in self.model._meta.fields])
             # Add the multi-select fields to readonly_fields:
             # Complex fields like ManyToManyField require special handling
-            readonly_fields.extend(["current_websites", "other_contacts", "alternative_domains"])
+            readonly_fields.extend(["alternative_domains"])
 
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
@@ -1158,8 +1487,49 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         if obj and obj.creator.status == models.User.RESTRICTED:
             messages.warning(
                 request,
-                "Cannot edit an application with a restricted creator.",
+                "Cannot edit a domain request with a restricted creator.",
             )
+
+    def changelist_view(self, request, extra_context=None):
+        """
+        Override changelist_view to set the selected value of status filter.
+        """
+        # there are two conditions which should set the default selected filter:
+        # 1 - there are no query parameters in the request and the request is the
+        #     initial request for this view
+        # 2 - there are no query parameters in the request and the referring url is
+        #     the change view for a domain request
+        should_apply_default_filter = False
+        # use http_referer in order to distinguish between request as a link from another page
+        # and request as a removal of all filters
+        http_referer = request.META.get("HTTP_REFERER", "")
+        # if there are no query parameters in the request
+        if not bool(request.GET):
+            # if the request is the initial request for this view
+            if request.path not in http_referer:
+                should_apply_default_filter = True
+            # elif the request is a referral from changelist view or from
+            # domain request change view
+            elif request.path in http_referer:
+                # find the index to determine the referring url after the path
+                index = http_referer.find(request.path)
+                # Check if there is a character following the path in http_referer
+                next_char_index = index + len(request.path)
+                if index + next_char_index < len(http_referer):
+                    next_char = http_referer[next_char_index]
+
+                    # Check if the next character is a digit, if so, this indicates
+                    # a change view for domain request
+                    if next_char.isdigit():
+                        should_apply_default_filter = True
+
+        if should_apply_default_filter:
+            # modify the GET of the request to set the selected filter
+            modified_get = copy.deepcopy(request.GET)
+            modified_get["status__in"] = "submitted,in review,action needed"
+            request.GET = modified_get
+        response = super().changelist_view(request, extra_context=extra_context)
+        return response
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         obj = self.get_object(request, object_id)
@@ -1182,31 +1552,48 @@ class TransitionDomainAdmin(ListHeaderAdmin):
     search_fields = ["username", "domain_name"]
     search_help_text = "Search by user or domain name."
 
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
 
 class DomainInformationInline(admin.StackedInline):
     """Edit a domain information on the domain page.
     We had issues inheriting from both StackedInline
     and the source DomainInformationAdmin since these
     classes conflict, so we'll just pull what we need
-    from DomainInformationAdmin"""
+    from DomainInformationAdmin
+    """
 
     form = DomainInformationInlineForm
-
+    template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
 
-    fieldsets = DomainInformationAdmin.fieldsets
+    fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
+    # remove .gov domain from fieldset
+    for index, (title, f) in enumerate(fieldsets):
+        if title == ".gov domain":
+            del fieldsets[index]
+            break
+
+    readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
-    # to activate the edit/delete/view buttons
-    filter_horizontal = ("other_contacts",)
 
     autocomplete_fields = [
         "creator",
-        "domain_application",
+        "domain_request",
         "authorizing_official",
         "domain",
         "submitter",
     ]
+
+    def has_change_permission(self, request, obj=None):
+        """Custom has_change_permission override so that we can specify that
+        analysts can edit this through this inline, but not through the model normally"""
+
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return True
+        return super().has_change_permission(request, obj)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
@@ -1250,7 +1637,6 @@ class DomainAdmin(ListHeaderAdmin):
             )
 
         def queryset(self, request, queryset):
-            logger.debug(self.value())
             if self.value() == "1":
                 return queryset.filter(domain_info__is_election_board=True)
             if self.value() == "0":
@@ -1261,7 +1647,7 @@ class DomainAdmin(ListHeaderAdmin):
     # Columns
     list_display = [
         "name",
-        "organization_type",
+        "generic_org_type",
         "federal_type",
         "federal_agency",
         "organization_name",
@@ -1286,10 +1672,10 @@ class DomainAdmin(ListHeaderAdmin):
     # in autocomplete_fields for domain
     ordering = ["name"]
 
-    def organization_type(self, obj):
-        return obj.domain_info.get_organization_type_display()
+    def generic_org_type(self, obj):
+        return obj.domain_info.get_generic_org_type_display()
 
-    organization_type.admin_order_field = "domain_info__organization_type"  # type: ignore
+    generic_org_type.admin_order_field = "domain_info__generic_org_type"  # type: ignore
 
     def federal_agency(self, obj):
         return obj.domain_info.federal_agency if obj.domain_info else None
@@ -1320,99 +1706,69 @@ class DomainAdmin(ListHeaderAdmin):
 
     city.admin_order_field = "domain_info__city"  # type: ignore
 
+    @admin.display(description=_("State / territory"))
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
 
     state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
 
     # Filters
-    list_filter = ["domain_info__organization_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
+    list_filter = ["domain_info__generic_org_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state", "expiration_date", "first_ready", "deleted"]
 
     # Table ordering
     ordering = ["name"]
+
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/domain_delete_selected_confirmation.html"
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """
+        Custom delete_view to perform additional actions or customize the template.
+        """
+
+        # Set the delete template to a custom one
+        self.delete_confirmation_template = "django/admin/domain_delete_confirmation.html"
+        response = super().delete_view(request, object_id, extra_context=extra_context)
+
+        return response
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         """Custom changeform implementation to pass in context information"""
         if extra_context is None:
             extra_context = {}
 
-        # Pass in what the an extended expiration date would be for the expiration date modal
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
-            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
 
-            try:
-                curr_exp_date = domain.registry_expiration_date
-            except KeyError:
-                # No expiration date was found. Return none.
-                extra_context["extended_expiration_date"] = None
-                return super().changeform_view(request, object_id, form_url, extra_context)
+            # Used in the custom contact view
+            if domain is not None and hasattr(domain, "domain_info"):
+                extra_context["original_object"] = domain.domain_info
 
-            if curr_exp_date < date.today():
-                extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
-            else:
-                new_date = domain.registry_expiration_date + relativedelta(years=years_to_extend_by)
-                extra_context["extended_expiration_date"] = new_date
-        else:
-            extra_context["extended_expiration_date"] = None
+            extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
+            extra_context["domain_state"] = domain.get_state_display()
+
+            # Pass in what the an extended expiration date would be for the expiration date modal
+            self._set_expiration_date_context(domain, extra_context)
 
         return super().changeform_view(request, object_id, form_url, extra_context)
 
-    def export_data_type(self, request):
-        # match the CSV example with all the fields
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="domains-by-type.csv"'
-        csv_export.export_data_type_to_csv(response)
-        return response
-
-    def export_data_full(self, request):
-        # Smaller export based on 1
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="current-full.csv"'
-        csv_export.export_data_full_to_csv(response)
-        return response
-
-    def export_data_federal(self, request):
-        # Federal only
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="current-federal.csv"'
-        csv_export.export_data_federal_to_csv(response)
-        return response
-
-    def get_urls(self):
-        from django.urls import path
-
-        urlpatterns = super().get_urls()
-
-        # Used to extrapolate a path name, for instance
-        # name="{app_label}_{model_name}_export_data_type"
-        info = self.model._meta.app_label, self.model._meta.model_name
-
-        my_url = [
-            path(
-                "export_data_type/",
-                self.export_data_type,
-                name="%s_%s_export_data_type" % info,
-            ),
-            path(
-                "export_data_full/",
-                self.export_data_full,
-                name="%s_%s_export_data_full" % info,
-            ),
-            path(
-                "export_data_federal/",
-                self.export_data_federal,
-                name="%s_%s_export_data_federal" % info,
-            ),
-        ]
-
-        return my_url + urlpatterns
+    def _set_expiration_date_context(self, domain, extra_context):
+        """Given a domain, calculate the an extended expiration date
+        from the current registry expiration date."""
+        years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
+        try:
+            curr_exp_date = domain.registry_expiration_date
+        except KeyError:
+            # No expiration date was found. Return none.
+            extra_context["extended_expiration_date"] = None
+        else:
+            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
+            extra_context["extended_expiration_date"] = new_date
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
@@ -1545,9 +1901,11 @@ class DomainAdmin(ListHeaderAdmin):
             else:
                 self.message_user(
                     request,
-                    "Error deleting this Domain: "
-                    f"Can't switch from state '{obj.state}' to 'deleted'"
-                    ", must be either 'dns_needed' or 'on_hold'",
+                    (
+                        "Error deleting this Domain: "
+                        f"Can't switch from state '{obj.state}' to 'deleted'"
+                        ", must be either 'dns_needed' or 'on_hold'"
+                    ),
                     messages.ERROR,
                 )
         except Exception:
@@ -1559,7 +1917,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("Domain %s has been deleted. Thanks!") % obj.name,
+                "Domain %s has been deleted. Thanks!" % obj.name,
             )
 
         return HttpResponseRedirect(".")
@@ -1601,7 +1959,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("%s is in client hold. This domain is no longer accessible on the public internet.") % obj.name,
+                "%s is in client hold. This domain is no longer accessible on the public internet." % obj.name,
             )
         return HttpResponseRedirect(".")
 
@@ -1630,7 +1988,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("%s is ready. This domain is accessible on the public internet.") % obj.name,
+                "%s is ready. This domain is accessible on the public internet." % obj.name,
             )
         return HttpResponseRedirect(".")
 
@@ -1669,18 +2027,69 @@ class DraftDomainAdmin(ListHeaderAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["name"]
+    list_display = ["name"]
+
+    @admin.display(description=_("Requested domain"))
+    def name(self, obj):
+        return obj.name
+
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return {}
+        return super().get_model_perms(request)
+
+    def has_change_permission(self, request, obj=None):
+        """
+        Allow analysts to access the change form directly via URL.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        if analyst_perm and not superuser_perm:
+            return True
+        return super().has_change_permission(request, obj)
+
+    def response_change(self, request, obj):
+        """
+        Override to redirect users back to the previous page after saving.
+        """
+        superuser_perm = request.user.has_perm("registrar.full_access_permission")
+        analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+        return_path = request.GET.get("return_path")
+
+        # First, call the super method to perform the standard operations and capture the response
+        response = super().response_change(request, obj)
+
+        # Don't redirect to the website page on save if the user is an analyst.
+        # Rather, just redirect back to the originating page.
+        if (analyst_perm and not superuser_perm) and return_path:
+            # Redirect to the return path if it exists
+            return HttpResponseRedirect(return_path)
+
+        # If no redirection is needed, return the original response
+        return response
+
+
+class PublicContactAdmin(ListHeaderAdmin):
+    """Custom PublicContact admin class."""
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+    autocomplete_fields = ["domain"]
 
 
 class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
     search_help_text = "Search by email."
-    list_filter = [
-        "requestor",
-    ]
     readonly_fields = [
         "requestor",
     ]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
 
     def truncated_notes(self, obj):
         # Truncate the 'notes' field to 50 characters
@@ -1694,24 +2103,55 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
+class FederalAgencyAdmin(ListHeaderAdmin):
+    list_display = ["agency"]
+    search_fields = ["agency"]
+    search_help_text = "Search by agency name."
+    ordering = ["agency"]
+
+
+class UserGroupAdmin(AuditedAdmin):
+    """Overwrite the generated UserGroup admin class"""
+
+    list_display = ["user_group"]
+
+    fieldsets = ((None, {"fields": ("name", "permissions")}),)
+
+    def formfield_for_dbfield(self, dbfield, **kwargs):
+        field = super().formfield_for_dbfield(dbfield, **kwargs)
+        if dbfield.name == "name":
+            field.label = "Group name"
+        if dbfield.name == "permissions":
+            field.label = "User permissions"
+        return field
+
+    # We name the custom prop 'Group' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    @admin.display(description=_("Group"))
+    def user_group(self, obj):
+        return obj.name
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
 # Unregister the built-in Group model
 admin.site.unregister(Group)
 # Register UserGroup
-admin.site.register(models.UserGroup)
+admin.site.register(models.UserGroup, UserGroupAdmin)
 admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
+admin.site.register(models.FederalAgency, FederalAgencyAdmin)
 # Host and HostIP removed from django admin because changes in admin
 # do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
-admin.site.register(models.PublicContact, AuditedAdmin)
-admin.site.register(models.DomainApplication, DomainApplicationAdmin)
+admin.site.register(models.PublicContact, PublicContactAdmin)
+admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)

@@ -1,0 +1,25 @@
+{% extends 'domain_request_form.html' %}
+{% load field_helpers %}
+
+{% block form_instructions %}
+  <p>To help us determine your eligibility for a .gov domain, we need to know more about your organization. For example:</p>
+  
+    <ul class="usa-list">
+      <li>The type of work your organization does </li>
+      <li>How your organization operates independently from a state government</li>
+      <li>A description of the specialized, essential services you offer (if applicable)</li>
+      <li>Links to authorizing legislation, applicable bylaws or charter, or other documentation to support your claims</li>
+    </ul>
+  </p>
+<h2>What can you tell us about your organization?</h2>
+{% endblock %}
+
+{% block form_required_fields_help_text %}
+{# commented out so it does not appear on this page #}
+{% endblock %}
+
+{% block form_fields %}
+    {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
+      {% input_with_errors forms.0.about_your_organization %}
+    {% endwith %}
+{% endblock %}

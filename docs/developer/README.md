@@ -73,14 +73,23 @@ cp ./.env-example .env
 
 Get the secrets from Cloud.gov by running `cf env getgov-YOURSANDBOX`. More information is available in [rotate_application_secrets.md](../operations/runbooks/rotate_application_secrets.md).
 
-## Adding user to /admin
+## Getting access to /admin on all development sandboxes (also referred to as "adding to fixtures")
 
-The endpoint /admin can be used to view and manage site content, including but not limited to user information and the list of current applications in the database. To be able to view and use /admin locally:
+The endpoint /admin can be used to view and manage site content, including but not limited to user information and the list of current applications in the database. However, access to this is limited to analysts and full-access users with regular domain requestors and domain managers not being able to see this page.
+
+While on production (the sandbox referred to as `stable`), an existing analyst or full-access user typically grants access /admin as part of onboarding ([see these instructions](../django-admin/roles.md)), doing this for all development sandboxes is very time consuming. Instead, to get access to /admin on all development sandboxes and when developing code locally, refer to the following sections depending on what level of user access you desire.
+
+
+### Adding full-access user to /admin
+
+ To get access to /admin on every non-production sandbox and to use /admin in local development, do the following:
 
 1. Login via login.gov
-2. Go to the home page and make sure you can see the part where you can submit an application
-3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4
-4. in src/registrar/fixtures_users.py add to the `ADMINS` list in that file by adding your UUID as your username along with your first and last name. See below:
+2. Go to the home page and make sure you can see the part where you can submit a domain request
+3. Go to /admin and it will tell you that your UUID is not authorized (it shows a very long string, this is your UUID). Copy that UUID for use in 4.
+4. (Designers) Message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Please see the "Adding an Analyst to /admin" section below to complete similiar steps if you also desire an `analyst` user account. Engineers will handle the remaining steps for designers, stop here.
+
+(Engineers) In src/registrar/fixtures_users.py add to the `ADMINS` list in that file by adding your UUID as your username along with your first and last name. See below:
 
 ```
  ADMINS = [
@@ -93,16 +102,18 @@ The endpoint /admin can be used to view and manage site content, including but n
  ]
 ```
 
-5. In the browser, navigate to /admin. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
-6. Add an optional email key/value pair
+5. (Engineers) In the browser, navigate to /admin. To verify that all is working correctly, under "domain requests" you should see fake domains with various fake statuses.
+6. (Engineers) Add an optional email key/value pair
 
-### Adding an Analyst to /admin
+### Adding an analyst-level user to /admin
 Analysts are a variant of the admin role with limited permissions. The process for adding an Analyst is much the same as adding an admin:
 
 1. Login via login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
-2. Go to the home page and make sure you can see the part where you can submit an application
+2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4 (this will be a different UUID than the one obtained from creating an admin)
-4. in src/registrar/fixtures_users.py add to the `STAFF` list in that file by adding your UUID as your username along with your first and last name. See below:
+4. (Designers) Message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Engineers will handle the remaining steps for designers, stop here.
+
+5. (Engineers) In src/registrar/fixtures_users.py add to the `STAFF` list in that file by adding your UUID as your username along with your first and last name. See below:
 
 ```
  STAFF = [
@@ -115,10 +126,11 @@ Analysts are a variant of the admin role with limited permissions. The process f
  ]
 ```
 
-5. In the browser, navigate to /admin. To verify that all is working correctly, verify that you can only see a sub-section of the modules and some are set to view-only.
-6. Add an optional email key/value pair
+5. (Engineers) In the browser, navigate to /admin. To verify that all is working correctly, verify that you can only see a sub-section of the modules and some are set to view-only.
+6. (Engineers) Add an optional email key/value pair
 
 Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name, or use a completely different first/last name to avoid confusion. Example: `Bob-Analyst`
+
 ## Adding to CODEOWNERS (optional)
 
 The CODEOWNERS file sets the tagged individuals as default reviewers on any Pull Request that changes files that they are marked as owners of.
@@ -145,7 +157,7 @@ You can change the logging verbosity, if needed. Do a web search for "django log
 
 ## Mock data
 
-[load.py](../../src/registrar/management/commands/load.py) called from docker-compose (locally) and reset-db.yml (upper) loads the fixtures from [fixtures_user.py](../../src/registrar/fixtures_users.py) and [fixtures_applications.py](../../src/registrar/fixtures_applications.py), giving you some test data to play with while developing.
+[load.py](../../src/registrar/management/commands/load.py) called from docker-compose (locally) and reset-db.yml (upper) loads the fixtures from [fixtures_user.py](../../src/registrar/fixtures_users.py) and [fixtures_domain_requests.py](../../src/registrar/fixtures_domain_requests.py), giving you some test data to play with while developing.
 
 See the [database-access README](./database-access.md) for information on how to pull data to update these fixtures.
 
@@ -204,6 +216,16 @@ from .common import less_console_noise
             # <test code goes here>
 ```
 
+Or alternatively, if you prefer using a decorator, just use:
+
+```python
+from .common import less_console_noise_decorator
+
+@less_console_noise_decorator
+def some_function():
+  # <test code goes here>
+```
+
 ### Accessibility Testing in the browser
 
 We use the [ANDI](https://www.ssa.gov/accessibility/andi/help/install.html) browser extension 
@@ -240,7 +262,7 @@ type
 docker-compose run owasp
 ```
 
-# Images, stylesheets, and JavaScript
+## Images, stylesheets, and JavaScript
 
 We use the U.S. Web Design System (USWDS) for styling our applications.
 
@@ -252,7 +274,7 @@ Assets are stored in `registrar/assets` during development and served from `regi
 
 We utilize the [uswds-compile tool](https://designsystem.digital.gov/documentation/getting-started/developers/phase-two-compile/) from USWDS to compile and package USWDS assets.
 
-## Making and viewing style changes
+### Making and viewing style changes
 
 When you run `docker-compose up` the `node` service in the container will begin to watch for changes in the `registrar/assets` folder, and will recompile once any changes are made.
 
@@ -263,7 +285,11 @@ Within the `registrar/assets` folder, the `_theme` folder contains three files i
 
 You can also compile the **Sass** at any time using `npx gulp compile`. Similarly, you can copy over **other static assets** (images and javascript files), using `npx gulp copyAssets`.
 
-## Upgrading USWDS and other JavaScript packages
+### CSS class naming conventions
+
+We use the [CSS Block Element Modifier (BEM)](https://getbem.com/naming/) naming convention for our custom classes. This is in line with how USWDS [approaches](https://designsystem.digital.gov/whats-new/updates/2019/04/08/introducing-uswds-2-0/) their CSS class architecture and helps keep our code cohesive and readable.
+
+### Upgrading USWDS and other JavaScript packages
 
 Version numbers can be manually controlled in `package.json`. Edit that, if desired.
 
@@ -330,11 +356,12 @@ To associate a S3 instance to your sandbox, follow these steps:
 3. Click `Services` on the application nav bar
 4. Add a new service (plus symbol)
 5. Click `Marketplace Service`
-6. On the `Select the service` dropdown, select `s3`
-7. Under the dropdown on `Select Plan`, select `basic-sandbox`
-8. Under `Service Instance` enter `getgov-s3` for the name
+6. For Space, put in your sandbox initials 
+7. On the `Select the service` dropdown, select `s3`
+8. Under the dropdown on `Select Plan`, select `basic-sandbox`
+9. Under `Service Instance` enter `getgov-s3` for the name and leave the other fields empty
 
-See this [resource](https://cloud.gov/docs/services/s3/) for information on associating an S3 instance with your sandbox through the CLI. 
+See this [resource](https://cloud.gov/docs/services/s3/) for information on associating an S3 instance with your sandbox through the CLI.
 
 ### Testing your S3 instance locally
 To test the S3 bucket associated with your sandbox, you will need to add four additional variables to your `.env` file. These are as follows:

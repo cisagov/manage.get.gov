@@ -1,4 +1,3 @@
-import datetime
 import os
 import logging
 
@@ -13,12 +12,14 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 from django.utils.timezone import make_aware
+from datetime import date, datetime, timedelta
+from django.utils import timezone
 
 from registrar.models import (
     Contact,
     DraftDomain,
     Website,
-    DomainApplication,
+    DomainRequest,
     DomainInvitation,
     User,
     UserGroup,
@@ -35,6 +36,7 @@ from epplibwrapper import (
     ErrorCode,
     responses,
 )
+from registrar.models.user_domain_role import UserDomainRole
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
@@ -97,7 +99,7 @@ def less_console_noise(output_stream=None):
 class GenericTestHelper(TestCase):
     """A helper class that contains various helper functions for TestCases"""
 
-    def __init__(self, admin, model=None, url=None, user=None, factory=None, **kwargs):
+    def __init__(self, admin, model=None, url=None, user=None, factory=None, client=None, **kwargs):
         """
         Parameters:
             admin (ModelAdmin): The Django ModelAdmin instance associated with the model.
@@ -112,6 +114,32 @@ class GenericTestHelper(TestCase):
         self.admin = admin
         self.model = model
         self.url = url
+        self.client = client
+
+    def assert_response_contains_distinct_values(self, response, expected_values):
+        """
+        Asserts that each specified value appears exactly once in the response.
+
+        This method iterates over a list of tuples, where each tuple contains a field name
+        and its expected value. It then performs an assertContains check for each value,
+        ensuring that each value appears exactly once in the response.
+
+        Parameters:
+        - response: The HttpResponse object to inspect.
+        - expected_values: A list of tuples, where each tuple contains:
+            - field: The name of the field (used for subTest identification).
+            - value: The expected value to check for in the response.
+
+        Example usage:
+        expected_values = [
+            ("title", "Treat inspector</td>"),
+            ("email", "meoward.jones@igorville.gov</td>"),
+        ]
+        self.assert_response_contains_distinct_values(response, expected_values)
+        """
+        for field, value in expected_values:
+            with self.subTest(field=field, expected_value=value):
+                self.assertContains(response, value, count=1)
 
     def assert_table_sorted(self, o_index, sort_fields):
         """
@@ -130,7 +158,7 @@ class GenericTestHelper(TestCase):
         Example Usage:
         ```
         self.assert_sort_helper(
-            self.factory, self.superuser, self.admin, self.url, DomainInformation, "1", ("domain__name",)
+            "1", ("domain__name",)
         )
         ```
 
@@ -147,9 +175,7 @@ class GenericTestHelper(TestCase):
         dummy_request.user = self.user
 
         # Mock a user request
-        middleware = SessionMiddleware(lambda req: req)
-        middleware.process_request(dummy_request)
-        dummy_request.session.save()
+        dummy_request = self._mock_user_request_for_factory(dummy_request)
 
         expected_sort_order = list(self.model.objects.order_by(*sort_fields))
 
@@ -159,6 +185,26 @@ class GenericTestHelper(TestCase):
         returned_sort_order = list(response.context_data["cl"].result_list)
 
         self.assertEqual(expected_sort_order, returned_sort_order)
+
+    def _mock_user_request_for_factory(self, request):
+        """Adds sessionmiddleware when using factory to associate session information"""
+        middleware = SessionMiddleware(lambda req: req)
+        middleware.process_request(request)
+        request.session.save()
+        return request
+
+    def get_table_delete_confirmation_page(self, selected_across: str, index: str):
+        """
+        Grabs the response for the delete confirmation page (generated from the actions toolbar).
+        selected_across and index must both be numbers encoded as str, e.g. "0" rather than 0
+        """
+
+        response = self.client.post(
+            self.url,
+            {"action": "delete_selected", "select_across": selected_across, "index": index, "_selected_action": "23"},
+            follow=True,
+        )
+        return response
 
 
 class MockUserLogin:
@@ -221,7 +267,7 @@ class AuditedAdminMockData:
 
     # Constants for different domain object types
     INFORMATION = "information"
-    APPLICATION = "application"
+    DOMAIN_REQUEST = "domain_request"
     INVITATION = "invitation"
 
     def dummy_user(self, item_name, short_hand):
@@ -326,7 +372,7 @@ class AuditedAdminMockData:
             purpose (str - optional): Sets a domains purpose
         Returns:
             Dictionary: {
-                organization_type: str,
+                generic_org_type: str,
                 federal_type: str,
                 purpose: str,
                 organization_name: str = "{} organization".format(item_name),
@@ -344,7 +390,7 @@ class AuditedAdminMockData:
         """  # noqa
         creator = self.dummy_user(item_name, "creator")
         common_args = dict(
-            organization_type=org_type,
+            generic_org_type=org_type,
             federal_type=federal_type,
             purpose=purpose,
             organization_name="{} organization".format(item_name),
@@ -365,24 +411,24 @@ class AuditedAdminMockData:
         self,
         domain_type,
         item_name,
-        status=DomainApplication.ApplicationStatus.STARTED,
+        status=DomainRequest.DomainRequestStatus.STARTED,
         org_type="federal",
         federal_type="executive",
         purpose="Purpose of the site",
     ):
         """
-        Returns a prebuilt kwarg dictionary for DomainApplication,
+        Returns a prebuilt kwarg dictionary for DomainRequest,
         DomainInformation, or DomainInvitation.
         Args:
-            domain_type (str): is either 'application', 'information',
+            domain_type (str): is either 'domain_request', 'information',
             or 'invitation'.
 
             item_name (str): A shared str value appended to first_name, last_name,
             organization_name, address_line1, address_line2,
             title, email, and username.
 
-            status (str - optional): Defines the status for DomainApplication,
-            e.g. DomainApplication.ApplicationStatus.STARTED
+            status (str - optional): Defines the status for DomainRequest,
+            e.g. DomainRequest.DomainRequestStatus.STARTED
 
             org_type (str - optional): Sets a domains org_type
 
@@ -391,13 +437,13 @@ class AuditedAdminMockData:
             purpose (str - optional): Sets a domains purpose
         Returns:
             dict: Returns a dictionary structurally consistent with the expected input
-            of either DomainApplication, DomainInvitation, or DomainInformation
+            of either DomainRequest, DomainInvitation, or DomainInformation
             based on the 'domain_type' field.
         """  # noqa
         common_args = self.get_common_domain_arg_dictionary(item_name, org_type, federal_type, purpose)
         full_arg_dict = None
         match domain_type:
-            case self.APPLICATION:
+            case self.DOMAIN_REQUEST:
                 full_arg_dict = dict(
                     **common_args,
                     requested_domain=self.dummy_draft_domain(item_name),
@@ -405,11 +451,11 @@ class AuditedAdminMockData:
                     status=status,
                 )
             case self.INFORMATION:
-                domain_app = self.create_full_dummy_domain_application(item_name)
+                domain_req = self.create_full_dummy_domain_request(item_name)
                 full_arg_dict = dict(
                     **common_args,
                     domain=self.dummy_domain(item_name, True),
-                    domain_application=domain_app,
+                    domain_request=domain_req,
                 )
             case self.INVITATION:
                 full_arg_dict = dict(
@@ -419,24 +465,24 @@ class AuditedAdminMockData:
                 )
         return full_arg_dict
 
-    def create_full_dummy_domain_application(self, item_name, status=DomainApplication.ApplicationStatus.STARTED):
-        """Creates a dummy domain application object"""
-        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.APPLICATION, item_name, status)
-        application = DomainApplication.objects.get_or_create(**domain_application_kwargs)[0]
-        return application
+    def create_full_dummy_domain_request(self, item_name, status=DomainRequest.DomainRequestStatus.STARTED):
+        """Creates a dummy domain request object"""
+        domain_request_kwargs = self.dummy_kwarg_boilerplate(self.DOMAIN_REQUEST, item_name, status)
+        domain_request = DomainRequest.objects.get_or_create(**domain_request_kwargs)[0]
+        return domain_request
 
-    def create_full_dummy_domain_information(self, item_name, status=DomainApplication.ApplicationStatus.STARTED):
+    def create_full_dummy_domain_information(self, item_name, status=DomainRequest.DomainRequestStatus.STARTED):
         """Creates a dummy domain information object"""
-        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INFORMATION, item_name, status)
-        application = DomainInformation.objects.get_or_create(**domain_application_kwargs)[0]
-        return application
+        domain_request_kwargs = self.dummy_kwarg_boilerplate(self.INFORMATION, item_name, status)
+        domain_request = DomainInformation.objects.get_or_create(**domain_request_kwargs)[0]
+        return domain_request
 
-    def create_full_dummy_domain_invitation(self, item_name, status=DomainApplication.ApplicationStatus.STARTED):
+    def create_full_dummy_domain_invitation(self, item_name, status=DomainRequest.DomainRequestStatus.STARTED):
         """Creates a dummy domain invitation object"""
-        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INVITATION, item_name, status)
-        application = DomainInvitation.objects.get_or_create(**domain_application_kwargs)[0]
+        domain_request_kwargs = self.dummy_kwarg_boilerplate(self.INVITATION, item_name, status)
+        domain_request = DomainInvitation.objects.get_or_create(**domain_request_kwargs)[0]
 
-        return application
+        return domain_request
 
     def create_full_dummy_domain_object(
         self,
@@ -445,31 +491,255 @@ class AuditedAdminMockData:
         has_other_contacts=True,
         has_current_website=True,
         has_alternative_gov_domain=True,
-        status=DomainApplication.ApplicationStatus.STARTED,
+        status=DomainRequest.DomainRequestStatus.STARTED,
     ):
-        """A helper to create a dummy domain application object"""
-        application = None
+        """A helper to create a dummy domain request object"""
+        domain_request = None
         match domain_type:
-            case self.APPLICATION:
-                application = self.create_full_dummy_domain_application(item_name, status)
+            case self.DOMAIN_REQUEST:
+                domain_request = self.create_full_dummy_domain_request(item_name, status)
             case self.INVITATION:
-                application = self.create_full_dummy_domain_invitation(item_name, status)
+                domain_request = self.create_full_dummy_domain_invitation(item_name, status)
             case self.INFORMATION:
-                application = self.create_full_dummy_domain_information(item_name, status)
+                domain_request = self.create_full_dummy_domain_information(item_name, status)
             case _:
                 raise ValueError("Invalid domain_type, must conform to given constants")
 
         if has_other_contacts and domain_type != self.INVITATION:
             other = self.dummy_contact(item_name, "other")
-            application.other_contacts.add(other)
-        if has_current_website and domain_type == self.APPLICATION:
+            domain_request.other_contacts.add(other)
+        if has_current_website and domain_type == self.DOMAIN_REQUEST:
             current = self.dummy_current(item_name)
-            application.current_websites.add(current)
-        if has_alternative_gov_domain and domain_type == self.APPLICATION:
+            domain_request.current_websites.add(current)
+        if has_alternative_gov_domain and domain_type == self.DOMAIN_REQUEST:
             alt = self.dummy_alt(item_name)
-            application.alternative_domains.add(alt)
+            domain_request.alternative_domains.add(alt)
 
-        return application
+        return domain_request
+
+
+class MockDb(TestCase):
+    """Hardcoded mocks make test case assertions straightforward."""
+
+    def setUp(self):
+        super().setUp()
+        username = "test_user"
+        first_name = "First"
+        last_name = "Last"
+        email = "info@example.com"
+        self.user = get_user_model().objects.create(
+            username=username, first_name=first_name, last_name=last_name, email=email
+        )
+
+        # Create a time-aware current date
+        current_datetime = timezone.now()
+        # Extract the date part
+        current_date = current_datetime.date()
+        # Create start and end dates using timedelta
+        self.end_date = current_date + timedelta(days=2)
+        self.start_date = current_date - timedelta(days=2)
+
+        self.domain_1, _ = Domain.objects.get_or_create(
+            name="cdomain1.gov", state=Domain.State.READY, first_ready=timezone.now()
+        )
+        self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
+        self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
+        self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
+        self.domain_5, _ = Domain.objects.get_or_create(
+            name="bdomain5.gov", state=Domain.State.DELETED, deleted=timezone.make_aware(datetime(2023, 11, 1))
+        )
+        self.domain_6, _ = Domain.objects.get_or_create(
+            name="bdomain6.gov", state=Domain.State.DELETED, deleted=timezone.make_aware(datetime(1980, 10, 16))
+        )
+        self.domain_7, _ = Domain.objects.get_or_create(
+            name="xdomain7.gov", state=Domain.State.DELETED, deleted=timezone.now()
+        )
+        self.domain_8, _ = Domain.objects.get_or_create(
+            name="sdomain8.gov", state=Domain.State.DELETED, deleted=timezone.now()
+        )
+        # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today())
+        # and a specific time (using datetime.min.time()).
+        # Deleted yesterday
+        self.domain_9, _ = Domain.objects.get_or_create(
+            name="zdomain9.gov",
+            state=Domain.State.DELETED,
+            deleted=timezone.make_aware(datetime.combine(date.today() - timedelta(days=1), datetime.min.time())),
+        )
+        # ready tomorrow
+        self.domain_10, _ = Domain.objects.get_or_create(
+            name="adomain10.gov",
+            state=Domain.State.READY,
+            first_ready=timezone.make_aware(datetime.combine(date.today() + timedelta(days=1), datetime.min.time())),
+        )
+        self.domain_11, _ = Domain.objects.get_or_create(
+            name="cdomain11.gov", state=Domain.State.READY, first_ready=timezone.now()
+        )
+        self.domain_12, _ = Domain.objects.get_or_create(
+            name="zdomain12.gov", state=Domain.State.READY, first_ready=timezone.now()
+        )
+
+        self.domain_information_1, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_1,
+            generic_org_type="federal",
+            federal_agency="World War I Centennial Commission",
+            federal_type="executive",
+            is_election_board=False,
+        )
+        self.domain_information_2, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain_2, generic_org_type="interstate", is_election_board=True
+        )
+        self.domain_information_3, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_3,
+            generic_org_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+            is_election_board=False,
+        )
+        self.domain_information_4, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_4,
+            generic_org_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+            is_election_board=False,
+        )
+        self.domain_information_5, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_5,
+            generic_org_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+            is_election_board=False,
+        )
+        self.domain_information_6, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_6,
+            generic_org_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+            is_election_board=False,
+        )
+        self.domain_information_7, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_7,
+            generic_org_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+            is_election_board=False,
+        )
+        self.domain_information_8, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_8,
+            generic_org_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+            is_election_board=False,
+        )
+        self.domain_information_9, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_9,
+            generic_org_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+            is_election_board=False,
+        )
+        self.domain_information_10, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_10,
+            generic_org_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+            is_election_board=False,
+        )
+        self.domain_information_11, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_11,
+            generic_org_type="federal",
+            federal_agency="World War I Centennial Commission",
+            federal_type="executive",
+            is_election_board=False,
+        )
+        self.domain_information_12, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_12,
+            generic_org_type="interstate",
+            is_election_board=False,
+        )
+
+        meoward_user = get_user_model().objects.create(
+            username="meoward_username", first_name="first_meoward", last_name="last_meoward", email="meoward@rocks.com"
+        )
+
+        lebowski_user = get_user_model().objects.create(
+            username="big_lebowski", first_name="big", last_name="lebowski", email="big_lebowski@dude.co"
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=lebowski_user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_2, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_11, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_12, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = DomainInvitation.objects.get_or_create(
+            email=meoward_user.email, domain=self.domain_1, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
+        )
+
+        _, created = DomainInvitation.objects.get_or_create(
+            email="woofwardthethird@rocks.com",
+            domain=self.domain_1,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        _, created = DomainInvitation.objects.get_or_create(
+            email="squeaker@rocks.com", domain=self.domain_2, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+
+        _, created = DomainInvitation.objects.get_or_create(
+            email="squeaker@rocks.com", domain=self.domain_10, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+
+        with less_console_noise():
+            self.domain_request_1 = completed_domain_request(
+                status=DomainRequest.DomainRequestStatus.STARTED, name="city1.gov"
+            )
+            self.domain_request_2 = completed_domain_request(
+                status=DomainRequest.DomainRequestStatus.IN_REVIEW, name="city2.gov"
+            )
+            self.domain_request_3 = completed_domain_request(
+                status=DomainRequest.DomainRequestStatus.STARTED, name="city3.gov"
+            )
+            self.domain_request_4 = completed_domain_request(
+                status=DomainRequest.DomainRequestStatus.STARTED, name="city4.gov"
+            )
+            self.domain_request_5 = completed_domain_request(
+                status=DomainRequest.DomainRequestStatus.APPROVED, name="city5.gov"
+            )
+            self.domain_request_3.submit()
+            self.domain_request_3.save()
+            self.domain_request_4.submit()
+            self.domain_request_4.save()
+
+    def tearDown(self):
+        super().tearDown()
+        PublicContact.objects.all().delete()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        User.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        DomainInvitation.objects.all().delete()
 
 
 def mock_user():
@@ -519,18 +789,22 @@ def create_ready_domain():
     return domain
 
 
-def completed_application(
+def completed_domain_request(
     has_other_contacts=True,
     has_current_website=True,
     has_alternative_gov_domain=True,
     has_about_your_organization=True,
     has_anything_else=True,
-    status=DomainApplication.ApplicationStatus.STARTED,
+    status=DomainRequest.DomainRequestStatus.STARTED,
     user=False,
     submitter=False,
     name="city.gov",
+    investigator=None,
+    generic_org_type="federal",
+    is_election_board=False,
+    organization_type=None,
 ):
-    """A completed domain application."""
+    """A completed domain request."""
     if not user:
         user = get_user_model().objects.create(username="username" + str(uuid.uuid4())[:8])
     ao, _ = Contact.objects.get_or_create(
@@ -558,8 +832,16 @@ def completed_application(
         email="testy2@town.com",
         phone="(555) 555 5557",
     )
-    domain_application_kwargs = dict(
-        organization_type="federal",
+    if not investigator:
+        investigator, _ = User.objects.get_or_create(
+            username="incrediblyfakeinvestigator",
+            first_name="Joe",
+            last_name="Bob",
+            is_staff=True,
+        )
+    domain_request_kwargs = dict(
+        generic_org_type=generic_org_type,
+        is_election_board=is_election_board,
         federal_type="executive",
         purpose="Purpose of the site",
         is_policy_acknowledged=True,
@@ -573,45 +855,56 @@ def completed_application(
         submitter=submitter,
         creator=user,
         status=status,
+        investigator=investigator,
     )
     if has_about_your_organization:
-        domain_application_kwargs["about_your_organization"] = "e-Government"
+        domain_request_kwargs["about_your_organization"] = "e-Government"
     if has_anything_else:
-        domain_application_kwargs["anything_else"] = "There is more"
+        domain_request_kwargs["anything_else"] = "There is more"
 
-    application, _ = DomainApplication.objects.get_or_create(**domain_application_kwargs)
+    if organization_type:
+        domain_request_kwargs["organization_type"] = organization_type
+
+    domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
     if has_other_contacts:
-        application.other_contacts.add(other)
+        domain_request.other_contacts.add(other)
     if has_current_website:
-        application.current_websites.add(current)
+        domain_request.current_websites.add(current)
     if has_alternative_gov_domain:
-        application.alternative_domains.add(alt)
+        domain_request.alternative_domains.add(alt)
 
-    return application
+    return domain_request
+
+
+def set_domain_request_investigators(domain_request_list: list[DomainRequest], investigator_user: User):
+    """Helper method that sets the investigator field of all provided domain requests"""
+    for request in domain_request_list:
+        request.investigator = investigator_user
+        request.save()
 
 
 def multiple_unalphabetical_domain_objects(
-    domain_type=AuditedAdminMockData.APPLICATION,
+    domain_type=AuditedAdminMockData.DOMAIN_REQUEST,
 ):
     """Returns a list of generic domain objects for testing purposes"""
-    applications = []
+    domain_requests = []
     list_of_letters = list(ascii_uppercase)
     random.shuffle(list_of_letters)
 
     mock = AuditedAdminMockData()
     for object_name in list_of_letters:
-        application = mock.create_full_dummy_domain_object(domain_type, object_name)
-        applications.append(application)
-    return applications
+        domain_request = mock.create_full_dummy_domain_object(domain_type, object_name)
+        domain_requests.append(domain_request)
+    return domain_requests
 
 
 def generic_domain_object(domain_type, object_name):
     """Returns a generic domain object of
-    domain_type 'application', 'information', or 'invitation'"""
+    domain_type 'domain_request', 'information', or 'invitation'"""
     mock = AuditedAdminMockData()
-    application = mock.create_full_dummy_domain_object(domain_type, object_name)
-    return application
+    domain_request = mock.create_full_dummy_domain_object(domain_type, object_name)
+    return domain_request
 
 
 class MockEppLib(TestCase):
@@ -644,7 +937,7 @@ class MockEppLib(TestCase):
             self,
             id,
             email,
-            cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+            cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
             pw="thisisnotapassword",
         ):
             fake = info.InfoContactResultData(
@@ -682,82 +975,98 @@ class MockEppLib(TestCase):
 
     mockDataInfoDomain = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
-        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[
+            common.DomainContact(
+                contact="securityContact",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            ),
+            common.DomainContact(
+                contact="technicalContact",
+                type=PublicContact.ContactTypeChoices.TECHNICAL,
+            ),
+            common.DomainContact(
+                contact="adminContact",
+                type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            ),
+        ],
         hosts=["fake.host.com"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
-        ex_date=datetime.date(2023, 5, 25),
+        ex_date=date(2023, 5, 25),
     )
 
     mockDataInfoDomainSubdomain = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.meoward.gov"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
-        ex_date=datetime.date(2023, 5, 25),
+        ex_date=date(2023, 5, 25),
     )
 
     mockDataInfoDomainSubdomainAndIPAddress = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.meow.gov"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
-        ex_date=datetime.date(2023, 5, 25),
+        ex_date=date(2023, 5, 25),
         addrs=[common.Ip(addr="2.0.0.8")],
     )
 
     mockDataInfoDomainNotSubdomainNoIP = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.meow.com"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
-        ex_date=datetime.date(2023, 5, 25),
+        ex_date=date(2023, 5, 25),
     )
 
     mockDataInfoDomainSubdomainNoIP = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.subdomainwoip.gov"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
-        ex_date=datetime.date(2023, 5, 25),
+        ex_date=date(2023, 5, 25),
     )
 
     mockDataExtensionDomain = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.host.com"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
-        ex_date=datetime.date(2023, 11, 15),
+        ex_date=date(2023, 11, 15),
     )
     mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
-        "123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
+        id="123", email="123@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
+    )
+    mockDataSecurityContact = mockDataInfoDomain.dummyInfoContactResultData(
+        id="securityContact", email="security@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
     )
     InfoDomainWithContacts = fakedEppObject(
-        "fakepw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        "fakePw",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[
             common.DomainContact(
                 contact="securityContact",
@@ -778,11 +1087,12 @@ class MockEppLib(TestCase):
             common.Status(state="inactive", description="", lang="en"),
         ],
         registrant="regContact",
+        ex_date=date(2023, 11, 15),
     )
 
     InfoDomainWithDefaultSecurityContact = fakedEppObject(
         "fakepw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[
             common.DomainContact(
                 contact="defaultSec",
@@ -797,11 +1107,11 @@ class MockEppLib(TestCase):
     )
 
     mockVerisignDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
-        "defaultVeri", "registrar@dotgov.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
+        "defaultVeri", "registrar@dotgov.gov", datetime(2023, 5, 25, 19, 45, 35), "lastPw"
     )
     InfoDomainWithVerisignSecurityContact = fakedEppObject(
         "fakepw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[
             common.DomainContact(
                 contact="defaultVeri",
@@ -817,7 +1127,7 @@ class MockEppLib(TestCase):
 
     InfoDomainWithDefaultTechnicalContact = fakedEppObject(
         "fakepw",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[
             common.DomainContact(
                 contact="defaultTech",
@@ -842,14 +1152,14 @@ class MockEppLib(TestCase):
 
     infoDomainNoContact = fakedEppObject(
         "security",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=["fake.host.com"],
     )
 
     infoDomainThreeHosts = fakedEppObject(
         "my-nameserver.gov",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=[
             "ns1.my-nameserver-1.com",
@@ -858,45 +1168,57 @@ class MockEppLib(TestCase):
         ],
     )
 
+    infoDomainFourHosts = fakedEppObject(
+        "fournameserversDomain.gov",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+            "ns1.explosive-chicken-nuggets.com",
+        ],
+    )
+
     infoDomainNoHost = fakedEppObject(
         "my-nameserver.gov",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=[],
     )
 
     infoDomainTwoHosts = fakedEppObject(
         "my-nameserver.gov",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=["ns1.my-nameserver-1.com", "ns1.my-nameserver-2.com"],
     )
 
     mockDataInfoHosts = fakedEppObject(
         "lastPw",
-        cr_date=make_aware(datetime.datetime(2023, 8, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 8, 25, 19, 45, 35)),
         addrs=[common.Ip(addr="1.2.3.4"), common.Ip(addr="2.3.4.5")],
     )
 
     mockDataInfoHosts1IP = fakedEppObject(
         "lastPw",
-        cr_date=make_aware(datetime.datetime(2023, 8, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 8, 25, 19, 45, 35)),
         addrs=[common.Ip(addr="2.0.0.8")],
     )
 
     mockDataInfoHostsNotSubdomainNoIP = fakedEppObject(
         "lastPw",
-        cr_date=make_aware(datetime.datetime(2023, 8, 26, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 8, 26, 19, 45, 35)),
         addrs=[],
     )
 
     mockDataInfoHostsSubdomainNoIP = fakedEppObject(
         "lastPw",
-        cr_date=make_aware(datetime.datetime(2023, 8, 27, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 8, 27, 19, 45, 35)),
         addrs=[],
     )
 
-    mockDataHostChange = fakedEppObject("lastPw", cr_date=make_aware(datetime.datetime(2023, 8, 25, 19, 45, 35)))
+    mockDataHostChange = fakedEppObject("lastPw", cr_date=make_aware(datetime(2023, 8, 25, 19, 45, 35)))
     addDsData1 = {
         "keyTag": 1234,
         "alg": 3,
@@ -928,7 +1250,7 @@ class MockEppLib(TestCase):
 
     infoDomainHasIP = fakedEppObject(
         "nameserverwithip.gov",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[
             common.DomainContact(
                 contact="securityContact",
@@ -953,7 +1275,7 @@ class MockEppLib(TestCase):
 
     justNameserver = fakedEppObject(
         "justnameserver.com",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[
             common.DomainContact(
                 contact="securityContact",
@@ -976,7 +1298,7 @@ class MockEppLib(TestCase):
 
     infoDomainCheckHostIPCombo = fakedEppObject(
         "nameserversubdomain.gov",
-        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=[
             "ns1.nameserversubdomain.gov",
@@ -986,27 +1308,27 @@ class MockEppLib(TestCase):
 
     mockRenewedDomainExpDate = fakedEppObject(
         "fake.gov",
-        ex_date=datetime.date(2023, 5, 25),
+        ex_date=date(2023, 5, 25),
     )
 
     mockButtonRenewedDomainExpDate = fakedEppObject(
         "fake.gov",
-        ex_date=datetime.date(2025, 5, 25),
+        ex_date=date(2025, 5, 25),
     )
 
     mockDnsNeededRenewedDomainExpDate = fakedEppObject(
         "fakeneeded.gov",
-        ex_date=datetime.date(2023, 2, 15),
+        ex_date=date(2023, 2, 15),
     )
 
     mockMaximumRenewedDomainExpDate = fakedEppObject(
         "fakemaximum.gov",
-        ex_date=datetime.date(2024, 12, 31),
+        ex_date=date(2024, 12, 31),
     )
 
     mockRecentRenewedDomainExpDate = fakedEppObject(
         "waterbutpurple.gov",
-        ex_date=datetime.date(2024, 11, 15),
+        ex_date=date(2024, 11, 15),
     )
 
     def _mockDomainName(self, _name, _avail=False):
@@ -1158,7 +1480,9 @@ class MockEppLib(TestCase):
                 )
 
     def mockInfoDomainCommands(self, _request, cleaned):
-        request_name = getattr(_request, "name", None)
+        request_name = getattr(_request, "name", None).lower()
+
+        print(request_name)
 
         # Define a dictionary to map request names to data and extension values
         request_mappings = {
@@ -1180,7 +1504,8 @@ class MockEppLib(TestCase):
             "nameserverwithip.gov": (self.infoDomainHasIP, None),
             "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
             "freeman.gov": (self.InfoDomainWithContacts, None),
-            "threenameserversDomain.gov": (self.infoDomainThreeHosts, None),
+            "threenameserversdomain.gov": (self.infoDomainThreeHosts, None),
+            "fournameserversdomain.gov": (self.infoDomainFourHosts, None),
             "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
             "adomain2.gov": (self.InfoDomainWithVerisignSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
@@ -1189,6 +1514,8 @@ class MockEppLib(TestCase):
             "meow.gov": (self.mockDataInfoDomainSubdomainAndIPAddress, None),
             "fakemeow.gov": (self.mockDataInfoDomainNotSubdomainNoIP, None),
             "subdomainwoip.gov": (self.mockDataInfoDomainSubdomainNoIP, None),
+            "ddomain3.gov": (self.InfoDomainWithContacts, None),
+            "igorville.gov": (self.InfoDomainWithContacts, None),
         }
 
         # Retrieve the corresponding values from the dictionary

@@ -11,18 +11,15 @@
         </div>
         <div class="desktop:flex-align-self-end">
             {% if original.state != original.State.DELETED %}
-            <a
-            class="text-middle"
-            href="#toggle-extend-expiration-alert"
-            aria-controls="toggle-extend-expiration-alert"
-            data-open-modal
-            >
+            <a class="text-middle" href="#toggle-extend-expiration-alert" aria-controls="toggle-extend-expiration-alert" data-open-modal>
                 Extend expiration date
             </a>
             <span class="margin-left-05 margin-right-05 text-middle"> | </span>
             {% endif %}
             {% if original.state == original.State.READY %}
-            <input type="submit" value="Place hold" name="_place_client_hold" class="custom-link-button">
+            <a class="text-middle" href="#toggle-place-on-hold" aria-controls="toggle-place-on-hold" data-open-modal>
+                Place hold
+            </a>
             {% elif original.state == original.State.ON_HOLD %}
             <input type="submit" value="Remove hold" name="_remove_client_hold" class="custom-link-button">
             {% endif %}
@@ -30,11 +27,16 @@
             <span class="margin-left-05 margin-right-05 text-middle"> | </span>
             {% endif %}
             {% if original.state != original.State.DELETED %}
-            <input type="submit" value="Remove from registry" name="_delete_domain" class="custom-link-button">
+            <a class="text-middle" href="#toggle-remove-from-registry" aria-controls="toggle-remove-from-registry" data-open-modal>
+                Remove from registry
+            </a>
         {% endif %}
         </div>
     </div>
-    {{ block.super }}
+
+    {% for fieldset in adminform %}
+        {% include "django/admin/includes/domain_fieldset.html" with state_help_message=state_help_message %}
+    {% endfor %}
 {% endblock %}
 
 {% block submit_buttons_bottom %}
@@ -52,8 +54,10 @@
     In addition, the modal element MUST be placed low in the DOM. The script loads slower on DJA than on other portions
     of the application, so this means that it will briefly "populate", causing unintended visual effects.
     {% endcomment %}
+
+    {# Create a modal for the _extend_expiration_date button #}
     <div
-    class="usa-modal"
+    class="usa-modal usa-modal--django-admin"
     id="toggle-extend-expiration-alert"
     aria-labelledby="Are you sure you want to extend the expiration date?"
     aria-describedby="This expiration date will be extended."
@@ -78,7 +82,7 @@
                         {{test}}
                     </p>
                 </div>
-        
+
                 <div class="usa-modal__footer">
                     <ul class="usa-button-group">
                         <li class="usa-button-group__item">
@@ -88,6 +92,141 @@
                             name="_extend_expiration_date"
                             >
                                 Yes, extend date
+                            </button>
+                        </li>
+                        <li class="usa-button-group__item">
+                            <button
+                            type="button"
+                            class="usa-button usa-button--unstyled padding-105 text-center"
+                            data-close-modal
+                            >
+                                Cancel
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <button
+            type="button"
+            class="usa-button usa-modal__close"
+            aria-label="Close this window"
+            data-close-modal
+            >
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    {# Create a modal for the _on_hold button #}
+    <div
+    class="usa-modal usa-modal--django-admin"
+    id="toggle-place-on-hold"
+    aria-labelledby="Are you sure you want to place this domain on hold?"
+    aria-describedby="This domain will be put on hold"
+    >
+        <div class="usa-modal__content">
+            <div class="usa-modal__main">
+                <h2 class="usa-modal__heading" id="modal-1-heading">
+                    Are you sure you want to place this domain on hold?
+                </h2>
+                <div class="usa-prose">
+                    <p>
+                        When a domain is on hold:
+                    </p>
+                    <ul>
+                        <li class="font-body-sm">The domain and its subdomains won’t resolve in DNS. Any infrastructure (like websites) will go offline.</li>
+                        <li class="font-body-sm">The domain will still appear in the registrar / admin.</li>
+                        <li class="font-body-sm">Domain managers won’t be able to edit the domain.</li>
+                    </ul>
+                    <p>
+                        This action can be reversed, if needed.
+                    </p>
+                    <p>
+                        Domain: <b>{{ original.name }}</b>
+                        {# Acts as a <br> #}
+                        <div class="display-inline"></div>
+                        New status: <b>{{ original.State.ON_HOLD|capfirst }}</b>
+                    </p>
+                </div>
+
+                <div class="usa-modal__footer">
+                    <ul class="usa-button-group">
+                        <li class="usa-button-group__item">
+                            <button
+                            type="submit" 
+                            class="usa-button dja-form-placeholder" 
+                            name="_place_client_hold"
+                            >
+                                Yes, place hold
+                            </button>
+                        </li>
+                        <li class="usa-button-group__item">
+                            <button
+                            type="button"
+                            class="usa-button usa-button--unstyled padding-105 text-center"
+                            data-close-modal
+                            >
+                                Cancel
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <button
+            type="button"
+            class="usa-button usa-modal__close"
+            aria-label="Close this window"
+            data-close-modal
+            >
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                </svg>
+            </button>
+        </div>
+    </div>
+    {# Create a modal for the _remove_domain button #}
+    <div
+    class="usa-modal usa-modal--django-admin"
+    id="toggle-remove-from-registry"
+    aria-labelledby="Are you sure you want to remove this domain from the registry?"
+    aria-describedby="This domain will be removed."
+    >
+        <div class="usa-modal__content">
+            <div class="usa-modal__main">
+                <h2 class="usa-modal__heading" id="modal-1-heading">
+                    Are you sure you want to remove this domain from the registry?
+                </h2>
+                <div class="usa-prose">
+                    <p>
+                        When a domain is removed from the registry:
+                    </p>
+                    <ul>
+                        <li class="font-body-sm">The domain and its subdomains won’t resolve in DNS. Any infrastructure (like websites) will go offline.</li>
+                        <li class="font-body-sm">The domain will still appear in the registrar / admin.</li>
+                        <li class="font-body-sm">Domain managers won’t be able to edit the domain.</li>
+                    </ul>
+                    <p>
+                        This action cannot be undone.
+                    </p>
+                    <p>
+                        Domain: <b>{{ original.name }}</b>
+                        {# Acts as a <br> #}
+                        <div class="display-inline"></div>
+                        New status: <b>{{ original.State.DELETED|capfirst }}</b>
+                    </p>
+                </div>
+
+                <div class="usa-modal__footer">
+                    <ul class="usa-button-group">
+                        <li class="usa-button-group__item">
+                            <button
+                            type="submit" 
+                            class="usa-button dja-form-placeholder" 
+                            name="_delete_domain"
+                            >
+                                Yes, remove from registry
                             </button>
                         </li>
                         <li class="usa-button-group__item">

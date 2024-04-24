@@ -5,6 +5,11 @@ logger = logging.getLogger(__name__)
 
 
 class UserGroup(Group):
+    """
+    UserGroup sets read and write permissions for superusers (who have full access)
+    and analysts. For more details, see the dev docs for user-permissions.
+    """
+
     class Meta:
         verbose_name = "User group"
         verbose_name_plural = "User groups"
@@ -28,23 +33,13 @@ class UserGroup(Group):
             },
             {
                 "app_label": "registrar",
-                "model": "domaininformation",
-                "permissions": ["change_domaininformation"],
-            },
-            {
-                "app_label": "registrar",
-                "model": "domainapplication",
-                "permissions": ["change_domainapplication"],
+                "model": "domainrequest",
+                "permissions": ["change_domainrequest"],
             },
             {
                 "app_label": "registrar",
                 "model": "domain",
                 "permissions": ["view_domain"],
-            },
-            {
-                "app_label": "registrar",
-                "model": "draftdomain",
-                "permissions": ["change_draftdomain"],
             },
             {
                 "app_label": "registrar",
@@ -58,11 +53,6 @@ class UserGroup(Group):
             },
             {
                 "app_label": "registrar",
-                "model": "website",
-                "permissions": ["change_website"],
-            },
-            {
-                "app_label": "registrar",
                 "model": "userdomainrole",
                 "permissions": ["view_userdomainrole", "delete_userdomainrole"],
             },
@@ -70,6 +60,11 @@ class UserGroup(Group):
                 "app_label": "registrar",
                 "model": "verifiedbystaff",
                 "permissions": ["add_verifiedbystaff", "change_verifiedbystaff", "delete_verifiedbystaff"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "federalagency",
+                "permissions": ["add_federalagency", "change_federalagency", "delete_federalagency"],
             },
         ]
 

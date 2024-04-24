@@ -1,10 +1,12 @@
 """Forms for domain management."""
 
+import logging
 from django import forms
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
-
+from registrar.models import DomainRequest
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
+from registrar.models.utility.domain_helper import DomainHelper
 from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
@@ -23,10 +25,23 @@ from .common import (
 import re
 
 
+logger = logging.getLogger(__name__)
+
+
 class DomainAddUserForm(forms.Form):
     """Form for adding a user to a domain."""
 
-    email = forms.EmailField(label="Email")
+    email = forms.EmailField(
+        label="Email",
+        max_length=None,
+        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
+        validators=[
+            MaxLengthValidator(
+                320,
+                message="Response must be less than 320 characters.",
+            )
+        ],
+    )
 
     def clean(self):
         """clean form data by lowercasing email"""
@@ -68,24 +83,33 @@ class DomainNameserverForm(forms.Form):
         # after clean_fields.  it is used to determine form level errors.
         # is_valid is typically called from view during a post
         cleaned_data = super().clean()
+
         self.clean_empty_strings(cleaned_data)
+
         server = cleaned_data.get("server", "")
-        # remove ANY spaces in the server field
-        server = server.replace(" ", "")
-        # lowercase the server
-        server = server.lower()
+        server = server.replace(" ", "").lower()
         cleaned_data["server"] = server
-        ip = cleaned_data.get("ip", None)
-        # remove ANY spaces in the ip field
+
+        ip = cleaned_data.get("ip", "")
         ip = ip.replace(" ", "")
         cleaned_data["ip"] = ip
+
         domain = cleaned_data.get("domain", "")
 
         ip_list = self.extract_ip_list(ip)
 
-        # validate if the form has a server or an ip
+        # Capture the server_value
+        server_value = self.cleaned_data.get("server")
+
+        # Validate if the form has a server or an ip
         if (ip and ip_list) or server:
             self.validate_nameserver_ip_combo(domain, server, ip_list)
+
+        # Re-set the server value:
+        # add_error which is called on validate_nameserver_ip_combo will clean-up (delete) any invalid data.
+        # We need that data because we need to know the total server entries (even if invalid) in the formset
+        # clean method where we determine whether a blank first and/or second entry should throw a required error.
+        self.cleaned_data["server"] = server_value
 
         return cleaned_data
 
@@ -134,6 +158,19 @@ class BaseNameserverFormset(forms.BaseFormSet):
         """
         Check for duplicate entries in the formset.
         """
+
+        # Check if there are at least two valid servers
+        valid_servers_count = sum(
+            1 for form in self.forms if form.cleaned_data.get("server") and form.cleaned_data.get("server").strip()
+        )
+        if valid_servers_count >= 2:
+            # If there are, remove the "At least two name servers are required" error from each form
+            # This will allow for successful submissions when the first or second entries are blanked
+            # but there are enough entries total
+            for form in self.forms:
+                if form.errors.get("server") == ["At least two name servers are required."]:
+                    form.errors.pop("server")
+
         if any(self.errors):
             # Don't bother validating the formset unless each form is valid on its own
             return
@@ -141,10 +178,13 @@ class BaseNameserverFormset(forms.BaseFormSet):
         data = []
         duplicates = []
 
-        for form in self.forms:
+        for index, form in enumerate(self.forms):
             if form.cleaned_data:
                 value = form.cleaned_data["server"]
-                if value in data:
+                # We need to make sure not to trigger the duplicate error in case the first and second nameservers
+                # are empty. If there are enough records in the formset, that error is an unecessary blocker.
+                # If there aren't, the required error will block the submit.
+                if value in data and not (form.cleaned_data.get("server", "").strip() == "" and index == 1):
                     form.add_error(
                         "server",
                         NameserverError(code=nsErrorCodes.DUPLICATE_HOST, nameserver=value),
@@ -165,6 +205,8 @@ NameserverFormset = formset_factory(
 
 class ContactForm(forms.ModelForm):
     """Form for updating contacts."""
+
+    email = forms.EmailField(max_length=None)
 
     class Meta:
         model = Contact
@@ -189,6 +231,10 @@ class ContactForm(forms.ModelForm):
         # which interferes with out input_with_errors template tag
         self.fields["phone"].widget.attrs.pop("maxlength", None)
 
+        # Define a custom validator for the email field with a custom error message
+        email_max_length_validator = MaxLengthValidator(320, message="Response must be less than 320 characters.")
+        self.fields["email"].validators.append(email_max_length_validator)
+
         for field_name in self.required:
             self.fields[field_name].required = True
 
@@ -205,6 +251,13 @@ class ContactForm(forms.ModelForm):
             "required": "Enter your email address in the required format, like name@example.com."
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
+        self.domainInfo = None
+
+    def set_domain_info(self, domainInfo):
+        """Set the domain information for the form.
+        The form instance is associated with the contact itself. In order to access the associated
+        domain information object, this needs to be set in the form by the view."""
+        self.domainInfo = domainInfo
 
 
 class AuthorizingOfficialContactForm(ContactForm):
@@ -212,7 +265,7 @@ class AuthorizingOfficialContactForm(ContactForm):
 
     JOIN = "authorizing_official"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, disable_fields=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Overriding bc phone not required in this form
@@ -232,20 +285,36 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
-        self.domainInfo = None
 
-    def set_domain_info(self, domainInfo):
-        """Set the domain information for the form.
-        The form instance is associated with the contact itself. In order to access the associated
-        domain information object, this needs to be set in the form by the view."""
-        self.domainInfo = domainInfo
+        # All fields should be disabled if the domain is federal or tribal
+        if disable_fields:
+            DomainHelper.mass_disable_fields(fields=self.fields, disable_required=True, disable_maxlength=True)
 
     def save(self, commit=True):
-        """Override the save() method of the BaseModelForm."""
+        """
+        Override the save() method of the BaseModelForm.
+        Used to perform checks on the underlying domain_information object.
+        If this doesn't exist, we just save as normal.
+        """
+
+        # If the underlying Domain doesn't have a domainInfo object,
+        # just let the default super handle it.
+        if not self.domainInfo:
+            return super().save()
+
+        # Determine if the domain is federal or tribal
+        is_federal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+        is_tribal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
 
         # Get the Contact object from the db for the Authorizing Official
         db_ao = Contact.objects.get(id=self.instance.id)
-        if self.domainInfo and db_ao.has_more_than_one_join("information_authorizing_official"):
+
+        if (is_federal or is_tribal) and self.has_changed():
+            # This action should be blocked by the UI, as the text fields are readonly.
+            # If they get past this point, we forbid it this way.
+            # This could be malicious, so lets reserve information for the backend only.
+            raise ValueError("Authorizing Official cannot be modified for federal or tribal domains.")
+        elif db_ao.has_more_than_one_join("information_authorizing_official"):
             # Handle the case where the domain information object is available and the AO Contact
             # has more than one joined object.
             # In this case, create a new Contact, and update the new Contact with form data.
@@ -254,6 +323,7 @@ class AuthorizingOfficialContactForm(ContactForm):
             self.domainInfo.authorizing_official = Contact.objects.create(**data)
             self.domainInfo.save()
         else:
+            # If all checks pass, just save normally
             super().save()
 
 
@@ -262,10 +332,17 @@ class DomainSecurityEmailForm(forms.Form):
 
     security_email = forms.EmailField(
         label="Security email (optional)",
+        max_length=None,
         required=False,
         error_messages={
             "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
         },
+        validators=[
+            MaxLengthValidator(
+                320,
+                message="Response must be less than 320 characters.",
+            )
+        ],
     )
 
 
@@ -304,11 +381,11 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             },
         }
         widgets = {
-            # We need to set the required attributed for federal_agency and
-            # state/territory because for these fields we are creating an individual
+            # We need to set the required attributed for State/territory
+            # because for this fields we are creating an individual
             # instance of the Select. For the other fields we use the for loop to set
             # the class's required attribute to true.
-            "federal_agency": forms.Select(attrs={"required": True}, choices=DomainInformation.AGENCY_CHOICES),
+            "federal_agency": forms.TextInput,
             "organization_name": forms.TextInput,
             "address_line1": forms.TextInput,
             "address_line2": forms.TextInput,
@@ -333,6 +410,46 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
+
+        self.is_federal = self.instance.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+        self.is_tribal = self.instance.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
+
+        field_to_disable = None
+        if self.is_federal:
+            field_to_disable = "federal_agency"
+        elif self.is_tribal:
+            field_to_disable = "organization_name"
+
+        # Disable any field that should be disabled, if applicable
+        if field_to_disable is not None:
+            DomainHelper.disable_field(self.fields[field_to_disable], disable_required=True)
+
+    def save(self, commit=True):
+        """Override the save() method of the BaseModelForm."""
+        if self.has_changed():
+
+            # This action should be blocked by the UI, as the text fields are readonly.
+            # If they get past this point, we forbid it this way.
+            # This could be malicious, so lets reserve information for the backend only.
+            if self.is_federal and not self._field_unchanged("federal_agency"):
+                raise ValueError("federal_agency cannot be modified when the generic_org_type is federal")
+            elif self.is_tribal and not self._field_unchanged("organization_name"):
+                raise ValueError("organization_name cannot be modified when the generic_org_type is tribal")
+
+        else:
+            super().save()
+
+    def _field_unchanged(self, field_name) -> bool:
+        """
+        Checks if a specified field has not changed between the old value
+        and the new value.
+
+        The old value is grabbed from self.initial.
+        The new value is grabbed from self.cleaned_data.
+        """
+        old_value = self.initial.get(field_name, None)
+        new_value = self.cleaned_data.get(field_name, None)
+        return old_value == new_value
 
 
 class DomainDnssecForm(forms.Form):

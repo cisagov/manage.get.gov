@@ -1,5 +1,6 @@
 import logging
 from faker import Faker
+from django.db import transaction
 
 from registrar.models import (
     User,
@@ -98,6 +99,12 @@ class UserFixture:
             "last_name": "Burnett",
             "email": "christina.burnett@cisa.dhs.gov",
         }, 
+
+            "username": "012f844d-8a0f-4225-9d82-cbf87bff1d3e",
+            "first_name": "Riley",
+            "last_name": "Orr",
+            "email": "riley+320@truss.works",
+        },
     ]
 
     STAFF = [
@@ -174,6 +181,17 @@ class UserFixture:
             "last_name": "Burnett-Analyst",
             "email": "christina.burnett@gwe.cisa.dhs.gov",
         },
+            "username": "d9839768-0c17-4fa2-9c8e-36291eef5c11",
+            "first_name": "Alex-Analyst",
+            "last_name": "Mcelya-Analyst",
+            "email": "ALEXANDER.MCELYA@cisa.dhs.gov",
+        },
+        {
+            "username": "082a066f-e0a4-45f6-8672-4343a1208a36",
+            "first_name": "Riley-Analyst",
+            "last_name": "Orr-Analyst",
+            "email": "riley+321@truss.works",
+        },
     ]
 
     def load_users(cls, users, group_name):
@@ -198,5 +216,12 @@ class UserFixture:
 
     @classmethod
     def load(cls):
-        cls.load_users(cls, cls.ADMINS, "full_access_group")
-        cls.load_users(cls, cls.STAFF, "cisa_analysts_group")
+        # Lumped under .atomic to ensure we don't make redundant DB calls.
+        # This bundles them all together, and then saves it in a single call.
+        # This is slightly different then bulk_create or bulk_update, in that
+        # you still get the same behaviour of .save(), but those incremental
+        # steps now do not need to close/reopen a db connection,
+        # instead they share one.
+        with transaction.atomic():
+            cls.load_users(cls, cls.ADMINS, "full_access_group")
+            cls.load_users(cls, cls.STAFF, "cisa_analysts_group")

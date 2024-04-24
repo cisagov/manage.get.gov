@@ -11,12 +11,24 @@
 
   <p>The name of your organization will be publicly listed as the domain registrant.</p>
 
+  {% if domain.domain_info.generic_org_type == "federal" %}
+  <p>
+    The federal agency for your organization can’t be updated here.
+    To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+  </p>
+  {% elif domain.domain_info.generic_org_type == "tribal" %}
+  <p>
+    Your organization name can’t be updated here.
+    To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+  </p>
+  {% endif %}
+
   {% include "includes/required_fields.html" %}
 
   <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
     {% csrf_token %}
 
-    {% if domain.domain_info.organization_type == 'federal' %}
+    {% if domain.domain_info.generic_org_type == 'federal' %}
       {% input_with_errors form.federal_agency %}
     {% endif %}
 

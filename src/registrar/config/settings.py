@@ -74,6 +74,9 @@ secret_aws_s3_key_id = secret("access_key_id", None) or secret("AWS_S3_ACCESS_KE
 secret_aws_s3_key = secret("secret_access_key", None) or secret("AWS_S3_SECRET_ACCESS_KEY", None)
 secret_aws_s3_bucket_name = secret("bucket", None) or secret("AWS_S3_BUCKET_NAME", None)
 
+# Passphrase for the encrypted metadata email
+secret_encrypt_metadata = secret("SECRET_ENCRYPT_METADATA", None)
+
 secret_registry_cl_id = secret("REGISTRY_CL_ID")
 secret_registry_password = secret("REGISTRY_PASSWORD")
 secret_registry_cert = b64decode(secret("REGISTRY_CERT", ""))
@@ -94,6 +97,7 @@ DEBUG = env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
+SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 
 # Applications are modular pieces of code.
 # They are provided by Django, by third-parties, or by yourself.
@@ -142,6 +146,8 @@ INSTALLED_APPS = [
     # "puml_generator",
     # supports necessary headers for Django cross origin
     "corsheaders",
+    # library for multiple choice filters in django admin
+    "django_admin_multiple_choice_list_filter",
 ]
 
 # Middleware are routines for processing web requests.
@@ -326,8 +332,9 @@ CSP_FORM_ACTION = allowed_sources
 
 # Google analytics requires that we relax our otherwise
 # strict CSP by allowing scripts to run from their domain
-# and inline with a nonce, as well as allowing connections back to their domain
-CSP_SCRIPT_SRC_ELEM = ["'self'", "https://www.googletagmanager.com/"]
+# and inline with a nonce, as well as allowing connections back to their domain.
+# Note: If needed, we can embed chart.js instead of using the CDN
+CSP_SCRIPT_SRC_ELEM = ["'self'", "https://www.googletagmanager.com/", "https://cdn.jsdelivr.net/npm/chart.js"]
 CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/"]
 CSP_INCLUDE_NONCE_IN = ["script-src-elem"]
 
@@ -635,6 +642,8 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-bob.app.cloud.gov",
+    "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
     "getgov-ky.app.cloud.gov",
     "getgov-es.app.cloud.gov",

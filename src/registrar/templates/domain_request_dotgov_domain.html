@@ -1,0 +1,99 @@
+{% extends 'domain_request_form.html' %}
+{% load static field_helpers url_helpers %}
+
+{% block form_instructions %}
+  <p>Before requesting a .gov domain, please make sure it meets <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">our naming requirements</a>. Your domain name must:
+    <ul class="usa-list">
+      <li>Be available </li>
+      <li>Relate to your organization’s name, location, and/or services </li>
+      <li>Be clear to the general public. Your domain name must not be easily confused
+      with other organizations.</li>
+    </ul>
+  </p>
+
+  <p>Names that <em>uniquely apply to your organization</em> are likely to be approved over names that could also apply to other organizations. 
+    {% if not is_federal %}In most instances, this requires including your state’s two-letter abbreviation.{% endif %}</p> 
+
+  <p>Requests for your organization’s initials or an abbreviated name might not be approved, but we encourage you to request the name you want.</p> 
+
+  <p>Note that <strong>only federal agencies can request generic terms</strong> like
+  vote.gov.</p>
+
+  <h2 class="margin-top-3">Domain examples for your type of organization</h2>
+  <div class="domain_example">
+    {% include "includes/domain_example.html" %}
+  </div>
+{% endblock %}
+
+
+{% block form_required_fields_help_text %}
+{# empty this block so it doesn't show on this page #}
+{% endblock %}
+
+
+{% block form_fields %}
+
+  {{ forms.0.management_form }}
+
+  <fieldset class="usa-fieldset margin-top-2">
+    <legend>
+      <h2>What .gov domain do you want?</h2>
+    </legend>
+
+    <p id="domain_instructions" class="margin-top-05">After you enter your domain, we’ll make sure it’s available and that it meets some of our naming requirements. If your domain passes these initial checks, we’ll verify that it meets all our requirements after you complete the rest of this form.</p>
+
+    {% with attr_aria_describedby="domain_instructions domain_instructions2" %}
+      {# attr_validate / validate="domain" invokes code in get-gov.js #}
+      {% with append_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
+        {% input_with_errors forms.0.requested_domain %}
+      {% endwith %}
+    {% endwith %}
+    <button
+      type="button"
+      class="usa-button usa-button--outline"
+      validate-for="{{ forms.0.requested_domain.auto_id }}"
+    >Check availability</button>
+  </fieldset>
+
+  {{ forms.1.management_form }}
+
+  <fieldset class="usa-fieldset margin-top-1 dotgov-domain-form" id="form-container">
+    <legend>
+      <h2>Alternative domains (optional)</h2>
+    </legend>
+
+    <p id="alt_domain_instructions" class="margin-top-05">Are there other domains you’d like if we can’t give
+    you your first choice?</p>
+
+    {% with attr_aria_describedby="alt_domain_instructions" %}
+      {# Will probably want to remove blank-ok and do related cleanup when we implement delete #}
+      {% with attr_validate="domain" append_gov=True add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input" %}
+        {% for form in forms.1 %}
+          <div class="repeatable-form">
+            {% input_with_errors form.alternative_domain %}
+          </div>
+        {% endfor %}
+      {% endwith %}
+    {% endwith %}
+
+    <button type="button" value="save" class="usa-button usa-button--unstyled" id="add-form">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+        <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
+      </svg><span class="margin-left-05">Add another alternative</span>
+    </button>
+
+    <div class="margin-bottom-3">
+      <button
+      id="validate-alt-domains-availability"
+      type="button"
+      class="usa-button usa-button--outline"
+      validate-for="{{ forms.1.requested_domain.auto_id }}"
+      >Check availability</button>
+    </div>
+    
+
+  <p class="margin-top-05">If you’re not sure this is the domain you want, that’s ok. You can change the domain later. </p>
+
+</fieldset>
+
+{% endblock %}

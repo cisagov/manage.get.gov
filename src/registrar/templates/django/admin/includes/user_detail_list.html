@@ -1,0 +1,33 @@
+{% load i18n static %}
+
+{% with approved_domains_count=user.get_approved_domains_count %}
+    {% with active_requests_count=user.get_active_requests_count %}
+        {% with rejected_requests_count=user.get_rejected_requests_count %}
+            {% with ineligible_requests_count=user.get_ineligible_requests_count %}
+                {% if approved_domains_count|add:active_requests_count|add:rejected_requests_count|add:ineligible_requests_count > 0 %}
+                    <div class="flex-container">
+                        <label aria-label="User summary details"></label>
+                        <ul class="dja-status-list">
+                            {% if approved_domains_count > 0 %}
+                                {# Approved domains #}
+                                <li>Approved domains: {{ approved_domains_count }}</li>
+                            {% endif %}
+                            {% if active_requests_count > 0 %}
+                                {# Active requests #}
+                                <li>Active requests: {{ active_requests_count }}</li>
+                            {% endif %}
+                            {% if rejected_requests_count > 0 %}
+                                {# Rejected requests #}
+                                <li>Rejected requests: {{ rejected_requests_count }}</li>
+                            {% endif %}
+                            {% if ineligible_requests_count > 0 %}
+                                {# Ineligible requests #}
+                                <li>Ineligible requests: {{ ineligible_requests_count }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% endwith %}
+        {% endwith %}
+    {% endwith %}
+{% endwith %}

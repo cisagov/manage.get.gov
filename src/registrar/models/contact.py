@@ -18,7 +18,7 @@ class Contact(TimeStampedModel):
     first_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="first name / given name",
+        verbose_name="first name",
         db_index=True,
     )
     middle_name = models.CharField(
@@ -28,18 +28,19 @@ class Contact(TimeStampedModel):
     last_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="last name / family name",
+        verbose_name="last name",
         db_index=True,
     )
     title = models.CharField(
         null=True,
         blank=True,
-        verbose_name="title or role in your organization",
+        verbose_name="title / role",
     )
     email = models.EmailField(
         null=True,
         blank=True,
         db_index=True,
+        max_length=320,
     )
     phone = PhoneNumberField(
         null=True,
@@ -92,6 +93,9 @@ class Contact(TimeStampedModel):
         """Returns the contact's name in Western order."""
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
         return " ".join(names) if names else "Unknown"
+
+    def has_contact_info(self):
+        return bool(self.title or self.email or self.phone)
 
     def save(self, *args, **kwargs):
         # Call the parent class's save method to perform the actual save

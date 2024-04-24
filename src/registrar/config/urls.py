@@ -9,22 +9,29 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar import views
+from registrar.views.admin_views import (
+    ExportDataDomainsGrowth,
+    ExportDataFederal,
+    ExportDataFull,
+    ExportDataManagedDomains,
+    ExportDataRequestsGrowth,
+    ExportDataType,
+    ExportDataUnmanagedDomains,
+    AnalyticsView,
+)
 
-from registrar.views.admin_views import ExportData
-
-
-from registrar.views.application import Step
+from registrar.views.domain_request import Step
 from registrar.views.utility import always_404
 from api.views import available, get_current_federal, get_current_full
 
 
-APPLICATION_NAMESPACE = views.ApplicationWizard.URL_NAMESPACE
-application_urls = [
-    path("", views.ApplicationWizard.as_view(), name=""),
+DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
+domain_request_urls = [
+    path("", views.DomainRequestWizard.as_view(), name=""),
     path("finished/", views.Finished.as_view(), name="finished"),
 ]
 
-# dynamically generate the other application_urls
+# dynamically generate the other domain_request_urls
 for step, view in [
     # add/remove steps here
     (Step.ORGANIZATION_TYPE, views.OrganizationType),
@@ -43,7 +50,7 @@ for step, view in [
     (Step.REQUIREMENTS, views.Requirements),
     (Step.REVIEW, views.Review),
 ]:
-    application_urls.append(path(f"{step}/", view.as_view(), name=step))
+    domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
 
 
 urlpatterns = [
@@ -52,31 +59,70 @@ urlpatterns = [
         "admin/logout/",
         RedirectView.as_view(pattern_name="logout", permanent=False),
     ),
-    path("export_data/", ExportData.as_view(), name="admin_export_data"),
+    path(
+        "admin/analytics/export_data_type/",
+        ExportDataType.as_view(),
+        name="export_data_type",
+    ),
+    path(
+        "admin/analytics/export_data_full/",
+        ExportDataFull.as_view(),
+        name="export_data_full",
+    ),
+    path(
+        "admin/analytics/export_data_federal/",
+        ExportDataFederal.as_view(),
+        name="export_data_federal",
+    ),
+    path(
+        "admin/analytics/export_domains_growth/",
+        ExportDataDomainsGrowth.as_view(),
+        name="export_domains_growth",
+    ),
+    path(
+        "admin/analytics/export_requests_growth/",
+        ExportDataRequestsGrowth.as_view(),
+        name="export_requests_growth",
+    ),
+    path(
+        "admin/analytics/export_managed_domains/",
+        ExportDataManagedDomains.as_view(),
+        name="export_managed_domains",
+    ),
+    path(
+        "admin/analytics/export_unmanaged_domains/",
+        ExportDataUnmanagedDomains.as_view(),
+        name="export_unmanaged_domains",
+    ),
+    path(
+        "admin/analytics/",
+        AnalyticsView.as_view(),
+        name="analytics",
+    ),
     path("admin/", admin.site.urls),
     path(
-        "application/<id>/edit/",
-        views.ApplicationWizard.as_view(),
-        name=views.ApplicationWizard.EDIT_URL_NAME,
+        "domain-request/<id>/edit/",
+        views.DomainRequestWizard.as_view(),
+        name=views.DomainRequestWizard.EDIT_URL_NAME,
     ),
     path(
-        "application/<int:pk>",
-        views.ApplicationStatus.as_view(),
-        name="application-status",
+        "domain-request/<int:pk>",
+        views.DomainRequestStatus.as_view(),
+        name="domain-request-status",
     ),
     path(
-        "application/<int:pk>/withdraw",
-        views.ApplicationWithdrawConfirmation.as_view(),
-        name="application-withdraw-confirmation",
+        "domain-request/<int:pk>/withdraw",
+        views.DomainRequestWithdrawConfirmation.as_view(),
+        name="domain-request-withdraw-confirmation",
     ),
     path(
-        "application/<int:pk>/withdrawconfirmed",
-        views.ApplicationWithdrawn.as_view(),
-        name="application-withdrawn",
+        "domain-request/<int:pk>/withdrawconfirmed",
+        views.DomainRequestWithdrawn.as_view(),
+        name="domain-request-withdrawn",
     ),
     path("health", views.health, name="health"),
     path("openid/", include("djangooidc.urls")),
-    path("request/", include((application_urls, APPLICATION_NAMESPACE))),
+    path("request/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
     path("api/v1/available/", available, name="available"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),
     path("api/v1/get-report/current-full", get_current_full, name="get-current-full"),
@@ -138,9 +184,9 @@ urlpatterns = [
         name="invitation-delete",
     ),
     path(
-        "application/<int:pk>/delete",
-        views.DomainApplicationDeleteView.as_view(http_method_names=["post"]),
-        name="application-delete",
+        "domain-request/<int:pk>/delete",
+        views.DomainRequestDeleteView.as_view(http_method_names=["post"]),
+        name="domain-request-delete",
     ),
     path(
         "domain/<int:pk>/users/<int:user_pk>/delete",
@@ -148,6 +194,18 @@ urlpatterns = [
         name="domain-user-delete",
     ),
 ]
+
+# Djangooidc strips out context data from that context, so we define a custom error
+# view through this method.
+# If Djangooidc is left to its own devices and uses reverse directly,
+# then both context and session information will be obliterated due to:
+
+# a) Djangooidc being out of scope for context_processors
+# b) Potential cyclical import errors restricting what kind of data is passable.
+
+# Rather than dealing with that, we keep everything centralized in one location.
+# This way, we can share a view for djangooidc, and other pages as we see fit.
+handler500 = "registrar.views.utility.error_views.custom_500_error_view"
 
 # we normally would guard these with `if settings.DEBUG` but tests run with
 # DEBUG = False even when these apps have been loaded because settings.DEBUG

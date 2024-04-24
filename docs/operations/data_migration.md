@@ -586,3 +586,59 @@ Example: `cf ssh getgov-za`
 |   | Parameter                  | Description                                                                 |
 |:-:|:-------------------------- |:----------------------------------------------------------------------------|
 | 1 | **debug**                  | Increases logging detail. Defaults to False.                                |
+
+
+## Populate Organization type
+This section outlines how to run the `populate_organization_type` script. 
+The script is used to update the organization_type field on DomainRequest and DomainInformation when it is None.
+That data are synthesized from the generic_org_type field and the is_election_board field by concatenating " - Elections" on the end of generic_org_type string if is_elections_board is True.
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: Get the domain_election_board file
+The latest domain_election_board csv can be found [here](https://drive.google.com/file/d/1aDeCqwHmBnXBl2arvoFCN0INoZmsEGsQ/view).
+After downloading this file, place it in `src/migrationdata`
+
+#### Step 2: Upload the domain_election_board file to your sandbox
+Follow [Step 1: Transfer data to sandboxes](#step-1-transfer-data-to-sandboxes) and [Step 2: Transfer uploaded files to the getgov directory](#step-2-transfer-uploaded-files-to-the-getgov-directory) from the [Set Up Migrations on Sandbox](#set-up-migrations-on-sandbox) portion of this doc.
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py populate_organization_type {domain_election_board_filename}```
+
+- The domain_election_board_filename file must adhere to this format:
+    - example.gov\
+    example2.gov\
+    example3.gov
+
+Example: 
+`./manage.py populate_organization_type migrationdata/election-domains.csv`
+
+### Running locally
+
+#### Step 1: Get the domain_election_board file
+The latest domain_election_board csv can be found [here](https://drive.google.com/file/d/1aDeCqwHmBnXBl2arvoFCN0INoZmsEGsQ/view).
+After downloading this file, place it in `src/migrationdata`
+
+
+#### Step 2: Running the script
+```docker-compose exec app ./manage.py populate_organization_type {domain_election_board_filename}```
+
+Example (assuming that this is being ran from src/): 
+`docker-compose exec app ./manage.py populate_organization_type migrationdata/election-domains.csv`
+
+
+### Required parameters
+|   | Parameter                           | Description                                                        |
+|:-:|:------------------------------------|:-------------------------------------------------------------------|
+| 1 | **domain_election_board_filename** | A file containing every domain that is an election office.

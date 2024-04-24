@@ -34,11 +34,12 @@ class TestGroups(TestCase):
             "view_logentry",
             "change_contact",
             "view_domain",
-            "change_domainapplication",
-            "change_domaininformation",
             "add_domaininvitation",
             "view_domaininvitation",
-            "change_draftdomain",
+            "change_domainrequest",
+            "add_federalagency",
+            "change_federalagency",
+            "delete_federalagency",
             "analyst_access_permission",
             "change_user",
             "delete_userdomainrole",
@@ -46,7 +47,6 @@ class TestGroups(TestCase):
             "add_verifiedbystaff",
             "change_verifiedbystaff",
             "delete_verifiedbystaff",
-            "change_website",
         ]
 
         # Get the codenames of actual permissions associated with the group

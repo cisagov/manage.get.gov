@@ -1,0 +1,43 @@
+{% extends 'domain_request_form.html' %}
+{% load field_helpers url_helpers %}
+
+{% block form_instructions %}
+  <p>If your domain request is approved, the name of your organization and your city/state will be listed in <a href="{% public_site_url 'about/data/' %}" target="_blank">.gov’s public data.</a></p>  
+
+  <h2>What is the name and mailing address of the organization you represent?</h2>
+
+  <p>Your organization might be part of a larger entity. If so, enter the name of your part of the larger entity. </p>
+
+{% endblock %}
+
+
+{% block form_fields %}
+  <fieldset class="usa-fieldset">
+    <legend class="usa-sr-only">
+      What is the name and mailing address of your organization?
+    </legend>
+
+    {% if is_federal %}
+      {% with attr_required=True %}
+        {% input_with_errors forms.0.federal_agency %}
+      {% endwith %}
+    {% endif %}
+
+    {% input_with_errors forms.0.organization_name %}
+
+    {% input_with_errors forms.0.address_line1 %}
+
+    {% input_with_errors forms.0.address_line2 %}
+
+    {% input_with_errors forms.0.city %}
+
+    {% input_with_errors forms.0.state_territory %}
+
+    {% with add_class="usa-input--small" %}
+      {% input_with_errors forms.0.zipcode %}
+    {% endwith %}
+
+    {% input_with_errors forms.0.urbanization %}
+
+  </fieldset>
+{% endblock %}

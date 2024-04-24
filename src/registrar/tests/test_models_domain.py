@@ -12,7 +12,7 @@ from django.utils.timezone import make_aware
 from registrar.models import Domain, Host, HostIP
 
 from unittest import skip
-from registrar.models.domain_application import DomainApplication
+from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
@@ -107,9 +107,9 @@ class TestDomainCache(MockEppLib):
                 common.DomainContact(contact="123", type="security"),
             ]
             expectedContactsDict = {
-                PublicContact.ContactTypeChoices.ADMINISTRATIVE: None,
-                PublicContact.ContactTypeChoices.SECURITY: "123",
-                PublicContact.ContactTypeChoices.TECHNICAL: None,
+                PublicContact.ContactTypeChoices.ADMINISTRATIVE: "adminContact",
+                PublicContact.ContactTypeChoices.SECURITY: "securityContact",
+                PublicContact.ContactTypeChoices.TECHNICAL: "technicalContact",
             }
             expectedHostsDict = {
                 "name": self.mockDataInfoDomain.hosts[0],
@@ -129,6 +129,7 @@ class TestDomainCache(MockEppLib):
             # The contact list should not contain what is sent by the registry by default,
             # as _fetch_cache will transform the type to PublicContact
             self.assertNotEqual(domain._cache["contacts"], expectedUnfurledContactsList)
+
             self.assertEqual(domain._cache["contacts"], expectedContactsDict)
 
             # get and check hosts is set correctly
@@ -203,19 +204,20 @@ class TestDomainCache(MockEppLib):
     def test_map_epp_contact_to_public_contact(self):
         # Tests that the mapper is working how we expect
         with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="registry.gov")
+            domain, _ = Domain.objects.get_or_create(name="registry.gov", state=Domain.State.DNS_NEEDED)
             security = PublicContact.ContactTypeChoices.SECURITY
             mapped = domain.map_epp_contact_to_public_contact(
-                self.mockDataInfoContact,
-                self.mockDataInfoContact.id,
+                self.mockDataSecurityContact,
+                self.mockDataSecurityContact.id,
                 security,
             )
 
+            # id, registry_id, and contact are the same thing
             expected_contact = PublicContact(
                 domain=domain,
                 contact_type=security,
-                registry_id="123",
-                email="123@mail.gov",
+                registry_id="securityContact",
+                email="security@mail.gov",
                 voice="+1.8882820870",
                 fax="+1-212-9876543",
                 pw="lastPw",
@@ -232,7 +234,6 @@ class TestDomainCache(MockEppLib):
             # two duplicate objects. We would expect
             # these not to have the same state.
             expected_contact._state = mapped._state
-
             # Mapped object is what we expect
             self.assertEqual(mapped.__dict__, expected_contact.__dict__)
 
@@ -243,9 +244,9 @@ class TestDomainCache(MockEppLib):
                 registry_id=domain.security_contact.registry_id,
                 contact_type=security,
             ).get()
+
             # DB Object is the same as the mapped object
             self.assertEqual(db_object, in_db)
-
             domain.security_contact = in_db
             # Trigger the getter
             _ = domain.security_contact
@@ -309,29 +310,66 @@ class TestDomainCache(MockEppLib):
                 )
             self.assertEqual(context.exception.code, desired_error)
 
+    def test_fix_unknown_to_ready_state(self):
+        """
+        Scenario: A error occurred and the domain's state is in UNKONWN
+            which shouldn't happen. The biz logic and test is to make sure
+            we resolve that UNKNOWN state to READY because it has 2 nameservers.
+        Note:
+            * Default state when you do get_or_create is UNKNOWN
+            * justnameserver.com has 2 nameservers which is why we are using it
+            * justnameserver.com also has all 3 contacts hence 0 count
+        """
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="justnameserver.com")
+            # trigger the getter
+            _ = domain.nameservers
+            self.assertEqual(domain.state, Domain.State.READY)
+            self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 0)
+
+    def test_fix_unknown_to_dns_needed_state(self):
+        """
+        Scenario: A error occurred and the domain's state is in UNKONWN
+            which shouldn't happen. The biz logic and test is to make sure
+            we resolve that UNKNOWN state to DNS_NEEDED because it has 1 nameserver.
+        Note:
+            * Default state when you do get_or_create is UNKNOWN
+            * defaulttechnical.gov has 1 nameservers which is why we are using it
+            * defaulttechnical.gov already has a security contact (1) hence 2 count
+        """
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="defaulttechnical.gov")
+            # trigger the getter
+            _ = domain.nameservers
+            self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
+            self.assertEqual(PublicContact.objects.filter(domain=domain.id).count(), 2)
+
 
 class TestDomainCreation(MockEppLib):
-    """Rule: An approved domain application must result in a domain"""
+    """Rule: An approved domain request must result in a domain"""
 
     @boto3_mocking.patching
-    def test_approved_application_creates_domain_locally(self):
+    def test_approved_domain_request_creates_domain_locally(self):
         """
-        Scenario: Analyst approves a domain application
-            When the DomainApplication transitions to approved
+        Scenario: Analyst approves a domain request
+            When the DomainRequest transitions to approved
             Then a Domain exists in the database with the same `name`
             But a domain object does not exist in the registry
         """
         with less_console_noise():
             draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
             user, _ = User.objects.get_or_create()
-            application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
+            investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
+            domain_request = DomainRequest.objects.create(
+                creator=user, requested_domain=draft_domain, investigator=investigator
+            )
 
             mock_client = MockSESClient()
             with boto3_mocking.clients.handler_for("sesv2", mock_client):
                 # skip using the submit method
-                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
                 # transition to approve state
-                application.approve()
+                domain_request.approve()
             # should have information present for this domain
             domain = Domain.objects.get(name="igorville.gov")
             self.assertTrue(domain)
@@ -343,7 +381,7 @@ class TestDomainCreation(MockEppLib):
             Given that no domain object exists in the registry
             When a property is accessed
             Then Domain sends `commands.CreateDomain` to the registry
-            And `domain.state` is set to `UNKNOWN`
+            And `domain.state` is set to `DNS_NEEDED`
             And `domain.is_active()` returns False
         """
         with less_console_noise():
@@ -372,7 +410,7 @@ class TestDomainCreation(MockEppLib):
                 any_order=False,  # Ensure calls are in the specified order
             )
 
-            self.assertEqual(domain.state, Domain.State.UNKNOWN)
+            self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
             self.assertEqual(domain.is_active(), False)
 
     @skip("assertion broken with mock addition")
@@ -395,8 +433,9 @@ class TestDomainCreation(MockEppLib):
 
     def tearDown(self) -> None:
         DomainInformation.objects.all().delete()
-        DomainApplication.objects.all().delete()
+        DomainRequest.objects.all().delete()
         PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()
         DraftDomain.objects.all().delete()
@@ -482,6 +521,7 @@ class TestDomainStatuses(MockEppLib):
 
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
@@ -621,6 +661,7 @@ class TestRegistrantContacts(MockEppLib):
         self.domain._invalidate_cache()
         self.domain_contact._invalidate_cache()
         PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
 
     def test_no_security_email(self):
@@ -995,10 +1036,10 @@ class TestRegistrantContacts(MockEppLib):
             And the field `disclose` is set to true for DF.EMAIL
         """
         with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            domain, _ = Domain.objects.get_or_create(name="igorville.gov", state=Domain.State.DNS_NEEDED)
             expectedSecContact = PublicContact.get_default_security()
             expectedSecContact.domain = domain
-            expectedSecContact.email = "123@mail.gov"
+            expectedSecContact.email = "security@mail.gov"
             domain.security_contact = expectedSecContact
             expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
@@ -1844,6 +1885,8 @@ class TestRegistrantDNSSEC(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov")
 
     def tearDown(self):
+        PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
@@ -1901,6 +1944,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                         ),
                         cleaned=True,
                     ),
+                    call(commands.InfoHost(name="fake.host.com"), cleaned=True),
                     call(
                         commands.UpdateDomain(
                             name="dnssec-dsdata.gov",
@@ -1973,6 +2017,13 @@ class TestRegistrantDNSSEC(MockEppLib):
                         ),
                         cleaned=True,
                     ),
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-dsdata.gov",
+                        ),
+                        cleaned=True,
+                    ),
+                    call(commands.InfoHost(name="fake.host.com"), cleaned=True),
                     call(
                         commands.UpdateDomain(
                             name="dnssec-dsdata.gov",
@@ -2126,6 +2177,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                         ),
                         cleaned=True,
                     ),
+                    call(commands.InfoHost(name="fake.host.com"), cleaned=True),
                     call(
                         commands.UpdateDomain(
                             name="dnssec-dsdata.gov",

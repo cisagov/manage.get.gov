@@ -1,0 +1,17 @@
+{% extends 'admin/change_form.html' %}
+{% load i18n static %}
+
+{% block field_sets %}
+    {% for fieldset in adminform %}
+        {% comment %}
+        TODO: this will eventually need to be changed to something like this
+        if we ever want to customize this file:
+        {% include "django/admin/includes/domain_information_fieldset.html" %}
+
+        Use detail_table_fieldset as an example, or just extend it.
+
+        original_object is just a variable name for "DomainInformation" or "DomainRequest"
+        {% endcomment %}
+        {% include "django/admin/includes/detail_table_fieldset.html" with original_object=original %}
+    {% endfor %}
+{% endblock %}

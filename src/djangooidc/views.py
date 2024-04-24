@@ -6,12 +6,13 @@ from django.conf import settings
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from urllib.parse import parse_qs, urlencode
 
 from djangooidc.oidc import Client
 from djangooidc import exceptions as o_e
 from registrar.models import User
+from registrar.views.utility.error_views import custom_500_error_view, custom_401_error_view
 
 logger = logging.getLogger(__name__)
 
@@ -49,27 +50,19 @@ def error_page(request, error):
     """Display a sensible message and log the error."""
     logger.error(error)
     if isinstance(error, o_e.AuthenticationFailed):
-        return render(
-            request,
-            "401.html",
-            context={
-                "friendly_message": error.friendly_message,
-                "log_identifier": error.locator,
-            },
-            status=401,
-        )
+        context = {
+            "friendly_message": error.friendly_message,
+            "log_identifier": error.locator,
+        }
+        return custom_401_error_view(request, context)
     if isinstance(error, o_e.InternalError):
-        return render(
-            request,
-            "500.html",
-            context={
-                "friendly_message": error.friendly_message,
-                "log_identifier": error.locator,
-            },
-            status=500,
-        )
+        context = {
+            "friendly_message": error.friendly_message,
+            "log_identifier": error.locator,
+        }
+        return custom_500_error_view(request, context)
     if isinstance(error, Exception):
-        return render(request, "500.html", status=500)
+        return custom_500_error_view(request)
 
 
 def openid(request):
@@ -108,16 +101,25 @@ def login_callback(request):
         if user:
             login(request, user)
             logger.info("Successfully logged in user %s" % user)
-            # Double login bug (1507)?
+            # Clear the flag if the exception is not caught
+            request.session.pop("redirect_attempted", None)
             return redirect(request.session.get("next", "/"))
         else:
             raise o_e.BannedUser()
-    except o_e.NoStateDefined as nsd_err:
-        # In the event that a user is in the middle of a login when the app is restarted,
-        # their session state will no longer be available, so redirect the user to the
-        # beginning of login process without raising an error to the user.
-        logger.warning(f"No State Defined: {nsd_err}")
-        return redirect(request.session.get("next", "/"))
+    except o_e.StateMismatch as nsd_err:
+        # Check if the redirect has already been attempted
+        if not request.session.get("redirect_attempted", False):
+            # Set the flag to indicate that the redirect has been attempted
+            request.session["redirect_attempted"] = True
+
+            # In the event of a state mismatch between OP and session, redirect the user to the
+            # beginning of login process without raising an error to the user. Attempt once.
+            logger.warning(f"No State Defined: {nsd_err}")
+            return redirect(request.session.get("next", "/"))
+        else:
+            # Clear the flag if the exception is not caught
+            request.session.pop("redirect_attempted", None)
+            return error_page(request, nsd_err)
     except Exception as err:
         return error_page(request, err)
 

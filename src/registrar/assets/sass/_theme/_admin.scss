@@ -42,6 +42,7 @@ html[data-theme="light"] {
     --error-fg: #{$theme-color-error};
 
     --message-success-bg: #{$theme-color-success-lighter};
+    --checkbox-green: #{$theme-color-success-light};
     // $theme-color-warning-lighter - yellow-5
     --message-warning-bg: #faf3d1;
     --message-error-bg: #{$theme-color-error-lighter};
@@ -93,6 +94,7 @@ html[data-theme="light"] {
   
       --error-fg: #e35f5f;
       --message-success-bg: #006b1b;
+      --checkbox-green: #006b1b;
       --message-warning-bg: #583305;
       --message-error-bg: #570808;
   
@@ -112,7 +114,8 @@ html[data-theme="light"] {
     .change-list .usa-table thead th,
     body.dashboard,
     body.change-list,
-    body.change-form {
+    body.change-form,
+    .analytics {
         color: var(--body-fg);
     }
 }
@@ -135,10 +138,16 @@ html[data-theme="dark"] {
     color: var(--primary-fg);
 }
 
+
+
 #branding h1,
 h1, h2, h3,
 .module h2 {
     font-weight: font-weight('bold');
+}
+
+div#content > h2 {
+    font-size: 1.3rem;
 }
 
 .module h3 {
@@ -275,11 +284,6 @@ h1, h2, h3,
     }
 }
 
-// Hides the "clear" button on autocomplete, as we already have one to use
-.select2-selection__clear {
-    display: none;
-}
-
 // Fixes a display issue where the list was entirely white, or had too much whitespace
 .select2-dropdown {
     display: inline-grid !important;
@@ -301,4 +305,315 @@ input.admin-confirm-button {
     .button-list-mobile {
         display: contents !important;
     }
+}
+
+.usa-button-group {
+    margin-left: -0.25rem!important;
+    padding-left: 0!important;
+    .usa-button-group__item {
+        list-style-type: none;
+        line-height: normal;
+    }
+    .button {
+        display: inline-block;
+        padding: 10px 8px;
+        line-height: normal;
+    }
+    .usa-icon {
+        top: 2px;
+    }
+    a.button:active, a.button:focus {
+        text-decoration: none;
+    }
+}
+
+.module--custom {
+    a {
+        font-size: 13px;
+        font-weight: 600;
+        border: solid 1px var(--darkened-bg);
+        background: var(--darkened-bg);
+    }
+}
+
+.usa-modal--django-admin .usa-prose ul > li {
+    list-style-type: inherit;
+    // Styling based off of the <p> styling in django admin
+    line-height: 1.5;
+    margin-bottom: 0;
+    margin-top: 0;
+    max-width: 68ex;
+}
+
+.usa-summary-box__dhs-color {
+    color: $dhs-blue-70;
+}
+
+details.dja-detail-table {
+    display: inline-table;
+    background-color: var(--body-bg);
+    .dja-details-summary {
+        cursor: pointer;
+        color: var(--body-quiet-color);
+    }
+
+    @media (max-width: 1024px){
+        .dja-detail-contents {
+            max-width: 400px !important;
+            overflow-x: scroll !important;
+        }
+    }
+
+    tr {
+        background-color: transparent;
+    }
+
+    td, th {
+        padding-left: 12px;
+        border: none
+    }
+
+    thead > tr > th {
+        border-radius: 4px;
+        border-top: none;
+        border-bottom: none;
+    }
+
+}
+
+
+address.margin-top-neg-1__detail-list {
+    margin-top: -8px !important;
+}
+
+.dja-detail-list {
+    dl {
+        padding-left: 0px !important;
+        margin-top: 5px !important;
+    }
+    // Mimic the normal label size
+    address, dt {
+        font-size: 0.8125rem;
+        color: var(--body-quiet-color);
+    }
+}
+
+td button.usa-button__clipboard-link, address.dja-address-contact-list {
+    font-size: unset;
+}
+
+address.dja-address-contact-list {
+    color: var(--body-quiet-color);
+    button.usa-button__clipboard-link {
+        font-size: unset;
+    }
+}
+
+// Mimic the normal label size
+@media (max-width: 1024px){
+    .dja-detail-list dt, .dja-detail-list address {
+        font-size: 0.875rem;
+        color: var(--body-quiet-color);
+    }
+
+    address button.usa-button__clipboard-link, td button.usa-button__clipboard-link {
+        font-size: 0.875rem !important;
+    }
+
+}
+
+.errors span.select2-selection {
+    border: 1px solid var(--error-fg) !important;
+}
+
+.choice-filter {
+    position: relative;
+    padding-left: 20px;
+    svg {
+        top: 4px;
+    }
+}
+
+.choice-filter--checked {
+    svg:nth-child(1) {
+        background: var(--checkbox-green);
+        fill: var(--checkbox-green);
+    }
+    svg:nth-child(2) {
+        color: var(--body-loud-color);
+    }
+}
+
+// Let's define this block of code once and use it for analysts over a certain screen size,
+// superusers over another screen size.
+@mixin submit-row-wrapper--collapsed-one-line(){
+    &.submit-row-wrapper--collapsed {
+     transform: translate3d(0, 42px, 0);
+    }
+    .submit-row {
+        clear: none;
+    }
+  }
+
+// Sticky submit bar for domain requests on desktop
+@media screen and (min-width:768px) {
+    .submit-row-wrapper {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        left: 338px;
+        background: var(--darkened-bg);
+        border-top-left-radius: 6px;
+        transition: transform .2s ease-out;
+        .submit-row {
+            margin-bottom: 0;
+        }
+    }
+    .submit-row-wrapper--collapsed {
+        // translate3d is more performant than translateY
+        // https://stackoverflow.com/questions/22111256/translate3d-vs-translate-performance
+        transform: translate3d(0, 88px, 0);
+    }
+    .submit-row-wrapper--collapsed-one-line {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+    .submit-row {
+        clear: both;
+    }
+    .submit-row-toggle{
+        display: inline-block;
+        position: absolute;
+        top: -30px;
+        right: 0;
+        background: var(--darkened-bg);
+    }
+    #submitRowToggle {
+        color: var(--body-fg);
+    }
+    .requested-domain-sticky {
+        max-width: 325px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        font-size: medium;
+        padding-top: 3px !important;
+    }
+}
+
+.visible-768 {
+    display: none;
+}
+
+@media screen and (min-width:768px) {
+    .visible-768 {
+        display: block;
+        padding-top: 0;
+    }
+}
+
+@media screen and (min-width:935px) {
+    // Analyst only class
+    .submit-row-wrapper--analyst-view {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+}
+
+@media screen and (min-width:1256px) {
+    .submit-row-wrapper {
+        @include submit-row-wrapper--collapsed-one-line();
+    }
+}
+
+// Collapse button styles for fieldsets
+.module.collapse {
+    margin-top: -35px;
+    padding-top: 0;
+    border: none;
+    h2 {
+        background: none;
+        color: var(--body-fg)!important;
+        text-transform: none;
+    }
+    a {
+        color: var(--link-fg);
+    }
+}
+
+.dja-status-list {
+    border-top: solid 1px var(--border-color);
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    padding-top: 10px;
+    li {
+        line-height: 1.5;
+        font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif !important;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
+// Make the clipboard button "float" inside of the input box
+.admin-icon-group {
+    position: relative;
+    display: inline;
+    align-items: center;
+
+    input {
+        // Allow for padding around the copy button
+        padding-right: 35px !important;
+        // Match the height of other inputs
+        min-height: 2.25rem !important;
+    }
+
+    button {
+        line-height: 14px;
+        width: max-content;
+        font-size: unset;
+        text-decoration: none !important;
+    }
+
+    @media (max-width: 1000px) {
+        button {
+            display: block;
+            padding-top: 8px;
+        }
+    }
+
+    span {
+        padding-left: 0.1rem;
+    }
+
+}
+
+.admin-icon-group.admin-icon-group__clipboard-link {
+    position: relative;
+    display: inline;
+    align-items: center;
+    
+
+    .usa-button__icon {
+        position: absolute;
+        right: auto;
+        left: 4px;
+        height: 100%;
+        top: -1px;
+    }
+    button {
+        font-size: unset !important;
+        display: inline-flex;
+        padding-top: 4px;
+        line-height: 14px;
+        color: var(--link-fg);
+        width: max-content;
+        font-size: unset;
+        text-decoration: none !important;
+    }
+}
+
+.no-outline-on-click:focus {
+    outline: none !important;
+}
+
+.usa-button__small-text {
+    font-size: small;
 }

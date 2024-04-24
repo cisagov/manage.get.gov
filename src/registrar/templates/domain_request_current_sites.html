@@ -1,0 +1,28 @@
+{% extends 'domain_request_form.html' %}
+{% load static field_helpers %}
+
+{% block form_instructions %}
+  <p>We can better evaluate your request if we know about domains you’re already using.</p>
+  <h2>What are the current websites for your organization?</h2>
+  <p>Enter your organization’s current public websites. If you already have a .gov domain, include that in your list. This question is optional.</p>
+{% endblock %}
+
+{% block form_required_fields_help_text %}
+{# empty this block so it doesn't show on this page #}
+{% endblock %}
+
+{% block form_fields %}
+  {{ forms.0.management_form }}
+
+  {% for form in forms.0 %}
+  {% with add_label_class="usa-sr-only" %}
+    {% input_with_errors form.website %}
+  {% endwith %} 
+  {% endfor %}
+
+  <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
+    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+      <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
+    </svg><span class="margin-left-05">Add another site</span>
+  </button>
+{% endblock %}

@@ -4,7 +4,7 @@ import json
 from django.test import TestCase, RequestFactory
 from api.views import available
 
-from registrar.forms.application_wizard import (
+from registrar.forms.domain_request_wizard import (
     AlternativeDomainForm,
     CurrentSitesForm,
     DotGovDomainForm,
@@ -226,10 +226,28 @@ class TestFormValidation(MockEppLib):
         )
 
     def test_purpose_form_character_count_invalid(self):
-        """Response must be less than 1000 characters."""
+        """Response must be less than 2000 characters."""
         form = PurposeForm(
             data={
                 "purpose": "Bacon ipsum dolor amet fatback strip steak pastrami"
+                "shankle, drumstick doner chicken landjaeger turkey andouille."
+                "Buffalo biltong chuck pork chop tongue bresaola turkey. Doner"
+                "ground round strip steak, jowl tail chuck ribeye bacon"
+                "beef ribs swine filet ball tip pancetta strip steak sirloin"
+                "mignon ham spare ribs rump. Tail shank biltong beef ribs doner"
+                "buffalo swine bacon. Tongue cow picanha brisket bacon chuck"
+                "leberkas pork loin pork, drumstick capicola. Doner short loin"
+                "ground round fatback turducken chislic shoulder turducken"
+                "spare ribs, burgdoggen kielbasa kevin frankfurter ball tip"
+                "pancetta cupim. Turkey meatball andouille porchetta hamburger"
+                "pork chop corned beef. Brisket short ribs turducken, pork chop"
+                "chislic turkey ball pork chop leberkas rump, rump bacon, jowl"
+                "tip ham. Shankle salami tongue venison short ribs kielbasa"
+                "tri-tip ham hock swine hamburger. Flank meatball corned beef"
+                "cow sausage ball tip kielbasa ham hock. Ball tip cupim meatloaf"
+                "beef ribs rump jowl tenderloin swine sausage biltong"
+                "bacon rump tail boudin meatball boudin meatball boudin."
+                "Bacon ipsum dolor amet fatback strip steak pastrami"
                 "shankle, drumstick doner chicken landjaeger turkey andouille."
                 "Buffalo biltong chuck pork chop tongue bresaola turkey. Doner"
                 "ground round strip steak, jowl tail chuck ribeye bacon"
@@ -251,14 +269,31 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["purpose"],
-            ["Response must be less than 1000 characters."],
+            ["Response must be less than 2000 characters."],
         )
 
     def test_anything_else_form_about_your_organization_character_count_invalid(self):
-        """Response must be less than 1000 characters."""
+        """Response must be less than 2000 characters."""
         form = AnythingElseForm(
             data={
                 "anything_else": "Bacon ipsum dolor amet fatback strip steak pastrami"
+                "shankle, drumstick doner chicken landjaeger turkey andouille."
+                "Buffalo biltong chuck pork chop tongue bresaola turkey. Doner"
+                "ground round strip steak, jowl tail chuck ribeye bacon"
+                "beef ribs swine filet ball tip pancetta strip steak sirloin"
+                "mignon ham spare ribs rump. Tail shank biltong beef ribs doner"
+                "buffalo swine bacon. Tongue cow picanha brisket bacon chuck"
+                "leberkas pork loin pork, drumstick capicola. Doner short loin"
+                "ground round fatback turducken chislic shoulder turducken"
+                "spare ribs, burgdoggen kielbasa kevin frankfurter ball tip"
+                "pancetta cupim. Turkey meatball andouille porchetta hamburger"
+                "pork chop corned beef. Brisket short ribs turducken, pork chop"
+                "chislic turkey ball pork chop leberkas rump, rump bacon, jowl"
+                "tip ham. Shankle salami tongue venison short ribs kielbasa"
+                "tri-tip ham hock swine hamburger. Flank meatball corned beef"
+                "cow sausage ball tip kielbasa ham hock. Ball tip cupim meatloaf"
+                "beef ribs rump jowl tenderloin swine sausage biltong"
+                "bacon rump tail boudin meatball boudin meatball boudin."
                 "shankle, drumstick doner chicken landjaeger turkey andouille."
                 "Buffalo biltong chuck pork chop tongue bresaola turkey. Doner"
                 "ground round strip steak, jowl tail chuck ribeye bacon"
@@ -280,14 +315,32 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["anything_else"],
-            ["Response must be less than 1000 characters."],
+            ["Response must be less than 2000 characters."],
         )
 
     def test_anything_else_form_character_count_invalid(self):
-        """Response must be less than 1000 characters."""
+        """Response must be less than 2000 characters."""
         form = AboutYourOrganizationForm(
             data={
                 "about_your_organization": "Bacon ipsum dolor amet fatback"
+                "strip steak pastrami"
+                "shankle, drumstick doner chicken landjaeger turkey andouille."
+                "Buffalo biltong chuck pork chop tongue bresaola turkey. Doner"
+                "ground round strip steak, jowl tail chuck ribeye bacon"
+                "beef ribs swine filet ball tip pancetta strip steak sirloin"
+                "mignon ham spare ribs rump. Tail shank biltong beef ribs doner"
+                "buffalo swine bacon. Tongue cow picanha brisket bacon chuck"
+                "leberkas pork loin pork, drumstick capicola. Doner short loin"
+                "ground round fatback turducken chislic shoulder turducken"
+                "spare ribs, burgdoggen kielbasa kevin frankfurter ball tip"
+                "pancetta cupim. Turkey meatball andouille porchetta hamburger"
+                "pork chop corned beef. Brisket short ribs turducken, pork chop"
+                "chislic turkey ball pork chop leberkas rump, rump bacon, jowl"
+                "tip ham. Shankle salami tongue venison short ribs kielbasa"
+                "tri-tip ham hock swine hamburger. Flank meatball corned beef"
+                "cow sausage ball tip kielbasa ham hock. Ball tip cupim meatloaf"
+                "beef ribs rump jowl tenderloin swine sausage biltong"
+                "bacon rump tail boudin meatball boudin meatball boudin."
                 "strip steak pastrami"
                 "shankle, drumstick doner chicken landjaeger turkey andouille."
                 "Buffalo biltong chuck pork chop tongue bresaola turkey. Doner"
@@ -310,7 +363,7 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["about_your_organization"],
-            ["Response must be less than 1000 characters."],
+            ["Response must be less than 2000 characters."],
         )
 
     def test_your_contact_email_invalid(self):

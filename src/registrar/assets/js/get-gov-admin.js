@@ -29,20 +29,26 @@ function openInNewTab(el, removeAttribute = false){
 */
 (function (){
     function createPhantomModalFormButtons(){
-        let submitButtons = document.querySelectorAll('.usa-modal button[type="submit"]');
+        let submitButtons = document.querySelectorAll('.usa-modal button[type="submit"].dja-form-placeholder');
         form = document.querySelector("form")
         submitButtons.forEach((button) => {
 
             let input = document.createElement("input");
             input.type = "submit";
-            input.name = button.name;
-            input.value = button.value;
+
+            if(button.name){
+                input.name = button.name;
+            }
+
+            if(button.value){
+                input.value = button.value;
+            }
+
             input.style.display = "none"
 
             // Add the hidden input to the form
             form.appendChild(input);
             button.addEventListener("click", () => {
-                console.log("clicking")
                 input.click();
             })
         })
@@ -50,6 +56,61 @@ function openInNewTab(el, removeAttribute = false){
 
     createPhantomModalFormButtons();
 })();
+
+/** An IIFE for DomainRequest to hook a modal to a dropdown option.
+ * This intentionally does not interact with createPhantomModalFormButtons()
+*/
+(function (){
+    function displayModalOnDropdownClick(linkClickedDisplaysModal, statusDropdown, actionButton, valueToCheck){
+
+        // If these exist all at the same time, we're on the right page
+        if (linkClickedDisplaysModal && statusDropdown && statusDropdown.value){
+            
+            // Set the previous value in the event the user cancels.
+            let previousValue = statusDropdown.value;
+            if (actionButton){
+
+                // Otherwise, if the confirmation buttion is pressed, set it to that
+                actionButton.addEventListener('click', function() {
+                    // Revert the dropdown to its previous value
+                    statusDropdown.value = valueToCheck;
+                });
+            }else {
+                console.log("displayModalOnDropdownClick() -> Cancel button was null")
+            }
+
+            // Add a change event listener to the dropdown.
+            statusDropdown.addEventListener('change', function() {
+                // Check if "Ineligible" is selected
+                if (this.value && this.value.toLowerCase() === valueToCheck) {
+                    // Set the old value in the event the user cancels,
+                    // or otherwise exists the dropdown.
+                    statusDropdown.value = previousValue
+
+                    // Display the modal.
+                    linkClickedDisplaysModal.click()
+                }
+            });
+        }
+    }
+
+    // When the status dropdown is clicked and is set to "ineligible", toggle a confirmation dropdown.
+    function hookModalToIneligibleStatus(){
+        // Grab the invisible element that will hook to the modal.
+        // This doesn't technically need to be done with one, but this is simpler to manage.
+        let modalButton = document.getElementById("invisible-ineligible-modal-toggler")
+        let statusDropdown = document.getElementById("id_status")
+
+        // Because the modal button does not have the class "dja-form-placeholder",
+        // it will not be affected by the createPhantomModalFormButtons() function.
+        let actionButton = document.querySelector('button[name="_set_domain_request_ineligible"]');
+        let valueToCheck = "ineligible"
+        displayModalOnDropdownClick(modalButton, statusDropdown, actionButton, valueToCheck);
+    }
+
+    hookModalToIneligibleStatus()
+})();
+
 /** An IIFE for pages in DjangoAdmin which may need custom JS implementation.
  * Currently only appends target="_blank" to the domain_form object,
  * but this can be expanded.
@@ -75,6 +136,94 @@ function openInNewTab(el, removeAttribute = false){
 
     prepareDjangoAdmin();
 })();
+
+/** An IIFE for pages in DjangoAdmin that use a clipboard button
+*/
+(function (){
+
+    function copyInnerTextToClipboard(elem) {
+        let text = elem.innerText
+        navigator.clipboard.writeText(text)
+    }
+
+    function copyToClipboardAndChangeIcon(button) {
+        // Assuming the input is the previous sibling of the button
+        let input = button.previousElementSibling;
+        let userId = input.getAttribute("user-id")
+        // Copy input value to clipboard
+        if (input) {
+            navigator.clipboard.writeText(input.value).then(function() {
+                // Change the icon to a checkmark on successful copy
+                let buttonIcon = button.querySelector('.usa-button__clipboard use');
+                if (buttonIcon) {
+                    let currentHref = buttonIcon.getAttribute('xlink:href');
+                    let baseHref = currentHref.split('#')[0];
+
+                    // Append the new icon reference
+                    buttonIcon.setAttribute('xlink:href', baseHref + '#check');
+
+                    // Change the button text
+                    nearestSpan = button.querySelector("span")
+                    nearestSpan.innerText = "Copied to clipboard"
+
+                    setTimeout(function() {
+                        // Change back to the copy icon
+                        buttonIcon.setAttribute('xlink:href', currentHref); 
+                        if (button.classList.contains('usa-button__small-text')) {
+                            nearestSpan.innerText = "Copy email";
+                        } else {
+                            nearestSpan.innerText = "Copy";
+                        }
+                    }, 2000);
+
+                }
+
+            }).catch(function(error) {
+                console.error('Clipboard copy failed', error);
+            });
+        }
+    }
+    
+    function handleClipboardButtons() {
+        clipboardButtons = document.querySelectorAll(".usa-button__clipboard")
+        clipboardButtons.forEach((button) => {
+
+            // Handle copying the text to your clipboard,
+            // and changing the icon.
+            button.addEventListener("click", ()=>{
+                copyToClipboardAndChangeIcon(button);
+            });
+            
+            // Add a class that adds the outline style on click
+            button.addEventListener("mousedown", function() {
+                this.classList.add("no-outline-on-click");
+            });
+            
+            // But add it back in after the user clicked,
+            // for accessibility reasons (so we can still tab, etc)
+            button.addEventListener("blur", function() {
+                this.classList.remove("no-outline-on-click");
+            });
+
+        });
+    }
+
+    function handleClipboardLinks() {
+        let emailButtons = document.querySelectorAll(".usa-button__clipboard-link");
+        if (emailButtons){
+            emailButtons.forEach((button) => {
+                button.addEventListener("click", ()=>{
+                    copyInnerTextToClipboard(button);
+                })
+            });
+        }
+    }
+
+    handleClipboardButtons();
+    handleClipboardLinks();
+
+})();
+
 
 /**
  * An IIFE to listen to changes on filter_horizontal and enable or disable the change/delete/view buttons as applicable
@@ -307,43 +456,6 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     viewLink.setAttribute('title', viewLink.getAttribute('title-template').replace('selected item', elementText));
 }
 
-/** An IIFE for admin in DjangoAdmin to listen to clicks on the growth report export button,
- * attach the seleted start and end dates to a url that'll trigger the view, and finally
- * redirect to that url.
-*/
-(function (){
-
-    // Get the current date in the format YYYY-MM-DD
-    let currentDate = new Date().toISOString().split('T')[0];
-
-    // Default the value of the start date input field to the current date
-    let startDateInput =document.getElementById('start');
-
-    // Default the value of the end date input field to the current date
-    let endDateInput =document.getElementById('end');
-
-    let exportGrowthReportButton = document.getElementById('exportLink');
-
-    if (exportGrowthReportButton) {
-        startDateInput.value = currentDate;
-        endDateInput.value = currentDate;
-
-        exportGrowthReportButton.addEventListener('click', function() {
-            // Get the selected start and end dates
-            let startDate = startDateInput.value;
-            let endDate = endDateInput.value;
-            let exportUrl = document.getElementById('exportLink').dataset.exportUrl;
-
-            // Build the URL with parameters
-            exportUrl += "?start_date=" + startDate + "&end_date=" + endDate;
-        
-            // Redirect to the export URL
-            window.location.href = exportUrl;
-        });
-    }
-
-})();
-
 /** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
  * status select amd to show/hide the rejection reason
 */
@@ -385,4 +497,61 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
         });
     });
     observer.observe({ type: "navigation" });
+})();
+
+/** An IIFE for toggling the submit bar on domain request forms
+*/
+(function (){
+    // Get a reference to the button element
+    const toggleButton = document.getElementById('submitRowToggle');
+    const submitRowWrapper = document.querySelector('.submit-row-wrapper');
+
+    if (toggleButton) {
+        // Add event listener to toggle the class and update content on click
+        toggleButton.addEventListener('click', function() {
+            // Toggle the 'collapsed' class on the bar
+            submitRowWrapper.classList.toggle('submit-row-wrapper--collapsed');
+
+            // Get a reference to the span element inside the button
+            const spanElement = this.querySelector('span');
+
+            // Get a reference to the use element inside the button
+            const useElement = this.querySelector('use');
+
+            // Check if the span element text is 'Hide'
+            if (spanElement.textContent.trim() === 'Hide') {
+                // Update the span element text to 'Show'
+                spanElement.textContent = 'Show';
+
+                // Update the xlink:href attribute to expand_more
+                useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_less');
+            } else {
+                // Update the span element text to 'Hide'
+                spanElement.textContent = 'Hide';
+
+                // Update the xlink:href attribute to expand_less
+                useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_more');
+            }
+        });
+
+        // We have a scroll indicator at the end of the page.
+        // Observe it. Once it gets on screen, test to see if the row is collapsed.
+        // If it is, expand it.
+        const targetElement = document.querySelector(".scroll-indicator");
+        const options = {
+            threshold: 1
+        };
+        // Create a new Intersection Observer
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Refresh reference to submit row wrapper and check if it's collapsed
+                    if (document.querySelector('.submit-row-wrapper').classList.contains('submit-row-wrapper--collapsed')) {
+                        toggleButton.click();
+                    }
+                }
+            });
+        }, options);
+        observer.observe(targetElement);
+    }
 })();

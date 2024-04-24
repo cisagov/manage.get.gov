@@ -5,7 +5,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from .common import MockSESClient, create_user  # type: ignore
+from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -21,7 +21,7 @@ from registrar.utility.errors import (
 )
 
 from registrar.models import (
-    DomainApplication,
+    DomainRequest,
     Domain,
     DomainInformation,
     DomainInvitation,
@@ -71,11 +71,14 @@ class TestWithDomainPermissions(TestWithUser):
         # that inherit this setUp
         self.domain_dnssec_none, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
 
+        self.domain_with_four_nameservers, _ = Domain.objects.get_or_create(name="fournameserversDomain.gov")
+
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_four_nameservers)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
@@ -100,6 +103,11 @@ class TestWithDomainPermissions(TestWithUser):
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
+            domain=self.domain_with_four_nameservers,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
             domain=self.domain_with_ip,
             role=UserDomainRole.Roles.MANAGER,
         )
@@ -120,7 +128,7 @@ class TestWithDomainPermissions(TestWithUser):
             UserDomainRole.objects.all().delete()
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
-            DomainApplication.objects.all().delete()
+            DomainRequest.objects.all().delete()
             DomainInformation.objects.all().delete()
             PublicContact.objects.all().delete()
             HostIP.objects.all().delete()
@@ -235,7 +243,7 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(home_page, "DNS needed")
 
     def test_unknown_domain_does_not_show_as_expired_on_detail_page(self):
-        """An UNKNOWN domain does not show as expired on the detail page.
+        """An UNKNOWN domain should not exist on the detail_page anymore.
         It shows as 'DNS needed'"""
         # At the time of this test's writing, there are 6 UNKNOWN domains inherited
         # from constructors. Let's reset.
@@ -254,9 +262,9 @@ class TestDomainDetail(TestDomainOverview):
             igorville = Domain.objects.get(name="igorville.gov")
             self.assertEquals(igorville.state, Domain.State.UNKNOWN)
             detail_page = home_page.click("Manage", index=0)
-            self.assertNotContains(detail_page, "Expired")
+            self.assertContains(detail_page, "Expired")
 
-            self.assertContains(detail_page, "DNS needed")
+            self.assertNotContains(detail_page, "DNS needed")
 
     def test_domain_detail_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
@@ -309,9 +317,9 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "(1.2.3.4,")
             self.assertContains(detail_page, "2.3.4.5)")
 
-    def test_domain_detail_with_no_information_or_application(self):
+    def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
-        when no domain information or domain application exist"""
+        when no domain information or domain request exist"""
         with less_console_noise():
             # have to use staff user for this test
             staff_user = create_user()
@@ -665,6 +673,22 @@ class TestDomainManagers(TestDomainOverview):
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
 
+    def test_domain_invitation_cancel_retrieved_invitation(self):
+        """Posting to the delete view when invitation retrieved returns an error message"""
+        email_address = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(
+            domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
+        )
+        with less_console_noise():
+            response = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}), follow=True)
+            # Assert that an error message is displayed to the user
+            self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
+            # Assert that the Cancel link is not displayed
+            self.assertNotContains(response, "Cancel")
+        # Assert that the DomainInvitation is not deleted
+        self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
+        DomainInvitation.objects.filter(email=email_address).delete()
+
     def test_domain_invitation_cancel_no_permissions(self):
         """Posting to the delete view as a different user should fail."""
         email_address = "mayor@igorville.gov"
@@ -711,7 +735,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertContains(home_page, self.domain.name)
 
 
-class TestDomainNameservers(TestDomainOverview):
+class TestDomainNameservers(TestDomainOverview, MockEppLib):
     def test_domain_nameservers(self):
         """Can load domain's nameservers page."""
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
@@ -958,6 +982,117 @@ class TestDomainNameservers(TestDomainOverview):
         page = result.follow()
         self.assertContains(page, "The name servers for this domain have been updated")
 
+    def test_domain_nameservers_can_blank_out_first_or_second_one_if_enough_entries(self):
+        """Nameserver form submits successfully with 2 valid inputs, even if the first or
+        second entries are blanked out.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+
+        nameserver1 = ""
+        nameserver2 = "ns2.igorville.gov"
+        nameserver3 = "ns3.igorville.gov"
+        valid_ip = ""
+        valid_ip_2 = "128.0.0.2"
+        valid_ip_3 = "128.0.0.3"
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-0-ip"] = valid_ip
+        nameservers_page.form["form-1-server"] = nameserver2
+        nameservers_page.form["form-1-ip"] = valid_ip_2
+        nameservers_page.form["form-2-server"] = nameserver3
+        nameservers_page.form["form-2-ip"] = valid_ip_3
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+
+        # form submission was a successful post, response should be a 302
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page = result.follow()
+        self.assertContains(nameservers_page, "The name servers for this domain have been updated")
+
+        nameserver1 = "ns1.igorville.gov"
+        nameserver2 = ""
+        nameserver3 = "ns3.igorville.gov"
+        valid_ip = "128.0.0.1"
+        valid_ip_2 = ""
+        valid_ip_3 = "128.0.0.3"
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-0-ip"] = valid_ip
+        nameservers_page.form["form-1-server"] = nameserver2
+        nameservers_page.form["form-1-ip"] = valid_ip_2
+        nameservers_page.form["form-2-server"] = nameserver3
+        nameservers_page.form["form-2-ip"] = valid_ip_3
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+
+        # form submission was a successful post, response should be a 302
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page = result.follow()
+        self.assertContains(nameservers_page, "The name servers for this domain have been updated")
+
+    def test_domain_nameservers_can_blank_out_first_and_second_one_if_enough_entries(self):
+        """Nameserver form submits successfully with 2 valid inputs, even if the first and
+        second entries are blanked out.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+
+        # We need to start with a domain with 4 nameservers otherwise the formset in the test environment
+        # will only have 3 forms
+        nameserver1 = ""
+        nameserver2 = ""
+        nameserver3 = "ns3.igorville.gov"
+        nameserver4 = "ns4.igorville.gov"
+        valid_ip = ""
+        valid_ip_2 = ""
+        valid_ip_3 = ""
+        valid_ip_4 = ""
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain_with_four_nameservers.id})
+        )
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Minimal check to ensure the form is loaded correctly
+        self.assertEqual(nameservers_page.form["form-0-server"].value, "ns1.my-nameserver-1.com")
+        self.assertEqual(nameservers_page.form["form-3-server"].value, "ns1.explosive-chicken-nuggets.com")
+
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-0-ip"] = valid_ip
+        nameservers_page.form["form-1-server"] = nameserver2
+        nameservers_page.form["form-1-ip"] = valid_ip_2
+        nameservers_page.form["form-2-server"] = nameserver3
+        nameservers_page.form["form-2-ip"] = valid_ip_3
+        nameservers_page.form["form-3-server"] = nameserver4
+        nameservers_page.form["form-3-ip"] = valid_ip_4
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+
+        # form submission was a successful post, response should be a 302
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain_with_four_nameservers.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        nameservers_page = result.follow()
+        self.assertContains(nameservers_page, "The name servers for this domain have been updated")
+
     def test_domain_nameservers_form_invalid(self):
         """Nameserver form does not submit with invalid data.
 
@@ -1020,6 +1155,144 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         self.domain_information.refresh_from_db()
         self.assertEqual("Testy2", self.domain_information.authorizing_official.first_name)
         self.assertEqual(ao_pk, self.domain_information.authorizing_official.id)
+
+    def assert_all_form_fields_have_expected_values(self, form, test_cases, test_for_disabled=False):
+        """
+        Asserts that each specified form field has the expected value and, optionally, checks if the field is disabled.
+
+        This method iterates over a list of tuples, where each
+        tuple contains a field name and the expected value for that field.
+        It uses subtests to isolate each assertion, allowing multiple field
+        checks within a single test method without stopping at the first failure.
+
+        Example usage:
+        test_cases = [
+            ("first_name", "John"),
+            ("last_name", "Doe"),
+            ("email", "john.doe@example.com"),
+        ]
+        self.assert_all_form_fields_have_expected_values(my_form, test_cases, test_for_disabled=True)
+        """
+        for field_name, expected_value in test_cases:
+            with self.subTest(field_name=field_name, expected_value=expected_value):
+                # Test that each field has the value we expect
+                self.assertEqual(expected_value, form[field_name].value)
+
+                if test_for_disabled:
+                    # Test for disabled on each field
+                    self.assertTrue("disabled" in form[field_name].attrs)
+
+    def test_domain_edit_authorizing_official_federal(self):
+        """Tests that no edit can occur when the underlying domain is federal"""
+
+        # Set the org type to federal
+        self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.save()
+
+        # Add an AO. We can do this at the model level, just not the form level.
+        self.domain_information.authorizing_official = Contact(
+            first_name="Apple", last_name="Tester", title="CIO", email="nobody@igorville.gov"
+        )
+        self.domain_information.authorizing_official.save()
+        self.domain_information.save()
+
+        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Test if the form is populating data correctly
+        ao_form = ao_page.forms[0]
+
+        test_cases = [
+            ("first_name", "Apple"),
+            ("last_name", "Tester"),
+            ("title", "CIO"),
+            ("email", "nobody@igorville.gov"),
+        ]
+        self.assert_all_form_fields_have_expected_values(ao_form, test_cases, test_for_disabled=True)
+
+        # Attempt to change data on each field. Because this domain is federal,
+        # this should not succeed.
+        ao_form["first_name"] = "Orange"
+        ao_form["last_name"] = "Smoothie"
+        ao_form["title"] = "Cat"
+        ao_form["email"] = "somebody@igorville.gov"
+
+        submission = ao_form.submit()
+
+        # A 302 indicates this page underwent a redirect.
+        self.assertEqual(submission.status_code, 302)
+
+        followed_submission = submission.follow()
+
+        # Test the returned form for data accuracy. These values should be unchanged.
+        new_form = followed_submission.forms[0]
+        self.assert_all_form_fields_have_expected_values(new_form, test_cases, test_for_disabled=True)
+
+        # refresh domain information. Test these values in the DB.
+        self.domain_information.refresh_from_db()
+
+        # All values should be unchanged. These are defined manually for code clarity.
+        self.assertEqual("Apple", self.domain_information.authorizing_official.first_name)
+        self.assertEqual("Tester", self.domain_information.authorizing_official.last_name)
+        self.assertEqual("CIO", self.domain_information.authorizing_official.title)
+        self.assertEqual("nobody@igorville.gov", self.domain_information.authorizing_official.email)
+
+    def test_domain_edit_authorizing_official_tribal(self):
+        """Tests that no edit can occur when the underlying domain is tribal"""
+
+        # Set the org type to federal
+        self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.TRIBAL
+        self.domain_information.save()
+
+        # Add an AO. We can do this at the model level, just not the form level.
+        self.domain_information.authorizing_official = Contact(
+            first_name="Apple", last_name="Tester", title="CIO", email="nobody@igorville.gov"
+        )
+        self.domain_information.authorizing_official.save()
+        self.domain_information.save()
+
+        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Test if the form is populating data correctly
+        ao_form = ao_page.forms[0]
+
+        test_cases = [
+            ("first_name", "Apple"),
+            ("last_name", "Tester"),
+            ("title", "CIO"),
+            ("email", "nobody@igorville.gov"),
+        ]
+        self.assert_all_form_fields_have_expected_values(ao_form, test_cases, test_for_disabled=True)
+
+        # Attempt to change data on each field. Because this domain is federal,
+        # this should not succeed.
+        ao_form["first_name"] = "Orange"
+        ao_form["last_name"] = "Smoothie"
+        ao_form["title"] = "Cat"
+        ao_form["email"] = "somebody@igorville.gov"
+
+        submission = ao_form.submit()
+
+        # A 302 indicates this page underwent a redirect.
+        self.assertEqual(submission.status_code, 302)
+
+        followed_submission = submission.follow()
+
+        # Test the returned form for data accuracy. These values should be unchanged.
+        new_form = followed_submission.forms[0]
+        self.assert_all_form_fields_have_expected_values(new_form, test_cases, test_for_disabled=True)
+
+        # refresh domain information. Test these values in the DB.
+        self.domain_information.refresh_from_db()
+
+        # All values should be unchanged. These are defined manually for code clarity.
+        self.assertEqual("Apple", self.domain_information.authorizing_official.first_name)
+        self.assertEqual("Tester", self.domain_information.authorizing_official.last_name)
+        self.assertEqual("CIO", self.domain_information.authorizing_official.title)
+        self.assertEqual("nobody@igorville.gov", self.domain_information.authorizing_official.email)
 
     def test_domain_edit_authorizing_official_creates_new(self):
         """When editing an authorizing official for domain information and AO IS
@@ -1087,6 +1360,149 @@ class TestDomainOrganization(TestDomainOverview):
 
         self.assertContains(success_result_page, "Not igorville")
         self.assertContains(success_result_page, "Faketown")
+
+    def test_domain_org_name_address_form_tribal(self):
+        """
+        Submitting a change to organization_name is blocked for tribal domains
+        """
+        # Set the current domain to a tribal organization with a preset value.
+        # Save first, so we can test if saving is unaffected (it should be).
+        tribal_org_type = DomainInformation.OrganizationChoices.TRIBAL
+        self.domain_information.generic_org_type = tribal_org_type
+        self.domain_information.save()
+        try:
+            # Add an org name
+            self.domain_information.organization_name = "Town of Igorville"
+            self.domain_information.save()
+        except ValueError as err:
+            self.fail(f"A ValueError was caught during the test: {err}")
+
+        self.assertEqual(self.domain_information.generic_org_type, tribal_org_type)
+
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+
+        form = org_name_page.forms[0]
+        # Check the value of the input field
+        organization_name_input = form.fields["organization_name"][0]
+        self.assertEqual(organization_name_input.value, "Town of Igorville")
+
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in organization_name_input.attrs)
+        self.assertEqual(organization_name_input.attrs.get("disabled"), "")
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        org_name_page.form["organization_name"] = "Not igorville"
+        org_name_page.form["city"] = "Faketown"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Make the change. The org name should be unchanged, but city should be modifiable.
+        success_result_page = org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 200)
+
+        # Check for the old and new value
+        self.assertContains(success_result_page, "Town of Igorville")
+        self.assertNotContains(success_result_page, "Not igorville")
+
+        # Do another check on the form itself
+        form = success_result_page.forms[0]
+        # Check the value of the input field
+        organization_name_input = form.fields["organization_name"][0]
+        self.assertEqual(organization_name_input.value, "Town of Igorville")
+
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in organization_name_input.attrs)
+        self.assertEqual(organization_name_input.attrs.get("disabled"), "")
+
+        # Check for the value we want to update
+        self.assertContains(success_result_page, "Faketown")
+
+    def test_domain_org_name_address_form_federal(self):
+        """
+        Submitting a change to federal_agency is blocked for federal domains
+        """
+        # Set the current domain to a tribal organization with a preset value.
+        # Save first, so we can test if saving is unaffected (it should be).
+        fed_org_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.generic_org_type = fed_org_type
+        self.domain_information.save()
+        try:
+            self.domain_information.federal_agency = "AMTRAK"
+            self.domain_information.save()
+        except ValueError as err:
+            self.fail(f"A ValueError was caught during the test: {err}")
+
+        self.assertEqual(self.domain_information.generic_org_type, fed_org_type)
+
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+
+        form = org_name_page.forms[0]
+        # Check the value of the input field
+        agency_input = form.fields["federal_agency"][0]
+        self.assertEqual(agency_input.value, "AMTRAK")
+
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in agency_input.attrs)
+        self.assertEqual(agency_input.attrs.get("disabled"), "")
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        org_name_page.form["federal_agency"] = "Department of State"
+        org_name_page.form["city"] = "Faketown"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Make the change. The agency should be unchanged, but city should be modifiable.
+        success_result_page = org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 200)
+
+        # Check for the old and new value
+        self.assertContains(success_result_page, "AMTRAK")
+        self.assertNotContains(success_result_page, "Department of State")
+
+        # Do another check on the form itself
+        form = success_result_page.forms[0]
+        # Check the value of the input field
+        organization_name_input = form.fields["federal_agency"][0]
+        self.assertEqual(organization_name_input.value, "AMTRAK")
+
+        # Check if the input field is disabled
+        self.assertTrue("disabled" in organization_name_input.attrs)
+        self.assertEqual(organization_name_input.attrs.get("disabled"), "")
+
+        # Check for the value we want to update
+        self.assertContains(success_result_page, "Faketown")
+
+    def test_federal_agency_submit_blocked(self):
+        """
+        Submitting a change to federal_agency is blocked for federal domains
+        """
+        # Set the current domain to a tribal organization with a preset value.
+        # Save first, so we can test if saving is unaffected (it should be).
+        federal_org_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.generic_org_type = federal_org_type
+        self.domain_information.save()
+
+        old_federal_agency_value = ("AMTRAK", "AMTRAK")
+        try:
+            # Add a federal agency. Defined as a tuple since this list may change order.
+            self.domain_information.federal_agency = old_federal_agency_value
+            self.domain_information.save()
+        except ValueError as err:
+            self.fail(f"A ValueError was caught during the test: {err}")
+
+        self.assertEqual(self.domain_information.generic_org_type, federal_org_type)
+
+        new_value = ("Department of State", "Department of State")
+        self.client.post(
+            reverse("domain-org-name-address", kwargs={"pk": self.domain.id}),
+            {
+                "federal_agency": new_value,
+            },
+        )
+        self.assertEqual(self.domain_information.federal_agency, old_federal_agency_value)
+        self.assertNotEqual(self.domain_information.federal_agency, new_value)
 
 
 class TestDomainContactInformation(TestDomainOverview):

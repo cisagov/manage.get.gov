@@ -16,12 +16,14 @@ The following set of rules should be followed while an incident is in progress.
   - If downtime occurs outside of working hours, team members who are off for the day may still be pinged and called but are not required to join if unavailable to do so.
 - Uncomment the [banner on get.gov](https://github.com/cisagov/get.gov/blob/0365d3d34b041cc9353497b2b5f81b6ab7fe75a9/_includes/header.html#L9), so it is transparent to users that we know about the issue on manage.get.gov.
   - Designers or Developers should be able to make this change; if designers are online and can help with this task, that will allow developers to focus on fixing the bug.
+- If the issue persists for three hours or more, follow the [instructions for enabling/disabling a redirect to get.gov](https://docs.google.com/document/d/1PiWXpjBzbiKsSYqEo9Rkl72HMytMp7zTte9CI-vvwYw/edit).
 
 ## Post Incident
 
 The following checklist should be followed after the site is back up and running.
 
-- [ ] Message in #dotgov-announce with an @here saying the issue is resolved
+- [ ] Message in #dotgov-announce with an @here saying the issue is resolved.
+- [ ] If the redirect was used, refer to the [instructions for enabling/disabling a redirect to get.gov](https://docs.google.com/document/d/1PiWXpjBzbiKsSYqEo9Rkl72HMytMp7zTte9CI-vvwYw/edit) to turn off this redirect. Double-check in the browser that this redirect is no longer occurring (the change may take a few minutes to take full effect).
 - [ ] Remove the [banner on get.gov](https://github.com/cisagov/get.gov/blob/0365d3d34b041cc9353497b2b5f81b6ab7fe75a9/_includes/header.html#L9) by commenting it out.
 - [ ] Write up what happened and when; if the cause is already known, write that as well. This is a draft for internal communications and not for any public facing site and can be as simple as using bullet points.
 - [ ] If the cause is not known yet, developers should investigate the issue as the highest priority task.

@@ -15,7 +15,7 @@ from registrar.management.commands.utility.terminal_helper import (
     TerminalHelper,
 )
 from registrar.models.contact import Contact
-from registrar.models.domain_application import DomainApplication
+from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from registrar.models.user import User
 
@@ -332,7 +332,7 @@ class Command(BaseCommand):
         updated = False
 
         fields_to_update = [
-            "organization_type",
+            "generic_org_type",
             "federal_type",
             "federal_agency",
             "organization_name",
@@ -400,7 +400,7 @@ class Command(BaseCommand):
         if debug_on:
             logger.info(f"Contact created: {contact}")
 
-        org_type_current = transition_domain.organization_type
+        org_type_current = transition_domain.generic_org_type
         match org_type_current:
             case "Federal":
                 org_type = ("federal", "Federal")
@@ -431,7 +431,7 @@ class Command(BaseCommand):
         }
 
         if valid_org_type:
-            new_domain_info_data["organization_type"] = org_type[0]
+            new_domain_info_data["generic_org_type"] = org_type[0]
         elif debug_on:
             logger.debug(f"No org type found on {domain.name}")
 
@@ -817,9 +817,9 @@ class Command(BaseCommand):
                 raise Exception(f"Domain {existing_domain} wants to be added" "but doesn't exist in the DB")
             invitation.save()
 
-        valid_org_choices = [(name, value) for name, value in DomainApplication.OrganizationChoices.choices]
-        valid_fed_choices = [value for name, value in DomainApplication.BranchChoices.choices]
-        valid_agency_choices = DomainApplication.AGENCIES
+        valid_org_choices = [(name, value) for name, value in DomainRequest.OrganizationChoices.choices]
+        valid_fed_choices = [value for name, value in DomainRequest.BranchChoices.choices]
+        valid_agency_choices = DomainRequest.AGENCIES
         # ======================================================
         # ================= DOMAIN INFORMATION =================
         logger.info(

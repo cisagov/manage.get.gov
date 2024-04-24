@@ -1,7 +1,7 @@
 import logging
 from django import template
 import re
-from registrar.models.domain_application import DomainApplication
+from registrar.models.domain_request import DomainRequest
 
 register = template.Library()
 logger = logging.getLogger(__name__)
@@ -54,11 +54,16 @@ def contains_checkbox(html_list):
 
 
 @register.filter
-def get_organization_long_name(organization_type):
-    organization_choices_dict = dict(DomainApplication.OrganizationChoicesVerbose.choices)
-    long_form_type = organization_choices_dict[organization_type]
+def get_organization_long_name(generic_org_type):
+    organization_choices_dict = dict(DomainRequest.OrganizationChoicesVerbose.choices)
+    long_form_type = organization_choices_dict[generic_org_type]
     if long_form_type is None:
         logger.error("Organization type error, triggered by a template's custom filter")
         return "Error"
 
     return long_form_type
+
+
+@register.filter(name="has_permission")
+def has_permission(user, permission):
+    return user.has_perm(permission)
