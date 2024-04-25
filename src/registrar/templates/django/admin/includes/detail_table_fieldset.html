@@ -1,5 +1,6 @@
 {% extends "admin/fieldset.html" %}
 {% load static url_helpers %}
+{% load custom_filters %}
 
 {% comment %}
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
@@ -80,18 +81,16 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 <table class="usa-table usa-table--borderless">
                     <thead>
                         <tr>
-                            <th data-sortable scope="col" role="columnheader">From</th>
-                            <th data-sortable scope="col" role="columnheader">To</th>
-                            <th data-sortable scope="col" role="columnheader">Changed By</th>
-                            <th data-sortable scope="col" role="columnheader" aria-sort="ascending">Change Date</th>
+                            <th>Status</th>
+                            <th>User</th>
+                            <th>Changed at</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for log_entry in original_object.history.all %}
+                        {% for log_entry in original_object.history.all|reverse_list %}
                             {% for key, value in log_entry.changes_display_dict.items %}
                                 {% if key == "status" %}
                                     <tr>
-                                        <td>{{ value.0|default:"None" }}</td>
                                         <td>{{ value.1|default:"None" }}</td>
                                         <td>{{ log_entry.actor|default:"None" }}</td>
                                         <td>{{ log_entry.timestamp|default:"None" }}</td>

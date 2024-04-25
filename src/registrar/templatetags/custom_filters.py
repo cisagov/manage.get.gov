@@ -67,3 +67,9 @@ def get_organization_long_name(generic_org_type):
 @register.filter(name="has_permission")
 def has_permission(user, permission):
     return user.has_perm(permission)
+
+
+@register.filter(name='reverse_list')
+def reverse_list(value):
+    return reversed(value)
+
