@@ -537,6 +537,11 @@ address.dja-address-contact-list {
         margin-left: 10px;
         span {
             text-decoration: underline;
+            font-size: 13px;
+            font-feature-settings: "kern";
+            font-kerning: normal;
+            line-height: 13px;
+            font-family: -apple-system, "system-ui", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
         }
     }
 }
