@@ -108,7 +108,7 @@ services:
       - pa11y
 
   owasp:
-    image: owasp/zap2docker-stable
+    image: softwaresecurityproject/zap-bare
     command: zap-baseline.py -t http://app:8080 -c zap.conf -I -r zap_report.html
     volumes:
       - .:/zap/wrk/
