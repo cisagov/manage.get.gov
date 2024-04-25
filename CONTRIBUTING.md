@@ -18,7 +18,7 @@ Where 'jsd' stands for your initials and sandbox environment name (if you were c
 
 When a code change is made that is not user facing, then the following is required:
 - a developer approves the PR
-- no that's wrong
+- no that's right
 
 When a code change is made that is user facing, beyond content updates, then the following are required:
 - a developer approves the PR
