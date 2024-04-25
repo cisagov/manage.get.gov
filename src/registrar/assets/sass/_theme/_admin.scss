@@ -619,9 +619,22 @@ address.dja-address-contact-list {
 }
 
 div.django-admin__model-description{
-    color: var(--primary);
+    p, li {
+        color: var(--primary);
+        font-size: medium;
+        line-height: 1.2em;
+    }
+
+    li {
+        list-style-type: disc;
+    }
+
+    button {
+        padding-top: 20px;
+    }
+
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;  
     overflow: hidden;
 }
