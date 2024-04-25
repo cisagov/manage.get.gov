@@ -890,7 +890,8 @@ class TestDomainRequestAdmin(MockEppLib):
     @less_console_noise_decorator
     def test_status_logs(self):
         """
-        Tests that the status changes are shown in a table on the domain request change form
+        Tests that the status changes are shown in a table on the domain request change form,
+        accurately and in chronological order.
         """
 
         # Create a fake domain request and domain
@@ -907,9 +908,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain_request.requested_domain.name)
 
-        # Table will contain From None To Started
-        self.assertContains(response, '<th data-sortable scope="col" role="columnheader">')
-        self.assertContains(response, "<td>None</td>")
+        # Table will contain one row for Started
         self.assertContains(response, "<td>Started</td>", count=1)
         self.assertNotContains(response, "<td>Submitted</td>")
 
@@ -921,11 +920,63 @@ class TestDomainRequestAdmin(MockEppLib):
             follow=True,
         )
 
-        # Table will contain From None To Started
-        # Table will contain From Started To Submitted
-        self.assertContains(response, "<td>None</td>")
-        self.assertContains(response, "<td>Started</td>", count=2)
-        self.assertContains(response, "<td>Submitted</td>")
+        # Table will contain and extra row for Submitted
+        self.assertContains(response, "<td>Started</td>", count=1)
+        self.assertContains(response, "<td>Submitted</td>", count=1)
+
+        domain_request.in_review()
+        domain_request.save()
+
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Table will contain and extra row for In review
+        self.assertContains(response, "<td>Started</td>", count=1)
+        self.assertContains(response, "<td>Submitted</td>", count=1)
+        self.assertContains(response, "<td>In review</td>", count=1)
+
+        domain_request.action_needed()
+        domain_request.save()
+
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Table will contain and extra row for Action needed
+        self.assertContains(response, "<td>Started</td>", count=1)
+        self.assertContains(response, "<td>Submitted</td>", count=1)
+        self.assertContains(response, "<td>In review</td>", count=1)
+        self.assertContains(response, "<td>Action needed</td>", count=1)
+
+        domain_request.in_review()
+        domain_request.save()
+
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Define the expected sequence of status changes
+        expected_status_changes = [
+            "<td>Started</td>",
+            "<td>Submitted</td>",
+            "<td>In review</td>",
+            "<td>Action needed</td>",
+            "<td>In review</td>",
+        ]
+
+        # Test for the order of status changes
+        for status_change in expected_status_changes:
+            self.assertContains(response, status_change, html=True)
+
+        # Table now contains 2 rows for Approved
+        self.assertContains(response, "<td>Started</td>", count=1)
+        self.assertContains(response, "<td>Submitted</td>", count=1)
+        self.assertContains(response, "<td>In review</td>", count=2)
+        self.assertContains(response, "<td>Action needed</td>", count=1)
 
     @less_console_noise_decorator
     def test_analyst_can_see_and_edit_alternative_domain(self):
