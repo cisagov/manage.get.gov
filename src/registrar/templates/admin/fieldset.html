@@ -9,7 +9,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
     {% if fieldset.name %}
         {# Customize the markup for the collapse toggle #}
         {% if 'collapse--dotgov' in fieldset.classes %}
-            <button type="button" aria-label="Toggle (show/hide) more details">
+            <button type="button">
                 <span>{{ fieldset.name }}</span>
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                     <use xlink:href="{%static 'img/sprite.svg'%}#expand_more"></use>
