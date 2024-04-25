@@ -781,10 +781,3 @@ if DEBUG:
         "SHOW_TOOLBAR_CALLBACK": lambda _: True,
     }
 
-# From https://django-auditlog.readthedocs.io/en/latest/upgrade.html
-# Run:
-# cf run-task getgov-<> --wait --command 'python manage.py auditlogmigratejson --traceback' --name auditlogmigratejson
-# on our staging and stable, then remove these 2 variables or set to False
-AUDITLOG_TWO_STEP_MIGRATION = True
-
-AUDITLOG_USE_TEXT_CHANGES_IF_JSON_IS_NOT_PRESENT = True
