@@ -69,7 +69,6 @@ def has_permission(user, permission):
     return user.has_perm(permission)
 
 
-@register.filter(name='reverse_list')
+@register.filter(name="reverse_list")
 def reverse_list(value):
     return reversed(value)
-
