@@ -1,0 +1,183 @@
+<div class="django-admin__model-description text-normal">
+    {% if opts.model_name == 'domainrequest' %}
+        <p>
+        This table contains all domain requests that have been started within the registrar and the status of those requests. 
+        Updating values here will immediately update the corresponding values that users see in the registrar. 
+        </p>
+
+        <p>
+        Once a domain request has been adjudicated, the details of that request should not be modified. 
+        To update attributes (like an organization’s name) after a domain’s approval, 
+        go to <a href="{% url 'admin:registrar_user_changelist' %}">Domains</a>. 
+        Similar fields display on each Domain page, but edits made there will not affect the corresponding domain request.
+        </p>
+    {% elif opts.model_name == 'domaininformation' %}
+        <p>
+        Domain information represents the basic metadata for an approved domain and the organization that manages it. 
+        It does not include any information specific to the registry (DNS name servers, security email). 
+        Registry-related information 
+        can be managed within the <a href="{% url 'admin:registrar_domain_changelist' %}">Domains</a> table.
+        </p>
+
+        <p>
+        Updating values here will immediately update the corresponding values that users see in the registrar.
+        </p>
+
+        <p>
+        Domain information is similar to <a href="{% url 'admin:registrar_domainrequest_changelist' %}">Domain requests</a>, 
+        and the fields are nearly identical, 
+        but edits made to one are not made to the other. 
+        Domain information exists so we don’t modify details of an approved request after adjudication 
+        (since a domain request should be maintained as-adjudicated for records retention purposes). 
+        Entries are created here upon approval of a domain request. 
+        </p>
+    {% elif opts.model_name == 'contact' %}
+        <p>
+        Contacts include anyone who has access to the registrar (known as “users”) and anyone listed in a domain request, 
+        including other employees and authorizing officials. 
+        Only contacts who have access to the registrar will have 
+        a corresponding record within the <a href="{% url 'admin:registrar_user_changelist' %}">Users</a> table.
+        Updating someone’s contact information here will not affect that person’s Login.gov information.
+        </p>
+    {% elif opts.model_name == 'auditlog' %}
+        <p>
+        Log entries represent instances where something was created, updated, or deleted within the registrar or /admin. 
+        The table on this page is useful for searching actions across all records. 
+        To understand what happened to an individual record (like a domain request), 
+        it’s better to go to that specific page 
+        (<a href="{% url 'admin:registrar_domainrequest_changelist' %}">Domain requests</a>) and click on the “History” button.  
+        </p>
+    {% elif opts.model_name == 'domain'%}
+        <p>
+        This table contains all approved domains in the .gov registrar. 
+        In other words, with the exception of domains in the “Unknown”, ”On hold”, and “Deleted” states, 
+        this table matches the list of domains in the .gov zone file. 
+        </p>
+
+        <p>
+        Individual domain pages allow you to view registry-related details and edit the associated domain information. 
+        </p>
+
+        <p>
+        Other actions available on the domain page include the ability to:
+        </p>
+        <ul>
+            <li>Extend a domain’s expiration date</li>
+            <li>Place a domain “On hold”</li> 
+            <li>Remove a domain from the registry</li>
+            <li>View the domain from a domain manager’s perspective 
+        </ul>
+
+        <p>
+        To view a domain from a domain manager’s perspective, click the "Manage domain" button. 
+        That will allow you to make changes (e.g., update DNS settings, invite people to manage the domain) 
+        directly inside the registrar.
+        </p>
+    {% elif opts.model_name == 'draftdomain' %}
+        <p>
+        This table represents all “requested domains” that have been saved within a domain request form. 
+        If a registrant changes the requested domain in their form, 
+        the original name they listed and the new name will appear as separate records.
+        </p>
+        
+        <p>
+        This table does not include “alternative domains,” 
+        which are housed in the <a href="{% url 'admin:registrar_website_changelist' %}">Websites</a> table.
+        </p>
+    {% elif opts.model_name == 'host' %}
+        <p>
+        Entries in the Hosts table indicate the relationship between an approved domain and a name server address 
+        (and, if applicable, the IP address for a name server address). 
+        </p>
+
+        <p>
+        In general, you should not modify these values here. They should be updated directly inside the registrar. 
+        To update a domain’s name servers and/or IP addresses, 
+        in the registrar, go to the domain in <a href="{% url 'admin:registrar_domain_changelist' %}">Domains</a>, 
+        then click the "Manage domain" button.
+        </p>
+    {% elif opts.model_name == 'publiccontact' %}
+        <p>
+        Public contacts represent the three registry contact types (administrative, technical, and security) 
+        and their fields that are exposed in WHOIS data. 
+        </p>
+
+        <p>
+        We don’t currently allow registrants to publish real contact information to WHOIS, 
+        but we must publish something to WHOIS. For each of the contact types, we use default values that are 
+        associated with the program instead of the real contact information, 
+        which we then redact in whole at the registry/WHOIS. 
+        We do allow registrants to set a security contact email address, 
+        which is published to WHOIS when a user sets one.
+        </p>
+
+        <p>
+        The public contacts in this table are a reflection of the data in the registry and should not be updated. 
+        This information is primarily used by developers for validation purposes.
+        </p>
+    {% elif opts.model_name == 'transitiondomain' %}
+        <p>
+        This table represents the domains that were transitioned from the old registry in November 2023. 
+        This data has been preserved for historical reference and should not be updated.
+        </p>
+    {% elif opts.model_name == 'userdomainrole' %}
+        <p>
+        This table represents the managers who are assigned to each domain in the registrar. 
+        There are separate records for each domain/manager combination. 
+        Managers can update information related to a domain, such as DNS data and security contact.
+        </p>
+
+        <p>
+        The creator of an approved domain request automatically becomes a manager for that domain. 
+        Anyone who retrieves a domain invitation is also assigned the manager role. 
+        </p>
+    {% elif opts.model_name == 'usergroup' %}
+        <p>
+        Groups are a way to bundle admin permissions so they can be easily assigned to multiple users. 
+        Once a group is created, it can be assigned to people via the <a href="{% url 'admin:registrar_user_changelist' %}">Users</a> table. 
+        </p>
+
+        <p>
+        To maintain a single source of truth across all environments (stable, staging, etc.), 
+        the groups and permissions are set and updated through the codebase. 
+        <strong>Do not add, edit or delete user groups here.</strong>
+        </p>
+    {% elif opts.model_name == 'user' %}
+        <p>
+        A user is anyone who has access to the registrar. This includes request creators, domain managers, and CISA administrators. 
+        Within each user record, you can review that user’s permissions and user status.
+        </p>
+
+        <p>
+        If a user has a domain request in ineligible status, then their user status will be “restricted.” 
+        Users who are in restricted status cannot create/edit domain requests or approved domains, 
+        and their existing requests are locked. They will see a 403 error if  they try to take action in the registrar.
+        </p>
+
+        <p>
+        Each user record displays the associated “contact” info for that user, 
+        which is the same info found in the <a href="{% url 'admin:registrar_contact_changelist' %}">Contacts</a> table. 
+        Updating these details on the user record will also update the corresponding contact record for that user. 
+        </p>
+    {% elif opts.model_name == 'verifiedbystaff' %}
+        <p>
+        This table contains users who have been allowed to bypass identity proofing through Login.gov after approval by a CISA representative. 
+        Bypassing identity proofing means they will not be asked to provide a form of ID, PII, and so on. 
+        </p>
+
+        <p>
+        Additions to this table should be rare, and only after obtaining confirmation of their identity directly (or from a trusted person). 
+        Once a verified-by-staff user has been added as a domain manager, they can be removed from this list, 
+        (However, if they are removed as a domain manager for all domains and they attempt to sign in again, they will be identity proofed by Login.gov).
+        </p>
+    {% elif opts.model_name == 'websites' %}
+        <p>
+        This section lists all the “current websites” and “alternative domains” that users have submitted in domain requests since January 2024. 
+        </p>
+
+        <p>
+        This does not include any “requested domains” that have appeared within the <a href="{% url 'admin:registrar_domainrequest_changelist' %}">Domain requests</a> table. 
+        Those names are managed in the <a href="{% url 'admin:registrar_draftdomain_changelist' %}">Draft domains<a/> table.
+        </p>
+    {% endif %}
+</div>
