@@ -1,5 +1,6 @@
 import logging
 import sys
+from abc import ABC, abstractmethod
 from django.core.paginator import Paginator
 from typing import List
 from django.core.management import BaseCommand
@@ -59,9 +60,9 @@ class ScriptDataHelper:
             model_class.objects.bulk_update(page.object_list, fields_to_update)
 
 
-class ScriptTemplate(BaseCommand):
+class PopulateScriptTemplate(ABC):
     """
-    Contains common script actions for our scripts which can be prefilled as templates.
+    Contains an ABC for generic populate scripts
     """
 
     def mass_populate_field(self, sender, filter_conditions, fields_to_update):
@@ -102,9 +103,10 @@ class ScriptTemplate(BaseCommand):
         # Log what happened
         TerminalHelper.log_script_run_summary(to_update, failed_to_update, skipped=[], debug=True)
 
+    @abstractmethod
     def populate_field(self, field_to_update):
         """Defines how we update each field. Must be defined before using mass_populate_field."""
-        raise NotImplementedError("This method should be implemented by the child class.")
+        pass
 
 
 class TerminalHelper:
