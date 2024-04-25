@@ -7,9 +7,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block field_readonly %}
     {% with all_contacts=original_object.other_contacts.all %}
-    {% if field.field.name == "creator" %}
-        <div class="readonly">{{ field.contents }} ({{ user.get_verification_type_display }})</div>
-    {% elif field.field.name == "other_contacts" %}
+    {% if field.field.name == "other_contacts" %}
         {% if all_contacts.count > 2 %}
             <div class="readonly">
                 {% for contact in all_contacts %}
@@ -68,24 +66,11 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% endwith %}
 {% endblock field_readonly %}
 
-{% block help_text %}
-    <div class="help {% if field.field.name != "creator" %}margin-bottom-2{% endif %}" {% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
-        <div>{{ field.field.help_text|safe }}</div>
-    </div>
-
-    {% if not field.is_readonly and field.field.name == "creator" %}
-    <div class="help margin-bottom-2" {% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
-        <div>({{ user.get_verification_type_display }})</div>
-    </div>
-    {% endif %}
-{% endblock help_text %}
-
-
 {% block after_help_text %}
     {% if field.field.name == "creator" %}
         <div class="flex-container tablet:margin-top-1">
         <label aria-label="Creator contact details"></label>
-            {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
+            {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly user_verification_type=original_object.creator.get_verification_type_display%}
         </div>
         {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
     {% elif field.field.name == "submitter" %}

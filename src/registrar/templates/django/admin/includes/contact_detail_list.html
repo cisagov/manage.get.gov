@@ -47,7 +47,12 @@
         {% else %}
             None<br>
         {% endif %}
+
     {% else %}
-        No additional contact information found.
+        No additional contact information found.<br>
+    {% endif %}
+
+    {% if user_verification_type %}
+        {{ user_verification_type }}
     {% endif %}
 </address>
