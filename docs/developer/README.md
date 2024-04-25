@@ -1,7 +1,7 @@
 # Development
 ========================
 
-If you're new to Django, see [Getting Started with Django](https://www.djangoproject.com/start/) for an introduction to the framework.
+If you're new to Django, see [Getting Started with Django](https://www.djangoproject.com/start/) for an introduction to the framework. Hello!
 
 ## Local Setup
 
