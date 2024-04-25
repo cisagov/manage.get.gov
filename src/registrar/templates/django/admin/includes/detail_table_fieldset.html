@@ -74,13 +74,13 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block after_help_text %}
     {% if field.field.name == "creator" %}
-        <div class="flex-container tablet:margin-top-2">
+        <div class="flex-container tablet:margin-top-1">
         <label aria-label="Creator contact details"></label>
             {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly user_verification_type=original_object.creator.get_verification_type_display%}
         </div>
         {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
     {% elif field.field.name == "submitter" %}
-        <div class="flex-container">
+        <div class="flex-container tablet:margin-top-1">
         <label aria-label="Submitter contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.submitter no_title_top_padding=field.is_readonly %}
         </div>
