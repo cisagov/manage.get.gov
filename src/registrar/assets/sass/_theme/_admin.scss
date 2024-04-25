@@ -636,15 +636,7 @@ div.dja__model-description{
 
 }
 
-.dja__model-description + button {
-    margin-top: 25px !important;
-    height: 10px !important;
-}
-
 div.dja__model-description.dja__model-description--no-overflow {
     display: block;
     overflow: unset;
-    button {
-        margin-top: unset;
-    }
 }

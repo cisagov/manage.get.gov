@@ -562,6 +562,7 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     let descriptionDiv = document.querySelector('.dja__model-description');
 
     if (toggleButton && descriptionDiv) {
+
         toggleButton.addEventListener('click', function() {
             // Toggle the class on the description div
             descriptionDiv.classList.toggle('dja__model-description--no-overflow');
@@ -569,12 +570,8 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
             // Change the button text based on the presence of the class
             if (descriptionDiv.classList.contains('dja__model-description--no-overflow')) {
                 toggleButton.textContent = 'Show less';
-
-                // Move the div to where it was when the page first loaded
-                descriptionDiv.appendChild(toggleButton);
             } else {    
                 toggleButton.textContent = 'Show more';
-                descriptionDiv.insertAdjacentElement('afterend', toggleButton);
             }
         });
     }
