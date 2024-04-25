@@ -22,14 +22,13 @@ class Host(TimeStampedModel):
         default=None,  # prevent saving without a value
         unique=False,
         verbose_name="host name",
-        help_text="Fully qualified domain name",
     )
 
     domain = models.ForeignKey(
         "registrar.Domain",
         on_delete=models.PROTECT,
         related_name="host",  # access this Host via the Domain as `domain.host`
-        help_text="Domain to which this host belongs",
+        help_text="Domain associated with this host",
     )
 
     def __str__(self):
