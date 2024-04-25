@@ -555,3 +555,27 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
         observer.observe(targetElement);
     }
 })();
+
+/** An IIFE for toggling the overflow styles on django-admin__model-description (the show more / show less button) */
+(function () {
+    let toggleButton = document.getElementById('dja-show-more-model-description');
+    let descriptionDiv = document.querySelector('.dja__model-description');
+
+    if (toggleButton && descriptionDiv) {
+        toggleButton.addEventListener('click', function() {
+            // Toggle the class on the description div
+            descriptionDiv.classList.toggle('dja__model-description--no-overflow');
+
+            // Change the button text based on the presence of the class
+            if (descriptionDiv.classList.contains('dja__model-description--no-overflow')) {
+                toggleButton.textContent = 'Show less';
+
+                // Move the div to where it was when the page first loaded
+                descriptionDiv.appendChild(toggleButton);
+            } else {    
+                toggleButton.textContent = 'Show more';
+                descriptionDiv.insertAdjacentElement('afterend', toggleButton);
+            }
+        });
+    }
+})();

@@ -618,7 +618,12 @@ address.dja-address-contact-list {
     font-size: small;
 }
 
-div.django-admin__model-description{
+div.dja__model-description{
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+
     p, li {
         color: var(--primary);
         font-size: medium;
@@ -629,13 +634,17 @@ div.django-admin__model-description{
         list-style-type: disc;
     }
 
-    button {
-        margin-top: 25px !important;
-        height: 10px !important;
-    }
+}
 
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;  
-    overflow: hidden;
+.dja__model-description + button {
+    margin-top: 25px !important;
+    height: 10px !important;
+}
+
+div.dja__model-description.dja__model-description--no-overflow {
+    display: block;
+    overflow: unset;
+    button {
+        margin-top: unset;
+    }
 }
