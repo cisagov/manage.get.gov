@@ -642,6 +642,32 @@ class DomainRequest(TimeStampedModel):
     anything_else = models.TextField(
         null=True,
         blank=True,
+        verbose_name="Additional details",
+    )
+
+    # This is a drop-in replacement for a has_anything_else_text() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_anything_else_text = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a anything_else or not",
+    )
+
+    cisa_representative_email = models.EmailField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative",
+        max_length=320,
+    )
+
+    # This is a drop-in replacement for an has_cisa_representative() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_cisa_representative = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a representative email or not",
     )
 
     is_policy_acknowledged = models.BooleanField(
@@ -696,7 +722,32 @@ class DomainRequest(TimeStampedModel):
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_organization_type()
+        self.sync_yes_no_form_fields()
+
         super().save(*args, **kwargs)
+
+    def sync_yes_no_form_fields(self):
+        """Some yes/no forms use a db field to track whether it was checked or not.
+        We handle that here for def save().
+        """
+
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.cisa_representative_email is not None:
+            self.has_cisa_representative = self.cisa_representative_email != ""
+
+        # This check is required to ensure that the form doesn't start out checked
+        if self.has_cisa_representative is not None:
+            self.has_cisa_representative = (
+                self.cisa_representative_email != "" and self.cisa_representative_email is not None
+            )
+
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.anything_else is not None:
+            self.has_anything_else_text = self.anything_else != ""
+
+        # This check is required to ensure that the form doesn't start out checked.
+        if self.has_anything_else_text is not None:
+            self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 
     def __str__(self):
         try:
@@ -1035,6 +1086,16 @@ class DomainRequest(TimeStampedModel):
     def has_other_contacts(self) -> bool:
         """Does this domain request have other contacts listed?"""
         return self.other_contacts.exists()
+
+    def has_additional_details(self) -> bool:
+        """Combines the has_anything_else_text and has_cisa_representative fields,
+        then returns if this domain request has either of them."""
+        # Split out for linter
+        has_details = False
+        if self.has_anything_else_text or self.has_cisa_representative:
+            has_details = True
+
+        return has_details
 
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
