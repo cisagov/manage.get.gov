@@ -625,9 +625,20 @@ div.dja__model-description{
     overflow: hidden;
 
     p, li {
-        color: var(--primary);
         font-size: medium;
         line-height: 1.2em;
+    }
+
+    @media (prefers-color-scheme: light) {
+        p, li {
+            color: var(--body-fg);
+        }
+    }
+
+    @media (prefers-color-scheme: dark) {
+        p, li {
+            color: var(--primary);
+        }
     }
 
     li {

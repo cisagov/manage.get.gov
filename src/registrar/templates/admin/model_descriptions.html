@@ -9,7 +9,7 @@
         <p>
         Once a domain request has been adjudicated, the details of that request should not be modified. 
         To update attributes (like an organization’s name) after a domain’s approval, 
-        go to <a href="{% url 'admin:registrar_user_changelist' %}">Domains</a>. 
+        go to <a href="{% url 'admin:registrar_domain_changelist' %}">Domains</a>. 
         Similar fields display on each Domain page, but edits made there will not affect the corresponding domain request.
         </p>
     {% elif opts.model_name == 'domaininformation' %}
@@ -140,7 +140,7 @@
 
         <p>
         To maintain a single source of truth across all environments (stable, staging, etc.), 
-        the groups and permissions are set and updated through the codebase. 
+        the groups and permissions are set and updated through the codebase.
         <strong>Do not add, edit or delete user groups here.</strong>
         </p>
     {% elif opts.model_name == 'user' %}
