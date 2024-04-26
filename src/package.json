@@ -17,9 +17,6 @@
   "devDependencies": {
     "@uswds/compile": "^1.0.0-beta.3"
   },
-  // TODO - this needs to be removed
-  // after gulp is fixed for node version 22
-  // https://github.com/gulpjs/vinyl-fs/issues/350#issuecomment-2079392597
   "engines": {
     "node": "21.7.3"
   }
