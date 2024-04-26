@@ -234,7 +234,7 @@ function openInNewTab(el, removeAttribute = false){
     // and a "to" select list; initialization is based off of the presence of the
     // "to" select list
     checkToListThenInitWidget('id_groups_to', 0);
-    // checkToListThenInitWidget('id_user_permissions_to', 0);
+    checkToListThenInitWidget('id_user_permissions_to', 0);
 })();
 
 // Function to check for the existence of the "to" select list element in the DOM, and if and when found,
@@ -244,7 +244,7 @@ function checkToListThenInitWidget(toListId, attempts) {
     attempts++;
 
     if (attempts < 12) {
-        if ((toList)) {
+        if ((toList && toList !== undefined)) {
             // toList found, handle it
             // Then get fromList and handle it
             initializeWidgetOnList(toList, ".selector-chosen");
