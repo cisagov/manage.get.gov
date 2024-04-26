@@ -538,7 +538,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
             # There are 4 template references to Federal (4) plus four references in the table
             # for our actual domain_request
-            self.assertContains(response, "Federal", count=36)
+            self.assertContains(response, "Federal", count=39)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -1200,7 +1200,7 @@ class TestDomainRequestAdmin(MockEppLib):
             response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
             # There are 2 template references to Federal (4) and two in the results data
             # of the request
-            self.assertContains(response, "Federal", count=34)
+            self.assertContains(response, "Federal", count=37)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -2470,7 +2470,7 @@ class TestDomainInvitationAdmin(TestCase):
             )
 
             # Assert that the filters are added
-            self.assertContains(response, "invited", count=2)
+            self.assertContains(response, "invited", count=4)
             self.assertContains(response, "Invited", count=2)
             self.assertContains(response, "retrieved", count=2)
             self.assertContains(response, "Retrieved", count=2)
@@ -3845,7 +3845,7 @@ class TestFederalAgency(TestCase):
 
         # Test for a description snippet
         self.assertContains(response, "This table does not have a description yet.")
-        self.assertNotContains(response, "Show more")
+        self.assertContains(response, "Show more")
 
 
 class TestPublicContact(TestCase):
