@@ -746,7 +746,7 @@ class TestDiscloseEmails(MockEppLib):
 
 
 # TODO in #1793: Remove this whole test class
-class TestRenamingFederalAgency(TestCase):
+class TestPopulateDomainUpdatedFederalAgency(TestCase):
     def setUp(self):
         super().setUp()
 
@@ -802,11 +802,7 @@ class TestRenamingFederalAgency(TestCase):
         execute the populate_domain_updated_federal_agency command.
         """
         with less_console_noise():
-            with patch(
-                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                return_value=True,
-            ):
-                call_command("populate_domain_updated_federal_agency")
+            call_command("populate_domain_updated_federal_agency")
 
     def test_domain_information_renaming_federal_agency_success(self):
         """

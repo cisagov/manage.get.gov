@@ -41,7 +41,7 @@ class Command(BaseCommand):
         Renames the Federal Agency to the correct new naming
         for both Domain Information and Domain Requests objects.
 
-        NOTE: If it's NULL for a domain request, we skip it as
+        NOTE: If it's None for a domain request, we skip it as
         a user most likely hasn't gotten to it yet.
         """
         logger.info("Transferring federal agencies to FederalAgency object")
@@ -65,7 +65,7 @@ class Command(BaseCommand):
                 domain_info.updated_federal_agency = federal_agency_row
                 domain_infos_to_update.append(domain_info)
                 logger.info(
-                    f"DomainInformation {domain_info} updated_federal_agency set to:"
+                    f"DomainInformation {domain_info} => updated_federal_agency set to:"
                     f"{domain_info.updated_federal_agency}"
                 )
             except Exception as err:
@@ -83,7 +83,7 @@ class Command(BaseCommand):
                     domain_request.updated_federal_agency = federal_agency_row
                     domain_requests_to_update.append(domain_request)
                     logger.info(
-                        f"DomainRequest {domain_request} updated_federal_agency set to:"
+                        f"DomainRequest {domain_request} => updated_federal_agency set to:"
                         f"{domain_request.updated_federal_agency}"
                     )
             except Exception as err:
