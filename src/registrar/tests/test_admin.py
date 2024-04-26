@@ -27,7 +27,6 @@ from registrar.admin import (
     PublicContactAdmin,
     TransitionDomainAdmin,
     UserGroupAdmin,
-    TransitionDomainAdmin,
 )
 from registrar.models import (
     Domain,
