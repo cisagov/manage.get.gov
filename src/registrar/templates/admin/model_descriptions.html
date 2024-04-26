@@ -57,7 +57,7 @@
         a corresponding record within the <a href="{% url 'admin:registrar_user_changelist' %}">Users</a> table.
         Updating someone’s contact information here will not affect that person’s Login.gov information.
         </p>
-    {% elif opts.model_name == 'auditlog' %}
+    {% elif opts.model_name == 'logentry' %}
         <p>
         Log entries represent instances where something was created, updated, or deleted within the registrar or /admin. 
         The table on this page is useful for searching actions across all records. 
