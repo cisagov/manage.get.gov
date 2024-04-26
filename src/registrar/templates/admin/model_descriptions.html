@@ -32,6 +32,23 @@
         (since a domain request should be maintained as-adjudicated for records retention purposes). 
         Entries are created here upon approval of a domain request. 
         </p>
+    {% elif opts.model_name == 'domaininvitation' %}
+    <p>
+    Domain invitations contain all individuals who have been invited to manage a .gov domain. 
+    Invitations are sent via email, and the recipient must log in to the registrar to officially 
+    accept and become a domain manager. 
+    </p>
+
+    <p>
+    An “invited” status indicates that the recipient has not logged in to the registrar since the invitation was sent. 
+    A “received” status indicates that the recipient has logged in.
+    </p>
+
+    <p>
+    If an invitation is created in this table, an email will not be sent. 
+    To have an email sent, go to the domain in <a href="{% url 'admin:registrar_domain_changelist' %}">Domains</a>, 
+    click the “Manage domain” button, and add a domain manager. 
+    </p>
     {% elif opts.model_name == 'contact' %}
         <p>
         Contacts include anyone who has access to the registrar (known as “users”) and anyone listed in a domain request, 
