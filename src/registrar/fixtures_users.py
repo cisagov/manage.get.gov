@@ -95,6 +95,12 @@ class UserFixture:
             "email": "szu.chin@associates.cisa.dhs.gov",
         },
         {
+            "username": "66bb1a5a-a091-4d7f-a6cf-4d772b4711c7",
+            "first_name": "Christina",
+            "last_name": "Burnett",
+            "email": "christina.burnett@cisa.dhs.gov",
+        },
+        {
             "username": "012f844d-8a0f-4225-9d82-cbf87bff1d3e",
             "first_name": "Riley",
             "last_name": "Orr",
@@ -169,6 +175,12 @@ class UserFixture:
             "first_name": "Vickster-Analyst",
             "last_name": "Chin-Analyst",
             "email": "szu.chin@ecstech.com",
+        },
+        {
+            "username": "22f88aa5-3b54-4b1f-9c57-201fb02ddba7",
+            "first_name": "Christina-Analyst",
+            "last_name": "Burnett-Analyst",
+            "email": "christina.burnett@gwe.cisa.dhs.gov",
         },
         {
             "username": "d9839768-0c17-4fa2-9c8e-36291eef5c11",

@@ -356,33 +356,39 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(other_contacts_result.status_code, 302)
-        self.assertEqual(other_contacts_result["Location"], "/request/anything_else/")
+        self.assertEqual(other_contacts_result["Location"], "/request/additional_details/")
         num_pages_tested += 1
 
-        # ---- ANYTHING ELSE PAGE  ----
+        # ---- ADDITIONAL DETAILS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        anything_else_page = other_contacts_result.follow()
-        anything_else_form = anything_else_page.forms[0]
+        additional_details_page = other_contacts_result.follow()
+        additional_details_form = additional_details_page.forms[0]
 
-        anything_else_form["anything_else-anything_else"] = "Nothing else."
+        # load inputs with test data
+
+        additional_details_form["additional_details-has_cisa_representative"] = "True"
+        additional_details_form["additional_details-has_anything_else_text"] = "True"
+        additional_details_form["additional_details-cisa_representative_email"] = "FakeEmail@gmail.com"
+        additional_details_form["additional_details-anything_else"] = "Nothing else."
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        anything_else_result = anything_else_form.submit()
+        additional_details_result = additional_details_form.submit()
         # validate that data from this step are being saved
         domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.cisa_representative_email, "FakeEmail@gmail.com")
         self.assertEqual(domain_request.anything_else, "Nothing else.")
         # the post request should return a redirect to the next form in
         # the domain request page
-        self.assertEqual(anything_else_result.status_code, 302)
-        self.assertEqual(anything_else_result["Location"], "/request/requirements/")
+        self.assertEqual(additional_details_result.status_code, 302)
+        self.assertEqual(additional_details_result["Location"], "/request/requirements/")
         num_pages_tested += 1
 
         # ---- REQUIREMENTS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        requirements_page = anything_else_result.follow()
+        requirements_page = additional_details_result.follow()
         requirements_form = requirements_page.forms[0]
 
         requirements_form["requirements-is_policy_acknowledged"] = True
@@ -434,6 +440,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Another Tester")
         self.assertContains(review_page, "testy2@town.com")
         self.assertContains(review_page, "(201) 555-5557")
+        self.assertContains(review_page, "FakeEmail@gmail.com")
         self.assertContains(review_page, "Nothing else.")
 
         # We can't test the modal itself as it relies on JS for init and triggering,
@@ -717,12 +724,24 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
 
-    def test_yes_no_form_inits_blank_for_new_domain_request(self):
+    def test_yes_no_contact_form_inits_blank_for_new_domain_request(self):
         """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
         other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
+
+    def test_yes_no_additional_form_inits_blank_for_new_domain_request(self):
+        """On the Additional Details page, the yes/no form gets initialized with nothing selected for
+        new domain requests"""
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        self.assertEquals(additional_form["additional_details-has_cisa_representative"].value, None)
+
+        # Check the anything else yes/no field
+        self.assertEquals(additional_form["additional_details-has_anything_else_text"].value, None)
 
     def test_yes_no_form_inits_yes_for_domain_request_with_other_contacts(self):
         """On the Other Contacts page, the yes/no form gets initialized with YES selected if the
@@ -743,6 +762,38 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+
+    def test_yes_no_form_inits_yes_for_cisa_representative_and_anything_else(self):
+        """On the Additional Details page, the yes/no form gets initialized with YES selected
+        for both yes/no radios if the domain request has a value for cisa_representative and
+        anything_else"""
+
+        domain_request = completed_domain_request(user=self.user, has_anything_else=True)
+        domain_request.cisa_representative_email = "test@igorville.gov"
+        domain_request.anything_else = "1234"
+        domain_request.save()
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
+        self.assertEquals(yes_no_cisa, "True")
+
+        # Check the anything else yes/no field
+        yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
+        self.assertEquals(yes_no_anything_else, "True")
 
     def test_yes_no_form_inits_no_for_domain_request_with_no_other_contacts_rationale(self):
         """On the Other Contacts page, the yes/no form gets initialized with NO selected if the
@@ -765,6 +816,230 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
+
+    def test_yes_no_form_for_domain_request_with_no_cisa_representative_and_anything_else(self):
+        """On the Additional details page, the form preselects "no" when has_cisa_representative
+        and anything_else is no"""
+
+        domain_request = completed_domain_request(user=self.user, has_anything_else=False)
+
+        # Unlike the other contacts form, the no button is tracked with these boolean fields.
+        # This means that we should expect this to correlate with the no button.
+        domain_request.has_anything_else_text = False
+        domain_request.has_cisa_representative = False
+        domain_request.save()
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
+        self.assertEquals(yes_no_cisa, "False")
+
+        # Check the anything else yes/no field
+        yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
+        self.assertEquals(yes_no_anything_else, "False")
+
+    def test_submitting_additional_details_deletes_cisa_representative_and_anything_else(self):
+        """When a user submits the Additional Details form with no selected for all fields,
+        the domain request's data gets wiped when submitted"""
+        domain_request = completed_domain_request(name="nocisareps.gov", user=self.user)
+        domain_request.cisa_representative_email = "fake@faketown.gov"
+        domain_request.save()
+
+        # Make sure we have the data we need for the test
+        self.assertEqual(domain_request.anything_else, "There is more")
+        self.assertEqual(domain_request.cisa_representative_email, "fake@faketown.gov")
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
+        self.assertEquals(yes_no_cisa, "True")
+
+        # Check the anything else yes/no field
+        yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
+        self.assertEquals(yes_no_anything_else, "True")
+
+        # Set fields to false
+        additional_details_form["additional_details-has_cisa_representative"] = "False"
+        additional_details_form["additional_details-has_anything_else_text"] = "False"
+
+        # Submit the form
+        additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the anything_else and cisa_representative have been deleted from the DB
+        domain_request = DomainRequest.objects.get(requested_domain__name="nocisareps.gov")
+
+        # Check that our data has been cleared
+        self.assertEqual(domain_request.anything_else, None)
+        self.assertEqual(domain_request.cisa_representative_email, None)
+
+        # Double check the yes/no fields
+        self.assertEqual(domain_request.has_anything_else_text, False)
+        self.assertEqual(domain_request.has_cisa_representative, False)
+
+    def test_submitting_additional_details_populates_cisa_representative_and_anything_else(self):
+        """When a user submits the Additional Details form,
+        the domain request's data gets submitted"""
+        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+
+        # Make sure we have the data we need for the test
+        self.assertEqual(domain_request.anything_else, None)
+        self.assertEqual(domain_request.cisa_representative_email, None)
+
+        # These fields should not be selected at all, since we haven't initialized the form yet
+        self.assertEqual(domain_request.has_anything_else_text, None)
+        self.assertEqual(domain_request.has_cisa_representative, None)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Set fields to true, and set data on those fields
+        additional_details_form["additional_details-has_cisa_representative"] = "True"
+        additional_details_form["additional_details-has_anything_else_text"] = "True"
+        additional_details_form["additional_details-cisa_representative_email"] = "test@faketest.gov"
+        additional_details_form["additional_details-anything_else"] = "redandblue"
+
+        # Submit the form
+        additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the anything_else and cisa_representative exist in the db
+        domain_request = DomainRequest.objects.get(requested_domain__name="cisareps.gov")
+
+        self.assertEqual(domain_request.anything_else, "redandblue")
+        self.assertEqual(domain_request.cisa_representative_email, "test@faketest.gov")
+
+        self.assertEqual(domain_request.has_cisa_representative, True)
+        self.assertEqual(domain_request.has_anything_else_text, True)
+
+    def test_if_cisa_representative_yes_no_form_is_yes_then_field_is_required(self):
+        """Applicants with a cisa representative must provide a value"""
+        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Set fields to true, and set data on those fields
+        additional_details_form["additional_details-has_cisa_representative"] = "True"
+        additional_details_form["additional_details-has_anything_else_text"] = "False"
+
+        # Submit the form
+        response = additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        self.assertContains(response, "Enter the email address of your CISA regional representative.")
+
+    def test_if_anything_else_yes_no_form_is_yes_then_field_is_required(self):
+        """Applicants with a anything else must provide a value"""
+        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Set fields to true, and set data on those fields
+        additional_details_form["additional_details-has_cisa_representative"] = "False"
+        additional_details_form["additional_details-has_anything_else_text"] = "True"
+
+        # Submit the form
+        response = additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        expected_message = "Provide additional details you’d like us to know. If you have nothing to add, select “No.”"
+        self.assertContains(response, expected_message)
+
+    def test_additional_details_form_fields_required(self):
+        """When a user submits the Additional Details form without checking the
+        has_cisa_representative and has_anything_else_text fields, the form should deny this action"""
+        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+
+        self.assertEqual(domain_request.has_anything_else_text, None)
+        self.assertEqual(domain_request.has_cisa_representative, None)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Submit the form
+        response = additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # We expect to see this twice for both fields. This results in a count of 4
+        # due to screen reader information / html.
+        self.assertContains(response, "This question is required.", count=4)
 
     def test_submitting_other_contacts_deletes_no_other_contacts_rationale(self):
         """When a user submits the Other Contacts form with other contacts selected, the domain request's

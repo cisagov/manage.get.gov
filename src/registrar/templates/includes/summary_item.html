@@ -21,6 +21,9 @@
     {% else %} 
       </h2>
     {% endif %}
+      {% if sub_header_text %}
+        <h3 class="register-form-review-header">{{ sub_header_text }}</h3>
+      {% endif %}
       {% if address %}
         {% include "includes/organization_address.html" with organization=value %}
       {% elif contact %}
@@ -39,6 +42,10 @@
                   </dd>
                 {% endfor %}
                 </dl>
+            {% elif custom_text_for_value_none %}
+              <p>
+                {{ custom_text_for_value_none }}
+              </p>
             {% else %}
               <p>
                   None
@@ -92,6 +99,8 @@
       <p class="margin-top-0 margin-bottom-0">
         {% if value %}
           {{ value }}
+        {% elif custom_text_for_value_none %}
+          {{ custom_text_for_value_none }}
         {% else %}
           None
         {% endif %}
