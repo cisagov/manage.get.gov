@@ -105,7 +105,7 @@ class PopulateScriptTemplate(ABC):
     @abstractmethod
     def populate_field(self, field_to_update):
         """Defines how we update each field. Must be defined before using mass_populate_field."""
-        pass  #  noqa
+        raise NotImplementedError
 
 
 class TerminalHelper:

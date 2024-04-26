@@ -307,7 +307,8 @@ class ViewsTest(TestCase):
 
     @less_console_noise_decorator
     def test_login_callback_sets_verification_type_grandfathered(self, mock_client):
-        """Test that openid sets the verification type to grandfathered on a user which exists in our TransitionDomain table"""
+        """Test that openid sets the verification type to grandfathered
+        on a user which exists in our TransitionDomain table"""
         # SETUP
         session = self.client.session
         session.save()
