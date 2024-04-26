@@ -159,6 +159,31 @@ class Domain(TimeStampedModel, DomainHelper):
 
             return help_texts.get(state, "")
 
+        @classmethod
+        def get_admin_help_text(cls, state):
+            """Returns a help message for a desired state for /admin. If none is found, an empty string is returned"""
+            admin_help_texts = {
+                cls.UNKNOWN: (
+                    "The creator of the associated domain request has not logged in to "
+                    "manage the domain since it was approved. "
+                    'The state will switch to "DNS needed" after they access the domain in the registrar.'
+                ),
+                cls.DNS_NEEDED: (
+                    "Before this domain can be used, name server addresses need to be added within the registrar."
+                ),
+                cls.READY: "This domain has name servers and is ready for use.",
+                cls.ON_HOLD: (
+                    "While on hold, this domain won't resolve in DNS and "
+                    "any infrastructure (like websites) will be offline."
+                ),
+                cls.DELETED: (
+                    "This domain was permanently removed from the registry. "
+                    "The domain no longer resolves in DNS and any infrastructure (like websites) is offline."
+                ),
+            }
+
+            return admin_help_texts.get(state, "")
+
     class Cache(property):
         """
         Python descriptor to turn class methods into properties.
@@ -992,22 +1017,25 @@ class Domain(TimeStampedModel, DomainHelper):
         blank=False,
         default=None,  # prevent saving without a value
         unique=True,
-        verbose_name="domain",
         help_text="Fully qualified domain name",
+        verbose_name="domain",
     )
 
     state = FSMField(
         max_length=21,
         choices=State.choices,
         default=State.UNKNOWN,
-        protected=True,  # cannot change state directly, particularly in Django admin
+        # cannot change state directly, particularly in Django admin
+        protected=True,
+        # This must be defined for custom state help messages,
+        # as otherwise the view will purge the help field as it does not exist.
+        help_text=" ",
         verbose_name="domain state",
-        help_text="Very basic info about the lifecycle of this domain object",
     )
 
     expiration_date = DateField(
         null=True,
-        help_text=("Duplication of registry's expiration date saved for ease of reporting"),
+        help_text=("Date the domain expires in the registry"),
     )
 
     security_contact_registry_id = TextField(
@@ -1019,15 +1047,15 @@ class Domain(TimeStampedModel, DomainHelper):
     deleted = DateField(
         null=True,
         editable=False,
+        help_text='Will appear blank unless the domain is in "deleted" state',
         verbose_name="deleted on",
-        help_text="Deleted at date",
     )
 
     first_ready = DateField(
         null=True,
         editable=False,
+        help_text='Date when this domain first moved into "ready" state; date will never change',
         verbose_name="first ready on",
-        help_text="The last time this domain moved into the READY state",
     )
 
     def isActive(self):

@@ -457,7 +457,7 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
 }
 
 /** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
- * status select amd to show/hide the rejection reason
+ * status select and to show/hide the rejection reason
 */
 (function (){
     let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')

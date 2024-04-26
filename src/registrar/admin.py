@@ -48,6 +48,34 @@ class MyUserAdminForm(UserChangeForm):
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
         }
 
+    def __init__(self, *args, **kwargs):
+        """Custom init to modify the user form"""
+        super(MyUserAdminForm, self).__init__(*args, **kwargs)
+        self._override_base_help_texts()
+
+    def _override_base_help_texts(self):
+        """
+        Used to override pre-existing help texts in AbstractUser.
+        This is done to avoid modifying the base AbstractUser class.
+        """
+        is_superuser = self.fields.get("is_superuser")
+        is_staff = self.fields.get("is_staff")
+        password = self.fields.get("password")
+
+        if is_superuser is not None:
+            is_superuser.help_text = "For development purposes only; provides superuser access on the database level."
+
+        if is_staff is not None:
+            is_staff.help_text = "Designates whether the user can log in to this admin site."
+
+        if password is not None:
+            # Link is copied from the base implementation of UserChangeForm.
+            link = f"../../{self.instance.pk}/password/"
+            password.help_text = (
+                "Raw passwords are not stored, so they will not display here. "
+                f'You can change the password using <a href="{link}">this form</a>.'
+            )
+
 
 class DomainInformationAdminForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
@@ -533,7 +561,7 @@ class MyUserAdmin(BaseUserAdmin):
     analyst_fieldsets = (
         (
             None,
-            {"fields": ("password", "status")},
+            {"fields": ("status",)},
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
@@ -559,7 +587,6 @@ class MyUserAdmin(BaseUserAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "password",
         "Personal Info",
         "first_name",
         "last_name",
@@ -974,9 +1001,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
                     # TODO 1975 BEFORE MERGING: COMMENT BELOW OUT
@@ -1000,9 +1028,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",
@@ -1203,7 +1232,17 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        (
+            "Contacts",
+            {
+                "fields": [
+                    "authorizing_official",
+                    "other_contacts",
+                    "no_other_contacts_rationale",
+                    "cisa_representative_email",
+                ]
+            },
+        ),
         ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
         (
             "Type of organization",
@@ -1216,9 +1255,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
                     # TODO 1975 BEFORE MERGING: COMMENT BELOW OUT
@@ -1242,9 +1282,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",
@@ -1277,6 +1318,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
+        "cisa_representative_email",
     ]
     autocomplete_fields = [
         "approved_domain",
@@ -1724,20 +1766,26 @@ class DomainAdmin(ListHeaderAdmin):
             if domain is not None and hasattr(domain, "domain_info"):
                 extra_context["original_object"] = domain.domain_info
 
+            extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
+            extra_context["domain_state"] = domain.get_state_display()
+
             # Pass in what the an extended expiration date would be for the expiration date modal
-            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
-            try:
-                curr_exp_date = domain.registry_expiration_date
-            except KeyError:
-                # No expiration date was found. Return none.
-                extra_context["extended_expiration_date"] = None
-                return super().changeform_view(request, object_id, form_url, extra_context)
-            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
-            extra_context["extended_expiration_date"] = new_date
-        else:
-            extra_context["extended_expiration_date"] = None
+            self._set_expiration_date_context(domain, extra_context)
 
         return super().changeform_view(request, object_id, form_url, extra_context)
+
+    def _set_expiration_date_context(self, domain, extra_context):
+        """Given a domain, calculate the an extended expiration date
+        from the current registry expiration date."""
+        years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
+        try:
+            curr_exp_date = domain.registry_expiration_date
+        except KeyError:
+            # No expiration date was found. Return none.
+            extra_context["extended_expiration_date"] = None
+        else:
+            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
+            extra_context["extended_expiration_date"] = new_date
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
