@@ -563,7 +563,12 @@ class MyUserAdmin(BaseUserAdmin):
     analyst_fieldsets = (
         (
             None,
-            {"fields": ("status", "verification_type",)},
+            {
+                "fields": (
+                    "status",
+                    "verification_type",
+                )
+            },
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (

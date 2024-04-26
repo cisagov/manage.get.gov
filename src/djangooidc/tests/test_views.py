@@ -17,7 +17,7 @@ class ViewsTest(TestCase):
     def setUp(self):
         self.client = Client()
         self.factory = RequestFactory()
-    
+
     def tearDown(self):
         User.objects.all().delete()
         Contact.objects.all().delete()
@@ -238,7 +238,7 @@ class ViewsTest(TestCase):
                         # assert that redirect is to / when no 'next' is set
                         self.assertEqual(response.status_code, 302)
                         self.assertEqual(response.url, "/")
-    
+
     @less_console_noise_decorator
     def test_login_callback_sets_verification_type_regular(self, mock_client):
         """
@@ -252,7 +252,9 @@ class ViewsTest(TestCase):
         # mock that callback returns user_info; this is the expected behavior
         mock_client.callback.side_effect = self.user_info
         # patch that the request does not require step up auth
-        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch("djangooidc.views._initialize_client") as mock_init_client:
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
+            "djangooidc.views._initialize_client"
+        ) as mock_init_client:
             with patch("djangooidc.views._client_is_none", return_value=True):
                 # TEST
                 # test the login callback url
@@ -283,7 +285,9 @@ class ViewsTest(TestCase):
         # mock that callback returns user_info; this is the expected behavior
         mock_client.callback.side_effect = self.user_info
         # patch that the request does not require step up auth
-        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch("djangooidc.views._initialize_client") as mock_init_client:
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
+            "djangooidc.views._initialize_client"
+        ) as mock_init_client:
             with patch("djangooidc.views._client_is_none", return_value=True):
                 # TEST
                 # test the login callback url
@@ -314,7 +318,9 @@ class ViewsTest(TestCase):
         td, _ = TransitionDomain.objects.get_or_create(username="test@example.com", domain_name="test123.gov")
 
         # patch that the request does not require step up auth
-        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch("djangooidc.views._initialize_client") as mock_init_client:
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
+            "djangooidc.views._initialize_client"
+        ) as mock_init_client:
             with patch("djangooidc.views._client_is_none", return_value=True):
                 # TEST
                 # test the login callback url
@@ -334,7 +340,7 @@ class ViewsTest(TestCase):
 
     @less_console_noise_decorator
     def test_login_callback_sets_verification_type_verified_by_staff(self, mock_client):
-        """Test that openid sets the verification type to verified_by_staff 
+        """Test that openid sets the verification type to verified_by_staff
         on a user which exists in our VerifiedByStaff table"""
         # SETUP
         session = self.client.session
@@ -346,7 +352,9 @@ class ViewsTest(TestCase):
         vip, _ = VerifiedByStaff.objects.get_or_create(email="test@example.com")
 
         # patch that the request does not require step up auth
-        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch("djangooidc.views._initialize_client") as mock_init_client:
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
+            "djangooidc.views._initialize_client"
+        ) as mock_init_client:
             with patch("djangooidc.views._client_is_none", return_value=True):
                 # TEST
                 # test the login callback url

@@ -1,4 +1,3 @@
-from enum import Enum
 import logging
 
 from django.contrib.auth.models import AbstractUser
