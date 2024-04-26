@@ -1,171 +1,23 @@
 from __future__ import annotations  # allows forward references in annotations
-from itertools import zip_longest
 import logging
-from typing import Callable
 from api.views import DOMAIN_API_MESSAGES
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
-from django.db.models.fields.related import ForeignObjectRel
 
+from registrar.forms.utility.wizard_form_helper import (
+    RegistrarForm,
+    RegistrarFormSet,
+    BaseYesNoForm,
+    BaseDeletableRegistrarForm,
+)
 from registrar.models import Contact, DomainRequest, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 
 logger = logging.getLogger(__name__)
-
-
-class RegistrarForm(forms.Form):
-    """
-    A common set of methods and configuration.
-
-    The registrar's domain request is several pages of "steps".
-    Each step is an HTML form containing one or more Django "forms".
-
-    Subclass this class to create new forms.
-    """
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("label_suffix", "")
-        # save a reference to a domain request object
-        self.domain_request = kwargs.pop("domain_request", None)
-        super(RegistrarForm, self).__init__(*args, **kwargs)
-
-    def to_database(self, obj: DomainRequest | Contact):
-        """
-        Adds this form's cleaned data to `obj` and saves `obj`.
-
-        Does nothing if form is not valid.
-        """
-        if not self.is_valid():
-            return
-        for name, value in self.cleaned_data.items():
-            setattr(obj, name, value)
-        obj.save()
-
-    @classmethod
-    def from_database(cls, obj: DomainRequest | Contact | None):
-        """Returns a dict of form field values gotten from `obj`."""
-        if obj is None:
-            return {}
-        return {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
-
-
-class RegistrarFormSet(forms.BaseFormSet):
-    """
-    As with RegistrarForm, a common set of methods and configuration.
-
-    Subclass this class to create new formsets.
-    """
-
-    def __init__(self, *args, **kwargs):
-        # save a reference to an domain_request object
-        self.domain_request = kwargs.pop("domain_request", None)
-        super(RegistrarFormSet, self).__init__(*args, **kwargs)
-        # quick workaround to ensure that the HTML `required`
-        # attribute shows up on required fields for any forms
-        # in the formset which have data already (stated another
-        # way: you can leave a form in the formset blank, but
-        # if you opt to fill it out, you must fill it out _right_)
-        for index in range(self.initial_form_count()):
-            self.forms[index].use_required_attribute = True
-
-    def should_delete(self, cleaned):
-        """Should this entry be deleted from the database?"""
-        raise NotImplementedError
-
-    def pre_update(self, db_obj, cleaned):
-        """Code to run before an item in the formset is saved."""
-        for key, value in cleaned.items():
-            setattr(db_obj, key, value)
-
-    def pre_create(self, db_obj, cleaned):
-        """Code to run before an item in the formset is created in the database."""
-        return cleaned
-
-    def to_database(self, obj: DomainRequest):
-        """
-        Adds this form's cleaned data to `obj` and saves `obj`.
-
-        Does nothing if form is not valid.
-
-        Hint: Subclass should call `self._to_database(...)`.
-        """
-        raise NotImplementedError
-
-    def _to_database(
-        self,
-        obj: DomainRequest,
-        join: str,
-        should_delete: Callable,
-        pre_update: Callable,
-        pre_create: Callable,
-    ):
-        """
-        Performs the actual work of saving.
-
-        Has hooks such as `should_delete` and `pre_update` by which the
-        subclass can control behavior. Add more hooks whenever needed.
-        """
-        if not self.is_valid():
-            return
-        obj.save()
-
-        query = getattr(obj, join).order_by("created_at").all()  # order matters
-
-        # get the related name for the join defined for the db_obj for this form.
-        # the related name will be the reference on a related object back to db_obj
-        related_name = ""
-        field = obj._meta.get_field(join)
-        if isinstance(field, ForeignObjectRel) and callable(field.related_query_name):
-            related_name = field.related_query_name()
-        elif hasattr(field, "related_query_name") and callable(field.related_query_name):
-            related_name = field.related_query_name()
-
-        # the use of `zip` pairs the forms in the formset with the
-        # related objects gotten from the database -- there should always be
-        # at least as many forms as database entries: extra forms means new
-        # entries, but fewer forms is _not_ the correct way to delete items
-        # (likely a client-side error or an attempt at data tampering)
-        for db_obj, post_data in zip_longest(query, self.forms, fillvalue=None):
-            cleaned = post_data.cleaned_data if post_data is not None else {}
-
-            # matching database object exists, update it
-            if db_obj is not None and cleaned:
-                if should_delete(cleaned):
-                    if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(related_name):
-                        # Remove the specific relationship without deleting the object
-                        getattr(db_obj, related_name).remove(self.domain_request)
-                    else:
-                        # If there are no other relationships, delete the object
-                        db_obj.delete()
-                else:
-                    if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(related_name):
-                        # create a new db_obj and disconnect existing one
-                        getattr(db_obj, related_name).remove(self.domain_request)
-                        kwargs = pre_create(db_obj, cleaned)
-                        getattr(obj, join).create(**kwargs)
-                    else:
-                        pre_update(db_obj, cleaned)
-                        db_obj.save()
-
-            # no matching database object, create it
-            # make sure not to create a database object if cleaned has 'delete' attribute
-            elif db_obj is None and cleaned and not cleaned.get("DELETE", False):
-                kwargs = pre_create(db_obj, cleaned)
-                getattr(obj, join).create(**kwargs)
-
-    @classmethod
-    def on_fetch(cls, query):
-        """Code to run when fetching formset's objects from the database."""
-        return query.values()
-
-    @classmethod
-    def from_database(cls, obj: DomainRequest, join: str, on_fetch: Callable):
-        """Returns a dict of form field values gotten from `obj`."""
-        return on_fetch(getattr(obj, join).order_by("created_at"))  # order matters
 
 
 class OrganizationTypeForm(RegistrarForm):
@@ -588,28 +440,24 @@ class YourContactForm(RegistrarForm):
     )
 
 
-class OtherContactsYesNoForm(RegistrarForm):
-    def __init__(self, *args, **kwargs):
-        """Extend the initialization of the form from RegistrarForm __init__"""
-        super().__init__(*args, **kwargs)
-        # set the initial value based on attributes of domain request
-        if self.domain_request and self.domain_request.has_other_contacts():
-            initial_value = True
-        elif self.domain_request and self.domain_request.has_rationale():
-            initial_value = False
+class OtherContactsYesNoForm(BaseYesNoForm):
+    """The yes/no field for the OtherContacts form."""
+
+    form_choices = ((True, "Yes, I can name other employees."), (False, "No. (We’ll ask you to explain why.)"))
+    field_name = "has_other_contacts"
+
+    @property
+    def form_is_checked(self):
+        """
+        Determines the initial checked state of the form based on the domain_request's attributes.
+        """
+        if self.domain_request.has_other_contacts():
+            return True
+        elif self.domain_request.has_rationale():
+            return False
         else:
             # No pre-selection for new domain requests
-            initial_value = None
-
-        self.fields["has_other_contacts"] = forms.TypedChoiceField(
-            coerce=lambda x: x.lower() == "true" if x is not None else None,  # coerce strings to bool, excepting None
-            choices=((True, "Yes, I can name other employees."), (False, "No. (We’ll ask you to explain why.)")),
-            initial=initial_value,
-            widget=forms.RadioSelect,
-            error_messages={
-                "required": "This question is required.",
-            },
-        )
+            return None
 
 
 class OtherContactsForm(RegistrarForm):
@@ -779,7 +627,7 @@ OtherContactsFormSet = forms.formset_factory(
 )
 
 
-class NoOtherContactsForm(RegistrarForm):
+class NoOtherContactsForm(BaseDeletableRegistrarForm):
     no_other_contacts_rationale = forms.CharField(
         required=True,
         # label has to end in a space to get the label_suffix to show
@@ -794,59 +642,35 @@ class NoOtherContactsForm(RegistrarForm):
         error_messages={"required": ("Rationale for no other employees is required.")},
     )
 
-    def __init__(self, *args, **kwargs):
-        self.form_data_marked_for_deletion = False
-        super().__init__(*args, **kwargs)
 
-    def mark_form_for_deletion(self):
-        """Marks no_other_contacts form for deletion.
-        This changes behavior of validity checks and to_database
-        methods."""
-        self.form_data_marked_for_deletion = True
-
-    def clean(self):
-        """
-        This method overrides the default behavior for forms.
-        This cleans the form after field validation has already taken place.
-        In this override, remove errors associated with the form if form data
-        is marked for deletion.
-        """
-
-        if self.form_data_marked_for_deletion:
-            # clear any errors raised by the form fields
-            # (before this clean() method is run, each field
-            # performs its own clean, which could result in
-            # errors that we wish to ignore at this point)
-            #
-            # NOTE: we cannot just clear() the errors list.
-            # That causes problems.
-            for field in self.fields:
-                if field in self.errors:
-                    del self.errors[field]
-
-        return self.cleaned_data
-
-    def to_database(self, obj):
-        """
-        This method overrides the behavior of RegistrarForm.
-        If form data is marked for deletion, set relevant fields
-        to None before saving.
-        Do nothing if form is not valid.
-        """
-        if not self.is_valid():
-            return
-        if self.form_data_marked_for_deletion:
-            for field_name, _ in self.fields.items():
-                setattr(obj, field_name, None)
-        else:
-            for name, value in self.cleaned_data.items():
-                setattr(obj, name, value)
-        obj.save()
+class CisaRepresentativeForm(BaseDeletableRegistrarForm):
+    cisa_representative_email = forms.EmailField(
+        required=True,
+        max_length=None,
+        label="Your representative’s email",
+        validators=[
+            MaxLengthValidator(
+                320,
+                message="Response must be less than 320 characters.",
+            )
+        ],
+        error_messages={
+            "invalid": ("Enter your email address in the required format, like name@example.com."),
+            "required": ("Enter the email address of your CISA regional representative."),
+        },
+    )
 
 
-class AnythingElseForm(RegistrarForm):
+class CisaRepresentativeYesNoForm(BaseYesNoForm):
+    """Yes/no toggle for the CISA regions question on additional details"""
+
+    form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)  # type: ignore
+    field_name = "has_cisa_representative"
+
+
+class AdditionalDetailsForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
-        required=False,
+        required=True,
         label="Anything else?",
         widget=forms.Textarea(),
         validators=[
@@ -855,7 +679,20 @@ class AnythingElseForm(RegistrarForm):
                 message="Response must be less than 2000 characters.",
             )
         ],
+        error_messages={
+            "required": (
+                "Provide additional details you’d like us to know. " "If you have nothing to add, select “No.”"
+            )
+        },
     )
+
+
+class AdditionalDetailsYesNoForm(BaseYesNoForm):
+    """Yes/no toggle for the anything else question on additional details"""
+
+    # Note that these can be set as functions/init if you need more fine-grained control.
+    form_is_checked = property(lambda self: self.domain_request.has_anything_else_text)  # type: ignore
+    field_name = "has_anything_else_text"
 
 
 class RequirementsForm(RegistrarForm):

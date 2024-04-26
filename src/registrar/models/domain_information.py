@@ -212,6 +212,14 @@ class DomainInformation(TimeStampedModel):
     anything_else = models.TextField(
         null=True,
         blank=True,
+        verbose_name="Additional details",
+    )
+
+    cisa_representative_email = models.EmailField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative",
+        max_length=320,
     )
 
     is_policy_acknowledged = models.BooleanField(

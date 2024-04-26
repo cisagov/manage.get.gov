@@ -1001,9 +1001,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
                     # "updated_federal_agency",
@@ -1026,9 +1027,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",
@@ -1229,7 +1231,17 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        (
+            "Contacts",
+            {
+                "fields": [
+                    "authorizing_official",
+                    "other_contacts",
+                    "no_other_contacts_rationale",
+                    "cisa_representative_email",
+                ]
+            },
+        ),
         ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
         (
             "Type of organization",
@@ -1242,9 +1254,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
                     # "updated_federal_agency",
@@ -1267,9 +1280,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",
@@ -1302,6 +1316,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
+        "cisa_representative_email",
     ]
     autocomplete_fields = [
         "approved_domain",
