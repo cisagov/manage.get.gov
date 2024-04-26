@@ -19,5 +19,6 @@ class Command(BaseCommand, PopulateScriptTemplate):
         """Defines how we update the verification_type field"""
         field_to_update.set_user_verification_type()
         logger.info(
-            f"{TerminalColors.OKCYAN}Updating {field_to_update} => {field_to_update.verification_type}{TerminalColors.OKCYAN}"
+            f"{TerminalColors.OKCYAN}Updating {field_to_update} => "
+            f"{field_to_update.verification_type}{TerminalColors.OKCYAN}"
         )

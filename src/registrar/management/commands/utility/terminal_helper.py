@@ -3,7 +3,6 @@ import sys
 from abc import ABC, abstractmethod
 from django.core.paginator import Paginator
 from typing import List
-from django.core.management import BaseCommand
 from registrar.utility.enums import LogCode
 
 logger = logging.getLogger(__name__)
@@ -106,7 +105,7 @@ class PopulateScriptTemplate(ABC):
     @abstractmethod
     def populate_field(self, field_to_update):
         """Defines how we update each field. Must be defined before using mass_populate_field."""
-        pass
+        pass  #  noqa
 
 
 class TerminalHelper:
