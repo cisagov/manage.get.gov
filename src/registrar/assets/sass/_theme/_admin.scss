@@ -634,9 +634,9 @@ div.dja__model-description{
         list-style-type: disc;
     }
 
-}
+    &.dja__model-description--no-overflow {
+        display: block;
+        overflow: unset;
+    }
 
-div.dja__model-description.dja__model-description--no-overflow {
-    display: block;
-    overflow: unset;
 }
