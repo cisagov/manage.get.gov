@@ -149,10 +149,10 @@ class User(AbstractUser):
         # always exist at this point. We do it down the line.
         verification_type = cls.get_verification_type_from_email(email)
 
+        # Checks if the user needs verification.
         # The user needs identity verification if they don't meet
         # any special criteria, i.e. we are validating them "regularly"
-        needs_verification = verification_type == cls.VerificationTypeChoices.REGULAR
-        return needs_verification
+        return verification_type == cls.VerificationTypeChoices.REGULAR
 
     def set_user_verification_type(self):
         """
@@ -174,7 +174,7 @@ class User(AbstractUser):
 
             # If you joined BEFORE the oldest invitation was created, then you were verified normally.
             # (See logic in get_verification_type_from_email)
-            if invitation is not None and self.date_joined < invitation.created_at:
+            if not invitation and self.date_joined < invitation.created_at:
                 verification_type = User.VerificationTypeChoices.REGULAR
 
         self.verification_type = verification_type

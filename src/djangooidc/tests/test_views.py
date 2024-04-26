@@ -241,7 +241,10 @@ class ViewsTest(TestCase):
     
     @less_console_noise_decorator
     def test_login_callback_sets_verification_type_regular(self, mock_client):
-        """Test that openid sets the verification type to regular on the returned user"""
+        """
+        Test that openid sets the verification type to regular on the returned user.
+        Regular, in this context, means that this user was "Verifed by Login.gov"
+        """
         # SETUP
         session = self.client.session
         session.save()

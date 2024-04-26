@@ -93,7 +93,7 @@ class PopulateScriptTemplate(ABC):
                 self.populate_field(updated_object)
                 to_update.append(updated_object)
             except Exception as err:
-                to_update.append(updated_object)
+                failed_to_update.append(updated_object)
                 logger.error(err)
                 logger.error(f"{TerminalColors.FAIL}" f"Failed to update {updated_object}" f"{TerminalColors.ENDC}")
 
