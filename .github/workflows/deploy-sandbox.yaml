@@ -40,6 +40,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Compile USWDS assets
+        uses: actions/setup-node@v4
+        with:
+            node-version: '21.0.0'
         working-directory: ./src
         run: |
           docker compose run node npm install && 
