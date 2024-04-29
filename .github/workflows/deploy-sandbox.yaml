@@ -43,6 +43,8 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '14.14.0'
+      - name: Check Node.js version
+          run: node --version
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
