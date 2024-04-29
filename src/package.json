@@ -4,7 +4,8 @@
   "description": "========================",
   "main": "index.js",
   "engines": {
-    "node": "21.7.3"
+    "node": "21.7.3",
+    "npm": "10.5.0"
   },
   "engineStrict": true,
   "scripts": {

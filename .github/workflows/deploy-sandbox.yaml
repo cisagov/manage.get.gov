@@ -39,9 +39,6 @@ jobs:
     needs: [variables]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '23.0.0-nightly202404297c3dce0e4f'
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
