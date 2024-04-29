@@ -41,17 +41,11 @@ exports.watch = uswds.watch;
 // https://github.com/nodejs/node/issues/52707#issuecomment-2081352450
 
 async function mkDist() {
-    try {
-        await promises.mkdir('./dist', { recursive: true });
-    } catch (e) {
-        if (e.code !== 'EEXIST') throw e;
-    }
+	try { await promises.mkdir('./dist') } catch (e) { if (e.code !== 'EEXIST') throw e }
 }
 
-function copyAssets() {
-    return src([`${ASSETS_DIR}**/*`, `!${ASSETS_DIR}/**/*.{ts,tsx}`, `${ASSETS_DIR}**/*.d.ts`])
-        .pipe(dest('./dist/', { atime: null, mtime: null }));
+function copy() {
+	return src([ './src/**', '!./src/**/*.{ts,tsx}', './src/**/*.d.ts', ]).pipe(dest('./dist/'))
 }
 
-// Composite task that includes your tasks and the USWDS copyAssets
-exports.copyAssets = series(mkDist, copyAssets, uswds.copyAssets);
+exports.copyAssets = series(mkDist, copy, uswds.copyAssets);
