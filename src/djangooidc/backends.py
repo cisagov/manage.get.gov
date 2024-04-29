@@ -8,6 +8,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.utils import timezone
 
+from registrar.models.contact import Contact
+
 logger = logging.getLogger(__name__)
 
 
@@ -80,6 +82,14 @@ class OpenIdConnectBackend(ModelBackend):
             - 'first_name' and 'last_name' will be updated if the provided value is not empty.
         """
 
+        contacts = Contact.objects.filter(user=user)
+
+        if len(contacts) == 0:  # no matching contact
+            logger.warning("Could not find a contact when one should've existed.")
+
+        if len(contacts) > 1:  # multiple matches
+            logger.warning("There are multiple Contacts with the same email address.")
+
         # Iterate over fields to update
         for key, value in kwargs.items():
             # Check if the field is not 'first_name', 'last_name', or 'phone',
@@ -87,7 +97,7 @@ class OpenIdConnectBackend(ModelBackend):
             # or if it's 'first_name' or 'last_name' and the provided value is not empty
             if (
                 key not in ["first_name", "last_name", "phone"]
-                or (key == "phone" and (user.phone is None or user.phone == ""))
+                or (key == "phone" and not contacts[0].phone)
                 or (key in ["first_name", "last_name"] and value)
             ):
                 # Update the corresponding attribute of the user object
