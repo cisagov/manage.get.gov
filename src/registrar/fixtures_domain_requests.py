@@ -9,6 +9,7 @@ from registrar.models import (
     DraftDomain,
     Contact,
     Website,
+    FederalAgency
 )
 
 fake = Faker()
@@ -101,12 +102,6 @@ class DomainRequestFixture:
 
         # TODO for a future ticket: Allow for more than just "federal" here
         da.generic_org_type = app["generic_org_type"] if "generic_org_type" in app else "federal"
-        da.federal_agency = (
-            app["federal_agency"]
-            if "federal_agency" in app
-            # Random choice of agency for selects, used as placeholders for testing.
-            else random.choice(DomainRequest.AGENCIES)  # nosec
-        )
         da.submission_date = fake.date()
         da.federal_type = (
             app["federal_type"]
@@ -146,6 +141,13 @@ class DomainRequestFixture:
                 da.requested_domain, _ = DraftDomain.objects.get_or_create(name=app["requested_domain"])
             else:
                 da.requested_domain = DraftDomain.objects.create(name=cls.fake_dot_gov())
+        
+        if not da.federal_agency:
+            if "federal_agency" in app and app["federal_agency"] is not None:
+                da.federal_agency, _ = FederalAgency.objects.get_or_create(name=app["federal_agency"])
+            else:
+                federal_agencies = FederalAgency.objects.all()
+                da.federal_agency = random.choice(federal_agencies)
 
     @classmethod
     def _set_many_to_many_relations(cls, da: DomainRequest, app: dict):
