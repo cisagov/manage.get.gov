@@ -1,6 +1,20 @@
 /* gulpfile.js */
 
 const uswds = require('@uswds/compile');
+const {promises} = require('fs')
+
+// THIS IS A TEMPORARY WORKAROUND. Delete lines 4-16 after this lands in the node releases
+// https://github.com/nodejs/node/issues/52707#issue-2265785789
+// This solution was pulled from here: https://github.com/nodejs/node/issues/52707#issuecomment-2081352450
+async function mkDist() {
+	try { await promises.mkdir('./dist') } catch (e) { if (e.code !== 'EEXIST') throw e }
+}
+
+function copy() {
+	return src([ './src/**', '!./src/**/*.{ts,tsx}', './src/**/*.d.ts', ]).pipe(dest('./dist/'))
+}
+
+exports.copyAssets = series(mkDist, copy)
 
 /**
  * USWDS version
