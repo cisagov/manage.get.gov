@@ -9,7 +9,6 @@ class VerifiedByStaff(TimeStampedModel):
     email = models.EmailField(
         null=False,
         blank=False,
-        help_text="Email",
         db_index=True,
     )
 
@@ -19,12 +18,12 @@ class VerifiedByStaff(TimeStampedModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="verifiedby_user",
+        help_text="Person who verified this user",
     )
 
     notes = models.TextField(
         null=False,
         blank=False,
-        help_text="Notes",
     )
 
     class Meta:

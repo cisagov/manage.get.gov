@@ -34,6 +34,7 @@ class User(AbstractUser):
         null=True,  # Allow the field to be null
         blank=True,  # Allow the field to be blank
         verbose_name="user status",
+        help_text='Users in "restricted" status cannot make updates in the registrar or start a new request.',
     )
 
     domains = models.ManyToManyField(

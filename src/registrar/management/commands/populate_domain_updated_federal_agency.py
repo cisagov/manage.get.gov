@@ -1,9 +1,10 @@
 """"
-TODO: write description
+Data migration: Renaming deprecated Federal Agencies to
+their new updated names ie (U.S. Peace Corps to Peace Corps)
+within Domain Information and Domain Requests
 """
 
 import logging
-import copy
 
 from django.core.management import BaseCommand
 from registrar.models import DomainInformation, DomainRequest, FederalAgency
@@ -16,10 +17,10 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Transfers Domain Request and Domain Information federal agency field from string to FederalAgency object"
 
-    # Deprecated federal agency names mapped to designated replacements
+    # Deprecated federal agency names mapped to designated replacements {old_value, new value}
     rename_deprecated_federal_agency = {
         "Appraisal Subcommittee": "Appraisal Subcommittee of the Federal Financial Institutions Examination Council",
-        "Barry Goldwater Scholarship and Excellence in Education Program": "Barry Goldwater Scholarship and Excellence in Education Foundation",
+        "Barry Goldwater Scholarship and Excellence in Education Program": "Barry Goldwater Scholarship and Excellence in Education Foundation",  # noqa
         "Federal Reserve System": "Federal Reserve Board of Governors",
         "Harry S Truman Scholarship Foundation": "Harry S. Truman Scholarship Foundation",
         "Japan-US Friendship Commission": "Japan-U.S. Friendship Commission",
@@ -46,24 +47,26 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         """
-        Converts all ready and DNS needed domains with a non-default public contact
-        to disclose their public contact.
+        Renames the Federal Agency to the correct new naming
+        for both Domain Information and Domain Requests objects.
+
+        NOTE: If it's None for a domain request, we skip it as
+        a user most likely hasn't gotten to it yet.
         """
         logger.info("Transferring federal agencies to FederalAgency object")
-        # DomainInforation object we populate with updated_federal_agency which are then bulk updated
+        # DomainInformation object we populate with updated_federal_agency which are then bulk updated
         domain_infos_to_update = []
         domain_requests_to_update = []
-        # domain requests with null federal_agency that are not populated with updated_federal_agency
+        # Domain Requests with null federal_agency that are not populated with updated_federal_agency
         domain_requests_skipped = []
         domain_infos_with_errors = []
         domain_requests_with_errors = []
 
-        # Initializes domain request and domain info objects that need to update federal agency
-        # filter out domains with federal agency null or Non-Federal Agency
         domain_infos = DomainInformation.objects.all()
         domain_requests = DomainRequest.objects.all()
 
         logger.info(f"Found {len(domain_infos)} DomainInfo objects with federal agency.")
+        logger.info(f"Found {len(domain_requests)} Domain Request objects with federal agency.")
 
         for domain_info in domain_infos:
             try:
@@ -71,12 +74,11 @@ class Command(BaseCommand):
                 domain_info.updated_federal_agency = federal_agency_row
                 domain_infos_to_update.append(domain_info)
                 logger.info(
-                    f"DomainInformation {domain_info} updated_federal_agency set to: {domain_info.updated_federal_agency}"
+                    f"DomainInformation {domain_info} => updated_federal_agency set to:"
+                    f"{domain_info.updated_federal_agency}"
                 )
             except Exception as err:
-                logger.info(
-                    f"DomainInformation for {domain_information} failed to update updated_federal_agency: {err}"
-                )
+                logger.info(f"DomainInformation for {domain_info} failed to update updated_federal_agency: {err}")
                 domain_infos_with_errors.append(domain_info)
 
         ScriptDataHelper.bulk_update_fields(DomainInformation, domain_infos_to_update, ["updated_federal_agency"])
@@ -90,7 +92,8 @@ class Command(BaseCommand):
                     domain_request.updated_federal_agency = federal_agency_row
                     domain_requests_to_update.append(domain_request)
                     logger.info(
-                        f"DomainRequest {domain_request} updated_federal_agency set to: {domain_request.updated_federal_agency}"
+                        f"DomainRequest {domain_request} => updated_federal_agency set to:"
+                        f"{domain_request.updated_federal_agency}"
                     )
             except Exception as err:
                 logger.info(f"DomainRequest for {domain_request} failed to update updated_federal_agency: {err}")
@@ -105,5 +108,6 @@ class Command(BaseCommand):
         logger.info(f"{len(domain_requests_to_update)} DomainRequest rows updated update_federal_agency.")
         logger.info(f"{len(domain_requests_skipped)} DomainRequest rows with null federal_agency skipped.")
         logger.info(
-            f"{len(domain_requests_with_errors)} DomainRequest rows errored when updating update_federal_agency.\n{domain_requests_with_errors}"
+            f"{len(domain_requests_with_errors)} DomainRequest rows errored when updating update_federal_agency."
+            f"{domain_requests_with_errors}"
         )
