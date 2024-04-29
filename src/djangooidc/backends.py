@@ -65,13 +65,35 @@ class OpenIdConnectBackend(ModelBackend):
         return user
 
     def update_existing_user(self, user, kwargs):
-        """Update other fields without overwriting first_name and last_name.
-        Overwrite first_name and last_name if not empty string"""
+        """
+        Update user fields without overwriting certain fields.
 
+        Args:
+            user: User object to be updated.
+            kwargs: Dictionary containing fields to update and their new values.
+
+        Note:
+            This method updates user fields while preserving the values of 'first_name',
+            'last_name', and 'phone' fields, unless specific conditions are met.
+
+            - 'phone' field will be updated if it's None or an empty string.
+            - 'first_name' and 'last_name' will be updated if the provided value is not empty.
+        """
+
+        # Iterate over fields to update
         for key, value in kwargs.items():
-            # Check if the key is not first_name or last_name or value is not empty string
-            if key not in ["first_name", "last_name"] or value:
+            # Check if the field is not 'first_name', 'last_name', or 'phone',
+            # or if it's the 'phone' field and 'user.phone' is None or empty,
+            # or if it's 'first_name' or 'last_name' and the provided value is not empty
+            if (
+                key not in ["first_name", "last_name", "phone"]
+                or (key == "phone" and (user.phone is None or user.phone == ""))
+                or (key in ["first_name", "last_name"] and value)
+            ):
+                # Update the corresponding attribute of the user object
                 setattr(user, key, value)
+
+        # Save the user object with the updated fields
         user.save()
 
     def clean_username(self, username):
