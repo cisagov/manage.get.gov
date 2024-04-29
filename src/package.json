@@ -12,14 +12,9 @@
   "dependencies": {
     "@uswds/uswds": "^3.3.0",
     "pa11y-ci": "^3.0.1",
-    "sass": "^1.54.8",
-    "vinyl-fs": "^3.0.0",
-    "gulp": "^4.0.2"
+    "sass": "^1.54.8"
   },
   "devDependencies": {
     "@uswds/compile": "^1.0.0-beta.3"
-  },
-  "engines" : { 
-    "node" : "nightly"
   }
 }

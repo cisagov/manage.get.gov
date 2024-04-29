@@ -38,6 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [variables]
     steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '23.0.0-nightly202404297c3dce0e4f'
       - uses: actions/checkout@v3
       - name: Compile USWDS assets
         working-directory: ./src
