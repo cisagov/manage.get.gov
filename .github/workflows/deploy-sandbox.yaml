@@ -43,6 +43,7 @@ jobs:
         with:
           node-version: '21.7.3'
           cache: 'npm'
+          cache-dependency-path: ./src/package-lock.json
 
       - name: Compile USWDS assets
         working-directory: ./src
