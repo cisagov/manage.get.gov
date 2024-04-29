@@ -40,13 +40,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
+        working-directory: ./src
         uses: actions/setup-node@v4
         with:
           node-version: '21.7.3'
+          cache: 'npm'
+        
+      - name: Prepare Node environment and install dependencies
+        working-directory: ./src
+        run: |
+          docker compose run node npm install -g npm@10.5.0
+          docker compose run node npm install
+
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
-          docker compose run node npm install && 
           docker compose run node npx gulp copyAssets &&
           docker compose run node npx gulp compile 
       - name: Collect static assets 
