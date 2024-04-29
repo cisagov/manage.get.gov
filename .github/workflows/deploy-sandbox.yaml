@@ -39,9 +39,13 @@ jobs:
     needs: [variables]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v4
+      - name: Set up Node js
+        uses: actions/setup-node@v4
         with:
           node-version: '21.7.3'
+        run: |
+          npm install -g npm@10.5.0
+          npm install -g node@21.7.3
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
