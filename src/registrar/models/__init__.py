@@ -15,6 +15,7 @@ from .user_group import UserGroup
 from .website import Website
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
+from .waffle_flag import WaffleFlag
 
 __all__ = [
     "Contact",
@@ -33,6 +34,7 @@ __all__ = [
     "Website",
     "TransitionDomain",
     "VerifiedByStaff",
+    "WaffleFlag",
 ]
 
 auditlog.register(Contact)
@@ -51,3 +53,4 @@ auditlog.register(UserGroup, m2m_fields=["permissions"])
 auditlog.register(Website)
 auditlog.register(TransitionDomain)
 auditlog.register(VerifiedByStaff)
+auditlog.register(WaffleFlag)

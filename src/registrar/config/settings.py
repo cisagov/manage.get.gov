@@ -22,7 +22,6 @@ from base64 import b64decode
 from cfenv import AppEnv  # type: ignore
 from pathlib import Path
 from typing import Final
-
 from botocore.config import Config
 
 # # #                          ###
@@ -326,7 +325,10 @@ SERVER_EMAIL = "root@get.gov"
 
 # region: Waffle feature flags-----------------------------------------------------------###
 # If Waffle encounters a reference to a flag that is not in the database, should Waffle create the flag?
-# WAFFLE_CREATE_MISSING_FLAGS
+WAFFLE_CREATE_MISSING_FLAGS = False
+
+# The model that will be used to keep track of flags. Extends AbstractUserFlag.
+WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
 
 # endregion
 

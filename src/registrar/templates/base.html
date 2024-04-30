@@ -72,7 +72,7 @@
 
   {% if not IS_PRODUCTION %}
     {% include "includes/non-production-alert.html" %}
-    {% if profile_feature_flag %}
+    {% if has_profile_feature_flag %}
       <h2>it worked!</h2>
     {% endif %}
   {% endif %}
