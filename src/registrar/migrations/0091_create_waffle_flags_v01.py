@@ -9,19 +9,25 @@ from typing import Any
 
 # For linting: RunPython expects a function reference,
 # so let's give it one
-def create_flags():
+def create_flags(apps, schema_editor):
     """
     Populates pre-existing flags we wish to associate.
     Only generates a flag name and a note, but no other data is loaded at this point.
     """
-    WaffleFlag.create_waffle_flags_for_migrations()
 
-def delete_flags():
+    # This is a bit of a hack to get around "apps" not knowing what the concept of a constant is
+    default_flags = WaffleFlag.get_default_waffle_flags()
+    WaffleFlag.create_waffle_flags_for_migrations(apps, default_flags)
+
+
+def delete_flags(apps, schema_editor):
     """
-    Deletes all prexisting flags. 
+    Deletes all prexisting flags.
     Does not delete flags not defined in this scope (user generated).
     """
-    WaffleFlag.delete_waffle_flags_for_migrations()
+    # This is a bit of a hack to get around "apps" not knowing what the concept of a constant is
+    default_flags = WaffleFlag.get_default_waffle_flags()
+    WaffleFlag.delete_waffle_flags_for_migrations(apps, default_flags)
 
 
 class Migration(migrations.Migration):

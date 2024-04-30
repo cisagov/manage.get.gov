@@ -2159,11 +2159,14 @@ class UserGroupAdmin(AuditedAdmin):
     def user_group(self, obj):
         return obj.name
 
+
 class WaffleFlagAdmin(FlagAdmin):
     class Meta:
         """Contains meta information about this class"""
+
         model = models.WaffleFlag
         fields = "__all__"
+
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
