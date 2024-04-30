@@ -81,7 +81,7 @@ class Command(BaseCommand):
             except Exception as err:
                 logger.info(f"DomainInformation for {domain_info} failed to update updated_federal_agency: {err}")
                 domain_infos_with_errors.append(domain_info)
-
+                logger.info(f"DOMAIN INFO - {domain_info} - Federal Agency is {domain_info.federal_agency}")
         ScriptDataHelper.bulk_update_fields(DomainInformation, domain_infos_to_update, ["updated_federal_agency"])
 
         for domain_request in domain_requests:
@@ -99,12 +99,14 @@ class Command(BaseCommand):
             except Exception as err:
                 logger.info(f"DomainRequest for {domain_request} failed to update updated_federal_agency: {err}")
                 domain_requests_with_errors.append(domain_request)
+                logger.info(f"DOMAIN REQUEST - {domain_request} - Federal Agency is {domain_request.federal_agency}")
 
         ScriptDataHelper.bulk_update_fields(DomainRequest, domain_requests_to_update, ["updated_federal_agency"])
 
         logger.info(f"{len(domain_infos_to_update)} DomainInformation rows updated update_federal_agency.")
         logger.info(
             f"{len(domain_infos_with_errors)} DomainInformation rows errored when updating update_federal_agency."
+            f"{domain_infos_with_errors}"
         )
         logger.info(f"{len(domain_requests_to_update)} DomainRequest rows updated update_federal_agency.")
         logger.info(f"{len(domain_requests_skipped)} DomainRequest rows with null federal_agency skipped.")
