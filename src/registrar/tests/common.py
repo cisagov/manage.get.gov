@@ -753,12 +753,14 @@ def mock_user():
 
 
 def create_superuser():
+    """Creates a user with admin-level permissions"""
     User = get_user_model()
     p = "adminpass"
     user = User.objects.create_user(
         username="superuser",
         email="admin@example.com",
         is_staff=True,
+        is_superuser=True,
         password=p,
     )
     # Retrieve the group or create it if it doesn't exist
@@ -768,7 +770,8 @@ def create_superuser():
     return user
 
 
-def create_user():
+def create_staffuser():
+    """Creates a user with staff level permissions"""
     User = get_user_model()
     p = "userpass"
     user = User.objects.create_user(
@@ -783,6 +786,18 @@ def create_user():
     user.groups.set([group])
     return user
 
+def create_user():
+    """Creates a user with no special permissions"""
+    User = get_user_model()
+    p = "userpass"
+    user = User.objects.create_user(
+        username="regularuser",
+        email="regularuser@example.com",
+        is_staff=False,
+        is_superuser=False,
+        password=p,
+    )
+    return user
 
 def create_ready_domain():
     domain, _ = Domain.objects.get_or_create(name="city.gov", state=Domain.State.READY)

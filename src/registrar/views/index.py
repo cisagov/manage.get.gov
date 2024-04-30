@@ -3,6 +3,7 @@ from django.shortcuts import render
 from registrar.models import DomainRequest, Domain, UserDomainRole
 from waffle.decorators import flag_is_active
 
+
 def index(request):
     """This page is available to anyone without logging in."""
     context = {}

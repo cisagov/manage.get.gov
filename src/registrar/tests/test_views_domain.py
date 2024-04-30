@@ -5,7 +5,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from .common import MockEppLib, MockSESClient, create_user  # type: ignore
+from .common import MockEppLib, MockSESClient, create_staffuser  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -322,7 +322,7 @@ class TestDomainDetail(TestDomainOverview):
         when no domain information or domain request exist"""
         with less_console_noise():
             # have to use staff user for this test
-            staff_user = create_user()
+            staff_user = create_staffuser()
             # staff_user.save()
             self.client.force_login(staff_user)
 
