@@ -631,6 +631,11 @@ address.dja-address-contact-list {
     font-size: small;
 }
 
+// Get rid of padding on all help texts
+form .aligned p.help, form .aligned div.help {
+    padding-left: 0px !important;
+}
+
 div.dja__model-description{
     display: -webkit-box;
     -webkit-line-clamp: 2;
