@@ -1007,7 +1007,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
                 "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
-                    # "updated_federal_agency",
+                    "updated_federal_agency",
                     # Above field commented out so it won't display
                     "federal_agency",  # TODO: remove later
                     "tribe_name",
@@ -1260,7 +1260,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
                 "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
-                    # "updated_federal_agency",
+                    "updated_federal_agency",
                     # Above field commented out so it won't display
                     "federal_agency",  # TODO: remove later
                     "tribe_name",

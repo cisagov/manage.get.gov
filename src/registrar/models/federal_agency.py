@@ -176,7 +176,6 @@ class FederalAgency(TimeStampedModel):
             "U.S. Agency for International Development",
             "U.S. Capitol Police",
             "U.S. Chemical Safety Board",
-            "U.S. China Economic and Security Review Commission",
             "U.S. Commission for the Preservation of Americas Heritage Abroad",
             "U.S. Commission of Fine Arts",
             "U.S. Commission on Civil Rights",
