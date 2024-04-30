@@ -4,8 +4,10 @@ from django.http import HttpResponse
 from django.test import Client, TestCase, RequestFactory
 from django.urls import reverse
 
+from api.tests.common import less_console_noise_decorator
 from djangooidc.exceptions import StateMismatch, InternalError
 from ..views import login_callback
+from registrar.models import User, Contact, VerifiedByStaff, DomainInvitation, TransitionDomain, Domain
 
 from .common import less_console_noise
 
@@ -15,6 +17,14 @@ class ViewsTest(TestCase):
     def setUp(self):
         self.client = Client()
         self.factory = RequestFactory()
+
+    def tearDown(self):
+        User.objects.all().delete()
+        Contact.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+        VerifiedByStaff.objects.all().delete()
+        TransitionDomain.objects.all().delete()
+        Domain.objects.all().delete()
 
     def say_hi(*args):
         return HttpResponse("Hi")
@@ -228,6 +238,140 @@ class ViewsTest(TestCase):
                         # assert that redirect is to / when no 'next' is set
                         self.assertEqual(response.status_code, 302)
                         self.assertEqual(response.url, "/")
+
+    @less_console_noise_decorator
+    def test_login_callback_sets_verification_type_regular(self, mock_client):
+        """
+        Test that openid sets the verification type to regular on the returned user.
+        Regular, in this context, means that this user was "Verifed by Login.gov"
+        """
+        # SETUP
+        session = self.client.session
+        session.save()
+        # MOCK
+        # mock that callback returns user_info; this is the expected behavior
+        mock_client.callback.side_effect = self.user_info
+        # patch that the request does not require step up auth
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
+            "djangooidc.views._initialize_client"
+        ) as mock_init_client:
+            with patch("djangooidc.views._client_is_none", return_value=True):
+                # TEST
+                # test the login callback url
+                response = self.client.get(reverse("openid_login_callback"))
+
+                # assert that _initialize_client was called
+                mock_init_client.assert_called_once()
+
+                # Assert that we get a redirect
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.url, "/")
+
+                # Test the created user object
+                created_user = User.objects.get(email="test@example.com")
+                self.assertEqual(created_user.verification_type, User.VerificationTypeChoices.REGULAR)
+
+    @less_console_noise_decorator
+    def test_login_callback_sets_verification_type_invited(self, mock_client):
+        """Test that openid sets the verification type to invited on the returned user
+        when they exist in the DomainInvitation table"""
+        # SETUP
+        session = self.client.session
+        session.save()
+
+        domain, _ = Domain.objects.get_or_create(name="test123.gov")
+        invitation, _ = DomainInvitation.objects.get_or_create(email="test@example.com", domain=domain)
+        # MOCK
+        # mock that callback returns user_info; this is the expected behavior
+        mock_client.callback.side_effect = self.user_info
+        # patch that the request does not require step up auth
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
+            "djangooidc.views._initialize_client"
+        ) as mock_init_client:
+            with patch("djangooidc.views._client_is_none", return_value=True):
+                # TEST
+                # test the login callback url
+                response = self.client.get(reverse("openid_login_callback"))
+
+                # assert that _initialize_client was called
+                mock_init_client.assert_called_once()
+
+                # Assert that we get a redirect
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.url, "/")
+
+                # Test the created user object
+                created_user = User.objects.get(email="test@example.com")
+                self.assertEqual(created_user.email, invitation.email)
+                self.assertEqual(created_user.verification_type, User.VerificationTypeChoices.INVITED)
+
+    @less_console_noise_decorator
+    def test_login_callback_sets_verification_type_grandfathered(self, mock_client):
+        """Test that openid sets the verification type to grandfathered
+        on a user which exists in our TransitionDomain table"""
+        # SETUP
+        session = self.client.session
+        session.save()
+        # MOCK
+        # mock that callback returns user_info; this is the expected behavior
+        mock_client.callback.side_effect = self.user_info
+
+        td, _ = TransitionDomain.objects.get_or_create(username="test@example.com", domain_name="test123.gov")
+
+        # patch that the request does not require step up auth
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
+            "djangooidc.views._initialize_client"
+        ) as mock_init_client:
+            with patch("djangooidc.views._client_is_none", return_value=True):
+                # TEST
+                # test the login callback url
+                response = self.client.get(reverse("openid_login_callback"))
+
+                # assert that _initialize_client was called
+                mock_init_client.assert_called_once()
+
+                # Assert that we get a redirect
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.url, "/")
+
+                # Test the created user object
+                created_user = User.objects.get(email="test@example.com")
+                self.assertEqual(created_user.email, td.username)
+                self.assertEqual(created_user.verification_type, User.VerificationTypeChoices.GRANDFATHERED)
+
+    @less_console_noise_decorator
+    def test_login_callback_sets_verification_type_verified_by_staff(self, mock_client):
+        """Test that openid sets the verification type to verified_by_staff
+        on a user which exists in our VerifiedByStaff table"""
+        # SETUP
+        session = self.client.session
+        session.save()
+        # MOCK
+        # mock that callback returns user_info; this is the expected behavior
+        mock_client.callback.side_effect = self.user_info
+
+        vip, _ = VerifiedByStaff.objects.get_or_create(email="test@example.com")
+
+        # patch that the request does not require step up auth
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
+            "djangooidc.views._initialize_client"
+        ) as mock_init_client:
+            with patch("djangooidc.views._client_is_none", return_value=True):
+                # TEST
+                # test the login callback url
+                response = self.client.get(reverse("openid_login_callback"))
+
+                # assert that _initialize_client was called
+                mock_init_client.assert_called_once()
+
+                # Assert that we get a redirect
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.url, "/")
+
+                # Test the created user object
+                created_user = User.objects.get(email="test@example.com")
+                self.assertEqual(created_user.email, vip.email)
+                self.assertEqual(created_user.verification_type, User.VerificationTypeChoices.VERIFIED_BY_STAFF)
 
     def test_login_callback_no_step_up_auth(self, mock_client):
         """Walk through login_callback when _requires_step_up_auth returns False
