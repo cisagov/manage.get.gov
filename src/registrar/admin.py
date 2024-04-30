@@ -537,7 +537,7 @@ class MyUserAdmin(BaseUserAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ("username", "password", "status")},
+            {"fields": ("username", "password", "status", "verification_type")},
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
@@ -555,13 +555,20 @@ class MyUserAdmin(BaseUserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    readonly_fields = ("verification_type",)
+
     # Hide Username (uuid), Groups and Permissions
     # Q: Now that we're using Groups and Permissions,
     # do we expose those to analysts to view?
     analyst_fieldsets = (
         (
             None,
-            {"fields": ("status",)},
+            {
+                "fields": (
+                    "status",
+                    "verification_type",
+                )
+            },
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
@@ -681,11 +688,14 @@ class MyUserAdmin(BaseUserAdmin):
             return []
 
     def get_readonly_fields(self, request, obj=None):
+        readonly_fields = list(self.readonly_fields)
+
         if request.user.has_perm("registrar.full_access_permission"):
-            return ()  # No read-only fields for all access users
-        # Return restrictive Read-only fields for analysts and
-        # users who might not belong to groups
-        return self.analyst_readonly_fields
+            return readonly_fields
+        else:
+            # Return restrictive Read-only fields for analysts and
+            # users who might not belong to groups
+            return self.analyst_readonly_fields
 
 
 class HostIPInline(admin.StackedInline):
@@ -1001,9 +1011,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
                     # "updated_federal_agency",
@@ -1026,9 +1037,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",
@@ -1252,9 +1264,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
                     # "updated_federal_agency",
@@ -1277,9 +1290,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dotgov"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",
