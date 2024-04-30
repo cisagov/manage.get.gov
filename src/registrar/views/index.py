@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 from registrar.models import DomainRequest, Domain, UserDomainRole
-
+from waffle.decorators import flag_is_active
 
 def index(request):
     """This page is available to anyone without logging in."""
@@ -19,6 +19,10 @@ def index(request):
         # Determine if the user will see domain requests that they can delete
         has_deletable_domain_requests = deletable_domain_requests.exists()
         context["has_deletable_domain_requests"] = has_deletable_domain_requests
+
+        # This is a django waffle flag which toggles features based off of the "flag" table
+        # TODO - note that the flag must be checked for superuser AND staff for superuser to see it
+        context["profile_feature_flag"] = flag_is_active(request, "profile_feature")
 
         # If they can delete domain requests, add the delete button to the context
         if has_deletable_domain_requests:

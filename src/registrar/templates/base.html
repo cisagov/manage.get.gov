@@ -72,6 +72,9 @@
 
   {% if not IS_PRODUCTION %}
     {% include "includes/non-production-alert.html" %}
+    {% if profile_feature_flag %}
+      <h2>it worked!</h2>
+    {% endif %}
   {% endif %}
 
   <section class="usa-banner" aria-label="Official website of the United States government">

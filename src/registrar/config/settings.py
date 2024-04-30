@@ -323,6 +323,13 @@ EMAIL_TIMEOUT = 30
 SERVER_EMAIL = "root@get.gov"
 
 # endregion
+
+# region: Waffle feature flags-----------------------------------------------------------###
+# If Waffle encounters a reference to a flag that is not in the database, should Waffle create the flag?
+# WAFFLE_CREATE_MISSING_FLAGS
+
+# endregion
+
 # region: Headers-----------------------------------------------------------###
 
 # Content-Security-Policy configuration
