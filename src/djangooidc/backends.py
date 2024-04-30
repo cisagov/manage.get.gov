@@ -76,7 +76,6 @@ class OpenIdConnectBackend(ModelBackend):
             This method updates user fields while preserving the values of 'first_name',
             'last_name', and 'phone' fields, unless specific conditions are met.
 
-            - 'phone' field will be updated if it's None or an empty string.
             - 'first_name', 'last_name' or 'phone' will be updated if the provided value is not empty.
         """
 
