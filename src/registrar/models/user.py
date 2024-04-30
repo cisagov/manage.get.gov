@@ -2,6 +2,7 @@ import logging
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
 
 from registrar.models.user_domain_role import UserDomainRole
 
@@ -22,6 +23,28 @@ class User(AbstractUser):
     A custom user model that performs identically to the default user model
     but can be customized later.
     """
+
+    class VerificationTypeChoices(models.TextChoices):
+        """
+        Users achieve access to our system in a few different ways.
+        These choices reflect those pathways.
+
+        Overview of verification types:
+        - GRANDFATHERED: User exists in the `TransitionDomain` table
+        - VERIFIED_BY_STAFF: User exists in the `VerifiedByStaff` table
+        - INVITED: User exists in the `DomainInvitation` table
+        - REGULAR: User was verified through IAL2
+        - FIXTURE_USER: User was created by fixtures
+        """
+
+        GRANDFATHERED = "grandfathered", "Legacy user"
+        VERIFIED_BY_STAFF = "verified_by_staff", "Verified by staff"
+        REGULAR = "regular", "Verified by Login.gov"
+        INVITED = "invited", "Invited by a domain manager"
+        # We need a type for fixture users (rather than using verified by staff)
+        # because those users still do get "verified" through normal means
+        # after they login.
+        FIXTURE_USER = "fixture_user", "Created by fixtures"
 
     # #### Constants for choice fields ####
     RESTRICTED = "restricted"
@@ -48,6 +71,13 @@ class User(AbstractUser):
         blank=True,
         help_text="Phone",
         db_index=True,
+    )
+
+    verification_type = models.CharField(
+        choices=VerificationTypeChoices.choices,
+        null=True,
+        blank=True,
+        help_text="The means through which this user was verified",
     )
 
     def __str__(self):
@@ -114,23 +144,61 @@ class User(AbstractUser):
         except Exception as err:
             raise err
 
-        # A new incoming user who is a domain manager for one of the domains
-        # that we inputted from Verisign (that is, their email address appears
-        # in the username field of a TransitionDomain)
-        if TransitionDomain.objects.filter(username=email).exists():
-            return False
+        # We can't set the verification type here because the user may not
+        # always exist at this point. We do it down the line.
+        verification_type = cls.get_verification_type_from_email(email)
 
-        # New users flagged by Staff to bypass ial2
-        if VerifiedByStaff.objects.filter(email=email).exists():
-            return False
+        # Checks if the user needs verification.
+        # The user needs identity verification if they don't meet
+        # any special criteria, i.e. we are validating them "regularly"
+        return verification_type == cls.VerificationTypeChoices.REGULAR
 
-        # A new incoming user who is being invited to be a domain manager (that is,
-        # their email address is in DomainInvitation for an invitation that is not yet "retrieved").
-        invited = DomainInvitation.DomainInvitationStatus.INVITED
-        if DomainInvitation.objects.filter(email=email, status=invited).exists():
-            return False
+    def set_user_verification_type(self):
+        """
+        Given pre-existing data from TransitionDomain, VerifiedByStaff, and DomainInvitation,
+        set the verification "type" defined in VerificationTypeChoices.
+        """
+        email_or_username = self.email if self.email else self.username
+        retrieved = DomainInvitation.DomainInvitationStatus.RETRIEVED
+        verification_type = self.get_verification_type_from_email(email_or_username, invitation_status=retrieved)
 
-        return True
+        # An existing user may have been invited to a domain after they got verified.
+        # We need to check for this condition.
+        if verification_type == User.VerificationTypeChoices.INVITED:
+            invitation = (
+                DomainInvitation.objects.filter(email=email_or_username, status=retrieved)
+                .order_by("created_at")
+                .first()
+            )
+
+            # If you joined BEFORE the oldest invitation was created, then you were verified normally.
+            # (See logic in get_verification_type_from_email)
+            if not invitation and self.date_joined < invitation.created_at:
+                verification_type = User.VerificationTypeChoices.REGULAR
+
+        self.verification_type = verification_type
+
+    @classmethod
+    def get_verification_type_from_email(cls, email, invitation_status=DomainInvitation.DomainInvitationStatus.INVITED):
+        """Retrieves the verification type based off of a provided email address"""
+
+        verification_type = None
+        if TransitionDomain.objects.filter(Q(username=email) | Q(email=email)).exists():
+            # A new incoming user who is a domain manager for one of the domains
+            # that we inputted from Verisign (that is, their email address appears
+            # in the username field of a TransitionDomain)
+            verification_type = cls.VerificationTypeChoices.GRANDFATHERED
+        elif VerifiedByStaff.objects.filter(email=email).exists():
+            # New users flagged by Staff to bypass ial2
+            verification_type = cls.VerificationTypeChoices.VERIFIED_BY_STAFF
+        elif DomainInvitation.objects.filter(email=email, status=invitation_status).exists():
+            # A new incoming user who is being invited to be a domain manager (that is,
+            # their email address is in DomainInvitation for an invitation that is not yet "retrieved").
+            verification_type = cls.VerificationTypeChoices.INVITED
+        else:
+            verification_type = cls.VerificationTypeChoices.REGULAR
+
+        return verification_type
 
     def check_domain_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any domain
