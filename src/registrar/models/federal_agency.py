@@ -176,6 +176,7 @@ class FederalAgency(TimeStampedModel):
             "U.S. Agency for International Development",
             "U.S. Capitol Police",
             "U.S. Chemical Safety Board",
+            "U.S. China Economic and Security Review Commission",
             "U.S. Commission for the Preservation of Americas Heritage Abroad",
             "U.S. Commission of Fine Arts",
             "U.S. Commission on Civil Rights",
@@ -216,7 +217,7 @@ class FederalAgency(TimeStampedModel):
         logger.info("Creating federal agency table.")
 
         try:
-            for agency in AGENCIES:
-                FederalAgency.objects.update_or_create(agency=agency)
+            agencies = [FederalAgency(agency=agency) for agency in AGENCIES]
+            FederalAgency.objects.bulk_create(agencies, ["agency"])
         except Exception as e:
             logger.error(f"Error creating federal agencies: {e}")

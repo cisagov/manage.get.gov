@@ -34,7 +34,7 @@ class Command(BaseCommand):
         "Chemical Safety Board": "U.S. Chemical Safety Board",
         "Nuclear Waste Technical Review Board": "U.S. Nuclear Waste Technical Review Board",
         "State, Local, and Tribal Government": "Non-Federal Agency",
-        "U.S. China Economic and Security Review Commission": "U.S.-China Economic and Security Review Commission",
+        # "U.S. China Economic and Security Review Commission": "U.S.-China Economic and Security Review Commission",
     }
 
     def find_federal_agency_row(self, domain_object):
