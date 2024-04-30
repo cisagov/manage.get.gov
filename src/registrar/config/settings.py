@@ -148,6 +148,8 @@ INSTALLED_APPS = [
     "corsheaders",
     # library for multiple choice filters in django admin
     "django_admin_multiple_choice_list_filter",
+    # Waffle feature flags
+    "waffle",
 ]
 
 # Middleware are routines for processing web requests.
@@ -183,6 +185,8 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     # django-auditlog: obtain the request User for use in logging
     "auditlog.middleware.AuditlogMiddleware",
+    # Used for waffle feature flags
+    "waffle.middleware.WaffleMiddleware",
 ]
 
 # application object used by Django’s built-in servers (e.g. `runserver`)

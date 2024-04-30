@@ -32,6 +32,8 @@ fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "master"}
 pyzipper="*"
 tblib = "*"
 django-admin-multiple-choice-list-filter = "*"
+django-waffle = "*"
+cffi = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
