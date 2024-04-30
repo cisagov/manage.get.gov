@@ -8,8 +8,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.utils import timezone
 
-from registrar.models.contact import Contact
-
 logger = logging.getLogger(__name__)
 
 
@@ -79,26 +77,15 @@ class OpenIdConnectBackend(ModelBackend):
             'last_name', and 'phone' fields, unless specific conditions are met.
 
             - 'phone' field will be updated if it's None or an empty string.
-            - 'first_name' and 'last_name' will be updated if the provided value is not empty.
+            - 'first_name', 'last_name' or 'phone' will be updated if the provided value is not empty.
         """
-
-        contacts = Contact.objects.filter(user=user)
-
-        if len(contacts) == 0:  # no matching contact
-            logger.warning("Could not find a contact when one should've existed.")
-
-        if len(contacts) > 1:  # multiple matches
-            logger.warning("There are multiple Contacts with the same email address.")
 
         # Iterate over fields to update
         for key, value in kwargs.items():
             # Check if the field is not 'first_name', 'last_name', or 'phone',
-            # or if it's the 'phone' field and 'user.phone' is None or empty,
-            # or if it's 'first_name' or 'last_name' and the provided value is not empty
-            if (
-                key not in ["first_name", "last_name", "phone"]
-                or (key == "phone" and not contacts[0].phone)
-                or (key in ["first_name", "last_name"] and value)
+            # or if it's 'first_name' or 'last_name' or 'phone' and the provided value is not empty
+            if key not in ["first_name", "last_name", "phone"] or (
+                key in ["first_name", "last_name", "phone"] and value
             ):
                 # Update the corresponding attribute of the user object
                 setattr(user, key, value)

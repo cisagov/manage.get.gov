@@ -101,12 +101,23 @@ class Contact(TimeStampedModel):
         # Call the parent class's save method to perform the actual save
         super().save(*args, **kwargs)
 
-        # Update the related User object's first_name and last_name
-        if self.user and (not self.user.first_name or not self.user.last_name or not self.user.phone):
-            self.user.first_name = self.first_name
-            self.user.last_name = self.last_name
-            self.user.phone = self.phone
-            self.user.save()
+        if self.user:
+            updated = False
+
+            # Update first name and last name if necessary
+            if not self.user.first_name or not self.user.last_name:
+                self.user.first_name = self.first_name
+                self.user.last_name = self.last_name
+                updated = True
+
+            # Update phone if necessary
+            if not self.user.phone:
+                self.user.phone = self.phone
+                updated = True
+
+            # Save user if any updates were made
+            if updated:
+                self.user.save()
 
     def __str__(self):
         if self.first_name or self.last_name:
