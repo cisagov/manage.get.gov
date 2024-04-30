@@ -2170,11 +2170,6 @@ class WaffleFlagAdmin(FlagAdmin):
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
-# Unregister samples and switches from django-waffle, as we currently don't use these.
-# TODO - address this
-admin.site.unregister(Sample)
-admin.site.unregister(Switch)
-
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
 # Unregister the built-in Group model
@@ -2199,3 +2194,10 @@ admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 
 # Register our custom waffle flag implementation
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
+
+# Unregister samples and switches from django-waffle, as we currently don't use these.
+# Django admin sorts different "sites" alphabetically, and offers little customization for them.
+# If we do need to use these, we should also consider using this library:
+# https://pypi.org/project/django-reorder-admin/
+admin.site.unregister(Sample)
+admin.site.unregister(Switch)
