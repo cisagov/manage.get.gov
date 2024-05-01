@@ -5,6 +5,7 @@
 {% comment %}
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endcomment %}
+
 {% block field_readonly %}
     {% with all_contacts=original_object.other_contacts.all %}
     {% if field.field.name == "other_contacts" %}
@@ -66,16 +67,9 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% endwith %}
 {% endblock field_readonly %}
 
-{% block help_text %}
-    <div class="help margin-bottom-1" {% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
-        <div>{{ field.field.help_text|safe }}</div>
-    </div>
-{% endblock help_text %}
-
-
 {% block after_help_text %}
     {% if field.field.name == "status" and original_object.history.count > 0 %}
-        <div class="flex-container tablet:margin-top-1">
+        <div class="flex-container tablet:margin-top-2">
             <label aria-label="Submitter contact details"></label>
             <div class="usa-table-container--scrollable" tabindex="0">
                 <table class="usa-table usa-table--borderless">
@@ -102,14 +96,14 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 </table>
             </div>
         </div>
-    {% elif field.field.name == "creator" %}
-        <div class="flex-container tablet:margin-top-1">
+    {% if field.field.name == "creator" %}
+        <div class="flex-container tablet:margin-top-2">
         <label aria-label="Creator contact details"></label>
-            {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
+            {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly user_verification_type=original_object.creator.get_verification_type_display%}
         </div>
         {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
     {% elif field.field.name == "submitter" %}
-        <div class="flex-container">
+        <div class="flex-container tablet:margin-top-2">
         <label aria-label="Submitter contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.submitter no_title_top_padding=field.is_readonly %}
         </div>
