@@ -9,7 +9,7 @@ cfenv = "*"
 django-cors-headers = "*"
 pycryptodomex = "*"
 django-allow-cidr = "*"
-django-auditlog = "2.3.0"
+django-auditlog = "*"
 django-csp = "*"
 environs = {extras=["django"]}
 Faker = "*"

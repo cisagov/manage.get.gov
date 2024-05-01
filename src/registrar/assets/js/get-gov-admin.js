@@ -233,10 +233,8 @@ function openInNewTab(el, removeAttribute = false){
     // Initialize custom filter_horizontal widgets; each widget has a "from" select list
     // and a "to" select list; initialization is based off of the presence of the
     // "to" select list
-    checkToListThenInitWidget('id_other_contacts_to', 0);
-    checkToListThenInitWidget('id_domain_info-0-other_contacts_to', 0);
-    checkToListThenInitWidget('id_current_websites_to', 0);
-    checkToListThenInitWidget('id_alternative_domains_to', 0);
+    checkToListThenInitWidget('id_groups_to', 0);
+    checkToListThenInitWidget('id_user_permissions_to', 0);
 })();
 
 // Function to check for the existence of the "to" select list element in the DOM, and if and when found,
@@ -245,215 +243,56 @@ function checkToListThenInitWidget(toListId, attempts) {
     let toList = document.getElementById(toListId);
     attempts++;
 
-    if (attempts < 6) {
-        if ((toList !== null)) {
+    if (attempts < 12) {
+        if (toList) {
             // toList found, handle it
-            // Add an event listener on the element
-            // Add disabled buttons on the element's great-grandparent
-            initializeWidgetOnToList(toList, toListId);
+            // Then get fromList and handle it
+            initializeWidgetOnList(toList, ".selector-chosen");
+            let fromList = toList.closest('.selector').querySelector(".selector-available select");
+            initializeWidgetOnList(fromList, ".selector-available");
         } else {
             // Element not found, check again after a delay
-            setTimeout(() => checkToListThenInitWidget(toListId, attempts), 1000); // Check every 1000 milliseconds (1 second)
+            setTimeout(() => checkToListThenInitWidget(toListId, attempts), 300); // Check every 300 milliseconds
         }
     }
 }
 
 // Initialize the widget:
-//  add related buttons to the widget for edit, delete and view
-//  add event listeners on the from list, the to list, and selector buttons which either enable or disable the related buttons
-function initializeWidgetOnToList(toList, toListId) {
-    // create the change button
-    let changeLink = createAndCustomizeLink(
-        toList,
-        toListId,
-        'related-widget-wrapper-link change-related',
-        'Change',
-        '/public/admin/img/icon-changelink.svg',
-        {
-            'contacts': '/admin/registrar/contact/__fk__/change/?_to_field=id&_popup=1',
-            'websites': '/admin/registrar/website/__fk__/change/?_to_field=id&_popup=1',
-            'alternative_domains': '/admin/registrar/website/__fk__/change/?_to_field=id&_popup=1',
-        },
-        true,
-        true
-    );
+// Replace h2 with more semantic h3
+function initializeWidgetOnList(list, parentId) {    
+    if (list) {
+        // Get h2 and its container
+        const parentElement = list.closest(parentId);
+        const h2Element = parentElement.querySelector('h2');
 
-    let hasDeletePermission = hasDeletePermissionOnPage();
+        // One last check
+        if (parentElement && h2Element) {
+            // Create a new <h3> element
+            const h3Element = document.createElement('h3');
 
-    let deleteLink = null;
-    if (hasDeletePermission) {
-        // create the delete button if user has permission to delete
-        deleteLink = createAndCustomizeLink(
-            toList,
-            toListId,
-            'related-widget-wrapper-link delete-related',
-            'Delete',
-            '/public/admin/img/icon-deletelink.svg',
-            {
-                'contacts': '/admin/registrar/contact/__fk__/delete/?_to_field=id&amp;_popup=1',
-                'websites': '/admin/registrar/website/__fk__/delete/?_to_field=id&_popup=1',
-                'alternative_domains': '/admin/registrar/website/__fk__/delete/?_to_field=id&_popup=1',
-            },
-            true,
-            false
-        );
-    }
+            // Copy the text content from the <h2> element to the <h3> element
+            h3Element.textContent = h2Element.textContent;
 
-    // create the view button
-    let viewLink = createAndCustomizeLink(
-        toList,
-        toListId,
-        'related-widget-wrapper-link view-related',
-        'View',
-        '/public/admin/img/icon-viewlink.svg',
-        {
-            'contacts': '/admin/registrar/contact/__fk__/change/?_to_field=id',
-            'websites': '/admin/registrar/website/__fk__/change/?_to_field=id',
-            'alternative_domains': '/admin/registrar/website/__fk__/change/?_to_field=id',
-        },
-        // NOTE: If we open view in the same window then use the back button
-        // to go back, the 'chosen' list will fail to initialize correctly in
-        // sandbozes (but will work fine on local). This is related to how the
-        // Django JS runs (SelectBox.js) and is probably due to a race condition.
-        true,
-        false
-    );
+            // Find the nested <span> element inside the <h2>
+            const nestedSpan = h2Element.querySelector('span[class][title]');
 
-    // identify the fromList element in the DOM
-    let fromList = toList.closest('.selector').querySelector(".selector-available select");
+            // If the nested <span> element exists
+            if (nestedSpan) {
+                // Create a new <span> element
+                const newSpan = document.createElement('span');
 
-    fromList.addEventListener('click', function(event) {
-        handleSelectClick(fromList, changeLink, deleteLink, viewLink);
-    });
-    
-    toList.addEventListener('click', function(event) {
-        handleSelectClick(toList, changeLink, deleteLink, viewLink);
-    });
-    
-    // Disable buttons when the selectors are interacted with (items are moved from one column to the other)
-    let selectorButtons = [];
-    selectorButtons.push(toList.closest(".selector").querySelector(".selector-chooseall"));
-    selectorButtons.push(toList.closest(".selector").querySelector(".selector-add"));
-    selectorButtons.push(toList.closest(".selector").querySelector(".selector-remove"));
+                // Copy the class and title attributes from the nested <span> element
+                newSpan.className = nestedSpan.className;
+                newSpan.title = nestedSpan.title;
 
-    selectorButtons.forEach((selector) => {
-        selector.addEventListener("click", ()=>{disableRelatedWidgetButtons(changeLink, deleteLink, viewLink)});
-      });
-}
-
-// create and customize the button, then add to the DOM, relative to the toList
-//  toList - the element in the DOM for the toList
-//  toListId - the ID of the element in the DOM
-//  className - className to add to the created link
-//  action - the action to perform on the item {change, delete, view}
-//  imgSrc - the img.src for the created link
-//  dataMappings - dictionary which relates toListId to href for the created link
-//  dataPopup - boolean for whether the link should produce a popup window
-//  firstPosition - boolean indicating if link should be first position in list of links, otherwise, should be last link
-function createAndCustomizeLink(toList, toListId, className, action, imgSrc, dataMappings, dataPopup, firstPosition) {
-    // Create a link element
-    var link = document.createElement('a');
-
-    // Set class attribute for the link
-    link.className = className;
-
-    // Set id
-    // Determine function {change, link, view} from the className
-    // Add {function}_ to the beginning of the string
-    let modifiedLinkString = className.split('-')[0] + '_' + toListId;
-    // Remove '_to' from the end of the string
-    modifiedLinkString = modifiedLinkString.replace('_to', '');
-    link.id = modifiedLinkString;
-
-    // Set data-href-template
-    for (const [idPattern, template] of Object.entries(dataMappings)) {
-        if (toListId.includes(idPattern)) {
-            link.setAttribute('data-href-template', template);
-            break; // Stop checking once a match is found
-        }
-    }
-
-    if (dataPopup)
-        link.setAttribute('data-popup', 'yes');
-    
-    link.setAttribute('title-template', action + " selected item")
-    link.title = link.getAttribute('title-template');
-
-    // Create an 'img' element
-    var img = document.createElement('img');
-
-    // Set attributes for the new image
-    img.src = imgSrc;
-    img.alt = action;
-
-    // Append the image to the link
-    link.appendChild(img);
-
-    let relatedWidgetWrapper = toList.closest('.related-widget-wrapper');
-    // If firstPosition is true, insert link as the first child element
-    if (firstPosition) {
-        relatedWidgetWrapper.insertBefore(link, relatedWidgetWrapper.children[0]);
-    } else {
-        // otherwise, insert the link prior to the last child (which is a div)
-        // and also prior to any text elements immediately preceding the last
-        // child node
-        var lastChild = relatedWidgetWrapper.lastChild;
-
-        // Check if lastChild is an element node (not a text node, comment, etc.)
-        if (lastChild.nodeType === 1) {
-            var previousSibling = lastChild.previousSibling;
-            // need to work around some white space which has been inserted into the dom
-            while (previousSibling.nodeType !== 1) {
-                previousSibling = previousSibling.previousSibling;
+                // Append the new <span> element to the <h3> element
+                h3Element.appendChild(newSpan);
             }
-            relatedWidgetWrapper.insertBefore(link, previousSibling.nextSibling);
+
+            // Replace the <h2> element with the new <h3> element
+            parentElement.replaceChild(h3Element, h2Element);
         }
     }
-
-    // Return the link, which we'll use in the disable and enable functions
-    return link;
-}
-
-// Either enable or disable widget buttons when select is clicked. Action (enable or disable) taken depends on the count
-// of selected items in selectElement. If exactly one item is selected, buttons are enabled, and urls for the buttons are
-// associated with the selected item
-function handleSelectClick(selectElement, changeLink, deleteLink, viewLink) {
-
-    // If one item is selected (across selectElement and relatedSelectElement), enable buttons; otherwise, disable them
-    if (selectElement.selectedOptions.length === 1) {
-        // enable buttons for selected item in selectElement
-        enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, selectElement.selectedOptions[0].value, selectElement.selectedOptions[0].text);
-    } else {
-        disableRelatedWidgetButtons(changeLink, deleteLink, viewLink);
-    }
-}
-
-// return true if there exist elements on the page with classname of delete-related.
-// presence of one or more of these elements indicates user has permission to delete
-function hasDeletePermissionOnPage() {
-    return document.querySelector('.delete-related') != null
-}
-
-function disableRelatedWidgetButtons(changeLink, deleteLink, viewLink) {
-    changeLink.removeAttribute('href');
-    changeLink.setAttribute('title', changeLink.getAttribute('title-template'));
-    if (deleteLink) {
-        deleteLink.removeAttribute('href');
-        deleteLink.setAttribute('title', deleteLink.getAttribute('title-template'));
-    }
-    viewLink.removeAttribute('href');
-    viewLink.setAttribute('title', viewLink.getAttribute('title-template'));
-}
-
-function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk, elementText) {
-    changeLink.setAttribute('href', changeLink.getAttribute('data-href-template').replace('__fk__', elementPk));
-    changeLink.setAttribute('title', changeLink.getAttribute('title-template').replace('selected item', elementText));
-    if (deleteLink) {
-        deleteLink.setAttribute('href', deleteLink.getAttribute('data-href-template').replace('__fk__', elementPk));
-        deleteLink.setAttribute('title', deleteLink.getAttribute('title-template').replace('selected item', elementText));
-    }
-    viewLink.setAttribute('href', viewLink.getAttribute('data-href-template').replace('__fk__', elementPk));
-    viewLink.setAttribute('title', viewLink.getAttribute('title-template').replace('selected item', elementText));
 }
 
 /** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
