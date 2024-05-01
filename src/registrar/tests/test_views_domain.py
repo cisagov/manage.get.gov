@@ -344,8 +344,6 @@ class TestDomainManagers(TestDomainOverview):
     def tearDown(self):
         """Ensure that the user has its original permissions"""
         super().tearDown()
-        self.user.is_staff = False
-        self.user.save()
 
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
