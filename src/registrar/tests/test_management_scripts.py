@@ -912,6 +912,7 @@ class TestPopulateDomainUpdatedFederalAgency(TestCase):
         self.domain_info_1.refresh_from_db()
 
         previous_federal_agency_name = self.domain_info_1.federal_agency
+
         updated_federal_agency_name = self.domain_info_1.updated_federal_agency.agency
 
         self.assertEqual(previous_federal_agency_name, "U.S. Peace Corps")

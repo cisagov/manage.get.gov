@@ -218,6 +218,6 @@ class FederalAgency(TimeStampedModel):
 
         try:
             agencies = [FederalAgency(agency=agency) for agency in AGENCIES]
-            FederalAgency.objects.bulk_create(agencies, ["agency"])
+            FederalAgency.objects.bulk_create(agencies)
         except Exception as e:
             logger.error(f"Error creating federal agencies: {e}")
