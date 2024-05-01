@@ -130,7 +130,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% elif field.field.name == "state_territory" %}
         <div class="flex-container margin-top-2">
             <span>
-                CISA Region:
+                CISA region:
                 {% if original_object.generic_org_type != "federal" %}
                     {{ original_object.state_territory|get_region }}
                 {% else %}
