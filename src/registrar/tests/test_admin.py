@@ -961,11 +961,11 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Define the expected sequence of status changes
         expected_status_changes = [
-            "<td>Started</td>",
-            "<td>Submitted</td>",
             "<td>In review</td>",
             "<td>Action needed</td>",
             "<td>In review</td>",
+            "<td>Submitted</td>",
+            "<td>Started</td>",
         ]
 
         # Test for the order of status changes
