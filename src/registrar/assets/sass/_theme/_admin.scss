@@ -635,3 +635,27 @@ address.dja-address-contact-list {
 form .aligned p.help, form .aligned div.help {
     padding-left: 0px !important;
 }
+
+// We override the DJA header on multi list selects from h2 to h3
+// The following block of code styles our generated h3s to match the old h2s
+.selector .selector-available h3 {
+    background: var(--darkened-bg);
+    color: var(--body-quiet-color);
+}
+
+.selector-available h3, .selector-chosen h3 {
+    border: 1px solid var(--border-color);
+    border-radius: 4px 4px 0 0;
+    margin: 0;
+    padding: 8px;
+    font-size: 0.8125rem;
+    text-align: left;
+    margin: 0;
+    padding: 8px;
+    line-height: 1.3;
+}
+
+.selector .selector-chosen h3 {
+    background: var(--primary);
+    color: var(--header-link-color);
+}
