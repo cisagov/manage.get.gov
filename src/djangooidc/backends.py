@@ -79,12 +79,14 @@ class OpenIdConnectBackend(ModelBackend):
             - 'first_name', 'last_name' or 'phone' will be updated if the provided value is not empty.
         """
 
+        fields_to_check = ["first_name", "last_name", "phone"]
+
         # Iterate over fields to update
         for key, value in kwargs.items():
             # Check if the field is not 'first_name', 'last_name', or 'phone',
             # or if it's 'first_name' or 'last_name' or 'phone' and the provided value is not empty
-            if key not in ["first_name", "last_name", "phone"] or (
-                key in ["first_name", "last_name", "phone"] and value
+            if key not in fields_to_check or (
+                key in fields_to_check and value
             ):
                 # Update the corresponding attribute of the user object
                 setattr(user, key, value)
