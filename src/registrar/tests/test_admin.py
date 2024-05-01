@@ -2392,6 +2392,66 @@ class TestDomainRequestAdmin(MockEppLib):
 
             self.assertEqual(expected_list, actual_list)
 
+    @less_console_noise_decorator
+    def test_staff_can_see_cisa_region_federal(self):
+        """Tests if staff can see CISA Region: N/A"""
+
+        # Create a fake domain request
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, _domain_request.requested_domain.name)
+
+        # Test if the page has the right CISA region
+        expected_html = '<div class="flex-container margin-top-2">' "<span>CISA Region: N/A</span>" "</div>"
+        # Remove whitespace from expected_html
+        expected_html = "".join(expected_html.split())
+
+        # Remove whitespace from response content
+        response_content = "".join(response.content.decode().split())
+
+        # Check if response contains expected_html
+        self.assertIn(expected_html, response_content)
+
+    @less_console_noise_decorator
+    def test_staff_can_see_cisa_region_non_federal(self):
+        """Tests if staff can see the correct CISA region"""
+
+        # Create a fake domain request. State will be NY (2).
+        _domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, generic_org_type="interstate"
+        )
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, _domain_request.requested_domain.name)
+
+        # Test if the page has the right CISA region
+        expected_html = '<div class="flex-container margin-top-2">' '<span">CISA Region: 2</span>' "</div>"
+        # Remove whitespace from expected_html
+        expected_html = "".join(expected_html.split())
+
+        # Remove whitespace from response content
+        response_content = "".join(response.content.decode().split())
+
+        # Check if response contains expected_html
+        self.assertIn(expected_html, response_content)
+
     def tearDown(self):
         super().tearDown()
         Domain.objects.all().delete()

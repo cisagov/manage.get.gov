@@ -1,4 +1,5 @@
 {% extends "admin/fieldset.html" %}
+{% load custom_filters %}
 {% load static url_helpers %}
 
 {% comment %}
@@ -126,5 +127,16 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             </details>
         {% endif %}
         {% endwith %}
+    {% elif field.field.name == "state_territory" %}
+        <div class="flex-container margin-top-2">
+            <span>
+                CISA Region:
+                {% if original_object.generic_org_type != "federal" %}
+                    {{ original_object.state_territory|get_region }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </span>
+        </div>
     {% endif %}
 {% endblock after_help_text %}
