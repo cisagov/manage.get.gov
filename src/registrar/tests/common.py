@@ -786,6 +786,7 @@ def create_staffuser():
     user.groups.set([group])
     return user
 
+
 def create_user():
     """Creates a user with no special permissions"""
     User = get_user_model()
@@ -798,6 +799,7 @@ def create_user():
         password=p,
     )
     return user
+
 
 def create_ready_domain():
     domain, _ = Domain.objects.get_or_create(name="city.gov", state=Domain.State.READY)

@@ -1,4 +1,3 @@
-from unittest import skip
 from waffle.decorators import flag_is_active
 from django.test import TestCase, Client, RequestFactory
 from registrar.models import (
@@ -8,6 +7,7 @@ from registrar.models import (
     UserGroup,
 )
 from registrar.tests.common import create_superuser, create_staffuser, create_user
+
 
 class TestFeatureFlags(TestCase):
     def setUp(self):
@@ -32,7 +32,7 @@ class TestFeatureFlags(TestCase):
         request = self.factory.get(location)
         request.user = request_user
         self.assertTrue(flag_is_active(request, flag_name))
-    
+
     def assert_flag_not_active(self, request_user, flag_name, location="/"):
         """
         Checks if the given `request_user` has `flag_name` not active
@@ -59,7 +59,7 @@ class TestFeatureFlags(TestCase):
 
         # Ensure that a normal user also can't access this flag
         self.assert_flag_not_active(request_user=self.user, flag_name=flag.name)
-    
+
     def test_flag_active_for_is_staff(self):
         """
         Tests flag_is_active for a flag with `is_staff = True`
