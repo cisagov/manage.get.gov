@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("auth", "0012_alter_user_first_name_max_length"),
-        ("registrar", "0089_user_verification_type copy"),
+        ("registrar", "0089_user_verification_type"),
     ]
 
     operations = [
