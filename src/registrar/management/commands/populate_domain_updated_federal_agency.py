@@ -40,7 +40,7 @@ class Command(BaseCommand):
     def find_federal_agency_row(self, domain_object):
         federal_agency = domain_object.federal_agency
         # Domain Information objects without a federal agency default to Non-Federal Agency
-        if federal_agency is None:
+        if (federal_agency is None) or (federal_agency == ""):
             federal_agency = "Non-Federal Agency"
         if federal_agency in self.rename_deprecated_federal_agency.keys():
             federal_agency = self.rename_deprecated_federal_agency[federal_agency]
@@ -75,42 +75,47 @@ class Command(BaseCommand):
                 domain_info.updated_federal_agency = federal_agency_row
                 domain_infos_to_update.append(domain_info)
                 logger.info(
-                    f"DomainInformation {domain_info} => updated_federal_agency set to:"
-                    f"{domain_info.updated_federal_agency}"
+                    f"DomainInformation {domain_info} => updated_federal_agency set to: \
+                    {domain_info.updated_federal_agency}"
                 )
             except Exception as err:
-                logger.info(f"DomainInformation for {domain_info} failed to update updated_federal_agency: {err}")
                 domain_infos_with_errors.append(domain_info)
-                logger.info(f"DOMAIN INFO - {domain_info} - Federal Agency is {domain_info.federal_agency}")
+                logger.info(
+                    f"DomainInformation {domain_info} failed to update updated_federal_agency \
+                from federal_agency {domain_info.federal_agency}. Error: {err}"
+                )
+
         ScriptDataHelper.bulk_update_fields(DomainInformation, domain_infos_to_update, ["updated_federal_agency"])
 
         for domain_request in domain_requests:
             try:
-                if domain_request.federal_agency is None:
+                if (domain_request.federal_agency is None) or (domain_request.federal_agency == ""):
                     domain_requests_skipped.append(domain_request)
                 else:
                     federal_agency_row = self.find_federal_agency_row(domain_request)
                     domain_request.updated_federal_agency = federal_agency_row
                     domain_requests_to_update.append(domain_request)
                     logger.info(
-                        f"DomainRequest {domain_request} => updated_federal_agency set to:"
-                        f"{domain_request.updated_federal_agency}"
+                        f"DomainRequest {domain_request} => updated_federal_agency set to: \
+                        {domain_request.updated_federal_agency}"
                     )
             except Exception as err:
-                logger.info(f"DomainRequest for {domain_request} failed to update updated_federal_agency: {err}")
                 domain_requests_with_errors.append(domain_request)
-                logger.info(f"DOMAIN REQUEST - {domain_request} - Federal Agency is {domain_request.federal_agency}")
+                logger.info(
+                    f"DomainRequest {domain_request} failed to update updated_federal_agency \
+                from federal_agency {domain_request.federal_agency}. Error: {err}"
+                )
 
         ScriptDataHelper.bulk_update_fields(DomainRequest, domain_requests_to_update, ["updated_federal_agency"])
 
         logger.info(f"{len(domain_infos_to_update)} DomainInformation rows updated update_federal_agency.")
         logger.info(
-            f"{len(domain_infos_with_errors)} DomainInformation rows errored when updating update_federal_agency."
-            f"{domain_infos_with_errors}"
+            f"{len(domain_infos_with_errors)} DomainInformation rows errored when updating update_federal_agency. \
+            {domain_infos_with_errors}"
         )
         logger.info(f"{len(domain_requests_to_update)} DomainRequest rows updated update_federal_agency.")
         logger.info(f"{len(domain_requests_skipped)} DomainRequest rows with null federal_agency skipped.")
         logger.info(
-            f"{len(domain_requests_with_errors)} DomainRequest rows errored when updating update_federal_agency."
-            f"{domain_requests_with_errors}"
+            f"{len(domain_requests_with_errors)} DomainRequest rows errored when updating update_federal_agency. \
+            {domain_requests_with_errors}"
         )
