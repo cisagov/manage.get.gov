@@ -16,6 +16,8 @@ from .website import Website
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .waffle_flag import WaffleFlag
+from .waffle_sample import WaffleSample
+from .waffle_switch import WaffleSwitch
 
 __all__ = [
     "Contact",
@@ -35,6 +37,8 @@ __all__ = [
     "TransitionDomain",
     "VerifiedByStaff",
     "WaffleFlag",
+    "WaffleSwitch",
+    "WaffleSample",
 ]
 
 auditlog.register(Contact)
@@ -54,3 +58,5 @@ auditlog.register(Website)
 auditlog.register(TransitionDomain)
 auditlog.register(VerifiedByStaff)
 auditlog.register(WaffleFlag)
+auditlog.register(WaffleSample)
+auditlog.register(WaffleSwitch)

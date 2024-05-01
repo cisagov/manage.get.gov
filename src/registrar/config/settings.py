@@ -328,7 +328,16 @@ SERVER_EMAIL = "root@get.gov"
 WAFFLE_CREATE_MISSING_FLAGS = False
 
 # The model that will be used to keep track of flags. Extends AbstractUserFlag.
+# Used to replace the default flag class (for customization purposes).
 WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
+
+# The model that will be used to keep track of switches. Extends AbstractBaseSwitch.
+# Used to replace the default switch class (for customization purposes).
+WAFFLE_SWITCH_MODEL = "registrar.WaffleSwitch"
+
+# The model that will be used to keep track of samples. Extends AbstractBaseSample.
+# Used to replace the default sample class (for customization purposes).
+WAFFLE_SAMPLE_MODEL = "registrar.WaffleSample"
 
 # endregion
 

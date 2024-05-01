@@ -22,10 +22,10 @@ class WaffleFlag(AbstractUserFlag):
     def get_default_waffle_flags():
         """
         Defines which waffle flags should be created at startup.
-        Add to this list if you want to add another flag that is generated at startup.
+
+        Add to this function if you want to add another flag that is generated at startup.
         When you do so, you will need to add a new instance of `0091_create_waffle_flags_v{version_number}`
         in registrar/migrations for that change to update automatically on migrate.
-        This has to exist here, as from the context of migrations, it cannot access constants
         """
         default_flags = [
             # flag_name, flag_note
@@ -37,7 +37,7 @@ class WaffleFlag(AbstractUserFlag):
     @staticmethod
     def create_waffle_flags_for_migrations(apps, default_waffle_flags):
         """
-        Creates a pre-defined list of flags for our migrations.
+        Creates a list of flags for our migrations.
         """
         logger.info("Creating default waffle flags...")
         WaffleFlag = apps.get_model("registrar", "WaffleFlag")
@@ -57,7 +57,7 @@ class WaffleFlag(AbstractUserFlag):
     @staticmethod
     def delete_waffle_flags_for_migrations(apps, default_waffle_flags):
         """
-        Delete a pre-defined list of flags for our migrations (the reverse_code operation).
+        Delete a list of flags for our migrations (the reverse_code operation).
         """
         logger.info("Deleting default waffle flags...")
         WaffleFlag = apps.get_model("registrar", "WaffleFlag")

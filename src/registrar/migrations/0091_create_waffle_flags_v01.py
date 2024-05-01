@@ -25,6 +25,7 @@ def delete_flags(apps, schema_editor):
     Deletes all prexisting flags.
     Does not delete flags not defined in this scope (user generated).
     """
+
     # This is a bit of a hack to get around "apps" not knowing what the concept of a constant is
     default_flags = WaffleFlag.get_default_waffle_flags()
     WaffleFlag.delete_waffle_flags_for_migrations(apps, default_flags)
@@ -32,7 +33,7 @@ def delete_flags(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0090_waffleflag"),
+        ("registrar", "0090_wafflesample_waffleswitch_waffleflag"),
     ]
 
     operations = [

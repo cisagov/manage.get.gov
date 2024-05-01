@@ -15,9 +15,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from waffle.admin import FlagAdmin
+from waffle.admin import FlagAdmin, SampleAdmin, SwitchAdmin
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
-from waffle.models import Sample, Switch
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -2168,6 +2167,22 @@ class WaffleFlagAdmin(FlagAdmin):
         fields = "__all__"
 
 
+class WaffleSwitchAdmin(SwitchAdmin):
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.WaffleSwitch
+        fields = "__all__"
+
+
+class WaffleSampleAdmin(SampleAdmin):
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.WaffleSample
+        fields = "__all__"
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
 admin.site.register(LogEntry, CustomLogEntryAdmin)
@@ -2192,12 +2207,7 @@ admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 
-# Register our custom waffle flag implementation
+# Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
-
-# Unregister samples and switches from django-waffle, as we currently don't use these.
-# Django admin sorts different "sites" alphabetically, and offers little customization for them.
-# If we do need to use these, we should also consider using this library:
-# https://pypi.org/project/django-reorder-admin/
-admin.site.unregister(Sample)
-admin.site.unregister(Switch)
+admin.site.register(models.WaffleSample, WaffleSampleAdmin)
+admin.site.register(models.WaffleSwitch, WaffleSwitchAdmin)
