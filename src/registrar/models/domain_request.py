@@ -27,7 +27,7 @@ class DomainRequest(TimeStampedModel):
     # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history
     # If we note any performace degradation due to this addition,
     # we can query the auditlogs table in admin.py and add the results to
-    # extra_context in the change_view method for DomainRequestAdmin
+    # extra_context in the change_view method for DomainRequestAdmin.
     # This is the more straightforward way so trying it first.
     history = AuditlogHistoryField()
 
