@@ -15,6 +15,9 @@ class TestFeatureFlags(TestCase):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.factory = RequestFactory()
         self.superuser = create_superuser()
+        # For testing purposes, lets flag this as false.
+        self.superuser.is_staff = False
+        self.superuser.save()
         self.staffuser = create_staffuser()
         self.user = create_user()
 
@@ -154,8 +157,9 @@ class TestFeatureFlags(TestCase):
         # Ensure that regular staff can access this flag
         self.assert_flag_active(request_user=self.staffuser, flag_name=flag.name)
 
-        # Ensure that superusers cannot access this flag
-        self.assert_flag_not_active(request_user=self.superuser, flag_name=flag.name)
+        # Ensure that superusers can access this flag.
+        # This permission encompasses cisa_analysts_group.
+        self.assert_flag_active(request_user=self.superuser, flag_name=flag.name)
 
         # Ensure that normal users cannot access this flag
         self.assert_flag_not_active(request_user=self.user, flag_name=flag.name)
