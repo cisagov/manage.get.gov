@@ -2411,7 +2411,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, _domain_request.requested_domain.name)
 
         # Test if the page has the right CISA region
-        expected_html = '<div class="flex-container margin-top-2">' "<span>CISA Region: N/A</span>" "</div>"
+        expected_html = '<div class="flex-container margin-top-2">' "<span>CISA region: N/A</span>" "</div>"
         # Remove whitespace from expected_html
         expected_html = "".join(expected_html.split())
 
@@ -2442,7 +2442,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, _domain_request.requested_domain.name)
 
         # Test if the page has the right CISA region
-        expected_html = '<div class="flex-container margin-top-2">' '<span">CISA Region: 2</span>' "</div>"
+        expected_html = '<div class="flex-container margin-top-2">' '<span">CISA region: 2</span>' "</div>"
         # Remove whitespace from expected_html
         expected_html = "".join(expected_html.split())
 
