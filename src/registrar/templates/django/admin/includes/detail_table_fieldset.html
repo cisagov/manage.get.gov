@@ -68,7 +68,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block after_help_text %}
     {% if field.field.name == "status" and original_object.history.count > 0 %}
-        <div class="flex-container tablet:margin-top-2">
+        <div class="flex-container">
             <label aria-label="Submitter contact details"></label>
             <div class="usa-table-container--scrollable" tabindex="0">
                 <table class="usa-table usa-table--borderless">
