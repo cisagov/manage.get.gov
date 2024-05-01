@@ -244,7 +244,7 @@ function checkToListThenInitWidget(toListId, attempts) {
     attempts++;
 
     if (attempts < 12) {
-        if ((toList && toList !== undefined)) {
+        if (toList) {
             // toList found, handle it
             // Then get fromList and handle it
             initializeWidgetOnList(toList, ".selector-chosen");
@@ -252,7 +252,7 @@ function checkToListThenInitWidget(toListId, attempts) {
             initializeWidgetOnList(fromList, ".selector-available");
         } else {
             // Element not found, check again after a delay
-            setTimeout(() => checkToListThenInitWidget(toListId, attempts), 300); // Check every 1000 milliseconds (1 second)
+            setTimeout(() => checkToListThenInitWidget(toListId, attempts), 300); // Check every 300 milliseconds
         }
     }
 }
