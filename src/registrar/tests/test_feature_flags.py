@@ -15,9 +15,11 @@ class TestFeatureFlags(TestCase):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.factory = RequestFactory()
         self.superuser = create_superuser()
-        # For testing purposes, lets flag this as false.
+
+        # For testing purposes, lets set this to false.
         self.superuser.is_staff = False
         self.superuser.save()
+
         self.staffuser = create_staffuser()
         self.user = create_user()
 
