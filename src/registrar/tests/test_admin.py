@@ -977,26 +977,26 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "<td>Submitted</td>", count=1)
         self.assertContains(response, "<td>In review</td>", count=2)
         self.assertContains(response, "<td>Action needed</td>", count=1)
-    
+
     def test_collaspe_toggle_button_markup(self):
-            """
-            Tests for the correct collapse toggle button markup
-            """
+        """
+        Tests for the correct collapse toggle button markup
+        """
 
-            # Create a fake domain request and domain
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a fake domain request and domain
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
-            response = self.client.get(
-                "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
-                follow=True,
-            )
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
 
-            # Make sure the page loaded, and that we're on the right page
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, domain_request.requested_domain.name)
-            self.test_helper.assertContains(response, "<span>Show details</span>")
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+        self.test_helper.assertContains(response, "<span>Show details</span>")
 
     @less_console_noise_decorator
     def test_analyst_can_see_and_edit_alternative_domain(self):
