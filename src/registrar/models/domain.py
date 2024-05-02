@@ -758,7 +758,7 @@ class Domain(TimeStampedModel, DomainHelper):
         so follow on additions will update the current registrant"""
 
         logger.info("making registrant contact")
-        self.try_set_singleton_contact(contact=contact, expected_type=contact.ContactTypeChoices.REGISTRANT)
+        self._set_singleton_contact(contact=contact, expected_type=contact.ContactTypeChoices.REGISTRANT)
 
     @Cache
     def administrative_contact(self) -> PublicContact | None:
@@ -769,7 +769,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
         logger.info("making admin contact")
-        self.try_set_singleton_contact(contact=contact, expected_type=contact.ContactTypeChoices.ADMINISTRATIVE)
+        self._set_singleton_contact(contact=contact, expected_type=contact.ContactTypeChoices.ADMINISTRATIVE)
 
     def _update_epp_contact(self, contact: PublicContact):
         """Sends UpdateContact to update the actual contact object,
@@ -828,57 +828,6 @@ class Domain(TimeStampedModel, DomainHelper):
         except RegistryError as e:
             logger.error("Error changing to new registrant error code is %s, error is %s" % (e.code, e))
             # TODO-error handling better here?
-
-    def try_set_singleton_contact(self, contact: PublicContact, expected_type: str):  # noqa
-        """
-        Attempts to set a singleton contact for a domain, 
-        handling potential IntegrityErrors due to duplicate entries.
-
-        This function wraps the `_set_singleton_contact` method, 
-        which is intended to assign a unique contact of a specified type to a domain.
-
-        If a duplicate is detected, all duplicate entries are deleted before retrying the operation.
-        
-        Args:
-            contact (PublicContact): The contact instance to set as a singleton.
-            expected_type (str): The expected type of the contact (e.g., 'technical', 'administrative').
-
-        Raises:
-            IntegrityError: Re-raises the IntegrityError if an unexpected number of duplicates are found,
-            or on the rerun of _set_singleton_contact.
-        """
-        try:
-            self._set_singleton_contact(contact=contact, expectedType=expected_type)
-        except IntegrityError as err:
-            # If this error occurs, it indicates that our DB tried to create a duplicate PublicContact
-            logger.error(f"A contact with this registry ID already exists. Error: {err}")
-
-            # Delete the duplicates and try again.
-            duplicates = PublicContact.objects.filter(
-                registry_id=contact.registry_id,
-                contact_type=contact.contact_type,
-                domain=self,
-            )
-
-            # If we find duplicates, log it and delete the newest one.
-            if duplicates.count() <= 1:
-                # Something weird happened - we got an integrity error with one or fewer records
-                # which should not be possible.
-                logger.error(
-                    "try_set_singleton_contact() -> "
-                    f"An IntegrityError was raised but {duplicates.count()} entries exist"
-                )
-                # Raise the error. This is a case in which it is appropriate to do so.
-                raise err
-            else:
-                logger.warning("try_set_singleton_contact() -> Duplicate contacts found. Deleting duplicate.")
-                self._delete_duplicates(duplicates)
-            
-            # Try to set the contact again. If we get an error at this point, then
-            # this indicates a very bad data issue in the DB (duplicate registry_ids on other domains).
-            # This requires patching the DB and epp with a script due to the epp <---> DB link.
-            # Trying to fix that here will just result in corrupt EPP records.
-            self._set_singleton_contact(contact=contact, expectedType=expected_type)
 
     def _delete_duplicates(self, duplicates):
         """Given a list of duplicates, delete all but the oldest one."""
@@ -982,7 +931,7 @@ class Domain(TimeStampedModel, DomainHelper):
         from domain information (not domain request)
         and should have the security email from DomainRequest"""
         logger.info("making security contact in registry")
-        self.try_set_singleton_contact(contact, expected_type=contact.ContactTypeChoices.SECURITY)
+        self._set_singleton_contact(contact, expected_type=contact.ContactTypeChoices.SECURITY)
 
     @Cache
     def technical_contact(self) -> PublicContact | None:
@@ -993,7 +942,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @technical_contact.setter  # type: ignore
     def technical_contact(self, contact: PublicContact):
         logger.info("making technical contact")
-        self.try_set_singleton_contact(contact, expected_type=contact.ContactTypeChoices.TECHNICAL)
+        self._set_singleton_contact(contact, expected_type=contact.ContactTypeChoices.TECHNICAL)
 
     def is_active(self) -> bool:
         """Currently just returns if the state is created,
