@@ -103,7 +103,7 @@ class OrganizationContactForm(RegistrarForm):
         # it is a federal agency. Use clean to check programatically
         # if it has been filled in when required.
         # uncomment to see if modelChoiceField can be an arg later
-        # required=False,
+        required=False,
         queryset=FederalAgency.objects.all(),
         empty_label="--Select--",
         # choices=[("", "--Select--")] + DomainRequest.AGENCY_CHOICES,

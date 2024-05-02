@@ -180,7 +180,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         org_contact_form = org_contact_page.forms[0]
         # federal agency so we have to fill in federal_agency
         federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency
+        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -690,7 +690,6 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_result = org_contact_form.submit()
-
         # the post request should return a redirect to the
         # about your organization page if it was successful.
         self.assertEqual(contact_result.status_code, 302)
@@ -2023,14 +2022,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         org_contact_form = org_contact_page.forms[0]
         # federal agency so we have to fill in federal_agency
         federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        print("!!! org_contact_form displayed", org_contact_form.__dict__)
-        print("!!! Federal agency is", federal_agency)
-        org_contact_form["organization_contact-federal_agency"] = "67"
-        # org_contact_form["organization_contact-federal_agency"] = federal_agency
+        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
-        print("!!! GET PAST Organization name")
         org_contact_form["organization_contact-address_line1"] = "address 1"
-        print("!!! GET PAST Address Line 1")
         org_contact_form["organization_contact-address_line2"] = "address 2"
         org_contact_form["organization_contact-city"] = "NYC"
         org_contact_form["organization_contact-state_territory"] = "NY"
@@ -2038,11 +2032,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         org_contact_form["organization_contact-urbanization"] = "URB Royal Oaks"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        print("!!! Before submit")
         org_contact_result = org_contact_form.submit()
 
         # ---- AO CONTACT PAGE  ----
-        print("!!! After submit")
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_page = org_contact_result.follow()
         self.assertContains(ao_page, "Executive branch federal agencies")
@@ -2102,7 +2094,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         org_contact_form = org_contact_page.forms[0]
         # federal agency so we have to fill in federal_agency
         federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency
+        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
