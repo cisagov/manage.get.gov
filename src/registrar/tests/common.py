@@ -753,14 +753,12 @@ def mock_user():
 
 
 def create_superuser():
-    """Creates a user with admin-level permissions"""
     User = get_user_model()
     p = "adminpass"
     user = User.objects.create_user(
         username="superuser",
         email="admin@example.com",
         is_staff=True,
-        is_superuser=True,
         password=p,
     )
     # Retrieve the group or create it if it doesn't exist
@@ -770,8 +768,7 @@ def create_superuser():
     return user
 
 
-def create_staffuser():
-    """Creates a user with staff level permissions"""
+def create_user():
     User = get_user_model()
     p = "userpass"
     user = User.objects.create_user(
@@ -787,25 +784,12 @@ def create_staffuser():
     return user
 
 
-def create_user():
-    """Creates a user with no special permissions"""
-    User = get_user_model()
-    p = "userpass"
-    user = User.objects.create_user(
-        username="regularuser",
-        email="regularuser@example.com",
-        is_staff=False,
-        is_superuser=False,
-        password=p,
-    )
-    return user
-
-
 def create_ready_domain():
     domain, _ = Domain.objects.get_or_create(name="city.gov", state=Domain.State.READY)
     return domain
 
 
+# TODO in 1793: Remove the federal agency/updated federal agency fields
 def completed_domain_request(
     has_other_contacts=True,
     has_current_website=True,
@@ -820,6 +804,8 @@ def completed_domain_request(
     generic_org_type="federal",
     is_election_board=False,
     organization_type=None,
+    federal_agency=None,
+    updated_federal_agency=None,
 ):
     """A completed domain request."""
     if not user:
@@ -856,6 +842,7 @@ def completed_domain_request(
             last_name="Bob",
             is_staff=True,
         )
+
     domain_request_kwargs = dict(
         generic_org_type=generic_org_type,
         is_election_board=is_election_board,
@@ -873,6 +860,8 @@ def completed_domain_request(
         creator=user,
         status=status,
         investigator=investigator,
+        federal_agency=federal_agency,
+        updated_federal_agency=updated_federal_agency,
     )
     if has_about_your_organization:
         domain_request_kwargs["about_your_organization"] = "e-Government"
@@ -881,7 +870,6 @@ def completed_domain_request(
 
     if organization_type:
         domain_request_kwargs["organization_type"] = organization_type
-
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
     if has_other_contacts:
