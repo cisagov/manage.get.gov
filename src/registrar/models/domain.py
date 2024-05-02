@@ -758,7 +758,7 @@ class Domain(TimeStampedModel, DomainHelper):
         so follow on additions will update the current registrant"""
 
         logger.info("making registrant contact")
-        self._set_singleton_contact(contact=contact, expected_type=contact.ContactTypeChoices.REGISTRANT)
+        self._set_singleton_contact(contact=contact, expectedType=contact.ContactTypeChoices.REGISTRANT)
 
     @Cache
     def administrative_contact(self) -> PublicContact | None:
@@ -769,7 +769,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
         logger.info("making admin contact")
-        self._set_singleton_contact(contact=contact, expected_type=contact.ContactTypeChoices.ADMINISTRATIVE)
+        self._set_singleton_contact(contact=contact, expectedType=contact.ContactTypeChoices.ADMINISTRATIVE)
 
     def _update_epp_contact(self, contact: PublicContact):
         """Sends UpdateContact to update the actual contact object,
@@ -931,7 +931,7 @@ class Domain(TimeStampedModel, DomainHelper):
         from domain information (not domain request)
         and should have the security email from DomainRequest"""
         logger.info("making security contact in registry")
-        self._set_singleton_contact(contact, expected_type=contact.ContactTypeChoices.SECURITY)
+        self._set_singleton_contact(contact, expectedType=contact.ContactTypeChoices.SECURITY)
 
     @Cache
     def technical_contact(self) -> PublicContact | None:
@@ -942,7 +942,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @technical_contact.setter  # type: ignore
     def technical_contact(self, contact: PublicContact):
         logger.info("making technical contact")
-        self._set_singleton_contact(contact, expected_type=contact.ContactTypeChoices.TECHNICAL)
+        self._set_singleton_contact(contact, expectedType=contact.ContactTypeChoices.TECHNICAL)
 
     def is_active(self) -> bool:
         """Currently just returns if the state is created,
