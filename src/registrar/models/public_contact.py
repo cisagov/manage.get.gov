@@ -48,6 +48,7 @@ class PublicContact(TimeStampedModel):
         help_text="For which type of WHOIS contact",
     )
     registry_id = models.CharField(
+        unique=True,
         max_length=16,
         default=get_id,
         null=False,
