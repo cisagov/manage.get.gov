@@ -829,18 +829,6 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error changing to new registrant error code is %s, error is %s" % (e.code, e))
             # TODO-error handling better here?
 
-    def _delete_duplicates(self, duplicates):
-        """Given a list of duplicates, delete all but the oldest one."""
-
-        # Q: Should we be deleting the newest or the oldest? Does it even matter?
-        oldest_duplicate = duplicates.order_by('created_at').first()
-
-        # Exclude the oldest entry
-        duplicates_to_delete = duplicates.exclude(id=oldest_duplicate.id)
-
-        # Delete all duplicates
-        duplicates_to_delete.delete()
-
     def _set_singleton_contact(self, contact: PublicContact, expectedType: str):  # noqa
         """Sets the contacts by adding them to the registry as new contacts,
         updates the contact if it is already in epp,
@@ -859,12 +847,9 @@ class Domain(TimeStampedModel, DomainHelper):
         # get publicContact objects that have the matching
         # domain and type but a different id
         # like in highlander we there can only be one
-        duplicate_contacts = (
-            PublicContact.objects.exclude(registry_id=contact.registry_id)
-            .filter(domain=self, contact_type=contact.contact_type)
+        duplicate_contacts = PublicContact.objects.exclude(registry_id=contact.registry_id).filter(
+            domain=self, contact_type=contact.contact_type
         )
-
-
 
         # if no record exists with this contact type
         # make contact in registry, duplicate and errors handled there
@@ -1971,7 +1956,15 @@ class Domain(TimeStampedModel, DomainHelper):
         # If we find duplicates, log it and delete the newest one.
         if db_contact.count() > 1:
             logger.warning("_get_or_create_public_contact() -> Duplicate contacts found. Deleting duplicate.")
-            self._delete_duplicates(db_contact)
+
+            # Q: Should we be deleting the newest or the oldest? Does it even matter?
+            oldest_duplicate = db_contact.order_by("created_at").first()
+
+            # Exclude the oldest entry
+            duplicates_to_delete = db_contact.exclude(id=oldest_duplicate.id)
+
+            # Delete all duplicates
+            duplicates_to_delete.delete()
 
         # Save to DB if it doesn't exist already.
         if db_contact.count() == 0:
