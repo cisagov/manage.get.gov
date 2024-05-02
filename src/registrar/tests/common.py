@@ -805,7 +805,6 @@ def completed_domain_request(
     is_election_board=False,
     organization_type=None,
     federal_agency=None,
-    updated_federal_agency=None,
 ):
     """A completed domain request."""
     if not user:
@@ -861,7 +860,6 @@ def completed_domain_request(
         status=status,
         investigator=investigator,
         federal_agency=federal_agency,
-        updated_federal_agency=updated_federal_agency,
     )
     if has_about_your_organization:
         domain_request_kwargs["about_your_organization"] = "e-Government"
