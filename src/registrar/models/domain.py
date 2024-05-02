@@ -1969,6 +1969,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # If we find duplicates, log it and delete the newest one.
         if db_contact.count() > 1:
             logger.warning("_get_or_create_public_contact() -> Duplicate contacts found. Deleting duplicate.")
+            # Q: Should we be deleting the newest or the oldest? Does it even matter?
             newest_duplicate = db_contact.order_by('-created_at').first()
             newest_duplicate.delete()
 
