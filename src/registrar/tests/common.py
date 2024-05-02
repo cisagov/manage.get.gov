@@ -744,6 +744,7 @@ class MockDb(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
         DomainInvitation.objects.all().delete()
+        FederalAgency.objects.all().delete()
 
 
 def mock_user():

@@ -11,6 +11,7 @@ from registrar.models import (
     TransitionDomain,
     DomainInformation,
     UserDomainRole,
+    FederalAgency
 )
 
 from django.core.management import call_command
@@ -42,6 +43,7 @@ class TestProcessedMigrations(TestCase):
         DomainInformation.objects.all().delete()
         DomainInvitation.objects.all().delete()
         TransitionDomain.objects.all().delete()
+        FederalAgency.objects.all().delete()
 
         # Delete users
         User.objects.all().delete()
@@ -329,6 +331,7 @@ class TestOrganizationMigration(TestCase):
 
             # Lets test the first one
             transition = transition_domains.first()
+            federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
             expected_transition_domain = TransitionDomain(
                 username="alexandra.bobbitt5@test.com",
                 domain_name="fakewebsite2.gov",
@@ -337,7 +340,7 @@ class TestOrganizationMigration(TestCase):
                 generic_org_type="Federal",
                 organization_name="Fanoodle",
                 federal_type="Executive",
-                federal_agency="Department of Commerce",
+                federal_agency=federal_agency,
                 epp_creation_date=datetime.date(2004, 5, 7),
                 epp_expiration_date=datetime.date(2023, 9, 30),
                 first_name="Seline",
@@ -392,6 +395,7 @@ class TestOrganizationMigration(TestCase):
             # == Third, test that we've loaded data as we expect == #
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
+            federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
 
             expected_creator = User.objects.filter(username="System").get()
             expected_ao = Contact.objects.filter(
@@ -400,7 +404,7 @@ class TestOrganizationMigration(TestCase):
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
                 generic_org_type="federal",
-                federal_agency="Department of Commerce",
+                federal_agency=federal_agency,
                 federal_type="executive",
                 organization_name="Fanoodle",
                 address_line1="93001 Arizona Drive",
@@ -447,6 +451,7 @@ class TestOrganizationMigration(TestCase):
             # == Fourth, test that no data is overwritten as we expect == #
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
+            federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
 
             expected_creator = User.objects.filter(username="System").get()
             expected_ao = Contact.objects.filter(
@@ -455,7 +460,7 @@ class TestOrganizationMigration(TestCase):
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
                 generic_org_type="federal",
-                federal_agency="Department of Commerce",
+                federal_agency=federal_agency,
                 federal_type="executive",
                 organization_name="Fanoodle",
                 address_line1="93001 Galactic Way",
