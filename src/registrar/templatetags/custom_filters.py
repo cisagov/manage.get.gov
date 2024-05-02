@@ -133,4 +133,3 @@ def get_region(state):
         return regions.get(state.upper(), None)
     else:
         return None
-
