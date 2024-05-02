@@ -2167,6 +2167,7 @@ class WaffleFlagAdmin(FlagAdmin):
         model = models.WaffleFlag
         fields = "__all__"
 
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
 admin.site.register(LogEntry, CustomLogEntryAdmin)
