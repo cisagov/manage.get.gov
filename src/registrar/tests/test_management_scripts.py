@@ -16,6 +16,7 @@ from registrar.models import (
     UserDomainRole,
     VerifiedByStaff,
     PublicContact,
+    FederalAgency,
 )
 
 from django.core.management import call_command
@@ -534,8 +535,9 @@ class TestPatchAgencyInfo(TestCase):
         self.user, _ = User.objects.get_or_create(username="testuser")
         self.domain, _ = Domain.objects.get_or_create(name="testdomain.gov")
         self.domain_info, _ = DomainInformation.objects.get_or_create(domain=self.domain, creator=self.user)
+        self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="test agency")
         self.transition_domain, _ = TransitionDomain.objects.get_or_create(
-            domain_name="testdomain.gov", federal_agency="test agency"
+            domain_name="testdomain.gov", federal_agency=self.federal_agency
         )
 
     def tearDown(self):
@@ -564,7 +566,8 @@ class TestPatchAgencyInfo(TestCase):
             # Reload the domain_info object from the database
             self.domain_info.refresh_from_db()
             # Check that the federal_agency field was updated
-            self.assertEqual(self.domain_info.federal_agency, "test agency")
+            federal_agency, _ = FederalAgency.objects.get_or_create(agency="test agency")
+            self.assertEqual(self.domain_info.federal_agency.agency, "test agency")
 
     def test_patch_agency_info_skip(self):
         """
