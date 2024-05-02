@@ -322,7 +322,7 @@ class TestDomainDetail(TestDomainOverview):
         when no domain information or domain request exist"""
         with less_console_noise():
             # have to use staff user for this test
-            staff_user = create_staffuser()
+            staff_user = create_user()
             # staff_user.save()
             self.client.force_login(staff_user)
 

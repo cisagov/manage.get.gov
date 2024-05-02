@@ -72,7 +72,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
-        self.staffuser = create_staffuser()
+        self.staffuser = create_user()
         self.factory = RequestFactory()
         self.app.set_user(self.superuser.username)
         self.client.force_login(self.superuser)
@@ -841,7 +841,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.factory = RequestFactory()
         self.admin = DomainRequestAdmin(model=DomainRequest, admin_site=self.site)
         self.superuser = create_superuser()
-        self.staffuser = create_staffuser()
+        self.staffuser = create_user()
         self.client = Client(HTTP_HOST="localhost:8080")
         self.test_helper = GenericTestHelper(
             factory=self.factory,
@@ -2502,7 +2502,7 @@ class TestDomainInformationAdmin(TestCase):
         self.admin = DomainInformationAdmin(model=DomainInformation, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
-        self.staffuser = create_staffuser()
+        self.staffuser = create_user()
         self.mock_data_generator = AuditedAdminMockData()
 
         self.test_helper = GenericTestHelper(
@@ -3012,7 +3012,7 @@ class TestMyUserAdmin(TestCase):
         """
         Tests for the correct helper text on this page
         """
-        user = create_staffuser()
+        user = create_user()
 
         p = "adminpass"
         self.client.login(username="superuser", password=p)
@@ -3036,7 +3036,7 @@ class TestMyUserAdmin(TestCase):
     def test_list_display_without_username(self):
         with less_console_noise():
             request = self.client.request().wsgi_request
-            request.user = create_staffuser()
+            request.user = create_user()
 
             list_display = self.admin.get_list_display(request)
             expected_list_display = [
@@ -3062,7 +3062,7 @@ class TestMyUserAdmin(TestCase):
     def test_get_fieldsets_cisa_analyst(self):
         with less_console_noise():
             request = self.client.request().wsgi_request
-            request.user = create_staffuser()
+            request.user = create_user()
             fieldsets = self.admin.get_fieldsets(request)
             expected_fieldsets = (
                 (
@@ -3448,7 +3448,7 @@ class ContactAdminTest(TestCase):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.admin = ContactAdmin(model=get_user_model(), admin_site=None)
         self.superuser = create_superuser()
-        self.staffuser = create_staffuser()
+        self.staffuser = create_user()
 
     def test_readonly_when_restricted_staffuser(self):
         with less_console_noise():
