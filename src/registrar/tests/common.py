@@ -26,6 +26,7 @@ from registrar.models import (
     DomainInformation,
     PublicContact,
     Domain,
+    FederalAgency
 )
 from epplibwrapper import (
     commands,
@@ -539,6 +540,9 @@ class MockDb(TestCase):
         self.end_date = current_date + timedelta(days=2)
         self.start_date = current_date - timedelta(days=2)
 
+        self.federal_agency_1, _ = FederalAgency.get_or_create(name="World War I Centennial Commission")
+        self.federal_agency_2, _ = FederalAgency.get_or_create(name="Armed Forces Retirement Home")
+
         self.domain_1, _ = Domain.objects.get_or_create(
             name="cdomain1.gov", state=Domain.State.READY, first_ready=timezone.now()
         )
@@ -582,7 +586,7 @@ class MockDb(TestCase):
             creator=self.user,
             domain=self.domain_1,
             generic_org_type="federal",
-            federal_agency="World War I Centennial Commission",
+            federal_agency=federal_agency_1,
             federal_type="executive",
             is_election_board=False,
         )
@@ -593,63 +597,63 @@ class MockDb(TestCase):
             creator=self.user,
             domain=self.domain_3,
             generic_org_type="federal",
-            federal_agency="Armed Forces Retirement Home",
+            federal_agency=federal_agency_2,
             is_election_board=False,
         )
         self.domain_information_4, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_4,
             generic_org_type="federal",
-            federal_agency="Armed Forces Retirement Home",
+            federal_agency=federal_agency_2,
             is_election_board=False,
         )
         self.domain_information_5, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_5,
             generic_org_type="federal",
-            federal_agency="Armed Forces Retirement Home",
+            federal_agency=federal_agency_2,
             is_election_board=False,
         )
         self.domain_information_6, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_6,
             generic_org_type="federal",
-            federal_agency="Armed Forces Retirement Home",
+            federal_agency=federal_agency_2,
             is_election_board=False,
         )
         self.domain_information_7, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_7,
             generic_org_type="federal",
-            federal_agency="Armed Forces Retirement Home",
+            federal_agency=federal_agency_2,
             is_election_board=False,
         )
         self.domain_information_8, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_8,
             generic_org_type="federal",
-            federal_agency="Armed Forces Retirement Home",
+            federal_agency=federal_agency_2,
             is_election_board=False,
         )
         self.domain_information_9, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_9,
             generic_org_type="federal",
-            federal_agency="Armed Forces Retirement Home",
+            federal_agency=federal_agency_2,
             is_election_board=False,
         )
         self.domain_information_10, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_10,
             generic_org_type="federal",
-            federal_agency="Armed Forces Retirement Home",
+            federal_agency=federal_agency_2,
             is_election_board=False,
         )
         self.domain_information_11, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_11,
             generic_org_type="federal",
-            federal_agency="World War I Centennial Commission",
+            federal_agency=federal_agency_1,
             federal_type="executive",
             is_election_board=False,
         )

@@ -1989,8 +1989,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "updated_at",
                 "status",
                 "rejection_reason",
-                "updated_federal_agency",
-                # TODO: once approved, we'll have to remove above from test
                 "creator",
                 "investigator",
                 "generic_org_type",

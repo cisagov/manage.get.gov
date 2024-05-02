@@ -29,9 +29,6 @@ class DomainInformation(TimeStampedModel):
 
     BranchChoices = DomainRequest.BranchChoices
 
-    # TODO for #1975: Delete this after we run the new migration
-    AGENCY_CHOICES = DomainRequest.AGENCY_CHOICES
-
     federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
