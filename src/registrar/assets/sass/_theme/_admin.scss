@@ -112,11 +112,19 @@ html[data-theme="light"] {
     .change-list .usa-table--borderless thead th,
     .change-list .usa-table thead td, 
     .change-list .usa-table thead th,
+    .change-form .usa-table,
+    .change-form .usa-table--striped tbody tr:nth-child(odd) td,
+    .change-form .usa-table--borderless thead th,
+    .change-form .usa-table thead td, 
+    .change-form .usa-table thead th,
     body.dashboard,
     body.change-list,
     body.change-form,
     .analytics {
         color: var(--body-fg);
+    }
+    .usa-table td {
+        background-color: transparent;
     }
 }
 
@@ -127,10 +135,19 @@ html[data-theme="dark"] {
     .change-list .usa-table--borderless thead th,
     .change-list .usa-table thead td, 
     .change-list .usa-table thead th,
+    .change-form .usa-table,
+    .change-form .usa-table--striped tbody tr:nth-child(odd) td,
+    .change-form .usa-table--borderless thead th,
+    .change-form .usa-table thead td, 
+    .change-form .usa-table thead th,
     body.dashboard,
     body.change-list,
-    body.change-form {
+    body.change-form,
+    .analytics {
         color: var(--body-fg);
+    }
+    .usa-table td {
+        background-color: transparent;
     }
 }
 
