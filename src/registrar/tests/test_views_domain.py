@@ -31,6 +31,7 @@ from registrar.models import (
     HostIP,
     UserDomainRole,
     User,
+    FederalAgency,
 )
 from datetime import date, datetime, timedelta
 from django.utils import timezone
@@ -1426,7 +1427,8 @@ class TestDomainOrganization(TestDomainOverview):
         self.domain_information.generic_org_type = fed_org_type
         self.domain_information.save()
         try:
-            self.domain_information.federal_agency = "AMTRAK"
+            federal_agency, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+            self.domain_information.federal_agency = federal_agency
             self.domain_information.save()
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
@@ -1482,7 +1484,9 @@ class TestDomainOrganization(TestDomainOverview):
         self.domain_information.generic_org_type = federal_org_type
         self.domain_information.save()
 
-        old_federal_agency_value = ("AMTRAK", "AMTRAK")
+        federal_agency, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+
+        old_federal_agency_value = (federal_agency, federal_agency)
         try:
             # Add a federal agency. Defined as a tuple since this list may change order.
             self.domain_information.federal_agency = old_federal_agency_value

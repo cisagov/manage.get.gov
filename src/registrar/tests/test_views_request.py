@@ -16,7 +16,7 @@ from registrar.models import (
     Contact,
     User,
     Website,
-    FederalAgency
+    FederalAgency,
 )
 from registrar.views.domain_request import DomainRequestWizard, Step
 

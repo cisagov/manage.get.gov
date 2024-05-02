@@ -3,14 +3,7 @@ import random
 from faker import Faker
 from django.db import transaction
 
-from registrar.models import (
-    User,
-    DomainRequest,
-    DraftDomain,
-    Contact,
-    Website,
-    FederalAgency
-)
+from registrar.models import User, DomainRequest, DraftDomain, Contact, Website, FederalAgency
 
 fake = Faker()
 logger = logging.getLogger(__name__)

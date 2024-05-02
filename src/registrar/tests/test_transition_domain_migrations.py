@@ -11,7 +11,7 @@ from registrar.models import (
     TransitionDomain,
     DomainInformation,
     UserDomainRole,
-    FederalAgency
+    FederalAgency,
 )
 
 from django.core.management import call_command
@@ -815,7 +815,7 @@ class TestMigrations(TestCase):
             fakewebsite = fakewebsite_domain_infos.get()
             self.assertEqual(fakewebsite.organization_name, "Fanoodle")
             self.assertEqual(fakewebsite.generic_org_type, "federal")
-            self.assertEqual(fakewebsite.federal_agency, "Department of Commerce")
+            self.assertEqual(fakewebsite.federal_agency.agency, "Department of Commerce")
             self.assertEqual(fakewebsite.federal_type, "executive")
 
             ao = fakewebsite.authorizing_official
