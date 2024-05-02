@@ -44,7 +44,7 @@ from .common import (
     less_console_noise,
     mock_user,
     create_superuser,
-    create_staffuser,
+    create_user,
     create_ready_domain,
     multiple_unalphabetical_domain_objects,
     MockEppLib,
