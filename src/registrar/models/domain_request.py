@@ -28,7 +28,7 @@ class DomainRequest(TimeStampedModel):
     # If we note any performace degradation due to this addition,
     # we can query the auditlogs table in admin.py and add the results to
     # extra_context in the change_view method for DomainRequestAdmin.
-    # This is the more straightforward way, so trying it first.
+    # This is the more straightforward way so trying it first.
     history = AuditlogHistoryField()
 
     # Constants for choice fields
