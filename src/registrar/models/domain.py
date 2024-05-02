@@ -1966,10 +1966,11 @@ class Domain(TimeStampedModel, DomainHelper):
             domain=self,
         )
 
-        # Raise an error if we find duplicates.
-        # This should not occur
+        # If we find duplicates, log it and delete the newest one.
         if db_contact.count() > 1:
-            raise Exception(f"Multiple contacts found for {public_contact.contact_type}")
+            logger.warning("_get_or_create_public_contact() -> Duplicate contacts found. Deleting duplicate.")
+            newest_duplicate = db_contact.order_by('-created_at').first()
+            newest_duplicate.delete()
 
         # Save to DB if it doesn't exist already.
         if db_contact.count() == 0:
@@ -1981,16 +1982,14 @@ class Domain(TimeStampedModel, DomainHelper):
 
         existing_contact = db_contact.get()
 
-        # Does the item we're grabbing match
-        # what we have in our DB?
+        # Does the item we're grabbing match what we have in our DB?
         if existing_contact.email != public_contact.email or existing_contact.registry_id != public_contact.registry_id:
             existing_contact.delete()
             public_contact.save()
             logger.warning("Requested PublicContact is out of sync " "with DB.")
             return public_contact
-        # If it already exists, we can
-        # assume that the DB instance was updated
-        # during set, so we should just use that.
+
+        # If it already exists, we can assume that the DB instance was updated during set, so we should just use that.
         return existing_contact
 
     def _registrant_to_public_contact(self, registry_id: str):
