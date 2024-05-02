@@ -449,7 +449,7 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    updated_federal_agency = models.ForeignKey(
+    federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
         help_text="Associated federal agency",
@@ -508,12 +508,6 @@ class DomainRequest(TimeStampedModel):
     )
 
     tribe_name = models.CharField(
-        null=True,
-        blank=True,
-    )
-
-    federal_agency = models.CharField(
-        choices=AGENCY_CHOICES,
         null=True,
         blank=True,
     )
