@@ -41,9 +41,7 @@ class WaffleFlag(AbstractUserFlag):
         """
         logger.info("Creating default waffle flags...")
         WaffleFlag = apps.get_model("registrar", "WaffleFlag")
-        # Flags can be changed through the command line or through django admin.
-        # To keep the scope of this function minimal and simple, if we require additional
-        # config on these flag, it should be done in a seperate function or as a command.
+        # Flags can be changed through django admin if necessary.
         for flag_name, flag_note in default_waffle_flags:
             try:
                 WaffleFlag.objects.update_or_create(

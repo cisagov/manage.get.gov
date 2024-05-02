@@ -20,9 +20,6 @@ Follow these steps to achieve this:
 5. Rename the copied migration to match the increment. For instance, if `0091_create_waffle_flags_v01` exists, you will rename your migration to `0091_create_waffle_flags_v02`.
 6. Modify the migration dependency to match the last migration in the stack.
 
-## Modifying an existing feature flag through the CLI
-Waffle comes with built in management commands that you can use to update records remotely. [Read here](https://waffle.readthedocs.io/en/stable/usage/cli.html) for information on how to use them.
-
 ## Using feature flags as boolean values
 Waffle [provides a boolean](https://waffle.readthedocs.io/en/stable/usage/views.html) called `flag_is_active` that you can use as you otherwise would a boolean. This boolean requires a request object and the flag name.
 

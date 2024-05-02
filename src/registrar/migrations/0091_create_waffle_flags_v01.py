@@ -33,7 +33,7 @@ def delete_flags(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0090_wafflesample_waffleswitch_waffleflag"),
+        ("registrar", "0090_waffleflag"),
     ]
 
     operations = [
