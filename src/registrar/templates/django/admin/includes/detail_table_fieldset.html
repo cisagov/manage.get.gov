@@ -44,7 +44,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         <div class="readonly">
         {% with total_websites=field.contents|split:", " %}
             {% for website in total_websites %}
-                <a href="{{ website }}" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
+                <a href="{{ website }}" target="_blank" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
                 {# Acts as a <br> #}
                 {% if total_websites|length < 5 %}
                 <div class="display-block margin-top-1"></div>

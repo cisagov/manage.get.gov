@@ -1886,7 +1886,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, domain_request.requested_domain.name)
 
         # Check that the page contains the link we expect.
-        expected_url = '<a href="city.com" class="padding-top-1 current-website__1">city.com</a>'
+        expected_url = '<a href="city.com" target="_blank" class="padding-top-1 current-website__1">city.com</a>'
         self.assertContains(response, expected_url)
 
     @less_console_noise_decorator
