@@ -679,7 +679,7 @@ div.dja__model-description{
 
     @media (prefers-color-scheme: dark) {
         p, li {
-            color: var(--primary);
+            color: var(--body-bg);
         }
     }
 
@@ -689,7 +689,7 @@ div.dja__model-description{
 
     &.dja__model-description--no-overflow {
         display: block;
-        overflow: unset;
+        overflow: auto;
     }
 
 }
