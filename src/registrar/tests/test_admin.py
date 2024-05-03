@@ -888,6 +888,96 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
 
     @less_console_noise_decorator
+    def test_status_logs(self):
+        """
+        Tests that the status changes are shown in a table on the domain request change form,
+        accurately and in chronological order.
+        """
+
+        # Create a fake domain request and domain
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED)
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Table will contain one row for Started
+        self.assertContains(response, "<td>Started</td>", count=1)
+        self.assertNotContains(response, "<td>Submitted</td>")
+
+        domain_request.submit()
+        domain_request.save()
+
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Table will contain and extra row for Submitted
+        self.assertContains(response, "<td>Started</td>", count=1)
+        self.assertContains(response, "<td>Submitted</td>", count=1)
+
+        domain_request.in_review()
+        domain_request.save()
+
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Table will contain and extra row for In review
+        self.assertContains(response, "<td>Started</td>", count=1)
+        self.assertContains(response, "<td>Submitted</td>", count=1)
+        self.assertContains(response, "<td>In review</td>", count=1)
+
+        domain_request.action_needed()
+        domain_request.save()
+
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Table will contain and extra row for Action needed
+        self.assertContains(response, "<td>Started</td>", count=1)
+        self.assertContains(response, "<td>Submitted</td>", count=1)
+        self.assertContains(response, "<td>In review</td>", count=1)
+        self.assertContains(response, "<td>Action needed</td>", count=1)
+
+        domain_request.in_review()
+        domain_request.save()
+
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Define the expected sequence of status changes
+        expected_status_changes = [
+            "<td>In review</td>",
+            "<td>Action needed</td>",
+            "<td>In review</td>",
+            "<td>Submitted</td>",
+            "<td>Started</td>",
+        ]
+
+        # Test for the order of status changes
+        for status_change in expected_status_changes:
+            self.assertContains(response, status_change, html=True)
+
+        # Table now contains 2 rows for Approved
+        self.assertContains(response, "<td>Started</td>", count=1)
+        self.assertContains(response, "<td>Submitted</td>", count=1)
+        self.assertContains(response, "<td>In review</td>", count=2)
+        self.assertContains(response, "<td>Action needed</td>", count=1)
+
     def test_collaspe_toggle_button_markup(self):
         """
         Tests for the correct collapse toggle button markup
@@ -906,7 +996,6 @@ class TestDomainRequestAdmin(MockEppLib):
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain_request.requested_domain.name)
-
         self.test_helper.assertContains(response, "<span>Show details</span>")
 
     @less_console_noise_decorator
@@ -1797,7 +1886,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, domain_request.requested_domain.name)
 
         # Check that the page contains the link we expect.
-        expected_url = '<a href="city.com" class="padding-top-1 current-website__1">city.com</a>'
+        expected_url = '<a href="city.com" target="_blank" class="padding-top-1 current-website__1">city.com</a>'
         self.assertContains(response, expected_url)
 
     @less_console_noise_decorator
