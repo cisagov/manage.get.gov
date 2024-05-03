@@ -685,18 +685,7 @@ div.dja__model-description{
 
     p, li {
         font-size: medium;
-    }
-
-    @media (prefers-color-scheme: light) {
-        p, li {
-            color: var(--body-fg);
-        }
-    }
-
-    @media (prefers-color-scheme: dark) {
-        p, li {
-            color: var(--secondary);
-        }
+        color: var(--secondary);
     }
 
     li {
@@ -704,7 +693,7 @@ div.dja__model-description{
         font-family: Source Sans Pro Web,Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;
     }
 
-    a {
+    a, a:link, a:visited {
         font-size: medium;
         color: #005288 !important;
     }

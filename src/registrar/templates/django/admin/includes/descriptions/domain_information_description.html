@@ -2,7 +2,7 @@
 Domain information represents the basic metadata for an approved domain and the organization that manages it. 
 It does not include any information specific to the registry (DNS name servers, security email). 
 Registry-related information 
-can be managed within the <a class="usa-button usa-button--unstyled text-underline" href="{% url 'admin:registrar_domain_changelist' %}">Domains</a> table.
+can be managed within the <a class="text-underline" href="{% url 'admin:registrar_domain_changelist' %}">Domains</a> table.
 </p>
 
 <p>
@@ -10,7 +10,7 @@ Updating values here will immediately update the corresponding values that users
 </p>
 
 <p>
-Domain information is similar to <a class="usa-button usa-button--unstyled text-underline" href="{% url 'admin:registrar_domainrequest_changelist' %}">Domain requests</a>, 
+Domain information is similar to <a class="text-underline" href="{% url 'admin:registrar_domainrequest_changelist' %}">Domain requests</a>, 
 and the fields are nearly identical, 
 but edits made to one are not made to the other. 
 Domain information exists so we don’t modify details of an approved request after adjudication 
