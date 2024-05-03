@@ -21,6 +21,12 @@ from registrar.admin import (
     MyHostAdmin,
     UserDomainRoleAdmin,
     VerifiedByStaffAdmin,
+    WebsiteAdmin,
+    DraftDomainAdmin,
+    FederalAgencyAdmin,
+    PublicContactAdmin,
+    TransitionDomainAdmin,
+    UserGroupAdmin,
 )
 from registrar.models import (
     Domain,
@@ -33,6 +39,9 @@ from registrar.models import (
     PublicContact,
     Host,
     Website,
+    FederalAgency,
+    UserGroup,
+    TransitionDomain,
 )
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
@@ -94,6 +103,23 @@ class TestDomainAdmin(MockEppLib, WebTest):
             client=self.client,
         )
         super().setUp()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domain/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "This table contains all approved domains in the .gov registrar.")
+        self.assertContains(response, "Show more")
 
     @less_console_noise_decorator
     def test_contact_fields_on_domain_change_form_have_detail_table(self):
@@ -511,7 +537,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
             # There are 4 template references to Federal (4) plus four references in the table
             # for our actual domain_request
-            self.assertContains(response, "Federal", count=36)
+            self.assertContains(response, "Federal", count=42)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -851,6 +877,23 @@ class TestDomainRequestAdmin(MockEppLib):
             model=DomainRequest,
         )
         self.mock_client = MockSESClient()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "This table contains all domain requests")
+        self.assertContains(response, "Show more")
 
     @less_console_noise_decorator
     def test_helper_text(self):
@@ -1267,7 +1310,7 @@ class TestDomainRequestAdmin(MockEppLib):
             response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
             # There are 2 template references to Federal (4) and two in the results data
             # of the request
-            self.assertContains(response, "Federal", count=34)
+            self.assertContains(response, "Federal", count=40)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -2492,7 +2535,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.mock_client.EMAILS_SENT.clear()
 
 
-class DomainInvitationAdminTest(TestCase):
+class TestDomainInvitationAdmin(TestCase):
     """Tests for the DomainInvitation page"""
 
     def setUp(self):
@@ -2508,6 +2551,25 @@ class DomainInvitationAdminTest(TestCase):
         User.objects.all().delete()
         Contact.objects.all().delete()
 
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domaininvitation/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(
+            response, "Domain invitations contain all individuals who have been invited to manage a .gov domain."
+        )
+        self.assertContains(response, "Show more")
+
     def test_get_filters(self):
         """Ensures that our filters are displaying correctly"""
         with less_console_noise():
@@ -2522,7 +2584,7 @@ class DomainInvitationAdminTest(TestCase):
             )
 
             # Assert that the filters are added
-            self.assertContains(response, "invited", count=2)
+            self.assertContains(response, "invited", count=4)
             self.assertContains(response, "Invited", count=2)
             self.assertContains(response, "retrieved", count=2)
             self.assertContains(response, "Retrieved", count=2)
@@ -2556,6 +2618,23 @@ class TestHostAdmin(TestCase):
         super().tearDown()
         Host.objects.all().delete()
         Domain.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/host/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "Entries in the Hosts table indicate the relationship between an approved domain")
+        self.assertContains(response, "Show more")
 
     @less_console_noise_decorator
     def test_helper_text(self):
@@ -2634,6 +2713,23 @@ class TestDomainInformationAdmin(TestCase):
         Domain.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domaininformation/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "Domain information represents the basic metadata")
+        self.assertContains(response, "Show more")
 
     @less_console_noise_decorator
     def test_helper_text(self):
@@ -2878,7 +2974,7 @@ class TestDomainInformationAdmin(TestCase):
             self.test_helper.assert_table_sorted("-4", ("-submitter__first_name", "-submitter__last_name"))
 
 
-class UserDomainRoleAdminTest(TestCase):
+class TestUserDomainRoleAdmin(TestCase):
     def setUp(self):
         """Setup environment for a mock admin user"""
         self.site = AdminSite()
@@ -2899,6 +2995,25 @@ class UserDomainRoleAdminTest(TestCase):
         User.objects.all().delete()
         Domain.objects.all().delete()
         UserDomainRole.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/userdomainrole/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(
+            response, "This table represents the managers who are assigned to each domain in the registrar"
+        )
+        self.assertContains(response, "Show more")
 
     def test_domain_sortable(self):
         """Tests if the UserDomainrole sorts by domain correctly"""
@@ -3095,6 +3210,23 @@ class TestMyUserAdmin(TestCase):
     def tearDown(self):
         super().tearDown()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/user/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "A user is anyone who has access to the registrar.")
+        self.assertContains(response, "Show more")
 
     @less_console_noise_decorator
     def test_helper_text(self):
@@ -3530,7 +3662,7 @@ class DomainSessionVariableTest(TestCase):
         )
 
 
-class ContactAdminTest(TestCase):
+class TestContactAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.factory = RequestFactory()
@@ -3538,6 +3670,23 @@ class ContactAdminTest(TestCase):
         self.admin = ContactAdmin(model=get_user_model(), admin_site=None)
         self.superuser = create_superuser()
         self.staffuser = create_user()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/contact/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "Contacts include anyone who has access to the registrar (known as “users”)")
+        self.assertContains(response, "Show more")
 
     def test_readonly_when_restricted_staffuser(self):
         with less_console_noise():
@@ -3658,6 +3807,25 @@ class TestVerifiedByStaffAdmin(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/verifiedbystaff/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(
+            response, "This table contains users who have been allowed to bypass " "identity proofing through Login.gov"
+        )
+        self.assertContains(response, "Show more")
+
+    @less_console_noise_decorator
     def test_helper_text(self):
         """
         Tests for the correct helper text on this page
@@ -3699,3 +3867,204 @@ class TestVerifiedByStaffAdmin(TestCase):
 
             # Check that the user field is set to the request.user
             self.assertEqual(vip_instance.requestor, self.superuser)
+
+
+class TestWebsiteAdmin(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.site = AdminSite()
+        self.superuser = create_superuser()
+        self.admin = WebsiteAdmin(model=Website, admin_site=self.site)
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.test_helper = GenericTestHelper(admin=self.admin)
+
+    def tearDown(self):
+        super().tearDown()
+        Website.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/website/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "This table lists all the “current websites” and “alternative domains”")
+        self.assertContains(response, "Show more")
+
+
+class TestDraftDomain(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.site = AdminSite()
+        self.superuser = create_superuser()
+        self.admin = DraftDomainAdmin(model=DraftDomain, admin_site=self.site)
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.test_helper = GenericTestHelper(admin=self.admin)
+
+    def tearDown(self):
+        super().tearDown()
+        DraftDomain.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/draftdomain/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(
+            response, "This table represents all “requested domains” that have been saved within a domain"
+        )
+        self.assertContains(response, "Show more")
+
+
+class TestFederalAgency(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.site = AdminSite()
+        self.superuser = create_superuser()
+        self.admin = FederalAgencyAdmin(model=FederalAgency, admin_site=self.site)
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.test_helper = GenericTestHelper(admin=self.admin)
+
+    def tearDown(self):
+        super().tearDown()
+        FederalAgency.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/federalagency/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "This table does not have a description yet.")
+        self.assertContains(response, "Show more")
+
+
+class TestPublicContact(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.site = AdminSite()
+        self.superuser = create_superuser()
+        self.admin = PublicContactAdmin(model=PublicContact, admin_site=self.site)
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.test_helper = GenericTestHelper(admin=self.admin)
+
+    def tearDown(self):
+        super().tearDown()
+        PublicContact.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/publiccontact/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "Public contacts represent the three registry contact types")
+        self.assertContains(response, "Show more")
+
+
+class TestTransitionDomain(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.site = AdminSite()
+        self.superuser = create_superuser()
+        self.admin = TransitionDomainAdmin(model=TransitionDomain, admin_site=self.site)
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.test_helper = GenericTestHelper(admin=self.admin)
+
+    def tearDown(self):
+        super().tearDown()
+        PublicContact.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/transitiondomain/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(response, "This table represents the domains that were transitioned from the old registry")
+        self.assertContains(response, "Show more")
+
+
+class TestUserGroup(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.site = AdminSite()
+        self.superuser = create_superuser()
+        self.admin = UserGroupAdmin(model=UserGroup, admin_site=self.site)
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.test_helper = GenericTestHelper(admin=self.admin)
+
+    def tearDown(self):
+        super().tearDown()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/usergroup/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(
+            response, "Groups are a way to bundle admin permissions so they can be easily assigned to multiple users."
+        )
+        self.assertContains(response, "Show more")
