@@ -21,9 +21,10 @@ class PublicContact(TimeStampedModel):
 
     class Meta:
         """Contains meta info about this class"""
+
         # Creates a composite primary key with these fields.
         # We can share the same registry id, but only if the contact type is
-        # different or if the domain is different. 
+        # different or if the domain is different.
         # For instance - we don't desire to have two admin contacts with the same id
         # on the same domain.
         unique_together = [("contact_type", "registry_id", "domain")]

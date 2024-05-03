@@ -7,7 +7,7 @@ from typing import Optional
 
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
-from django.db import IntegrityError, models
+from django.db import models
 from django.utils import timezone
 from typing import Any
 from registrar.models.host import Host
@@ -1967,7 +1967,7 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.warning("_get_or_create_public_contact() -> Duplicate contacts found. Deleting duplicate.")
 
             # Q: Should we be deleting the newest or the oldest? Does it even matter?
-            oldest_duplicate = db_contact.order_by("created_at").first()
+            oldest_duplicate = db_contact.order_by("created_at")
 
             # Exclude the oldest entry
             duplicates_to_delete = db_contact.exclude(id=oldest_duplicate.id)
