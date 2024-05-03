@@ -1207,24 +1207,28 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def get_default_security_contact(self):
         """Gets the default security contact."""
+        logger.info("get_default_security_contact() -> Adding default security contact")
         contact = PublicContact.get_default_security()
         contact.domain = self
         return contact
 
     def get_default_administrative_contact(self):
         """Gets the default administrative contact."""
+        logger.info("get_default_security_contact() -> Adding administrative security contact")
         contact = PublicContact.get_default_administrative()
         contact.domain = self
         return contact
 
     def get_default_technical_contact(self):
         """Gets the default technical contact."""
+        logger.info("get_default_security_contact() -> Adding technical security contact")
         contact = PublicContact.get_default_technical()
         contact.domain = self
         return contact
 
     def get_default_registrant_contact(self):
         """Gets the default registrant contact."""
+        logger.info("get_default_security_contact() -> Adding default registrant contact")
         contact = PublicContact.get_default_registrant()
         contact.domain = self
         return contact
@@ -1238,6 +1242,7 @@ class Domain(TimeStampedModel, DomainHelper):
         Returns:
             PublicContact | None
         """
+        logger.info(f"get_contact_in_keys() -> Grabbing a {contact_type} contact from cache")
         # Registrant doesn't exist as an array, and is of
         # a special data type, so we need to handle that.
         if contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
@@ -1300,6 +1305,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e.code)
                     raise e
                 if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state == Domain.State.UNKNOWN:
+                    logger.info("_get_or_create_domain() -> Switching to dns_needed from unknown")
                     # avoid infinite loop
                     already_tried_to_create = True
                     self.dns_needed_from_unknown()
@@ -1310,6 +1316,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     raise e
 
     def addRegistrant(self):
+        """Adds a default registrant contact"""
         registrant = PublicContact.get_default_registrant()
         registrant.domain = self
         registrant.save()  # calls the registrant_contact.setter
@@ -1337,6 +1344,8 @@ class Domain(TimeStampedModel, DomainHelper):
         self.addAllDefaults()
 
     def addAllDefaults(self):
+        """Adds default security, technical, and administrative contacts"""
+        logger.info("addAllDefaults() -> Adding default security, technical, and administrative contacts")
         security_contact = self.get_default_security_contact()
         security_contact.save()
 
@@ -1351,7 +1360,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """place a clienthold on a domain (no longer should resolve)
         ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
         """
-        # TODO - ensure all requirements for client hold are made here
+
         # (check prohibited statuses)
         logger.info("clientHold()-> inside clientHold")
 
@@ -1359,7 +1368,6 @@ class Domain(TimeStampedModel, DomainHelper):
         # include this ignoreEPP flag
         if not ignoreEPP:
             self._place_client_hold()
-        # TODO -on the client hold ticket any additional error handling here
 
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.READY)
     def revert_client_hold(self, ignoreEPP=False):
@@ -1561,6 +1569,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
+        logger.info(f"_get_or_create_contact() -> Fetching contact info")
         try:
             return self._request_contact_info(contact)
         except RegistryError as e:

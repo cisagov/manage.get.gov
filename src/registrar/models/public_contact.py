@@ -19,6 +19,15 @@ def get_id():
 class PublicContact(TimeStampedModel):
     """Contact information intended to be published in WHOIS."""
 
+    class Meta:
+        """Contains meta info about this class"""
+        # Creates a composite primary key with these fields.
+        # We can share the same registry id, but only if the contact type is
+        # different or if the domain is different. 
+        # For instance - we don't desire to have two admin contacts with the same id
+        # on the same domain.
+        unique_together = [("contact_type", "registry_id", "domain")]
+
     class ContactTypeChoices(models.TextChoices):
         """These are the types of contacts accepted by the registry."""
 
@@ -48,7 +57,6 @@ class PublicContact(TimeStampedModel):
         help_text="For which type of WHOIS contact",
     )
     registry_id = models.CharField(
-        unique=True,
         max_length=16,
         default=get_id,
         null=False,
