@@ -1013,7 +1013,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         (
             "Show details",
             {
-                "classes": ["collapse--dotgov"],
+                "classes": ["collapse--dgfieldset"],
                 "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
@@ -1039,7 +1039,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         (
             "Show details",
             {
-                "classes": ["collapse--dotgov"],
+                "classes": ["collapse--dgfieldset"],
                 "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
@@ -1266,7 +1266,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         (
             "Show details",
             {
-                "classes": ["collapse--dotgov"],
+                "classes": ["collapse--dgfieldset"],
                 "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
@@ -1292,7 +1292,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         (
             "Show details",
             {
-                "classes": ["collapse--dotgov"],
+                "classes": ["collapse--dgfieldset"],
                 "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",

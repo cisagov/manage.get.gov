@@ -243,7 +243,7 @@ div#content > h2 {
 // in the future
 .object-tools li a,
 .object-tools p a {
-    font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-family: family('sans');
     text-transform: none!important;
     font-size: 14px!important;
 }
@@ -293,7 +293,7 @@ div#content > h2 {
 .messagelist_content-list--unstyled {
     padding-left: 0;
     li {
-        font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+        font-family: family('sans');
         font-size: 13.92px!important;
         background: none!important;
         padding: 0!important;
@@ -542,31 +542,41 @@ address.dja-address-contact-list {
 }
 
 // Collapse button styles for fieldsets
-.module.collapse--dotgov {
+.module.collapse--dgfieldset {
     margin-top: -35px;
     padding-top: 0;
     border: none;
-    button {
-        background: none;
-        text-transform: none;
+}
+.collapse-toggle--dgsimple,
+.module.collapse--dgfieldset button {
+    background: none;
+    text-transform: none;
+    color: var(--link-fg);
+    margin-top: 8px;
+    margin-left: 10px;
+    span {
+        text-decoration: underline;
+        font-size: 13px;
+        font-feature-settings: "kern";
+        font-kerning: normal;
+        line-height: 13px;
+        font-family: family('sans');
+    }
+    &:hover {
         color: var(--link-fg);
-        margin-top: 8px;
-        margin-left: 10px;
-        span {
-            text-decoration: underline;
-            font-size: 13px;
-            font-feature-settings: "kern";
-            font-kerning: normal;
-            line-height: 13px;
-            font-family: -apple-system, "system-ui", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        svg {
+            color: var(--link-fg);
         }
     }
 }
-.collapse--dotgov.collapsed .collapse-toggle--dotgov  {
+.collapse--dgfieldset.collapsed .collapse-toggle--dgfieldset  {
     display: inline-block!important;
     * {
         display: inline-block;
     }
+}
+.collapse--dgsimple.collapsed {
+    display: none;
 }
 
 .dja-status-list {
@@ -576,7 +586,7 @@ address.dja-address-contact-list {
     padding-top: 10px;
     li {
         line-height: 1.5;
-        font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif !important;
+        font-family: family('sans');
         padding-top: 0;
         padding-bottom: 0;
     }
