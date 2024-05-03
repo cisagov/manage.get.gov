@@ -4,6 +4,7 @@
 {% comment %}
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endcomment %}
+
 {% block field_readonly %}
     {% with all_contacts=original_object.other_contacts.all %}
     {% if field.field.name == "other_contacts" %}
@@ -66,14 +67,42 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endblock field_readonly %}
 
 {% block after_help_text %}
-    {% if field.field.name == "creator" %}
+    {% if field.field.name == "status" and original_object.history.count > 0 %}
         <div class="flex-container">
+            <label aria-label="Submitter contact details"></label>
+            <div class="usa-table-container--scrollable" tabindex="0">
+                <table class="usa-table usa-table--borderless">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>User</th>
+                            <th>Changed at</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log_entry in original_object.history.all %}
+                            {% for key, value in log_entry.changes_display_dict.items %}
+                                {% if key == "status" %}
+                                    <tr>
+                                        <td>{{ value.1|default:"None" }}</td>
+                                        <td>{{ log_entry.actor|default:"None" }}</td>
+                                        <td>{{ log_entry.timestamp|default:"None" }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% elif field.field.name == "creator" %}
+        <div class="flex-container tablet:margin-top-2">
         <label aria-label="Creator contact details"></label>
-            {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
+            {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly user_verification_type=original_object.creator.get_verification_type_display%}
         </div>
         {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
     {% elif field.field.name == "submitter" %}
-        <div class="flex-container">
+        <div class="flex-container tablet:margin-top-2">
         <label aria-label="Submitter contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.submitter no_title_top_padding=field.is_readonly %}
         </div>

@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "========================",
   "main": "index.js",
+  "engines": {
+    "node": "21.7.3",
+    "npm": "10.5.0"
+  },
+  "engineStrict": true,
   "scripts": {
     "pa11y-ci": "pa11y-ci",
     "test": "echo \"Error: no test specified\" && exit 1"

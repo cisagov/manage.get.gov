@@ -167,7 +167,7 @@ class CreateOrUpdateOrganizationTypeHelper:
                 # There is no avenue for this to occur in the UI,
                 # as such - this can only occur if the object is initialized in this way.
                 # Or if there are pre-existing data.
-                logger.warning(
+                logger.debug(
                     "create_or_update_organization_type() -> is_election_board "
                     f"cannot exist for {generic_org_type}. Setting to None."
                 )

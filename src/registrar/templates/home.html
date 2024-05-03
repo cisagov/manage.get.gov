@@ -26,7 +26,7 @@
   <section class="section--outlined">
     <h2>Domains</h2>
     {% if domains %}
-    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__registered-domains">
       <caption class="sr-only">Your registered domains</caption>
       <thead>
         <tr>
@@ -98,13 +98,21 @@
     ></div>
     {% else %}
     <p>You don't have any registered domains.</p>
+    <p class="maxw-none clearfix">
+      <a href="https://get.gov/help/faq/#do-not-see-my-domain" class="float-right-tablet display-flex flex-align-start usa-link" target="_blank">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+          <use xlink:href="{%static 'img/sprite.svg'%}#help_outline"></use>
+        </svg>
+        Why don't I see my domain when I sign in to the registrar?
+      </a>
+    </p>
     {% endif %}
   </section>
 
   <section class="section--outlined">
     <h2>Domain requests</h2>
     {% if domain_requests %}
-    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__domain-requests">
       <caption class="sr-only">Your domain requests</caption>
       <thead>
         <tr>

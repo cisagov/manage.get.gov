@@ -16,11 +16,20 @@ from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
 
+from auditlog.models import AuditlogHistoryField  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 
 class DomainRequest(TimeStampedModel):
     """A registrant's domain request for a new domain."""
+
+    # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history
+    # If we note any performace degradation due to this addition,
+    # we can query the auditlogs table in admin.py and add the results to
+    # extra_context in the change_view method for DomainRequestAdmin.
+    # This is the more straightforward way so trying it first.
+    history = AuditlogHistoryField()
 
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
@@ -464,6 +473,7 @@ class DomainRequest(TimeStampedModel):
         "registrar.User",
         on_delete=models.PROTECT,
         related_name="domain_requests_created",
+        help_text="Person who submitted the domain request; will not receive email updates",
     )
 
     investigator = models.ForeignKey(
@@ -481,14 +491,12 @@ class DomainRequest(TimeStampedModel):
         choices=OrganizationChoices.choices,
         null=True,
         blank=True,
-        help_text="Type of organization",
     )
 
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
         verbose_name="election office",
-        help_text="Is your organization an election office?",
     )
 
     # TODO - Ticket #1911: stub this data from DomainRequest
@@ -497,30 +505,26 @@ class DomainRequest(TimeStampedModel):
         choices=OrgChoicesElectionOffice.choices,
         null=True,
         blank=True,
-        help_text="Type of organization - Election office",
+        help_text='"Election" appears after the org type if it\'s an election office.',
     )
 
     federally_recognized_tribe = models.BooleanField(
         null=True,
-        help_text="Is the tribe federally recognized",
     )
 
     state_recognized_tribe = models.BooleanField(
         null=True,
-        help_text="Is the tribe recognized by a state",
     )
 
     tribe_name = models.CharField(
         null=True,
         blank=True,
-        help_text="Name of tribe",
     )
 
     federal_agency = models.CharField(
         choices=AGENCY_CHOICES,
         null=True,
         blank=True,
-        help_text="Federal agency",
     )
 
     federal_type = models.CharField(
@@ -528,32 +532,27 @@ class DomainRequest(TimeStampedModel):
         choices=BranchChoices.choices,
         null=True,
         blank=True,
-        help_text="Federal government branch",
     )
 
     organization_name = models.CharField(
         null=True,
         blank=True,
-        help_text="Organization name",
         db_index=True,
     )
 
     address_line1 = models.CharField(
         null=True,
         blank=True,
-        help_text="Street address",
         verbose_name="Address line 1",
     )
     address_line2 = models.CharField(
         null=True,
         blank=True,
-        help_text="Street address line 2 (optional)",
         verbose_name="Address line 2",
     )
     city = models.CharField(
         null=True,
         blank=True,
-        help_text="City",
     )
     state_territory = models.CharField(
         max_length=2,
@@ -561,26 +560,23 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name="state / territory",
-        help_text="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
         verbose_name="zip code",
-        help_text="Zip code",
         db_index=True,
     )
     urbanization = models.CharField(
         null=True,
         blank=True,
-        help_text="Urbanization (required for Puerto Rico only)",
+        help_text="Required for Puerto Rico only",
     )
 
     about_your_organization = models.TextField(
         null=True,
         blank=True,
-        help_text="Information about your organization",
     )
 
     authorizing_official = models.ForeignKey(
@@ -603,7 +599,7 @@ class DomainRequest(TimeStampedModel):
         "Domain",
         null=True,
         blank=True,
-        help_text="The approved domain",
+        help_text="Domain associated with this request; will be blank until request is approved",
         related_name="domain_request",
         on_delete=models.SET_NULL,
     )
@@ -612,7 +608,6 @@ class DomainRequest(TimeStampedModel):
         "DraftDomain",
         null=True,
         blank=True,
-        help_text="The requested domain",
         related_name="domain_request",
         on_delete=models.PROTECT,
     )
@@ -621,6 +616,7 @@ class DomainRequest(TimeStampedModel):
         "registrar.Website",
         blank=True,
         related_name="alternatives+",
+        help_text="Other domain names the creator provided for consideration",
     )
 
     # This is the contact information provided by the domain requestor. The
@@ -631,12 +627,12 @@ class DomainRequest(TimeStampedModel):
         blank=True,
         related_name="submitted_domain_requests",
         on_delete=models.PROTECT,
+        help_text='Person listed under "your contact information" in the request form; will receive email updates',
     )
 
     purpose = models.TextField(
         null=True,
         blank=True,
-        help_text="Purpose of your domain",
     )
 
     other_contacts = models.ManyToManyField(
@@ -649,13 +645,38 @@ class DomainRequest(TimeStampedModel):
     no_other_contacts_rationale = models.TextField(
         null=True,
         blank=True,
-        help_text="Reason for listing no additional contacts",
+        help_text="Required if creator does not list other employees",
     )
 
     anything_else = models.TextField(
         null=True,
         blank=True,
-        help_text="Anything else?",
+        verbose_name="Additional details",
+    )
+
+    # This is a drop-in replacement for a has_anything_else_text() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_anything_else_text = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a anything_else or not",
+    )
+
+    cisa_representative_email = models.EmailField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative",
+        max_length=320,
+    )
+
+    # This is a drop-in replacement for an has_cisa_representative() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_cisa_representative = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a representative email or not",
     )
 
     is_policy_acknowledged = models.BooleanField(
@@ -676,7 +697,6 @@ class DomainRequest(TimeStampedModel):
     notes = models.TextField(
         null=True,
         blank=True,
-        help_text="Notes about this request",
     )
 
     def sync_organization_type(self):
@@ -711,7 +731,32 @@ class DomainRequest(TimeStampedModel):
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_organization_type()
+        self.sync_yes_no_form_fields()
+
         super().save(*args, **kwargs)
+
+    def sync_yes_no_form_fields(self):
+        """Some yes/no forms use a db field to track whether it was checked or not.
+        We handle that here for def save().
+        """
+
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.cisa_representative_email is not None:
+            self.has_cisa_representative = self.cisa_representative_email != ""
+
+        # This check is required to ensure that the form doesn't start out checked
+        if self.has_cisa_representative is not None:
+            self.has_cisa_representative = (
+                self.cisa_representative_email != "" and self.cisa_representative_email is not None
+            )
+
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.anything_else is not None:
+            self.has_anything_else_text = self.anything_else != ""
+
+        # This check is required to ensure that the form doesn't start out checked.
+        if self.has_anything_else_text is not None:
+            self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 
     def __str__(self):
         try:
@@ -1050,6 +1095,16 @@ class DomainRequest(TimeStampedModel):
     def has_other_contacts(self) -> bool:
         """Does this domain request have other contacts listed?"""
         return self.other_contacts.exists()
+
+    def has_additional_details(self) -> bool:
+        """Combines the has_anything_else_text and has_cisa_representative fields,
+        then returns if this domain request has either of them."""
+        # Split out for linter
+        has_details = False
+        if self.has_anything_else_text or self.has_cisa_representative:
+            has_details = True
+
+        return has_details
 
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?

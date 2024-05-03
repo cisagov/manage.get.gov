@@ -12,7 +12,7 @@ class Website(TimeStampedModel):
     website = models.CharField(
         max_length=255,
         null=False,
-        help_text="",
+        help_text="An alternative domain or current website listed on a domain request",
     )
 
     def __str__(self) -> str:
