@@ -837,7 +837,7 @@ def completed_domain_request(
     )
     if not investigator:
         investigator, _ = User.objects.get_or_create(
-            username="incrediblyfakeinvestigator",
+            username="incrediblyfakeinvestigator" + str(uuid.uuid4())[:8],
             first_name="Joe",
             last_name="Bob",
             is_staff=True,
