@@ -37,26 +37,43 @@ logger = logging.getLogger(__name__)
 
 
 class FsmModelResource(resources.ModelResource):
+    """ModelResource is extended to support importing of tables which
+    have FSMFields.  ModelResource is extended with the following changes
+    to existing behavior:
+    When new objects are to be imported, FSMFields are initialized before
+    the object is initialized.  This is because FSMFields do not allow
+    direct modification.
+    When objects, which are to be imported, are updated, the FSMFields
+    are skipped."""
 
     def init_instance(self, row=None):
+        """Overrides the init_instance method of ModelResource.  Returns
+        an instance of the model, with the FSMFields already initialized
+        from data in the row."""
 
         # Get fields which are fsm fields
         fsm_fields = []
 
-        for f in sorted(self._meta.model._meta.fields):
+        for f in self._meta.model._meta.fields:
             if isinstance(f, FSMField):
                 if row and f.name in row:
                     fsm_fields.append((f.name, row[f.name]))
 
-        # Convert fields_and_values to kwargs
+        # Convert fsm_fields fields_and_values to kwargs
         kwargs = dict(fsm_fields)
 
         # Initialize model instance with kwargs
         return self._meta.model(**kwargs)
 
     def import_field(self, field, obj, data, is_m2m=False, **kwargs):
+        """Overrides the import_field method of ModelResource.  If the
+        field being imported is an FSMField, it is not imported."""
+
         is_fsm = False
+
+        # check each field in the object
         for f in obj._meta.fields:
+            # if the field is an instance of FSMField
             if field.attribute == f.name and isinstance(f, FSMField):
                 is_fsm = True
         if not is_fsm:
@@ -67,42 +84,6 @@ class UserResource(resources.ModelResource):
 
     class Meta:
         model = models.User
-        import_id_fields = ('id', 'username',)
-
-    def import_data(
-        self,
-        dataset,
-        dry_run=False,
-        raise_errors=False,
-        use_transactions=None,
-        collect_failed_rows=False,
-        rollback_on_validation_errors=False,
-        **kwargs
-    ):
-        logger.info("in import_data")
-        logger.info(dataset)
-        return super().import_data(dataset,dry_run,raise_errors,use_transactions,collect_failed_rows,rollback_on_validation_errors,**kwargs)
-
-
-    def before_import(self, dataset, using_transactions, dry_run, **kwargs):
-        logger.info("in before_import")
-
-    def import_row(
-        self,
-        row,
-        instance_loader,
-        using_transactions=True,
-        dry_run=False,
-        raise_errors=None,
-        **kwargs
-    ):
-        logger.info("in import_row")
-        logger.info(row)
-        return super().import_row(row,instance_loader,using_transactions,dry_run,raise_errors,**kwargs)
-    
-    def after_import_row(self, row, row_result, **kwargs):
-        logger.info(row_result.original)
-        logger.info(row_result.instance)
 
 
 class MyUserAdminForm(UserChangeForm):
@@ -1761,7 +1742,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom domain admin class to add extra buttons."""
 
     resource_classes = [DomainResource]
-    
+
     class ElectionOfficeFilter(admin.SimpleListFilter):
         """Define a custom filter for is_election_board"""
 
