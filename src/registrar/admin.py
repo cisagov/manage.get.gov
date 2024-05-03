@@ -785,8 +785,16 @@ class MyHostAdmin(AuditedAdmin):
     inlines = [HostIPInline]
 
 
-class ContactAdmin(ListHeaderAdmin):
+class ContactResource(resources.ModelResource):
+
+    class Meta:
+        model = models.Contact
+
+
+class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom contact admin class to add search."""
+
+    resource_classes = [ContactResource]
 
     search_fields = ["email", "first_name", "last_name"]
     search_help_text = "Search by first name, last name or email."
