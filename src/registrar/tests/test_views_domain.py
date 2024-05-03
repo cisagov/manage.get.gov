@@ -1438,6 +1438,7 @@ class TestDomainOrganization(TestDomainOverview):
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
 
         form = org_name_page.forms[0]
+        # I think we can remove this check below bc this doesn't have a value # anymore bc it's an actual string
         # Check the value of the input field
         agency_input = form.fields["federal_agency"][0]
         self.assertEqual(agency_input.value, "AMTRAK")
@@ -1485,8 +1486,7 @@ class TestDomainOrganization(TestDomainOverview):
         self.domain_information.save()
 
         federal_agency, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
-
-        old_federal_agency_value = (federal_agency, federal_agency)
+        old_federal_agency_value = federal_agency
         try:
             # Add a federal agency. Defined as a tuple since this list may change order.
             self.domain_information.federal_agency = old_federal_agency_value
