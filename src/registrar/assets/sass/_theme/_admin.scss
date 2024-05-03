@@ -685,7 +685,6 @@ div.dja__model-description{
 
     p, li {
         font-size: medium;
-        line-height: 1.2em;
     }
 
     @media (prefers-color-scheme: light) {
@@ -702,6 +701,7 @@ div.dja__model-description{
 
     li {
         list-style-type: disc;
+        font-family: Source Sans Pro Web,Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;
     }
 
     &.dja__model-description--no-overflow {
@@ -709,4 +709,8 @@ div.dja__model-description{
         overflow: auto;
     }
 
+}
+
+.text-underline {
+    text-decoration: underline !important;
 }
