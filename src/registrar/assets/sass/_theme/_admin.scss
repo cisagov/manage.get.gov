@@ -695,13 +695,17 @@ div.dja__model-description{
 
     @media (prefers-color-scheme: dark) {
         p, li {
-            color: var(--body-bg);
+            color: var(--secondary);
         }
     }
 
     li {
         list-style-type: disc;
         font-family: Source Sans Pro Web,Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;
+    }
+
+    a {
+        font-size: medium;
     }
 
     &.dja__model-description--no-overflow {
