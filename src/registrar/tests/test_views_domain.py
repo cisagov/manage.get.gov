@@ -1421,8 +1421,7 @@ class TestDomainOrganization(TestDomainOverview):
         """
         Submitting a change to federal_agency is blocked for federal domains
         """
-        # Set the current domain to a tribal organization with a preset value.
-        # Save first, so we can test if saving is unaffected (it should be).
+
         fed_org_type = DomainInformation.OrganizationChoices.FEDERAL
         self.domain_information.generic_org_type = fed_org_type
         self.domain_information.save()
@@ -1438,10 +1437,9 @@ class TestDomainOrganization(TestDomainOverview):
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
 
         form = org_name_page.forms[0]
-        # I think we can remove this check below bc this doesn't have a value # anymore bc it's an actual string
         # Check the value of the input field
         agency_input = form.fields["federal_agency"][0]
-        self.assertEqual(agency_input.value, "AMTRAK")
+        self.assertEqual(agency_input.value, str(federal_agency.id))
 
         # Check if the input field is disabled
         self.assertTrue("disabled" in agency_input.attrs)
@@ -1459,14 +1457,16 @@ class TestDomainOrganization(TestDomainOverview):
         self.assertEqual(success_result_page.status_code, 200)
 
         # Check for the old and new value
-        self.assertContains(success_result_page, "AMTRAK")
+        # print("!!! SUCCESS_RESULT_PAGE IS", success_result_page)
+        # TODO: Check for "selected" instead of id
+        self.assertContains(success_result_page, federal_agency.id)
         self.assertNotContains(success_result_page, "Department of State")
 
         # Do another check on the form itself
         form = success_result_page.forms[0]
         # Check the value of the input field
         organization_name_input = form.fields["federal_agency"][0]
-        self.assertEqual(organization_name_input.value, "AMTRAK")
+        self.assertEqual(organization_name_input.value, str(federal_agency.id))
 
         # Check if the input field is disabled
         self.assertTrue("disabled" in organization_name_input.attrs)
