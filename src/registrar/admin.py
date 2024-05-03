@@ -1,13 +1,10 @@
 from datetime import date
 import logging
 import copy
-import traceback
-import warnings
 
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
-from django.db.transaction import TransactionManagementError
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
@@ -15,7 +12,6 @@ from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
@@ -32,8 +28,7 @@ from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
-from import_export import resources, widgets
-from import_export.results import RowResult
+from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 
 from django.utils.translation import gettext_lazy as _
@@ -44,8 +39,6 @@ logger = logging.getLogger(__name__)
 class FsmModelResource(resources.ModelResource):
 
     def init_instance(self, row=None):
-        logger.info("Initializing instance")
-        logger.info(f"Row: {row}")
 
         # Get fields which are fsm fields
         fsm_fields = []
@@ -55,8 +48,6 @@ class FsmModelResource(resources.ModelResource):
                 if row and f.name in row:
                     fsm_fields.append((f.name, row[f.name]))
 
-        logger.info(f"Fsm fields: {fsm_fields}")
-
         # Convert fields_and_values to kwargs
         kwargs = dict(fsm_fields)
 
@@ -64,25 +55,12 @@ class FsmModelResource(resources.ModelResource):
         return self._meta.model(**kwargs)
 
     def import_field(self, field, obj, data, is_m2m=False, **kwargs):
-        # logger.info(f"import_field: ${field}")
-        # logger.info(field.attribute)
-        # logger.info(field.widget)
-        # logger.info(type(obj))
-        # logger.info(obj._meta.fields)
         is_fsm = False
         for f in obj._meta.fields:
-            # logger.info(f.name)
-            # logger.info(type(f))
             if field.attribute == f.name and isinstance(f, FSMField):
                 is_fsm = True
-        # if field.attribute in sorted(obj._meta.fields):
-        #     logger.info("in fields")
-        #     if not isinstance(obj._meta.fields[field.attribute], FSMField):
         if not is_fsm:
-            # logger.info("not fsm field")
-            #if (field.attribute != 'state'):
             super().import_field(field, obj, data, is_m2m, **kwargs)
-        # logger.info("finished importing")
 
 
 class UserResource(resources.ModelResource):
