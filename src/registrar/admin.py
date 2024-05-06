@@ -15,6 +15,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
+from waffle.admin import FlagAdmin
+from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
@@ -2158,7 +2160,16 @@ class UserGroupAdmin(AuditedAdmin):
         return obj.name
 
 
+class WaffleFlagAdmin(FlagAdmin):
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.WaffleFlag
+        fields = "__all__"
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
+
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
 # Unregister the built-in Group model
@@ -2180,3 +2191,10 @@ admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
+
+# Register our custom waffle implementations
+admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
+
+# Unregister Sample and Switch from the waffle library
+admin.site.unregister(Sample)
+admin.site.unregister(Switch)
