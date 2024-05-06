@@ -50,24 +50,6 @@ class CreateOrUpdateOrganizationTypeHelper:
         self.election_org_map = election_org_to_generic_org_map
 
     def create_or_update_organization_type(self, force_update=False):
-        """The organization_type field on DomainRequest and DomainInformation is consituted from the
-        generic_org_type and is_election_board fields. To keep the organization_type
-        field up to date, we need to update it before save based off of those field
-        values.
-
-        If the instance is marked as an election board and the generic_org_type is not
-        one of the excluded types (FEDERAL, INTERSTATE, SCHOOL_DISTRICT), the
-        organization_type is set to a corresponding election variant. Otherwise, it directly
-        mirrors the generic_org_type value.
-
-        args:
-            force_update (bool): If an existing instance has no values to change,
-            try to update the organization_type field (or related fields) anyway.
-            This is done by invoking the new instance handler.
-
-            Use to force org type to be updated to the correct value even
-            if no other changes were made (including is_election).
-        """
         # A new record is added with organization_type not defined.
         # This happens from the regular domain request flow.
         is_new_instance = self.instance.id is None
@@ -85,18 +67,25 @@ class CreateOrUpdateOrganizationTypeHelper:
         """
         org_type_is_none = self.instance.organization_type is None
         generic_org_type_is_none = self.instance.generic_org_type is None
+
         both_none = org_type_is_none and generic_org_type_is_none
         both_not_none = not org_type_is_none and not generic_org_type_is_none
 
         # We cannot update both fields at the same time.
         # And we also cannot update no fields at all.
-        one_or_the_other = (both_none and both_not_none)
-        if one_or_the_other:
-            should_proceed = True
-        elif both_none:
+        # We can only update one or the other
+        if both_none:
             should_proceed = False
-        elif not both_none:
+        elif both_not_none:
+            # If data exists already for org type and generic org type,
+            # we can only update if all data matches.
+            # Otherwise, which one do we sync with?
             should_proceed = self._check_new_instance_values()
+        else:
+            # This means that we're only updating one field at a time.
+            # Either generic_org_type/is_election_office OR organization_type.
+            # but not both.
+            should_proceed = True
 
         if should_proceed:
             self._update_fields(org_type_is_none, generic_org_type_is_none)
@@ -109,8 +98,9 @@ class CreateOrUpdateOrganizationTypeHelper:
         organization_type, generic_org_type, and is_election_board fields.
         """
         # Check the new and old values
-        generic_org_changed, election_board_changed, org_type_changed = self._get_changed_fields()
+        generic_org_changed, election_board_changed, org_type_changed = self._get_fields_that_were_changed()
 
+        # Check for what fields need to be updated
         organization_type_needs_update = generic_org_changed or election_board_changed
         generic_org_type_needs_update = org_type_changed
 
@@ -121,13 +111,15 @@ class CreateOrUpdateOrganizationTypeHelper:
             raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
         elif both_dont_need_update:
             if force_update_when_no_are_changes_found:
+                # Pretend that this instance is a new instance (i.e. - overwrite data)
+                # Useful for scripts. Otherwise, lets avoid this.
                 self.handle_new_instance()
             else:
                 logger.debug(f"handle_existing_instance() -> No changes made.")
         else:
             self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
 
-    def _get_changed_fields(self):
+    def _get_fields_that_were_changed(self):
         """
         Compare what is changing from the old instance to the new one
         """
@@ -141,13 +133,6 @@ class CreateOrUpdateOrganizationTypeHelper:
         return (generic_org_type_changed, is_election_board_changed, organization_type_changed)
 
     def _update_fields(self, organization_type_needs_update, generic_org_type_needs_update):
-        """
-        Validates the conditions for updating organization and generic organization types.
-
-        Raises:
-            ValueError: If both organization_type_needs_update and generic_org_type_needs_update are True,
-                        indicating an attempt to update both fields simultaneously, which is not allowed.
-        """
         if organization_type_needs_update and generic_org_type_needs_update:
             raise ValueError("Cannot update both org type and generic org type at the same time.")
         elif organization_type_needs_update:
@@ -167,14 +152,17 @@ class CreateOrUpdateOrganizationTypeHelper:
 
         new_org = generic_org_type
         if can_have_election_board:
-            if self.instance.is_election_board is None:
-                self.instance.is_election_board = False
-
-            if self.instance.is_election_board is True:
-                new_org = self.generic_org_map[generic_org_type]
-
+            # If this domain can have an election board, swap to the election board "type"
+            # If it can have one but the is_election_board value is None, this means "False"
+            new_org = self.generic_org_map[generic_org_type] if self.instance.is_election_board is not None else False  # noqa
         elif self.instance.is_election_board is not None:
+            # If we can't have an election board, is_election_board should be None
             self.instance.is_election_board = None
+        else:
+            # Do nothing - this means that we can't have an election board
+            # and the is_election_board value = None.
+            # For instance - this could be a federal domain with is_election_board = None
+            pass
 
         self.instance.organization_type = new_org
 
@@ -203,29 +191,32 @@ class CreateOrUpdateOrganizationTypeHelper:
         )
 
     def _check_new_instance_values(self) -> bool:
-        """ 
-        Checks to see if we can add generic_org_type, organization_type, and is_election_board
-        simultaneously.
-        Returns true if we can. 
-        Otherwise, raise a ValueError.
-        """
         org_type = str(self.instance.organization_type)
 
         # Strip "_election" from organization_type if it exists
         cleaned_org_type = self.election_org_map.get(org_type)
+
+        # Does the underlying org type on generic_org_type match whats on organization_type?
         org_out_of_sync = str(self.instance.generic_org_type) != cleaned_org_type
 
+        # Does the underlying election type match whats on organization_type?
         is_election_type = "_election" in org_type
         election_type_out_of_sync = is_election_type != self.instance.is_election_board
         can_have_election_board = org_type in self.generic_org_map
 
-        if org_out_of_sync and cleaned_org_type is not None:
+        # Check if allowing this update would override any data.
+        # We want to avoid this because we want to avoid recursively updating each field forever.
+        # (organization_type => generic_org_type => organization_type) etc. They MUST match.
+        would_override_org = org_out_of_sync and cleaned_org_type is not None
+        would_override_election_type = election_type_out_of_sync and can_have_election_board
+
+        if would_override_org:
             message = (
                 "Cannot add organization_type and generic_org_type simultaneously. "
                 "generic_org_type and organization_type fields do not match (would override data)."
             )
             raise ValueError(message)
-        elif election_type_out_of_sync and can_have_election_board:
+        elif would_override_election_type:
             message = (
                 "Cannot add organization_type and is_election_board simultaneously. "
                 "is_election_board fields do not match (would override data)."
