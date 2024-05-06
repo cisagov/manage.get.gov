@@ -1962,16 +1962,16 @@ class Domain(TimeStampedModel, DomainHelper):
             domain=self,
         )
 
-        # If we find duplicates, log it and delete the newest one.
+        # If we find duplicates, log it and delete the newest ones.
         if db_contact.count() > 1:
             logger.warning("_get_or_create_public_contact() -> Duplicate contacts found. Deleting duplicate.")
 
             # Q: Should we be deleting the newest or the oldest? Does it even matter?
             oldest_duplicate = db_contact.order_by("created_at").first()
 
-            # The linter wants this check on the id, though in practice
+            # The linter wants this check on the id / oldest_duplicate, though in practice
             # this should be otherwise impossible.
-            if hasattr(oldest_duplicate, "id"):
+            if oldest_duplicate is not None and hasattr(oldest_duplicate, "id"):
                 # Exclude the oldest
                 duplicates_to_delete = db_contact.exclude(id=oldest_duplicate.id)
             else:
@@ -1979,6 +1979,13 @@ class Domain(TimeStampedModel, DomainHelper):
 
             # Delete all duplicates
             duplicates_to_delete.delete()
+
+            # Do a second filter to grab the latest content
+            db_contact = PublicContact.objects.filter(
+                registry_id=public_contact.registry_id,
+                contact_type=public_contact.contact_type,
+                domain=self,
+            )
 
         # Save to DB if it doesn't exist already.
         if db_contact.count() == 0:
