@@ -70,7 +70,6 @@ class User(AbstractUser):
         null=True,
         blank=True,
         help_text="Phone",
-        db_index=True,
     )
 
     verification_type = models.CharField(

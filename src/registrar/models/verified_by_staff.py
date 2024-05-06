@@ -9,7 +9,6 @@ class VerifiedByStaff(TimeStampedModel):
     email = models.EmailField(
         null=False,
         blank=False,
-        db_index=True,
     )
 
     requestor = models.ForeignKey(

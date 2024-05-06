@@ -8,6 +8,13 @@ from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 class Contact(TimeStampedModel):
     """Contact information follows a similar pattern for each contact."""
 
+    class Meta:
+        """Contains meta information about this class"""
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["email"]),
+        ]
+
     user = models.OneToOneField(
         "registrar.User",
         null=True,
@@ -19,7 +26,6 @@ class Contact(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name="first name",
-        db_index=True,
     )
     middle_name = models.CharField(
         null=True,
@@ -29,7 +35,6 @@ class Contact(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name="last name",
-        db_index=True,
     )
     title = models.CharField(
         null=True,
@@ -39,13 +44,11 @@ class Contact(TimeStampedModel):
     email = models.EmailField(
         null=True,
         blank=True,
-        db_index=True,
         max_length=320,
     )
     phone = PhoneNumberField(
         null=True,
         blank=True,
-        db_index=True,
     )
 
     def _get_all_relations(self):

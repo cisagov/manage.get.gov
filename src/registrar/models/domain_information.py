@@ -22,6 +22,14 @@ class DomainInformation(TimeStampedModel):
     the domain request once approved, so copying them that way we can make changes
     after its approved. Most fields here are copied from DomainRequest."""
 
+    class Meta:
+        """Contains meta information about this class"""
+        indexes = [
+            models.Index(fields=["domain"]),
+            models.Index(fields=["domain_request"]),
+            models.Index(fields=["generic_org_type"]),
+        ]
+
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
     # use the short names in Django admin
@@ -120,7 +128,6 @@ class DomainInformation(TimeStampedModel):
     organization_name = models.CharField(
         null=True,
         blank=True,
-        db_index=True,
     )
     address_line1 = models.CharField(
         null=True,
@@ -147,7 +154,6 @@ class DomainInformation(TimeStampedModel):
         max_length=10,
         null=True,
         blank=True,
-        db_index=True,
         verbose_name="zip code",
     )
     urbanization = models.CharField(
