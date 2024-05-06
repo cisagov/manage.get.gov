@@ -1457,8 +1457,6 @@ class TestDomainOrganization(TestDomainOverview):
         self.assertEqual(success_result_page.status_code, 200)
 
         # Check for the old and new value
-        # print("!!! SUCCESS_RESULT_PAGE IS", success_result_page)
-        # TODO: Check for "selected" instead of id
         self.assertContains(success_result_page, federal_agency.id)
         self.assertNotContains(success_result_page, "Department of State")
 
