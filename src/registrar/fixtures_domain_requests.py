@@ -139,7 +139,8 @@ class DomainRequestFixture:
                 da.federal_agency, _ = FederalAgency.objects.get_or_create(name=app["federal_agency"])
             else:
                 federal_agencies = FederalAgency.objects.all()
-                da.federal_agency = random.choice(federal_agencies)
+                # Random choice of agency for selects, used as placeholders for testing.
+                da.federal_agency = random.choice(federal_agencies)  # nosec
 
     @classmethod
     def _set_many_to_many_relations(cls, da: DomainRequest, app: dict):
