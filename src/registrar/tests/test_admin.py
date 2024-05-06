@@ -2840,7 +2840,6 @@ class TestDomainInformationAdmin(TestCase):
         Contact.objects.all().delete()
         User.objects.all().delete()
 
-
     @less_console_noise_decorator
     def test_admin_can_see_cisa_region_federal(self):
         """Tests if admins can see CISA Region: N/A"""
