@@ -1569,7 +1569,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
-        logger.info(f"_get_or_create_contact() -> Fetching contact info")
+        logger.info("_get_or_create_contact() -> Fetching contact info")
         try:
             return self._request_contact_info(contact)
         except RegistryError as e:
