@@ -1969,8 +1969,8 @@ class Domain(TimeStampedModel, DomainHelper):
             # Q: Should we be deleting the newest or the oldest? Does it even matter?
             oldest_duplicate = db_contact.order_by("created_at").first()
 
-            # Exclude the oldest entry
-            duplicates_to_delete = db_contact.exclude(id=oldest_duplicate.id)
+            # Exclude the oldest
+            duplicates_to_delete = db_contact.exclude(id=oldest_duplicate.id)  # noqa
 
             # Delete all duplicates
             duplicates_to_delete.delete()
