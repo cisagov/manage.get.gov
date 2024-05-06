@@ -395,7 +395,6 @@ details.dja-detail-table {
         border-top: none;
         border-bottom: none;
     }
-
 }
 
 
@@ -643,11 +642,14 @@ address.dja-address-contact-list {
         display: inline-flex;
         padding-top: 4px;
         line-height: 14px;
-        color: var(--link-fg);
         width: max-content;
         font-size: unset;
         text-decoration: none !important;
     }
+}
+
+button.usa-button__clipboard {
+    color: var(--link-fg);
 }
 
 .no-outline-on-click:focus {
