@@ -3,7 +3,6 @@ from unittest.mock import Mock
 
 from django.conf import settings
 from django.urls import reverse
-from datetime import date
 
 from .common import MockSESClient, completed_domain_request  # type: ignore
 from django_webtest import WebTest  # type: ignore
@@ -17,7 +16,6 @@ from registrar.models import (
     Contact,
     User,
     Website,
-    UserDomainRole,
 )
 from registrar.views.domain_request import DomainRequestWizard, Step
 
@@ -356,33 +354,39 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(other_contacts_result.status_code, 302)
-        self.assertEqual(other_contacts_result["Location"], "/request/anything_else/")
+        self.assertEqual(other_contacts_result["Location"], "/request/additional_details/")
         num_pages_tested += 1
 
-        # ---- ANYTHING ELSE PAGE  ----
+        # ---- ADDITIONAL DETAILS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        anything_else_page = other_contacts_result.follow()
-        anything_else_form = anything_else_page.forms[0]
+        additional_details_page = other_contacts_result.follow()
+        additional_details_form = additional_details_page.forms[0]
 
-        anything_else_form["anything_else-anything_else"] = "Nothing else."
+        # load inputs with test data
+
+        additional_details_form["additional_details-has_cisa_representative"] = "True"
+        additional_details_form["additional_details-has_anything_else_text"] = "True"
+        additional_details_form["additional_details-cisa_representative_email"] = "FakeEmail@gmail.com"
+        additional_details_form["additional_details-anything_else"] = "Nothing else."
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        anything_else_result = anything_else_form.submit()
+        additional_details_result = additional_details_form.submit()
         # validate that data from this step are being saved
         domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.cisa_representative_email, "FakeEmail@gmail.com")
         self.assertEqual(domain_request.anything_else, "Nothing else.")
         # the post request should return a redirect to the next form in
         # the domain request page
-        self.assertEqual(anything_else_result.status_code, 302)
-        self.assertEqual(anything_else_result["Location"], "/request/requirements/")
+        self.assertEqual(additional_details_result.status_code, 302)
+        self.assertEqual(additional_details_result["Location"], "/request/requirements/")
         num_pages_tested += 1
 
         # ---- REQUIREMENTS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        requirements_page = anything_else_result.follow()
+        requirements_page = additional_details_result.follow()
         requirements_form = requirements_page.forms[0]
 
         requirements_form["requirements-is_policy_acknowledged"] = True
@@ -434,6 +438,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Another Tester")
         self.assertContains(review_page, "testy2@town.com")
         self.assertContains(review_page, "(201) 555-5557")
+        self.assertContains(review_page, "FakeEmail@gmail.com")
         self.assertContains(review_page, "Nothing else.")
 
         # We can't test the modal itself as it relies on JS for init and triggering,
@@ -717,12 +722,24 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
 
-    def test_yes_no_form_inits_blank_for_new_domain_request(self):
+    def test_yes_no_contact_form_inits_blank_for_new_domain_request(self):
         """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
         other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
+
+    def test_yes_no_additional_form_inits_blank_for_new_domain_request(self):
+        """On the Additional Details page, the yes/no form gets initialized with nothing selected for
+        new domain requests"""
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        self.assertEquals(additional_form["additional_details-has_cisa_representative"].value, None)
+
+        # Check the anything else yes/no field
+        self.assertEquals(additional_form["additional_details-has_anything_else_text"].value, None)
 
     def test_yes_no_form_inits_yes_for_domain_request_with_other_contacts(self):
         """On the Other Contacts page, the yes/no form gets initialized with YES selected if the
@@ -743,6 +760,38 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+
+    def test_yes_no_form_inits_yes_for_cisa_representative_and_anything_else(self):
+        """On the Additional Details page, the yes/no form gets initialized with YES selected
+        for both yes/no radios if the domain request has a value for cisa_representative and
+        anything_else"""
+
+        domain_request = completed_domain_request(user=self.user, has_anything_else=True)
+        domain_request.cisa_representative_email = "test@igorville.gov"
+        domain_request.anything_else = "1234"
+        domain_request.save()
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
+        self.assertEquals(yes_no_cisa, "True")
+
+        # Check the anything else yes/no field
+        yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
+        self.assertEquals(yes_no_anything_else, "True")
 
     def test_yes_no_form_inits_no_for_domain_request_with_no_other_contacts_rationale(self):
         """On the Other Contacts page, the yes/no form gets initialized with NO selected if the
@@ -765,6 +814,230 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
+
+    def test_yes_no_form_for_domain_request_with_no_cisa_representative_and_anything_else(self):
+        """On the Additional details page, the form preselects "no" when has_cisa_representative
+        and anything_else is no"""
+
+        domain_request = completed_domain_request(user=self.user, has_anything_else=False)
+
+        # Unlike the other contacts form, the no button is tracked with these boolean fields.
+        # This means that we should expect this to correlate with the no button.
+        domain_request.has_anything_else_text = False
+        domain_request.has_cisa_representative = False
+        domain_request.save()
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
+        self.assertEquals(yes_no_cisa, "False")
+
+        # Check the anything else yes/no field
+        yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
+        self.assertEquals(yes_no_anything_else, "False")
+
+    def test_submitting_additional_details_deletes_cisa_representative_and_anything_else(self):
+        """When a user submits the Additional Details form with no selected for all fields,
+        the domain request's data gets wiped when submitted"""
+        domain_request = completed_domain_request(name="nocisareps.gov", user=self.user)
+        domain_request.cisa_representative_email = "fake@faketown.gov"
+        domain_request.save()
+
+        # Make sure we have the data we need for the test
+        self.assertEqual(domain_request.anything_else, "There is more")
+        self.assertEqual(domain_request.cisa_representative_email, "fake@faketown.gov")
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Check the cisa representative yes/no field
+        yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
+        self.assertEquals(yes_no_cisa, "True")
+
+        # Check the anything else yes/no field
+        yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
+        self.assertEquals(yes_no_anything_else, "True")
+
+        # Set fields to false
+        additional_details_form["additional_details-has_cisa_representative"] = "False"
+        additional_details_form["additional_details-has_anything_else_text"] = "False"
+
+        # Submit the form
+        additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the anything_else and cisa_representative have been deleted from the DB
+        domain_request = DomainRequest.objects.get(requested_domain__name="nocisareps.gov")
+
+        # Check that our data has been cleared
+        self.assertEqual(domain_request.anything_else, None)
+        self.assertEqual(domain_request.cisa_representative_email, None)
+
+        # Double check the yes/no fields
+        self.assertEqual(domain_request.has_anything_else_text, False)
+        self.assertEqual(domain_request.has_cisa_representative, False)
+
+    def test_submitting_additional_details_populates_cisa_representative_and_anything_else(self):
+        """When a user submits the Additional Details form,
+        the domain request's data gets submitted"""
+        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+
+        # Make sure we have the data we need for the test
+        self.assertEqual(domain_request.anything_else, None)
+        self.assertEqual(domain_request.cisa_representative_email, None)
+
+        # These fields should not be selected at all, since we haven't initialized the form yet
+        self.assertEqual(domain_request.has_anything_else_text, None)
+        self.assertEqual(domain_request.has_cisa_representative, None)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Set fields to true, and set data on those fields
+        additional_details_form["additional_details-has_cisa_representative"] = "True"
+        additional_details_form["additional_details-has_anything_else_text"] = "True"
+        additional_details_form["additional_details-cisa_representative_email"] = "test@faketest.gov"
+        additional_details_form["additional_details-anything_else"] = "redandblue"
+
+        # Submit the form
+        additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the anything_else and cisa_representative exist in the db
+        domain_request = DomainRequest.objects.get(requested_domain__name="cisareps.gov")
+
+        self.assertEqual(domain_request.anything_else, "redandblue")
+        self.assertEqual(domain_request.cisa_representative_email, "test@faketest.gov")
+
+        self.assertEqual(domain_request.has_cisa_representative, True)
+        self.assertEqual(domain_request.has_anything_else_text, True)
+
+    def test_if_cisa_representative_yes_no_form_is_yes_then_field_is_required(self):
+        """Applicants with a cisa representative must provide a value"""
+        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Set fields to true, and set data on those fields
+        additional_details_form["additional_details-has_cisa_representative"] = "True"
+        additional_details_form["additional_details-has_anything_else_text"] = "False"
+
+        # Submit the form
+        response = additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        self.assertContains(response, "Enter the email address of your CISA regional representative.")
+
+    def test_if_anything_else_yes_no_form_is_yes_then_field_is_required(self):
+        """Applicants with a anything else must provide a value"""
+        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Set fields to true, and set data on those fields
+        additional_details_form["additional_details-has_cisa_representative"] = "False"
+        additional_details_form["additional_details-has_anything_else_text"] = "True"
+
+        # Submit the form
+        response = additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        expected_message = "Provide additional details you’d like us to know. If you have nothing to add, select “No.”"
+        self.assertContains(response, expected_message)
+
+    def test_additional_details_form_fields_required(self):
+        """When a user submits the Additional Details form without checking the
+        has_cisa_representative and has_anything_else_text fields, the form should deny this action"""
+        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+
+        self.assertEqual(domain_request.has_anything_else_text, None)
+        self.assertEqual(domain_request.has_cisa_representative, None)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        additional_details_form = additional_details_page.forms[0]
+
+        # Submit the form
+        response = additional_details_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # We expect to see this twice for both fields. This results in a count of 4
+        # due to screen reader information / html.
+        self.assertContains(response, "This question is required.", count=4)
 
     def test_submitting_other_contacts_deletes_no_other_contacts_rationale(self):
         """When a user submits the Other Contacts form with other contacts selected, the domain request's
@@ -2328,364 +2601,3 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
 
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
-
-
-class HomeTests(TestWithUser):
-    """A series of tests that target the two tables on home.html"""
-
-    def setUp(self):
-        super().setUp()
-        self.client.force_login(self.user)
-
-    def tearDown(self):
-        super().tearDown()
-        Contact.objects.all().delete()
-
-    def test_home_lists_domain_requests(self):
-        response = self.client.get("/")
-        self.assertNotContains(response, "igorville.gov")
-        site = DraftDomain.objects.create(name="igorville.gov")
-        domain_request = DomainRequest.objects.create(creator=self.user, requested_domain=site)
-        response = self.client.get("/")
-
-        # count = 7 because of screenreader content
-        self.assertContains(response, "igorville.gov", count=7)
-
-        # clean up
-        domain_request.delete()
-
-    def test_state_help_text(self):
-        """Tests if each domain state has help text"""
-
-        # Get the expected text content of each state
-        deleted_text = "This domain has been removed and " "is no longer registered to your organization."
-        dns_needed_text = "Before this domain can be used, " "you’ll need to add name server addresses."
-        ready_text = "This domain has name servers and is ready for use."
-        on_hold_text = (
-            "This domain is administratively paused, "
-            "so it can’t be edited and won’t resolve in DNS. "
-            "Contact help@get.gov for details."
-        )
-        deleted_text = "This domain has been removed and " "is no longer registered to your organization."
-        # Generate a mapping of domain names, the state, and expected messages for the subtest
-        test_cases = [
-            ("deleted.gov", Domain.State.DELETED, deleted_text),
-            ("dnsneeded.gov", Domain.State.DNS_NEEDED, dns_needed_text),
-            ("unknown.gov", Domain.State.UNKNOWN, dns_needed_text),
-            ("onhold.gov", Domain.State.ON_HOLD, on_hold_text),
-            ("ready.gov", Domain.State.READY, ready_text),
-        ]
-        for domain_name, state, expected_message in test_cases:
-            with self.subTest(domain_name=domain_name, state=state, expected_message=expected_message):
-                # Create a domain and a UserRole with the given params
-                test_domain, _ = Domain.objects.get_or_create(name=domain_name, state=state)
-                test_domain.expiration_date = date.today()
-                test_domain.save()
-
-                user_role, _ = UserDomainRole.objects.get_or_create(
-                    user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
-                )
-
-                # Grab the home page
-                response = self.client.get("/")
-
-                # Make sure the user can actually see the domain.
-                # We expect two instances because of SR content.
-                self.assertContains(response, domain_name, count=2)
-
-                # Check that we have the right text content.
-                self.assertContains(response, expected_message, count=1)
-
-                # Delete the role and domain to ensure we're testing in isolation
-                user_role.delete()
-                test_domain.delete()
-
-    def test_state_help_text_expired(self):
-        """Tests if each domain state has help text when expired"""
-        expired_text = "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
-        test_domain, _ = Domain.objects.get_or_create(name="expired.gov", state=Domain.State.READY)
-        test_domain.expiration_date = date(2011, 10, 10)
-        test_domain.save()
-
-        UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
-
-        # Grab the home page
-        response = self.client.get("/")
-
-        # Make sure the user can actually see the domain.
-        # We expect two instances because of SR content.
-        self.assertContains(response, "expired.gov", count=2)
-
-        # Check that we have the right text content.
-        self.assertContains(response, expired_text, count=1)
-
-    def test_state_help_text_no_expiration_date(self):
-        """Tests if each domain state has help text when expiration date is None"""
-
-        # == Test a expiration of None for state ready. This should be expired. == #
-        expired_text = "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
-        test_domain, _ = Domain.objects.get_or_create(name="imexpired.gov", state=Domain.State.READY)
-        test_domain.expiration_date = None
-        test_domain.save()
-
-        UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
-
-        # Grab the home page
-        response = self.client.get("/")
-
-        # Make sure the user can actually see the domain.
-        # We expect two instances because of SR content.
-        self.assertContains(response, "imexpired.gov", count=2)
-
-        # Make sure the expiration date is None
-        self.assertEqual(test_domain.expiration_date, None)
-
-        # Check that we have the right text content.
-        self.assertContains(response, expired_text, count=1)
-
-        # == Test a expiration of None for state unknown. This should not display expired text. == #
-        unknown_text = "Before this domain can be used, " "you’ll need to add name server addresses."
-        test_domain_2, _ = Domain.objects.get_or_create(name="notexpired.gov", state=Domain.State.UNKNOWN)
-        test_domain_2.expiration_date = None
-        test_domain_2.save()
-
-        UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain_2, role=UserDomainRole.Roles.MANAGER)
-
-        # Grab the home page
-        response = self.client.get("/")
-
-        # Make sure the user can actually see the domain.
-        # We expect two instances because of SR content.
-        self.assertContains(response, "notexpired.gov", count=2)
-
-        # Make sure the expiration date is None
-        self.assertEqual(test_domain_2.expiration_date, None)
-
-        # Check that we have the right text content.
-        self.assertContains(response, unknown_text, count=1)
-
-    def test_home_deletes_withdrawn_domain_request(self):
-        """Tests if the user can delete a DomainRequest in the 'withdrawn' status"""
-
-        site = DraftDomain.objects.create(name="igorville.gov")
-        domain_request = DomainRequest.objects.create(
-            creator=self.user, requested_domain=site, status=DomainRequest.DomainRequestStatus.WITHDRAWN
-        )
-
-        # Ensure that igorville.gov exists on the page
-        home_page = self.client.get("/")
-        self.assertContains(home_page, "igorville.gov")
-
-        # Check if the delete button exists. We can do this by checking for its id and text content.
-        self.assertContains(home_page, "Delete")
-        self.assertContains(home_page, "button-toggle-delete-domain-alert-1")
-
-        # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
-
-        self.assertNotContains(response, "igorville.gov")
-
-        # clean up
-        domain_request.delete()
-
-    def test_home_deletes_started_domain_request(self):
-        """Tests if the user can delete a DomainRequest in the 'started' status"""
-
-        site = DraftDomain.objects.create(name="igorville.gov")
-        domain_request = DomainRequest.objects.create(
-            creator=self.user, requested_domain=site, status=DomainRequest.DomainRequestStatus.STARTED
-        )
-
-        # Ensure that igorville.gov exists on the page
-        home_page = self.client.get("/")
-        self.assertContains(home_page, "igorville.gov")
-
-        # Check if the delete button exists. We can do this by checking for its id and text content.
-        self.assertContains(home_page, "Delete")
-        self.assertContains(home_page, "button-toggle-delete-domain-alert-1")
-
-        # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
-
-        self.assertNotContains(response, "igorville.gov")
-
-        # clean up
-        domain_request.delete()
-
-    def test_home_doesnt_delete_other_domain_requests(self):
-        """Tests to ensure the user can't delete domain requests not in the status of STARTED or WITHDRAWN"""
-
-        # Given that we are including a subset of items that can be deleted while excluding the rest,
-        # subTest is appropriate here as otherwise we would need many duplicate tests for the same reason.
-        with less_console_noise():
-            draft_domain = DraftDomain.objects.create(name="igorville.gov")
-            for status in DomainRequest.DomainRequestStatus:
-                if status not in [
-                    DomainRequest.DomainRequestStatus.STARTED,
-                    DomainRequest.DomainRequestStatus.WITHDRAWN,
-                ]:
-                    with self.subTest(status=status):
-                        domain_request = DomainRequest.objects.create(
-                            creator=self.user, requested_domain=draft_domain, status=status
-                        )
-
-                        # Trigger the delete logic
-                        response = self.client.post(
-                            reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True
-                        )
-
-                        # Check for a 403 error - the end user should not be allowed to do this
-                        self.assertEqual(response.status_code, 403)
-
-                        desired_domain_request = DomainRequest.objects.filter(requested_domain=draft_domain)
-
-                        # Make sure the DomainRequest wasn't deleted
-                        self.assertEqual(desired_domain_request.count(), 1)
-
-                        # clean up
-                        domain_request.delete()
-
-    def test_home_deletes_domain_request_and_orphans(self):
-        """Tests if delete for DomainRequest deletes orphaned Contact objects"""
-
-        # Create the site and contacts to delete (orphaned)
-        contact = Contact.objects.create(
-            first_name="Henry",
-            last_name="Mcfakerson",
-        )
-        contact_shared = Contact.objects.create(
-            first_name="Relative",
-            last_name="Aether",
-        )
-
-        # Create two non-orphaned contacts
-        contact_2 = Contact.objects.create(
-            first_name="Saturn",
-            last_name="Mars",
-        )
-
-        # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
-
-        site = DraftDomain.objects.create(name="igorville.gov")
-        domain_request = DomainRequest.objects.create(
-            creator=self.user,
-            requested_domain=site,
-            status=DomainRequest.DomainRequestStatus.WITHDRAWN,
-            authorizing_official=contact,
-            submitter=contact_user,
-        )
-        domain_request.other_contacts.set([contact_2])
-
-        # Create a second domain request to attach contacts to
-        site_2 = DraftDomain.objects.create(name="teaville.gov")
-        domain_request_2 = DomainRequest.objects.create(
-            creator=self.user,
-            requested_domain=site_2,
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            authorizing_official=contact_2,
-            submitter=contact_shared,
-        )
-        domain_request_2.other_contacts.set([contact_shared])
-
-        # Ensure that igorville.gov exists on the page
-        home_page = self.client.get("/")
-        self.assertContains(home_page, "igorville.gov")
-
-        # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
-
-        # igorville is now deleted
-        self.assertNotContains(response, "igorville.gov")
-
-        # Check if the orphaned contact was deleted
-        orphan = Contact.objects.filter(id=contact.id)
-        self.assertFalse(orphan.exists())
-
-        # All non-orphan contacts should still exist and are unaltered
-        try:
-            current_user = Contact.objects.filter(id=contact_user.id).get()
-        except Contact.DoesNotExist:
-            self.fail("contact_user (a non-orphaned contact) was deleted")
-
-        self.assertEqual(current_user, contact_user)
-        try:
-            edge_case = Contact.objects.filter(id=contact_2.id).get()
-        except Contact.DoesNotExist:
-            self.fail("contact_2 (a non-orphaned contact) was deleted")
-
-        self.assertEqual(edge_case, contact_2)
-
-    def test_home_deletes_domain_request_and_shared_orphans(self):
-        """Test the edge case for an object that will become orphaned after a delete
-        (but is not an orphan at the time of deletion)"""
-
-        # Create the site and contacts to delete (orphaned)
-        contact = Contact.objects.create(
-            first_name="Henry",
-            last_name="Mcfakerson",
-        )
-        contact_shared = Contact.objects.create(
-            first_name="Relative",
-            last_name="Aether",
-        )
-
-        # Create two non-orphaned contacts
-        contact_2 = Contact.objects.create(
-            first_name="Saturn",
-            last_name="Mars",
-        )
-
-        # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
-
-        site = DraftDomain.objects.create(name="igorville.gov")
-        domain_request = DomainRequest.objects.create(
-            creator=self.user,
-            requested_domain=site,
-            status=DomainRequest.DomainRequestStatus.WITHDRAWN,
-            authorizing_official=contact,
-            submitter=contact_user,
-        )
-        domain_request.other_contacts.set([contact_2])
-
-        # Create a second domain request to attach contacts to
-        site_2 = DraftDomain.objects.create(name="teaville.gov")
-        domain_request_2 = DomainRequest.objects.create(
-            creator=self.user,
-            requested_domain=site_2,
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            authorizing_official=contact_2,
-            submitter=contact_shared,
-        )
-        domain_request_2.other_contacts.set([contact_shared])
-
-        home_page = self.client.get("/")
-        self.assertContains(home_page, "teaville.gov")
-
-        # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request_2.pk}), follow=True)
-
-        self.assertNotContains(response, "teaville.gov")
-
-        # Check if the orphaned contact was deleted
-        orphan = Contact.objects.filter(id=contact_shared.id)
-        self.assertFalse(orphan.exists())
-
-    def test_domain_request_form_view(self):
-        response = self.client.get("/request/", follow=True)
-        self.assertContains(
-            response,
-            "You’re about to start your .gov domain request.",
-        )
-
-    def test_domain_request_form_with_ineligible_user(self):
-        """Domain request form not accessible for an ineligible user.
-        This test should be solid enough since all domain request wizard
-        views share the same permissions class"""
-        self.user.status = User.RESTRICTED
-        self.user.save()
-
-        with less_console_noise():
-            response = self.client.get("/request/", follow=True)
-            self.assertEqual(response.status_code, 403)

@@ -545,7 +545,6 @@ class MockDb(TestCase):
         self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
         self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
-        self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
         self.domain_5, _ = Domain.objects.get_or_create(
             name="bdomain5.gov", state=Domain.State.DELETED, deleted=timezone.make_aware(datetime(2023, 11, 1))
         )
@@ -790,6 +789,7 @@ def create_ready_domain():
     return domain
 
 
+# TODO in 1793: Remove the federal agency/updated federal agency fields
 def completed_domain_request(
     has_other_contacts=True,
     has_current_website=True,
@@ -804,6 +804,8 @@ def completed_domain_request(
     generic_org_type="federal",
     is_election_board=False,
     organization_type=None,
+    federal_agency=None,
+    updated_federal_agency=None,
 ):
     """A completed domain request."""
     if not user:
@@ -835,11 +837,12 @@ def completed_domain_request(
     )
     if not investigator:
         investigator, _ = User.objects.get_or_create(
-            username="incrediblyfakeinvestigator",
+            username="incrediblyfakeinvestigator" + str(uuid.uuid4())[:8],
             first_name="Joe",
             last_name="Bob",
             is_staff=True,
         )
+
     domain_request_kwargs = dict(
         generic_org_type=generic_org_type,
         is_election_board=is_election_board,
@@ -857,6 +860,8 @@ def completed_domain_request(
         creator=user,
         status=status,
         investigator=investigator,
+        federal_agency=federal_agency,
+        updated_federal_agency=updated_federal_agency,
     )
     if has_about_your_organization:
         domain_request_kwargs["about_your_organization"] = "e-Government"
@@ -865,7 +870,6 @@ def completed_domain_request(
 
     if organization_type:
         domain_request_kwargs["organization_type"] = organization_type
-
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
     if has_other_contacts:
@@ -977,7 +981,20 @@ class MockEppLib(TestCase):
     mockDataInfoDomain = fakedEppObject(
         "fakePw",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
-        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        contacts=[
+            common.DomainContact(
+                contact="securityContact",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            ),
+            common.DomainContact(
+                contact="technicalContact",
+                type=PublicContact.ContactTypeChoices.TECHNICAL,
+            ),
+            common.DomainContact(
+                contact="adminContact",
+                type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            ),
+        ],
         hosts=["fake.host.com"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
@@ -1047,10 +1064,13 @@ class MockEppLib(TestCase):
         ex_date=date(2023, 11, 15),
     )
     mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
-        "123", "123@mail.gov", datetime(2023, 5, 25, 19, 45, 35), "lastPw"
+        id="123", email="123@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
+    )
+    mockDataSecurityContact = mockDataInfoDomain.dummyInfoContactResultData(
+        id="securityContact", email="security@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
     )
     InfoDomainWithContacts = fakedEppObject(
-        "fakepw",
+        "fakePw",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[
             common.DomainContact(
@@ -1072,6 +1092,7 @@ class MockEppLib(TestCase):
             common.Status(state="inactive", description="", lang="en"),
         ],
         registrant="regContact",
+        ex_date=date(2023, 11, 15),
     )
 
     InfoDomainWithDefaultSecurityContact = fakedEppObject(
@@ -1498,6 +1519,8 @@ class MockEppLib(TestCase):
             "meow.gov": (self.mockDataInfoDomainSubdomainAndIPAddress, None),
             "fakemeow.gov": (self.mockDataInfoDomainNotSubdomainNoIP, None),
             "subdomainwoip.gov": (self.mockDataInfoDomainSubdomainNoIP, None),
+            "ddomain3.gov": (self.InfoDomainWithContacts, None),
+            "igorville.gov": (self.InfoDomainWithContacts, None),
         }
 
         # Retrieve the corresponding values from the dictionary

@@ -56,22 +56,6 @@
 .dotgov-table {
   width: 100%;
 
-  a {
-    display: flex;
-    align-items: flex-start;
-    color: color('primary');
-
-    &:visited {
-      color: color('primary');
-    }
-
-    .usa-icon {
-      // align icon with x height
-      margin-top: units(0.5);
-      margin-right: units(0.5);
-    }
-  }
-
   th[data-sortable]:not([aria-sort]) .usa-table__header__button {
     right: auto;
   }
@@ -108,12 +92,51 @@
       padding: units(2) units(2) units(2) 0;
     }
 
-    th:first-of-type {
-      padding-left: 0;
-    }
-
     thead tr:first-child th:first-child {
       border-top: none;
+    }
+  }
+}
+@media (min-width: 1040px){
+  .dotgov-table__domain-requests {
+    th:nth-of-type(1) {
+      width: 200px;
+    }
+
+    th:nth-of-type(2) {
+      width: 158px;
+    }
+
+    th:nth-of-type(3) {
+      width: 120px;
+    }
+
+    th:nth-of-type(4) {
+      width: 95px;
+    }
+
+    th:nth-of-type(5) {
+      width: 85px;
+    }
+  }
+}
+
+@media (min-width: 1040px){
+  .dotgov-table__registered-domains {
+    th:nth-of-type(1) {
+      width: 200px;
+    }
+
+    th:nth-of-type(2) {
+      width: 158px;
+    }
+
+    th:nth-of-type(3) {
+      width: 215px;
+    }
+
+    th:nth-of-type(4) {
+      width: 95px;
     }
   }
 }

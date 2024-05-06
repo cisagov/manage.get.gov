@@ -18,7 +18,7 @@ class Contact(TimeStampedModel):
     first_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="first name / given name",
+        verbose_name="first name",
         db_index=True,
     )
     middle_name = models.CharField(
@@ -28,13 +28,13 @@ class Contact(TimeStampedModel):
     last_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="last name / family name",
+        verbose_name="last name",
         db_index=True,
     )
     title = models.CharField(
         null=True,
         blank=True,
-        verbose_name="title or role in your organization",
+        verbose_name="title / role",
     )
     email = models.EmailField(
         null=True,
@@ -101,11 +101,23 @@ class Contact(TimeStampedModel):
         # Call the parent class's save method to perform the actual save
         super().save(*args, **kwargs)
 
-        # Update the related User object's first_name and last_name
-        if self.user and (not self.user.first_name or not self.user.last_name):
-            self.user.first_name = self.first_name
-            self.user.last_name = self.last_name
-            self.user.save()
+        if self.user:
+            updated = False
+
+            # Update first name and last name if necessary
+            if not self.user.first_name or not self.user.last_name:
+                self.user.first_name = self.first_name
+                self.user.last_name = self.last_name
+                updated = True
+
+            # Update phone if necessary
+            if not self.user.phone:
+                self.user.phone = self.phone
+                updated = True
+
+            # Save user if any updates were made
+            if updated:
+                self.user.save()
 
     def __str__(self):
         if self.first_name or self.last_name:

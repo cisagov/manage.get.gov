@@ -29,7 +29,17 @@ class DomainInformation(TimeStampedModel):
 
     BranchChoices = DomainRequest.BranchChoices
 
+    # TODO for #1975: Delete this after we run the new migration
     AGENCY_CHOICES = DomainRequest.AGENCY_CHOICES
+
+    updated_federal_agency = models.ForeignKey(
+        "registrar.FederalAgency",
+        on_delete=models.PROTECT,
+        help_text="Associated federal agency",
+        unique=False,
+        blank=True,
+        null=True,
+    )
 
     # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
@@ -37,6 +47,7 @@ class DomainInformation(TimeStampedModel):
         "registrar.User",
         on_delete=models.PROTECT,
         related_name="information_created",
+        help_text="Person who submitted the domain request",
     )
 
     domain_request = models.OneToOneField(
@@ -45,7 +56,7 @@ class DomainInformation(TimeStampedModel):
         blank=True,
         null=True,
         related_name="DomainRequest_info",
-        help_text="Associated domain request",
+        help_text="Request associated with this domain",
         unique=True,
     )
 
@@ -62,7 +73,7 @@ class DomainInformation(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
-        help_text="Is your organization an election office?",
+        verbose_name="election office",
     )
 
     # TODO - Ticket #1911: stub this data from DomainRequest
@@ -71,30 +82,26 @@ class DomainInformation(TimeStampedModel):
         choices=DomainRequest.OrgChoicesElectionOffice.choices,
         null=True,
         blank=True,
-        help_text="Type of organization - Election office",
+        help_text='"Election" appears after the org type if it\'s an election office.',
     )
 
     federally_recognized_tribe = models.BooleanField(
         null=True,
-        help_text="Is the tribe federally recognized",
     )
 
     state_recognized_tribe = models.BooleanField(
         null=True,
-        help_text="Is the tribe recognized by a state",
     )
 
     tribe_name = models.CharField(
         null=True,
         blank=True,
-        help_text="Name of tribe",
     )
 
     federal_agency = models.CharField(
         choices=AGENCY_CHOICES,
         null=True,
         blank=True,
-        help_text="Federal agency",
     )
 
     federal_type = models.CharField(
@@ -102,64 +109,57 @@ class DomainInformation(TimeStampedModel):
         choices=BranchChoices.choices,
         null=True,
         blank=True,
-        help_text="Federal government branch",
     )
 
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
-        help_text="Is your organization an election office?",
+        verbose_name="election office",
     )
 
     organization_name = models.CharField(
         null=True,
         blank=True,
-        help_text="Organization name",
         db_index=True,
     )
     address_line1 = models.CharField(
         null=True,
         blank=True,
-        help_text="Street address",
-        verbose_name="Street address",
+        verbose_name="address line 1",
     )
     address_line2 = models.CharField(
         null=True,
         blank=True,
-        help_text="Street address line 2 (optional)",
-        verbose_name="Street address line 2 (optional)",
+        verbose_name="address line 2",
     )
     city = models.CharField(
         null=True,
         blank=True,
-        help_text="City",
     )
     state_territory = models.CharField(
         max_length=2,
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
-        help_text="State, territory, or military post",
-        verbose_name="State, territory, or military post",
+        verbose_name="state / territory",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
-        help_text="Zip code",
         db_index=True,
+        verbose_name="zip code",
     )
     urbanization = models.CharField(
         null=True,
         blank=True,
-        help_text="Urbanization (required for Puerto Rico only)",
-        verbose_name="Urbanization (required for Puerto Rico only)",
+        help_text="Required for Puerto Rico only",
+        verbose_name="urbanization",
     )
 
     about_your_organization = models.TextField(
         null=True,
         blank=True,
-        help_text="Information about your organization",
     )
 
     authorizing_official = models.ForeignKey(
@@ -177,7 +177,6 @@ class DomainInformation(TimeStampedModel):
         null=True,
         # Access this information via Domain as "domain.domain_info"
         related_name="domain_info",
-        help_text="Domain to which this information belongs",
     )
 
     # This is the contact information provided by the domain requestor. The
@@ -188,6 +187,7 @@ class DomainInformation(TimeStampedModel):
         blank=True,
         related_name="submitted_domain_requests_information",
         on_delete=models.PROTECT,
+        help_text='Person listed under "your contact information" in the request form',
     )
 
     purpose = models.TextField(
@@ -206,13 +206,20 @@ class DomainInformation(TimeStampedModel):
     no_other_contacts_rationale = models.TextField(
         null=True,
         blank=True,
-        help_text="Reason for listing no additional contacts",
+        help_text="Required if creator does not list other employees",
     )
 
     anything_else = models.TextField(
         null=True,
         blank=True,
-        help_text="Anything else?",
+        verbose_name="Additional details",
+    )
+
+    cisa_representative_email = models.EmailField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative",
+        max_length=320,
     )
 
     is_policy_acknowledged = models.BooleanField(
@@ -224,7 +231,6 @@ class DomainInformation(TimeStampedModel):
     notes = models.TextField(
         null=True,
         blank=True,
-        help_text="Notes about the request",
     )
 
     def __str__(self):

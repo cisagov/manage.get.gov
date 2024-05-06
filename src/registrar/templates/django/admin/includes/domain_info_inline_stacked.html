@@ -1,0 +1,6 @@
+{% extends 'admin/stacked.html' %}
+{% load i18n static %}
+
+{% block fieldset %}
+    {% include "django/admin/includes/detail_table_fieldset.html" with original_object=original_object %}
+{% endblock %}

@@ -48,6 +48,34 @@ class MyUserAdminForm(UserChangeForm):
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
         }
 
+    def __init__(self, *args, **kwargs):
+        """Custom init to modify the user form"""
+        super(MyUserAdminForm, self).__init__(*args, **kwargs)
+        self._override_base_help_texts()
+
+    def _override_base_help_texts(self):
+        """
+        Used to override pre-existing help texts in AbstractUser.
+        This is done to avoid modifying the base AbstractUser class.
+        """
+        is_superuser = self.fields.get("is_superuser")
+        is_staff = self.fields.get("is_staff")
+        password = self.fields.get("password")
+
+        if is_superuser is not None:
+            is_superuser.help_text = "For development purposes only; provides superuser access on the database level."
+
+        if is_staff is not None:
+            is_staff.help_text = "Designates whether the user can log in to this admin site."
+
+        if password is not None:
+            # Link is copied from the base implementation of UserChangeForm.
+            link = f"../../{self.instance.pk}/password/"
+            password.help_text = (
+                "Raw passwords are not stored, so they will not display here. "
+                f'You can change the password using <a href="{link}">this form</a>.'
+            )
+
 
 class DomainInformationAdminForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
@@ -290,6 +318,13 @@ class CustomLogEntryAdmin(LogEntryAdmin):
         # Return the field value without a link
         return f"{obj.content_type} - {obj.object_repr}"
 
+    # We name the custom prop 'created_at' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    @admin.display(description=_("Created at"))
+    def created(self, obj):
+        return obj.timestamp
+
     search_help_text = "Search by resource, changes, or user."
 
     change_form_template = "admin/change_form_no_submit.html"
@@ -478,7 +513,7 @@ class MyUserAdmin(BaseUserAdmin):
 
     list_display = (
         "username",
-        "email",
+        "overridden_email_field",
         "first_name",
         "last_name",
         # Group is a custom property defined within this file,
@@ -487,10 +522,22 @@ class MyUserAdmin(BaseUserAdmin):
         "status",
     )
 
+    # Renames inherited AbstractUser label 'email_address to 'email'
+    def formfield_for_dbfield(self, dbfield, **kwargs):
+        field = super().formfield_for_dbfield(dbfield, **kwargs)
+        if dbfield.name == "email":
+            field.label = "Email"
+        return field
+
+    # Renames inherited AbstractUser column name 'email_address to 'email'
+    @admin.display(description=_("Email"))
+    def overridden_email_field(self, obj):
+        return obj.email
+
     fieldsets = (
         (
             None,
-            {"fields": ("username", "password", "status")},
+            {"fields": ("username", "password", "status", "verification_type")},
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
@@ -508,13 +555,20 @@ class MyUserAdmin(BaseUserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    readonly_fields = ("verification_type",)
+
     # Hide Username (uuid), Groups and Permissions
     # Q: Now that we're using Groups and Permissions,
     # do we expose those to analysts to view?
     analyst_fieldsets = (
         (
             None,
-            {"fields": ("password", "status")},
+            {
+                "fields": (
+                    "status",
+                    "verification_type",
+                )
+            },
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
@@ -540,7 +594,6 @@ class MyUserAdmin(BaseUserAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "password",
         "Personal Info",
         "first_name",
         "last_name",
@@ -561,6 +614,7 @@ class MyUserAdmin(BaseUserAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
+    search_help_text = "Search by first name, last name, or email."
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
 
@@ -634,11 +688,14 @@ class MyUserAdmin(BaseUserAdmin):
             return []
 
     def get_readonly_fields(self, request, obj=None):
+        readonly_fields = list(self.readonly_fields)
+
         if request.user.has_perm("registrar.full_access_permission"):
-            return ()  # No read-only fields for all access users
-        # Return restrictive Read-only fields for analysts and
-        # users who might not belong to groups
-        return self.analyst_readonly_fields
+            return readonly_fields
+        else:
+            # Return restrictive Read-only fields for analysts and
+            # users who might not belong to groups
+            return self.analyst_readonly_fields
 
 
 class HostIPInline(admin.StackedInline):
@@ -651,7 +708,7 @@ class MyHostAdmin(AuditedAdmin):
     """Custom host admin class to use our inlines."""
 
     search_fields = ["name", "domain__name"]
-    search_help_text = "Search by domain or hostname."
+    search_help_text = "Search by domain or host name."
     inlines = [HostIPInline]
 
 
@@ -659,9 +716,9 @@ class ContactAdmin(ListHeaderAdmin):
     """Custom contact admin class to add search."""
 
     search_fields = ["email", "first_name", "last_name"]
-    search_help_text = "Search by firstname, lastname or email."
+    search_help_text = "Search by first name, last name or email."
     list_display = [
-        "contact",
+        "name",
         "email",
         "user_exists",
     ]
@@ -690,7 +747,7 @@ class ContactAdmin(ListHeaderAdmin):
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
     # This gets around the linter limitation, for now.
-    def contact(self, obj: models.Contact):
+    def name(self, obj: models.Contact):
         """Duplicate the contact _str_"""
         if obj.first_name or obj.last_name:
             return obj.get_formatted_name()
@@ -701,7 +758,7 @@ class ContactAdmin(ListHeaderAdmin):
         else:
             return ""
 
-    contact.admin_order_field = "first_name"  # type: ignore
+    name.admin_order_field = "first_name"  # type: ignore
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -859,7 +916,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
         "domain__name",
         "role",
     ]
-    search_help_text = "Search by firstname, lastname, email, domain, or role."
+    search_help_text = "Search by first name, last name, email, or domain."
 
     autocomplete_fields = ["user", "domain"]
 
@@ -954,12 +1011,15 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dgfieldset"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
-                    "federal_agency",
+                    # "updated_federal_agency",
+                    # Above field commented out so it won't display
+                    "federal_agency",  # TODO: remove later
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
@@ -977,9 +1037,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dgfieldset"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",
@@ -1180,7 +1241,17 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        (
+            "Contacts",
+            {
+                "fields": [
+                    "authorizing_official",
+                    "other_contacts",
+                    "no_other_contacts_rationale",
+                    "cisa_representative_email",
+                ]
+            },
+        ),
         ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
         (
             "Type of organization",
@@ -1193,12 +1264,15 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dgfieldset"],
+                "description": "Extends type of organization",
                 "fields": [
                     "federal_type",
-                    "federal_agency",
+                    # "updated_federal_agency",
+                    # Above field commented out so it won't display
+                    "federal_agency",  # TODO: remove later
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
@@ -1216,9 +1290,10 @@ class DomainRequestAdmin(ListHeaderAdmin):
             },
         ),
         (
-            "More details",
+            "Show details",
             {
-                "classes": ["collapse"],
+                "classes": ["collapse--dgfieldset"],
+                "description": "Extends organization name and mailing address",
                 "fields": [
                     "address_line1",
                     "address_line2",
@@ -1251,6 +1326,7 @@ class DomainRequestAdmin(ListHeaderAdmin):
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
+        "cisa_representative_email",
     ]
     autocomplete_fields = [
         "approved_domain",
@@ -1509,10 +1585,11 @@ class DomainInformationInline(admin.StackedInline):
     We had issues inheriting from both StackedInline
     and the source DomainInformationAdmin since these
     classes conflict, so we'll just pull what we need
-    from DomainInformationAdmin"""
+    from DomainInformationAdmin
+    """
 
     form = DomainInformationInlineForm
-
+    template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
 
     fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
@@ -1522,10 +1599,8 @@ class DomainInformationInline(admin.StackedInline):
             del fieldsets[index]
             break
 
+    readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
-    # to activate the edit/delete/view buttons
-    filter_horizontal = ("other_contacts",)
 
     autocomplete_fields = [
         "creator",
@@ -1656,6 +1731,7 @@ class DomainAdmin(ListHeaderAdmin):
 
     city.admin_order_field = "domain_info__city"  # type: ignore
 
+    @admin.display(description=_("State / territory"))
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
 
@@ -1691,23 +1767,33 @@ class DomainAdmin(ListHeaderAdmin):
         if extra_context is None:
             extra_context = {}
 
-        # Pass in what the an extended expiration date would be for the expiration date modal
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
-            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
 
-            try:
-                curr_exp_date = domain.registry_expiration_date
-            except KeyError:
-                # No expiration date was found. Return none.
-                extra_context["extended_expiration_date"] = None
-                return super().changeform_view(request, object_id, form_url, extra_context)
-            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
-            extra_context["extended_expiration_date"] = new_date
-        else:
-            extra_context["extended_expiration_date"] = None
+            # Used in the custom contact view
+            if domain is not None and hasattr(domain, "domain_info"):
+                extra_context["original_object"] = domain.domain_info
+
+            extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
+            extra_context["domain_state"] = domain.get_state_display()
+
+            # Pass in what the an extended expiration date would be for the expiration date modal
+            self._set_expiration_date_context(domain, extra_context)
 
         return super().changeform_view(request, object_id, form_url, extra_context)
+
+    def _set_expiration_date_context(self, domain, extra_context):
+        """Given a domain, calculate the an extended expiration date
+        from the current registry expiration date."""
+        years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
+        try:
+            curr_exp_date = domain.registry_expiration_date
+        except KeyError:
+            # No expiration date was found. Return none.
+            extra_context["extended_expiration_date"] = None
+        else:
+            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
+            extra_context["extended_expiration_date"] = new_date
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
@@ -1966,6 +2052,11 @@ class DraftDomainAdmin(ListHeaderAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["name"]
+    list_display = ["name"]
+
+    @admin.display(description=_("Requested domain"))
+    def name(self, obj):
+        return obj.name
 
     def get_model_perms(self, request):
         """
@@ -2044,13 +2135,36 @@ class FederalAgencyAdmin(ListHeaderAdmin):
     ordering = ["agency"]
 
 
+class UserGroupAdmin(AuditedAdmin):
+    """Overwrite the generated UserGroup admin class"""
+
+    list_display = ["user_group"]
+
+    fieldsets = ((None, {"fields": ("name", "permissions")}),)
+
+    def formfield_for_dbfield(self, dbfield, **kwargs):
+        field = super().formfield_for_dbfield(dbfield, **kwargs)
+        if dbfield.name == "name":
+            field.label = "Group name"
+        if dbfield.name == "permissions":
+            field.label = "User permissions"
+        return field
+
+    # We name the custom prop 'Group' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    @admin.display(description=_("Group"))
+    def user_group(self, obj):
+        return obj.name
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
 # Unregister the built-in Group model
 admin.site.unregister(Group)
 # Register UserGroup
-admin.site.register(models.UserGroup)
+admin.site.register(models.UserGroup, UserGroupAdmin)
 admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)

@@ -1,0 +1,21 @@
+{% extends "admin/fieldset.html" %}
+{% load static url_helpers %}
+
+
+{% block field_readonly %}
+    {% if field.field.name == "state" %}
+    <div class="readonly">{{ domain_state }}</div>
+    {% else %}
+    <div class="readonly">{{ field.contents }}</div>
+    {% endif %}
+{% endblock %}
+
+{% block help_text %}
+    <div class="help margin-bottom-1" {% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+        {% if field.field.name == "state" %}
+        <div>{{ state_help_message }}</div>
+        {% else %}
+        <div>{{ field.field.help_text|safe }}</div>
+        {% endif %}
+    </div>
+{% endblock help_text %}

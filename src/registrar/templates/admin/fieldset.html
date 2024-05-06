@@ -6,9 +6,23 @@ It is not inherently customizable on its own, so we can modify this instead.
 https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/includes/fieldset.html
 {% endcomment %}
 <fieldset class="module aligned {{ fieldset.classes }}">
-    {% if fieldset.name %}<h2>{{ fieldset.name }}</h2>{% endif %}
+    {% if fieldset.name %}
+        {# Customize the markup for the collapse toggle #}
+        {% if 'collapse--dgfieldset' in fieldset.classes %}
+            <button type="button">
+                <span>{{ fieldset.name }}</span>
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                    <use xlink:href="{%static 'img/sprite.svg'%}#expand_more"></use>
+                </svg>
+            </button>
+            <legend class="sr-only">{{ fieldset.description }}</legend>
+        {% else %}
+            <h2>{{ fieldset.name }}</h2>
+        {% endif %}
+    {% endif %}
 
-    {% if fieldset.description %}
+    {# Customize the markup for the collapse toggle: Do not show a description for the collapse fieldsets, instead we're using the description as a screen reader only legend #}
+    {% if fieldset.description and 'collapse--dgfieldset' not in fieldset.classes %}
         <div class="description">{{ fieldset.description|safe }}</div>
     {% endif %}
 

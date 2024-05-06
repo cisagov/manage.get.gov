@@ -1152,12 +1152,18 @@ class TestContact(TestCase):
     def setUp(self):
         self.email_for_invalid = "intern@igorville.gov"
         self.invalid_user, _ = User.objects.get_or_create(
-            username=self.email_for_invalid, email=self.email_for_invalid, first_name="", last_name=""
+            username=self.email_for_invalid,
+            email=self.email_for_invalid,
+            first_name="",
+            last_name="",
+            phone="",
         )
         self.invalid_contact, _ = Contact.objects.get_or_create(user=self.invalid_user)
 
         self.email = "mayor@igorville.gov"
-        self.user, _ = User.objects.get_or_create(email=self.email, first_name="Jeff", last_name="Lebowski")
+        self.user, _ = User.objects.get_or_create(
+            email=self.email, first_name="Jeff", last_name="Lebowski", phone="123456789"
+        )
         self.contact, _ = Contact.objects.get_or_create(user=self.user)
 
         self.contact_as_ao, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
@@ -1169,19 +1175,22 @@ class TestContact(TestCase):
         Contact.objects.all().delete()
         User.objects.all().delete()
 
-    def test_saving_contact_updates_user_first_last_names(self):
+    def test_saving_contact_updates_user_first_last_names_and_phone(self):
         """When a contact is updated, we propagate the changes to the linked user if it exists."""
 
         # User and Contact are created and linked as expected.
         # An empty User object should create an empty contact.
         self.assertEqual(self.invalid_contact.first_name, "")
         self.assertEqual(self.invalid_contact.last_name, "")
+        self.assertEqual(self.invalid_contact.phone, "")
         self.assertEqual(self.invalid_user.first_name, "")
         self.assertEqual(self.invalid_user.last_name, "")
+        self.assertEqual(self.invalid_user.phone, "")
 
         # Manually update the contact - mimicking production (pre-existing data)
         self.invalid_contact.first_name = "Joey"
         self.invalid_contact.last_name = "Baloney"
+        self.invalid_contact.phone = "123456789"
         self.invalid_contact.save()
 
         # Refresh the user object to reflect the changes made in the database
@@ -1190,20 +1199,25 @@ class TestContact(TestCase):
         # Updating the contact's first and last names propagate to the user
         self.assertEqual(self.invalid_contact.first_name, "Joey")
         self.assertEqual(self.invalid_contact.last_name, "Baloney")
+        self.assertEqual(self.invalid_contact.phone, "123456789")
         self.assertEqual(self.invalid_user.first_name, "Joey")
         self.assertEqual(self.invalid_user.last_name, "Baloney")
+        self.assertEqual(self.invalid_user.phone, "123456789")
 
-    def test_saving_contact_does_not_update_user_first_last_names(self):
+    def test_saving_contact_does_not_update_user_first_last_names_and_phone(self):
         """When a contact is updated, we avoid propagating the changes to the linked user if it already has a value"""
 
         # User and Contact are created and linked as expected
         self.assertEqual(self.contact.first_name, "Jeff")
         self.assertEqual(self.contact.last_name, "Lebowski")
+        self.assertEqual(self.contact.phone, "123456789")
         self.assertEqual(self.user.first_name, "Jeff")
         self.assertEqual(self.user.last_name, "Lebowski")
+        self.assertEqual(self.user.phone, "123456789")
 
         self.contact.first_name = "Joey"
         self.contact.last_name = "Baloney"
+        self.contact.phone = "987654321"
         self.contact.save()
 
         # Refresh the user object to reflect the changes made in the database
@@ -1212,8 +1226,10 @@ class TestContact(TestCase):
         # Updating the contact's first and last names propagate to the user
         self.assertEqual(self.contact.first_name, "Joey")
         self.assertEqual(self.contact.last_name, "Baloney")
+        self.assertEqual(self.contact.phone, "987654321")
         self.assertEqual(self.user.first_name, "Jeff")
         self.assertEqual(self.user.last_name, "Lebowski")
+        self.assertEqual(self.user.phone, "123456789")
 
     def test_saving_contact_does_not_update_user_email(self):
         """When a contact's email is updated, the change is not propagated to the user."""

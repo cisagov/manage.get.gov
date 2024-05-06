@@ -7,6 +7,7 @@ from registrar.models import (
     UserGroup,
 )
 
+
 fake = Faker()
 logger = logging.getLogger(__name__)
 
@@ -94,6 +95,12 @@ class UserFixture:
             "email": "szu.chin@associates.cisa.dhs.gov",
         },
         {
+            "username": "66bb1a5a-a091-4d7f-a6cf-4d772b4711c7",
+            "first_name": "Christina",
+            "last_name": "Burnett",
+            "email": "christina.burnett@cisa.dhs.gov",
+        },
+        {
             "username": "012f844d-8a0f-4225-9d82-cbf87bff1d3e",
             "first_name": "Riley",
             "last_name": "Orr",
@@ -170,6 +177,12 @@ class UserFixture:
             "email": "szu.chin@ecstech.com",
         },
         {
+            "username": "22f88aa5-3b54-4b1f-9c57-201fb02ddba7",
+            "first_name": "Christina-Analyst",
+            "last_name": "Burnett-Analyst",
+            "email": "christina.burnett@gwe.cisa.dhs.gov",
+        },
+        {
             "username": "d9839768-0c17-4fa2-9c8e-36291eef5c11",
             "first_name": "Alex-Analyst",
             "last_name": "Mcelya-Analyst",
@@ -195,6 +208,10 @@ class UserFixture:
                     user.email = user_data["email"]
                 user.is_staff = True
                 user.is_active = True
+                # This verification type will get reverted to "regular" (or whichever is applicables)
+                # once the user logs in for the first time (as they then got verified through different means).
+                # In the meantime, we can still describe how the user got here in the first place.
+                user.verification_type = User.VerificationTypeChoices.FIXTURE_USER
                 group = UserGroup.objects.get(name=group_name)
                 user.groups.add(group)
                 user.save()
