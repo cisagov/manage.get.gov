@@ -131,7 +131,7 @@ class CreateOrUpdateOrganizationTypeHelper:
 
                 # Update the field
                 self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
-        except:
+        except self.sender.DoesNotExist:
             pass
 
     def _update_fields(self, organization_type_needs_update, generic_org_type_needs_update):
