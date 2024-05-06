@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0090_remove_domaininformation_federal_agency_and_more"),
+        ("registrar", "0091_remove_domaininformation_federal_agency_and_more"),
     ]
 
     operations = [

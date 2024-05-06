@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0089_user_verification_type"),
+        ("registrar", "0090_waffleflag"),
     ]
 
     operations = [
