@@ -130,6 +130,6 @@ def get_region(state):
             "OR": 10,
             "WA": 10,
         }
-        return regions.get(state.upper(), None)
+        return regions.get(state.upper(), "N/A")
     else:
         return None
