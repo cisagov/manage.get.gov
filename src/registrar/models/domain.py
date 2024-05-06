@@ -1969,8 +1969,13 @@ class Domain(TimeStampedModel, DomainHelper):
             # Q: Should we be deleting the newest or the oldest? Does it even matter?
             oldest_duplicate = db_contact.order_by("created_at").first()
 
-            # Exclude the oldest
-            duplicates_to_delete = db_contact.exclude(id=oldest_duplicate.id)  # noqa
+            # The linter wants this check on the id, though in practice
+            # this should be otherwise impossible.
+            if hasattr(oldest_duplicate, "id"):
+                # Exclude the oldest
+                duplicates_to_delete = db_contact.exclude(id=oldest_duplicate.id)
+            else:
+                duplicates_to_delete = db_contact
 
             # Delete all duplicates
             duplicates_to_delete.delete()
