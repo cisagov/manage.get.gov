@@ -16,6 +16,7 @@ from registrar.models import (
     UserDomainRole,
     VerifiedByStaff,
     PublicContact,
+    FederalAgency,
 )
 
 from django.core.management import call_command
@@ -534,8 +535,9 @@ class TestPatchAgencyInfo(TestCase):
         self.user, _ = User.objects.get_or_create(username="testuser")
         self.domain, _ = Domain.objects.get_or_create(name="testdomain.gov")
         self.domain_info, _ = DomainInformation.objects.get_or_create(domain=self.domain, creator=self.user)
+        self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="test agency")
         self.transition_domain, _ = TransitionDomain.objects.get_or_create(
-            domain_name="testdomain.gov", federal_agency="test agency"
+            domain_name="testdomain.gov", federal_agency=self.federal_agency
         )
 
     def tearDown(self):
@@ -549,82 +551,6 @@ class TestPatchAgencyInfo(TestCase):
         """Calls the patch_federal_agency_info command and mimics a keypress"""
         with less_console_noise():
             call_command("patch_federal_agency_info", "registrar/tests/data/fake_current_full.csv", debug=True)
-
-    def test_patch_agency_info(self):
-        """
-        Tests that the `patch_federal_agency_info` command successfully
-        updates the `federal_agency` field
-        of a `DomainInformation` object when the corresponding
-        `TransitionDomain` object has a valid `federal_agency`.
-        """
-        with less_console_noise():
-            # Ensure that the federal_agency is None
-            self.assertEqual(self.domain_info.federal_agency, None)
-            self.call_patch_federal_agency_info()
-            # Reload the domain_info object from the database
-            self.domain_info.refresh_from_db()
-            # Check that the federal_agency field was updated
-            self.assertEqual(self.domain_info.federal_agency, "test agency")
-
-    def test_patch_agency_info_skip(self):
-        """
-        Tests that the `patch_federal_agency_info` command logs a warning and
-        does not update the `federal_agency` field
-        of a `DomainInformation` object when the corresponding
-        `TransitionDomain` object does not exist.
-        """
-        with less_console_noise():
-            # Set federal_agency to None to simulate a skip
-            self.transition_domain.federal_agency = None
-            self.transition_domain.save()
-            with self.assertLogs("registrar.management.commands.patch_federal_agency_info", level="WARNING") as context:
-                self.call_patch_federal_agency_info()
-            # Check that the correct log message was output
-            self.assertIn("SOME AGENCY DATA WAS NONE", context.output[0])
-            # Reload the domain_info object from the database
-            self.domain_info.refresh_from_db()
-            # Check that the federal_agency field was not updated
-            self.assertIsNone(self.domain_info.federal_agency)
-
-    def test_patch_agency_info_skip_updates_data(self):
-        """
-        Tests that the `patch_federal_agency_info` command logs a warning but
-        updates the DomainInformation object, because a record exists in the
-        provided current-full.csv file.
-        """
-        with less_console_noise():
-            # Set federal_agency to None to simulate a skip
-            self.transition_domain.federal_agency = None
-            self.transition_domain.save()
-            # Change the domain name to something parsable in the .csv
-            self.domain.name = "cdomain1.gov"
-            self.domain.save()
-            with self.assertLogs("registrar.management.commands.patch_federal_agency_info", level="WARNING") as context:
-                self.call_patch_federal_agency_info()
-            # Check that the correct log message was output
-            self.assertIn("SOME AGENCY DATA WAS NONE", context.output[0])
-            # Reload the domain_info object from the database
-            self.domain_info.refresh_from_db()
-            # Check that the federal_agency field was not updated
-            self.assertEqual(self.domain_info.federal_agency, "World War I Centennial Commission")
-
-    def test_patch_agency_info_skips_valid_domains(self):
-        """
-        Tests that the `patch_federal_agency_info` command logs INFO and
-        does not update the `federal_agency` field
-        of a `DomainInformation` object
-        """
-        with less_console_noise():
-            self.domain_info.federal_agency = "unchanged"
-            self.domain_info.save()
-            with self.assertLogs("registrar.management.commands.patch_federal_agency_info", level="INFO") as context:
-                self.call_patch_federal_agency_info()
-            # Check that the correct log message was output
-            self.assertIn("FINISHED", context.output[1])
-            # Reload the domain_info object from the database
-            self.domain_info.refresh_from_db()
-            # Check that the federal_agency field was not updated
-            self.assertEqual(self.domain_info.federal_agency, "unchanged")
 
 
 class TestExtendExpirationDates(MockEppLib):
@@ -841,120 +767,3 @@ class TestDiscloseEmails(MockEppLib):
                     )
                 ]
             )
-
-
-# TODO in #1793: Remove this whole test class
-class TestPopulateDomainUpdatedFederalAgency(TestCase):
-    def setUp(self):
-        super().setUp()
-
-        # Get the domain requests
-        self.domain_request_1 = completed_domain_request(
-            name="stitches.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            is_election_board=True,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            federal_agency="U.S. Peace Corps",
-        )
-        self.domain_request_2 = completed_domain_request(
-            name="fadoesntexist.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            is_election_board=True,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            federal_agency="MEOWARDRULES",
-        )
-        self.domain_request_3 = completed_domain_request(
-            name="nullfederalagency.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            is_election_board=True,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            federal_agency=None,
-        )
-
-        # Approve all three requests
-        self.domain_request_1.approve()
-        self.domain_request_2.approve()
-        self.domain_request_3.approve()
-
-        # Get the domains
-        self.domain_1 = Domain.objects.get(name="stitches.gov")
-        self.domain_2 = Domain.objects.get(name="fadoesntexist.gov")
-        self.domain_3 = Domain.objects.get(name="nullfederalagency.gov")
-
-        # Get the domain infos
-        self.domain_info_1 = DomainInformation.objects.get(domain=self.domain_1)
-        self.domain_info_2 = DomainInformation.objects.get(domain=self.domain_2)
-        self.domain_info_3 = DomainInformation.objects.get(domain=self.domain_3)
-
-    def tearDown(self):
-        super().tearDown()
-        DomainInformation.objects.all().delete()
-        DomainRequest.objects.all().delete()
-        Domain.objects.all().delete()
-
-    def run_populate_domain_updated_federal_agency(self):
-        """
-        This method executes the populate_domain_updated_federal_agency command.
-
-        The 'call_command' function from Django's management framework is then used to
-        execute the populate_domain_updated_federal_agency command.
-        """
-        with less_console_noise():
-            call_command("populate_domain_updated_federal_agency")
-
-    def test_domain_information_renaming_federal_agency_success(self):
-        """
-        Domain Information updates successfully for an "outdated" Federal Agency
-        """
-
-        self.run_populate_domain_updated_federal_agency()
-
-        self.domain_info_1.refresh_from_db()
-
-        previous_federal_agency_name = self.domain_info_1.federal_agency
-
-        updated_federal_agency_name = self.domain_info_1.updated_federal_agency.agency
-
-        self.assertEqual(previous_federal_agency_name, "U.S. Peace Corps")
-        self.assertEqual(updated_federal_agency_name, "Peace Corps")
-
-    def test_domain_information_does_not_exist(self):
-        """
-        Update a Federal Agency that doesn't exist
-        (should return None bc the Federal Agency didn't exist before)
-        """
-
-        self.run_populate_domain_updated_federal_agency()
-
-        self.domain_info_2.refresh_from_db()
-
-        self.assertEqual(self.domain_info_2.updated_federal_agency, None)
-
-    def test_domain_request_is_skipped(self):
-        """
-        Update a Domain Request that doesn't exist
-        (should return None bc the Federal Agency didn't exist before)
-        """
-
-        # Test case #2
-        self.run_populate_domain_updated_federal_agency()
-
-        self.domain_request_2.refresh_from_db()
-
-        self.assertEqual(self.domain_request_2.updated_federal_agency, None)
-
-    def test_domain_information_updating_null_federal_agency_to_non_federal_agency(self):
-        """
-        Updating a Domain Information that was previously None
-        to Non-Federal Agency
-        """
-
-        self.run_populate_domain_updated_federal_agency()
-
-        self.domain_info_3.refresh_from_db()
-
-        previous_federal_agency_name = self.domain_info_3.federal_agency
-        updated_federal_agency_name = self.domain_info_3.updated_federal_agency.agency
-
-        self.assertEqual(previous_federal_agency_name, None)
-        self.assertEqual(updated_federal_agency_name, "Non-Federal Agency")

@@ -13,7 +13,7 @@ from registrar.forms.utility.wizard_form_helper import (
     BaseYesNoForm,
     BaseDeletableRegistrarForm,
 )
-from registrar.models import Contact, DomainRequest, DraftDomain, Domain
+from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 
@@ -97,13 +97,16 @@ class OrganizationElectionForm(RegistrarForm):
 
 class OrganizationContactForm(RegistrarForm):
     # for federal agencies we also want to know the top-level agency.
-    federal_agency = forms.ChoiceField(
+    federal_agency = forms.ModelChoiceField(
         label="Federal agency",
         # not required because this field won't be filled out unless
         # it is a federal agency. Use clean to check programatically
         # if it has been filled in when required.
+        # uncomment to see if modelChoiceField can be an arg later
         required=False,
-        choices=[("", "--Select--")] + DomainRequest.AGENCY_CHOICES,
+        queryset=FederalAgency.objects.all(),
+        empty_label="--Select--",
+        # choices=[("", "--Select--")] + DomainRequest.AGENCY_CHOICES,
     )
     organization_name = forms.CharField(
         label="Organization name",
