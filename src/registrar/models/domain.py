@@ -846,7 +846,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # get publicContact objects that have the matching
         # domain and type but a different id
-        # like in highlander we there can only be one
+        # like in highlander where there can only be one
         duplicate_contacts = PublicContact.objects.exclude(registry_id=contact.registry_id).filter(
             domain=self, contact_type=contact.contact_type
         )
@@ -1962,20 +1962,13 @@ class Domain(TimeStampedModel, DomainHelper):
             domain=self,
         )
 
-        # If we find duplicates, log it and delete the newest ones.
+        # If we find duplicates, log it and delete the oldest ones.
         if db_contact.count() > 1:
             logger.warning("_get_or_create_public_contact() -> Duplicate contacts found. Deleting duplicate.")
 
-            # Q: Should we be deleting the newest or the oldest? Does it even matter?
-            oldest_duplicate = db_contact.order_by("created_at").first()
+            newest_duplicate = db_contact.order_by("-created_at").first()
 
-            # The linter wants this check on the id / oldest_duplicate, though in practice
-            # this should be otherwise impossible.
-            if oldest_duplicate is not None and hasattr(oldest_duplicate, "id"):
-                # Exclude the oldest
-                duplicates_to_delete = db_contact.exclude(id=oldest_duplicate.id)
-            else:
-                duplicates_to_delete = db_contact
+            duplicates_to_delete = db_contact.exclude(id=newest_duplicate.id)  # type: ignore
 
             # Delete all duplicates
             duplicates_to_delete.delete()
