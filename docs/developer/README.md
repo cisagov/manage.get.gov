@@ -366,10 +366,11 @@ Then, copy the variables under the section labled `s3`.
 ## Signals 
 Though minimally, our application uses [Django signals](https://docs.djangoproject.com/en/5.0/topics/signals/) for a select few models to manage `user <---> contact` interaction. In particular, we use a subset of prebuilt signals called [model signals](https://docs.djangoproject.com/en/5.0/ref/signals/#module-django.db.models.signals). 
 
-Per Django, signals "[...allow certain senders to notify a set of receivers that some action has taken place.](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch)" For the vast majority of our use cases, [pre_save](https://docs.djangoproject.com/en/5.0/ref/signals/#pre-save) or [post_save](https://docs.djangoproject.com/en/5.0/ref/signals/#post-save) would be sufficient.
+Per Django, signals "[...allow certain senders to notify a set of receivers that some action has taken place.](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch)" For the vast majority of our use cases, [pre_save](https://docs.djangoproject.com/en/5.0/ref/signals/#pre-save) or [post_save](https://docs.djangoproject.com/en/5.0/ref/signals/#post-save) are be sufficient.
 
 ### When should you use signals?
 
 ### Where should you use them?
+This project compiles signals in a unified location to maintain readability. If you are adding a signal, you should always define them in [signals.py](link to signals.py). The reasoning for this is that [signals give the appearance of loose coupling, but they can quickly lead to code that is hard to understand, adjust and debug](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch). With the exception of rare circumstances (such as import loops), this should be adhered to for the reasons mentioned above. 
 
 ### Why use signals at all?
