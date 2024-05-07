@@ -320,9 +320,6 @@ it may help to resync your laptop with time.nist.gov:
 sudo sntp -sS time.nist.gov
 ```
 
-## Connection pool
-To handle our connection to the registry, we utilize a connection pool to keep a socket open to increase responsiveness. In order to accomplish this, we are utilizing a heavily modified version of the [geventconnpool](https://github.com/rasky/geventconnpool) library.
-
 ### Settings
 The config for the connection pool exists inside the `settings.py` file.
 | Name                     | Purpose                                                                                           |
@@ -332,20 +329,6 @@ The config for the connection pool exists inside the `settings.py` file.
 | POOL_TIMEOUT             | Determines how long we try to keep a pool alive for, before restarting it.                        |
 
 Consider updating the `POOL_TIMEOUT` or `POOL_KEEP_ALIVE` periods if the pool often restarts. If the pool only restarts after a period of inactivity, update `POOL_KEEP_ALIVE`. If it restarts during the EPP call itself, then `POOL_TIMEOUT` needs to be updated.
-
-### Test if the connection pool is running
-Our connection pool has a built-in `pool_status` object which you can call at anytime to assess the current connection status of the pool. Follow these steps to access it.
-
-1. `cf ssh getgov-{env-name} -i {instance-index}`
-* env-name -> Which environment to target, e.g. `staging`
-* instance-index -> Which instance to target. For instance, `cf ssh getgov-staging -i 0`
-2. `/tmp/lifecycle/shell`
-3. `./manage.py shell`
-4. `from epplibwrapper import CLIENT as registry, commands`
-5. `print(registry.pool_status.connection_success)`
-* Should return true
-
-If you have multiple instances (staging for example), then repeat commands 1-5 for each instance you want to test. 
 
 ## Adding a S3 instance to your sandbox
 This can either be done through the CLI, or through the cloud.gov dashboard. Generally, it is better to do it through the dashboard as it handles app binding for you. 
@@ -379,3 +362,14 @@ cf env getgov-{app name}
 ```
 
 Then, copy the variables under the section labled `s3`.
+
+## Signals 
+Though minimally, our application uses [Django signals](https://docs.djangoproject.com/en/5.0/topics/signals/) for a select few models to manage `user <---> contact` interaction. In particular, we use a subset of prebuilt signals called [model signals](https://docs.djangoproject.com/en/5.0/ref/signals/#module-django.db.models.signals). 
+
+Per Django, signals "[...allow certain senders to notify a set of receivers that some action has taken place.](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch)" For the vast majority of our use cases, [pre_save](https://docs.djangoproject.com/en/5.0/ref/signals/#pre-save) or [post_save](https://docs.djangoproject.com/en/5.0/ref/signals/#post-save) would be sufficient.
+
+### When should you use signals?
+
+### Where should you use them?
+
+### Why use signals at all?
