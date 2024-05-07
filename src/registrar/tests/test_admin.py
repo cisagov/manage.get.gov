@@ -92,19 +92,27 @@ class TestFsmModelResource(TestCase):
 
     def test_import_field(self):
         """Test that importing a field does not import FSM field"""
-        # Mock a field and object
-        field_mock = Mock(attribute="state")
-        obj_mock = Mock(_meta=Mock(fields=[Mock(name="state", spec=["name"], __class__=Mock)]))
 
-        # Mock the super() method
-        super_mock = Mock()
-        self.resource.import_field = super_mock
+        # Mock a FSMField and a non-FSM-field
+        fsm_field_mock = Mock(attribute="state", column_name="state")
+        field_mock = Mock(attribute="name", column_name="name")
+        # Mock the data
+        data_mock = {"state": "unknown", "name": "test"}
+        # Define a mock Domain
+        obj = Domain(state=Domain.State.UNKNOWN, name="test")
+
+        # Mock the save() method of fields so that we can test if save is called
+        # save() is only supposed to be called for non FSM fields
+        field_mock.save = Mock()
+        fsm_field_mock.save = Mock()
 
         # Call the method with FSMField and non-FSMField
-        self.resource.import_field(field_mock, obj_mock, data={}, is_m2m=False)
+        self.resource.import_field(fsm_field_mock, obj, data=data_mock, is_m2m=False)
+        self.resource.import_field(field_mock, obj, data=data_mock, is_m2m=False)
 
-        # Assert that super().import_field() is called only for non-FSMField
-        super_mock.assert_called_once_with(field_mock, obj_mock, data={}, is_m2m=False)
+        # Assert that field.save() in super().import_field() is called only for non-FSMField
+        field_mock.save.assert_called_once()
+        fsm_field_mock.save.assert_not_called()
 
 
 class TestDomainAdmin(MockEppLib, WebTest):
@@ -893,7 +901,6 @@ class TestDomainAdmin(MockEppLib, WebTest):
         with less_console_noise():
             response = self.client.get("/admin/registrar/domain/")
             self.assertContains(response, ">Export<")
-            # Now let's make sure the long description does not exist
             self.assertNotContains(response, ">Import<")
 
     def tearDown(self):
