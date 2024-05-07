@@ -196,12 +196,12 @@ class UserFixture:
         },
     ]
 
-    def load_users(cls, users, group_name):
+    def load_users(cls, users, group_name, are_superusers=False):
         logger.info(f"Going to load {len(users)} users in group {group_name}")
         for user_data in users:
             try:
                 user, _ = User.objects.get_or_create(username=user_data["username"])
-                user.is_superuser = False
+                user.is_superuser = are_superusers
                 user.first_name = user_data["first_name"]
                 user.last_name = user_data["last_name"]
                 if "email" in user_data:
@@ -229,5 +229,5 @@ class UserFixture:
         # steps now do not need to close/reopen a db connection,
         # instead they share one.
         with transaction.atomic():
-            cls.load_users(cls, cls.ADMINS, "full_access_group")
+            cls.load_users(cls, cls.ADMINS, "full_access_group", are_superusers=True)
             cls.load_users(cls, cls.STAFF, "cisa_analysts_group")

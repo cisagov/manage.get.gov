@@ -33,6 +33,7 @@ pyzipper="*"
 tblib = "*"
 django-admin-multiple-choice-list-filter = "*"
 django-import-export = "*"
+django-waffle = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"

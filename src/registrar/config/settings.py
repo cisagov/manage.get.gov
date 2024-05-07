@@ -22,7 +22,6 @@ from base64 import b64decode
 from cfenv import AppEnv  # type: ignore
 from pathlib import Path
 from typing import Final
-
 from botocore.config import Config
 
 # # #                          ###
@@ -150,6 +149,8 @@ INSTALLED_APPS = [
     "django_admin_multiple_choice_list_filter",
     # library for export and import of data
     "import_export",
+    # Waffle feature flags
+    "waffle",
 ]
 
 # Middleware are routines for processing web requests.
@@ -185,6 +186,8 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     # django-auditlog: obtain the request User for use in logging
     "auditlog.middleware.AuditlogMiddleware",
+    # Used for waffle feature flags
+    "waffle.middleware.WaffleMiddleware",
 ]
 
 # application object used by Django’s built-in servers (e.g. `runserver`)
@@ -321,6 +324,17 @@ EMAIL_TIMEOUT = 30
 SERVER_EMAIL = "root@get.gov"
 
 # endregion
+
+# region: Waffle feature flags-----------------------------------------------------------###
+# If Waffle encounters a reference to a flag that is not in the database, should Waffle create the flag?
+WAFFLE_CREATE_MISSING_FLAGS = True
+
+# The model that will be used to keep track of flags. Extends AbstractUserFlag.
+# Used to replace the default flag class (for customization purposes).
+WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
+
+# endregion
+
 # region: Headers-----------------------------------------------------------###
 
 # Content-Security-Policy configuration
@@ -644,6 +658,7 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-cb.app.cloud.gov",
     "getgov-bob.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",

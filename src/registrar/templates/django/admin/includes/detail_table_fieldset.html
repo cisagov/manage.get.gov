@@ -1,4 +1,5 @@
 {% extends "admin/fieldset.html" %}
+{% load custom_filters %}
 {% load static url_helpers %}
 
 {% comment %}
@@ -44,7 +45,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         <div class="readonly">
         {% with total_websites=field.contents|split:", " %}
             {% for website in total_websites %}
-                <a href="{{ website }}" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
+                <a href="{{ website }}" target="_blank" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
                 {# Acts as a <br> #}
                 {% if total_websites|length < 5 %}
                 <div class="display-block margin-top-1"></div>
@@ -70,29 +71,37 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% if field.field.name == "status" and original_object.history.count > 0 %}
         <div class="flex-container">
             <label aria-label="Submitter contact details"></label>
-            <div class="usa-table-container--scrollable" tabindex="0">
-                <table class="usa-table usa-table--borderless">
-                    <thead>
-                        <tr>
-                            <th>Status</th>
-                            <th>User</th>
-                            <th>Changed at</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for log_entry in original_object.history.all %}
-                            {% for key, value in log_entry.changes_display_dict.items %}
-                                {% if key == "status" %}
-                                    <tr>
-                                        <td>{{ value.1|default:"None" }}</td>
-                                        <td>{{ log_entry.actor|default:"None" }}</td>
-                                        <td>{{ log_entry.timestamp|default:"None" }}</td>
-                                    </tr>
-                                {% endif %}
+            <div>
+                <div class="usa-table-container--scrollable collapse--dgsimple" tabindex="0">
+                    <table class="usa-table usa-table--borderless">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>User</th>
+                                <th>Changed at</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log_entry in original_object.history.all %}
+                                {% for key, value in log_entry.changes_display_dict.items %}
+                                    {% if key == "status" %}
+                                        <tr>
+                                            <td>{{ value.1|default:"None" }}</td>
+                                            <td>{{ log_entry.actor|default:"None" }}</td>
+                                            <td>{{ log_entry.timestamp|default:"None" }}</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
                             {% endfor %}
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-2 margin-bottom-1 margin-left-1">
+                    <span>Hide details</span>
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                        <use xlink:href="/public/img/sprite.svg#expand_less"></use>
+                    </svg>
+                </button>
             </div>
         </div>
     {% elif field.field.name == "creator" %}
@@ -154,5 +163,16 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             </details>
         {% endif %}
         {% endwith %}
+    {% elif field.field.name == "state_territory" %}
+        <div class="flex-container margin-top-2">
+            <span>
+                CISA region:
+                {% if original_object.generic_org_type and original_object.generic_org_type != original_object.OrganizationChoices.FEDERAL %}
+                    {{ original_object.state_territory|get_region }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </span>
+        </div>
     {% endif %}
 {% endblock after_help_text %}

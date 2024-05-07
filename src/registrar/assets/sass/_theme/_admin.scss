@@ -243,7 +243,7 @@ div#content > h2 {
 // in the future
 .object-tools li a,
 .object-tools p a {
-    font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-family: family('sans');
     text-transform: none!important;
     font-size: 14px!important;
 }
@@ -293,7 +293,7 @@ div#content > h2 {
 .messagelist_content-list--unstyled {
     padding-left: 0;
     li {
-        font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+        font-family: family('sans');
         font-size: 13.92px!important;
         background: none!important;
         padding: 0!important;
@@ -395,7 +395,6 @@ details.dja-detail-table {
         border-top: none;
         border-bottom: none;
     }
-
 }
 
 
@@ -542,31 +541,41 @@ address.dja-address-contact-list {
 }
 
 // Collapse button styles for fieldsets
-.module.collapse--dotgov {
+.module.collapse--dgfieldset {
     margin-top: -35px;
     padding-top: 0;
     border: none;
-    button {
-        background: none;
-        text-transform: none;
+}
+.collapse-toggle--dgsimple,
+.module.collapse--dgfieldset button {
+    background: none;
+    text-transform: none;
+    color: var(--link-fg);
+    margin-top: 8px;
+    margin-left: 10px;
+    span {
+        text-decoration: underline;
+        font-size: 13px;
+        font-feature-settings: "kern";
+        font-kerning: normal;
+        line-height: 13px;
+        font-family: family('sans');
+    }
+    &:hover {
         color: var(--link-fg);
-        margin-top: 8px;
-        margin-left: 10px;
-        span {
-            text-decoration: underline;
-            font-size: 13px;
-            font-feature-settings: "kern";
-            font-kerning: normal;
-            line-height: 13px;
-            font-family: -apple-system, "system-ui", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        svg {
+            color: var(--link-fg);
         }
     }
 }
-.collapse--dotgov.collapsed .collapse-toggle--dotgov  {
+.collapse--dgfieldset.collapsed .collapse-toggle--dgfieldset  {
     display: inline-block!important;
     * {
         display: inline-block;
     }
+}
+.collapse--dgsimple.collapsed {
+    display: none;
 }
 
 .dja-status-list {
@@ -576,7 +585,7 @@ address.dja-address-contact-list {
     padding-top: 10px;
     li {
         line-height: 1.5;
-        font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif !important;
+        font-family: family('sans');
         padding-top: 0;
         padding-bottom: 0;
     }
@@ -633,11 +642,14 @@ address.dja-address-contact-list {
         display: inline-flex;
         padding-top: 4px;
         line-height: 14px;
-        color: var(--link-fg);
         width: max-content;
         font-size: unset;
         text-decoration: none !important;
     }
+}
+
+button.usa-button__clipboard {
+    color: var(--link-fg);
 }
 
 .no-outline-on-click:focus {
@@ -675,4 +687,36 @@ form .aligned p.help, form .aligned div.help {
 .selector .selector-chosen h3 {
     background: var(--primary);
     color: var(--header-link-color);
+}
+
+div.dja__model-description{
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+
+    p, li {
+        font-size: medium;
+        color: var(--secondary);
+    }
+
+    li {
+        list-style-type: disc;
+        font-family: Source Sans Pro Web,Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;
+    }
+
+    a, a:link, a:visited {
+        font-size: medium;
+        color: #005288 !important;
+    }
+
+    &.dja__model-description--no-overflow {
+        display: block;
+        overflow: auto;
+    }
+
+}
+
+.text-underline {
+    text-decoration: underline !important;
 }
