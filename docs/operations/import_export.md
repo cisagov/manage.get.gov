@@ -20,6 +20,9 @@ need to be exported:
 * DomainRequest
 * DomainInformation
 * DomainUserRole
+* DraftDomain
+* Websites
+* Host
 
 ### Import
 
@@ -37,9 +40,6 @@ Delete all rows from tables in the following order through django admin:
 * Domain
 * User (all but the current user)
 * Contact
-
-It may not be necessary, but advisable to also remove rows from these tables:
-
 * Websites
 * DraftDomain
 * Host
@@ -49,8 +49,11 @@ It may not be necessary, but advisable to also remove rows from these tables:
 Once target environment is prepared, files can be imported in the following
 order:
 
-* User
+* User (After importing User table, you need to delete all rows from Contact table before importing Contacts)
 * Contact
+* Host
+* DraftDomain
+* Websites
 * Domain
 * DomainRequest
 * DomainInformation

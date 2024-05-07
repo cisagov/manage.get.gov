@@ -54,18 +54,15 @@ class FsmModelResource(resources.ModelResource):
         from data in the row."""
 
         # Get fields which are fsm fields
-        fsm_fields = []
+        fsm_fields = {}
 
         for f in self._meta.model._meta.fields:
             if isinstance(f, FSMField):
                 if row and f.name in row:
-                    fsm_fields.append((f.name, row[f.name]))
+                    fsm_fields[f.name] = row[f.name]
 
-        # Convert fsm_fields fields_and_values to kwargs
-        kwargs = dict(fsm_fields)
-
-        # Initialize model instance with kwargs
-        return self._meta.model(**kwargs)
+        # Initialize model instance with fsm_fields
+        return self._meta.model(**fsm_fields)
 
     def import_field(self, field, obj, data, is_m2m=False, **kwargs):
         """Overrides the import_field method of ModelResource.  If the
@@ -760,8 +757,16 @@ class HostIPInline(admin.StackedInline):
     model = models.HostIP
 
 
-class MyHostAdmin(AuditedAdmin):
+class HostResource(resources.ModelResource):
+
+    class Meta:
+        model = models.Host
+
+    
+class MyHostAdmin(AuditedAdmin, ImportExportModelAdmin):
     """Custom host admin class to use our inlines."""
+
+    resource_classes = [HostResource]
 
     search_fields = ["name", "domain__name"]
     search_help_text = "Search by domain or host name."
@@ -899,8 +904,16 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
-class WebsiteAdmin(ListHeaderAdmin):
+class WebsiteResource(resources.ModelResource):
+
+    class Meta:
+        model = models.Website
+
+
+class WebsiteAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom website admin class."""
+
+    resource_classes = [WebsiteResource]
 
     # Search
     search_fields = [
@@ -2139,8 +2152,16 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().has_change_permission(request, obj)
 
 
-class DraftDomainAdmin(ListHeaderAdmin):
+class DraftDomainResource(resources.ModelResource):
+
+    class Meta:
+        model = models.DraftDomain
+
+
+class DraftDomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom draft domain admin class."""
+
+    resource_classes = [DraftDomainResource]
 
     search_fields = ["name"]
     search_help_text = "Search by draft domain name."
