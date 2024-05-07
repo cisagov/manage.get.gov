@@ -2,6 +2,10 @@
 
 {% block content_title %}
     <h1>{{ title }}</h1>
+
+    {# Adds a model description #}
+    {% include "admin/model_descriptions.html" %}
+
     <h2>
         {{ cl.result_count }} 
         {% if cl.get_ordering_field_columns %}

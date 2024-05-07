@@ -8,7 +8,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
 <fieldset class="module aligned {{ fieldset.classes }}">
     {% if fieldset.name %}
         {# Customize the markup for the collapse toggle #}
-        {% if 'collapse--dotgov' in fieldset.classes %}
+        {% if 'collapse--dgfieldset' in fieldset.classes %}
             <button type="button">
                 <span>{{ fieldset.name }}</span>
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
@@ -22,7 +22,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
     {% endif %}
 
     {# Customize the markup for the collapse toggle: Do not show a description for the collapse fieldsets, instead we're using the description as a screen reader only legend #}
-    {% if fieldset.description and 'collapse--dotgov' not in fieldset.classes %}
+    {% if fieldset.description and 'collapse--dgfieldset' not in fieldset.classes %}
         <div class="description">{{ fieldset.description|safe }}</div>
     {% endif %}
 

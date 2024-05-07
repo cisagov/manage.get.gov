@@ -1,0 +1,10 @@
+<p>
+Groups are a way to bundle admin permissions so they can be easily assigned to multiple users. 
+Once a group is created, it can be assigned to people via the <a class="text-underline" href="{% url 'admin:registrar_user_changelist' %}">Users</a> table. 
+</p>
+
+<p>
+To maintain a single source of truth across all environments (stable, staging, etc.), 
+the groups and permissions are set and updated through the codebase.
+<strong>Do not add, edit or delete user groups here.</strong>
+</p>
