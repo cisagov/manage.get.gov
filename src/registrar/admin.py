@@ -762,7 +762,7 @@ class HostResource(resources.ModelResource):
     class Meta:
         model = models.Host
 
-    
+
 class MyHostAdmin(AuditedAdmin, ImportExportModelAdmin):
     """Custom host admin class to use our inlines."""
 
