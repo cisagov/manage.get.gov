@@ -14,7 +14,6 @@ from registrar.models.public_contact import PublicContact
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.enums import DefaultEmail
 
-
 logger = logging.getLogger(__name__)
 
 

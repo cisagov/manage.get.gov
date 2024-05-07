@@ -33,7 +33,6 @@ from django_admin_multiple_choice_list_filter.list_filters import MultipleChoice
 
 from django.utils.translation import gettext_lazy as _
 
-
 logger = logging.getLogger(__name__)
 
 

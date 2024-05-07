@@ -30,6 +30,8 @@ class DomainInformation(TimeStampedModel):
             models.Index(fields=["domain_request"]),
         ]
 
+        verbose_name_plural = "Domain information"
+
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
     # use the short names in Django admin
@@ -342,6 +344,3 @@ class DomainInformation(TimeStampedModel):
     def _get_many_to_many_fields():
         """Returns a set of each field.name that has the many to many relation"""
         return {field.name for field in DomainInformation._meta.many_to_many}  # type: ignore
-
-    class Meta:
-        verbose_name_plural = "Domain information"
