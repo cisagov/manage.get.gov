@@ -67,10 +67,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
     class Meta:
         """Contains meta information about this class"""
+
         indexes = [
             models.Index(fields=["name"]),
+            models.Index(fields=["state"]),
         ]
-
 
     def __init__(self, *args, **kwargs):
         self._cache = {}

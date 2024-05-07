@@ -26,11 +26,11 @@ class DomainRequest(TimeStampedModel):
 
     class Meta:
         """Contains meta information about this class"""
+
         indexes = [
             models.Index(fields=["requested_domain"]),
             models.Index(fields=["approved_domain"]),
             models.Index(fields=["status"]),
-            models.Index(fields=["generic_org_type"]),
         ]
 
     # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history

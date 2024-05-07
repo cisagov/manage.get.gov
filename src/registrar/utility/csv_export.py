@@ -13,7 +13,8 @@ from django.db.models.functions import Concat, Coalesce
 from registrar.models.public_contact import PublicContact
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.enums import DefaultEmail
-from registrar.models.utility.generic_helper import Timer
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -379,7 +380,6 @@ def write_csv_for_requests(
 
 def export_data_type_to_csv(csv_file):
     """All domains report with extra columns"""
-    logger.info("Timing export_data_type_to_csv")
     writer = csv.writer(csv_file)
     # define columns to include in export
     columns = [

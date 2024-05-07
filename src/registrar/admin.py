@@ -32,7 +32,7 @@ from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 
 from django.utils.translation import gettext_lazy as _
-from registrar.models.utility.generic_helper import Timer
+
 
 logger = logging.getLogger(__name__)
 
@@ -2024,7 +2024,6 @@ class DomainAdmin(ListHeaderAdmin):
         return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
 
     def change_view(self, request, object_id):
-        logger.info("Timing change_view on domain")
         # If the analyst was recently editing a domain page,
         # delete any associated session values
         if "analyst_action" in request.session:

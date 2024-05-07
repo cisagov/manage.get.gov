@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class DomainInvitation(TimeStampedModel):
     class Meta:
         """Contains meta information about this class"""
+
         indexes = [
             models.Index(fields=["status"]),
         ]

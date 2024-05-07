@@ -10,6 +10,7 @@ class Contact(TimeStampedModel):
 
     class Meta:
         """Contains meta information about this class"""
+
         indexes = [
             models.Index(fields=["user"]),
             models.Index(fields=["email"]),

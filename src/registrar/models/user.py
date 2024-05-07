@@ -26,6 +26,7 @@ class User(AbstractUser):
 
     class Meta:
         """Contains meta information about this class"""
+
         indexes = [
             models.Index(fields=["username"]),
             models.Index(fields=["email"]),

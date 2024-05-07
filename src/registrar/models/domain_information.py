@@ -24,10 +24,10 @@ class DomainInformation(TimeStampedModel):
 
     class Meta:
         """Contains meta information about this class"""
+
         indexes = [
             models.Index(fields=["domain"]),
             models.Index(fields=["domain_request"]),
-            models.Index(fields=["generic_org_type"]),
         ]
 
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
