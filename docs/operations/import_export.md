@@ -51,10 +51,10 @@ order:
 
 * User (After importing User table, you need to delete all rows from Contact table before importing Contacts)
 * Contact
+* Domain
 * Host
 * DraftDomain
 * Websites
-* Domain
 * DomainRequest
 * DomainInformation
 * UserDomainRole
