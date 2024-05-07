@@ -656,6 +656,7 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-cb.app.cloud.gov",
     "getgov-bob.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
@@ -799,6 +800,6 @@ if DEBUG:
 # Run:
 # cf run-task getgov-<> --wait --command 'python manage.py auditlogmigratejson --traceback' --name auditlogmigratejson
 # on our staging and stable, then remove these 2 variables or set to False
-AUDITLOG_TWO_STEP_MIGRATION = True
+AUDITLOG_TWO_STEP_MIGRATION = False
 
-AUDITLOG_USE_TEXT_CHANGES_IF_JSON_IS_NOT_PRESENT = True
+AUDITLOG_USE_TEXT_CHANGES_IF_JSON_IS_NOT_PRESENT = False

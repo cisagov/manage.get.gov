@@ -16,6 +16,7 @@ on:
         options:
           - staging
           - development
+          - cb
           - bob
           - meoward
           - backup
