@@ -80,7 +80,7 @@ class TestFsmModelResource(TestCase):
         """Test initializing an instance of a class with a FSM field"""
 
         # Mock a row with FSMField data
-        row_data = {'state': 'ready'}
+        row_data = {"state": "ready"}
 
         self.resource._meta.model = Domain
 
@@ -88,13 +88,13 @@ class TestFsmModelResource(TestCase):
 
         # Assert that the instance is initialized correctly
         self.assertIsInstance(instance, Domain)
-        self.assertEqual(instance.state, 'ready')
+        self.assertEqual(instance.state, "ready")
 
     def test_import_field(self):
         """Test that importing a field does not import FSM field"""
         # Mock a field and object
-        field_mock = Mock(attribute='state')
-        obj_mock = Mock(_meta=Mock(fields=[Mock(name='state', spec=['name'], __class__=Mock)]))
+        field_mock = Mock(attribute="state")
+        obj_mock = Mock(_meta=Mock(fields=[Mock(name="state", spec=["name"], __class__=Mock)]))
 
         # Mock the super() method
         super_mock = Mock()
@@ -105,7 +105,6 @@ class TestFsmModelResource(TestCase):
 
         # Assert that super().import_field() is called only for non-FSMField
         super_mock.assert_called_once_with(field_mock, obj_mock, data={}, is_m2m=False)
-
 
 
 class TestDomainAdmin(MockEppLib, WebTest):
