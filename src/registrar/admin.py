@@ -2029,13 +2029,12 @@ class DomainAdmin(ListHeaderAdmin):
 
     def change_view(self, request, object_id):
         logger.info("Timing change_view on domain")
-        with Timer():
-            # If the analyst was recently editing a domain page,
-            # delete any associated session values
-            if "analyst_action" in request.session:
-                del request.session["analyst_action"]
-                del request.session["analyst_action_location"]
-            return super().change_view(request, object_id)
+        # If the analyst was recently editing a domain page,
+        # delete any associated session values
+        if "analyst_action" in request.session:
+            del request.session["analyst_action"]
+            del request.session["analyst_action_location"]
+        return super().change_view(request, object_id)
 
     def has_change_permission(self, request, obj=None):
         # Fixes a bug wherein users which are only is_staff

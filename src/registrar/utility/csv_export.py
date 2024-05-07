@@ -380,111 +380,106 @@ def write_csv_for_requests(
 def export_data_type_to_csv(csv_file):
     """All domains report with extra columns"""
     logger.info("Timing export_data_type_to_csv")
-    with Timer():
-        writer = csv.writer(csv_file)
-        # define columns to include in export
-        columns = [
-            "Domain name",
-            "Status",
-            "Expiration date",
-            "Domain type",
-            "Agency",
-            "Organization name",
-            "City",
-            "State",
-            "AO",
-            "AO email",
-            "Security contact email",
-            # For domain manager we are pass it in as a parameter below in write_body
-        ]
+    writer = csv.writer(csv_file)
+    # define columns to include in export
+    columns = [
+        "Domain name",
+        "Status",
+        "Expiration date",
+        "Domain type",
+        "Agency",
+        "Organization name",
+        "City",
+        "State",
+        "AO",
+        "AO email",
+        "Security contact email",
+        # For domain manager we are pass it in as a parameter below in write_body
+    ]
 
-        # Coalesce is used to replace federal_type of None with ZZZZZ
-        sort_fields = [
-            "organization_type",
-            Coalesce("federal_type", Value("ZZZZZ")),
-            "federal_agency",
-            "domain__name",
-        ]
-        filter_condition = {
-            "domain__state__in": [
-                Domain.State.READY,
-                Domain.State.DNS_NEEDED,
-                Domain.State.ON_HOLD,
-            ],
-        }
-        write_csv_for_domains(
-            writer, columns, sort_fields, filter_condition, should_get_domain_managers=True, should_write_header=True
-        )
+    # Coalesce is used to replace federal_type of None with ZZZZZ
+    sort_fields = [
+        "organization_type",
+        Coalesce("federal_type", Value("ZZZZZ")),
+        "federal_agency",
+        "domain__name",
+    ]
+    filter_condition = {
+        "domain__state__in": [
+            Domain.State.READY,
+            Domain.State.DNS_NEEDED,
+            Domain.State.ON_HOLD,
+        ],
+    }
+    write_csv_for_domains(
+        writer, columns, sort_fields, filter_condition, should_get_domain_managers=True, should_write_header=True
+    )
 
 
 def export_data_full_to_csv(csv_file):
     """All domains report"""
 
-    logger.info("Timing def export_data_full_to_csv")
-    with Timer():
-        writer = csv.writer(csv_file)
-        # define columns to include in export
-        columns = [
-            "Domain name",
-            "Domain type",
-            "Agency",
-            "Organization name",
-            "City",
-            "State",
-            "Security contact email",
-        ]
-        # Coalesce is used to replace federal_type of None with ZZZZZ
-        sort_fields = [
-            "organization_type",
-            Coalesce("federal_type", Value("ZZZZZ")),
-            "federal_agency",
-            "domain__name",
-        ]
-        filter_condition = {
-            "domain__state__in": [
-                Domain.State.READY,
-                Domain.State.DNS_NEEDED,
-                Domain.State.ON_HOLD,
-            ],
-        }
-        write_csv_for_domains(
-            writer, columns, sort_fields, filter_condition, should_get_domain_managers=False, should_write_header=True
-        )
+    writer = csv.writer(csv_file)
+    # define columns to include in export
+    columns = [
+        "Domain name",
+        "Domain type",
+        "Agency",
+        "Organization name",
+        "City",
+        "State",
+        "Security contact email",
+    ]
+    # Coalesce is used to replace federal_type of None with ZZZZZ
+    sort_fields = [
+        "organization_type",
+        Coalesce("federal_type", Value("ZZZZZ")),
+        "federal_agency",
+        "domain__name",
+    ]
+    filter_condition = {
+        "domain__state__in": [
+            Domain.State.READY,
+            Domain.State.DNS_NEEDED,
+            Domain.State.ON_HOLD,
+        ],
+    }
+    write_csv_for_domains(
+        writer, columns, sort_fields, filter_condition, should_get_domain_managers=False, should_write_header=True
+    )
 
 
 def export_data_federal_to_csv(csv_file):
     """Federal domains report"""
-    logger.info("Timing def export_data_federal_to_csv")
-    with Timer():
-        writer = csv.writer(csv_file)
-        # define columns to include in export
-        columns = [
-            "Domain name",
-            "Domain type",
-            "Agency",
-            "Organization name",
-            "City",
-            "State",
-            "Security contact email",
-        ]
-        # Coalesce is used to replace federal_type of None with ZZZZZ
-        sort_fields = [
-            "organization_type",
-            Coalesce("federal_type", Value("ZZZZZ")),
-            "federal_agency",
-            "domain__name",
-        ]
-        filter_condition = {
-            "organization_type__icontains": "federal",
-            "domain__state__in": [
-                Domain.State.READY,
-                Domain.State.DNS_NEEDED,
-                Domain.State.ON_HOLD,
-            ],
-        }
-        write_csv_for_domains(
-            writer, columns, sort_fields, filter_condition, should_get_domain_managers=False, should_write_header=True
-        )
+    writer = csv.writer(csv_file)
+    # define columns to include in export
+    columns = [
+        "Domain name",
+        "Domain type",
+        "Agency",
+        "Organization name",
+        "City",
+        "State",
+        "Security contact email",
+    ]
+    # Coalesce is used to replace federal_type of None with ZZZZZ
+    sort_fields = [
+        "organization_type",
+        Coalesce("federal_type", Value("ZZZZZ")),
+        "federal_agency",
+        "domain__name",
+    ]
+    filter_condition = {
+        "organization_type__icontains": "federal",
+        "domain__state__in": [
+            Domain.State.READY,
+            Domain.State.DNS_NEEDED,
+            Domain.State.ON_HOLD,
+        ],
+    }
+    write_csv_for_domains(
+        writer, columns, sort_fields, filter_condition, should_get_domain_managers=False, should_write_header=True
+    )
 
 
 def get_default_start_date():

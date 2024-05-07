@@ -24,6 +24,13 @@ class User(AbstractUser):
     but can be customized later.
     """
 
+    class Meta:
+        """Contains meta information about this class"""
+        indexes = [
+            models.Index(fields=["username"]),
+            models.Index(fields=["email"]),
+        ]
+
     class VerificationTypeChoices(models.TextChoices):
         """
         Users achieve access to our system in a few different ways.
