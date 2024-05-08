@@ -370,7 +370,7 @@ Per Django, signals "[...allow certain senders to notify a set of receivers that
 
 In other words, signals are a mechanism that allows different parts of an application to communicate with each other by sending and receiving notifications when events occur. When an event occurs (such as creating, updating, or deleting a record), signals can automatically trigger specific actions in response. This allows different parts of an application to stay synchronized without tightly coupling the component. 
 
-## Rules of use
+### Rules of use
 When using signals, try to adhere to these guidelines:
 1. Don't use signals when you can use another method, such as an override of `save()` or `__init__`.   
 2. Document its usage in this readme (or another centralized location), as well as briefly on the underlying class it is associated with. For instance, since the `handle_profile` directly affects the class `Contact`, the class description notes this and links to [signals.py](../../src/registrar/signals.py).
