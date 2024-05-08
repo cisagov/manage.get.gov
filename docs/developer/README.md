@@ -372,10 +372,10 @@ In other words, signals are a mechanism that allows different parts of an applic
 
 ## Rules of use
 When using signals, try to adhere to these guidelines:
-1. Document its usage in this readme (or another centralized location), as well as briefly on the underlying class it is associated with. For instance, since the `handle_profile` directly affects the class `Contact`, the class description notes this and links to [signals.py](../../src/registrar/signals.py).
-2. Where possible, avoid chaining signals together (i.e. a signal that calls a signal). If this has to be done, clearly document the flow.
-3. Minimize logic complexity within the signal as much as possible.
-4. Don't use signals when you can use another method, such as an override of `save()` or `__init__`.   
+1. Don't use signals when you can use another method, such as an override of `save()` or `__init__`.   
+2. Document its usage in this readme (or another centralized location), as well as briefly on the underlying class it is associated with. For instance, since the `handle_profile` directly affects the class `Contact`, the class description notes this and links to [signals.py](../../src/registrar/signals.py).
+3. Where possible, avoid chaining signals together (i.e. a signal that calls a signal). If this has to be done, clearly document the flow.
+4. Minimize logic complexity within the signal as much as possible.
 
 ### When should you use signals?
 Generally, you would use signals when you want an event to be synchronized across multiple areas of code at once (such as with two models or more models at once) in a way that would otherwise be difficult to achieve by overriding functions.
