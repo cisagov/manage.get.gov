@@ -364,7 +364,7 @@ cf env getgov-{app name}
 Then, copy the variables under the section labled `s3`.
 
 ## Signals 
-Though minimally, our application uses [Django signals](https://docs.djangoproject.com/en/5.0/topics/signals/) for a select few models to manage `user <---> contact` interaction. In particular, we use a subset of prebuilt signals called [model signals](https://docs.djangoproject.com/en/5.0/ref/signals/#module-django.db.models.signals). 
+Though minimally, our application uses [Django signals](https://docs.djangoproject.com/en/5.0/topics/signals/). In particular, we use a subset of prebuilt signals called [model signals](https://docs.djangoproject.com/en/5.0/ref/signals/#module-django.db.models.signals). 
 
 Per Django, signals "[...allow certain senders to notify a set of receivers that some action has taken place.](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch)" For the vast majority of our use cases, [pre_save](https://docs.djangoproject.com/en/5.0/ref/signals/#pre-save) or [post_save](https://docs.djangoproject.com/en/5.0/ref/signals/#post-save) are be sufficient.
 
