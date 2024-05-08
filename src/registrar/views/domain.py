@@ -776,15 +776,23 @@ class DomainAddUserView(DomainFormBaseView):
 
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
-        invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
-        if not created:
+        # Check to see if an invite has already been sent (NOTE: we do not want to create an invite just yet.)
+        invite_exists = DomainInvitation.objects.get(email=email_address, domain=self.object)
+        if invite_exists:
             # that invitation already existed
             messages.warning(
                 self.request,
                 f"{email_address} has already been invited to this domain.",
             )
         else:
-            self._send_domain_invitation_email(email=email_address, requestor=requestor)
+            #Try to send the invitation.  If it succeeds, add it to the DomainInvitation table.
+            try:
+                self._send_domain_invitation_email(email=email_address, requestor=requestor)
+            except Exception as exc:
+                raise EmailSendingError("Could not send SES email.") from exc
+            else:
+                #(NOTE: if the invitation fails to send, no invitation should be added to the DomainInvitation table)
+                DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
