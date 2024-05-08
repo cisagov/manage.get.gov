@@ -379,8 +379,8 @@ Consider using signals when:
 1. Synchronizing events across multiple models or areas of code.
 2. Performing logic before or after saving a model to the database (when otherwise difficult through `save()`).
 3. Encountering an import loop when overriding functions such as `save()`.
-4. You are otherwise unable to achieve the intended behavior by overriding `save()` or `__init__` methods.
-5. (Rare) Offloading tasks when using multi-threading.
+4. You are otherwise unable to achieve the intended behavior by overrides or other means.
+5. (Rare) Offloading tasks when multi-threading.
 
 For the vast majority of use cases, the [pre_save](https://docs.djangoproject.com/en/5.0/ref/signals/#pre-save) and [post_save](https://docs.djangoproject.com/en/5.0/ref/signals/#post-save) signals are sufficient in terms of model-to-model management.
 
