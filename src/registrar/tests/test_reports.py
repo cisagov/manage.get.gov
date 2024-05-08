@@ -22,7 +22,6 @@ from django.conf import settings
 from botocore.exceptions import ClientError
 import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
-from datetime import datetime
 from django.utils import timezone
 from .common import MockDb, MockEppLib, less_console_noise
 
