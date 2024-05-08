@@ -2187,8 +2187,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "updated_at",
                 "status",
                 "rejection_reason",
-                "updated_federal_agency",
-                # TODO: once approved, we'll have to remove above from test
+                "federal_agency",
                 "creator",
                 "investigator",
                 "generic_org_type",
@@ -2197,7 +2196,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "federally_recognized_tribe",
                 "state_recognized_tribe",
                 "tribe_name",
-                "federal_agency",
                 "federal_type",
                 "organization_name",
                 "address_line1",

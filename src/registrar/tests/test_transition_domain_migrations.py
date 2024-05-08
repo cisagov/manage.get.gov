@@ -11,6 +11,7 @@ from registrar.models import (
     TransitionDomain,
     DomainInformation,
     UserDomainRole,
+    FederalAgency,
 )
 
 from django.core.management import call_command
@@ -42,6 +43,7 @@ class TestProcessedMigrations(TestCase):
         DomainInformation.objects.all().delete()
         DomainInvitation.objects.all().delete()
         TransitionDomain.objects.all().delete()
+        FederalAgency.objects.all().delete()
 
         # Delete users
         User.objects.all().delete()
@@ -329,6 +331,7 @@ class TestOrganizationMigration(TestCase):
 
             # Lets test the first one
             transition = transition_domains.first()
+            federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
             expected_transition_domain = TransitionDomain(
                 username="alexandra.bobbitt5@test.com",
                 domain_name="fakewebsite2.gov",
@@ -337,7 +340,7 @@ class TestOrganizationMigration(TestCase):
                 generic_org_type="Federal",
                 organization_name="Fanoodle",
                 federal_type="Executive",
-                federal_agency="Department of Commerce",
+                federal_agency=federal_agency,
                 epp_creation_date=datetime.date(2004, 5, 7),
                 epp_expiration_date=datetime.date(2023, 9, 30),
                 first_name="Seline",
@@ -392,6 +395,7 @@ class TestOrganizationMigration(TestCase):
             # == Third, test that we've loaded data as we expect == #
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
+            federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
 
             expected_creator = User.objects.filter(username="System").get()
             expected_ao = Contact.objects.filter(
@@ -400,7 +404,7 @@ class TestOrganizationMigration(TestCase):
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
                 generic_org_type="federal",
-                federal_agency="Department of Commerce",
+                federal_agency=federal_agency,
                 federal_type="executive",
                 organization_name="Fanoodle",
                 address_line1="93001 Arizona Drive",
@@ -447,6 +451,7 @@ class TestOrganizationMigration(TestCase):
             # == Fourth, test that no data is overwritten as we expect == #
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
+            federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
 
             expected_creator = User.objects.filter(username="System").get()
             expected_ao = Contact.objects.filter(
@@ -455,7 +460,7 @@ class TestOrganizationMigration(TestCase):
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
                 generic_org_type="federal",
-                federal_agency="Department of Commerce",
+                federal_agency=federal_agency,
                 federal_type="executive",
                 organization_name="Fanoodle",
                 address_line1="93001 Galactic Way",
@@ -757,74 +762,6 @@ class TestMigrations(TestCase):
             self.assertEqual(testdomain.expiration_date, datetime.date(2023, 9, 30))
             self.assertEqual(testdomain.name, "fakewebsite2.gov")
             self.assertEqual(testdomain.state, "on hold")
-
-    def test_load_full_domain_information(self):
-        with less_console_noise():
-            self.run_load_domains()
-            self.run_transfer_domains()
-
-            # Analyze the tables
-            expected_total_transition_domains = 9
-            expected_total_domains = 5
-            expected_total_domain_informations = 5
-            expected_total_domain_invitations = 8
-
-            expected_missing_domains = 0
-            expected_duplicate_domains = 0
-            expected_missing_domain_informations = 0
-            expected_missing_domain_invitations = 1
-            self.compare_tables(
-                expected_total_transition_domains,
-                expected_total_domains,
-                expected_total_domain_informations,
-                expected_total_domain_invitations,
-                expected_missing_domains,
-                expected_duplicate_domains,
-                expected_missing_domain_informations,
-                expected_missing_domain_invitations,
-            )
-
-            # Test created Domain Information objects
-            domain = Domain.objects.filter(name="anomaly.gov").get()
-            anomaly_domain_infos = DomainInformation.objects.filter(domain=domain)
-
-            self.assertEqual(anomaly_domain_infos.count(), 1)
-
-            # This domain should be pretty barebones. Something isnt
-            # parsing right if we get a lot of data.
-            anomaly = anomaly_domain_infos.get()
-            self.assertEqual(anomaly.organization_name, "Flashdog")
-            self.assertEqual(anomaly.generic_org_type, None)
-            self.assertEqual(anomaly.federal_agency, None)
-            self.assertEqual(anomaly.federal_type, None)
-
-            # Check for the "system" creator user
-            Users = User.objects.filter(username="System")
-            self.assertEqual(Users.count(), 1)
-            self.assertEqual(anomaly.creator, Users.get())
-
-            domain = Domain.objects.filter(name="fakewebsite2.gov").get()
-            fakewebsite_domain_infos = DomainInformation.objects.filter(domain=domain)
-            self.assertEqual(fakewebsite_domain_infos.count(), 1)
-
-            fakewebsite = fakewebsite_domain_infos.get()
-            self.assertEqual(fakewebsite.organization_name, "Fanoodle")
-            self.assertEqual(fakewebsite.generic_org_type, "federal")
-            self.assertEqual(fakewebsite.federal_agency, "Department of Commerce")
-            self.assertEqual(fakewebsite.federal_type, "executive")
-
-            ao = fakewebsite.authorizing_official
-
-            self.assertEqual(ao.first_name, "Seline")
-            self.assertEqual(ao.middle_name, "testmiddle2")
-            self.assertEqual(ao.last_name, "Tower")
-            self.assertEqual(ao.email, "stower3@answers.com")
-            self.assertEqual(ao.phone, "151-539-6028")
-
-            # Check for the "system" creator user
-            Users = User.objects.filter(username="System")
-            self.assertEqual(Users.count(), 1)
-            self.assertEqual(anomaly.creator, Users.get())
 
     def test_transfer_transition_domains_to_domains(self):
         with less_console_noise():

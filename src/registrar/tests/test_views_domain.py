@@ -31,6 +31,7 @@ from registrar.models import (
     HostIP,
     UserDomainRole,
     User,
+    FederalAgency,
 )
 from datetime import date, datetime, timedelta
 from django.utils import timezone
@@ -1420,13 +1421,13 @@ class TestDomainOrganization(TestDomainOverview):
         """
         Submitting a change to federal_agency is blocked for federal domains
         """
-        # Set the current domain to a tribal organization with a preset value.
-        # Save first, so we can test if saving is unaffected (it should be).
+
         fed_org_type = DomainInformation.OrganizationChoices.FEDERAL
         self.domain_information.generic_org_type = fed_org_type
         self.domain_information.save()
         try:
-            self.domain_information.federal_agency = "AMTRAK"
+            federal_agency, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+            self.domain_information.federal_agency = federal_agency
             self.domain_information.save()
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
@@ -1438,7 +1439,7 @@ class TestDomainOrganization(TestDomainOverview):
         form = org_name_page.forms[0]
         # Check the value of the input field
         agency_input = form.fields["federal_agency"][0]
-        self.assertEqual(agency_input.value, "AMTRAK")
+        self.assertEqual(agency_input.value, str(federal_agency.id))
 
         # Check if the input field is disabled
         self.assertTrue("disabled" in agency_input.attrs)
@@ -1456,14 +1457,14 @@ class TestDomainOrganization(TestDomainOverview):
         self.assertEqual(success_result_page.status_code, 200)
 
         # Check for the old and new value
-        self.assertContains(success_result_page, "AMTRAK")
+        self.assertContains(success_result_page, federal_agency.id)
         self.assertNotContains(success_result_page, "Department of State")
 
         # Do another check on the form itself
         form = success_result_page.forms[0]
         # Check the value of the input field
         organization_name_input = form.fields["federal_agency"][0]
-        self.assertEqual(organization_name_input.value, "AMTRAK")
+        self.assertEqual(organization_name_input.value, str(federal_agency.id))
 
         # Check if the input field is disabled
         self.assertTrue("disabled" in organization_name_input.attrs)
@@ -1482,7 +1483,8 @@ class TestDomainOrganization(TestDomainOverview):
         self.domain_information.generic_org_type = federal_org_type
         self.domain_information.save()
 
-        old_federal_agency_value = ("AMTRAK", "AMTRAK")
+        federal_agency, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+        old_federal_agency_value = federal_agency
         try:
             # Add a federal agency. Defined as a tuple since this list may change order.
             self.domain_information.federal_agency = old_federal_agency_value
