@@ -364,18 +364,16 @@ cf env getgov-{app name}
 Then, copy the variables under the section labled `s3`.
 
 ## Signals 
-Though minimally, our application uses [Django signals](https://docs.djangoproject.com/en/5.0/topics/signals/). In particular, we use a subset of prebuilt signals called [model signals](https://docs.djangoproject.com/en/5.0/ref/signals/#module-django.db.models.signals). 
+The application uses [Django signals](https://docs.djangoproject.com/en/5.0/topics/signals/). In particular, it uses a subset of prebuilt signals called [model signals](https://docs.djangoproject.com/en/5.0/ref/signals/#module-django.db.models.signals). 
 
-Per Django, signals "[...allow certain senders to notify a set of receivers that some action has taken place.](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch)" For the vast majority of our use cases, [pre_save](https://docs.djangoproject.com/en/5.0/ref/signals/#pre-save) or [post_save](https://docs.djangoproject.com/en/5.0/ref/signals/#post-save) are be sufficient.
+Per Django, signals "[...allow certain senders to notify a set of receivers that some action has taken place.](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch)" 
 
-In other words, signals are a mechanism that allows different parts of an application to communicate with each other by sending and receiving notifications when said actions occur.
-
-When an event occurs (such as creating, updating, or deleting a record) signals can automatically trigger specific actions in response. This allows different parts of an application to stay synchronized without tightly coupling the component. 
+In other words, signals are a mechanism that allows different parts of an application to communicate with each other by sending and receiving notifications when events occur. When an event occurs (such as creating, updating, or deleting a record), signals can automatically trigger specific actions in response. This allows different parts of an application to stay synchronized without tightly coupling the component. 
 
 ### When should you use signals?
 Generally, you would use signals when you want an event to be synchronized across multiple areas of code at once (such as with two models or more models at once) in a way that would otherwise be difficult to achieve by overriding functions.
 
-However, in most scenarios, if you can get away with _not_ using signals - you should. The reasoning for this is that [signals give the appearance of loose coupling, but they can quickly lead to code that is hard to understand, adjust and debug](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch).
+However, in most scenarios, if you can get away with avoiding signals - you should. The reasoning for this is that [signals give the appearance of loose coupling, but they can quickly lead to code that is hard to understand, adjust and debug](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch).
 
 Consider using signals when:
 1. Synchronizing events across multiple models or areas of code.
@@ -384,8 +382,10 @@ Consider using signals when:
 4. You are otherwise unable to achieve the intended behavior by overriding `save()` or `__init__` methods.
 5. (Rare) Offloading tasks when using multi-threading.
 
+For the vast majority of use cases, the [pre_save](https://docs.djangoproject.com/en/5.0/ref/signals/#pre-save) and [post_save](https://docs.djangoproject.com/en/5.0/ref/signals/#post-save) signals are sufficient in terms of model-to-model management.
+
 ### Where should you use them?
-This project compiles signals in a unified location to maintain readability. If you are adding a signal, you should always define them in [signals.py](../../src/registrar/signals.py). Except under rare circumstances, this should be adhered to for the reasons mentioned above. 
+This project compiles signals in a unified location to maintain readability. If you are adding a signal or otherwise utilizing one, you should always define them in [signals.py](../../src/registrar/signals.py). Except under rare circumstances, this should be adhered to for the reasons mentioned above. 
 
 ### How are we currently using signals?
 At the time of writing, we currently only use signals for the Contact and User objects when synchronizing data returned from Login.gov. This is because the `Contact` object holds information that the user specified in our system, whereas the `User` object holds information that was specified in Login.gov.

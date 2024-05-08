@@ -22,6 +22,8 @@ class User(AbstractUser):
     """
     A custom user model that performs identically to the default user model
     but can be customized later.
+
+    This model uses signals [as defined in [signals.py](../../src/registrar/signals.py)].
     """
 
     class VerificationTypeChoices(models.TextChoices):

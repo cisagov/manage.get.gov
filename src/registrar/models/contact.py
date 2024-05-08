@@ -6,7 +6,11 @@ from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
 
 class Contact(TimeStampedModel):
-    """Contact information follows a similar pattern for each contact."""
+    """
+    Contact information follows a similar pattern for each contact.
+    
+    This model uses signals [as defined in [signals.py](../../src/registrar/signals.py)].
+    """
 
     user = models.OneToOneField(
         "registrar.User",
