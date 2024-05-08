@@ -205,7 +205,7 @@ class ExportDataTest(MockDb, MockEppLib):
         """Test that export_domains_to_writer returns the
         expected security email and first_ready value"""
 
-        with less_console_noise:
+        with less_console_noise():
             # Add security email information
             self.domain_1.name = "defaultsecurity.gov"
             self.domain_1.save()
