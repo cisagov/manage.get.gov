@@ -96,7 +96,7 @@ def parse_row_for_domain(
     FIELDS = {
         "Domain name": domain.name,
         "Status": domain.get_state_display(),
-        "First ready on": domain.first_ready,
+        "First ready on": domain.first_ready or "(blank)",
         "Expiration date": domain.expiration_date,
         "Domain type": domain_type,
         "Agency": domain_info.federal_agency,
