@@ -717,7 +717,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         type_form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.forms[0].submit()
-        # follow first redirectt
+        # follow first redirect
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = type_result.follow()
 
@@ -725,7 +725,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def test_federal_agency_dropdown_excludes_expected_values(self):
         """The Federal Agency dropdown on a domain request form should not
-        include options for gov Administration or Non-Federal Agency"""
+        include options for gov Administration and Non-Federal Agency"""
         intro_page = self.app.get(reverse("domain-request:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
@@ -767,6 +767,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # gov Administration and Non-Federal Agency should not be federal agency options
         self.assertNotContains(org_contact_page, "gov Administration")
         self.assertNotContains(org_contact_page, "Non-Federal Agency")
+        # make sure correct federal agency options still show up
         self.assertContains(org_contact_page, "General Services Administration")
 
     def test_yes_no_contact_form_inits_blank_for_new_domain_request(self):
