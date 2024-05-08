@@ -746,6 +746,10 @@ class MockDb(TestCase):
         DomainInvitation.objects.all().delete()
         FederalAgency.objects.all().delete()
 
+    def get_time_aware_date(self, date=datetime(2023, 11, 1)):
+        """Returns a time aware date"""
+        return timezone.make_aware(date)
+
 
 def mock_user():
     """A simple user."""
