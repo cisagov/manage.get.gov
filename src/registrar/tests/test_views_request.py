@@ -717,11 +717,57 @@ class DomainRequestTests(TestWithUser, WebTest):
         type_form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.forms[0].submit()
-        # follow first redirect
+        # follow first redirectt
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = type_result.follow()
 
         self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
+
+    def test_federal_agency_dropdown_excludes_expected_values(self):
+        """The Federal Agency dropdown on a domain request form should not
+        include options for gov Administration or Non-Federal Agency"""
+        intro_page = self.app.get(reverse("domain-request:"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- TYPE PAGE  ----
+        type_form = type_page.forms[0]
+        type_form["generic_org_type-generic_org_type"] = "federal"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_form.submit()
+
+        # ---- FEDERAL BRANCH PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_page = type_result.follow()
+        federal_form = federal_page.forms[0]
+        federal_form["organization_federal-federal_type"] = "executive"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_result = federal_form.submit()
+
+        # ---- ORG CONTACT PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        org_contact_page = federal_result.follow()
+
+        # gov Administration and Non-Federal Agency should not be federal agency options
+        self.assertNotContains(org_contact_page, "gov Administration")
+        self.assertNotContains(org_contact_page, "Non-Federal Agency")
+        self.assertContains(org_contact_page, "General Services Administration")
 
     def test_yes_no_contact_form_inits_blank_for_new_domain_request(self):
         """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
