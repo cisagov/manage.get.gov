@@ -25,6 +25,56 @@ from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # typ
 from datetime import datetime
 from django.utils import timezone
 from .common import MockDb, MockEppLib, less_console_noise
+from api.tests.common import less_console_noise_decorator
+
+
+class HelperFunctions(MockDb):
+    """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
+
+    def get_time_aware_date(self, date=datetime(2023, 11, 1)):
+        """Returns a time aware date"""
+        return timezone.make_aware(date)
+
+    def test_get_default_start_date(self):
+        expected_date = self.get_time_aware_date()
+        actual_date = get_default_start_date()
+        self.assertEqual(actual_date, expected_date)
+
+    def test_get_default_end_date(self):
+        # Note: You may need to mock timezone.now() for accurate testing
+        expected_date = timezone.now()
+        actual_date = get_default_end_date()
+        self.assertEqual(actual_date.date(), expected_date.date())
+
+    def test_get_sliced_domains(self):
+        """Should get fitered domains counts sliced by org type and election office."""
+
+        with less_console_noise():
+            filter_condition = {
+                "domain__permissions__isnull": False,
+                "domain__first_ready__lte": self.end_date,
+            }
+            # Test with distinct
+            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
+            self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
+
+            # Test without distinct
+            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
+            self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
+
+    def test_get_sliced_requests(self):
+        """Should get fitered requests counts sliced by org type and election office."""
+
+        with less_console_noise():
+            filter_condition = {
+                "status": DomainRequest.DomainRequestStatus.SUBMITTED,
+                "submission_date__lte": self.end_date,
+            }
+            submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)
+            expected_content = [2, 2, 0, 0, 0, 0, 0, 0, 0, 0]
+            self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)
 
 
 class CsvReportsTest(MockDb):
@@ -194,84 +244,89 @@ class CsvReportsTest(MockDb):
             self.assertEqual(expected_file_content, response.content)
 
 
-class ExportDataTest(MockDb, MockEppLib):
+class ExportDataTest(HelperFunctions, MockEppLib):
     def setUp(self):
         super().setUp()
 
     def tearDown(self):
         super().tearDown()
-
-    def test_export_domains_to_writer_security_emails(self):
+    
+    @less_console_noise_decorator
+    def test_export_domains_to_writer_security_emails_and_first_ready(self):
         """Test that export_domains_to_writer returns the
-        expected security email"""
+        expected security email and first_ready value"""
+        # Add security email information
+        self.domain_1.name = "defaultsecurity.gov"
+        self.domain_1.save()
+        # Invoke setter
+        self.domain_1.security_contact
+        # Invoke setter
+        self.domain_2.security_contact
+        # Invoke setter
+        self.domain_3.security_contact
 
-        with less_console_noise():
-            # Add security email information
-            self.domain_1.name = "defaultsecurity.gov"
-            self.domain_1.save()
-            # Invoke setter
-            self.domain_1.security_contact
-            # Invoke setter
-            self.domain_2.security_contact
-            # Invoke setter
-            self.domain_3.security_contact
-            # Create a CSV file in memory
-            csv_file = StringIO()
-            writer = csv.writer(csv_file)
-            # Define columns, sort fields, and filter condition
-            columns = [
-                "Domain name",
-                "Domain type",
-                "Agency",
-                "Organization name",
-                "City",
-                "State",
-                "AO",
-                "AO email",
-                "Security contact email",
-                "Status",
-                "Expiration date",
-            ]
-            sort_fields = ["domain__name"]
-            filter_condition = {
-                "domain__state__in": [
-                    Domain.State.READY,
-                    Domain.State.DNS_NEEDED,
-                    Domain.State.ON_HOLD,
-                ],
-            }
-            self.maxDiff = None
-            # Call the export functions
-            write_csv_for_domains(
-                writer,
-                columns,
-                sort_fields,
-                filter_condition,
-                should_get_domain_managers=False,
-                should_write_header=True,
-            )
+        # Add a first ready date on the first domain. Leaving the others blank.
+        self.domain_1.first_ready = get_default_start_date()
+        self.domain_1.save()
 
-            # Reset the CSV file's position to the beginning
-            csv_file.seek(0)
-            # Read the content into a variable
-            csv_content = csv_file.read()
-            # We expect READY domains,
-            # sorted alphabetially by domain name
-            expected_content = (
-                "Domain name,Domain type,Agency,Organization name,City,State,AO,"
-                "AO email,Security contact email,Status,Expiration date\n"
-                "adomain10.gov,Federal,Armed Forces Retirement Home,Ready\n"
-                "adomain2.gov,Interstate,(blank),Dns needed\n"
-                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
-                "ddomain3.gov,Federal,Armed Forces Retirement Home,security@mail.gov,On hold,2023-11-15\n"
-                "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready\n"
-                "zdomain12.govInterstateReady\n"
-            )
-            # Normalize line endings and remove commas,
-            # spaces and leading/trailing whitespace
-            csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
-            expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-            self.assertEqual(csv_content, expected_content)
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        writer = csv.writer(csv_file)
+        # Define columns, sort fields, and filter condition
+        columns = [
+            "Domain name",
+            "Domain type",
+            "Agency",
+            "Organization name",
+            "City",
+            "State",
+            "AO",
+            "AO email",
+            "Security contact email",
+            "Status",
+            "Expiration date",
+            "First ready on",
+        ]
+        sort_fields = ["domain__name"]
+        filter_condition = {
+            "domain__state__in": [
+                Domain.State.READY,
+                Domain.State.DNS_NEEDED,
+                Domain.State.ON_HOLD,
+            ],
+        }
+        self.maxDiff = None
+        # Call the export functions
+        write_csv_for_domains(
+            writer,
+            columns,
+            sort_fields,
+            filter_condition,
+            should_get_domain_managers=False,
+            should_write_header=True,
+        )
+
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+        # Read the content into a variable
+        csv_content = csv_file.read()
+        # We expect READY domains,
+        # sorted alphabetially by domain name
+        expected_content = (
+            "Domain name,Domain type,Agency,Organization name,City,State,AO,"
+            "AO email,Security contact email,Status,Expiration date, First ready on\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,Ready,2024-05-09\n"
+            "adomain2.gov,Interstate,(blank),Dns needed,(blank)\n"
+            "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady,2024-05-08\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,security@mail.gov,On hold,2023-11-15,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready,2023-11-01\n"
+            "zdomain12.govInterstateReady,2024-05-08\n"
+        )
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.assertEqual(csv_content, expected_content)
 
     def test_write_csv_for_domains(self):
         """Test that write_body returns the
@@ -692,48 +747,3 @@ class ExportDataTest(MockDb, MockEppLib):
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
 
             self.assertEqual(csv_content, expected_content)
-
-
-class HelperFunctions(MockDb):
-    """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
-
-    def test_get_default_start_date(self):
-        expected_date = timezone.make_aware(datetime(2023, 11, 1))
-        actual_date = get_default_start_date()
-        self.assertEqual(actual_date, expected_date)
-
-    def test_get_default_end_date(self):
-        # Note: You may need to mock timezone.now() for accurate testing
-        expected_date = timezone.now()
-        actual_date = get_default_end_date()
-        self.assertEqual(actual_date.date(), expected_date.date())
-
-    def test_get_sliced_domains(self):
-        """Should get fitered domains counts sliced by org type and election office."""
-
-        with less_console_noise():
-            filter_condition = {
-                "domain__permissions__isnull": False,
-                "domain__first_ready__lte": self.end_date,
-            }
-            # Test with distinct
-            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
-            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
-            self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
-
-            # Test without distinct
-            managed_domains_sliced_at_end_date = get_sliced_domains(filter_condition)
-            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
-            self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
-
-    def test_get_sliced_requests(self):
-        """Should get fitered requests counts sliced by org type and election office."""
-
-        with less_console_noise():
-            filter_condition = {
-                "status": DomainRequest.DomainRequestStatus.SUBMITTED,
-                "submission_date__lte": self.end_date,
-            }
-            submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)
-            expected_content = [2, 2, 0, 0, 0, 0, 0, 0, 0, 0]
-            self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)
