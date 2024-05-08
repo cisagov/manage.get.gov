@@ -24,6 +24,11 @@ class User(AbstractUser):
     but can be customized later.
 
     This model uses signals [as defined in [signals.py](../../src/registrar/signals.py)].
+    When a new user is created through Login.gov, a contact object will be created and 
+    associated on the contacts `user` field.
+
+    If the `user` object already exists, said user object 
+    will be updated if any updates are made to it through Login.gov.
     """
 
     class VerificationTypeChoices(models.TextChoices):
