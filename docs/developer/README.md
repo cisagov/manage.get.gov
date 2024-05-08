@@ -368,17 +368,29 @@ Though minimally, our application uses [Django signals](https://docs.djangoproje
 
 Per Django, signals "[...allow certain senders to notify a set of receivers that some action has taken place.](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch)" For the vast majority of our use cases, [pre_save](https://docs.djangoproject.com/en/5.0/ref/signals/#pre-save) or [post_save](https://docs.djangoproject.com/en/5.0/ref/signals/#post-save) are be sufficient.
 
+In other words, signals
+
 ### When should you use signals?
-(TODO - do some prelim research on this)
-Generally, you should use signals in two scenarios:
-1. When you want an event to be synchronized across multiple areas of code at once (such as with two models or more models at once) in a way that would otherwise be difficult to achieve by overriding functions
-2. You need to perform some logic before or after a model is saved to the DB. (TODO improve this section)
+Generally, you would use signals when you want an event to be synchronized across multiple areas of code at once (such as with two models or more models at once) in a way that would otherwise be difficult to achieve by overriding functions.
+
+However, in most scenarios, if you can get away with not using signals - you should. 
+
+Consider using signals when:
+1. Synchronizing events across multiple models or areas of code.
+2. Performing logic before or after saving a model to the database (when otherwise difficult through `save()`).
+3. Encountering an import loop when overriding functions such as `save()`.
+4. You are otherwise unable to achieve the intended behavior by overriding `save()` or `__init__` methods.
+5. (Rare) Offloading tasks when using multi-threading.
 
 ### Where should you use them?
-This project compiles signals in a unified location to maintain readability. If you are adding a signal, you should always define them in [signals.py](link to signals.py). The reasoning for this is that [signals give the appearance of loose coupling, but they can quickly lead to code that is hard to understand, adjust and debug](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch). With the exception of rare circumstances (such as import loops), this should be adhered to for the reasons mentioned above. 
+This project compiles signals in a unified location to maintain readability. If you are adding a signal, you should always define them in [signals.py](../../src/registrar/signals.py). The reasoning for this is that [signals give the appearance of loose coupling, but they can quickly lead to code that is hard to understand, adjust and debug](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch). With the exception of rare circumstancee, this should be adhered to for the reasons mentioned above. 
 
 ### How are we currently using signals?
 To keep our signal usage coherent and well-documented, add to this document when a new function is added for ease of reference and use.
 
-#### Function handle_profile
-This function hooks to the post_save event on the `User` model to sync the user object and the contact object. It will either create a new one, or update an existing one by linking the contact object to the incoming user object.
+#### handle_profile
+This function is triggered by the post_save event on the User model, designed to manage the synchronization between User and Contact entities. It operates under the following conditions:
+
+1. For New Users: Upon the creation of a new user, it checks for an existing `Contact` by email. If no matching contact is found, it creates a new Contact using the user's details from Login.gov. If a matching contact is found, it associates this contact with the user. In cases where multiple contacts with the same email exist, it logs a warning and associates the first contact found.
+
+2. For Existing Users: For users logging in subsequent times, the function ensures that any updates from Login.gov are applied to the associated User record. However, it does not alter any existing Contact records.
