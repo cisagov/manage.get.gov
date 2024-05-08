@@ -762,14 +762,14 @@ class DomainAddUserView(DomainFormBaseView):
                     "requestor_email": requestor_email,
                 },
             )
-        except EmailSendingError:
-            messages.warning(self.request, "Could not send email invitation.")
+        except EmailSendingError as exc:
             logger.warn(
                 "Could not sent email invitation to %s for domain %s",
                 email,
                 self.object,
                 exc_info=True,
             )
+            raise EmailSendingError("Could not send email invitation.") from exc
         else:
             if add_success:
                 messages.success(self.request, f"{email} has been invited to this domain.")
@@ -777,21 +777,21 @@ class DomainAddUserView(DomainFormBaseView):
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
         # Check to see if an invite has already been sent (NOTE: we do not want to create an invite just yet.)
-        invite_exists = DomainInvitation.objects.get(email=email_address, domain=self.object)
-        if invite_exists:
+        try:
+            invite = DomainInvitation.objects.get(email=email_address, domain=self.object)
             # that invitation already existed
             messages.warning(
                 self.request,
                 f"{email_address} has already been invited to this domain.",
             )
-        else:
+        except DomainInvitation.DoesNotExist:
             #Try to send the invitation.  If it succeeds, add it to the DomainInvitation table.
             try:
                 self._send_domain_invitation_email(email=email_address, requestor=requestor)
-            except Exception as exc:
-                raise EmailSendingError("Could not send SES email.") from exc
+            except EmailSendingError as exc:
+                messages.warning(self.request, "Could not send email invitation.")
             else:
-                #(NOTE: if the invitation fails to send, no invitation should be added to the DomainInvitation table)
+                #(NOTE: only create a domainInvitation if the e-mail sends correctly)
                 DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         return redirect(self.get_success_url())
 
@@ -807,7 +807,10 @@ class DomainAddUserView(DomainFormBaseView):
             return self._make_invitation(requested_email, requestor)
         else:
             # if user already exists then just send an email
-            self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+            try:
+                self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+            except Exception as exc:
+                messages.warning(self.request, "Could not send email invitation.")
 
         try:
             UserDomainRole.objects.create(
