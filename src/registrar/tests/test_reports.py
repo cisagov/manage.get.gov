@@ -245,7 +245,7 @@ class ExportDataTest(MockDb, MockEppLib):
                     Domain.State.ON_HOLD,
                 ],
             }
-            self.maxDiff = None
+
             # Call the export functions
             write_csv_for_domains(
                 writer,
@@ -474,7 +474,7 @@ class ExportDataTest(MockDb, MockEppLib):
 
             # Read the content into a variable
             csv_content = csv_file.read()
-            self.maxDiff = None
+
             # We expect READY domains first, created between day-2 and day+2, sorted by created_at then name
             # and DELETED domains deleted between day-2 and day+2, sorted by deleted then name
             expected_content = (
@@ -587,7 +587,7 @@ class ExportDataTest(MockDb, MockEppLib):
             csv_file.seek(0)
             # Read the content into a variable
             csv_content = csv_file.read()
-            self.maxDiff = None
+
             # We expect the READY domain names with the domain managers: Their counts, and listing at end_date.
             expected_content = (
                 "MANAGED DOMAINS COUNTS AT START DATE\n"
@@ -630,7 +630,7 @@ class ExportDataTest(MockDb, MockEppLib):
             csv_file.seek(0)
             # Read the content into a variable
             csv_content = csv_file.read()
-            self.maxDiff = None
+
             # We expect the READY domain names with the domain managers: Their counts, and listing at end_date.
             expected_content = (
                 "UNMANAGED DOMAINS AT START DATE\n"

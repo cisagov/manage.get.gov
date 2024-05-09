@@ -2164,7 +2164,6 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "Yes, select ineligible status")
 
     def test_readonly_when_restricted_creator(self):
-        self.maxDiff = None
         with less_console_noise():
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
