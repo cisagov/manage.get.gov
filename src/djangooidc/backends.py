@@ -60,6 +60,7 @@ class OpenIdConnectBackend(ModelBackend):
         else:
             try:
                 user = UserModel.objects.get_by_natural_key(username)
+                request.session["is_new_user"] = False
             except UserModel.DoesNotExist:
                 return None
         # run this callback for a each login

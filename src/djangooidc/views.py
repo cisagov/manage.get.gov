@@ -114,7 +114,9 @@ def login_callback(request):
                 user.set_user_verification_type()
                 should_update_user = True
 
-            if is_new_user:
+            # If we're dealing with a new user and if this field isn't set already,
+            # Then set this to False. Otherwise, if we set the field manually it'll revert.
+            if is_new_user and not user.finished_setup:
                 user.finished_setup = False
                 should_update_user = True
 
