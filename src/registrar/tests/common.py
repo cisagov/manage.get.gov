@@ -97,6 +97,11 @@ def less_console_noise(output_stream=None):
             output_stream.close()
 
 
+def get_time_aware_date(date=datetime(2023, 11, 1)):
+    """Returns a time aware date"""
+    return timezone.make_aware(date)
+
+
 class GenericTestHelper(TestCase):
     """A helper class that contains various helper functions for TestCases"""
 
@@ -532,11 +537,9 @@ class MockDb(TestCase):
             username=username, first_name=first_name, last_name=last_name, email=email
         )
 
-        # Create a time-aware current date
-        current_datetime = timezone.now()
-        # Extract the date part
-        current_date = current_datetime.date()
+        current_date = get_time_aware_date(datetime(2024, 4, 2))
         # Create start and end dates using timedelta
+
         self.end_date = current_date + timedelta(days=2)
         self.start_date = current_date - timedelta(days=2)
 
@@ -544,22 +547,22 @@ class MockDb(TestCase):
         self.federal_agency_2, _ = FederalAgency.objects.get_or_create(agency="Armed Forces Retirement Home")
 
         self.domain_1, _ = Domain.objects.get_or_create(
-            name="cdomain1.gov", state=Domain.State.READY, first_ready=timezone.now()
+            name="cdomain1.gov", state=Domain.State.READY, first_ready=get_time_aware_date(datetime(2024, 4, 2))
         )
         self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
         self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
         self.domain_5, _ = Domain.objects.get_or_create(
-            name="bdomain5.gov", state=Domain.State.DELETED, deleted=timezone.make_aware(datetime(2023, 11, 1))
+            name="bdomain5.gov", state=Domain.State.DELETED, deleted=get_time_aware_date(datetime(2023, 11, 1))
         )
         self.domain_6, _ = Domain.objects.get_or_create(
-            name="bdomain6.gov", state=Domain.State.DELETED, deleted=timezone.make_aware(datetime(1980, 10, 16))
+            name="bdomain6.gov", state=Domain.State.DELETED, deleted=get_time_aware_date(datetime(1980, 10, 16))
         )
         self.domain_7, _ = Domain.objects.get_or_create(
-            name="xdomain7.gov", state=Domain.State.DELETED, deleted=timezone.now()
+            name="xdomain7.gov", state=Domain.State.DELETED, deleted=get_time_aware_date(datetime(2024, 4, 2))
         )
         self.domain_8, _ = Domain.objects.get_or_create(
-            name="sdomain8.gov", state=Domain.State.DELETED, deleted=timezone.now()
+            name="sdomain8.gov", state=Domain.State.DELETED, deleted=get_time_aware_date(datetime(2024, 4, 2))
         )
         # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today())
         # and a specific time (using datetime.min.time()).
@@ -567,19 +570,19 @@ class MockDb(TestCase):
         self.domain_9, _ = Domain.objects.get_or_create(
             name="zdomain9.gov",
             state=Domain.State.DELETED,
-            deleted=timezone.make_aware(datetime.combine(date.today() - timedelta(days=1), datetime.min.time())),
+            deleted=get_time_aware_date(datetime(2024, 4, 1)),
         )
         # ready tomorrow
         self.domain_10, _ = Domain.objects.get_or_create(
             name="adomain10.gov",
             state=Domain.State.READY,
-            first_ready=timezone.make_aware(datetime.combine(date.today() + timedelta(days=1), datetime.min.time())),
+            first_ready=get_time_aware_date(datetime(2024, 4, 3)),
         )
         self.domain_11, _ = Domain.objects.get_or_create(
-            name="cdomain11.gov", state=Domain.State.READY, first_ready=timezone.now()
+            name="cdomain11.gov", state=Domain.State.READY, first_ready=get_time_aware_date(datetime(2024, 4, 2))
         )
         self.domain_12, _ = Domain.objects.get_or_create(
-            name="zdomain12.gov", state=Domain.State.READY, first_ready=timezone.now()
+            name="zdomain12.gov", state=Domain.State.READY, first_ready=get_time_aware_date(datetime(2024, 4, 2))
         )
 
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
@@ -716,23 +719,31 @@ class MockDb(TestCase):
 
         with less_console_noise():
             self.domain_request_1 = completed_domain_request(
-                status=DomainRequest.DomainRequestStatus.STARTED, name="city1.gov"
+                status=DomainRequest.DomainRequestStatus.STARTED,
+                name="city1.gov",
             )
             self.domain_request_2 = completed_domain_request(
-                status=DomainRequest.DomainRequestStatus.IN_REVIEW, name="city2.gov"
+                status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+                name="city2.gov",
             )
             self.domain_request_3 = completed_domain_request(
-                status=DomainRequest.DomainRequestStatus.STARTED, name="city3.gov"
+                status=DomainRequest.DomainRequestStatus.STARTED,
+                name="city3.gov",
             )
             self.domain_request_4 = completed_domain_request(
-                status=DomainRequest.DomainRequestStatus.STARTED, name="city4.gov"
+                status=DomainRequest.DomainRequestStatus.STARTED,
+                name="city4.gov",
             )
             self.domain_request_5 = completed_domain_request(
-                status=DomainRequest.DomainRequestStatus.APPROVED, name="city5.gov"
+                status=DomainRequest.DomainRequestStatus.APPROVED,
+                name="city5.gov",
             )
             self.domain_request_3.submit()
-            self.domain_request_3.save()
             self.domain_request_4.submit()
+
+            self.domain_request_3.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            self.domain_request_4.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            self.domain_request_3.save()
             self.domain_request_4.save()
 
     def tearDown(self):
@@ -745,10 +756,6 @@ class MockDb(TestCase):
         UserDomainRole.objects.all().delete()
         DomainInvitation.objects.all().delete()
         FederalAgency.objects.all().delete()
-
-    def get_time_aware_date(self, date=datetime(2023, 11, 1)):
-        """Returns a time aware date"""
-        return timezone.make_aware(date)
 
 
 def mock_user():
@@ -877,6 +884,7 @@ def completed_domain_request(
 
     if organization_type:
         domain_request_kwargs["organization_type"] = organization_type
+
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
     if has_other_contacts:

@@ -23,7 +23,7 @@ from botocore.exceptions import ClientError
 import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from django.utils import timezone
-from .common import MockDb, MockEppLib, less_console_noise
+from .common import MockDb, MockEppLib, less_console_noise, get_time_aware_date
 
 
 class CsvReportsTest(MockDb):
@@ -265,12 +265,12 @@ class ExportDataTest(MockDb, MockEppLib):
             expected_content = (
                 "Domain name,Domain type,Agency,Organization name,City,State,AO,"
                 "AO email,Security contact email,Status,Expiration date, First ready on\n"
-                "adomain10.gov,Federal,Armed Forces Retirement Home,Ready,2024-05-09\n"
-                "adomain2.gov,Interstate,(blank),Dns needed,(blank)\n"
-                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady,2024-05-08\n"
+                "adomain10.gov,Federal,Armed Forces Retirement Home,Ready,(blank),2023-11-01\n"
+                "adomain2.gov,Interstate,(blank),Dns needed,(blank),(blank)\n"
+                "cdomain11.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank),2023-11-01\n"
                 "ddomain3.gov,Federal,Armed Forces Retirement Home,security@mail.gov,On hold,2023-11-15,(blank)\n"
-                "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready,2023-11-01\n"
-                "zdomain12.govInterstateReady,2024-05-08\n"
+                "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready,(blank),2023-11-01\n"
+                "zdomain12.govInterstateReady,(blank),2023-11-01\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -474,19 +474,21 @@ class ExportDataTest(MockDb, MockEppLib):
 
             # Read the content into a variable
             csv_content = csv_file.read()
-
-            # We expect READY domains first, created between today-2 and today+2, sorted by created_at then name
-            # and DELETED domains deleted between today-2 and today+2, sorted by deleted then name
+            self.maxDiff = None
+            # We expect READY domains first, created between day-2 and day+2, sorted by created_at then name
+            # and DELETED domains deleted between day-2 and day+2, sorted by deleted then name
             expected_content = (
                 "Domain name,Domain type,Agency,Organization name,City,"
                 "State,Status,Expiration date\n"
-                "cdomain1.gov,Federal-Executive,World War I Centennial Commission,,,,Ready,\n"
-                "adomain10.gov,Federal,Armed Forces Retirement Home,,,,Ready,\n"
-                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
-                "zdomain12.govInterstateReady\n"
-                "zdomain9.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
-                "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
-                "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
+                "cdomain1.gov,Federal-Executive,World War I Centennial Commission,,,,Ready,(blank)\n"
+                "adomain10.gov,Federal,Armed Forces Retirement Home,,,,Ready,(blank)\n"
+                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady(blank)\n"
+                "zdomain12.govInterstateReady(blank)\n"
+                "bdomain5.gov,Federal,ArmedForcesRetirementHome,Deleted(blank)\n"
+                "bdomain6.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank)\n"
+                "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,Deleted,(blank)\n"
+                "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,Deleted,(blank)\n"
+                "zdomain9.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank)\n"
             )
 
             # Normalize line endings and remove commas,
@@ -531,7 +533,7 @@ class ExportDataTest(MockDb, MockEppLib):
                     Domain.State.ON_HOLD,
                 ],
             }
-            self.maxDiff = None
+
             # Call the export functions
             write_csv_for_domains(
                 writer,
@@ -553,14 +555,14 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Organization name,City,State,AO,AO email,"
                 "Security contact email,Domain manager 1,DM1 status,Domain manager 2,DM2 status,"
                 "Domain manager 3,DM3 status,Domain manager 4,DM4 status\n"
-                "adomain10.gov,Ready,,Federal,Armed Forces Retirement Home,,,, , ,squeaker@rocks.com, I\n"
-                "adomain2.gov,Dns needed,,Interstate,,,,, , , ,meoward@rocks.com, R,squeaker@rocks.com, I\n"
-                "cdomain11.govReadyFederal-ExecutiveWorldWarICentennialCommissionmeoward@rocks.comR\n"
-                "cdomain1.gov,Ready,,Federal - Executive,World War I Centennial Commission,,,"
+                "adomain10.gov,Ready,(blank),Federal,Armed Forces Retirement Home,,,, , ,squeaker@rocks.com, I\n"
+                "adomain2.gov,Dns needed,(blank),Interstate,,,,, , , ,meoward@rocks.com, R,squeaker@rocks.com, I\n"
+                "cdomain11.govReady,(blank),Federal-ExecutiveWorldWarICentennialCommissionmeoward@rocks.comR\n"
+                "cdomain1.gov,Ready,(blank),Federal - Executive,World War I Centennial Commission,,,"
                 ", , , ,meoward@rocks.com,R,info@example.com,R,big_lebowski@dude.co,R,"
                 "woofwardthethird@rocks.com,I\n"
-                "ddomain3.gov,On hold,,Federal,Armed Forces Retirement Home,,,, , , ,,\n"
-                "zdomain12.govReadyInterstatemeoward@rocks.comR\n"
+                "ddomain3.gov,On hold,(blank),Federal,Armed Forces Retirement Home,,,, , , ,,\n"
+                "zdomain12.gov,Ready,(blank),Interstate,meoward@rocks.com,R\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -695,7 +697,7 @@ class ExportDataTest(MockDb, MockEppLib):
             # spaces and leading/trailing whitespace
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-
+            print(f"what is the actual content {csv_content}")
             self.assertEqual(csv_content, expected_content)
 
 
@@ -703,7 +705,7 @@ class HelperFunctions(MockDb):
     """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
 
     def test_get_default_start_date(self):
-        expected_date = self.get_time_aware_date()
+        expected_date = get_time_aware_date()
         actual_date = get_default_start_date()
         self.assertEqual(actual_date, expected_date)
 
