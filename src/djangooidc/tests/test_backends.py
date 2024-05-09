@@ -21,7 +21,7 @@ class OpenIdConnectBackendTestCase(TestCase):
         """Test that authenticate creates a new user if it does not find
         existing user"""
         # Ensure that the authenticate method creates a new user
-        user = self.backend.authenticate(request=None, **self.kwargs)
+        user, _ = self.backend.authenticate(request=None, **self.kwargs)
         self.assertIsNotNone(user)
         self.assertIsInstance(user, User)
         self.assertEqual(user.username, "test_user")
@@ -39,7 +39,7 @@ class OpenIdConnectBackendTestCase(TestCase):
         existing_user = User.objects.create_user(username="test_user")
 
         # Ensure that the authenticate method updates the existing user
-        user = self.backend.authenticate(request=None, **self.kwargs)
+        user, _ = self.backend.authenticate(request=None, **self.kwargs)
         self.assertIsNotNone(user)
         self.assertIsInstance(user, User)
         self.assertEqual(user, existing_user)  # The same user instance should be returned
@@ -68,7 +68,7 @@ class OpenIdConnectBackendTestCase(TestCase):
 
         # Ensure that the authenticate method updates the existing user
         # and preserves existing first and last names
-        user = self.backend.authenticate(request=None, **self.kwargs)
+        user, _ = self.backend.authenticate(request=None, **self.kwargs)
         self.assertIsNotNone(user)
         self.assertIsInstance(user, User)
         self.assertEqual(user, existing_user)  # The same user instance should be returned
@@ -89,7 +89,7 @@ class OpenIdConnectBackendTestCase(TestCase):
 
         # Ensure that the authenticate method updates the existing user
         # and preserves existing first and last names
-        user = self.backend.authenticate(request=None, **self.kwargs)
+        user, _ = self.backend.authenticate(request=None, **self.kwargs)
         self.assertIsNotNone(user)
         self.assertIsInstance(user, User)
         self.assertEqual(user, existing_user)  # The same user instance should be returned
@@ -103,5 +103,5 @@ class OpenIdConnectBackendTestCase(TestCase):
     def test_authenticate_with_unknown_user(self):
         """Test that authenticate returns None when no kwargs are supplied"""
         # Ensure that the authenticate method handles the case when the user is not found
-        user = self.backend.authenticate(request=None, **{})
+        user, _ = self.backend.authenticate(request=None, **{})
         self.assertIsNone(user)

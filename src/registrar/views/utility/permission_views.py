@@ -3,8 +3,7 @@
 import abc  # abstract base class
 
 from django.views.generic import DetailView, DeleteView, TemplateView
-from registrar.models import Domain, DomainRequest, DomainInvitation
-from registrar.models.user_domain_role import UserDomainRole
+from registrar.models import Domain, DomainRequest, DomainInvitation, UserDomainRole, Contact
 
 from .mixins import (
     DomainPermission,
@@ -13,6 +12,7 @@ from .mixins import (
     DomainInvitationPermission,
     DomainRequestWizardPermission,
     UserDeleteDomainRolePermission,
+    ContactPermission,
 )
 import logging
 
@@ -142,3 +142,22 @@ class UserDomainRolePermissionDeleteView(UserDeleteDomainRolePermission, DeleteV
 
     # variable name in template context for the model object
     context_object_name = "userdomainrole"
+
+
+class ContactPermissionView(ContactPermission, DetailView, abc.ABC):
+    """Abstract base view for domain requests that enforces permissions
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+    # DetailView property for what model this is viewing
+    model = Contact
+    # variable name in template context for the model object
+    context_object_name = "Contact"
+
+    # Abstract property enforces NotImplementedError on an attribute.
+    @property
+    @abc.abstractmethod
+    def template_name(self):
+        raise NotImplementedError

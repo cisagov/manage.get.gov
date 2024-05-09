@@ -80,6 +80,13 @@ class User(AbstractUser):
         help_text="The means through which this user was verified",
     )
 
+    # Tracks if the user finished their profile setup or not. This is so
+    # we can globally enforce that new users provide additional context before proceeding.
+    finished_setup = models.BooleanField(
+        # Default to true so we don't impact existing users. We set this to false downstream.
+        default=True
+    )
+
     def __str__(self):
         # this info is pulled from Login.gov
         if self.first_name or self.last_name:

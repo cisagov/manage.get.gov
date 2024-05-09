@@ -85,6 +85,7 @@ def login_callback(request):
     """Analyze the token returned by the authentication provider (OP)."""
     global CLIENT
     try:
+        request.session["is_new_user"] = False
         # If the CLIENT is none, attempt to reinitialize before handling the request
         if _client_is_none():
             logger.debug("OIDC client is None, attempting to initialize")
@@ -97,9 +98,9 @@ def login_callback(request):
             # add acr_value to request.session
             request.session["acr_value"] = CLIENT.get_step_up_acr_value()
             return CLIENT.create_authn_request(request.session)
-        user = authenticate(request=request, **userinfo)
+        user, is_new_user = authenticate(request=request, **userinfo)
         if user:
-
+            should_update_user = False
             # Fixture users kind of exist in a superposition of verification types,
             # because while the system "verified" them, if they login,
             # we don't know how the user themselves was verified through login.gov until
@@ -110,9 +111,17 @@ def login_callback(request):
             # Set the verification type if it doesn't already exist or if its a fixture user
             if not user.verification_type or is_fixture_user:
                 user.set_user_verification_type()
+                should_update_user = True
+
+            if is_new_user:
+                user.finished_setup = False
+                should_update_user = True
+
+            if should_update_user:
                 user.save()
 
             login(request, user)
+
             logger.info("Successfully logged in user %s" % user)
 
             # Clear the flag if the exception is not caught

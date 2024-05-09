@@ -21,10 +21,13 @@ class OpenIdConnectBackend(ModelBackend):
     """
 
     def authenticate(self, request, **kwargs):
+        """Returns a tuple of (User, is_new_user)"""
         logger.debug("kwargs %s" % kwargs)
         user = None
+        is_new_user = True
+
         if not kwargs or "sub" not in kwargs.keys():
-            return user
+            return user, is_new_user
 
         UserModel = get_user_model()
         username = self.clean_username(kwargs["sub"])
@@ -48,6 +51,7 @@ class OpenIdConnectBackend(ModelBackend):
             }
 
             user, created = UserModel.objects.get_or_create(**args)
+            is_new_user = created
 
             if not created:
                 # If user exists, update existing user
@@ -59,10 +63,10 @@ class OpenIdConnectBackend(ModelBackend):
             try:
                 user = UserModel.objects.get_by_natural_key(username)
             except UserModel.DoesNotExist:
-                return None
+                return None, is_new_user
         # run this callback for a each login
         user.on_each_login()
-        return user
+        return user, is_new_user
 
     def update_existing_user(self, user, kwargs):
         """

@@ -8,6 +8,7 @@ from registrar.models import (
     DomainInvitation,
     DomainInformation,
     UserDomainRole,
+    Contact,
 )
 import logging
 
@@ -322,6 +323,38 @@ class UserDeleteDomainRolePermission(PermissionsLoginMixin):
             return False
 
         return True
+
+
+class ContactPermission(PermissionsLoginMixin):
+    """Permission mixin for UserDomainRole if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to this domain request.
+
+        The user is in self.request.user and the domain needs to be looked
+        up from the domain's primary key in self.kwargs["pk"]
+        """
+
+        # Check if the user is authenticated
+        if not self.request.user.is_authenticated:
+            return False
+
+        user_pk = self.kwargs["pk"]
+
+        # Check if the user has an associated contact
+        associated_contacts = Contact.objects.filter(user=user_pk)
+        associated_contacts_length = len(associated_contacts)
+
+        if associated_contacts_length == 0:
+            # This means that the user trying to access this page
+            # is a different user than the contact holder.
+            return False
+        elif associated_contacts_length > 1:
+            # TODO - change this
+            raise ValueError("User has multiple connected contacts")
+        else:
+            return True
 
 
 class DomainRequestPermissionWithdraw(PermissionsLoginMixin):
