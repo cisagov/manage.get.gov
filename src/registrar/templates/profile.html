@@ -25,7 +25,6 @@ Edit your User Profile |
 
     <form class="usa-form usa-form--large" method="post" enctype="multipart/form-data">
       <fieldset class="usa-fieldset">
-        <legend class="usa-legend usa-legend--large">Your profile</legend>
         {% for field in profile_form %}
         <label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
         {{ field }}
