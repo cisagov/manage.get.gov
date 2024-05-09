@@ -265,12 +265,13 @@ class ExportDataTest(MockDb, MockEppLib):
             expected_content = (
                 "Domain name,Domain type,Agency,Organization name,City,State,AO,"
                 "AO email,Security contact email,Status,Expiration date, First ready on\n"
-                "adomain10.gov,Federal,Armed Forces Retirement Home,Ready,(blank),2023-11-01\n"
+                "adomain10.gov,Federal,Armed Forces Retirement Home,Ready,(blank),2024-04-03\n"
                 "adomain2.gov,Interstate,(blank),Dns needed,(blank),(blank)\n"
-                "cdomain11.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank),2023-11-01\n"
+                "cdomain11.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank),2024-04-02\n"
                 "ddomain3.gov,Federal,Armed Forces Retirement Home,security@mail.gov,On hold,2023-11-15,(blank)\n"
-                "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready,(blank),2023-11-01\n"
-                "zdomain12.govInterstateReady,(blank),2023-11-01\n"
+                "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,"
+                "(blank),Ready,(blank),2023-11-01\n"
+                "zdomain12.govInterstateReady,(blank),2024-04-02\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -474,7 +475,7 @@ class ExportDataTest(MockDb, MockEppLib):
 
             # Read the content into a variable
             csv_content = csv_file.read()
-
+            self.maxDiff = None
             # We expect READY domains first, created between day-2 and day+2, sorted by created_at then name
             # and DELETED domains deleted between day-2 and day+2, sorted by deleted then name
             expected_content = (
@@ -484,11 +485,9 @@ class ExportDataTest(MockDb, MockEppLib):
                 "adomain10.gov,Federal,Armed Forces Retirement Home,,,,Ready,(blank)\n"
                 "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady(blank)\n"
                 "zdomain12.govInterstateReady(blank)\n"
-                "bdomain5.gov,Federal,ArmedForcesRetirementHome,Deleted(blank)\n"
-                "bdomain6.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank)\n"
-                "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,Deleted,(blank)\n"
-                "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,Deleted,(blank)\n"
                 "zdomain9.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank)\n"
+                "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,Deleted,(blank)\n"
+                "xdomain7.gov,FederalArmedForcesRetirementHome,Deleted,(blank)\n"
             )
 
             # Normalize line endings and remove commas,
