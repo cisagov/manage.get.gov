@@ -179,6 +179,11 @@ urlpatterns = [
         name="domain-users-add",
     ),
     path(
+        "user-profile",
+        views.UserProfileView.as_view(),
+        name="user-profile",
+    ),
+    path(
         "invitation/<int:pk>/delete",
         views.DomainInvitationDeleteView.as_view(http_method_names=["post"]),
         name="invitation-delete",

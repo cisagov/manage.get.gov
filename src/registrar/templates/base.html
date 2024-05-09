@@ -158,8 +158,11 @@
           </li>
           <li class="usa-nav__primary-item display-flex flex-align-center margin-left-2">
             <span class="text-base"> | </span>
-            <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>
+            <a href="{% url 'user-profile' %}"><span class="text-primary">Your profile</span></a>
           </li>
+          <li class="usa-nav__primary-item display-flex flex-align-center margin-left-2">
+            <span class="text-base"> | </span>
+            <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>
             {% else %}
             <a href="{% url 'login' %}"><span>Sign in</span></a>
             {% endif %}

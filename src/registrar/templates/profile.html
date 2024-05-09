@@ -3,25 +3,36 @@
 {% block title %}
 Edit your User Profile |
 {% endblock title %}
+{% load static url_helpers %}
 
 {% block content %}
 <main id="main-content" class="grid-container">
-  <form class="usa-form usa-form--large" method="post" enctype="multipart/form-data">
-    <fieldset class="usa-fieldset">
-      <legend class="usa-legend usa-legend--large">Your profile</legend>
-      <p>
-      Required fields are marked with an asterisk (<abbr
-        title="required"
-        class="usa-hint usa-hint--required"
-        >*</abbr>).
+  <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
+    <a href="{% url 'home' %}" class="breadcrumb__back">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+      <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+      </svg>
+  
+      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+      Back to manage your domains
       </p>
-      {% for field in profile_form %}
-      <label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
-      {{ field }}
-      {% endfor %}
-  </fieldset>
-    <button type="submit" class="usa-button usa-button--big">Save Changes</button>
-  </form>
+    </a>
+    <h1>Your profile</h1>
+    <p>We require that you maintain accurate contact information. The details you provide will only be used to support the administration of .gov and won’t be made public.</p>
+    <h2>Contact information</h2>
+    <p>Review the details below and update any required information. Note that editing this information won’t affect your Login.gov account information.</p>
+    {% include "includes/required_fields.html" %}
+
+    <form class="usa-form usa-form--large" method="post" enctype="multipart/form-data">
+      <fieldset class="usa-fieldset">
+        <legend class="usa-legend usa-legend--large">Your profile</legend>
+        {% for field in profile_form %}
+        <label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
+        {{ field }}
+        {% endfor %}
+      </fieldset>
+      <button type="submit" class="usa-button">Save</button>
+    </form>
 </main>
 {% endblock content %}
 
