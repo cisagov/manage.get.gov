@@ -20,10 +20,20 @@ class CheckUserProfileMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        # Check if the user is authenticated and if the setup is not finished
-        if request.user.is_authenticated and not request.user.finished_setup:
-            # Redirect to the setup page
-            return HttpResponseRedirect(reverse('finish-contact-profile-setup'))
+        # Check if setup is not finished
+        finished_setup = hasattr(request.user, "finished_setup") and request.user.finished_setup
+        if request.user.is_authenticated and not finished_setup:
+            setup_page = reverse("finish-contact-profile-setup", kwargs={'pk': request.user.pk})
+            logout_page = reverse("logout")
+            excluded_pages = [
+                setup_page,
+                logout_page,
+            ]
+
+            # Don't redirect on excluded pages (such as the setup page itself)
+            if not any(request.path.startswith(page) for page in excluded_pages):
+                # Redirect to the setup page
+                return HttpResponseRedirect(setup_page)
 
         # Continue processing the view
         return None

@@ -99,7 +99,7 @@ def login_callback(request):
             request.session["acr_value"] = CLIENT.get_step_up_acr_value()
             return CLIENT.create_authn_request(request.session)
         user = authenticate(request=request, **userinfo)
-        is_new_user = request.session["is_new_user"]
+        is_new_user = request.session.get("is_new_user", False)
         if user:
             should_update_user = False
             # Fixture users kind of exist in a superposition of verification types,
@@ -114,9 +114,7 @@ def login_callback(request):
                 user.set_user_verification_type()
                 should_update_user = True
 
-            # If we're dealing with a new user and if this field isn't set already,
-            # Then set this to False. Otherwise, if we set the field manually it'll revert.
-            if is_new_user and not user.finished_setup:
+            if is_new_user:
                 user.finished_setup = False
                 should_update_user = True
 
