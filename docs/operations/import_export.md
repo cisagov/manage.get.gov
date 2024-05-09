@@ -23,6 +23,7 @@ need to be exported:
 * DraftDomain
 * Websites
 * Host
+* HostIP
 
 ### Import
 
@@ -42,6 +43,7 @@ Delete all rows from tables in the following order through django admin:
 * Contact
 * Websites
 * DraftDomain
+* HostIP
 * Host
 
 #### Importing into Target Environment
@@ -53,6 +55,7 @@ order:
 * Contact
 * Domain
 * Host
+* HostIP
 * DraftDomain
 * Websites
 * DomainRequest

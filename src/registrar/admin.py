@@ -773,6 +773,19 @@ class MyHostAdmin(AuditedAdmin, ImportExportModelAdmin):
     inlines = [HostIPInline]
 
 
+class HostIpResource(resources.ModelResource):
+
+    class Meta:
+        model = models.HostIP
+
+
+class HostIpAdmin(AuditedAdmin, ImportExportModelAdmin):
+    """Custom host ip admin class"""
+
+    resource_classes = [HostIpResource]
+    model = models.HostIP
+
+
 class ContactResource(resources.ModelResource):
 
     class Meta:
@@ -2298,9 +2311,8 @@ admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.FederalAgency, FederalAgencyAdmin)
-# Host and HostIP removed from django admin because changes in admin
-# do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)
+admin.site.register(models.HostIP, HostIpAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
