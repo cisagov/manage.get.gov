@@ -129,7 +129,9 @@ def login_callback(request):
 
             # Clear the flag if the exception is not caught
             request.session.pop("redirect_attempted", None)
-            return redirect(request.session.get("next", "/"))
+
+            success_redirect_url = "/" if user.finished_setup else f"/finish-user-setup/{user.id}"
+            return redirect(request.session.get("next", success_redirect_url))
         else:
             raise o_e.BannedUser()
     except o_e.StateMismatch as nsd_err:

@@ -824,5 +824,5 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 class FinishContactProfileSetupView(ContactPermissionView):
     """This view forces the user into providing additional details that 
     we may have missed from Login.gov"""
-    template_name = "domain_request_your_contact.html"
+    template_name = "finish_contact_setup.html"
     forms = [forms.YourContactForm]

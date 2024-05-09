@@ -101,6 +101,13 @@ urlpatterns = [
     ),
     path("admin/", admin.site.urls),
     path(
+        # We embed the current user ID here, but we have a permission check
+        # that ensures the user is who they say they are.
+        "finish-user-setup/<int:pk>",
+        views.FinishContactProfileSetupView.as_view(),
+        name="finish-contact-profile-setup",
+    ),
+    path(
         "domain-request/<id>/edit/",
         views.DomainRequestWizard.as_view(),
         name=views.DomainRequestWizard.EDIT_URL_NAME,
