@@ -98,7 +98,8 @@ def login_callback(request):
             # add acr_value to request.session
             request.session["acr_value"] = CLIENT.get_step_up_acr_value()
             return CLIENT.create_authn_request(request.session)
-        user, is_new_user = authenticate(request=request, **userinfo)
+        user = authenticate(request=request, **userinfo)
+        is_new_user = request.session["is_new_user"]
         if user:
             should_update_user = False
             # Fixture users kind of exist in a superposition of verification types,
