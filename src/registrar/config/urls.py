@@ -104,7 +104,7 @@ urlpatterns = [
         # We embed the current user ID here, but we have a permission check
         # that ensures the user is who they say they are.
         "finish-user-setup/<int:pk>",
-        views.FinishContactProfileSetupView.as_view(),
+        views.ContactProfileSetupView.as_view(),
         name="finish-contact-profile-setup",
     ),
     path(

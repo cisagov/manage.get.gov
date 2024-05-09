@@ -14,7 +14,7 @@ from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
-from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView, ContactPermissionView
+from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
 
 from .utility import (
     DomainRequestPermissionView,
@@ -820,9 +820,3 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         duplicates = [item for item, count in object_dict.items() if count > 1]
         return duplicates
 
-
-class FinishContactProfileSetupView(ContactPermissionView):
-    """This view forces the user into providing additional details that 
-    we may have missed from Login.gov"""
-    template_name = "finish_contact_setup.html"
-    forms = [forms.YourContactForm]

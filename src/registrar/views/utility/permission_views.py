@@ -153,11 +153,7 @@ class ContactPermissionView(ContactPermission, DetailView, abc.ABC):
 
     # DetailView property for what model this is viewing
     model = Contact
-    # variable name in template context for the model object
-    context_object_name = "Contact"
+    object: Contact
 
-    # Abstract property enforces NotImplementedError on an attribute.
-    @property
-    @abc.abstractmethod
-    def template_name(self):
-        raise NotImplementedError
+    # variable name in template context for the model object
+    context_object_name = "contact"

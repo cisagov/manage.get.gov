@@ -126,11 +126,11 @@ class UserFixture:
             "last_name": "Osos-Analyst",
             "email": "kosos@truss.works",
         },
-        {
-            "username": "2cc0cde8-8313-4a50-99d8-5882e71443e8",
-            "first_name": "Zander-Analyst",
-            "last_name": "Adkinson-Analyst",
-        },
+        # {
+        #     "username": "2cc0cde8-8313-4a50-99d8-5882e71443e8",
+        #     "first_name": "Zander-Analyst",
+        #     "last_name": "Adkinson-Analyst",
+        # },
         {
             "username": "57ab5847-7789-49fe-a2f9-21d38076d699",
             "first_name": "Paul-Analyst",
