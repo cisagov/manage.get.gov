@@ -697,7 +697,7 @@ class ExportDataTest(MockDb, MockEppLib):
             # spaces and leading/trailing whitespace
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-            print(f"what is the actual content {csv_content}")
+
             self.assertEqual(csv_content, expected_content)
 
 
