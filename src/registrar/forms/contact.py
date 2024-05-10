@@ -6,9 +6,24 @@ from django.core.validators import MaxLengthValidator
 class ContactForm(forms.Form):
     """Form for adding or editing a contact"""
 
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("label_suffix", "")
-        super(ContactForm, self).__init__(*args, **kwargs)
+    def to_database(self, obj):
+        """
+        Adds this form's cleaned data to `obj` and saves `obj`.
+
+        Does nothing if form is not valid.
+        """
+        if not self.is_valid():
+            return
+        for name, value in self.cleaned_data.items():
+            setattr(obj, name, value)
+        obj.save()
+
+    @classmethod
+    def from_database(cls, obj):
+        """Returns a dict of form field values gotten from `obj`."""
+        if obj is None:
+            return {}
+        return {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
 
     first_name = forms.CharField(
         label="First name / given name",
