@@ -100,7 +100,7 @@ class CreateOrUpdateOrganizationTypeHelper:
         # Update the field
         self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
 
-    def _handle_existing_instance(self, force_update_when_no_are_changes_found=False):
+    def _handle_existing_instance(self, force_update_when_no_changes_are_found=False):
         # == Init variables == #
         try:
             # Instance is already in the database, fetch its current state
@@ -119,7 +119,7 @@ class CreateOrUpdateOrganizationTypeHelper:
                 raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
             elif not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
                 # No changes found
-                if force_update_when_no_are_changes_found:
+                if force_update_when_no_changes_are_found:
                     # If we want to force an update anyway, we can treat this record like
                     # its a new one in that we check for "None" values rather than changes.
                     self._handle_new_instance()
@@ -132,6 +132,8 @@ class CreateOrUpdateOrganizationTypeHelper:
                 # Update the field
                 self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
         except self.sender.DoesNotExist:
+            # this exception should only be raised when import_export utility attempts to import
+            # a new row and already has an id
             pass
 
     def _update_fields(self, organization_type_needs_update, generic_org_type_needs_update):

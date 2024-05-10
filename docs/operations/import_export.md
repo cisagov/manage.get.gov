@@ -61,3 +61,6 @@ order:
 * DomainRequest
 * DomainInformation
 * UserDomainRole
+
+Optional step:
+* Run fixtures to load fixture users back in
