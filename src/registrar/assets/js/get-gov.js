@@ -834,3 +834,35 @@ function hideDeletedForms() {
 (function cisaRepresentativesFormListener() {
   HookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null)
 })();
+
+
+
+/**
+ * An IIFE that hooks up the edit buttons on the finish-user-setup page
+ */
+(function finishUserSetupListener() {
+  function showInputFieldHideReadonlyField(inputField, readonlyField, editButton) {
+    readonlyField.classList.add('display-none');
+    inputField.classList.remove('display-none');
+    editButton.classList.add('display-none');
+  }
+
+  document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
+    let fieldIdParts = button.id.split("__")
+
+    if (fieldIdParts && fieldIdParts.length > 0){
+      let fieldId = fieldIdParts[0]
+      button.addEventListener('click', function() {
+        // Lock the edit button while this operation occurs
+        button.disabled = true
+
+        inputField = document.querySelector(`#id_${fieldId}`)
+        readonlyField = document.querySelector(`#${fieldId}__edit-button-readonly`)
+        showInputFieldHideReadonlyField(inputField, readonlyField, button)
+
+        // Unlock after it completes
+        button.disabled = false
+      });
+    }
+  });
+})();

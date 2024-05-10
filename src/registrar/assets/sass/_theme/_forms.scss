@@ -26,6 +26,23 @@
   }
 }
 
+.usa-form--edit-button-form {
+  margin-top: 0.5em;
+  // todo update
+  border-top: 2px black solid;
+  label.usa-label {
+    font-weight: bold;
+  }
+}
+
+.usa-form--edit-button-form:first-of-type  {
+  border-top: None
+}
+
+.usa-form--edit-button-form > .usa-form-group:first-of-type {
+  margin-top: unset;
+}
+
 .usa-form-group--unstyled-error {
   margin-left: 0;
   padding-left: 0;

@@ -141,6 +141,7 @@ abbr[title] {
   cursor: pointer;
 }
 
+// todo this class should ideally be renamed
 .input-with-edit-button {
   svg.usa-icon {
     width: 1.5em !important;
@@ -154,6 +155,15 @@ abbr[title] {
     svg.usa-icon {
       color: red;
     }
+    div.readonly-field {
+      color: red
+    }
   }
+}
 
+.input-with-edit-button--button {
+  svg {
+    width: 1.25em !important;
+    height: 1.25em !important;
+  }
 }

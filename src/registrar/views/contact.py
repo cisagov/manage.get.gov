@@ -52,6 +52,7 @@ class ContactFormBaseView(BaseContactView, FormMixin):
 
         # Get the current form and validate it
         form = self.get_form()
+
         return self.check_form(form)
 
     # TODO rename?
@@ -77,17 +78,13 @@ class ContactProfileSetupView(ContactFormBaseView):
         """Redirect to the nameservers page for the domain."""
         # TODO - some logic should exist that navigates them to the domain request page if 
         # they clicked it on get.gov
-
-        # The user has finished their setup
-
-
         # Add a notification that the update was successful
         return reverse("home")
 
     def form_valid(self, form):
         self.request.user.finished_setup = True
         self.request.user.save()
-
+        
         form.to_database(self.object)
         self._update_session_with_contact()
 
@@ -95,4 +92,5 @@ class ContactProfileSetupView(ContactFormBaseView):
     
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
-        return self.form_class.from_database(self.object)
+        db_object = self.form_class.from_database(self.object)
+        return db_object

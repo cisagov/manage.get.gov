@@ -32,8 +32,13 @@ error messages, if necessary.
         <div class="grid-col">
           {% include "django/forms/label.html" %}
         </div>
-        <div class="grid-col">
-          <button type="button" class="usa-button usa-button--unstyled">Edit</button>
+        <div class="grid-col-2 text-right">
+          <button type="button" id="{{field.name}}__edit-button" class="usa-button usa-button--unstyled input-with-edit-button--button">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+              <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
+            </svg>
+            <span>Edit</span>
+          </button>
         </div>
       </div>
     {% else %}
@@ -71,7 +76,7 @@ error messages, if necessary.
   {% endif %}
 
   {% if show_edit_button %}
-    <div id="{{field.name}}__edit-button-value" class="input-with-edit-button {%if not field.value and field.field.required %}input-with-edit-button__error{% endif %}">
+    <div id="{{field.name}}__edit-button-readonly" class="margin-top-1 input-with-edit-button {%if not field.value and field.field.required %}input-with-edit-button__error{% endif %}">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         {% if field.value or not field.field.required %}
         <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>

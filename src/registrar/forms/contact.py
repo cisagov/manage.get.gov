@@ -25,6 +25,11 @@ class ContactForm(forms.Form):
             return {}
         return {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
 
+
+    full_name = forms.CharField(
+        label="Full name",
+        error_messages={"required": "Enter your full name"},
+    )
     first_name = forms.CharField(
         label="First name / given name",
         error_messages={"required": "Enter your first name / given name."},
