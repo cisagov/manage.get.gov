@@ -2,7 +2,7 @@
 Template include for form fields with classes and their corresponding
 error messages, if necessary.
 {% endcomment %}
-
+{% load static field_helpers url_helpers %}
 {% load custom_filters %}
 
 {% load widget_tweaks %}
@@ -27,7 +27,18 @@ error messages, if necessary.
 {% endif %}
 
   {% if not field.widget_type == "checkbox" %}
-    {% include "django/forms/label.html" %}
+    {% if show_edit_button %}
+      <div class="grid-row flex-align-baseline">
+        <div class="grid-col">
+          {% include "django/forms/label.html" %}
+        </div>
+        <div class="grid-col">
+          <button type="button" class="usa-button usa-button--unstyled">Edit</button>
+        </div>
+      </div>
+    {% else %}
+      {% include "django/forms/label.html" %}
+    {% endif %}
   {% endif %}
 
   {% if sublabel_text %}
@@ -58,9 +69,26 @@ error messages, if necessary.
   {% if append_gov %}
     <div class="display-flex flex-align-center">
   {% endif %}
-  {# this is the input field, itself #}
-  {% include widget.template_name %}
 
+  {% if show_edit_button %}
+    <div id="{{field.name}}__edit-button-value" class="input-with-edit-button {%if not field.value and field.field.required %}input-with-edit-button__error{% endif %}">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+        {% if field.value or not field.field.required %}
+        <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
+        {%elif not field.value %}
+        <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
+        {%endif %}
+      </svg>
+      <div class="display-inline padding-left-05 margin-left-3 readonly-field">
+        {{ field.value }}
+      </div>
+    </div>
+    {# this is the input field, itself #}
+    {% include widget.template_name %}
+  {% else %}
+      {# this is the input field, itself #}
+      {% include widget.template_name %}
+  {% endif %}
   {% if append_gov %}
       <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>

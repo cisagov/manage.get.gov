@@ -44,15 +44,9 @@ class ContactForm(forms.Form):
         },
     )
     email = forms.EmailField(
-        label="Email",
+        label="Organization email",
         max_length=None,
-        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
+        required=False,
     )
     phone = PhoneNumberField(
         label="Phone",

@@ -26,6 +26,7 @@ def input_with_errors(context, field=None):  # noqa: C901
         add_group_class: append to input element's surrounding tag's `class` attribute
         attr_* - adds or replaces any single html attribute for the input
         add_error_attr_* - like `attr_*` but only if field.errors is not empty
+        show_edit_button: shows a simple edit button, and adds display-none to the input field.
 
     Example usage:
         ```
@@ -90,6 +91,14 @@ def input_with_errors(context, field=None):  # noqa: C901
 
         elif key == "add_group_class":
             group_classes.append(value)
+
+        elif key == "show_edit_button":
+            # Hide the primary input field.
+            # Used such that we can toggle it with JS
+            if "display-none" not in classes and isinstance(value, bool) and value:
+                classes.append("display-none")
+            # Set this as a context value so we know what we're going to display
+            context["show_edit_button"] = value
 
     attrs["id"] = field.auto_id
 

@@ -140,3 +140,20 @@ abbr[title] {
 .cursor-pointer {
   cursor: pointer;
 }
+
+.input-with-edit-button {
+  svg.usa-icon {
+    width: 1.5em !important;
+    height: 1.5em !important;
+    // TODO CHANGE
+    color: green;
+    position: absolute;
+  }
+  &.input-with-edit-button__error {
+    // TODO CHANGE
+    svg.usa-icon {
+      color: red;
+    }
+  }
+
+}
