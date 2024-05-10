@@ -475,7 +475,7 @@ class ExportDataTest(MockDb, MockEppLib):
 
             # Read the content into a variable
             csv_content = csv_file.read()
-            self.maxDiff = None
+
             # We expect READY domains first, created between day-2 and day+2, sorted by created_at then name
             # and DELETED domains deleted between day-2 and day+2, sorted by deleted then name
             expected_content = (
