@@ -6,6 +6,13 @@ from django.core.validators import MaxLengthValidator
 class ContactForm(forms.Form):
     """Form for adding or editing a contact"""
 
+    def clean(self):
+        cleaned_data = super().clean()
+        # Remove the full name property
+        if "full_name" in cleaned_data:
+            del cleaned_data["full_name"]
+        return cleaned_data
+
     def to_database(self, obj):
         """
         Adds this form's cleaned data to `obj` and saves `obj`.
