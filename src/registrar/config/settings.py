@@ -147,6 +147,8 @@ INSTALLED_APPS = [
     "corsheaders",
     # library for multiple choice filters in django admin
     "django_admin_multiple_choice_list_filter",
+    # library for export and import of data
+    "import_export",
     # Waffle feature flags
     "waffle",
 ]
