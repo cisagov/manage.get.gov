@@ -80,7 +80,8 @@ class FsmModelResource(resources.ModelResource):
 
 
 class UserResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.User
@@ -759,7 +760,8 @@ class HostIPInline(admin.StackedInline):
 
 
 class HostResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.Host
@@ -776,7 +778,8 @@ class MyHostAdmin(AuditedAdmin, ImportExportModelAdmin):
 
 
 class HostIpResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.HostIP
@@ -790,7 +793,8 @@ class HostIpAdmin(AuditedAdmin, ImportExportModelAdmin):
 
 
 class ContactResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.Contact
@@ -922,7 +926,8 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 
 class WebsiteResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.Website
@@ -981,7 +986,8 @@ class WebsiteAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 
 class UserDomainRoleResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.UserDomainRole
@@ -1073,7 +1079,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
 
 
 class DomainInformationResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.DomainInformation
@@ -1215,7 +1222,8 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 
 class DomainRequestResource(FsmModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.DomainRequest
@@ -1769,7 +1777,8 @@ class DomainInformationInline(admin.StackedInline):
 
 
 class DomainResource(FsmModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.Domain
@@ -2175,7 +2184,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 
 class DraftDomainResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the import/export file"""
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
 
     class Meta:
         model = models.DraftDomain
