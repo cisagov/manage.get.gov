@@ -94,3 +94,11 @@ class ContactProfileSetupView(ContactFormBaseView):
         """The initial value for the form (which is a formset here)."""
         db_object = self.form_class.from_database(self.object)
         return db_object
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["email_sublabel_text"] = (
+            "We recommend using your work email for your .gov account. "
+            "If the wrong email is displayed below, you’ll need to update your Login.gov account "
+            "and log back in. Get help with your Login.gov account.")
+        return context

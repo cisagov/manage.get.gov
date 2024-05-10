@@ -841,24 +841,75 @@ function hideDeletedForms() {
  * An IIFE that hooks up the edit buttons on the finish-user-setup page
  */
 (function finishUserSetupListener() {
-  function showInputFieldHideReadonlyField(inputField, readonlyField, editButton) {
-    readonlyField.classList.add('display-none');
-    inputField.classList.remove('display-none');
-    editButton.classList.add('display-none');
+  function showInputFieldHideReadonlyField(fieldName, button) {
+    let inputId = getInputFieldId(fieldName)
+    let inputField = document.querySelector(inputId)
+
+    let readonlyId = getReadonlyFieldId(fieldName)
+    let readonlyField = document.querySelector(readonlyId)
+
+    readonlyField.classList.toggle('display-none');
+    inputField.classList.toggle('display-none');
+
+    // Toggle the bold style on the grid row
+    let formGroup = button.closest(".usa-form-group")
+    if (formGroup){
+      gridRow = button.querySelector(".grid-row")
+      if (gridRow){
+        gridRow.toggle("bold-usa-label")
+      }
+    }
+  }
+
+  function getInputFieldId(fieldName){
+    return `#id_${fieldName}`
+  }
+
+  function getReadonlyFieldId(fieldName){
+    return `#${fieldName}__edit-button-readonly`
+  }
+
+  function handleFullNameField(fieldName, nameFields) {
+    // Remove the display-none class from the nearest parent div
+    let fieldId = getInputFieldId(fieldName)
+    let inputField = document.querySelector(fieldId);
+
+    if (inputField) {
+      nameFields.forEach(function(fieldName) {
+        let nameId = getInputFieldId(fieldName)
+        let nameField = document.querySelector(nameId);
+        if (nameField){
+          let parentDiv = nameField.closest("div");
+          if (parentDiv) {
+            parentDiv.classList.remove("display-none");
+          }
+        }
+      });
+
+      inputFieldParentDiv = inputField.closest("div");
+      if (inputFieldParentDiv) {
+        inputFieldParentDiv.remove();
+      }
+    }
   }
 
   document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
     let fieldIdParts = button.id.split("__")
 
     if (fieldIdParts && fieldIdParts.length > 0){
-      let fieldId = fieldIdParts[0]
+      let fieldName = fieldIdParts[0]
       button.addEventListener('click', function() {
         // Lock the edit button while this operation occurs
         button.disabled = true
 
-        inputField = document.querySelector(`#id_${fieldId}`)
-        readonlyField = document.querySelector(`#${fieldId}__edit-button-readonly`)
-        showInputFieldHideReadonlyField(inputField, readonlyField, button)
+        if (fieldName == "full_name"){
+          let nameFields = ["first_name", "middle_name", "last_name"]
+          handleFullNameField(fieldName, nameFields);
+        }else {
+          showInputFieldHideReadonlyField(fieldName, button);
+        }
+  
+        button.classList.add('display-none');
 
         // Unlock after it completes
         button.disabled = false

@@ -28,19 +28,7 @@ error messages, if necessary.
 
   {% if not field.widget_type == "checkbox" %}
     {% if show_edit_button %}
-      <div class="grid-row flex-align-baseline">
-        <div class="grid-col">
-          {% include "django/forms/label.html" %}
-        </div>
-        <div class="grid-col-2 text-right">
-          <button type="button" id="{{field.name}}__edit-button" class="usa-button usa-button--unstyled input-with-edit-button--button">
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-              <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
-            </svg>
-            <span>Edit</span>
-          </button>
-        </div>
-      </div>
+      {% include "includes/label_with_edit_button.html" %}
     {% else %}
       {% include "django/forms/label.html" %}
     {% endif %}
@@ -75,25 +63,13 @@ error messages, if necessary.
     <div class="display-flex flex-align-center">
   {% endif %}
 
-  {% if show_edit_button %}
-    <div id="{{field.name}}__edit-button-readonly" class="margin-top-1 input-with-edit-button {%if not field.value and field.field.required %}input-with-edit-button__error{% endif %}">
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-        {% if field.value or not field.field.required %}
-        <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
-        {%elif not field.value %}
-        <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
-        {%endif %}
-      </svg>
-      <div class="display-inline padding-left-05 margin-left-3 readonly-field">
-        {{ field.value }}
-      </div>
-    </div>
-    {# this is the input field, itself #}
-    {% include widget.template_name %}
-  {% else %}
-      {# this is the input field, itself #}
-      {% include widget.template_name %}
+  {% if show_readonly %}
+    {% include "includes/readonly_input.html" %}
   {% endif %}
+
+  {# this is the input field, itself #}
+  {% include widget.template_name %}
+
   {% if append_gov %}
       <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>

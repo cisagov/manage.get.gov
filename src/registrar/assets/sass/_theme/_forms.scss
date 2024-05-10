@@ -26,20 +26,22 @@
   }
 }
 
-.usa-form--edit-button-form {
-  margin-top: 0.5em;
+.usa-form-readonly {
   // todo update
   border-top: 2px black solid;
-  label.usa-label {
+
+  .bold-usa-label label.usa-label{
     font-weight: bold;
   }
+
 }
 
-.usa-form--edit-button-form:first-of-type  {
-  border-top: None
+.usa-form-readonly:first-of-type  {
+  border-top: None;
+  margin-top: 0px !important;
 }
 
-.usa-form--edit-button-form > .usa-form-group:first-of-type {
+.usa-form-readonly > .usa-form-group:first-of-type {
   margin-top: unset;
 }
 

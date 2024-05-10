@@ -156,12 +156,16 @@ abbr[title] {
       color: red;
     }
     div.readonly-field {
-      color: red
+      color: red;
     }
   }
 }
 
-.input-with-edit-button--button {
+// We need to deviate from some default USWDS styles here
+// in this particular case, so we have to override this.
+.usa-form .usa-button.readonly-edit-button {
+  margin-top: 0px !important;
+  padding-top: 0px !important;
   svg {
     width: 1.25em !important;
     height: 1.25em !important;
