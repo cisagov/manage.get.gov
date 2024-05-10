@@ -41,20 +41,22 @@
                         <legend class="usa-sr-only">
                             Your contact information
                         </legend>
-
-                        {% input_with_errors forms.0.first_name %}
+                        {{form.first_name}}
+                        {% comment %}
+                        {% input_with_errors form.first_name %}
                     
-                        {% input_with_errors forms.0.middle_name %}
+                        {% input_with_errors form.middle_name %}
                     
-                        {% input_with_errors forms.0.last_name %}
+                        {% input_with_errors form.last_name %}
                     
-                        {% input_with_errors forms.0.title %}
+                        {% input_with_errors form.title %}
                     
-                        {% input_with_errors forms.0.email %}
+                        {% input_with_errors form.email %}
                     
                         {% with add_class="usa-input--medium" %}
-                            {% input_with_errors forms.0.phone %}
+                            {% input_with_errors form.phone %}
                         {% endwith %}
+                        {% endcomment %}
                     
                     </fieldset>
                     <div>

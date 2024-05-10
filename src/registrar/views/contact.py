@@ -75,6 +75,12 @@ class ContactProfileSetupView(ContactPermissionView):
     template_name = "finish_contact_setup.html"
     form_class = ContactForm
 
+    def get_form_kwargs(self, *args, **kwargs):
+        """Add domain_info.organization_name instance to make a bound form."""
+        form_kwargs = super().get_form_kwargs(*args, **kwargs)
+        form_kwargs["instance"] = self.object
+        return form_kwargs
+
     def get(self, request, *args, **kwargs):
         self._get_contact(request)
         context = self.get_context_data(object=self.object)

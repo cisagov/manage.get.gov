@@ -16,7 +16,6 @@ from registrar.forms.utility.wizard_form_helper import (
 from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
-from registrar.forms import ContactForm
 
 logger = logging.getLogger(__name__)
 
@@ -386,7 +385,7 @@ class PurposeForm(RegistrarForm):
     )
 
 
-class YourContactForm(RegistrarForm, ContactForm):
+class YourContactForm(RegistrarForm):
     JOIN = "submitter"
 
     def to_database(self, obj):
@@ -408,6 +407,40 @@ class YourContactForm(RegistrarForm, ContactForm):
     def from_database(cls, obj):
         contact = getattr(obj, "submitter", None)
         return super().from_database(contact)
+
+    first_name = forms.CharField(
+        label="First name / given name",
+        error_messages={"required": "Enter your first name / given name."},
+    )
+    middle_name = forms.CharField(
+        required=False,
+        label="Middle name (optional)",
+    )
+    last_name = forms.CharField(
+        label="Last name / family name",
+        error_messages={"required": "Enter your last name / family name."},
+    )
+    title = forms.CharField(
+        label="Title or role in your organization",
+        error_messages={
+            "required": ("Enter your title or role in your organization (e.g., Chief Information Officer).")
+        },
+    )
+    email = forms.EmailField(
+        label="Email",
+        max_length=None,
+        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
+        validators=[
+            MaxLengthValidator(
+                320,
+                message="Response must be less than 320 characters.",
+            )
+        ],
+    )
+    phone = PhoneNumberField(
+        label="Phone",
+        error_messages={"invalid": "Enter a valid 10-digit phone number.", "required": "Enter your phone number."},
+    )
 
 
 class OtherContactsYesNoForm(BaseYesNoForm):

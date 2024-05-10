@@ -1,10 +1,14 @@
 from django import forms
-from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
+from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from django.core.validators import MaxLengthValidator
 
 
 class ContactForm(forms.Form):
     """Form for adding or editing a contact"""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("label_suffix", "")
+        super(ContactForm, self).__init__(*args, **kwargs)
 
     first_name = forms.CharField(
         label="First name / given name",

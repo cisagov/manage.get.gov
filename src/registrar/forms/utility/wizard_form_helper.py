@@ -23,9 +23,6 @@ class RegistrarForm(forms.Form):
         # save a reference to a domain request object
         if "domain_request" in kwargs:
             self.domain_request = kwargs.pop("domain_request", None)
-        
-        if "contact" in kwargs:
-            self.contact = kwargs.pop("contact", None)
 
         super(RegistrarForm, self).__init__(*args, **kwargs)
 
