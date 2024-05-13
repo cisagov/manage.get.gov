@@ -841,6 +841,8 @@ function hideDeletedForms() {
  * An IIFE that hooks up the edit buttons on the finish-user-setup page
  */
 (function finishUserSetupListener() {
+
+  // Shows the hidden input field and hides the readonly one
   function showInputFieldHideReadonlyField(fieldName, button) {
     let inputId = getInputFieldId(fieldName)
     let inputField = document.querySelector(inputId)
@@ -885,35 +887,60 @@ function hideDeletedForms() {
           }
         }
       });
-
-      inputFieldParentDiv = inputField.closest("div");
-      if (inputFieldParentDiv) {
-        inputFieldParentDiv.remove();
-      }
     }
   }
 
-  document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
-    let fieldIdParts = button.id.split("__")
+  function handleEditButtonClick(fieldName, button){
+    button.addEventListener('click', function() {
+      // Lock the edit button while this operation occurs
+      button.disabled = true
 
-    if (fieldIdParts && fieldIdParts.length > 0){
-      let fieldName = fieldIdParts[0]
-      button.addEventListener('click', function() {
-        // Lock the edit button while this operation occurs
-        button.disabled = true
+      if (fieldName == "full_name"){
+        let nameFields = ["first_name", "middle_name", "last_name"]
+        handleFullNameField(fieldName, nameFields);
+      }else {
+        showInputFieldHideReadonlyField(fieldName, button);
+      }
 
-        if (fieldName == "full_name"){
-          let nameFields = ["first_name", "middle_name", "last_name"]
-          handleFullNameField(fieldName, nameFields);
-        }else {
-          showInputFieldHideReadonlyField(fieldName, button);
-        }
+      button.classList.add('display-none');
+
+      // Unlock after it completes
+      button.disabled = false
+    });
+  }
+
+  function setupListener(){
+    document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
+      // Get the "{field_name}" and "edit-button"
+      let fieldIdParts = button.id.split("__")
+      if (fieldIdParts && fieldIdParts.length > 0){
+        let fieldName = fieldIdParts[0]
+        
+        // When the edit button is clicked, show the input field under it
+        handleEditButtonClick(fieldName, button);
+      }
+    });
+  }
+
+  function showInputOnErrorFields(){
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
+        let fieldIdParts = button.id.split("__")
+        if (fieldIdParts && fieldIdParts.length > 0){
+          let fieldName = fieldIdParts[0]
   
-        button.classList.add('display-none');
+          let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
+          if (errorMessage) {
+            button.click()
+          }
+        }
+      });  
+    });
+  }
 
-        // Unlock after it completes
-        button.disabled = false
-      });
-    }
-  });
+  // Hookup all edit buttons to the `handleEditButtonClick` function
+  setupListener();
+
+  // Show the input fields if an error exists
+  showInputOnErrorFields();
 })();

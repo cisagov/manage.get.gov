@@ -1,6 +1,6 @@
 
 {% load static field_helpers url_helpers %}
-<div class="grid-row bold-usa-label">
+<div class="grid-row {% if bold_label %}bold-usa-label{% endif %}">
     <div class="grid-col">
       {% include "django/forms/label.html" %}
     </div>

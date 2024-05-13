@@ -7,7 +7,7 @@
     <div class="grid-row grid-gap">
         <div class="tablet:grid-col">
             <main id="main-content" class="grid-container">
-                {% include "includes/form_messages.html" %}
+                {% include "includes/form_errors.html" with form=form %}
                 {% comment %}
                 Repurposed from domain_request_form.html
                 {% endcomment %}

@@ -28,7 +28,7 @@ error messages, if necessary.
 
   {% if not field.widget_type == "checkbox" %}
     {% if show_edit_button %}
-      {% include "includes/label_with_edit_button.html" %}
+      {% include "includes/label_with_edit_button.html" with bold_label=True %}
     {% else %}
       {% include "django/forms/label.html" %}
     {% endif %}

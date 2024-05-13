@@ -1,4 +1,5 @@
 @use "uswds-core" as *;
+@use "cisa_colors" as *;
 
 .usa-form .usa-button {
   margin-top: units(3);
@@ -28,7 +29,7 @@
 
 .usa-form-readonly {
   // todo update
-  border-top: 2px black solid;
+  border-top: 2px #{$dhs-dark-gray-15} solid;
 
   .bold-usa-label label.usa-label{
     font-weight: bold;

@@ -1,4 +1,5 @@
 @use "uswds-core" as *;
+@use "cisa_colors" as *;
 
 /* Styles for making visible to screen reader / AT users only. */
 .sr-only {
@@ -146,17 +147,15 @@ abbr[title] {
   svg.usa-icon {
     width: 1.5em !important;
     height: 1.5em !important;
-    // TODO CHANGE
-    color: green;
+    color: #{$dhs-green};
     position: absolute;
   }
   &.input-with-edit-button__error {
-    // TODO CHANGE
     svg.usa-icon {
-      color: red;
+      color: #{$dhs-red};
     }
     div.readonly-field {
-      color: red;
+      color: #{$dhs-red};
     }
   }
 }
