@@ -1,3 +1,5 @@
+from enum import Enum
+from urllib.parse import urlencode
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from registrar.forms.contact import ContactForm
@@ -8,12 +10,16 @@ from django.views.generic.edit import FormMixin
 from registrar.models.utility.generic_helper import to_database, from_database
 from django.utils.safestring import mark_safe
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
+
 # TODO we can and probably should generalize this at this rate.
 class BaseContactView(ContactPermissionView):
 
     def get(self, request, *args, **kwargs):
         self._set_contact(request)
         context = self.get_context_data(object=self.object)
+
         return self.render_to_response(context)
 
     # TODO - this deserves a small refactor
@@ -74,11 +80,56 @@ class ContactProfileSetupView(ContactFormBaseView):
     form_class = ContactForm
     model = Contact
 
+    redirect_type = None
+    class RedirectType:
+        HOME = "home"
+        BACK_TO_SELF = "back_to_self"
+        DOMAIN_REQUEST = "domain_request"
+
+    @method_decorator(csrf_protect)
+    def dispatch(self, request, *args, **kwargs):
+        # Default redirect type
+        default_redirect = self.RedirectType.BACK_TO_SELF
+
+        # Update redirect type based on the query parameter if present
+        redirect_type = request.GET.get("redirect", default_redirect)
+
+        # Store the redirect type in the session
+        self.redirect_type = redirect_type
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_redirect_url(self):
+        match self.redirect_type:
+            case self.RedirectType.HOME:
+                return reverse("home")
+            case self.RedirectType.BACK_TO_SELF:
+                return reverse("finish-contact-profile-setup", kwargs={"pk": self.object.pk})
+            case self.RedirectType.DOMAIN_REQUEST:
+                # TODO
+                return reverse("home")
+            case _:
+                return reverse("home")
+    
+    def get_success_url(self):
+        """Redirect to the nameservers page for the domain."""
+        redirect_url = self.get_redirect_url()
+        return redirect_url
+
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view.
 
         This post method harmonizes using BaseContactView and FormMixin
         """
+                # Default redirect type
+        default_redirect = self.RedirectType.BACK_TO_SELF
+
+        # Update redirect type based on the query parameter if present
+        redirect_type = request.GET.get("redirect", default_redirect)
+
+        # Store the redirect type in the session
+        self.redirect_type = redirect_type
+
         # Set the current contact object in cache
         self._set_contact(request)
 
@@ -86,28 +137,25 @@ class ContactProfileSetupView(ContactFormBaseView):
 
         # Get the current form and validate it
         if form.is_valid():
-            if "redirect_to_home" not in self.session or not self.session["redirect_to_home"]:
-                self.session["redirect_to_home"] = "contact_setup_submit_button" in request.POST
+            if 'contact_setup_save_button' in request.POST:
+                # Logic for when the 'Save' button is clicked
+                self.redirect_type = self.RedirectType.BACK_TO_SELF
+                self.session["should_redirect_to_home"] = "redirect_to_home" in request.POST
+            elif 'contact_setup_submit_button' in request.POST:
+                # Logic for when the 'Save and continue' button is clicked
+                if self.redirect_type != self.RedirectType.DOMAIN_REQUEST:
+                    self.redirect_type = self.RedirectType.HOME
+                else:
+                    self.redirect_type = self.RedirectType.DOMAIN_REQUEST
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
 
-    def get_success_url(self):
-        """Redirect to the nameservers page for the domain."""
-
-        # TODO - some logic should exist that navigates them to the domain request page if 
-        # they clicked it on get.gov
-        # Add a notification that the update was successful
-        if "redirect_to_home" in self.session and self.session["redirect_to_home"]:
-            return reverse("home")
-        else:
-            # Redirect to the same page with a query parameter to confirm changes
-            self.session["redirect_to_home"] = True
-            return reverse("finish-contact-profile-setup", kwargs={"pk": self.object.pk})
-
     def form_valid(self, form):
-        self.request.user.finished_setup = True
-        self.request.user.save()
+
+        if self.redirect_type == self.RedirectType.HOME:
+            self.request.user.finished_setup = True
+            self.request.user.save()
         
         to_database(form=form, obj=self.object)
         self._update_session_with_contact()
@@ -120,11 +168,12 @@ class ContactProfileSetupView(ContactFormBaseView):
         return db_object
     
     def get_context_data(self, **kwargs):
+        
         context = super().get_context_data(**kwargs)
         context["email_sublabel_text"] = self._email_sublabel_text()
 
-        if "redirect_to_home" in self.session and self.session["redirect_to_home"]:
-            context['confirm_changes'] = True
+        if "should_redirect_to_home" in self.session:
+            context["confirm_changes"] = True
 
         return context
     

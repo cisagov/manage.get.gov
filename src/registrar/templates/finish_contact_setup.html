@@ -78,14 +78,16 @@
 
                     </fieldset>
                     <div>
+
                         {% if confirm_changes %}
-                            <button type="submit" name="contact_setup_save_button" class="usa-button">
-                                Save
-                            </button>
-                        {% else %}
                             <button type="submit" name="contact_setup_submit_button" class="usa-button">
                                 Save and continue
                             </button>
+                        {% else %}
+                            <button type="submit" name="contact_setup_save_button" class="usa-button usa-button--outline">
+                                Save
+                            </button>
+                            <input type="hidden" name="redirect_to_home" />
                         {% endif %}
                     </div>
                 {% block form_fields %}{% endblock %}
