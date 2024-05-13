@@ -92,6 +92,13 @@ class Contact(TimeStampedModel):
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
         return " ".join(names) if names else "Unknown"
 
+    @property
+    def full_name(self):
+        """
+        Returns the full name (first_name, middle_name, last_name) of this contact.
+        """
+        return self.get_formatted_name()
+
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
 
@@ -126,15 +133,3 @@ class Contact(TimeStampedModel):
             return str(self.pk)
         else:
             return ""
-
-    @property
-    def full_name(self, separator=" "):
-        """
-        Returns the full name (first_name, middle_name, last_name) of this contact.
-        Seperator (which defaults to a blank space) determines the seperator for each of those fields.
-        For instance, with seperator=", " - this function would return this:
-        "First, Middle, Last"
-        """
-        # Filter out empty strings to avoid extra spaces or separators
-        parts = [self.first_name or "", self.middle_name or "", self.last_name or ""]
-        return separator.join(parts)

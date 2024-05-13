@@ -24,7 +24,6 @@
                 <h1>Finish setting up your profile</h1>
 
                 <p>
-                    {% public_site_url 'help/account-management/#get-help-with-login.gov' %}
                     We <a href="{% public_site_url 'domains/requirements/#what-.gov-domain-registrants-must-do' %}">require</a> 
                     that you maintain accurate contact information.
                     The details you provide will only be used to support the administration of .gov and won’t be made public. 
@@ -79,9 +78,15 @@
 
                     </fieldset>
                     <div>
-                        <button type="submit" name="submit_button" class="usa-button">
-                        Save
-                        </button>
+                        {% if confirm_changes %}
+                            <button type="submit" name="contact_setup_save_button" class="usa-button">
+                                Save
+                            </button>
+                        {% else %}
+                            <button type="submit" name="contact_setup_submit_button" class="usa-button">
+                                Save and continue
+                            </button>
+                        {% endif %}
                     </div>
                 {% block form_fields %}{% endblock %}
             </main>

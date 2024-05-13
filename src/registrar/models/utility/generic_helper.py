@@ -261,3 +261,23 @@ class CreateOrUpdateOrganizationTypeHelper:
             return False
         else:
             return True
+
+
+def to_database(form, obj):
+    """
+    Adds the form's cleaned data to `obj` and saves `obj`.
+
+    Does nothing if form is not valid.
+    """
+    if not form.is_valid():
+        return None
+    for name, value in form.cleaned_data.items():
+        setattr(obj, name, value)
+    obj.save()
+
+
+def from_database(form_class, obj):
+    """Returns a dict of form field values gotten from `obj`."""
+    if obj is None:
+        return {}
+    return {name: getattr(obj, name) for name in form_class.declared_fields.keys()}  # type: ignore

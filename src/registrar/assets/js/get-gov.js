@@ -895,13 +895,7 @@ function hideDeletedForms() {
       // Lock the edit button while this operation occurs
       button.disabled = true
 
-      if (fieldName == "full_name"){
-        let nameFields = ["first_name", "middle_name", "last_name"]
-        handleFullNameField(fieldName, nameFields);
-      }else {
-        showInputFieldHideReadonlyField(fieldName, button);
-      }
-
+      showInputFieldHideReadonlyField(fieldName, button);
       button.classList.add('display-none');
 
       // Unlock after it completes
@@ -928,10 +922,15 @@ function hideDeletedForms() {
         let fieldIdParts = button.id.split("__")
         if (fieldIdParts && fieldIdParts.length > 0){
           let fieldName = fieldIdParts[0]
-  
+
           let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
           if (errorMessage) {
-            button.click()
+            if (fieldName == "full_name"){
+              let nameFields = ["first_name", "middle_name", "last_name"]
+              handleFullNameField(fieldName, nameFields);
+            }else {
+              button.click()
+            }
           }
         }
       });  

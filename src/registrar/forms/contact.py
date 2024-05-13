@@ -1,6 +1,5 @@
 from django import forms
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
-from django.core.validators import MaxLengthValidator
 
 
 class ContactForm(forms.Form):
@@ -10,28 +9,24 @@ class ContactForm(forms.Form):
         cleaned_data = super().clean()
         # Remove the full name property
         if "full_name" in cleaned_data:
-            del cleaned_data["full_name"]
+            full_name: str = cleaned_data["full_name"]
+            if full_name:
+                name_fields = full_name.split(" ")
+
+                
+                cleaned_data["first_name"] = name_fields[0]
+                if len(name_fields) == 2:
+                    cleaned_data["last_name"] = " ".join(name_fields[1:])
+                elif len(name_fields) > 2:
+                    cleaned_data["middle_name"] = name_fields[1]
+                    cleaned_data["last_name"] = " ".join(name_fields[2:])
+                else:
+                    cleaned_data["middle_name"] = None
+                    cleaned_data["last_name"] = None
+
+                # Delete the full name element as we don't need it anymore
+                del cleaned_data["full_name"]
         return cleaned_data
-
-    def to_database(self, obj):
-        """
-        Adds this form's cleaned data to `obj` and saves `obj`.
-
-        Does nothing if form is not valid.
-        """
-        if not self.is_valid():
-            return
-        for name, value in self.cleaned_data.items():
-            setattr(obj, name, value)
-        obj.save()
-
-    @classmethod
-    def from_database(cls, obj):
-        """Returns a dict of form field values gotten from `obj`."""
-        if obj is None:
-            return {}
-        return {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
-
 
     full_name = forms.CharField(
         label="Full name",
@@ -57,7 +52,6 @@ class ContactForm(forms.Form):
     )
     email = forms.EmailField(
         label="Organization email",
-        max_length=None,
         required=False,
     )
     phone = PhoneNumberField(

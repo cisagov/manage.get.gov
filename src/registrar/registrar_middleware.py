@@ -23,7 +23,8 @@ class CheckUserProfileMiddleware:
         # Check if setup is not finished
         finished_setup = hasattr(request.user, "finished_setup") and request.user.finished_setup
         if request.user.is_authenticated and not finished_setup:
-            setup_page = reverse("finish-contact-profile-setup", kwargs={'pk': request.user.contact.pk})
+            # redirect_to_domain_request = request.GET.get('domain_request', "") != ""
+            setup_page = reverse("finish-contact-profile-setup", kwargs={"pk": request.user.contact.pk})
             logout_page = reverse("logout")
             excluded_pages = [
                 setup_page,
@@ -32,6 +33,7 @@ class CheckUserProfileMiddleware:
 
             # Don't redirect on excluded pages (such as the setup page itself)
             if not any(request.path.startswith(page) for page in excluded_pages):
+                # Check if 'request' query parameter is not 'True'
                 # Redirect to the setup page
                 return HttpResponseRedirect(setup_page)
 
