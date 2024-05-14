@@ -1,6 +1,6 @@
 ---
 name: Developer Onboarding
-about: Onboarding steps for developers.
+about: Onboarding steps for new developers joining the .gov team.
 title: 'Developer Onboarding: GH_HANDLE'
 labels: dev, onboarding
 assignees: abroddrick

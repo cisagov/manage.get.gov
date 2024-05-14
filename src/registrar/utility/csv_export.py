@@ -96,7 +96,8 @@ def parse_row_for_domain(
     FIELDS = {
         "Domain name": domain.name,
         "Status": domain.get_state_display(),
-        "Expiration date": domain.expiration_date,
+        "First ready on": domain.first_ready or "(blank)",
+        "Expiration date": domain.expiration_date or "(blank)",
         "Domain type": domain_type,
         "Agency": domain_info.federal_agency,
         "Organization name": domain_info.organization_name,
@@ -106,7 +107,6 @@ def parse_row_for_domain(
         "AO email": domain_info.authorizing_official.email if domain_info.authorizing_official else " ",
         "Security contact email": security_email,
         "Created at": domain.created_at,
-        "First ready": domain.first_ready,
         "Deleted": domain.deleted,
     }
 
@@ -378,12 +378,17 @@ def write_csv_for_requests(
 
 
 def export_data_type_to_csv(csv_file):
-    """All domains report with extra columns"""
+    """
+    All domains report with extra columns.
+    This maps to the "All domain metadata" button.
+    """
+
     writer = csv.writer(csv_file)
     # define columns to include in export
     columns = [
         "Domain name",
         "Status",
+        "First ready on",
         "Expiration date",
         "Domain type",
         "Agency",

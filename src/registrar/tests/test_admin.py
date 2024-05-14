@@ -21,6 +21,7 @@ from registrar.admin import (
     MyHostAdmin,
     UserDomainRoleAdmin,
     VerifiedByStaffAdmin,
+    FsmModelResource,
     WebsiteAdmin,
     DraftDomainAdmin,
     FederalAgencyAdmin,
@@ -61,7 +62,7 @@ from .common import (
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
-from unittest.mock import ANY, call, patch
+from unittest.mock import ANY, call, patch, Mock
 from unittest import skip
 
 from django.conf import settings
@@ -69,6 +70,49 @@ import boto3_mocking  # type: ignore
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class TestFsmModelResource(TestCase):
+    def setUp(self):
+        self.resource = FsmModelResource()
+
+    def test_init_instance(self):
+        """Test initializing an instance of a class with a FSM field"""
+
+        # Mock a row with FSMField data
+        row_data = {"state": "ready"}
+
+        self.resource._meta.model = Domain
+
+        instance = self.resource.init_instance(row=row_data)
+
+        # Assert that the instance is initialized correctly
+        self.assertIsInstance(instance, Domain)
+        self.assertEqual(instance.state, "ready")
+
+    def test_import_field(self):
+        """Test that importing a field does not import FSM field"""
+
+        # Mock a FSMField and a non-FSM-field
+        fsm_field_mock = Mock(attribute="state", column_name="state")
+        field_mock = Mock(attribute="name", column_name="name")
+        # Mock the data
+        data_mock = {"state": "unknown", "name": "test"}
+        # Define a mock Domain
+        obj = Domain(state=Domain.State.UNKNOWN, name="test")
+
+        # Mock the save() method of fields so that we can test if save is called
+        # save() is only supposed to be called for non FSM fields
+        field_mock.save = Mock()
+        fsm_field_mock.save = Mock()
+
+        # Call the method with FSMField and non-FSMField
+        self.resource.import_field(fsm_field_mock, obj, data=data_mock, is_m2m=False)
+        self.resource.import_field(field_mock, obj, data=data_mock, is_m2m=False)
+
+        # Assert that field.save() in super().import_field() is called only for non-FSMField
+        field_mock.save.assert_called_once()
+        fsm_field_mock.save.assert_not_called()
 
 
 class TestDomainAdmin(MockEppLib, WebTest):
@@ -600,10 +644,9 @@ class TestDomainAdmin(MockEppLib, WebTest):
                 domain_request.approve()
 
             response = self.client.get("/admin/registrar/domain/")
-
             # There are 4 template references to Federal (4) plus four references in the table
             # for our actual domain_request
-            self.assertContains(response, "Federal", count=42)
+            self.assertContains(response, "Federal", count=54)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -851,6 +894,14 @@ class TestDomainAdmin(MockEppLib, WebTest):
     @skip("Waiting on epp lib to implement")
     def test_place_and_remove_hold_epp(self):
         raise
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_prod_only_shows_export(self):
+        """Test that production environment only displays export"""
+        with less_console_noise():
+            response = self.client.get("/admin/registrar/domain/")
+            self.assertContains(response, ">Export<")
+            self.assertNotContains(response, ">Import<")
 
     def tearDown(self):
         super().tearDown()
@@ -1376,7 +1427,7 @@ class TestDomainRequestAdmin(MockEppLib):
             response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
             # There are 2 template references to Federal (4) and two in the results data
             # of the request
-            self.assertContains(response, "Federal", count=40)
+            self.assertContains(response, "Federal", count=52)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -2164,7 +2215,6 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "Yes, select ineligible status")
 
     def test_readonly_when_restricted_creator(self):
-        self.maxDiff = None
         with less_console_noise():
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
