@@ -2,8 +2,9 @@
 Contains middleware used in settings.py
 """
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
-from django.urls import reverse, resolve
+from django.urls import reverse
 from django.http import HttpResponseRedirect
+from waffle.decorators import flag_is_active
 
 class CheckUserProfileMiddleware:
     """
@@ -20,12 +21,17 @@ class CheckUserProfileMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
+        
+        # Check that the user is "opted-in" to the profile feature flag
+        has_profile_feature_flag = flag_is_active(request, "profile_feature")
 
+        # If they aren't, skip this entirely
+        if not has_profile_feature_flag:
+            return None
 
         # Check if setup is not finished
         finished_setup = hasattr(request.user, "finished_setup") and request.user.finished_setup
         if request.user.is_authenticated and not finished_setup:
-            # redirect_to_domain_request = request.GET.get('domain_request', "") != ""
             setup_page = reverse(
                 "finish-contact-profile-setup", 
                 kwargs={"pk": request.user.contact.pk}

@@ -1,4 +1,4 @@
-from enum import Enum
+from waffle.decorators import waffle_flag
 from urllib.parse import urlencode, urlunparse, urlparse, quote
 from django.urls import NoReverseMatch, reverse
 from registrar.forms.contact import ContactForm
@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class BaseContactView(ContactPermissionView):
-
+    """Provides a base view for the contact object. On get, the contact
+    is saved in the session and on self.object."""
     def get(self, request, *args, **kwargs):
         """Sets the current contact in cache, defines the current object as self.object
         then returns render_to_response"""
@@ -54,7 +55,7 @@ class BaseContactView(ContactPermissionView):
 
 
 class ContactFormBaseView(BaseContactView, FormMixin):
-
+    """Adds a FormMixin to BaseContactView, and handles post"""
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view.
 
@@ -104,6 +105,7 @@ class ContactProfileSetupView(ContactFormBaseView):
         TO_SPECIFIC_PAGE = "domain_request"
 
     # TODO - refactor
+    @waffle_flag('profile_feature')
     @method_decorator(csrf_protect)
     def dispatch(self, request, *args, **kwargs):
 
@@ -140,6 +142,16 @@ class ContactProfileSetupView(ContactFormBaseView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_redirect_url(self):
+        """
+        Returns a URL string based on the current value of self.redirect_type.
+
+        Depending on self.redirect_type, constructs a base URL and appends a 
+        'redirect' query parameter. Handles different redirection types such as 
+        HOME, BACK_TO_SELF, COMPLETE_SETUP, and TO_SPECIFIC_PAGE.
+
+        Returns:
+            str: The full URL with the appropriate query parameters.
+        """
         base_url = ""
         query_params = {}
         match self.redirect_type:
