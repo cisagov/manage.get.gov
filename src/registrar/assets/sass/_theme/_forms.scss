@@ -15,6 +15,9 @@
 
 .usa-form--extra-large {
   max-width: none;
+  .usa-summary-box {
+    max-width: 600px;
+  }
 }
 
 .usa-form--text-width {

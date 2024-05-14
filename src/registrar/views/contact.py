@@ -94,7 +94,6 @@ class ContactProfileSetupView(ContactFormBaseView):
         # Update redirect type based on the query parameter if present
         redirect_type = request.GET.get("redirect", default_redirect)
 
-        # Store the redirect type in the session
         self.redirect_type = redirect_type
 
         return super().dispatch(request, *args, **kwargs)
@@ -106,8 +105,7 @@ class ContactProfileSetupView(ContactFormBaseView):
             case self.RedirectType.BACK_TO_SELF:
                 return reverse("finish-contact-profile-setup", kwargs={"pk": self.object.pk})
             case self.RedirectType.DOMAIN_REQUEST:
-                # TODO
-                return reverse("home")
+                return reverse("domain-request:")
             case _:
                 return reverse("home")
     
@@ -116,19 +114,12 @@ class ContactProfileSetupView(ContactFormBaseView):
         redirect_url = self.get_redirect_url()
         return redirect_url
 
+    # TODO - delete session information
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view.
 
         This post method harmonizes using BaseContactView and FormMixin
         """
-                # Default redirect type
-        default_redirect = self.RedirectType.BACK_TO_SELF
-
-        # Update redirect type based on the query parameter if present
-        redirect_type = request.GET.get("redirect", default_redirect)
-
-        # Store the redirect type in the session
-        self.redirect_type = redirect_type
 
         # Set the current contact object in cache
         self._set_contact(request)
@@ -140,7 +131,7 @@ class ContactProfileSetupView(ContactFormBaseView):
             if 'contact_setup_save_button' in request.POST:
                 # Logic for when the 'Save' button is clicked
                 self.redirect_type = self.RedirectType.BACK_TO_SELF
-                self.session["should_redirect_to_home"] = "redirect_to_home" in request.POST
+                self.session["should_redirect"] = "redirect_to_confirmation_page" in request.POST
             elif 'contact_setup_submit_button' in request.POST:
                 # Logic for when the 'Save and continue' button is clicked
                 if self.redirect_type != self.RedirectType.DOMAIN_REQUEST:
@@ -153,7 +144,7 @@ class ContactProfileSetupView(ContactFormBaseView):
 
     def form_valid(self, form):
 
-        if self.redirect_type == self.RedirectType.HOME:
+        if self.redirect_type != self.RedirectType.BACK_TO_SELF:
             self.request.user.finished_setup = True
             self.request.user.save()
         
@@ -172,7 +163,7 @@ class ContactProfileSetupView(ContactFormBaseView):
         context = super().get_context_data(**kwargs)
         context["email_sublabel_text"] = self._email_sublabel_text()
 
-        if "should_redirect_to_home" in self.session:
+        if "should_redirect" in self.session:
             context["confirm_changes"] = True
 
         return context
