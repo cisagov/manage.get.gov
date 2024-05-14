@@ -1,8 +1,8 @@
 """
 Contains middleware used in settings.py
 """
-
-from django.urls import reverse
+from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from django.urls import reverse, resolve
 from django.http import HttpResponseRedirect
 
 class CheckUserProfileMiddleware:
@@ -20,6 +20,8 @@ class CheckUserProfileMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
+
+
         # Check if setup is not finished
         finished_setup = hasattr(request.user, "finished_setup") and request.user.finished_setup
         if request.user.is_authenticated and not finished_setup:
@@ -33,13 +35,31 @@ class CheckUserProfileMiddleware:
                 setup_page,
                 logout_page,
             ]
+            custom_redirect = None
+
+            # In some cases, we don't want to redirect to home.
+            # This handles that.
+            if request.path == "/request/":
+                # This can be generalized if need be, but for now lets keep this easy to read.
+                custom_redirect = "domain-request:"
 
             # Don't redirect on excluded pages (such as the setup page itself)
             if not any(request.path.startswith(page) for page in excluded_pages):
-                # Preserve the original query parameters
-                query_params = request.GET.urlencode()
+                # Preserve the original query parameters, and coerce them into a dict
+                query_params = parse_qs(request.META['QUERY_STRING'])
+
+                if custom_redirect is not None:
+                    # Set the redirect value to our redirect location
+                    query_params["redirect"] = custom_redirect
+
                 if query_params:
-                    setup_page += f"?{query_params}"
+                    # Split the URL into parts
+                    setup_page_parts = list(urlparse(setup_page))
+                    # Modify the query param bit
+                    setup_page_parts[4] = urlencode(query_params)
+                    # Reassemble the URL
+                    setup_page = urlunparse(setup_page_parts)
+                
 
                 # Redirect to the setup page
                 return HttpResponseRedirect(setup_page)
