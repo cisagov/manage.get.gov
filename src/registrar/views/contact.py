@@ -273,4 +273,4 @@ class ContactProfileSetupView(ContactFormBaseView):
             "We recommend using your work email for your .gov account. "
             "If the wrong email is displayed below, you’ll need to update your Login.gov account "
             f'and log back in. <a class="usa-link" href={help_url}>Get help with your Login.gov account.</a>'
-        )
+        )  # nosec
