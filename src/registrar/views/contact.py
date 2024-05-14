@@ -1,7 +1,6 @@
 from enum import Enum
-from urllib.parse import urlencode
-from django.http import HttpResponseRedirect
-from django.urls import reverse
+from urllib.parse import urlencode, urlunparse, urlparse, quote
+from django.urls import NoReverseMatch, reverse
 from registrar.forms.contact import ContactForm
 from registrar.models.contact import Contact
 from registrar.templatetags.url_helpers import public_site_url
@@ -13,19 +12,23 @@ from django.utils.safestring import mark_safe
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 
-# TODO we can and probably should generalize this at this rate.
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class BaseContactView(ContactPermissionView):
 
     def get(self, request, *args, **kwargs):
+        """Sets the current contact in cache, defines the current object as self.object
+        then returns render_to_response"""
         self._set_contact(request)
         context = self.get_context_data(object=self.object)
-
         return self.render_to_response(context)
 
-    # TODO - this deserves a small refactor
     def _set_contact(self, request):
         """
-        get domain from session cache or from db and set
+        get contact from session cache or from db and set
         to self.object
         set session to self for downstream functions to
         update session cache
@@ -81,34 +84,99 @@ class ContactProfileSetupView(ContactFormBaseView):
     model = Contact
 
     redirect_type = None
+
+    # TODO - make this an enum
     class RedirectType:
+        """
+        Contains constants for each type of redirection.
+        Not an enum as we just need to track string values,
+        but we don't care about enforcing it.
+
+        - HOME: We want to redirect to reverse("home")
+        - BACK_TO_SELF: We want to redirect back to reverse("finish-contact-profile-setup")
+        - TO_SPECIFIC_PAGE: We want to redirect to the page specified in the queryparam "redirect"
+        - COMPLETE_SETUP: Indicates that we want to navigate BACK_TO_SELF, but the subsequent
+        redirect after the next POST should be either HOME or TO_SPECIFIC_PAGE
+        """
         HOME = "home"
         BACK_TO_SELF = "back_to_self"
-        DOMAIN_REQUEST = "domain_request"
+        COMPLETE_SETUP = "complete_setup"
+        TO_SPECIFIC_PAGE = "domain_request"
 
+    # TODO - refactor
     @method_decorator(csrf_protect)
     def dispatch(self, request, *args, **kwargs):
+
         # Default redirect type
         default_redirect = self.RedirectType.BACK_TO_SELF
 
         # Update redirect type based on the query parameter if present
-        redirect_type = request.GET.get("redirect", default_redirect)
+        redirect_type = request.GET.get("redirect", None)
 
-        self.redirect_type = redirect_type
+        is_default = False
+        # We set this here rather than in .get so we don't override
+        # existing data if no queryparam is present.
+        if redirect_type is None:
+            is_default = True
+            redirect_type = default_redirect
+
+            # Set the default if nothing exists already
+            if self.redirect_type is None:
+                self.redirect_type = redirect_type
+
+        if not is_default:
+            default_redirects = [
+                self.RedirectType.HOME,
+                self.RedirectType.COMPLETE_SETUP,
+                self.RedirectType.BACK_TO_SELF,
+                self.RedirectType.TO_SPECIFIC_PAGE
+            ]
+            if redirect_type not in default_redirects:
+                self.redirect_type = self.RedirectType.TO_SPECIFIC_PAGE
+                request.session["profile_setup_redirect_viewname"] = redirect_type
+            else:
+                self.redirect_type = redirect_type
 
         return super().dispatch(request, *args, **kwargs)
 
     def get_redirect_url(self):
+        base_url = ""
+        query_params = {}
         match self.redirect_type:
             case self.RedirectType.HOME:
-                return reverse("home")
-            case self.RedirectType.BACK_TO_SELF:
-                return reverse("finish-contact-profile-setup", kwargs={"pk": self.object.pk})
-            case self.RedirectType.DOMAIN_REQUEST:
-                return reverse("domain-request:")
+                base_url = reverse("home")
+            case self.RedirectType.BACK_TO_SELF | self.RedirectType.COMPLETE_SETUP:
+                base_url = reverse("finish-contact-profile-setup", kwargs={"pk": self.object.pk})
+            case self.RedirectType.TO_SPECIFIC_PAGE:
+
+                # We only allow this session value to use viewnames,
+                # because otherwise this allows anyone to enter any value in here.
+                # This restricts what can be redirected to.
+                try:
+                    desired_view = self.session["profile_setup_redirect_viewname"]
+                    base_url = reverse(desired_view)
+                except NoReverseMatch as err:
+                    logger.error(err)
+                    logger.error(
+                        "ContactProfileSetupView -> get_redirect_url -> Could not find specified page."
+                    )
+                    base_url = reverse("home")
             case _:
-                return reverse("home")
-    
+                base_url = reverse("home")
+        
+        # Quote cleans up the value so that it can be used in a url
+        query_params["redirect"] = quote(self.redirect_type)
+
+        # Parse the base URL
+        url_parts = list(urlparse(base_url))
+
+        # Update the query part of the URL
+        url_parts[4] = urlencode(query_params)
+
+        # Construct the full URL with query parameters
+        full_url = urlunparse(url_parts)
+        return full_url
+
     def get_success_url(self):
         """Redirect to the nameservers page for the domain."""
         redirect_url = self.get_redirect_url()
@@ -128,23 +196,26 @@ class ContactProfileSetupView(ContactFormBaseView):
 
         # Get the current form and validate it
         if form.is_valid():
-            if 'contact_setup_save_button' in request.POST:
+            if "contact_setup_save_button" in request.POST:
                 # Logic for when the 'Save' button is clicked
-                self.redirect_type = self.RedirectType.BACK_TO_SELF
-                self.session["should_redirect"] = "redirect_to_confirmation_page" in request.POST
-            elif 'contact_setup_submit_button' in request.POST:
-                # Logic for when the 'Save and continue' button is clicked
-                if self.redirect_type != self.RedirectType.DOMAIN_REQUEST:
-                    self.redirect_type = self.RedirectType.HOME
+                self.redirect_type = self.RedirectType.COMPLETE_SETUP
+            elif "contact_setup_submit_button" in request.POST:
+                if "profile_setup_redirect_viewname" in self.session:
+                    self.redirect_type = self.RedirectType.TO_SPECIFIC_PAGE
                 else:
-                    self.redirect_type = self.RedirectType.DOMAIN_REQUEST
+                    self.redirect_type = self.RedirectType.HOME
+
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
 
     def form_valid(self, form):
-
-        if self.redirect_type != self.RedirectType.BACK_TO_SELF:
+        
+        completed_states = [
+            self.RedirectType.TO_SPECIFIC_PAGE,
+            self.RedirectType.HOME
+        ]
+        if self.redirect_type in completed_states:
             self.request.user.finished_setup = True
             self.request.user.save()
         
@@ -163,14 +234,14 @@ class ContactProfileSetupView(ContactFormBaseView):
         context = super().get_context_data(**kwargs)
         context["email_sublabel_text"] = self._email_sublabel_text()
 
-        if "should_redirect" in self.session:
+        if self.redirect_type == self.RedirectType.COMPLETE_SETUP:
             context["confirm_changes"] = True
 
         return context
     
     def _email_sublabel_text(self):
         """Returns the lengthy sublabel for the email field"""
-        help_url = public_site_url('help/account-management/#get-help-with-login.gov')
+        help_url = public_site_url("help/account-management/#get-help-with-login.gov")
         return mark_safe(
             "We recommend using your work email for your .gov account. "
             "If the wrong email is displayed below, you’ll need to update your Login.gov account "
