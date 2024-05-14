@@ -1,17 +1,20 @@
 """
 Contains middleware used in settings.py
 """
+
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 from waffle.decorators import flag_is_active
 
+
 class CheckUserProfileMiddleware:
     """
-    Checks if the current user has finished_setup = False. 
+    Checks if the current user has finished_setup = False.
     If they do, redirect them to the setup page regardless of where they are in
     the application.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -21,7 +24,7 @@ class CheckUserProfileMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        
+
         # Check that the user is "opted-in" to the profile feature flag
         has_profile_feature_flag = flag_is_active(request, "profile_feature")
 
@@ -32,10 +35,7 @@ class CheckUserProfileMiddleware:
         # Check if setup is not finished
         finished_setup = hasattr(request.user, "finished_setup") and request.user.finished_setup
         if request.user.is_authenticated and not finished_setup:
-            setup_page = reverse(
-                "finish-contact-profile-setup", 
-                kwargs={"pk": request.user.contact.pk}
-            )
+            setup_page = reverse("finish-contact-profile-setup", kwargs={"pk": request.user.contact.pk})
             logout_page = reverse("logout")
             excluded_pages = [
                 setup_page,
@@ -52,7 +52,7 @@ class CheckUserProfileMiddleware:
             # Don't redirect on excluded pages (such as the setup page itself)
             if not any(request.path.startswith(page) for page in excluded_pages):
                 # Preserve the original query parameters, and coerce them into a dict
-                query_params = parse_qs(request.META['QUERY_STRING'])
+                query_params = parse_qs(request.META["QUERY_STRING"])
 
                 if custom_redirect is not None:
                     # Set the redirect value to our redirect location
@@ -65,7 +65,6 @@ class CheckUserProfileMiddleware:
                     setup_page_parts[4] = urlencode(query_params)
                     # Reassemble the URL
                     setup_page = urlunparse(setup_page_parts)
-                
 
                 # Redirect to the setup page
                 return HttpResponseRedirect(setup_page)

@@ -819,4 +819,3 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         duplicates = [item for item, count in object_dict.items() if count > 1]
         return duplicates
-

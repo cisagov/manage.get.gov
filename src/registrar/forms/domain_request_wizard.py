@@ -150,7 +150,7 @@ class OrganizationContactForm(RegistrarForm):
         """Require something to be selected when this is a federal agency."""
         federal_agency = self.cleaned_data.get("federal_agency", None)
         # need the domain request object to know if this is federal
-        if self.domain_request is None:
+        if hasattr(self, "domain_request") and self.domain_request is None:
             # hmm, no saved domain request object?, default require the agency
             if not federal_agency:
                 # no answer was selected

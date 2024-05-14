@@ -341,7 +341,6 @@ class ContactPermission(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
-
         given_contact_pk = self.kwargs["pk"]
 
         # Grab the user in the DB to do a full object comparision, not just on ids
@@ -351,13 +350,10 @@ class ContactPermission(PermissionsLoginMixin):
         if current_user.contact.pk != given_contact_pk:
             # Don't allow users to modify other users profiles
             return False
-        
+
         # Check if the object at the id we're searching on actually exists
         requested_user_exists = User.objects.filter(pk=current_user.pk).exists()
-        requested_contact_exists = Contact.objects.filter(
-            user=current_user.pk,
-            pk=given_contact_pk
-        ).exists()
+        requested_contact_exists = Contact.objects.filter(user=current_user.pk, pk=given_contact_pk).exists()
 
         if not requested_user_exists or not requested_contact_exists:
             return False

@@ -3,6 +3,7 @@ from django.db import models
 from .utility.time_stamped_model import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
+
 class Contact(TimeStampedModel):
     """Contact information follows a similar pattern for each contact."""
 

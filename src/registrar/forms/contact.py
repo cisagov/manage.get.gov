@@ -46,4 +46,3 @@ class ContactForm(forms.Form):
         label="Phone",
         error_messages={"invalid": "Enter a valid 10-digit phone number.", "required": "Enter your phone number."},
     )
-
