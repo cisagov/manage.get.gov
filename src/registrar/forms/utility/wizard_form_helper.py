@@ -21,8 +21,7 @@ class RegistrarForm(forms.Form):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("label_suffix", "")
         # save a reference to a domain request object
-        if "domain_request" in kwargs:
-            self.domain_request = kwargs.pop("domain_request", None)
+        self.domain_request = kwargs.pop("domain_request", None)
 
         super(RegistrarForm, self).__init__(*args, **kwargs)
 
