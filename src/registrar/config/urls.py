@@ -179,7 +179,7 @@ urlpatterns = [
         name="domain-users-add",
     ),
     path(
-        "user-profile/<int:pk>",
+        "user-profile",
         views.UserProfileView.as_view(),
         name="user-profile",
     ),

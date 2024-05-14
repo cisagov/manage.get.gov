@@ -33,7 +33,8 @@ class UserProfileView(UserProfilePermissionView):
     def get(self, request, *args, **kwargs):
         logger.info("in get()")
         self.object = self.get_object()
-        context = self.get_context_data(object=self.object)
+        form = self.form_class(instance=self.object)
+        context = self.get_context_data(object=self.object, form=form)
         logger.info(context)
         return self.render_to_response(context)
     
@@ -44,11 +45,11 @@ class UserProfileView(UserProfilePermissionView):
     #         kwargs.update(self.extra_context)
     #     return kwargs
     
-    # # Override get_object to return the logged-in user
-    # def get_object(self, queryset=None):
-    #     logger.info("in get_object")
-    #     user = self.request.user  # get the logged in user
-    #     if hasattr(user, 'contact'):  # Check if the user has a contact instance
-    #         logger.info(user.contact)
-    #         return user.contact
-    #     return None
+    # Override get_object to return the logged-in user
+    def get_object(self, queryset=None):
+        logger.info("in get_object")
+        user = self.request.user  # get the logged in user
+        if hasattr(user, 'contact'):  # Check if the user has a contact instance
+            logger.info(user.contact)
+            return user.contact
+        return None
