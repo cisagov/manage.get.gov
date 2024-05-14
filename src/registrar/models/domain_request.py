@@ -751,6 +751,10 @@ class DomainRequest(TimeStampedModel):
         domain request into an admin on that domain. It also triggers an email
         notification."""
 
+        if self.federal_agency is None:
+            self.federal_agency = "Non-Federal Agency"
+            self.save()
+
         # create the domain
         Domain = apps.get_model("registrar.Domain")
 
