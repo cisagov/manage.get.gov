@@ -2,6 +2,7 @@ from waffle.decorators import waffle_flag
 from urllib.parse import urlencode, urlunparse, urlparse, quote
 from django.urls import NoReverseMatch, reverse
 from registrar.forms.contact import ContactForm
+from django.contrib.messages.views import SuccessMessageMixin
 from registrar.models.contact import Contact
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.views.utility.permission_views import ContactPermissionView
@@ -17,9 +18,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class BaseContactView(ContactPermissionView):
+class BaseContactView(SuccessMessageMixin, ContactPermissionView):
     """Provides a base view for the contact object. On get, the contact
     is saved in the session and on self.object."""
+
+    def get_success_message(self):
+        return "Contact updated successfully."
 
     def get(self, request, *args, **kwargs):
         """Sets the current contact in cache, defines the current object as self.object
@@ -107,6 +111,9 @@ class ContactProfileSetupView(ContactFormBaseView):
         BACK_TO_SELF = "back_to_self"
         COMPLETE_SETUP = "complete_setup"
         TO_SPECIFIC_PAGE = "domain_request"
+
+    def get_success_message(self):
+        return "Your profile has been successfully updated."
 
     # TODO - refactor
     @waffle_flag("profile_feature")

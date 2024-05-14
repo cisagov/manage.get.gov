@@ -101,25 +101,9 @@ def login_callback(request):
         user = authenticate(request=request, **userinfo)
         is_new_user = request.session.get("is_new_user", False)
         if user:
-            should_update_user = False
-            # Fixture users kind of exist in a superposition of verification types,
-            # because while the system "verified" them, if they login,
-            # we don't know how the user themselves was verified through login.gov until
-            # they actually try logging in. This edge-case only matters in non-production environments.
-            fixture_user = User.VerificationTypeChoices.FIXTURE_USER
-            is_fixture_user = user.verification_type and user.verification_type == fixture_user
-
-            # Set the verification type if it doesn't already exist or if its a fixture user
-            if not user.verification_type or is_fixture_user:
-                user.set_user_verification_type()
-                should_update_user = True
-
-            if is_new_user:
-                user.finished_setup = False
-                should_update_user = True
-
-            if should_update_user:
-                user.save()
+            # Set login metadata about this user
+            # (verification_type for instance)
+            _set_authenticated_user_metadata(user, is_new_user)
 
             login(request, user)
 
@@ -147,6 +131,30 @@ def login_callback(request):
             return error_page(request, nsd_err)
     except Exception as err:
         return error_page(request, err)
+
+
+def _set_authenticated_user_metadata(user, is_new_user):
+    """Does checks on the recieved authenticated user from login_callback,
+    and updates fields accordingly. U"""
+    should_update_user = False
+    # Fixture users kind of exist in a superposition of verification types,
+    # because while the system "verified" them, if they login,
+    # we don't know how the user themselves was verified through login.gov until
+    # they actually try logging in. This edge-case only matters in non-production environments.
+    fixture_user = User.VerificationTypeChoices.FIXTURE_USER
+    is_fixture_user = user.verification_type and user.verification_type == fixture_user
+
+    # Set the verification type if it doesn't already exist or if its a fixture user
+    if not user.verification_type or is_fixture_user:
+        user.set_user_verification_type()
+        should_update_user = True
+
+    if is_new_user:
+        user.finished_setup = False
+        should_update_user = True
+
+    if should_update_user:
+        user.save()
 
 
 def _requires_step_up_auth(userinfo):
