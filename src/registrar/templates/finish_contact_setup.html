@@ -34,9 +34,9 @@
                     Review the details below and update any required information. 
                     Note that editing this information won’t affect your Login.gov account information.
                 </p>
-                {# TODO: maybe remove this? #}
-                <p>Required information is marked with an asterisk (*).</p>
-                <form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
+                {# We use a var called 'remove_margin_top' rather than 'add_margin_top' because most fields use this #}
+                {% include "includes/required_fields.html" with remove_margin_top=True %}
+                <form id="step__{{steps.current}}" class="usa-form usa-form--largest" method="post" novalidate>
                     {% csrf_token %}
                     <fieldset class="usa-fieldset">
                         <legend class="usa-sr-only">
@@ -61,8 +61,8 @@
                             {% input_with_errors form.last_name %}
                         {% endwith %}
                         
-                        {# TODO: I shouldnt need to do add_class here #}
-                        {% with show_readonly=True add_class="display-none" group_classes="usa-form-readonly padding-top-2" sublabel_text=email_sublabel_text %}
+                        {# This field doesn't have the readonly button but it has common design elements from it #}
+                        {% with show_readonly=True add_class="display-none" group_classes="usa-form-readonly padding-top-2 bold-usa-label" sublabel_text=email_sublabel_text %}
                             {% input_with_errors form.email %}
                         {% endwith %}
 

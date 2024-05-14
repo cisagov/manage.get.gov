@@ -38,6 +38,10 @@
     font-weight: bold;
   }
 
+  &.bold-usa-label label.usa-label{
+    font-weight: bold;
+  }
+
 }
 
 .usa-form-readonly:first-of-type  {
@@ -61,6 +65,13 @@ legend.float-left-tablet + button.float-right-tablet {
     margin-top: 1rem;
   }
 }
+
+@media (min-width: 35em) {
+  .usa-form--largest {
+      max-width: 35rem;
+  }
+}
+
 
 // Custom style for disabled inputs
 @media (prefers-color-scheme: light) {

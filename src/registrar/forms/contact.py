@@ -9,23 +9,10 @@ class ContactForm(forms.Form):
         cleaned_data = super().clean()
         # Remove the full name property
         if "full_name" in cleaned_data:
-            full_name: str = cleaned_data["full_name"]
-            if full_name:
-                name_fields = full_name.split(" ")
-
-                
-                cleaned_data["first_name"] = name_fields[0]
-                if len(name_fields) == 2:
-                    cleaned_data["last_name"] = " ".join(name_fields[1:])
-                elif len(name_fields) > 2:
-                    cleaned_data["middle_name"] = name_fields[1]
-                    cleaned_data["last_name"] = " ".join(name_fields[2:])
-                else:
-                    cleaned_data["middle_name"] = None
-                    cleaned_data["last_name"] = None
-
-                # Delete the full name element as we don't need it anymore
-                del cleaned_data["full_name"]
+            # Delete the full name element as its purely decorative.
+            # We include it as a normal Charfield for all the advantages
+            # and utility that it brings, but we're playing pretend.
+            del cleaned_data["full_name"]
         return cleaned_data
 
     full_name = forms.CharField(
@@ -53,6 +40,7 @@ class ContactForm(forms.Form):
     email = forms.EmailField(
         label="Organization email",
         required=False,
+        max_length=None,
     )
     phone = PhoneNumberField(
         label="Phone",

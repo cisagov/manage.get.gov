@@ -842,6 +842,14 @@ function hideDeletedForms() {
  */
 (function finishUserSetupListener() {
 
+  function getInputFieldId(fieldName){
+    return `#id_${fieldName}`
+  }
+
+  function getReadonlyFieldId(fieldName){
+    return `#${fieldName}__edit-button-readonly`
+  }
+
   // Shows the hidden input field and hides the readonly one
   function showInputFieldHideReadonlyField(fieldName, button) {
     let inputId = getInputFieldId(fieldName)
@@ -854,21 +862,10 @@ function hideDeletedForms() {
     inputField.classList.toggle('display-none');
 
     // Toggle the bold style on the grid row
-    let formGroup = button.closest(".usa-form-group")
-    if (formGroup){
-      gridRow = button.querySelector(".grid-row")
-      if (gridRow){
-        gridRow.toggle("bold-usa-label")
-      }
+    let gridRow = button.closest(".grid-col-2").closest(".grid-row")
+    if (gridRow){
+      gridRow.classList.toggle("bold-usa-label")
     }
-  }
-
-  function getInputFieldId(fieldName){
-    return `#id_${fieldName}`
-  }
-
-  function getReadonlyFieldId(fieldName){
-    return `#${fieldName}__edit-button-readonly`
   }
 
   function handleFullNameField(fieldName, nameFields) {
@@ -877,6 +874,7 @@ function hideDeletedForms() {
     let inputField = document.querySelector(fieldId);
 
     if (inputField) {
+      // Show each name field
       nameFields.forEach(function(fieldName) {
         let nameId = getInputFieldId(fieldName)
         let nameField = document.querySelector(nameId);
@@ -887,7 +885,14 @@ function hideDeletedForms() {
           }
         }
       });
+
+      // Remove the "full_name" field
+      inputFieldParentDiv = inputField.closest("div");
+      if (inputFieldParentDiv) {
+        inputFieldParentDiv.remove();
+      }
     }
+    
   }
 
   function handleEditButtonClick(fieldName, button){
@@ -895,8 +900,14 @@ function hideDeletedForms() {
       // Lock the edit button while this operation occurs
       button.disabled = true
 
-      showInputFieldHideReadonlyField(fieldName, button);
-      button.classList.add('display-none');
+      if (fieldName == "full_name"){
+        let nameFields = ["first_name", "middle_name", "last_name"]
+        handleFullNameField(fieldName, nameFields);
+      }else {
+        showInputFieldHideReadonlyField(fieldName, button);
+      }
+      
+      button.classList.add("display-none");
 
       // Unlock after it completes
       button.disabled = false
@@ -925,10 +936,16 @@ function hideDeletedForms() {
 
           let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
           if (errorMessage) {
+            let nameFields = ["first_name", "middle_name", "last_name"]
+            // If either the full_name field errors out,
+            // or if any of its associated fields do - show all name related fields. 
+            // Otherwise, just show the problematic field.
             if (fieldName == "full_name"){
-              let nameFields = ["first_name", "middle_name", "last_name"]
               handleFullNameField(fieldName, nameFields);
-            }else {
+            }else if (nameFields.includes(fieldName)){
+              handleFullNameField("full_name", nameFields);
+            }
+            else {
               button.click()
             }
           }
