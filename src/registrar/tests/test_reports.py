@@ -22,9 +22,8 @@ from django.conf import settings
 from botocore.exceptions import ClientError
 import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
-from datetime import datetime
 from django.utils import timezone
-from .common import MockDb, MockEppLib, less_console_noise
+from .common import MockDb, MockEppLib, less_console_noise, get_time_aware_date
 
 
 class CsvReportsTest(MockDb):
@@ -201,9 +200,9 @@ class ExportDataTest(MockDb, MockEppLib):
     def tearDown(self):
         super().tearDown()
 
-    def test_export_domains_to_writer_security_emails(self):
+    def test_export_domains_to_writer_security_emails_and_first_ready(self):
         """Test that export_domains_to_writer returns the
-        expected security email"""
+        expected security email and first_ready value"""
 
         with less_console_noise():
             # Add security email information
@@ -215,6 +214,11 @@ class ExportDataTest(MockDb, MockEppLib):
             self.domain_2.security_contact
             # Invoke setter
             self.domain_3.security_contact
+
+            # Add a first ready date on the first domain. Leaving the others blank.
+            self.domain_1.first_ready = get_default_start_date()
+            self.domain_1.save()
+
             # Create a CSV file in memory
             csv_file = StringIO()
             writer = csv.writer(csv_file)
@@ -231,6 +235,7 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Security contact email",
                 "Status",
                 "Expiration date",
+                "First ready on",
             ]
             sort_fields = ["domain__name"]
             filter_condition = {
@@ -240,7 +245,7 @@ class ExportDataTest(MockDb, MockEppLib):
                     Domain.State.ON_HOLD,
                 ],
             }
-            self.maxDiff = None
+
             # Call the export functions
             write_csv_for_domains(
                 writer,
@@ -259,13 +264,14 @@ class ExportDataTest(MockDb, MockEppLib):
             # sorted alphabetially by domain name
             expected_content = (
                 "Domain name,Domain type,Agency,Organization name,City,State,AO,"
-                "AO email,Security contact email,Status,Expiration date\n"
-                "adomain10.gov,Federal,Armed Forces Retirement Home,Ready\n"
-                "adomain2.gov,Interstate,(blank),Dns needed\n"
-                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
-                "ddomain3.gov,Federal,Armed Forces Retirement Home,security@mail.gov,On hold,2023-11-15\n"
-                "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,(blank),Ready\n"
-                "zdomain12.govInterstateReady\n"
+                "AO email,Security contact email,Status,Expiration date, First ready on\n"
+                "adomain10.gov,Federal,Armed Forces Retirement Home,Ready,(blank),2024-04-03\n"
+                "adomain2.gov,Interstate,(blank),Dns needed,(blank),(blank)\n"
+                "cdomain11.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank),2024-04-02\n"
+                "ddomain3.gov,Federal,Armed Forces Retirement Home,security@mail.gov,On hold,2023-11-15,(blank)\n"
+                "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,"
+                "(blank),Ready,(blank),2023-11-01\n"
+                "zdomain12.govInterstateReady,(blank),2024-04-02\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -470,18 +476,18 @@ class ExportDataTest(MockDb, MockEppLib):
             # Read the content into a variable
             csv_content = csv_file.read()
 
-            # We expect READY domains first, created between today-2 and today+2, sorted by created_at then name
-            # and DELETED domains deleted between today-2 and today+2, sorted by deleted then name
+            # We expect READY domains first, created between day-2 and day+2, sorted by created_at then name
+            # and DELETED domains deleted between day-2 and day+2, sorted by deleted then name
             expected_content = (
                 "Domain name,Domain type,Agency,Organization name,City,"
                 "State,Status,Expiration date\n"
-                "cdomain1.gov,Federal-Executive,World War I Centennial Commission,,,,Ready,\n"
-                "adomain10.gov,Federal,Armed Forces Retirement Home,,,,Ready,\n"
-                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady\n"
-                "zdomain12.govInterstateReady\n"
-                "zdomain9.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
-                "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
-                "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
+                "cdomain1.gov,Federal-Executive,World War I Centennial Commission,,,,Ready,(blank)\n"
+                "adomain10.gov,Federal,Armed Forces Retirement Home,,,,Ready,(blank)\n"
+                "cdomain11.govFederal-ExecutiveWorldWarICentennialCommissionReady(blank)\n"
+                "zdomain12.govInterstateReady(blank)\n"
+                "zdomain9.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank)\n"
+                "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,Deleted,(blank)\n"
+                "xdomain7.gov,FederalArmedForcesRetirementHome,Deleted,(blank)\n"
             )
 
             # Normalize line endings and remove commas,
@@ -526,7 +532,7 @@ class ExportDataTest(MockDb, MockEppLib):
                     Domain.State.ON_HOLD,
                 ],
             }
-            self.maxDiff = None
+
             # Call the export functions
             write_csv_for_domains(
                 writer,
@@ -548,14 +554,14 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Organization name,City,State,AO,AO email,"
                 "Security contact email,Domain manager 1,DM1 status,Domain manager 2,DM2 status,"
                 "Domain manager 3,DM3 status,Domain manager 4,DM4 status\n"
-                "adomain10.gov,Ready,,Federal,Armed Forces Retirement Home,,,, , ,squeaker@rocks.com, I\n"
-                "adomain2.gov,Dns needed,,Interstate,,,,, , , ,meoward@rocks.com, R,squeaker@rocks.com, I\n"
-                "cdomain11.govReadyFederal-ExecutiveWorldWarICentennialCommissionmeoward@rocks.comR\n"
-                "cdomain1.gov,Ready,,Federal - Executive,World War I Centennial Commission,,,"
+                "adomain10.gov,Ready,(blank),Federal,Armed Forces Retirement Home,,,, , ,squeaker@rocks.com, I\n"
+                "adomain2.gov,Dns needed,(blank),Interstate,,,,, , , ,meoward@rocks.com, R,squeaker@rocks.com, I\n"
+                "cdomain11.govReady,(blank),Federal-ExecutiveWorldWarICentennialCommissionmeoward@rocks.comR\n"
+                "cdomain1.gov,Ready,(blank),Federal - Executive,World War I Centennial Commission,,,"
                 ", , , ,meoward@rocks.com,R,info@example.com,R,big_lebowski@dude.co,R,"
                 "woofwardthethird@rocks.com,I\n"
-                "ddomain3.gov,On hold,,Federal,Armed Forces Retirement Home,,,, , , ,,\n"
-                "zdomain12.govReadyInterstatemeoward@rocks.comR\n"
+                "ddomain3.gov,On hold,(blank),Federal,Armed Forces Retirement Home,,,, , , ,,\n"
+                "zdomain12.gov,Ready,(blank),Interstate,meoward@rocks.com,R\n"
             )
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
@@ -580,7 +586,7 @@ class ExportDataTest(MockDb, MockEppLib):
             csv_file.seek(0)
             # Read the content into a variable
             csv_content = csv_file.read()
-            self.maxDiff = None
+
             # We expect the READY domain names with the domain managers: Their counts, and listing at end_date.
             expected_content = (
                 "MANAGED DOMAINS COUNTS AT START DATE\n"
@@ -623,7 +629,7 @@ class ExportDataTest(MockDb, MockEppLib):
             csv_file.seek(0)
             # Read the content into a variable
             csv_content = csv_file.read()
-            self.maxDiff = None
+
             # We expect the READY domain names with the domain managers: Their counts, and listing at end_date.
             expected_content = (
                 "UNMANAGED DOMAINS AT START DATE\n"
@@ -698,7 +704,7 @@ class HelperFunctions(MockDb):
     """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
 
     def test_get_default_start_date(self):
-        expected_date = timezone.make_aware(datetime(2023, 11, 1))
+        expected_date = get_time_aware_date()
         actual_date = get_default_start_date()
         self.assertEqual(actual_date, expected_date)
 

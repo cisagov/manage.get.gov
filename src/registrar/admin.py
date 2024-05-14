@@ -7,7 +7,7 @@ from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
-from django_fsm import get_available_FIELD_transitions
+from django_fsm import get_available_FIELD_transitions, FSMField
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
@@ -30,10 +30,61 @@ from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
+from import_export import resources
+from import_export.admin import ImportExportModelAdmin
 
 from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
+
+
+class FsmModelResource(resources.ModelResource):
+    """ModelResource is extended to support importing of tables which
+    have FSMFields.  ModelResource is extended with the following changes
+    to existing behavior:
+    When new objects are to be imported, FSMFields are initialized before
+    the object is initialized.  This is because FSMFields do not allow
+    direct modification.
+    When objects, which are to be imported, are updated, the FSMFields
+    are skipped."""
+
+    def init_instance(self, row=None):
+        """Overrides the init_instance method of ModelResource.  Returns
+        an instance of the model, with the FSMFields already initialized
+        from data in the row."""
+
+        # Get fields which are fsm fields
+        fsm_fields = {}
+
+        for f in self._meta.model._meta.fields:
+            if isinstance(f, FSMField):
+                if row and f.name in row:
+                    fsm_fields[f.name] = row[f.name]
+
+        # Initialize model instance with fsm_fields
+        return self._meta.model(**fsm_fields)
+
+    def import_field(self, field, obj, data, is_m2m=False, **kwargs):
+        """Overrides the import_field method of ModelResource.  If the
+        field being imported is an FSMField, it is not imported."""
+
+        is_fsm = False
+
+        # check each field in the object
+        for f in obj._meta.fields:
+            # if the field is an instance of FSMField
+            if field.attribute == f.name and isinstance(f, FSMField):
+                is_fsm = True
+        if not is_fsm:
+            super().import_field(field, obj, data, is_m2m, **kwargs)
+
+
+class UserResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.User
 
 
 class MyUserAdminForm(UserChangeForm):
@@ -498,8 +549,10 @@ class UserContactInline(admin.StackedInline):
     model = models.Contact
 
 
-class MyUserAdmin(BaseUserAdmin):
+class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     """Custom user admin class to use our inlines."""
+
+    resource_classes = [UserResource]
 
     form = MyUserAdminForm
 
@@ -706,16 +759,51 @@ class HostIPInline(admin.StackedInline):
     model = models.HostIP
 
 
-class MyHostAdmin(AuditedAdmin):
+class HostResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.Host
+
+
+class MyHostAdmin(AuditedAdmin, ImportExportModelAdmin):
     """Custom host admin class to use our inlines."""
+
+    resource_classes = [HostResource]
 
     search_fields = ["name", "domain__name"]
     search_help_text = "Search by domain or host name."
     inlines = [HostIPInline]
 
 
-class ContactAdmin(ListHeaderAdmin):
+class HostIpResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.HostIP
+
+
+class HostIpAdmin(AuditedAdmin, ImportExportModelAdmin):
+    """Custom host ip admin class"""
+
+    resource_classes = [HostIpResource]
+    model = models.HostIP
+
+
+class ContactResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.Contact
+
+
+class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom contact admin class to add search."""
+
+    resource_classes = [ContactResource]
 
     search_fields = ["email", "first_name", "last_name"]
     search_help_text = "Search by first name, last name or email."
@@ -837,8 +925,18 @@ class ContactAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
-class WebsiteAdmin(ListHeaderAdmin):
+class WebsiteResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.Website
+
+
+class WebsiteAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom website admin class."""
+
+    resource_classes = [WebsiteResource]
 
     # Search
     search_fields = [
@@ -887,8 +985,18 @@ class WebsiteAdmin(ListHeaderAdmin):
         return response
 
 
-class UserDomainRoleAdmin(ListHeaderAdmin):
+class UserDomainRoleResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.UserDomainRole
+
+
+class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom user domain role admin class."""
+
+    resource_classes = [UserDomainRoleResource]
 
     class Meta:
         """Contains meta information about this class"""
@@ -970,8 +1078,18 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/email_clipboard_change_form.html"
 
 
-class DomainInformationAdmin(ListHeaderAdmin):
+class DomainInformationResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.DomainInformation
+
+
+class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Customize domain information admin class."""
+
+    resource_classes = [DomainInformationResource]
 
     form = DomainInformationAdminForm
 
@@ -1101,8 +1219,18 @@ class DomainInformationAdmin(ListHeaderAdmin):
         return readonly_fields  # Read-only fields for analysts
 
 
-class DomainRequestAdmin(ListHeaderAdmin):
+class DomainRequestResource(FsmModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.DomainRequest
+
+
+class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom domain requests admin class."""
+
+    resource_classes = [DomainRequestResource]
 
     form = DomainRequestAdminForm
     change_form_template = "django/admin/domain_request_change_form.html"
@@ -1644,8 +1772,18 @@ class DomainInformationInline(admin.StackedInline):
         return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
 
 
-class DomainAdmin(ListHeaderAdmin):
+class DomainResource(FsmModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.Domain
+
+
+class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom domain admin class to add extra buttons."""
+
+    resource_classes = [DomainResource]
 
     class ElectionOfficeFilter(admin.SimpleListFilter):
         """Define a custom filter for is_election_board"""
@@ -2041,8 +2179,18 @@ class DomainAdmin(ListHeaderAdmin):
         return super().has_change_permission(request, obj)
 
 
-class DraftDomainAdmin(ListHeaderAdmin):
+class DraftDomainResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.DraftDomain
+
+
+class DraftDomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom draft domain admin class."""
+
+    resource_classes = [DraftDomainResource]
 
     search_fields = ["name"]
     search_help_text = "Search by draft domain name."
@@ -2179,9 +2327,8 @@ admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.FederalAgency, FederalAgencyAdmin)
-# Host and HostIP removed from django admin because changes in admin
-# do not propagate to registry and logic not applied
 admin.site.register(models.Host, MyHostAdmin)
+admin.site.register(models.HostIP, HostIpAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
