@@ -12,6 +12,7 @@ from registrar.models import (
     DraftDomain,
     DomainInvitation,
     UserDomainRole,
+    FederalAgency,
 )
 
 import boto3_mocking
@@ -74,6 +75,26 @@ class TestDomainRequest(TestCase):
         """Helper method for testing allowed transitions."""
         with less_console_noise():
             return self.assertRaises(Exception, None, exception_type)
+
+    def test_federal_agency_set_to_non_federal_on_approve(self):
+        """Ensures that when the federal_agency field is 'none' when .approve() is called,
+        the field is set to the 'Non-Federal Agency' record"""
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            name="city2.gov",
+            federal_agency=None,
+        )
+
+        # Ensure that the federal agency is None
+        self.assertEqual(domain_request.federal_agency, None)
+
+        # Approve the request
+        domain_request.approve()
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.APPROVED)
+
+        # After approval, it should be "Non-Federal agency"
+        expected_federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+        self.assertEqual(domain_request.federal_agency, expected_federal_agency)
 
     def test_empty_create_fails(self):
         """Can't create a completely empty domain request.

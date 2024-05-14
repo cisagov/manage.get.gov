@@ -9,6 +9,7 @@ from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
+from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 
@@ -752,7 +753,7 @@ class DomainRequest(TimeStampedModel):
         notification."""
 
         if self.federal_agency is None:
-            self.federal_agency = "Non-Federal Agency"
+            self.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
             self.save()
 
         # create the domain
