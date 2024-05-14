@@ -4,17 +4,10 @@
 
 import logging
 
-from django.contrib import messages
-from django.contrib.messages.views import SuccessMessageMixin
-from django.db import IntegrityError
-from django.http import HttpResponseRedirect
-from django.shortcuts import redirect
-from django.urls import reverse
-from django.views.generic.edit import FormMixin
-from django.conf import settings
-
+from registrar.forms.user_profile import UserProfileForm
 from registrar.models import (
     User,
+    Contact,
 )
 from registrar.views.utility.permission_views import UserProfilePermissionView
 
@@ -29,8 +22,33 @@ class UserProfileView(UserProfilePermissionView):
     and setting the domain in cache
     """
 
+    model = Contact
     template_name = "profile.html"
+    form_class = UserProfileForm
+
+    # def get(self, request, *args, **kwargs):
+    #     logger.info("in get")
+    #     return super().get(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        logger.info("in get()")
+        self.object = self.get_object()
+        context = self.get_context_data(object=self.object)
+        logger.info(context)
+        return self.render_to_response(context)
     
-    # Override get_object to return the logged-in user
-    def get_object(self, queryset=None):
-        return self.request.user  # Returns the logged-in user
+    # def get_context_data(self, **kwargs):
+    #     logger.info("in get_context_data")
+    #     kwargs.setdefault("view", self)
+    #     if self.extra_context is not None:
+    #         kwargs.update(self.extra_context)
+    #     return kwargs
+    
+    # # Override get_object to return the logged-in user
+    # def get_object(self, queryset=None):
+    #     logger.info("in get_object")
+    #     user = self.request.user  # get the logged in user
+    #     if hasattr(user, 'contact'):  # Check if the user has a contact instance
+    #         logger.info(user.contact)
+    #         return user.contact
+    #     return None
