@@ -16,6 +16,8 @@ from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
 
+from waffle.decorators import flag_is_active
+
 from .utility import (
     DomainRequestPermissionView,
     DomainRequestPermissionWithdrawView,
@@ -227,6 +229,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         #     know which view is first in the list of steps.
         if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
+                user = self.request.user
+                context = self.get_context_data()
+                context["user"] = user
+                context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
                 return render(request, "domain_request_intro.html")
             else:
                 return self.goto(self.steps.first)
