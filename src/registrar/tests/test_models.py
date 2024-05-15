@@ -963,6 +963,7 @@ class TestDomainInformation(TestCase):
             domain=domain,
             notes="test notes",
             domain_request=domain_request,
+            federal_agency=FederalAgency.objects.get(agency="Non-Federal Agency"),
         ).__dict__
 
         # Test the two records for consistency
