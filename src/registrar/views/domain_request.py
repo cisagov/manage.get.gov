@@ -394,7 +394,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             "is_federal": self.domain_request.is_federal(),
             "modal_button": modal_button,
             "modal_heading": modal_heading,
-            "has_profile_feature_flag": flag_is_active(self.request, "profile_feature")
+            "has_profile_feature_flag": flag_is_active(self.request, "profile_feature"),
         }
 
     def get_step_list(self) -> list:

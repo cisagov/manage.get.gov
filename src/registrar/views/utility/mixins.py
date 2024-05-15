@@ -382,7 +382,7 @@ class DomainInvitationPermission(PermissionsLoginMixin):
             return False
 
         return True
-    
+
 
 class UserProfilePermission(PermissionsLoginMixin):
     """Permission mixin that redirects to user profile if user

@@ -6,6 +6,7 @@ from django.core.validators import MaxLengthValidator
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.models.utility.domain_helper import DomainHelper
 
+
 class UserProfileForm(forms.ModelForm):
     """Form for updating user profile."""
 
@@ -20,7 +21,7 @@ class UserProfileForm(forms.ModelForm):
             "email": forms.EmailInput,
             "phone": RegionalPhoneNumberWidget,
         }
-    
+
     # the database fields have blank=True so ModelForm doesn't create
     # required fields by default. Use this list in __init__ to mark each
     # of these fields as required
@@ -54,7 +55,6 @@ class UserProfileForm(forms.ModelForm):
             "required": "Enter your email address in the required format, like name@example.com."
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
-        self.domainInfo = None 
+        self.domainInfo = None
 
         DomainHelper.disable_field(self.fields["email"], disable_required=True)
-        

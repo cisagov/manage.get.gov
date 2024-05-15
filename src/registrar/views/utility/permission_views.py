@@ -2,9 +2,8 @@
 
 import abc  # abstract base class
 
-from django.contrib.auth import get_user_model
 from django.views.generic import DetailView, DeleteView, TemplateView
-from registrar.models import Domain, DomainRequest, DomainInvitation, User
+from registrar.models import Domain, DomainRequest, DomainInvitation
 from registrar.models.contact import Contact
 from registrar.models.user_domain_role import UserDomainRole
 

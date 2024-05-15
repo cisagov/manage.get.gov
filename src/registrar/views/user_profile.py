@@ -9,7 +9,6 @@ from django.views.generic.edit import FormMixin
 from registrar.forms.user_profile import UserProfileForm
 from django.urls import reverse
 from registrar.models import (
-    User,
     Contact,
 )
 from registrar.views.utility.permission_views import UserProfilePermissionView
@@ -34,7 +33,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         form = self.form_class(instance=self.object)
         context = self.get_context_data(object=self.object, form=form)
         return self.render_to_response(context)
-    
+
     def get_context_data(self, **kwargs):
         """Extend get_context_data to include has_profile_feature_flag"""
         self.get()
@@ -42,7 +41,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
         return context
-        
+
     def get_success_url(self):
         """Redirect to the user's profile page."""
         return reverse("user-profile")
@@ -65,10 +64,10 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
         # superclass has the redirect
         return super().form_valid(form)
-                
+
     def get_object(self, queryset=None):
         """Override get_object to return the logged-in user's contact"""
         user = self.request.user  # get the logged in user
-        if hasattr(user, 'contact'):  # Check if the user has a contact instance
+        if hasattr(user, "contact"):  # Check if the user has a contact instance
             return user.contact
         return None

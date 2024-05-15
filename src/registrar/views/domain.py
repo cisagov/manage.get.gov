@@ -595,7 +595,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
-    
+
     def has_permission(self):
         """Check if this user has permission to see this view.
 
@@ -604,7 +604,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
         """
         if flag_is_active(self.request, "profile_feature"):
             return False
-        
+
         return super().has_permission()
 
 
