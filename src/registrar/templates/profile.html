@@ -19,6 +19,17 @@ Edit your User Profile |
       Back to manage your domains
       </p>
     </a>
+    {# messages block is under the back breadcrumb link #}
+    {% if messages %}
+    {% for message in messages %}
+    <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+        <div class="usa-alert__body">
+        {{ message }}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% include "includes/form_errors.html" with form=form %}
     <h1>Your profile</h1>
     <p>We require that you maintain accurate contact information. The details you provide will only be used to support the administration of .gov and won’t be made public.</p>
     <h2>Contact information</h2>

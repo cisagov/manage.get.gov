@@ -4,6 +4,7 @@ from registrar.models.contact import Contact
 
 from django.core.validators import MaxLengthValidator
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
+from registrar.models.utility.domain_helper import DomainHelper
 
 class UserProfileForm(forms.ModelForm):
     """Form for updating user profile."""
@@ -52,3 +53,5 @@ class UserProfileForm(forms.ModelForm):
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
         self.domainInfo = None 
+
+        DomainHelper.disable_field(self.fields["email"], disable_required=True)
