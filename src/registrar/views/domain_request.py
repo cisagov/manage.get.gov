@@ -230,9 +230,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
                 context = self.get_context_data()
-                has_prof = flag_is_active(self.request, "profile_feature")
-                context["has_profile_feature_flag"] = has_prof
-                logger.debug("PROFILE FLAG is %s" % has_prof)
                 return render(request, "domain_request_intro.html")
             else:
                 return self.goto(self.steps.first)
@@ -390,6 +387,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         else:
             modal_heading = "You are about to submit an incomplete request"
 
+        has_profile_flag = flag_is_active(self.request, "profile_feature")
+        logger.debug("PROFILE FLAG is %s" % has_profile_flag)
+
         context = {
             "form_titles": self.TITLES,
             "steps": self.steps,
@@ -398,9 +398,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             "is_federal": self.domain_request.is_federal(),
             "modal_button": modal_button,
             "modal_heading": modal_heading,
-            #Use the profile waffle feature flag to toggle profile features throughout domain requests
-            "has_profile_feature_flag": flag_is_active(self.request, "profile_feature"),
-            "user": self.request.user
+            # Use the profile waffle feature flag to toggle profile features throughout domain requests
+            "has_profile_feature_flag": has_profile_flag,
+            "user": self.request.user,
         }
         return context
 
