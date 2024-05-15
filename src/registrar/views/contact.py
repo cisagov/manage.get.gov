@@ -22,7 +22,8 @@ class BaseContactView(SuccessMessageMixin, ContactPermissionView):
     """Provides a base view for the contact object. On get, the contact
     is saved in the session and on self.object."""
 
-    def get_success_message(self):
+    def get_success_message(self, cleaned_data):
+        """Content of the returned success message"""
         return "Contact updated successfully."
 
     def get(self, request, *args, **kwargs):
@@ -112,7 +113,8 @@ class ContactProfileSetupView(ContactFormBaseView):
         COMPLETE_SETUP = "complete_setup"
         TO_SPECIFIC_PAGE = "domain_request"
 
-    def get_success_message(self):
+    def get_success_message(self, cleaned_data):
+        """Content of the returned success message"""
         return "Your profile has been successfully updated."
 
     # TODO - refactor

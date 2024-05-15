@@ -1,16 +1,36 @@
 {% extends "base.html" %}
 {% load static form_helpers url_helpers field_helpers %}
-{% block title %} Finish setting up your profile {% endblock %}
+{% block title %} Finish setting up your profile | {% endblock %}
+
+{# Disable the redirect  #}
+{% block logo %}
+    {% include "includes/gov_extended_logo.html" with logo_clickable=False %}
+{% endblock %}
 
 {% block content %}
 <div class="grid-container">
     <div class="grid-row grid-gap">
         <div class="tablet:grid-col">
             <main id="main-content" class="grid-container">
-                {% include "includes/form_errors.html" with form=form %}
+
                 {% comment %}
-                Repurposed from domain_request_form.html
+                Form success messages.
                 {% endcomment %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+                            <div class="usa-alert__body">
+                            {{ message }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                {% comment %}
+                Repurposed from domain_request_form.html.
+                Form errors.
+                {% endcomment %}
+                {% include "includes/form_errors.html" with form=form %}
                 {% for outer in forms %}
                     {% if outer|isformset %}
                         {% for inner in outer.forms %}
@@ -48,19 +68,21 @@
                         {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2" %}
                             {% input_with_errors form.full_name %}
                         {% endwith %}
-
-                        {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2 display-none" %}
-                            {% input_with_errors form.first_name %}
-                        {% endwith %}
-
-                        {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2 display-none" %}
-                            {% input_with_errors form.middle_name %}
-                        {% endwith %}
-
-                        {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2 display-none"%}
-                            {% input_with_errors form.last_name %}
-                        {% endwith %}
                         
+                        <fieldset id="contact-full-name-fieldset" class="registrar-fieldset__contact display-none">
+                            {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly" %}
+                                {% input_with_errors form.first_name %}
+                            {% endwith %}
+
+                            {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2" %}
+                                {% input_with_errors form.middle_name %}
+                            {% endwith %}
+
+                            {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2"%}
+                                {% input_with_errors form.last_name %}
+                            {% endwith %}
+                        </fieldset>
+
                         {# This field doesn't have the readonly button but it has common design elements from it #}
                         {% with show_readonly=True add_class="display-none" group_classes="usa-form-readonly padding-top-2 bold-usa-label" sublabel_text=email_sublabel_text %}
                             {% input_with_errors form.email %}
@@ -97,3 +119,6 @@
 
 {% endblock content %}
 
+{% block footer %}
+    {% include "includes/footer.html" %}
+{% endblock footer %}

@@ -170,3 +170,13 @@ abbr[title] {
     height: 1.25em !important;
   }
 }
+
+// todo - move this to a better location + better name
+@media (min-width: 800px){
+  .overlapped-full-name-field {
+    position: absolute;
+    top: 325px;
+    background-color: white;
+    padding-right: 8px;
+  }
+}

@@ -868,31 +868,42 @@ function hideDeletedForms() {
     }
   }
 
-  function handleFullNameField(fieldName, nameFields) {
+  function handleFullNameField(fieldName) {
     // Remove the display-none class from the nearest parent div
     let fieldId = getInputFieldId(fieldName)
     let inputField = document.querySelector(fieldId);
 
+    let nameFieldset = document.querySelector("#contact-full-name-fieldset");
+    if (nameFieldset){
+      nameFieldset.classList.remove("display-none");
+    }
+
     if (inputField) {
-      // Show each name field
-      nameFields.forEach(function(fieldName) {
-        let nameId = getInputFieldId(fieldName)
-        let nameField = document.querySelector(nameId);
-        if (nameField){
-          let parentDiv = nameField.closest("div");
-          if (parentDiv) {
-            parentDiv.classList.remove("display-none");
+      let readonlyId = getReadonlyFieldId(fieldName)
+      let readonlyField = document.querySelector(readonlyId)
+      if (readonlyField) {
+        // Update the <use> element's xlink:href attribute
+        let useElement = readonlyField.querySelector("use");
+        if (useElement) {
+          let currentHref = useElement.getAttribute("xlink:href");
+          let parts = currentHref.split("#");
+
+          // Update the icon reference to the info icon
+          if (parts.length > 1) {
+            parts[1] = "info";
+            useElement.setAttribute("xlink:href", parts.join("#"));
+
+            // Change the color to => $dhs-dark-gray-60
+            useElement.closest('svg').style.fill = '#444547';
           }
         }
-      });
-
-      // Remove the "full_name" field
-      inputFieldParentDiv = inputField.closest("div");
-      if (inputFieldParentDiv) {
-        inputFieldParentDiv.remove();
+        
+        let parentDiv = readonlyField.closest("div");
+        if (parentDiv) {
+          parentDiv.classList.toggle("overlapped-full-name-field");
+        }
       }
     }
-    
   }
 
   function handleEditButtonClick(fieldName, button){
@@ -901,8 +912,7 @@ function hideDeletedForms() {
       button.disabled = true
 
       if (fieldName == "full_name"){
-        let nameFields = ["first_name", "middle_name", "last_name"]
-        handleFullNameField(fieldName, nameFields);
+        handleFullNameField(fieldName);
       }else {
         showInputFieldHideReadonlyField(fieldName, button);
       }
@@ -941,9 +951,10 @@ function hideDeletedForms() {
             // or if any of its associated fields do - show all name related fields. 
             // Otherwise, just show the problematic field.
             if (fieldName == "full_name"){
-              handleFullNameField(fieldName, nameFields);
+              handleFullNameField(fieldName);
             }else if (nameFields.includes(fieldName)){
-              handleFullNameField("full_name", nameFields);
+              handleFullNameField("full_name");
+              button.click()
             }
             else {
               button.click()

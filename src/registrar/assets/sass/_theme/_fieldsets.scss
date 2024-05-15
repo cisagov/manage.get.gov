@@ -8,3 +8,19 @@ fieldset {
 fieldset:not(:first-child) {
     margin-top: units(2);
 }
+
+fieldset.registrar-fieldset__contact {
+    border-width: 2px;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+@media (max-width: 800px){
+    fieldset.registrar-fieldset__contact {
+        padding: 0;
+        margin: 0;
+        border: none;
+    }
+}
