@@ -154,11 +154,9 @@ class UserProfilePermissionView(UserProfilePermission, DetailView, abc.ABC):
     `template_name`.
     """
 
-    # # DetailView property for what model this is viewing
-    # model = get_user_model()
-    # # variable name in template context for the model object
-    # context_object_name = "user"
+    # DetailView property for what model this is viewing
     model = Contact
+    # variable name in template context for the model object
     context_object_name = "contact"
 
     # Abstract property enforces NotImplementedError on an attribute.

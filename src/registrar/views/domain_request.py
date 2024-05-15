@@ -699,7 +699,7 @@ class DomainRequestStatus(DomainRequestPermissionView):
     template_name = "domain_request_status.html"
 
     def get_context_data(self, **kwargs):
-        """Adjust context from FormMixin for formsets."""
+        """Extend get_context_data to add has_profile_feature_flag to context"""
         context = super().get_context_data(**kwargs)
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
@@ -716,7 +716,7 @@ class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     template_name = "domain_request_withdraw_confirmation.html"
 
     def get_context_data(self, **kwargs):
-        """Adjust context from FormMixin for formsets."""
+        """Extend get_context_data to add has_profile_feature_flag to context"""
         context = super().get_context_data(**kwargs)
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")

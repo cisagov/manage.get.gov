@@ -27,6 +27,8 @@ class UserProfileForm(forms.ModelForm):
     required = ["first_name", "last_name", "title", "email", "phone"]
 
     def __init__(self, *args, **kwargs):
+        """Override the inerited __init__ method to update the fields."""
+
         super().__init__(*args, **kwargs)
         # take off maxlength attribute for the phone number field
         # which interferes with out input_with_errors template tag
@@ -51,8 +53,8 @@ class UserProfileForm(forms.ModelForm):
         self.fields["email"].error_messages = {
             "required": "Enter your email address in the required format, like name@example.com."
         }
-        # self.fields["email"].widget.attrs["readonly"] = "readonly"
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
         self.domainInfo = None 
 
         DomainHelper.disable_field(self.fields["email"], disable_required=True)
+        

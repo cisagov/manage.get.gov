@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 
 class UserProfileView(UserProfilePermissionView, FormMixin):
     """
-    Base View for the Domain. Handles getting and setting the domain
-    in session cache on GETs. Also provides methods for getting
-    and setting the domain in cache
+    Base View for the User Profile. Handles getting and setting the User Profile
     """
 
     model = Contact
@@ -30,25 +28,27 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
     form_class = UserProfileForm
 
     def get(self, request, *args, **kwargs):
-        logger.info("in get()")
+        """Handle get requests by getting user's contact object and setting object
+        and form to context before rendering."""
         self.object = self.get_object()
         form = self.form_class(instance=self.object)
         context = self.get_context_data(object=self.object, form=form)
-        logger.info(context)
         return self.render_to_response(context)
     
     def get_context_data(self, **kwargs):
-        """Adjust context from FormMixin for formsets."""
+        """Extend get_context_data to include has_profile_feature_flag"""
+        self.get()
         context = super().get_context_data(**kwargs)
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
         return context
         
     def get_success_url(self):
-        """Redirect to the overview page for the domain."""
+        """Redirect to the user's profile page."""
         return reverse("user-profile")
 
     def post(self, request, *args, **kwargs):
+        """Handle post requests (form submissions)"""
         self.object = self.get_object()
         form = self.form_class(request.POST, instance=self.object)
 
@@ -58,6 +58,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
             return self.form_invalid(form)
 
     def form_valid(self, form):
+        """Handle successful and valid form submissions."""
         form.save()
 
         messages.success(self.request, "Your profile has been updated.")
@@ -65,11 +66,9 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         # superclass has the redirect
         return super().form_valid(form)
                 
-    # Override get_object to return the logged-in user
     def get_object(self, queryset=None):
-        logger.info("in get_object")
+        """Override get_object to return the logged-in user's contact"""
         user = self.request.user  # get the logged in user
         if hasattr(user, 'contact'):  # Check if the user has a contact instance
-            logger.info(user.contact)
             return user.contact
         return None

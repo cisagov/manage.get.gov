@@ -74,6 +74,7 @@
       </li>
 
       {% if not has_profile_feature_flag %}
+      {% comment %}Conditionally display profile link in main nav{% endcomment %}
       <li class="usa-sidenav__item">
         {% url 'domain-your-contact-information' pk=domain.id as url %}
         <a href="{{ url }}"

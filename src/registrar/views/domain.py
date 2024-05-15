@@ -103,7 +103,7 @@ class DomainBaseView(DomainPermissionView):
         self.session[domain_pk] = self.object
 
     def get_context_data(self, **kwargs):
-        """Adjust context from FormMixin for formsets."""
+        """Extend get_context_data to add has_profile_feature_flag to context"""
         context = super().get_context_data(**kwargs)
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
@@ -597,10 +597,10 @@ class DomainYourContactInformationView(DomainFormBaseView):
         return super().form_valid(form)
     
     def has_permission(self):
-        """Check if this user has access to this domain.
+        """Check if this user has permission to see this view.
 
-        The user is in self.request.user and the domain needs to be looked
-        up from the domain's primary key in self.kwargs["pk"]
+        In addition to permissions for the user, check that the profile_feature waffle flag
+        is not turned on.
         """
         if flag_is_active(self.request, "profile_feature"):
             return False
