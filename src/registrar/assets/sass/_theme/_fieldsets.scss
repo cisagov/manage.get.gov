@@ -17,6 +17,12 @@ fieldset.registrar-fieldset__contact {
     padding-bottom: 0;
 }
 
+@media (min-width: 800px) {
+    fieldset.registrar-fieldset__contact {
+        margin-top: 28px;
+    }
+}
+
 @media (max-width: 800px){
     fieldset.registrar-fieldset__contact {
         padding: 0;
