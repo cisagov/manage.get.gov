@@ -59,7 +59,6 @@ body {
 }
 
 @include at-media(desktop) {
-
   .usa-nav__primary-item:not(:first-child) {
     position: relative;
   }
@@ -74,7 +73,6 @@ body {
     border-left: solid 1px color('base-light');
     transform: translateY(-50%);
   }
-
 }
 
 .section--outlined {
