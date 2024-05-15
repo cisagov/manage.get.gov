@@ -46,6 +46,37 @@ body {
   margin-top:units(1);
 }
 
+.usa-nav__primary-username {
+  display: inline-block;
+  padding: units(1) units(2);
+  max-width: 208px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @include at-media(desktop) {
+    padding: units(2);
+    max-width: 500px;
+  }
+}
+
+@include at-media(desktop) {
+
+  .usa-nav__primary-item:not(:first-child) {
+    position: relative;
+  }
+
+  .usa-nav__primary-item:not(:first-child)::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0; /* No width since it's a border */
+    height: 50%;
+    border-left: solid 1px color('base-light');
+    transform: translateY(-50%);
+  }
+
+}
+
 .section--outlined {
   background-color: color('white');
   border: 1px solid color('base-lighter');
