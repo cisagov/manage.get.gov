@@ -890,7 +890,7 @@ function hideDeletedForms() {
 
           // Update the icon reference to the info icon
           if (parts.length > 1) {
-            parts[1] = "info";
+            parts[1] = "info_outline";
             useElement.setAttribute("xlink:href", parts.join("#"));
 
             // Change the color to => $dhs-dark-gray-60
@@ -938,6 +938,7 @@ function hideDeletedForms() {
   }
 
   function showInputOnErrorFields(){
+    let fullNameButtonClicked = false
     document.addEventListener('DOMContentLoaded', function() {
       document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
         let fieldIdParts = button.id.split("__")
@@ -947,18 +948,26 @@ function hideDeletedForms() {
           let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
           if (errorMessage) {
             let nameFields = ["first_name", "middle_name", "last_name"]
+
+            button.click()
+
             // If either the full_name field errors out,
             // or if any of its associated fields do - show all name related fields. 
             // Otherwise, just show the problematic field.
-            if (fieldName == "full_name"){
-              handleFullNameField(fieldName);
-            }else if (nameFields.includes(fieldName)){
-              handleFullNameField("full_name");
-              button.click()
+            if (nameFields.includes(fieldName) && !fullNameButtonClicked){
+              fullNameButton = document.querySelector("#full_name__edit-button")
+              if (fullNameButton) {
+                fullNameButton.click()
+                fullNameButtonClicked = true
+              }
+              
+              let readonlyId = getReadonlyFieldId("full_name");
+              let readonlyField = document.querySelector(readonlyId);
+              if (readonlyField) {
+                readonlyField.classList.toggle("overlapped-full-name-field");
+              }
             }
-            else {
-              button.click()
-            }
+
           }
         }
       });  
