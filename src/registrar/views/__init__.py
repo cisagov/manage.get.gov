@@ -14,8 +14,8 @@ from .domain import (
     DomainInvitationDeleteView,
     DomainDeleteUserView,
 )
-from .contact import (
-    ContactProfileSetupView,
+from .finish_user_setup import (
+    FinishUserSetupView,
 )
 from .health import *
 from .index import *

@@ -358,19 +358,7 @@ class ContactPermission(PermissionsLoginMixin):
         if not requested_user_exists or not requested_contact_exists:
             return False
 
-        # Check if the user has an associated contact
-        associated_contacts = Contact.objects.filter(user=current_user)
-        associated_contacts_length = len(associated_contacts)
-
-        if associated_contacts_length == 0:
-            # This means that the user trying to access this page
-            # is a different user than the contact holder.
-            return False
-        elif associated_contacts_length > 1:
-            # TODO - change this
-            raise ValueError("User has multiple connected contacts")
-        else:
-            return True
+        return True
 
 
 class DomainRequestPermissionWithdraw(PermissionsLoginMixin):

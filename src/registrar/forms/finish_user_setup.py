@@ -2,8 +2,8 @@ from django import forms
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 
-class ContactForm(forms.Form):
-    """Form for adding or editing a contact"""
+class FinishUserSetupForm(forms.Form):
+    """Form for adding or editing user information"""
 
     def clean(self):
         cleaned_data = super().clean()

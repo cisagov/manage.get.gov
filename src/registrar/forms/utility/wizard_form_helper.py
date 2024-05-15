@@ -22,7 +22,6 @@ class RegistrarForm(forms.Form):
         kwargs.setdefault("label_suffix", "")
         # save a reference to a domain request object
         self.domain_request = kwargs.pop("domain_request", None)
-
         super(RegistrarForm, self).__init__(*args, **kwargs)
 
     def to_database(self, obj: DomainRequest | Contact):

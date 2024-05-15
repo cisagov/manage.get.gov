@@ -203,7 +203,6 @@ NameserverFormset = formset_factory(
 )
 
 
-# TODO - refactor, wait until daves PR
 class ContactForm(forms.ModelForm):
     """Form for updating contacts."""
 

@@ -2,7 +2,8 @@
 
 import time
 import logging
-
+from typing import Any
+from urllib.parse import urlparse, urlunparse, urlencode
 
 logger = logging.getLogger(__name__)
 
@@ -286,3 +287,27 @@ def from_database(form_class, obj):
     if obj is None:
         return {}
     return {name: getattr(obj, name) for name in form_class.declared_fields.keys()}  # type: ignore
+
+
+def replace_url_queryparams(url_to_modify: str, query_params: dict[Any, list]):
+    """
+    Replaces the query parameters of a given URL.
+
+    Args:
+        url_to_modify (str): The URL whose query parameters need to be modified.
+        query_params (dict): Dictionary of query parameters to use.
+
+    Returns:
+        str: The modified URL with the updated query parameters.
+    """
+
+    # Split the URL into parts
+    url_parts = list(urlparse(url_to_modify))
+
+    # Modify the query param bit
+    url_parts[4] = urlencode(query_params)
+
+    # Reassemble the URL
+    new_url = urlunparse(url_parts)
+
+    return new_url
