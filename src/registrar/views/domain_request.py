@@ -22,6 +22,8 @@ from .utility import (
     DomainRequestWizardPermissionView,
 )
 
+from waffle.decorators import flag_is_active
+
 logger = logging.getLogger(__name__)
 
 
@@ -225,14 +227,14 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         #     will NOT be redirected. The purpose of this is to allow code to
         #     send users "to the domain request wizard" without needing to
         #     know which view is first in the list of steps.
+        context = self.get_context_data()
         if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
-                return render(request, "domain_request_intro.html")
+                return render(request, "domain_request_intro.html", context)
             else:
                 return self.goto(self.steps.first)
 
         self.steps.current = current_url
-        context = self.get_context_data()
         context["forms"] = self.get_forms()
 
         # if pending requests exist and user does not have approved domains,
@@ -392,6 +394,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             "is_federal": self.domain_request.is_federal(),
             "modal_button": modal_button,
             "modal_heading": modal_heading,
+            "has_profile_feature_flag": flag_is_active(self.request, "profile_feature")
         }
 
     def get_step_list(self) -> list:
@@ -695,6 +698,13 @@ class Finished(DomainRequestWizard):
 class DomainRequestStatus(DomainRequestPermissionView):
     template_name = "domain_request_status.html"
 
+    def get_context_data(self, **kwargs):
+        """Adjust context from FormMixin for formsets."""
+        context = super().get_context_data(**kwargs)
+        # This is a django waffle flag which toggles features based off of the "flag" table
+        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
+        return context
+
 
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
@@ -704,6 +714,13 @@ class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """
 
     template_name = "domain_request_withdraw_confirmation.html"
+
+    def get_context_data(self, **kwargs):
+        """Adjust context from FormMixin for formsets."""
+        context = super().get_context_data(**kwargs)
+        # This is a django waffle flag which toggles features based off of the "flag" table
+        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
+        return context
 
 
 class DomainRequestWithdrawn(DomainRequestPermissionWithdrawView):

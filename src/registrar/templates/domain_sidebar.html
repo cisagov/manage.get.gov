@@ -73,6 +73,7 @@
         </a>
       </li>
 
+      {% if not has_profile_feature_flag %}
       <li class="usa-sidenav__item">
         {% url 'domain-your-contact-information' pk=domain.id as url %}
         <a href="{{ url }}"
@@ -81,6 +82,7 @@
             Your contact information
         </a>
       </li>
+      {% endif %}
 
       <li class="usa-sidenav__item">
         {% url 'domain-security-email' pk=domain.id as url %}

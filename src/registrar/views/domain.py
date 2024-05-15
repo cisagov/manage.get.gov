@@ -59,7 +59,7 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
-
+from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +101,13 @@ class DomainBaseView(DomainPermissionView):
         """
         domain_pk = "domain:" + str(self.kwargs.get("pk"))
         self.session[domain_pk] = self.object
+
+    def get_context_data(self, **kwargs):
+        """Adjust context from FormMixin for formsets."""
+        context = super().get_context_data(**kwargs)
+        # This is a django waffle flag which toggles features based off of the "flag" table
+        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
+        return context
 
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
@@ -588,6 +595,17 @@ class DomainYourContactInformationView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
+    
+    def has_permission(self):
+        """Check if this user has access to this domain.
+
+        The user is in self.request.user and the domain needs to be looked
+        up from the domain's primary key in self.kwargs["pk"]
+        """
+        if flag_is_active(self.request, "profile_feature"):
+            return False
+        
+        return super().has_permission()
 
 
 class DomainSecurityEmailView(DomainFormBaseView):

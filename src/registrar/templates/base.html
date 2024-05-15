@@ -156,6 +156,7 @@
             {% if user.is_authenticated %}
             <span>{{ user.email }}</span>
           </li>
+          {% if has_profile_feature_flag %}
           <li class="usa-nav__primary-item display-flex flex-align-center margin-left-2">
             <span class="text-base"> | </span>
             {% url 'user-profile' as user_profile_url %}
@@ -163,6 +164,7 @@
                 <span class="text-primary">Your profile</span>
             </a>
           </li>
+          {% endif %}
           <li class="usa-nav__primary-item display-flex flex-align-center">
             <span class="text-base"> | </span>
             <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>

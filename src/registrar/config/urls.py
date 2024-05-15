@@ -211,6 +211,7 @@ urlpatterns = [
 # Rather than dealing with that, we keep everything centralized in one location.
 # This way, we can share a view for djangooidc, and other pages as we see fit.
 handler500 = "registrar.views.utility.error_views.custom_500_error_view"
+handler403 = "registrar.views.utility.error_views.custom_403_error_view"
 
 # we normally would guard these with `if settings.DEBUG` but tests run with
 # DEBUG = False even when these apps have been loaded because settings.DEBUG

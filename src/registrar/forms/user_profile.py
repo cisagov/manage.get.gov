@@ -51,6 +51,7 @@ class UserProfileForm(forms.ModelForm):
         self.fields["email"].error_messages = {
             "required": "Enter your email address in the required format, like name@example.com."
         }
+        # self.fields["email"].widget.attrs["readonly"] = "readonly"
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
         self.domainInfo = None 
 

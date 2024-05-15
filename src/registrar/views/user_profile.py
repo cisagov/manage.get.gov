@@ -13,7 +13,7 @@ from registrar.models import (
     Contact,
 )
 from registrar.views.utility.permission_views import UserProfilePermissionView
-
+from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +29,6 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
     template_name = "profile.html"
     form_class = UserProfileForm
 
-    # def get(self, request, *args, **kwargs):
-    #     logger.info("in get")
-    #     return super().get(request, *args, **kwargs)
-
     def get(self, request, *args, **kwargs):
         logger.info("in get()")
         self.object = self.get_object()
@@ -41,26 +37,21 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         logger.info(context)
         return self.render_to_response(context)
     
+    def get_context_data(self, **kwargs):
+        """Adjust context from FormMixin for formsets."""
+        context = super().get_context_data(**kwargs)
+        # This is a django waffle flag which toggles features based off of the "flag" table
+        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
+        return context
+        
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
         return reverse("user-profile")
 
-    # def post(self, request, *args, **kwargs):
-    #     # Handle POST request logic here
-    #     form = self.get_form()
-    #     if form.is_valid():
-    #         # Save form data or perform other actions
-    #         return HttpResponseRedirect(reverse('profile_success'))  # Redirect to a success page
-    #     else:
-    #         # Form is not valid, re-render the page with errors
-    #         return self.render_to_response(self.get_context_data(form=form))
-
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        form = self.get_form()
-        form.instance.id = self.object.id
-        form.instance.created_at = self.object.created_at
-        form.instance.user = self.request.user
+        form = self.form_class(request.POST, instance=self.object)
+
         if form.is_valid():
             return self.form_valid(form)
         else:
