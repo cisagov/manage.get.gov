@@ -97,6 +97,7 @@ class OrganizationElectionForm(RegistrarForm):
 
 class OrganizationContactForm(RegistrarForm):
     # for federal agencies we also want to know the top-level agency.
+    excluded_agencies = ["gov Administration", "Non-Federal Agency"]
     federal_agency = forms.ModelChoiceField(
         label="Federal agency",
         # not required because this field won't be filled out unless
@@ -104,9 +105,8 @@ class OrganizationContactForm(RegistrarForm):
         # if it has been filled in when required.
         # uncomment to see if modelChoiceField can be an arg later
         required=False,
-        queryset=FederalAgency.objects.all(),
+        queryset=FederalAgency.objects.exclude(agency__in=excluded_agencies),
         empty_label="--Select--",
-        # choices=[("", "--Select--")] + DomainRequest.AGENCY_CHOICES,
     )
     organization_name = forms.CharField(
         label="Organization name",

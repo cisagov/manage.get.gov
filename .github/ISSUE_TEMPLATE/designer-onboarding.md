@@ -1,6 +1,6 @@
 ---
 name: Designer Onboarding
-about: Onboarding steps for designers.
+about: Onboarding steps for new designers joining the .gov team.
 title: 'Designer Onboarding: GH_HANDLE'
 labels: design, onboarding
 assignees: katherineosos
