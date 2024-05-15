@@ -95,6 +95,8 @@ def login_callback(request):
         # if not satisfied, redirect user to login with stepped up acr_value
         if _requires_step_up_auth(userinfo):
             # add acr_value to request.session
+
+            # LOOK HERE this is basically the flag that indicates that we should proceed
             request.session["acr_value"] = CLIENT.get_step_up_acr_value()
             return CLIENT.create_authn_request(request.session)
         user = authenticate(request=request, **userinfo)
