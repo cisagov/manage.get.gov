@@ -93,17 +93,11 @@ def login_callback(request):
         userinfo = CLIENT.callback(query, request.session)
         # test for need for identity verification and if it is satisfied
         # if not satisfied, redirect user to login with stepped up acr_value
-        request.session["needs_biometric_validation"] = False
-        if _requires_step_up_auth(userinfo):
-            # add acr_value to request.session
-            if "acr_value" in request.session:
-                request.session.pop("acr_value")
-            extra_args = {
-                "vtm": CLIENT.get_vtm_value(),
-            }
-            request.session["needs_biometric_validation"] = True
-            print(f"session is: {request.session}")
-            return CLIENT.create_authn_request(request.session, add_acr=False, extra_args=extra_args)
+        needs_biometric_validation = _requires_biometric_auth(userinfo)
+        request.session["needs_biometric_validation"] = needs_biometric_validation
+        if needs_biometric_validation:
+            return CLIENT.create_authn_request(request.session, do_biometric_auth=True)
+
         user = authenticate(request=request, **userinfo)
         if user:
 
@@ -145,14 +139,12 @@ def login_callback(request):
         return error_page(request, err)
 
 
-def _requires_step_up_auth(userinfo):
+def _requires_biometric_auth(userinfo):
     """if User.needs_identity_verification and step_up_acr_value not in
     ial returned from callback, return True"""
-    step_up_acr_value = CLIENT.get_step_up_acr_value()
-    acr_value = userinfo.get("ial", "")
     uuid = userinfo.get("sub", "")
     email = userinfo.get("email", "")
-    if acr_value != step_up_acr_value and (not userinfo.get("vtm") and not userinfo.get("vtr")):
+    if not userinfo.get("vtm") or not userinfo.get("vtr"):
         # The acr of this attempt is not at the highest level
         # so check if the user needs the higher level
         return User.needs_identity_verification(email, uuid)

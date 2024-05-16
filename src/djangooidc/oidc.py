@@ -85,7 +85,7 @@ class Client(oic.Client):
     def create_authn_request(
         self,
         session,
-        add_acr=True,
+        do_biometric_auth=False,
         extra_args=None,
     ):
         """Step 2: Construct a login URL at OP's domain and send the user to it."""
@@ -103,10 +103,10 @@ class Client(oic.Client):
                 "nonce": session["nonce"],
                 "redirect_uri": self.registration_response["redirect_uris"][0],
             }
-            if add_acr:
-                request_args["acr_values"] = self.behaviour.get("acr_value")
+            if do_biometric_auth:
+                self._set_args_for_biometric_auth_request(session, request_args)
             else:
-                request_args["vtr"] = json.dumps(self.behaviour.get("vtr"))
+                request_args["acr_values"] = self.behaviour.get("acr_value")
 
             if extra_args is not None:
                 request_args.update(extra_args)
@@ -152,6 +152,12 @@ class Client(oic.Client):
             raise o_e.InternalError(locator=state)
 
         return response
+
+    def _set_args_for_biometric_auth_request(self, session, request_args):
+        if "acr_value" in session:
+            session.pop("acr_value")
+        request_args["vtr"] = self.get_vtr_value()
+        request_args["vtm"] = self.get_vtm_value()
 
     def callback(self, unparsed_response, session):
         """Step 3: Receive OP's response, request an access token, and user info."""
@@ -300,16 +306,12 @@ class Client(oic.Client):
         this helper function is called from djangooidc views"""
         return self.behaviour.get("acr_value")
 
-    def get_step_up_acr_value(self):
-        """returns the step_up_acr_value from settings
-        this helper function is called from djangooidc views"""
-        return self.behaviour.get("step_up_acr_value")
-
     def get_vtm_value(self):
         return self.behaviour.get("vtm")
     
-    def get_vtr_value(self):
-        return self.behaviour.get("vtr")
+    def get_vtr_value(self, cleaned=True):
+        vtr = self.behaviour.get("vtr")
+        return json.dumps(vtr) if cleaned else vtr
 
     def __repr__(self):
         return "Client {} {} {}".format(
