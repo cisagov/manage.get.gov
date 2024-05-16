@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0093_alter_publiccontact_unique_together"),
+        ("registrar", "0094_create_groups_v12"),
     ]
 
     operations = [
