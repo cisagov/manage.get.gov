@@ -93,14 +93,15 @@ def login_callback(request):
         userinfo = CLIENT.callback(query, request.session)
         # test for need for identity verification and if it is satisfied
         # if not satisfied, redirect user to login with stepped up acr_value
+        request.session["needs_biometric_validation"] = False
         if _requires_step_up_auth(userinfo):
             # add acr_value to request.session
-
             if "acr_value" in request.session:
                 request.session.pop("acr_value")
             extra_args = {
                 "vtm": CLIENT.get_vtm_value(),
             }
+            request.session["needs_biometric_validation"] = True
             print(f"session is: {request.session}")
             return CLIENT.create_authn_request(request.session, add_acr=False, extra_args=extra_args)
         user = authenticate(request=request, **userinfo)
@@ -151,7 +152,7 @@ def _requires_step_up_auth(userinfo):
     acr_value = userinfo.get("ial", "")
     uuid = userinfo.get("sub", "")
     email = userinfo.get("email", "")
-    if acr_value != step_up_acr_value:
+    if acr_value != step_up_acr_value and (not userinfo.get("vtm") and not userinfo.get("vtr")):
         # The acr of this attempt is not at the highest level
         # so check if the user needs the higher level
         return User.needs_identity_verification(email, uuid)

@@ -104,8 +104,9 @@ class Client(oic.Client):
                 "redirect_uri": self.registration_response["redirect_uris"][0],
             }
             if add_acr:
-                request_args["acr_values"] = session.get("acr_value") or self.behaviour.get("acr_value")
-            request_args["vtr"] = json.dumps(self.behaviour.get("vtr"))
+                request_args["acr_values"] = self.behaviour.get("acr_value")
+            else:
+                request_args["vtr"] = json.dumps(self.behaviour.get("vtr"))
 
             if extra_args is not None:
                 request_args.update(extra_args)
@@ -228,9 +229,15 @@ class Client(oic.Client):
         if isinstance(info_response, ErrorResponse):
             logger.error("Unable to get user info (%s) for %s" % (info_response.get("error", ""), state))
             raise o_e.AuthenticationFailed(locator=state)
+        info_response_dict = info_response.to_dict()
 
-        logger.debug("user info: %s" % info_response)
-        return info_response.to_dict()
+        if "needs_biometric_validation" in session and session["needs_biometric_validation"]:
+            if "vtm" in session:
+                info_response_dict["vtm"] = session.get("vtm")
+            if "vtr" in session:
+                info_response_dict["vtr"] = session.get("vtr")
+        logger.debug("user info: %s" % info_response_dict)
+        return info_response_dict
 
     def _request_token(self, state, code, session):
         """Request a token from OP to allow us to then request user info."""
