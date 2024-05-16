@@ -529,12 +529,29 @@ class UserProfileTests(TestWithUser, WebTest):
         self.domain.delete()
         Contact.objects.all().delete()
 
-    #       - error_500_main_nav_with_profile_feature_turned_on
-    #       - error_403_main_nav_with_profile_feature_turned_on
-    #       - error_401_main_nav_with_profile_feature_turned_on
-    #       - error_500_main_nav_with_profile_feature_turned_off
-    #       - error_403_main_nav_with_profile_feature_turned_off
-    #       - error_401_main_nav_with_profile_feature_turned_off
+    @less_console_noise_decorator
+    def error_500_main_nav_with_profile_feature_turned_on(self):
+        """test that Your profile is in main nav of 500 error page when profile_feature is on.
+
+        Our treatment of 401 and 403 error page handling with that waffle feature is similar, so we
+        assume that the same test results hold true for 401 and 403."""
+        with override_flag("profile_feature", active=True):
+            with self.assertRaises(Exception):
+                response = self.client.get(reverse("home"))
+                self.assertEqual(response.status_code, 500)
+                self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def error_500_main_nav_with_profile_feature_turned_off(self):
+        """test that Your profile is not in main nav of 500 error page when profile_feature is off.
+
+        Our treatment of 401 and 403 error page handling with that waffle feature is similar, so we
+        assume that the same test results hold true for 401 and 403."""
+        with override_flag("profile_feature", active=False):
+            with self.assertRaises(Exception):
+                response = self.client.get(reverse("home"), follow=True)
+                self.assertEqual(response.status_code, 500)
+                self.assertNotContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_home_page_main_nav_with_profile_feature_on(self):
