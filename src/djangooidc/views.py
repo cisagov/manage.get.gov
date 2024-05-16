@@ -100,7 +100,7 @@ def login_callback(request):
         needs_biometric_validation = _requires_biometric_auth(userinfo)
         request.session["needs_biometric_validation"] = needs_biometric_validation
 
-        # Return a redirect request to a new auth url that enables biometric validation
+        # Return a redirect request to a new auth url that does biometric validation
         if needs_biometric_validation:
             return CLIENT.create_authn_request(request.session, do_biometric_auth=True)
 
