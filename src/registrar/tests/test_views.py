@@ -6,6 +6,7 @@ from api.tests.common import less_console_noise_decorator
 from registrar.models.contact import Contact
 from registrar.models.domain import Domain
 from registrar.models.draft_domain import DraftDomain
+from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.views.domain import DomainNameserversView
@@ -513,16 +514,22 @@ class UserProfileTests(TestWithUser):
     def setUp(self):
         super().setUp()
         self.client.force_login(self.user)
+        self.domain, _ = Domain.objects.get_or_create(name="sampledomain.gov", state=Domain.State.READY)
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
 
     def tearDown(self):
         super().tearDown()
+        PublicContact.objects.filter(domain=self.domain).delete()
+        self.role.delete()
+        self.domain.delete()
         Contact.objects.all().delete()
 
 
 
 #    - domain_your_contact_403_when_profile_feature_turned_on
 #       - profile_submission (see your contact tests)
-#       - profile_page_403_when_profile_feature_turned_off
 #       - request_withdraw_main_nav_with_profile_feature_turned_on
 #       - domain_main_nav_with_profile_feature_turned_on
 #       - error_500_main_nav_with_profile_feature_turned_on
@@ -537,43 +544,65 @@ class UserProfileTests(TestWithUser):
      
     @less_console_noise_decorator
     def test_home_page_main_nav_with_profile_feature_on(self):
-        """test that Your profile is in main nave when profile_feature is on"""
+        """test that Your profile is in main nav of home page when profile_feature is on"""
         with override_flag('profile_feature', active=True):
             response = self.client.get("/")
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_home_page_main_nav_with_profile_feature_off(self):
-        """test that Your profile is not in main nave when profile_feature is off"""
+        """test that Your profile is not in main nav of home page when profile_feature is off"""
         with override_flag('profile_feature', active=False):
             response = self.client.get("/")
         self.assertNotContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_new_request_main_nav_with_profile_feature_on(self):
-        """test that Your profile is in main nave when profile_feature is on"""
+        """test that Your profile is in main nav of new request when profile_feature is on"""
         with override_flag('profile_feature', active=True):
             response = self.client.get("/request/")
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_new_request_main_nav_with_profile_feature_off(self):
-        """test that Your profile is not in main nave when profile_feature is off"""
+        """test that Your profile is not in main nav of new request when profile_feature is off"""
         with override_flag('profile_feature', active=False):
             response = self.client.get("/request/")
         self.assertNotContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_user_profile_main_nav_with_profile_feature_on(self):
-        """test that Your profile is in main nave when profile_feature is on"""
+        """test that Your profile is in main nav of user profile when profile_feature is on"""
         with override_flag('profile_feature', active=True):
             response = self.client.get("/user-profile")
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_user_profile_returns_403_when_feature_off(self):
-        """test that Your profile is not in main nave when profile_feature is off"""
+        """test that Your profile returns 403 when profile_feature is off"""
         with override_flag('profile_feature', active=False):
             response = self.client.get("/user-profile")
-        self.assertEqual(response.status_code, 403)   
+        self.assertEqual(response.status_code, 403)  
+        # TODO: Having trouble testing the content of the 403 response for inclusion of Your profile 
 
+    @less_console_noise_decorator
+    def test_domain_detail_profile_feature_on(self):
+        """test that domain detail view when profile_feature is on"""
+        with override_flag('profile_feature', active=True):
+            response = self.client.get(reverse("domain", args=[self.domain.pk]))
+        self.assertContains(response, "Your profile")
+        self.assertNotContains(response, "Your contact information")
+
+    @less_console_noise_decorator
+    def test_domain_your_contact_information_when_profile_feature_off(self):
+        """test that Your contact information is accessible when profile_feature is off"""
+        with override_flag('profile_feature', active=False):
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information")
+        self.assertContains(response, "Your contact information")
+
+    @less_console_noise_decorator
+    def test_domain_your_contact_information_when_profile_feature_on(self):
+        """test that Your contact information is not accessible when profile feature is on"""
+        with override_flag('profile_feature', active=True):
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information")
+        self.assertEqual(response.status_code, 403)  
