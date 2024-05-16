@@ -30,9 +30,13 @@ Edit your User Profile |
     {% endfor %}
     {% endif %}
     {% include "includes/form_errors.html" with form=form %}
+
     <h1>Your profile</h1>
-    <p>We require that you maintain accurate contact information. The details you provide will only be used to support the administration of .gov and won’t be made public.</p>
-    <p><strong>Please note that updating your contact information here will update the contact information for all domains in your account.</strong> However, it won’t affect your Login.gov account information.</p>
+    <p>We <a href="https://get.gov/domains/requirements/#what-.gov-domain-registrants-must-do" target="_blank">require</a> that you maintain accurate contact information. The details you provide will only be used to support the administration of .gov and won’t be made public.</p>
+    
+    <h2>Contact information</h2>
+    <p>Review the details below and update any required information. Note that editing this information won’t affect your Login.gov account information.</p>
+
     {% include "includes/required_fields.html" %}
 
     <form class="usa-form usa-form--large" method="post" novalidate>
@@ -47,13 +51,21 @@ Edit your User Profile |
     
         {% input_with_errors form.title %}
     
-        {% input_with_errors form.email %}
+        {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with your Login.gov account." %}
+          {% with link_text="Get help with your Login.gov account" %}
+            {% with link_href="http://Login.gov" %}
+              {% with target_blank="true" %}
+                {% with do_not_show_max_chars="true" %}
+                  {% input_with_errors form.email %}
+                {% endwith %}
+              {% endwith %}
+            {% endwith %}
+          {% endwith %}  
+        {% endwith %}
     
         {% with add_class="usa-input--medium" %}
           {% input_with_errors form.phone %}
         {% endwith %}
-
-
 
       </fieldset>
       <button type="submit" class="usa-button">Save</button>
