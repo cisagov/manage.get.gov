@@ -12,10 +12,9 @@ from registrar.models import (
     Contact,
 )
 from registrar.views.utility.permission_views import UserProfilePermissionView
-from waffle.decorators import flag_is_active
+from waffle.decorators import flag_is_active, waffle_flag
 
 logger = logging.getLogger(__name__)
-
 
 class UserProfileView(UserProfilePermissionView, FormMixin):
     """
@@ -33,6 +32,10 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         form = self.form_class(instance=self.object)
         context = self.get_context_data(object=self.object, form=form)
         return self.render_to_response(context)
+
+    @waffle_flag("profile_feature")
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         """Extend get_context_data to include has_profile_feature_flag"""
@@ -70,14 +73,3 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         if hasattr(user, "contact"):  # Check if the user has a contact instance
             return user.contact
         return None
-    
-    def has_permission(self):
-        """Check if this user has permission to see this view.
-
-        In addition to permissions for the user, check that the profile_feature waffle flag
-        is not turned on.
-        """
-        if not flag_is_active(self.request, "profile_feature"):
-            return False
-
-        return super().has_permission()

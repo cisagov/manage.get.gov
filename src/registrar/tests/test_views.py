@@ -1,6 +1,8 @@
 from datetime import date
 from django.test import Client, TestCase, override_settings
 from django.contrib.auth import get_user_model
+from django_webtest import WebTest  # type: ignore
+from django.conf import settings
 
 from api.tests.common import less_console_noise_decorator
 from registrar.models.contact import Contact
@@ -508,7 +510,7 @@ class HomeTests(TestWithUser):
             response = self.client.get("/request/", follow=True)
             self.assertEqual(response.status_code, 403)
 
-class UserProfileTests(TestWithUser):
+class UserProfileTests(TestWithUser, WebTest):
     """A series of tests that target your profile functionality"""
 
     def setUp(self):
@@ -528,15 +530,10 @@ class UserProfileTests(TestWithUser):
 
 
 
-#    - domain_your_contact_403_when_profile_feature_turned_on
 #       - profile_submission (see your contact tests)
-#       - request_withdraw_main_nav_with_profile_feature_turned_on
-#       - domain_main_nav_with_profile_feature_turned_on
 #       - error_500_main_nav_with_profile_feature_turned_on
 #       - error_403_main_nav_with_profile_feature_turned_on
 #       - error_401_main_nav_with_profile_feature_turned_on
-#       - request_withdraw_main_nav_with_profile_feature_turned_off
-#       - domain_main_nav_with_profile_feature_turned_off
 #       - error_500_main_nav_with_profile_feature_turned_off
 #       - error_403_main_nav_with_profile_feature_turned_off
 #       - error_401_main_nav_with_profile_feature_turned_off
@@ -578,12 +575,11 @@ class UserProfileTests(TestWithUser):
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
-    def test_user_profile_returns_403_when_feature_off(self):
-        """test that Your profile returns 403 when profile_feature is off"""
+    def test_user_profile_returns_404_when_feature_off(self):
+        """test that Your profile returns 404 when profile_feature is off"""
         with override_flag('profile_feature', active=False):
             response = self.client.get("/user-profile")
-        self.assertEqual(response.status_code, 403)  
-        # TODO: Having trouble testing the content of the 403 response for inclusion of Your profile 
+        self.assertEqual(response.status_code, 404)
 
     @less_console_noise_decorator
     def test_domain_detail_profile_feature_on(self):
@@ -605,4 +601,73 @@ class UserProfileTests(TestWithUser):
         """test that Your contact information is not accessible when profile feature is on"""
         with override_flag('profile_feature', active=True):
             response = self.client.get(f"/domain/{self.domain.id}/your-contact-information")
-        self.assertEqual(response.status_code, 403)  
+        self.assertEqual(response.status_code, 404)  
+
+    @less_console_noise_decorator
+    def test_request_when_profile_feature_on(self):
+        """test that Your profile is in request page when profile feature is on"""
+        
+        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        site = DraftDomain.objects.create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            authorizing_official=contact_user,
+            submitter=contact_user,
+        )
+        with override_flag('profile_feature', active=True):
+            response = self.client.get(f"/domain-request/{domain_request.id}")
+            self.assertContains(response, "Your profile") 
+            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw")
+            self.assertContains(response, "Your profile")
+        # cleanup
+        domain_request.delete()
+        site.delete()
+
+    @less_console_noise_decorator
+    def test_request_when_profile_feature_off(self):
+        """test that Your profile is not in request page when profile feature is off"""
+        
+        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        site = DraftDomain.objects.create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            authorizing_official=contact_user,
+            submitter=contact_user,
+        )
+        with override_flag('profile_feature', active=False):
+            response = self.client.get(f"/domain-request/{domain_request.id}")
+            self.assertNotContains(response, "Your profile") 
+            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw")
+            self.assertNotContains(response, "Your profile")
+        # cleanup
+        domain_request.delete()
+        site.delete()
+
+    @less_console_noise_decorator
+    def test_user_profile_form_submission(self):
+        """test user profile form submission"""
+        self.app.set_user(self.user.username)
+        with override_flag('profile_feature', active=True):
+            profile_page = self.app.get(reverse("user-profile"))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            profile_form = profile_page.form
+            profile_page = profile_form.submit()
+
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            # assert that first result contains errors
+            self.assertContains(profile_page, "Enter your title")
+            self.assertContains(profile_page, "Enter your phone number")
+            profile_form = profile_page.form
+            profile_form["title"] = "sample title"
+            profile_form["phone"] = "(201) 555-1212"
+            profile_page = profile_form.submit()
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            profile_page = profile_page.follow()
+            self.assertEqual(profile_page.status_code, 200)
+            self.assertContains(profile_page, "Your profile has been updated")
+        

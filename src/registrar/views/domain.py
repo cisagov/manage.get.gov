@@ -59,7 +59,7 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
-from waffle.decorators import flag_is_active
+from waffle.decorators import flag_is_active, waffle_flag
 
 logger = logging.getLogger(__name__)
 
@@ -575,6 +575,10 @@ class DomainYourContactInformationView(DomainFormBaseView):
     template_name = "domain_your_contact_information.html"
     form_class = ContactForm
 
+    @waffle_flag("!profile_feature")
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+    
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
@@ -595,17 +599,6 @@ class DomainYourContactInformationView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
-
-    def has_permission(self):
-        """Check if this user has permission to see this view.
-
-        In addition to permissions for the user, check that the profile_feature waffle flag
-        is not turned on.
-        """
-        if flag_is_active(self.request, "profile_feature"):
-            return False
-
-        return super().has_permission()
 
 
 class DomainSecurityEmailView(DomainFormBaseView):
