@@ -18,6 +18,7 @@ from registrar.models import (
     DomainRequest,
     DomainInformation,
 )
+from waffle.testutils import override_flag
 import logging
 
 logger = logging.getLogger(__name__)
@@ -505,3 +506,74 @@ class HomeTests(TestWithUser):
         with less_console_noise():
             response = self.client.get("/request/", follow=True)
             self.assertEqual(response.status_code, 403)
+
+class UserProfileTests(TestWithUser):
+    """A series of tests that target your profile functionality"""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.user)
+
+    def tearDown(self):
+        super().tearDown()
+        Contact.objects.all().delete()
+
+
+
+#    - domain_your_contact_403_when_profile_feature_turned_on
+#       - profile_submission (see your contact tests)
+#       - profile_page_403_when_profile_feature_turned_off
+#       - request_withdraw_main_nav_with_profile_feature_turned_on
+#       - domain_main_nav_with_profile_feature_turned_on
+#       - error_500_main_nav_with_profile_feature_turned_on
+#       - error_403_main_nav_with_profile_feature_turned_on
+#       - error_401_main_nav_with_profile_feature_turned_on
+#       - request_withdraw_main_nav_with_profile_feature_turned_off
+#       - domain_main_nav_with_profile_feature_turned_off
+#       - error_500_main_nav_with_profile_feature_turned_off
+#       - error_403_main_nav_with_profile_feature_turned_off
+#       - error_401_main_nav_with_profile_feature_turned_off
+        
+     
+    @less_console_noise_decorator
+    def test_home_page_main_nav_with_profile_feature_on(self):
+        """test that Your profile is in main nave when profile_feature is on"""
+        with override_flag('profile_feature', active=True):
+            response = self.client.get("/")
+        self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_home_page_main_nav_with_profile_feature_off(self):
+        """test that Your profile is not in main nave when profile_feature is off"""
+        with override_flag('profile_feature', active=False):
+            response = self.client.get("/")
+        self.assertNotContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_new_request_main_nav_with_profile_feature_on(self):
+        """test that Your profile is in main nave when profile_feature is on"""
+        with override_flag('profile_feature', active=True):
+            response = self.client.get("/request/")
+        self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_new_request_main_nav_with_profile_feature_off(self):
+        """test that Your profile is not in main nave when profile_feature is off"""
+        with override_flag('profile_feature', active=False):
+            response = self.client.get("/request/")
+        self.assertNotContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_user_profile_main_nav_with_profile_feature_on(self):
+        """test that Your profile is in main nave when profile_feature is on"""
+        with override_flag('profile_feature', active=True):
+            response = self.client.get("/user-profile")
+        self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_user_profile_returns_403_when_feature_off(self):
+        """test that Your profile is not in main nave when profile_feature is off"""
+        with override_flag('profile_feature', active=False):
+            response = self.client.get("/user-profile")
+        self.assertEqual(response.status_code, 403)   
+

@@ -36,7 +36,6 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
     def get_context_data(self, **kwargs):
         """Extend get_context_data to include has_profile_feature_flag"""
-        self.get()
         context = super().get_context_data(**kwargs)
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
@@ -71,3 +70,14 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         if hasattr(user, "contact"):  # Check if the user has a contact instance
             return user.contact
         return None
+    
+    def has_permission(self):
+        """Check if this user has permission to see this view.
+
+        In addition to permissions for the user, check that the profile_feature waffle flag
+        is not turned on.
+        """
+        if not flag_is_active(self.request, "profile_feature"):
+            return False
+
+        return super().has_permission()
