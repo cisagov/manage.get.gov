@@ -14,7 +14,9 @@ from registrar.models import (
 from registrar.views.utility.permission_views import UserProfilePermissionView
 from waffle.decorators import flag_is_active, waffle_flag
 
+
 logger = logging.getLogger(__name__)
+
 
 class UserProfileView(UserProfilePermissionView, FormMixin):
     """
@@ -33,8 +35,8 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         context = self.get_context_data(object=self.object, form=form)
         return self.render_to_response(context)
 
-    @waffle_flag("profile_feature")
-    def dispatch(self, request, *args, **kwargs):
+    @waffle_flag("profile_feature")  # type: ignore
+    def dispatch(self, request, *args, **kwargs):  # type: ignore
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
