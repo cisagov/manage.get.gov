@@ -14,7 +14,7 @@ from oic.oic import AuthorizationRequest, AuthorizationResponse, RegistrationRes
 from oic.oic.message import AccessTokenResponse
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 from oic.utils import keyio
-from urllib.parse import urlparse, urlunparse, urlencode, parse_qs
+
 
 from . import exceptions as o_e
 
@@ -145,7 +145,7 @@ class Client(oic.Client):
             if headers:
                 for key, value in headers.items():
                     response[key] = value
-            print(f"create auth => response is {response}")
+
         except Exception as err:
             logger.error(err)
             logger.error("Failed to create redirect object for %s" % state)
@@ -237,11 +237,12 @@ class Client(oic.Client):
             raise o_e.AuthenticationFailed(locator=state)
         info_response_dict = info_response.to_dict()
 
-        if "needs_biometric_validation" in session and session["needs_biometric_validation"]:
-            if "vtm" in session:
-                info_response_dict["vtm"] = session.get("vtm")
-            if "vtr" in session:
-                info_response_dict["vtr"] = session.get("vtr")
+        # Define vtm/vtr information on the user dictionary so we can track this in one location.
+        # If a user has this information, then they are bumped up in terms of verification level.
+        if session.get("needs_biometric_validation") is True:
+            info_response_dict["vtm"] = session.get("vtm", "")
+            info_response_dict["vtr"] = session.get("vtr", "")
+
         logger.debug("user info: %s" % info_response_dict)
         return info_response_dict
 
@@ -302,14 +303,18 @@ class Client(oic.Client):
         super(Client, self).store_response(resp, info)
 
     def get_default_acr_value(self):
-        """returns the acr_value from settings
-        this helper function is called from djangooidc views"""
+        """Returns the acr_value from settings.
+        This helper function is called from djangooidc views."""
         return self.behaviour.get("acr_value")
 
     def get_vtm_value(self):
+        """Returns the vtm value from settings.
+        This helper function is called from djangooidc views."""
         return self.behaviour.get("vtm")
     
     def get_vtr_value(self, cleaned=True):
+        """Returns the vtr value from settings.
+        This helper function is called from djangooidc views."""
         vtr = self.behaviour.get("vtr")
         return json.dumps(vtr) if cleaned else vtr
 

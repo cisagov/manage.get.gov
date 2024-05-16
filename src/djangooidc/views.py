@@ -91,10 +91,16 @@ def login_callback(request):
             _initialize_client()
         query = parse_qs(request.GET.urlencode())
         userinfo = CLIENT.callback(query, request.session)
+
         # test for need for identity verification and if it is satisfied
-        # if not satisfied, redirect user to login with stepped up acr_value
+        # if not satisfied, redirect user to login requiring biometric auth
+
+        # Tests for the presence of the vtm/vtr values in the userinfo object.
+        # If they are there, then we can set a flag in our session for tracking purposes. 
         needs_biometric_validation = _requires_biometric_auth(userinfo)
         request.session["needs_biometric_validation"] = needs_biometric_validation
+
+        # Return a redirect request to a new auth url that enables biometric validation
         if needs_biometric_validation:
             return CLIENT.create_authn_request(request.session, do_biometric_auth=True)
 
