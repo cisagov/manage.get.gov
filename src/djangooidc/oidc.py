@@ -14,6 +14,7 @@ from oic.oic import AuthorizationRequest, AuthorizationResponse, RegistrationRes
 from oic.oic.message import AccessTokenResponse
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 from oic.utils import keyio
+from urllib.parse import urlparse, urlunparse, urlencode, parse_qs
 
 from . import exceptions as o_e
 
@@ -84,6 +85,7 @@ class Client(oic.Client):
     def create_authn_request(
         self,
         session,
+        add_acr=True,
         extra_args=None,
     ):
         """Step 2: Construct a login URL at OP's domain and send the user to it."""
@@ -100,10 +102,10 @@ class Client(oic.Client):
                 "state": session["state"],
                 "nonce": session["nonce"],
                 "redirect_uri": self.registration_response["redirect_uris"][0],
-                # acr_value may be passed in session if overriding, as in the case
-                # of step up auth, otherwise get from settings.py
-                "acr_values": session.get("acr_value") or self.behaviour.get("acr_value"),
             }
+            if add_acr:
+                request_args["acr_values"] = session.get("acr_value") or self.behaviour.get("acr_value")
+            request_args["vtr"] = json.dumps(self.behaviour.get("vtr"))
 
             if extra_args is not None:
                 request_args.update(extra_args)
@@ -126,6 +128,7 @@ class Client(oic.Client):
                 method="GET",
                 request_args=request_args,
             )
+
             logger.debug("body: %s" % body)
             logger.debug("URL: %s" % url)
             logger.debug("headers: %s" % headers)
@@ -141,6 +144,7 @@ class Client(oic.Client):
             if headers:
                 for key, value in headers.items():
                     response[key] = value
+            print(f"create auth => response is {response}")
         except Exception as err:
             logger.error(err)
             logger.error("Failed to create redirect object for %s" % state)
@@ -293,6 +297,12 @@ class Client(oic.Client):
         """returns the step_up_acr_value from settings
         this helper function is called from djangooidc views"""
         return self.behaviour.get("step_up_acr_value")
+
+    def get_vtm_value(self):
+        return self.behaviour.get("vtm")
+    
+    def get_vtr_value(self):
+        return self.behaviour.get("vtr")
 
     def __repr__(self):
         return "Client {} {} {}".format(

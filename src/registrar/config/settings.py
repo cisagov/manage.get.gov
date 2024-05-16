@@ -497,13 +497,13 @@ LOGGING = {
         # OpenID Connect logger
         "oic": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         # Django wrapper for OpenID Connect
         "djangooidc": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         # Our app!
