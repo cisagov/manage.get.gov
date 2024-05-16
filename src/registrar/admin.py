@@ -1171,7 +1171,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "generic_org_type", "is_election_board")
+    readonly_fields = ("other_contacts", "generic_org_type", "is_election_board", "federal_agency")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1438,6 +1438,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "alternative_domains",
         "generic_org_type",
         "is_election_board",
+        "federal_agency",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -1879,7 +1880,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    readonly_fields = ["state", "expiration_date", "first_ready", "deleted"]
+    readonly_fields = ("state", "expiration_date", "first_ready", "deleted", "federal_agency")
 
     # Table ordering
     ordering = ["name"]
