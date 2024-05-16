@@ -563,7 +563,7 @@ OIDC_PROVIDERS = {
             "user_info_request": ["email", "first_name", "last_name", "phone"],
             "acr_value": "http://idmanagement.gov/ns/assurance/ial/1",
             # "P1" is the current IdV option; "Pb" stands for 'biometric'
-            "vtr": ["Pb","P1"],
+            "vtr": ["Pb", "P1"],
             # The url that biometric authentication takes place at.
             # A similar analog is the url for acr_value.
             "vtm": "https://developer.login.gov/vot-trust-framework",
@@ -585,7 +585,7 @@ OIDC_PROVIDERS = {
             "user_info_request": ["email", "first_name", "last_name", "phone"],
             "acr_value": "http://idmanagement.gov/ns/assurance/ial/1",
             # "P1" is the current IdV option; "Pb" stands for 'biometric'
-            "vtr": ["Pb","P1"],
+            "vtr": ["Pb", "P1"],
             # The url that biometric authentication takes place at.
             # A similar analog is the url for acr_value.
             "vtm": "https://developer.login.gov/vot-trust-framework",

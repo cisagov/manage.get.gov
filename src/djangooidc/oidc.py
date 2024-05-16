@@ -117,26 +117,7 @@ class Client(oic.Client):
 
         logger.debug("request args: %s" % request_args)
 
-        try:
-            # prepare the request for sending
-            cis = self.construct_AuthorizationRequest(request_args=request_args)
-            logger.debug("request: %s" % cis)
-
-            # obtain the url and headers from the prepared request
-            url, body, headers, cis = self.uri_and_body(
-                AuthorizationRequest,
-                cis,
-                method="GET",
-                request_args=request_args,
-            )
-
-            logger.debug("body: %s" % body)
-            logger.debug("URL: %s" % url)
-            logger.debug("headers: %s" % headers)
-        except Exception as err:
-            logger.error(err)
-            logger.error("Failed to prepare request for %s" % state)
-            raise o_e.InternalError(locator=state)
+        url, headers = self._prepare_authn_request(request_args, state)  # C901 too complex
 
         try:
             # create the redirect object
@@ -158,6 +139,35 @@ class Client(oic.Client):
             session.pop("acr_value")
         request_args["vtr"] = self.get_vtr_value()
         request_args["vtm"] = self.get_vtm_value()
+
+    def _prepare_authn_request(self, request_args, state):
+        """
+        Constructs an authorization request. Then, assembles the url, body, headers, and cis.
+
+        Returns the assembled url and associated header information: `(url, headers)`
+        """
+        try:
+            # prepare the request for sending
+            cis = self.construct_AuthorizationRequest(request_args=request_args)
+            logger.debug("request: %s" % cis)
+
+            # obtain the url and headers from the prepared request
+            url, body, headers, cis = self.uri_and_body(
+                AuthorizationRequest,
+                cis,
+                method="GET",
+                request_args=request_args,
+            )
+
+            logger.debug("body: %s" % body)
+            logger.debug("URL: %s" % url)
+            logger.debug("headers: %s" % headers)
+        except Exception as err:
+            logger.error(err)
+            logger.error("Failed to prepare request for %s" % state)
+            raise o_e.InternalError(locator=state)
+
+        return (url, headers)
 
     def callback(self, unparsed_response, session):
         """Step 3: Receive OP's response, request an access token, and user info."""
@@ -311,7 +321,7 @@ class Client(oic.Client):
         """Returns the vtm value from settings.
         This helper function is called from djangooidc views."""
         return self.behaviour.get("vtm")
-    
+
     def get_vtr_value(self, cleaned=True):
         """Returns the vtr value from settings.
         This helper function is called from djangooidc views."""

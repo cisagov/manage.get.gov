@@ -96,7 +96,7 @@ def login_callback(request):
         # if not satisfied, redirect user to login requiring biometric auth
 
         # Tests for the presence of the vtm/vtr values in the userinfo object.
-        # If they are there, then we can set a flag in our session for tracking purposes. 
+        # If they are there, then we can set a flag in our session for tracking purposes.
         needs_biometric_validation = _requires_biometric_auth(userinfo)
         request.session["needs_biometric_validation"] = needs_biometric_validation
 
@@ -145,9 +145,22 @@ def login_callback(request):
         return error_page(request, err)
 
 
-def _requires_biometric_auth(userinfo):
-    """if User.needs_identity_verification and step_up_acr_value not in
-    ial returned from callback, return True"""
+def _requires_biometric_auth(userinfo) -> bool:
+    """
+    Checks for the presence of the key 'vtm' and 'vtr' in the provided `userinfo` object.
+
+    If they are not found, then we call `User.needs_identity_verification()`.
+
+    Args:
+        userinfo (dict): A dictionary of data from the returned user object.
+
+    Return Conditions:
+        If the provided user does not exist in any tables which would preclude them from doing
+        biometric authentication, then we return True. Otherwise, we return False.
+
+        Alternatively, if 'vtm' and 'vtr' already exist on `userinfo`, then we return False.
+
+    """
     uuid = userinfo.get("sub", "")
     email = userinfo.get("email", "")
     if not userinfo.get("vtm") or not userinfo.get("vtr"):
