@@ -320,9 +320,6 @@ it may help to resync your laptop with time.nist.gov:
 sudo sntp -sS time.nist.gov
 ```
 
-## Connection pool
-To handle our connection to the registry, we utilize a connection pool to keep a socket open to increase responsiveness. In order to accomplish this, we are utilizing a heavily modified version of the [geventconnpool](https://github.com/rasky/geventconnpool) library.
-
 ### Settings
 The config for the connection pool exists inside the `settings.py` file.
 | Name                     | Purpose                                                                                           |
@@ -332,20 +329,6 @@ The config for the connection pool exists inside the `settings.py` file.
 | POOL_TIMEOUT             | Determines how long we try to keep a pool alive for, before restarting it.                        |
 
 Consider updating the `POOL_TIMEOUT` or `POOL_KEEP_ALIVE` periods if the pool often restarts. If the pool only restarts after a period of inactivity, update `POOL_KEEP_ALIVE`. If it restarts during the EPP call itself, then `POOL_TIMEOUT` needs to be updated.
-
-### Test if the connection pool is running
-Our connection pool has a built-in `pool_status` object which you can call at anytime to assess the current connection status of the pool. Follow these steps to access it.
-
-1. `cf ssh getgov-{env-name} -i {instance-index}`
-* env-name -> Which environment to target, e.g. `staging`
-* instance-index -> Which instance to target. For instance, `cf ssh getgov-staging -i 0`
-2. `/tmp/lifecycle/shell`
-3. `./manage.py shell`
-4. `from epplibwrapper import CLIENT as registry, commands`
-5. `print(registry.pool_status.connection_success)`
-* Should return true
-
-If you have multiple instances (staging for example), then repeat commands 1-5 for each instance you want to test. 
 
 ## Adding a S3 instance to your sandbox
 This can either be done through the CLI, or through the cloud.gov dashboard. Generally, it is better to do it through the dashboard as it handles app binding for you. 
@@ -379,3 +362,46 @@ cf env getgov-{app name}
 ```
 
 Then, copy the variables under the section labled `s3`.
+
+## Signals 
+The application uses [Django signals](https://docs.djangoproject.com/en/5.0/topics/signals/). In particular, it uses a subset of prebuilt signals called [model signals](https://docs.djangoproject.com/en/5.0/ref/signals/#module-django.db.models.signals). 
+
+Per Django, signals "[...allow certain senders to notify a set of receivers that some action has taken place.](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch)" 
+
+In other words, signals are a mechanism that allows different parts of an application to communicate with each other by sending and receiving notifications when events occur. When an event occurs (such as creating, updating, or deleting a record), signals can automatically trigger specific actions in response. This allows different parts of an application to stay synchronized without tightly coupling the component. 
+
+### Rules of use
+When using signals, try to adhere to these guidelines:
+1. Don't use signals when you can use another method, such as an override of `save()` or `__init__`.   
+2. Document its usage in this readme (or another centralized location), as well as briefly on the underlying class it is associated with. For instance, since the `handle_profile` directly affects the class `Contact`, the class description notes this and links to [signals.py](../../src/registrar/signals.py).
+3. Where possible, avoid chaining signals together (i.e. a signal that calls a signal). If this has to be done, clearly document the flow.
+4. Minimize logic complexity within the signal as much as possible.
+
+### When should you use signals?
+Generally, you would use signals when you want an event to be synchronized across multiple areas of code at once (such as with two models or more models at once) in a way that would otherwise be difficult to achieve by overriding functions.
+
+However, in most scenarios, if you can get away with avoiding signals - you should. The reasoning for this is that [signals give the appearance of loose coupling, but they can quickly lead to code that is hard to understand, adjust and debug](https://docs.djangoproject.com/en/5.0/topics/signals/#module-django.dispatch).
+
+Consider using signals when:
+1. Synchronizing events across multiple models or areas of code.
+2. Performing logic before or after saving a model to the database (when otherwise difficult through `save()`).
+3. Encountering an import loop when overriding functions such as `save()`.
+4. You are otherwise unable to achieve the intended behavior by overrides or other means.
+5. (Rare) Offloading tasks when multi-threading.
+
+For the vast majority of use cases, the [pre_save](https://docs.djangoproject.com/en/5.0/ref/signals/#pre-save) and [post_save](https://docs.djangoproject.com/en/5.0/ref/signals/#post-save) signals are sufficient in terms of model-to-model management.
+
+### Where should you use them?
+This project compiles signals in a unified location to maintain readability. If you are adding a signal or otherwise utilizing one, you should always define them in [signals.py](../../src/registrar/signals.py). Except under rare circumstances, this should be adhered to for the reasons mentioned above. 
+
+### How are we currently using signals?
+At the time of writing, we currently only use signals for the Contact and User objects when synchronizing data returned from Login.gov. This is because the `Contact` object holds information that the user specified in our system, whereas the `User` object holds information that was specified in Login.gov.
+
+To keep our signal usage coherent and well-documented, add to this document when a new function is added for ease of reference and use.
+
+#### handle_profile
+This function is triggered by the post_save event on the User model, designed to manage the synchronization between User and Contact entities. It operates under the following conditions:
+
+1. For New Users: Upon the creation of a new user, it checks for an existing `Contact` by email. If no matching contact is found, it creates a new Contact using the user's details from Login.gov. If a matching contact is found, it associates this contact with the user. In cases where multiple contacts with the same email exist, it logs a warning and associates the first contact found.
+
+2. For Existing Users: For users logging in subsequent times, the function ensures that any updates from Login.gov are applied to the associated User record. However, it does not alter any existing Contact records.
