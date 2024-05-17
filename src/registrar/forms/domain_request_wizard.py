@@ -646,23 +646,6 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
     )
 
 
-# class CisaRepresentativeForm(BaseDeletableRegistrarForm):
-#     cisa_representative_email = forms.EmailField(
-#         required=False,
-#         max_length=None,
-#         label="Your representative’s email",
-#         validators=[
-#             MaxLengthValidator(
-#                 320,
-#                 message="Response must be less than 320 characters.",
-#             )
-#         ],
-#         error_messages={
-#             "invalid": ("Enter your email address in the required format, like name@example.com."),
-#             "required": ("Enter the email address of your CISA regional representative."),
-#         },
-#     )
-
 class CisaRepresentativeForm(RegistrarForm):
     JOIN = "cisa_representative"
 
