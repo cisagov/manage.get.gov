@@ -646,7 +646,7 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
     )
 
 
-class CisaRepresentativeForm(RegistrarForm):
+class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     JOIN = "cisa_representative"
 
     logger.debug("GETTING CISA REP")
