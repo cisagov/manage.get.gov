@@ -646,21 +646,72 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
     )
 
 
-class CisaRepresentativeForm(BaseDeletableRegistrarForm):
-    cisa_representative_email = forms.EmailField(
-        required=True,
+# class CisaRepresentativeForm(BaseDeletableRegistrarForm):
+#     cisa_representative_email = forms.EmailField(
+#         required=False,
+#         max_length=None,
+#         label="Your representative’s email",
+#         validators=[
+#             MaxLengthValidator(
+#                 320,
+#                 message="Response must be less than 320 characters.",
+#             )
+#         ],
+#         error_messages={
+#             "invalid": ("Enter your email address in the required format, like name@example.com."),
+#             "required": ("Enter the email address of your CISA regional representative."),
+#         },
+#     )
+
+class CisaRepresentativeForm(RegistrarForm):
+    JOIN = "cisa_representative"
+
+    logger.debug("GETTING CISA REP")
+
+    def to_database(self, obj):
+        logger.debug("SAVING CISA REP")
+        if not self.is_valid():
+            return
+        contact = getattr(obj, "cisa_representative", None)
+        logger.debug("EXISTING REP: %s" % contact)
+        if contact is not None and not contact.has_more_than_one_join("cisa_representative_domain_requests"):
+            # if contact exists in the database and is not joined to other entities
+            super().to_database(contact)
+        else:
+            # no contact exists OR contact exists which is joined also to other entities;
+            # in either case, create a new contact and update it
+            contact = Contact()
+            super().to_database(contact)
+            logger.debug("NEW REP: %s" % contact)
+            obj.cisa_representative = contact
+            obj.save()
+
+    @classmethod
+    def from_database(cls, obj):
+        contact = getattr(obj, "cisa_representative", None)
+        return super().from_database(contact)
+
+    first_name = forms.CharField(
+        label="First name / given name",
+        error_messages={"required": "Enter your first name / given name."},
+    )
+    last_name = forms.CharField(
+        label="Last name / family name",
+        error_messages={"required": "Enter your last name / family name."},
+    )
+    email = forms.EmailField(
+        label="Email",
         max_length=None,
-        label="Your representative’s email",
+        error_messages={
+            "invalid": ("Enter your email address in the required format, like name@example.com."),
+            "required": ("Enter the email address of your CISA regional representative."),
+        },
         validators=[
             MaxLengthValidator(
                 320,
                 message="Response must be less than 320 characters.",
             )
         ],
-        error_messages={
-            "invalid": ("Enter your email address in the required format, like name@example.com."),
-            "required": ("Enter the email address of your CISA regional representative."),
-        },
     )
 
 
@@ -668,6 +719,7 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
     """Yes/no toggle for the CISA regions question on additional details"""
 
     form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)  # type: ignore
+    logger.debug("CHECKING FOR YES/NO CHECK -- %s" % form_is_checked)
     field_name = "has_cisa_representative"
 
 

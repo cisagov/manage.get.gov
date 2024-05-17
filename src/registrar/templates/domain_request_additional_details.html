@@ -9,7 +9,6 @@
 {# commented out so it does not appear at this point on this page #}
 {% endblock %}
 
-<!-- TODO-NL: (refactor) Breakup into two separate components-->
 {% block form_fields %}
     <fieldset class="usa-fieldset margin-top-2">
       <legend>
@@ -22,13 +21,13 @@
         {% input_with_errors forms.0.has_cisa_representative %}
       {% endwith %}
       {# forms.0 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
-      <!-- TODO-NL: Hookup forms.0 to yes/no form for cisa representative (backend def)-->
     </fieldset>
 
     <div id="cisa-representative" class="cisa-representative-form">
-        {% input_with_errors forms.1.cisa_representative_email %}
+        {% input_with_errors forms.1.first_name %}
+        {% input_with_errors forms.1.last_name %}
+        {% input_with_errors forms.1.email %}
         {# forms.1 is a form for inputting the e-mail of a cisa representative #}
-        <!-- TODO-NL: Hookup forms.1 to cisa representative form (backend def) -->
     </div>
 
 
@@ -42,7 +41,6 @@
           {% input_with_errors forms.2.has_anything_else_text %}
         {% endwith %}
         {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
-        <!-- TODO-NL: Hookup forms.2 to yes/no form for anything else form (backend def)-->
     </fieldset>
   
     <div id="anything-else">
@@ -50,6 +48,5 @@
             {% input_with_errors forms.3.anything_else %}
         {% endwith %}
         {# forms.3 is a form for inputting the e-mail of a cisa representative #}
-        <!-- TODO-NL: Hookup forms.3 to anything else form (backend def) -->
     </div>
 {% endblock %}
