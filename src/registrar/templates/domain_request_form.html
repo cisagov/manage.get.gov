@@ -84,6 +84,13 @@
               value="save_and_return"
               class="usa-button usa-button--outline"
             >Save and return to manage your domains</button>
+            <!-- {% elif form_is_not_complete %}
+            <button
+              type="submit"
+              name="submit_button"
+              value="save_and_return"
+              class="usa-button usa-button--outline"
+            >Return to manage your domains</button> -->
             {% else %}
             <a
               href="#toggle-submit-domain-request"
@@ -107,6 +114,16 @@
         >
             {% include 'includes/modal.html' with modal_heading=modal_heading|safe modal_description="Once you submit this request, you won’t be able to edit it until we review it. You’ll only be able to withdraw your request." modal_button=modal_button|safe %}
         </div>
+
+        <!-- <div
+        class="usa-modal"
+        id="toggle-incomplete-domain-request"
+        aria-labelledby="You can’t submit this request because it’s incomplete."
+        aria-describedby="You can’t submit this request because it’s incomplete."
+        data-force-action
+      >
+          {% include 'includes/modal.html' with modal_heading=modal_heading|safe modal_description="You can’t submit this request because it’s incomplete. Click return to request and complete the sections that are missing information." modal_button=modal_button|safe %}
+      </div> -->
 
 {% block after_form_content %}{% endblock %}
 

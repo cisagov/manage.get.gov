@@ -374,25 +374,100 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         }
         return [key for key, value in history_dict.items() if value]
 
+
+    def _form_complete(self):
+        # So in theory each part of the form individually should be already doing the check, correct?
+        # In theory, that means we just only need to check for the title pages that are completed which is
+        # Technically some of these don't even show up at all depending on which "state" its in or chosen
+
+        # If we choose Federal -> check "Federal government branch (has defaults)
+        # If we choose Interstate -> check "About your organization"
+        # If we choose State -> check "Election office" (has default)
+        # If we choose Tribal -> check "Tribal name" and "Election office"
+        # County -> "Election office"
+        # City -> "Election office"
+        # Special district -> "Election office" and "About your organization"
+        # School district -> clears common
+
+
+        if (
+            # (self.domain_request.tribe_name is None)
+            (self.domain_request.generic_org_type is None)
+            or (self.domain_request.tribe_name is None)
+            or (self.domain_request.federal_type is None)
+            or (self.domain_request.is_election_board is None)
+            or (
+                self.domain_request.federal_agency is None
+                or self.domain_request.organization_name is None
+                or self.domain_request.address_line1 is None
+                or self.domain_request.city is None
+                or self.domain_request.state_territory is None
+                or self.domain_request.zipcode is None
+                or self.domain_request.urbanization is None
+            )  # organization contact
+            or (self.domain_request.about_your_organization is None)
+            or (self.domain_request.authorizing_official is None)
+            or (
+                self.domain_request.current_websites.exists() or self.domain_request.requested_domain is None
+            )  # for current_sites
+            or (self.domain_request.requested_domain is None)  # for dotgov_domain
+            or (self.domain_request.purpose is None)
+            or (self.domain_request.submitter is None)  # your_contact
+            or (self.domain_request.other_contacts is None)
+            or (
+                (self.domain_request.anything_else is None and self.domain_request.cisa_representative_email)
+                or self.domain_request.is_policy_acknowledged is None
+            )  # additional detail
+            or (self.domain_request.is_policy_acknowledged is None)  # review
+        ):
+            # print("!!!!!! self.domain_request.tribe_name is", self.domain_request.tribe_name)
+            # context = self.get_context_data()
+            # context["forms"] = self.get_forms()
+            # context["form_is_not_complete"] = False
+
+            return False
+        else: 
+            # print("!!!!!! self.domain_request.tribe_name is", self.domain_request.tribe_name)
+            return True
+
+        # return None
+
     def get_context_data(self):
         """Define context for access on all wizard pages."""
         # Build the submit button that we'll pass to the modal.
         modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
         # Concatenate the modal header that we'll pass to the modal.
-        if self.domain_request.requested_domain:
-            modal_heading = "You are about to submit a domain request for " + str(self.domain_request.requested_domain)
-        else:
-            modal_heading = "You are about to submit an incomplete request"
 
-        return {
-            "form_titles": self.TITLES,
-            "steps": self.steps,
-            # Add information about which steps should be unlocked
-            "visited": self.storage.get("step_history", []),
-            "is_federal": self.domain_request.is_federal(),
-            "modal_button": modal_button,
-            "modal_heading": modal_heading,
-        }
+        # TODO: Still need to log!
+        context_stuff = {}
+        print("!!!!!!!!! before form complete")
+        print("!!!!!!!!! self.form_complete is", self._form_complete())
+        if self._form_complete():
+            print("!!!!!!!in form complete section")
+            context_stuff = {
+                "form_titles": self.TITLES,
+                "steps": self.steps,
+                # Add information about which steps should be unlocked
+                "visited": self.storage.get("step_history", []),
+                "is_federal": self.domain_request.is_federal(),
+                "modal_button": modal_button,
+                "modal_heading": "You are about to submit a domain request for "
+                + str(self.domain_request.requested_domain),
+            }
+        else:  # form is not complete
+            print("!!!!!!! form is not complete")
+            context_stuff = {
+                "form_titles": self.TITLES,
+                "steps": self.steps,
+                # Add information about which steps should be unlocked
+                "visited": self.storage.get("step_history", []),
+                "is_federal": self.domain_request.is_federal(),
+                # "modal_button": We'll have to set some kind of go back button
+                # And fix wording in text for domain_request_form
+                "modal_heading": "You can’t submit this request",
+            }
+
+        return context_stuff
 
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""

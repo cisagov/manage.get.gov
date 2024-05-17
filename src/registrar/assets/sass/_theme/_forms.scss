@@ -32,6 +32,11 @@
   border-left: none;
 }
 
+.incomplete {
+  color: red;
+  font-weight: bold;
+}
+
 legend.float-left-tablet + button.float-right-tablet {
   margin-top: .5rem;
   @include at-media('tablet') {

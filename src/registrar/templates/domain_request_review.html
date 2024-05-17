@@ -37,7 +37,7 @@
 
         {% if step == Step.TRIBAL_GOVERNMENT %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% with title=form_titles|get_item:step value=domain_request.tribe_name|default:"Incomplete" %}
+          {% with title=form_titles|get_item:step value=domain_request.tribe_name|default:"<span class='incomplete'>Incomplete</span>"|safe %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
           {% if domain_request.federally_recognized_tribe %}<p>Federally-recognized tribe</p>{% endif %}
