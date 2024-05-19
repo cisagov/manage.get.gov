@@ -457,7 +457,6 @@ class DomainRequest(TimeStampedModel):
         help_text="Determines if the user has a anything_else or not",
     )
 
-
     cisa_representative = models.ForeignKey(
         "registrar.Contact",
         null=True,
