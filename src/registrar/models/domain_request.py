@@ -538,15 +538,16 @@ class DomainRequest(TimeStampedModel):
         """
 
         cisa_rep_is_not_none = self.cisa_representative is not None
-        logger.debug("CISA REPRESENTATIVE IS %s" % cisa_rep_is_not_none)
+        cisa_first_name = None
 
         # This ensures that if we have prefilled data, the form is prepopulated
         if cisa_rep_is_not_none:
-            self.has_cisa_representative = True
+            cisa_first_name = self.cisa_representative.first_name
+            self.has_cisa_representative = cisa_first_name is not None and cisa_first_name != ""
 
         # This check is required to ensure that the form doesn't start out checked
         if self.has_cisa_representative is not None:
-            self.has_cisa_representative = cisa_rep_is_not_none
+            self.has_cisa_representative = cisa_first_name is not None and cisa_first_name != ""
 
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.anything_else is not None:

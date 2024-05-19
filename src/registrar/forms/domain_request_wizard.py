@@ -685,9 +685,9 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     email = forms.EmailField(
         label="Email",
         max_length=None,
+        required=False,
         error_messages={
             "invalid": ("Enter your email address in the required format, like name@example.com."),
-            "required": ("Enter the email address of your CISA regional representative."),
         },
         validators=[
             MaxLengthValidator(
