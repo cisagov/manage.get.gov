@@ -102,13 +102,6 @@ class Contact(TimeStampedModel):
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
         return " ".join(names) if names else "Unknown"
 
-    @property
-    def full_name(self):
-        """
-        Returns the full name (first_name, middle_name, last_name) of this contact.
-        """
-        return self.get_formatted_name()
-
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
 

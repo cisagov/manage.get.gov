@@ -873,35 +873,16 @@ function hideDeletedForms() {
     let fieldId = getInputFieldId(fieldName)
     let inputField = document.querySelector(fieldId);
 
-    let nameFieldset = document.querySelector("#contact-full-name-fieldset");
+    let nameFieldset = document.querySelector("#profile-name-fieldset");
     if (nameFieldset){
       nameFieldset.classList.remove("display-none");
     }
 
     if (inputField) {
-      let readonlyId = getReadonlyFieldId(fieldName)
-      let readonlyField = document.querySelector(readonlyId)
-      if (readonlyField) {
-        // Update the <use> element's xlink:href attribute
-        let useElement = readonlyField.querySelector("use");
-        if (useElement) {
-          let currentHref = useElement.getAttribute("xlink:href");
-          let parts = currentHref.split("#");
-
-          // Update the icon reference to the info icon
-          if (parts.length > 1) {
-            parts[1] = "info_outline";
-            useElement.setAttribute("xlink:href", parts.join("#"));
-
-            // Change the color to => $dhs-dark-gray-60
-            useElement.closest('svg').style.fill = '#444547';
-          }
-        }
-        
-        let parentDiv = readonlyField.closest("div");
-        if (parentDiv) {
-          parentDiv.classList.toggle("overlapped-full-name-field");
-        }
+      // Remove the "full_name" field
+      inputFieldParentDiv = inputField.closest("div");
+      if (inputFieldParentDiv) {
+        inputFieldParentDiv.remove();
       }
     }
   }

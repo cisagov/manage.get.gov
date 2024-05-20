@@ -10,23 +10,8 @@ fieldset:not(:first-child) {
 }
 
 fieldset.registrar-fieldset__contact {
-    border-width: 2px;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-@media (min-width: 800px) {
-    fieldset.registrar-fieldset__contact {
-        margin-top: 28px;
-    }
-}
-
-@media (max-width: 800px){
-    fieldset.registrar-fieldset__contact {
-        padding: 0;
-        margin: 0;
-        border: none;
-    }
+    // This fieldset is for SR purposes only
+    border: 0;
+    margin: 0;
+    padding: 0;
 }

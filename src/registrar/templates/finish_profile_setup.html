@@ -62,25 +62,17 @@
                         <legend class="usa-sr-only">
                             Your contact information
                         </legend>
-                        
-                        {# TODO: if an error is thrown here or edit clicked, show first last and middle fields #}
-                        {# Also todo: consolidate all of the scattered classes into this usa form one #}
+
                         {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2" %}
                             {% input_with_errors form.full_name %}
                         {% endwith %}
                         
-                        <fieldset id="contact-full-name-fieldset" class="registrar-fieldset__contact display-none">
-                            {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly" %}
-                                {% input_with_errors form.first_name %}
-                            {% endwith %}
+                        <fieldset id="profile-name-fieldset" class="registrar-fieldset__contact display-none">
+                            {% input_with_errors form.first_name %}
 
-                            {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2" %}
-                                {% input_with_errors form.middle_name %}
-                            {% endwith %}
+                            {% input_with_errors form.middle_name %}
 
-                            {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2"%}
-                                {% input_with_errors form.last_name %}
-                            {% endwith %}
+                            {% input_with_errors form.last_name %}
                         </fieldset>
 
                         {# This field doesn't have the readonly button but it has common design elements from it #}
