@@ -50,17 +50,19 @@ Edit your User Profile |
         {% input_with_errors form.last_name %}
     
         {% input_with_errors form.title %}
-    
-        {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with your Login.gov account." %}
-          {% with link_text="Get help with your Login.gov account" %}
-            {% with link_href="http://Login.gov" %}
-              {% with target_blank="true" %}
-                {% with do_not_show_max_chars="true" %}
+
+        {% public_site_url "help/account-management/#get-help-with-login.gov" as login_help_url %}
+
+        {% with link_href=login_help_url %}
+          {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with your Login.gov account." %}
+            {% with link_text="Get help with your Login.gov account" %}
+              {% with target_blank=True %}
+                {% with do_not_show_max_chars=True %}
                   {% input_with_errors form.email %}
                 {% endwith %}
               {% endwith %}
             {% endwith %}
-          {% endwith %}  
+          {% endwith %}
         {% endwith %}
     
         {% with add_class="usa-input--medium" %}
