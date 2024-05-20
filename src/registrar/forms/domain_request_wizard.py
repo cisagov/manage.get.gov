@@ -654,8 +654,13 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
             return
         contact = getattr(obj, "cisa_representative", None)
         if contact is not None and not contact.has_more_than_one_join("cisa_representative_domain_requests"):
-            # if contact exists in the database and is not joined to other entities
-            super().to_database(contact)
+            if self.form_data_marked_for_deletion:
+                # remove the CISA contact from this domain request
+                obj.cisa_representative = None
+                #QUESTION - should we also delete the contact object if it is not joined to other entities?
+            else:
+                # update existing contact if it is not joined to other enttities
+                super().to_database(contact)
         else:
             # no contact exists OR contact exists which is joined also to other entities;
             # in either case, create a new contact and update it
