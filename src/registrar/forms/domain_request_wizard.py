@@ -649,14 +649,10 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
 class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     JOIN = "cisa_representative"
 
-    logger.debug("GETTING CISA REP")
-
     def to_database(self, obj):
-        logger.debug("SAVING CISA REP")
         if not self.is_valid():
             return
         contact = getattr(obj, "cisa_representative", None)
-        logger.debug("EXISTING REP: %s" % contact)
         if contact is not None and not contact.has_more_than_one_join("cisa_representative_domain_requests"):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
@@ -665,7 +661,6 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
             # in either case, create a new contact and update it
             contact = Contact()
             super().to_database(contact)
-            logger.debug("NEW REP: %s" % contact)
             obj.cisa_representative = contact
             obj.save()
 

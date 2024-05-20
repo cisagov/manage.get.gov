@@ -2263,7 +2263,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "no_other_contacts_rationale",
                 "anything_else",
                 "has_anything_else_text",
-                "cisa_representative_email",
+                "cisa_representative",
                 "has_cisa_representative",
                 "is_policy_acknowledged",
                 "submission_date",
@@ -2296,7 +2296,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "no_other_contacts_rationale",
                 "anything_else",
                 "is_policy_acknowledged",
-                "cisa_representative_email",
+                "cisa_representative",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
