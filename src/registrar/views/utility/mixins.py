@@ -400,7 +400,7 @@ class UserProfilePermission(PermissionsLoginMixin):
             return False
 
         # If we are given a pk in the request, do checks on it
-        given_contact_pk = self.kwargs["pk"]
+        given_contact_pk = self.kwargs.get("pk", None)
 
         if given_contact_pk:
             # Grab the user in the DB to do a full object comparision, not just on ids

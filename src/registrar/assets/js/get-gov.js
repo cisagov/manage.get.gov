@@ -919,36 +919,43 @@ function hideDeletedForms() {
   }
 
   function showInputOnErrorFields(){
-    let fullNameButtonClicked = false
     document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
-        let fieldIdParts = button.id.split("__")
-        if (fieldIdParts && fieldIdParts.length > 0){
-          let fieldName = fieldIdParts[0]
+      let form = document.querySelector('.main-content-finish-profile');
+      // Get all input elements within the form
+      let inputs = form ? form.querySelectorAll('input') : null;
+      if (!inputs) {
+        return null;
+      }
 
-          // Check if an error message exists for the given field
-          let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
-          if (errorMessage) {
-            
-            // Show the input field of the field that errored out 
-            button.click()
+      let fullNameButtonClicked = false
+      inputs.forEach(function(input) {
+        let fieldName = input.name;
+        let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
+        if (!fieldName || !errorMessage) {
+          return null;
+        }
 
-            // If either the full_name field errors out,
-            // or if any of its associated fields do - show all name related fields.
-            let nameFields = ["first_name", "middle_name", "last_name"] 
-            if (nameFields.includes(fieldName) && !fullNameButtonClicked){
-              // Click the full name button if any of its related fields error out
-              fullNameButton = document.querySelector("#full_name__edit-button")
-              if (fullNameButton) {
-                fullNameButton.click()
-                fullNameButtonClicked = true
-              }
-            }
+        let editButton = document.querySelector(`#${fieldName}__edit-button`);
+        console.log(`edit button is ${editButton} vs id #${fieldName}__edit-button`)
+        if (editButton){
+          // Show the input field of the field that errored out 
+          editButton.click();
+        }
+
+        // If either the full_name field errors out,
+        // or if any of its associated fields do - show all name related fields.
+        let nameFields = ["first_name", "middle_name", "last_name"];
+        if (nameFields.includes(fieldName) && !fullNameButtonClicked){
+          // Click the full name button if any of its related fields error out
+          fullNameButton = document.querySelector("#full_name__edit-button");
+          if (fullNameButton) {
+            fullNameButton.click();
+            fullNameButtonClicked = true;
           }
         }
       });  
     });
-  }
+  };
 
   // Hookup all edit buttons to the `handleEditButtonClick` function
   setupListener();
