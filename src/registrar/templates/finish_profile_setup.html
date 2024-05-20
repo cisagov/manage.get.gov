@@ -67,13 +67,19 @@
                             {% input_with_errors form.full_name %}
                         {% endwith %}
                         
-                        <fieldset id="profile-name-fieldset" class="registrar-fieldset__contact display-none">
-                            {% input_with_errors form.first_name %}
-
-                            {% input_with_errors form.middle_name %}
-
-                            {% input_with_errors form.last_name %}
-                        </fieldset>
+                        <div id="profile-name-fieldset" class="display-none" role="group">
+                            {% with group_classes="usa-form-readonly padding-top-2" %}
+                                {% input_with_errors form.first_name %}
+                            {% endwith %}
+                            
+                            {% with group_classes="usa-form-readonly padding-top-2" %}
+                                {% input_with_errors form.middle_name %}
+                            {% endwith %}
+                            
+                            {% with group_classes="usa-form-readonly padding-top-2" %}
+                                {% input_with_errors form.last_name %}
+                            {% endwith %}
+                        </div>
 
                         {# This field doesn't have the readonly button but it has common design elements from it #}
                         {% with show_readonly=True add_class="display-none" group_classes="usa-form-readonly padding-top-2 bold-usa-label" sublabel_text=email_sublabel_text %}
