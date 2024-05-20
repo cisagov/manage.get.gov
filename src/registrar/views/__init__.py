@@ -14,6 +14,7 @@ from .domain import (
     DomainInvitationDeleteView,
     DomainDeleteUserView,
 )
+from .user_profile import UserProfileView
 from .finish_user_setup import (
     FinishUserSetupView,
 )

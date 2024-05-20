@@ -1,11 +1,14 @@
 from datetime import date
 from django.test import Client, TestCase, override_settings
 from django.contrib.auth import get_user_model
+from django_webtest import WebTest  # type: ignore
+from django.conf import settings
 
 from api.tests.common import less_console_noise_decorator
 from registrar.models.contact import Contact
 from registrar.models.domain import Domain
 from registrar.models.draft_domain import DraftDomain
+from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.views.domain import DomainNameserversView
@@ -18,6 +21,7 @@ from registrar.models import (
     DomainRequest,
     DomainInformation,
 )
+from waffle.testutils import override_flag
 import logging
 
 logger = logging.getLogger(__name__)
@@ -505,3 +509,178 @@ class HomeTests(TestWithUser):
         with less_console_noise():
             response = self.client.get("/request/", follow=True)
             self.assertEqual(response.status_code, 403)
+
+
+class UserProfileTests(TestWithUser, WebTest):
+    """A series of tests that target your profile functionality"""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.user)
+        self.domain, _ = Domain.objects.get_or_create(name="sampledomain.gov", state=Domain.State.READY)
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+    def tearDown(self):
+        super().tearDown()
+        PublicContact.objects.filter(domain=self.domain).delete()
+        self.role.delete()
+        self.domain.delete()
+        Contact.objects.all().delete()
+
+    @less_console_noise_decorator
+    def error_500_main_nav_with_profile_feature_turned_on(self):
+        """test that Your profile is in main nav of 500 error page when profile_feature is on.
+
+        Our treatment of 401 and 403 error page handling with that waffle feature is similar, so we
+        assume that the same test results hold true for 401 and 403."""
+        with override_flag("profile_feature", active=True):
+            with self.assertRaises(Exception):
+                response = self.client.get(reverse("home"))
+                self.assertEqual(response.status_code, 500)
+                self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def error_500_main_nav_with_profile_feature_turned_off(self):
+        """test that Your profile is not in main nav of 500 error page when profile_feature is off.
+
+        Our treatment of 401 and 403 error page handling with that waffle feature is similar, so we
+        assume that the same test results hold true for 401 and 403."""
+        with override_flag("profile_feature", active=False):
+            with self.assertRaises(Exception):
+                response = self.client.get(reverse("home"), follow=True)
+                self.assertEqual(response.status_code, 500)
+                self.assertNotContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_home_page_main_nav_with_profile_feature_on(self):
+        """test that Your profile is in main nav of home page when profile_feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get("/")
+        self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_home_page_main_nav_with_profile_feature_off(self):
+        """test that Your profile is not in main nav of home page when profile_feature is off"""
+        with override_flag("profile_feature", active=False):
+            response = self.client.get("/")
+        self.assertNotContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_new_request_main_nav_with_profile_feature_on(self):
+        """test that Your profile is in main nav of new request when profile_feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get("/request/")
+        self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_new_request_main_nav_with_profile_feature_off(self):
+        """test that Your profile is not in main nav of new request when profile_feature is off"""
+        with override_flag("profile_feature", active=False):
+            response = self.client.get("/request/")
+        self.assertNotContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_user_profile_main_nav_with_profile_feature_on(self):
+        """test that Your profile is in main nav of user profile when profile_feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get("/user-profile")
+        self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_user_profile_returns_404_when_feature_off(self):
+        """test that Your profile returns 404 when profile_feature is off"""
+        with override_flag("profile_feature", active=False):
+            response = self.client.get("/user-profile")
+        self.assertEqual(response.status_code, 404)
+
+    @less_console_noise_decorator
+    def test_domain_detail_profile_feature_on(self):
+        """test that domain detail view when profile_feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get(reverse("domain", args=[self.domain.pk]))
+        self.assertContains(response, "Your profile")
+        self.assertNotContains(response, "Your contact information")
+
+    @less_console_noise_decorator
+    def test_domain_your_contact_information_when_profile_feature_off(self):
+        """test that Your contact information is accessible when profile_feature is off"""
+        with override_flag("profile_feature", active=False):
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information")
+        self.assertContains(response, "Your contact information")
+
+    @less_console_noise_decorator
+    def test_domain_your_contact_information_when_profile_feature_on(self):
+        """test that Your contact information is not accessible when profile feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information")
+        self.assertEqual(response.status_code, 404)
+
+    @less_console_noise_decorator
+    def test_request_when_profile_feature_on(self):
+        """test that Your profile is in request page when profile feature is on"""
+
+        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        site = DraftDomain.objects.create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            authorizing_official=contact_user,
+            submitter=contact_user,
+        )
+        with override_flag("profile_feature", active=True):
+            response = self.client.get(f"/domain-request/{domain_request.id}")
+            self.assertContains(response, "Your profile")
+            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw")
+            self.assertContains(response, "Your profile")
+        # cleanup
+        domain_request.delete()
+        site.delete()
+
+    @less_console_noise_decorator
+    def test_request_when_profile_feature_off(self):
+        """test that Your profile is not in request page when profile feature is off"""
+
+        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        site = DraftDomain.objects.create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            authorizing_official=contact_user,
+            submitter=contact_user,
+        )
+        with override_flag("profile_feature", active=False):
+            response = self.client.get(f"/domain-request/{domain_request.id}")
+            self.assertNotContains(response, "Your profile")
+            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw")
+            self.assertNotContains(response, "Your profile")
+        # cleanup
+        domain_request.delete()
+        site.delete()
+
+    @less_console_noise_decorator
+    def test_user_profile_form_submission(self):
+        """test user profile form submission"""
+        self.app.set_user(self.user.username)
+        with override_flag("profile_feature", active=True):
+            profile_page = self.app.get(reverse("user-profile"))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            profile_form = profile_page.form
+            profile_page = profile_form.submit()
+
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            # assert that first result contains errors
+            self.assertContains(profile_page, "Enter your title")
+            self.assertContains(profile_page, "Enter your phone number")
+            profile_form = profile_page.form
+            profile_form["title"] = "sample title"
+            profile_form["phone"] = "(201) 555-1212"
+            profile_page = profile_form.submit()
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            profile_page = profile_page.follow()
+            self.assertEqual(profile_page.status_code, 200)
+            self.assertContains(profile_page, "Your profile has been updated")

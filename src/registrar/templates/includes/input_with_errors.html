@@ -85,7 +85,7 @@ error messages, if necessary.
   </div>
 {% endif %}
 
-{% if widget.attrs.maxlength %}
+{% if widget.attrs.maxlength and do_not_show_max_chars == "false" %}
   <span
     id="{{ widget.attrs.id }}__message"
     class="usa-character-count__message"
