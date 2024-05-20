@@ -13,7 +13,6 @@ from .mixins import (
     DomainRequestWizardPermission,
     UserDeleteDomainRolePermission,
     UserProfilePermission,
-    ContactPermission,
 )
 import logging
 
@@ -163,17 +162,3 @@ class UserProfilePermissionView(UserProfilePermission, DetailView, abc.ABC):
     def template_name(self):
         raise NotImplementedError
 
-
-class ContactPermissionView(ContactPermission, DetailView, abc.ABC):
-    """Abstract base view for domain requests that enforces permissions
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-    # DetailView property for what model this is viewing
-    model = Contact
-    object: Contact
-
-    # variable name in template context for the model object
-    context_object_name = "contact"

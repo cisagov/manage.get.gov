@@ -326,41 +326,6 @@ class UserDeleteDomainRolePermission(PermissionsLoginMixin):
         return True
 
 
-class ContactPermission(PermissionsLoginMixin):
-    """Permission mixin for UserDomainRole if user
-    has access, otherwise 403"""
-
-    def has_permission(self):
-        """Check if this user has access to this domain request.
-
-        The user is in self.request.user and the domain needs to be looked
-        up from the domain's primary key in self.kwargs["pk"]
-        """
-
-        # Check if the user is authenticated
-        if not self.request.user.is_authenticated:
-            return False
-
-        given_contact_pk = self.kwargs["pk"]
-
-        # Grab the user in the DB to do a full object comparision, not just on ids
-        current_user = self.request.user
-
-        # Compare the PK that was passed in to the user currently logged in
-        if current_user.contact.pk != given_contact_pk:
-            # Don't allow users to modify other users profiles
-            return False
-
-        # Check if the object at the id we're searching on actually exists
-        requested_user_exists = User.objects.filter(pk=current_user.pk).exists()
-        requested_contact_exists = Contact.objects.filter(user=current_user.pk, pk=given_contact_pk).exists()
-
-        if not requested_user_exists or not requested_contact_exists:
-            return False
-
-        return True
-
-
 class DomainRequestPermissionWithdraw(PermissionsLoginMixin):
     """Permission mixin that redirects to withdraw action on domain request
     if user has access, otherwise 403"""
@@ -430,7 +395,27 @@ class UserProfilePermission(PermissionsLoginMixin):
 
         If the user is authenticated, they have access
         """
+        # Check if the user is authenticated
         if not self.request.user.is_authenticated:
             return False
+
+        # If we are given a pk in the request, do checks on it
+        given_contact_pk = self.kwargs["pk"]
+
+        if given_contact_pk:
+            # Grab the user in the DB to do a full object comparision, not just on ids
+            current_user = self.request.user
+
+            # Compare the PK that was passed in to the user currently logged in
+            if current_user.contact.pk != given_contact_pk:
+                # Don't allow users to modify other users profiles
+                return False
+
+            # Check if the object at the id we're searching on actually exists
+            requested_user_exists = User.objects.filter(pk=current_user.pk).exists()
+            requested_contact_exists = Contact.objects.filter(user=current_user.pk, pk=given_contact_pk).exists()
+
+            if not requested_user_exists or not requested_contact_exists:
+                return False
 
         return True

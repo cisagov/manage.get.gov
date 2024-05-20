@@ -879,10 +879,10 @@ function hideDeletedForms() {
     }
 
     if (inputField) {
-      // Remove the "full_name" field
+      // Hide the "full_name" field
       inputFieldParentDiv = inputField.closest("div");
       if (inputFieldParentDiv) {
-        inputFieldParentDiv.remove();
+        inputFieldParentDiv.classList.add("display-none");
       }
     }
   }
@@ -926,29 +926,24 @@ function hideDeletedForms() {
         if (fieldIdParts && fieldIdParts.length > 0){
           let fieldName = fieldIdParts[0]
 
+          // Check if an error message exists for the given field
           let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
           if (errorMessage) {
-            let nameFields = ["first_name", "middle_name", "last_name"]
-
+            
+            // Show the input field of the field that errored out 
             button.click()
 
             // If either the full_name field errors out,
-            // or if any of its associated fields do - show all name related fields. 
-            // Otherwise, just show the problematic field.
+            // or if any of its associated fields do - show all name related fields.
+            let nameFields = ["first_name", "middle_name", "last_name"] 
             if (nameFields.includes(fieldName) && !fullNameButtonClicked){
+              // Click the full name button if any of its related fields error out
               fullNameButton = document.querySelector("#full_name__edit-button")
               if (fullNameButton) {
                 fullNameButton.click()
                 fullNameButtonClicked = true
               }
-              
-              let readonlyId = getReadonlyFieldId("full_name");
-              let readonlyField = document.querySelector(readonlyId);
-              if (readonlyField) {
-                readonlyField.classList.toggle("overlapped-full-name-field");
-              }
             }
-
           }
         }
       });  

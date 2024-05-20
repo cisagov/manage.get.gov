@@ -85,7 +85,6 @@ def login_callback(request):
     """Analyze the token returned by the authentication provider (OP)."""
     global CLIENT
     try:
-        request.session["is_new_user"] = False
         # If the CLIENT is none, attempt to reinitialize before handling the request
         if _client_is_none():
             logger.debug("OIDC client is None, attempting to initialize")
@@ -135,7 +134,7 @@ def login_callback(request):
 
 def _set_authenticated_user_metadata(user, is_new_user):
     """Does checks on the recieved authenticated user from login_callback,
-    and updates fields accordingly. U"""
+    and updates fields accordingly."""
     should_update_user = False
     # Fixture users kind of exist in a superposition of verification types,
     # because while the system "verified" them, if they login,
