@@ -170,10 +170,7 @@ class FinishProfileSetupView(UserProfileView):
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        """Form submission posts to this view.
-
-        This post method harmonizes using BaseContactView and FormMixin
-        """
+        """Form submission posts to this view."""
         self._refresh_session_and_object(request)
         form = self.form_class(request.POST, instance=self.object)
 
