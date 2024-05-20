@@ -11,7 +11,7 @@
 <div class="grid-container">
     <div class="grid-row grid-gap">
         <div class="tablet:grid-col">
-            <main id="main-content-finish-profile" class="grid-container">
+            <main id="main-content" class="grid-container">
 
                 {% comment %}
                 Form success messages.
@@ -56,7 +56,7 @@
                 </p>
                 {# We use a var called 'remove_margin_top' rather than 'add_margin_top' because most fields use this #}
                 {% include "includes/required_fields.html" with remove_margin_top=True %}
-                <form id="step__{{steps.current}}" class="usa-form usa-form--largest" method="post" novalidate>
+                <form id="finish-profile-setup-form" class="usa-form usa-form--largest" method="post" novalidate>
                     {% csrf_token %}
                     <fieldset class="usa-fieldset">
                         <legend class="usa-sr-only">
