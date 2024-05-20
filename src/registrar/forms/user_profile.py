@@ -55,6 +55,5 @@ class UserProfileForm(forms.ModelForm):
             "required": "Enter your email address in the required format, like name@example.com."
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
-        self.domainInfo = None
 
         DomainHelper.disable_field(self.fields["email"], disable_required=True)
