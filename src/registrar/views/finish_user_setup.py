@@ -132,26 +132,18 @@ class FinishUserSetupView(ContactFormBaseView):
         """
 
         # Update redirect type based on the query parameter if present
-        redirect_type = request.GET.get("redirect", None)
+        redirect_type = request.GET.get("redirect",  self.RedirectType.BACK_TO_SELF)
 
-        # We set this here rather than in .get so we don't override
-        # existing data if no queryparam is present.
-        is_default = redirect_type is None
-        if is_default:
-            # Set to the default
-            redirect_type = self.RedirectType.BACK_TO_SELF
-            self.redirect_type = redirect_type
+        all_redirect_types = [r.value for r in self.RedirectType]
+        if redirect_type in all_redirect_types:
+            self.redirect_type = self.RedirectType(redirect_type)
         else:
-            all_redirect_types = [r.value for r in self.RedirectType]
-            if redirect_type in all_redirect_types:
-                self.redirect_type = self.RedirectType(redirect_type)
-            else:
-                # If the redirect type is undefined, then we assume that
-                # we are specifying a particular page to redirect to.
-                self.redirect_type = self.RedirectType.TO_SPECIFIC_PAGE
+            # If the redirect type is undefined, then we assume that
+            # we are specifying a particular page to redirect to.
+            self.redirect_type = self.RedirectType.TO_SPECIFIC_PAGE
 
-                # Store the page that we want to redirect to for later use
-                request.session["redirect_viewname"] = str(redirect_type)
+            # Store the page that we want to redirect to for later use
+            request.session["redirect_viewname"] = str(redirect_type)
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -168,6 +160,12 @@ class FinishUserSetupView(ContactFormBaseView):
 
         # Get the current form and validate it
         if form.is_valid():
+
+            completed_states = [self.RedirectType.TO_SPECIFIC_PAGE, self.RedirectType.HOME]
+            if self.redirect_type in completed_states:
+                self.request.user.finished_setup = True
+                self.request.user.save()
+            
             if "contact_setup_save_button" in request.POST:
                 # Logic for when the 'Save' button is clicked
                 self.redirect_type = self.RedirectType.COMPLETE_SETUP
