@@ -101,13 +101,6 @@ urlpatterns = [
     ),
     path("admin/", admin.site.urls),
     path(
-        # We embed the current user ID here, but we have a permission check
-        # that ensures the user is who they say they are.
-        "finish-profile-setup/<int:pk>",
-        views.FinishProfileSetupView.as_view(),
-        name="finish-user-profile-setup",
-    ),
-    path(
         "domain-request/<id>/edit/",
         views.DomainRequestWizard.as_view(),
         name=views.DomainRequestWizard.EDIT_URL_NAME,
@@ -184,6 +177,13 @@ urlpatterns = [
         "domain/<int:pk>/users/add",
         views.DomainAddUserView.as_view(),
         name="domain-users-add",
+    ),
+    path(
+        # We embed the current user ID here, but we have a permission check
+        # that ensures the user is who they say they are.
+        "finish-profile-setup/<int:pk>",
+        views.FinishProfileSetupView.as_view(),
+        name="finish-user-profile-setup",
     ),
     path(
         "user-profile",
