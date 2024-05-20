@@ -154,7 +154,7 @@ class FinishProfileSetupView(UserProfileView):
         """
 
         # Update redirect type based on the query parameter if present
-        redirect_type = request.GET.get("redirect", str(self.RedirectType.BACK_TO_SELF))
+        redirect_type = request.GET.get("redirect", self.RedirectType.BACK_TO_SELF.value)
 
         all_redirect_types = [r.value for r in self.RedirectType]
         if redirect_type in all_redirect_types:
