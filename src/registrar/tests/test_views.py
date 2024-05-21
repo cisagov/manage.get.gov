@@ -523,6 +523,10 @@ class HomeTests(TestWithUser):
 class FinishUserProfileTests(TestWithUser, WebTest):
     """A series of tests that target the finish setup page for user profile"""
 
+    # csrf checks do not work well with WebTest.
+    # We disable them here.
+    csrf_checks = False
+
     def setUp(self):
         super().setUp()
         self.user.title = None
@@ -556,7 +560,8 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         """Tests that a new user is redirected to the profile setup page when profile_feature is on"""
         self.app.set_user(self.incomplete_user.username)
         with override_flag("profile_feature", active=True):
-            # This will redirect the user to the setup page
+            # This will redirect the user to the setup page.
+            # Follow implicity checks if our redirect is working.
             finish_setup_page = self.app.get(reverse("home")).follow()
             self._set_session_cookie()
 
@@ -578,10 +583,14 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             finish_setup_form["phone"] = "(201) 555-0123"
             finish_setup_form["title"] = "CEO"
             finish_setup_form["last_name"] = "example"
-            completed_setup_page = self._submit_form_webtest(finish_setup_page.form, follow=True)
+            save_page = self._submit_form_webtest(finish_setup_form, follow=True)
 
-            self.assertEqual(completed_setup_page.status_code, 200)
-            # Assert that we're on the home page
+            self.assertEqual(save_page.status_code, 200)
+            self.assertContains(save_page, "Your profile has been updated.")
+
+            # Try to navigate back to the home page.
+            # This is the same as clicking the back button.
+            completed_setup_page = self.app.get(reverse("home"))
             self.assertContains(completed_setup_page, "Manage your domain")
 
     @less_console_noise_decorator

@@ -272,6 +272,7 @@ class CreateOrUpdateOrganizationTypeHelper:
 def replace_url_queryparams(url_to_modify: str, query_params: dict[Any, list]):
     """
     Replaces the query parameters of a given URL.
+    Because this replaces them, this can be used to either add, delete, or modify.
 
     Args:
         url_to_modify (str): The URL whose query parameters need to be modified.

@@ -179,8 +179,6 @@ urlpatterns = [
         name="domain-users-add",
     ),
     path(
-        # We embed the current user ID here, but we have a permission check
-        # that ensures the user is who they say they are.
         "finish-profile-setup",
         views.FinishProfileSetupView.as_view(),
         name="finish-user-profile-setup",

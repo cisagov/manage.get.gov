@@ -31,7 +31,6 @@
 }
 
 .usa-form-readonly {
-  // todo update
   border-top: 2px #{$dhs-dark-gray-15} solid;
 
   .bold-usa-label label.usa-label{
@@ -53,6 +52,12 @@
   margin-top: unset;
 }
 
+@media (min-width: 35em) {
+  .usa-form--largest {
+      max-width: 35rem;
+  }
+}
+
 .usa-form-group--unstyled-error {
   margin-left: 0;
   padding-left: 0;
@@ -65,13 +70,6 @@ legend.float-left-tablet + button.float-right-tablet {
     margin-top: 1rem;
   }
 }
-
-@media (min-width: 35em) {
-  .usa-form--largest {
-      max-width: 35rem;
-  }
-}
-
 
 // Custom style for disabled inputs
 @media (prefers-color-scheme: light) {
