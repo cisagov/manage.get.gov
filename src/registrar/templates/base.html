@@ -155,7 +155,8 @@
           {% if has_profile_feature_flag %}
           <li class="usa-nav__primary-item">
             {% url 'user-profile' as user_profile_url %}
-            <a class="usa-nav-link {% if request.path == user_profile_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+            {% url 'finish-user-profile-setup' pk=request.user.contact.pk as finish_setup_url %}
+            <a class="usa-nav-link {% if request.path == user_profile_url or request.path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
                 <span class="text-primary">Your profile</span>
             </a>
           </li>
