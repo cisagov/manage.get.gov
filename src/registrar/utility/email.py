@@ -55,8 +55,13 @@ def send_templated_email(
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
 
-    html_example = "<div><b>HTML email template example</b></div> \
-    Questions? Visit our site <a href="https://get.gov/">get.gov.</a>"
+    html_example = "<div><h1>HEADER HERE</h1>\
+    <b>HTML email template example</b>\
+    <i> HEY ITALICS ARE COOL </i>\
+    <u> HEY UNDERLINE IS COOL </u></div> \
+    Questions? Visit our site <a href=\"https://get.gov/\">get.gov</a>\
+    <img src='https://ci3.googleusercontent.com/meips/ADKq_NaW-3ZANW--C3R5j3HuzMA3O_oqqpT10PFVSEz0F_sd6u8E4IW2I_XdFfL5CgO26LiGCA1GKnQbc5QzJuxgMQrBcztHq4H4LmId1d_REJQL8g=s0-d-e1-ft#https://a.slack-edge.com/80588/img/slack_logo_240_vogue.png'>"
+
 
     try:
         if attachment_file is None:
@@ -67,7 +72,7 @@ def send_templated_email(
                     "Simple": {
                         "Subject": {"Data": subject},
                         "Body": {
-                            "Html": {"Data": html_example}
+                            "Html": {"Data": html_example},
                             "Text": {"Data": email_body}
                         },
                     },
