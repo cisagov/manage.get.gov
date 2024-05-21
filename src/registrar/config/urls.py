@@ -21,6 +21,7 @@ from registrar.views.admin_views import (
 )
 
 from registrar.views.domain_request import Step
+from registrar.views.domains_json import get_domains_json
 from registrar.views.utility import always_404
 from api.views import available, get_current_federal, get_current_full
 
@@ -193,6 +194,7 @@ urlpatterns = [
         views.DomainDeleteUserView.as_view(http_method_names=["post"]),
         name="domain-user-delete",
     ),
+    path('get-domains-json/', get_domains_json, name='get_domains_json'),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

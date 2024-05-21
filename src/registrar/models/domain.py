@@ -1024,6 +1024,15 @@ class Domain(TimeStampedModel, DomainHelper):
         verbose_name="domain state",
     )
 
+    @property
+    def status_text(self):
+        if self.is_expired and self.state != Domain.State.UNKNOWN:
+            return "Expired"
+        elif self.state == Domain.State.UNKNOWN or self.state == Domain.State.DNS_NEEDED:
+            return "DNS needed"
+        else:
+            return self.get_state_display()  # Assuming get_state_display returns the capitalized state name
+
     expiration_date = DateField(
         null=True,
         help_text=("Date the domain expires in the registry"),

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-
+from django.core.paginator import Paginator
 from registrar.models import DomainRequest, Domain, UserDomainRole
 from waffle.decorators import flag_is_active
 
@@ -7,6 +7,18 @@ from waffle.decorators import flag_is_active
 def index(request):
     """This page is available to anyone without logging in."""
     context = {}
+
+
+    paginator = _get_domains(request)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+    }
+
+
+    
     if request.user.is_authenticated:
         # Get all domain requests the user has access to
         domain_requests, deletable_domain_requests = _get_domain_requests(request)
@@ -14,8 +26,8 @@ def index(request):
         context["domain_requests"] = domain_requests
 
         # Get all domains the user has access to
-        domains = _get_domains(request)
-        context["domains"] = domains
+        # domains = _get_domains(request)
+        # context["domains"] = domains
 
         # Determine if the user will see domain requests that they can delete
         has_deletable_domain_requests = deletable_domain_requests.exists()
@@ -62,4 +74,9 @@ def _get_domains(request):
     get all domains that are associated with the UserDomainRole object"""
     user_domain_roles = UserDomainRole.objects.filter(user=request.user)
     domain_ids = user_domain_roles.values_list("domain_id", flat=True)
-    return Domain.objects.filter(id__in=domain_ids)
+
+    objects = Domain.objects.filter(id__in=domain_ids).order_by('id')
+    p = Paginator(objects, 2)
+    print(p.count)
+    print(p.num_pages)
+    return p
