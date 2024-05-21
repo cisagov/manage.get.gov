@@ -56,14 +56,14 @@ class TestWithUser(MockEppLib):
         last_name = "Last"
         email = "info@example.com"
         self.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email, finished_setup=True
+            username=username, first_name=first_name, last_name=last_name, email=email
         )
 
         username_incomplete = "test_user_incomplete"
         first_name_2 = "Incomplete"
         email_2 = "unicorn@igorville.com"
         self.incomplete_user = get_user_model().objects.create(
-            username=username_incomplete, first_name=first_name_2, email=email_2, finished_setup=False
+            username=username_incomplete, first_name=first_name_2, email=email_2
         )
 
     def tearDown(self):
@@ -526,7 +526,6 @@ class FinishUserProfileTests(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
         self.user.title = None
-        self.user.finished_setup = False
         self.user.save()
         self.client.force_login(self.user)
         self.domain, _ = Domain.objects.get_or_create(name="sampledomain.gov", state=Domain.State.READY)

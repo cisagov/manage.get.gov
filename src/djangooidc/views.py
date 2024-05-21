@@ -98,11 +98,10 @@ def login_callback(request):
             request.session["acr_value"] = CLIENT.get_step_up_acr_value()
             return CLIENT.create_authn_request(request.session)
         user = authenticate(request=request, **userinfo)
-        is_new_user = request.session.get("is_new_user", False)
         if user:
             # Set login metadata about this user
             # (verification_type for instance)
-            _set_authenticated_user_metadata(user, is_new_user)
+            _set_authenticated_user_metadata(user)
 
             login(request, user)
 
@@ -132,7 +131,7 @@ def login_callback(request):
         return error_page(request, err)
 
 
-def _set_authenticated_user_metadata(user, is_new_user):
+def _set_authenticated_user_metadata(user):
     """Does checks on the recieved authenticated user from login_callback,
     and updates fields accordingly."""
     should_update_user = False
@@ -146,10 +145,6 @@ def _set_authenticated_user_metadata(user, is_new_user):
     # Set the verification type if it doesn't already exist or if its a fixture user
     if not user.verification_type or is_fixture_user:
         user.set_user_verification_type()
-        should_update_user = True
-
-    if is_new_user:
-        user.finished_setup = False
         should_update_user = True
 
     if should_update_user:

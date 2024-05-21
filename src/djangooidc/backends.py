@@ -50,9 +50,6 @@ class OpenIdConnectBackend(ModelBackend):
 
             user, created = UserModel.objects.get_or_create(**args)
 
-            if created and request is not None:
-                request.session["is_new_user"] = True
-
             if not created:
                 # If user exists, update existing user
                 self.update_existing_user(user, args["defaults"])
@@ -63,8 +60,6 @@ class OpenIdConnectBackend(ModelBackend):
             try:
                 user = UserModel.objects.get_by_natural_key(username)
             except UserModel.DoesNotExist:
-                if request is not None:
-                    request.session["is_new_user"] = True
                 return None
         # run this callback for a each login
         user.on_each_login()

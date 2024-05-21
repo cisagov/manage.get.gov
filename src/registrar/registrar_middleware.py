@@ -26,7 +26,9 @@ class CheckUserProfileMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-
+        """Runs pre-processing logic for each view. Checks for the 
+        finished_setup flag on the current user. If they haven't done so,
+        then we redirect them to the finish setup page."""
         # Check that the user is "opted-in" to the profile feature flag
         has_profile_feature_flag = flag_is_active(request, "profile_feature")
 
@@ -34,26 +36,24 @@ class CheckUserProfileMiddleware:
         if not has_profile_feature_flag:
             return None
 
-        # Check if setup is not finished
-        finished_setup = hasattr(request.user, "finished_setup") and request.user.finished_setup
-        if hasattr(request.user, "finished_setup"):
-            user_values = [
-                request.user.contact.first_name,
-                request.user.contact.last_name,
-                request.user.contact.title,
-                request.user.contact.phone,
-            ]
-            if None in user_values:
-                finished_setup = False
-
-        if request.user.is_authenticated and not finished_setup:
-            return self._handle_setup_not_finished(request)
+        if request.user.is_authenticated:
+            if hasattr(request.user, "finished_setup") and not request.user.finished_setup:
+                return self._handle_setup_not_finished(request)
 
         # Continue processing the view
         return None
 
     def _handle_setup_not_finished(self, request):
-        setup_page = reverse("finish-user-profile-setup", kwargs={"pk": request.user.contact.pk})
+        """Redirects the given user to the finish setup page.
+
+        We set the "redirect" query param equal to where the user wants to go.
+
+        If the user wants to go to '/request/', then we set that
+        information in the query param.
+
+        Otherwise, we assume they want to go to the home page.
+        """
+        setup_page = reverse("finish-user-profile-setup")
         logout_page = reverse("logout")
         excluded_pages = [
             setup_page,
@@ -66,13 +66,15 @@ class CheckUserProfileMiddleware:
 
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in excluded_pages):
+
             # Preserve the original query parameters, and coerce them into a dict
             query_params = parse_qs(request.META["QUERY_STRING"])
 
+            # Set the redirect value to our redirect location
             if custom_redirect is not None:
-                # Set the redirect value to our redirect location
                 query_params["redirect"] = custom_redirect
 
+            # Add our new query param, while preserving old ones
             if query_params:
                 setup_page = replace_url_queryparams(setup_page, query_params)
 

@@ -178,12 +178,6 @@ class FinishProfileSetupView(UserProfileView):
 
         # Get the current form and validate it
         if form.is_valid():
-
-            completed_states = [self.RedirectType.TO_SPECIFIC_PAGE, self.RedirectType.HOME]
-            if self.redirect_type in completed_states:
-                self.request.user.finished_setup = True
-                self.request.user.save()
-
             if "contact_setup_save_button" in request.POST:
                 # Logic for when the 'Save' button is clicked
                 self.redirect_type = self.RedirectType.COMPLETE_SETUP
@@ -196,16 +190,6 @@ class FinishProfileSetupView(UserProfileView):
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
-
-    def form_valid(self, form):
-        """Saves the current contact to the database, and if the user is complete
-        with their setup, then we mark user.finished_setup to True."""
-        completed_states = [self.RedirectType.TO_SPECIFIC_PAGE, self.RedirectType.HOME]
-        if self.redirect_type in completed_states:
-            self.request.user.finished_setup = True
-            self.request.user.save()
-
-        return super().form_valid(form)
 
     def get_success_url(self):
         """Redirect to the nameservers page for the domain."""

@@ -592,7 +592,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ("username", "password", "status", "finished_setup", "verification_type")},
+            {"fields": ("username", "password", "status", "verification_type")},
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
@@ -610,7 +610,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
-    readonly_fields = ("verification_type", "finished_setup")
+    readonly_fields = ("verification_type",)
 
     # Hide Username (uuid), Groups and Permissions
     # Q: Now that we're using Groups and Permissions,
