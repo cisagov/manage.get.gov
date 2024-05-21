@@ -866,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
                           ${expirationDate ? expirationDate.toLocaleDateString() : ''}
                       </td>
                       <td data-label="Status">
-                          ${domain.status_text}
+                          ${domain.state_display}
                           <svg 
                               class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
                               data-position="top"

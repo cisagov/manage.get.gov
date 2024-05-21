@@ -1024,14 +1024,6 @@ class Domain(TimeStampedModel, DomainHelper):
         verbose_name="domain state",
     )
 
-    @property
-    def status_text(self):
-        if self.is_expired and self.state != Domain.State.UNKNOWN:
-            return "Expired"
-        elif self.state == Domain.State.UNKNOWN or self.state == Domain.State.DNS_NEEDED:
-            return "DNS needed"
-        else:
-            return self.get_state_display()  # Assuming get_state_display returns the capitalized state name
 
     expiration_date = DateField(
         null=True,
@@ -1070,6 +1062,15 @@ class Domain(TimeStampedModel, DomainHelper):
             return True
         now = timezone.now().date()
         return self.expiration_date < now
+
+    def state_display(self):
+        """Return the display status of the domain."""
+        if self.is_expired() and self.state != self.State.UNKNOWN:
+            return 'Expired'
+        elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
+            return 'DNS needed'
+        else:
+            return self.state.capitalize()
 
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.
