@@ -393,6 +393,32 @@ class ViewsTest(TestCase):
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, "/")
 
+    def test_login_callback_requires_step_up_auth(self, mock_client):
+        """Invoke login_callback passing it a request when _requires_step_up_auth returns True
+        and assert that session is updated and create_authn_request (mock) is called."""
+        with less_console_noise():
+            # Create a mock request
+            request = self.factory.get("/some-url")
+            request.session = {"acr_value": ""}
+
+            # Ensure that the CLIENT instance used in login_callback is the mock
+            # patch _requires_step_up_auth to return True
+            with patch("djangooidc.views._requires_biometric_auth", return_value=True), patch(
+                "djangooidc.views.CLIENT.create_authn_request"
+            ) as mock_create_authn_request:
+                # TEST
+                # test the login callback
+                login_callback(request)
+
+            # ASSERTIONS
+            # create_authn_request only gets called when _requires_biometric_auth is True.
+            # The acr_value should be blank here
+            self.assertEqual(request.session["acr_value"], "")
+            self.assertEqual(request.session["needs_biometric_validation"], True)
+
+            # And create_authn_request was called again
+            mock_create_authn_request.assert_called_once()
+
     def test_login_callback_does_not_requires_biometric_auth(self, mock_client):
         """Invoke login_callback passing it a request when _requires_biometric_auth returns False
         and assert that session is not updated and create_authn_request (mock) is not called.
