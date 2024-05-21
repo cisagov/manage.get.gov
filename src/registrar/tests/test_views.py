@@ -546,11 +546,10 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
     
-    def _submit_form_webtest(self, form):
+    def _submit_form_webtest(self, form, follow=False):
         page = form.submit()
         self._set_session_cookie()
-
-        return page
+        return page.follow() if follow else page
 
     @less_console_noise_decorator
     def test_new_user_with_profile_feature_on(self):
@@ -558,59 +557,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.app.set_user(self.incomplete_user.username)
         with override_flag("profile_feature", active=True):
             # This will redirect the user to the setup page
-            finish_setup_page = self.app.get(reverse("home"))
-
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            finish_setup_page = finish_setup_page.follow()
-
-            # Assert that we're on the right page
-            self.assertEqual(finish_setup_page.status_code, 200)
-            self.assertContains(finish_setup_page, "Finish setting up your profile")
-
-            finish_setup_form = finish_setup_page.form
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            finish_setup_page = finish_setup_form.submit()
-            submitted_setup_page = finish_setup_page
-
-            self.assertEqual(submitted_setup_page.status_code, 200)
-
-            # We're missing a phone number, so the page should tell us that
-            self.assertContains(submitted_setup_page, "Enter your phone number.")
-
-            # Check for the name of the save button
-            self.assertContains(submitted_setup_page, "contact_setup_save_button")
-
-            # Add a phone number
-            finish_setup_form["phone"] = "(201) 555-0123"
-            finish_setup_form["title"] = "CEO"
-            finish_setup_form["last_name"] = "example"
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            complete_setup_page = finish_setup_form.submit(name="contact_setup_save_button")
-            complete_setup_page = complete_setup_page.follow()
-            self.assertEqual(complete_setup_page.status_code, 200)
-            # self.assertContains(complete_setup_page, "Your profile has been updated.")
-
-            self.assertContains(complete_setup_page, "contact_setup_submit_button")
-
-            # Click the save and continue button
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            complete_setup_page = finish_setup_form.submit(name="contact_setup_submit_button")
-            complete_setup_page = complete_setup_page.follow()
-            print(complete_setup_page)
-            self.assertEqual(complete_setup_page.status_code, 200)
-            # self.assertContains(complete_setup_page, "Your profile has been updated.")
-            self.assertContains(complete_setup_page, "Manage your domains")
-    
-    @less_console_noise_decorator
-    def test_new_user_goes_to_domain_request_with_profile_feature_on(self):
-        """Tests that a new user is redirected to the domain request page when profile_feature is on"""
-
-        self.app.set_user(self.incomplete_user.username)
-        with override_flag("profile_feature", active=True):
-            # This will redirect the user to the setup page
-            finish_setup_page = self.app.get(reverse("domain-request:")).follow()
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            finish_setup_page = self.app.get(reverse("home")).follow()
             self._set_session_cookie()
 
             # Assert that we're on the right page
@@ -631,7 +578,41 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             finish_setup_form["phone"] = "(201) 555-0123"
             finish_setup_form["title"] = "CEO"
             finish_setup_form["last_name"] = "example"
-            completed_setup_page = self._submit_form_webtest(finish_setup_page.form)
+            completed_setup_page = self._submit_form_webtest(finish_setup_page.form, follow=True)
+
+            self.assertEqual(completed_setup_page.status_code, 200)
+            # Assert that we're on the home page
+            self.assertContains(completed_setup_page, "Manage your domain")
+    
+    @less_console_noise_decorator
+    def test_new_user_goes_to_domain_request_with_profile_feature_on(self):
+        """Tests that a new user is redirected to the domain request page when profile_feature is on"""
+
+        self.app.set_user(self.incomplete_user.username)
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the setup page
+            finish_setup_page = self.app.get(reverse("domain-request:")).follow()
+            self._set_session_cookie()
+
+            # Assert that we're on the right page
+            self.assertContains(finish_setup_page, "Finish setting up your profile")
+
+            finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
+
+            self.assertEqual(finish_setup_page.status_code, 200)
+
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(finish_setup_page, "Enter your phone number.")
+
+            # Check for the name of the save button
+            self.assertContains(finish_setup_page, "contact_setup_save_button")
+
+            # Add a phone number
+            finish_setup_form = finish_setup_page.form
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            completed_setup_page = self._submit_form_webtest(finish_setup_page.form, follow=True)
 
             self.assertEqual(completed_setup_page.status_code, 200)
             # Assert that we're on the domain request page
