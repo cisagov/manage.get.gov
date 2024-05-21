@@ -137,8 +137,8 @@ class Client(oic.Client):
     def _set_args_for_biometric_auth_request(self, session, request_args):
         if "acr_value" in session:
             session.pop("acr_value")
-        request_args["vtr"] = self.get_vtr_value()
-        request_args["vtm"] = self.get_vtm_value()
+        request_args["vtr"] = session.get("vtr")
+        request_args["vtm"] = session.get("vtm")
 
     def _prepare_authn_request(self, request_args, state):
         """
@@ -246,12 +246,6 @@ class Client(oic.Client):
             logger.error("Unable to get user info (%s) for %s" % (info_response.get("error", ""), state))
             raise o_e.AuthenticationFailed(locator=state)
         info_response_dict = info_response.to_dict()
-
-        # Define vtm/vtr information on the user dictionary so we can track this in one location.
-        # If a user has this information, then they are bumped up in terms of verification level.
-        if session.get("needs_biometric_validation") is True:
-            info_response_dict["vtm"] = session.get("vtm", "")
-            info_response_dict["vtr"] = session.get("vtr", "")
 
         logger.debug("user info: %s" % info_response_dict)
         return info_response_dict

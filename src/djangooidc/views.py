@@ -97,11 +97,12 @@ def login_callback(request):
 
         # Tests for the presence of the vtm/vtr values in the userinfo object.
         # If they are there, then we can set a flag in our session for tracking purposes.
-        needs_biometric_validation = _requires_step_up_auth(userinfo)
-        request.session["needs_biometric_validation"] = needs_biometric_validation
+        needs_step_up_auth = _requires_step_up_auth(userinfo)
 
         # Return a redirect request to a new auth url that does biometric validation
-        if needs_biometric_validation:
+        if needs_step_up_auth:
+            request.session["vtm"] = CLIENT.get_vtm_value()
+            request.session["vtr"] = CLIENT.get_vtr_value()
             return CLIENT.create_authn_request(request.session, do_step_up_auth=True)
 
         user = authenticate(request=request, **userinfo)

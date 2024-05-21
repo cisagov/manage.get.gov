@@ -406,15 +406,21 @@ class ViewsTest(TestCase):
             with patch("djangooidc.views._requires_step_up_auth", return_value=True), patch(
                 "djangooidc.views.CLIENT.create_authn_request"
             ) as mock_create_authn_request:
-                # TEST
-                # test the login callback
-                login_callback(request)
+                with patch("djangooidc.views.CLIENT.get_vtm_value") as mock_get_vtm_value, patch(
+                    "djangooidc.views.CLIENT.get_vtr_value"
+                ) as mock_get_vtr_value:
+                    mock_get_vtm_value.return_value = "test_vtm"
+                    mock_get_vtr_value.return_value = "test_vtr"
+                    # TEST
+                    # test the login callback
+                    login_callback(request)
 
             # ASSERTIONS
             # create_authn_request only gets called when _requires_step_up_auth is True.
             # The acr_value should be blank here
             self.assertEqual(request.session["acr_value"], "")
-            self.assertEqual(request.session["needs_biometric_validation"], True)
+            self.assertEqual(request.session["vtm"], "test_vtm")
+            self.assertEqual(request.session["vtr"], "test_vtr")
 
             # And create_authn_request was called again
             mock_create_authn_request.assert_called_once()
