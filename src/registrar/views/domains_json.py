@@ -16,7 +16,7 @@ def get_domains_json(request):
 
     # Handle sorting
     sort_by = request.GET.get('sort_by', 'id')  # Default to 'id'
-    order = request.GET.get('order', 'asc')  # Default to 'asc'
+    order = request.GET.get('order', 'desc')  # Default to 'asc'
 
     if sort_by == 'state_display':
         # Fetch the objects and sort them in Python
@@ -27,7 +27,7 @@ def get_domains_json(request):
             sort_by = f'-{sort_by}'
         objects = objects.order_by(sort_by)
 
-    paginator = Paginator(objects, 2)
+    paginator = Paginator(objects, 1)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
