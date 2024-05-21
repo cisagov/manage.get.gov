@@ -657,7 +657,7 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
             if self.form_data_marked_for_deletion:
                 # remove the CISA contact from this domain request
                 obj.cisa_representative = None
-                #QUESTION - should we also delete the contact object if it is not joined to other entities?
+                # QUESTION - should we also delete the contact object if it is not joined to other entities?
             else:
                 # update existing contact if it is not joined to other enttities
                 super().to_database(contact)

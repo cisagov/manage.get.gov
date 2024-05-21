@@ -806,7 +806,7 @@ def create_ready_domain():
 
 
 # TODO in 1793: Remove the federal agency/updated federal agency fields
-def completed_domain_request(
+def completed_domain_request(  # noqa
     has_other_contacts=True,
     has_current_website=True,
     has_alternative_gov_domain=True,
