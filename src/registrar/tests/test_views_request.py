@@ -470,6 +470,376 @@ class DomainRequestTests(TestWithUser, WebTest):
         # check that any new pages are added to this test
         self.assertEqual(num_pages, num_pages_tested)
 
+    @boto3_mocking.patching
+    def test_domain_request_form_submission_incomplete(self):
+        """
+        Can fill out the entire form and submit.
+        As we add additional form pages, we need to include them here to make
+        this test work.
+
+        This test also looks for the long organization name on the summary page.
+
+        This also tests for the presence of a modal trigger and the dynamic test
+        in the modal header on the submit page.
+        """
+        num_pages_tested = 0
+        # elections, type_of_work, tribal (on purpose)
+        SKIPPED_PAGES = 2
+        num_pages = len(self.TITLES) - SKIPPED_PAGES
+
+        intro_page = self.app.get(reverse("domain-request:"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- TYPE PAGE  ----
+        type_form = type_page.forms[0]
+        type_form["generic_org_type-generic_org_type"] = "tribal"
+        # test next button and validate data
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_form.submit()
+        # should see results in db
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.generic_org_type, "tribal")
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(type_result.status_code, 302)
+        self.assertEqual(type_result["Location"], "/request/tribal_government/")
+        num_pages_tested += 1
+
+        # -- TRIBAL PAGE -- 
+        # We want to skip the tribal page right?? but how do we not fill it out.............
+        type_form = type_page.forms[0]
+        type_form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.TRIBAL
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_form.submit()
+        # the tribal government page comes immediately afterwards
+        self.assertIn("/tribal_government", type_result.headers["Location"])
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        tribal_government_page = type_result.follow()
+
+        # and the step is on the sidebar list.
+        self.assertContains(tribal_government_page, self.TITLES[Step.TRIBAL_GOVERNMENT])
+
+
+        # ---- ORG CONTACT PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        org_contact_page = type_result.follow()
+        org_contact_form = org_contact_page.forms[0]
+        # federal agency so we have to fill in federal_agency
+        # federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
+        # org_contact_form["organization_contact-federal_agency"] = federal_agency.id
+        org_contact_form["organization_contact-organization_name"] = "Testorg"
+        org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-address_line2"] = "address 2"
+        org_contact_form["organization_contact-city"] = "NYC"
+        org_contact_form["organization_contact-state_territory"] = "NY"
+        org_contact_form["organization_contact-zipcode"] = "10002"
+        org_contact_form["organization_contact-urbanization"] = "URB Royal Oaks"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        org_contact_result = org_contact_form.submit()
+        # validate that data from this step are being saved
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.organization_name, "Testorg")
+        self.assertEqual(domain_request.address_line1, "address 1")
+        self.assertEqual(domain_request.address_line2, "address 2")
+        self.assertEqual(domain_request.city, "NYC")
+        self.assertEqual(domain_request.state_territory, "NY")
+        self.assertEqual(domain_request.zipcode, "10002")
+        self.assertEqual(domain_request.urbanization, "URB Royal Oaks")
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(org_contact_result.status_code, 302)
+        self.assertEqual(org_contact_result["Location"], "/request/authorizing_official/")
+        num_pages_tested += 1
+
+        # ---- AUTHORIZING OFFICIAL PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_page = org_contact_result.follow()
+        ao_form = ao_page.forms[0]
+        ao_form["authorizing_official-first_name"] = "Testy ATO"
+        ao_form["authorizing_official-last_name"] = "Tester ATO"
+        ao_form["authorizing_official-title"] = "Chief Tester"
+        ao_form["authorizing_official-email"] = "testy@town.com"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_result = ao_form.submit()
+        # validate that data from this step are being saved
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.authorizing_official.first_name, "Testy ATO")
+        self.assertEqual(domain_request.authorizing_official.last_name, "Tester ATO")
+        self.assertEqual(domain_request.authorizing_official.title, "Chief Tester")
+        self.assertEqual(domain_request.authorizing_official.email, "testy@town.com")
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(ao_result.status_code, 302)
+        self.assertEqual(ao_result["Location"], "/request/current_sites/")
+        num_pages_tested += 1
+
+        # ---- CURRENT SITES PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_page = ao_result.follow()
+        current_sites_form = current_sites_page.forms[0]
+        current_sites_form["current_sites-0-website"] = "www.city.com"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_result = current_sites_form.submit()
+        # validate that data from this step are being saved
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(
+            domain_request.current_websites.filter(website="http://www.city.com").count(),
+            1,
+        )
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(current_sites_result.status_code, 302)
+        self.assertEqual(current_sites_result["Location"], "/request/dotgov_domain/")
+        num_pages_tested += 1
+
+        # ---- DOTGOV DOMAIN PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_page = current_sites_result.follow()
+        dotgov_form = dotgov_page.forms[0]
+        dotgov_form["dotgov_domain-requested_domain"] = "city"
+        dotgov_form["dotgov_domain-0-alternative_domain"] = "city1"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_result = dotgov_form.submit()
+        # validate that data from this step are being saved
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.requested_domain.name, "city.gov")
+        self.assertEqual(domain_request.alternative_domains.filter(website="city1.gov").count(), 1)
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(dotgov_result.status_code, 302)
+        self.assertEqual(dotgov_result["Location"], "/request/purpose/")
+        num_pages_tested += 1
+
+        # ---- PURPOSE PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        purpose_page = dotgov_result.follow()
+        purpose_form = purpose_page.forms[0]
+        purpose_form["purpose-purpose"] = "For all kinds of things."
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        purpose_result = purpose_form.submit()
+        # validate that data from this step are being saved
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.purpose, "For all kinds of things.")
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(purpose_result.status_code, 302)
+        self.assertEqual(purpose_result["Location"], "/request/your_contact/")
+        num_pages_tested += 1
+
+        # ---- YOUR CONTACT INFO PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        your_contact_page = purpose_result.follow()
+        your_contact_form = your_contact_page.forms[0]
+
+        your_contact_form["your_contact-first_name"] = "Testy you"
+        your_contact_form["your_contact-last_name"] = "Tester you"
+        your_contact_form["your_contact-title"] = "Admin Tester"
+        your_contact_form["your_contact-email"] = "testy-admin@town.com"
+        your_contact_form["your_contact-phone"] = "(201) 555 5556"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        your_contact_result = your_contact_form.submit()
+        # validate that data from this step are being saved
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.submitter.first_name, "Testy you")
+        self.assertEqual(domain_request.submitter.last_name, "Tester you")
+        self.assertEqual(domain_request.submitter.title, "Admin Tester")
+        self.assertEqual(domain_request.submitter.email, "testy-admin@town.com")
+        self.assertEqual(domain_request.submitter.phone, "(201) 555 5556")
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(your_contact_result.status_code, 302)
+        self.assertEqual(your_contact_result["Location"], "/request/other_contacts/")
+        num_pages_tested += 1
+
+        # ---- OTHER CONTACTS PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        other_contacts_page = your_contact_result.follow()
+
+        # This page has 3 forms in 1.
+        # Let's set the yes/no radios to enable the other contacts fieldsets
+        other_contacts_form = other_contacts_page.forms[0]
+
+        other_contacts_form["other_contacts-has_other_contacts"] = "True"
+
+        other_contacts_form["other_contacts-0-first_name"] = "Testy2"
+        other_contacts_form["other_contacts-0-last_name"] = "Tester2"
+        other_contacts_form["other_contacts-0-title"] = "Another Tester"
+        other_contacts_form["other_contacts-0-email"] = "testy2@town.com"
+        other_contacts_form["other_contacts-0-phone"] = "(201) 555 5557"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        other_contacts_result = other_contacts_form.submit()
+        # validate that data from this step are being saved
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(
+            domain_request.other_contacts.filter(
+                first_name="Testy2",
+                last_name="Tester2",
+                title="Another Tester",
+                email="testy2@town.com",
+                phone="(201) 555 5557",
+            ).count(),
+            1,
+        )
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(other_contacts_result.status_code, 302)
+        self.assertEqual(other_contacts_result["Location"], "/request/additional_details/")
+        num_pages_tested += 1
+
+        # ---- ADDITIONAL DETAILS PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        additional_details_page = other_contacts_result.follow()
+        additional_details_form = additional_details_page.forms[0]
+
+        # load inputs with test data
+
+        additional_details_form["additional_details-has_cisa_representative"] = "True"
+        additional_details_form["additional_details-has_anything_else_text"] = "True"
+        additional_details_form["additional_details-cisa_representative_email"] = "FakeEmail@gmail.com"
+        additional_details_form["additional_details-anything_else"] = "Nothing else."
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        additional_details_result = additional_details_form.submit()
+        # validate that data from this step are being saved
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.cisa_representative_email, "FakeEmail@gmail.com")
+        self.assertEqual(domain_request.anything_else, "Nothing else.")
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(additional_details_result.status_code, 302)
+        self.assertEqual(additional_details_result["Location"], "/request/requirements/")
+        num_pages_tested += 1
+
+        # ---- REQUIREMENTS PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_page = additional_details_result.follow()
+        requirements_form = requirements_page.forms[0]
+
+        requirements_form["requirements-is_policy_acknowledged"] = True
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_result = requirements_form.submit()
+        # validate that data from this step are being saved
+        domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.is_policy_acknowledged, True)
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(requirements_result.status_code, 302)
+        self.assertEqual(requirements_result["Location"], "/request/review/")
+        num_pages_tested += 1
+
+        # ---- REVIEW AND FINSIHED PAGES  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        review_page = requirements_result.follow()
+        review_form = review_page.forms[0]
+        print("$$$$$$$$$$$$$$$$$$$$$$", review_page)
+
+        # Review page contains all the previously entered data
+        # Let's make sure the long org name is displayed
+        self.assertContains(review_page, "Incomplete")
+        # In theory we just need to check that tribal is incomplete 
+        # I don't need to re-look at any of these underneath
+        # self.assertContains(review_page, "Executive")
+        # self.assertContains(review_page, "Testorg")
+        # self.assertContains(review_page, "address 1")
+        # self.assertContains(review_page, "address 2")
+        # self.assertContains(review_page, "NYC")
+        # self.assertContains(review_page, "NY")
+        # self.assertContains(review_page, "10002")
+        # self.assertContains(review_page, "URB Royal Oaks")
+        # self.assertContains(review_page, "Testy ATO")
+        # self.assertContains(review_page, "Tester ATO")
+        # self.assertContains(review_page, "Chief Tester")
+        # self.assertContains(review_page, "testy@town.com")
+        # self.assertContains(review_page, "city.com")
+        # self.assertContains(review_page, "city.gov")
+        # self.assertContains(review_page, "city1.gov")
+        # self.assertContains(review_page, "For all kinds of things.")
+        # self.assertContains(review_page, "Testy you")
+        # self.assertContains(review_page, "Tester you")
+        # self.assertContains(review_page, "Admin Tester")
+        # self.assertContains(review_page, "testy-admin@town.com")
+        # self.assertContains(review_page, "(201) 555-5556")
+        # self.assertContains(review_page, "Testy2")
+        # self.assertContains(review_page, "Tester2")
+        # self.assertContains(review_page, "Another Tester")
+        # self.assertContains(review_page, "testy2@town.com")
+        # self.assertContains(review_page, "(201) 555-5557")
+        # self.assertContains(review_page, "FakeEmail@gmail.com")
+        # self.assertContains(review_page, "Nothing else.")
+
+        # We can't test the modal itself as it relies on JS for init and triggering,
+        # but we can test for the existence of its trigger:
+        # self.assertContains(review_page, "toggle-submit-domain-request")
+        # And the existence of the modal's data parked and ready for the js init.
+        # The next assert also tests for the passed requested domain context from
+        # the view > domain_request_form > modal
+        self.assertContains(review_page, "You can’t submit this request")
+
+        # final submission results in a redirect to the "finished" URL
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with less_console_noise():
+            review_result = review_form.submit()
+        print("!!!!!!!!!!!!!!!!!!! review_result", review_result)
+
+        print("!!!!!!!!!!!!!!!!!!! review_result.status_code", review_result.status_code)
+        print("!!!!!!!!!!!!!!!!!!! review_results location", review_result["Location"])
+
+        self.assertEqual(review_result.status_code, 302)
+        self.assertEqual(review_result["Location"], "/request/finished/")
+
+        # self.assertEqual(review_result["Location"], "/tribal_government/")
+        num_pages_tested += 1
+
+        # following this redirect is a GET request, so include the cookie
+        # here too.
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # with less_console_noise():
+        #     final_result = review_result.follow()
+        # self.assertContains(final_result, "Thanks for your domain request!")
+
+        # check that any new pages are added to this test
+        self.assertEqual(num_pages, num_pages_tested)
+
     # This is the start of a test to check an existing domain_request, it currently
     # does not work and results in errors as noted in:
     # https://github.com/cisagov/getgov/pull/728
