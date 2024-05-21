@@ -123,6 +123,10 @@ class FinishProfileSetupView(UserProfileView):
 
         if self.redirect_type == self.RedirectType.COMPLETE_SETUP:
             context["confirm_changes"] = True
+        
+        if "redirect_viewname" in self.session:
+            context["going_to_specific_page"] = True
+            context["redirect_button_text"] = "Continue to your request"
 
         return context
 

@@ -1,4 +1,5 @@
-{% extends "base.html" %}
+{% extends "profile.html" %}
+
 {% load static form_helpers url_helpers field_helpers %}
 {% block title %} Finish setting up your profile | {% endblock %}
 
@@ -12,111 +13,35 @@
     <div class="grid-row grid-gap">
         <div class="tablet:grid-col">
             <main id="main-content" class="grid-container">
-
-                {% comment %}
-                Form success messages.
-                {% endcomment %}
+                {# messages block is under the back breadcrumb link #}
                 {% if messages %}
-                    {% for message in messages %}
-                        <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
-                            <div class="usa-alert__body">
-                            {{ message }}
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                {% comment %}
-                Repurposed from domain_request_form.html.
-                Form errors.
-                {% endcomment %}
-                {% include "includes/form_errors.html" with form=form %}
-                {% for outer in forms %}
-                    {% if outer|isformset %}
-                        {% for inner in outer.forms %}
-                            {% include "includes/form_errors.html" with form=inner %}
-                        {% endfor %}
-                    {% else %}
-                        {% include "includes/form_errors.html" with form=outer %}
-                    {% endif %}
-                {% endfor %}
-
-                <h1>Finish setting up your profile</h1>
-
-                <p>
-                    We <a class="usa-link" href="{% public_site_url 'domains/requirements/#what-.gov-domain-registrants-must-do' %}"  target="_blank">require</a> 
-                    that you maintain accurate contact information.
-                    The details you provide will only be used to support the administration of .gov and won’t be made public. 
-                </p>
-
-                <h2>What contact information should we use to reach you?</h2>
-                <p>
-                    Review the details below and update any required information. 
-                    Note that editing this information won’t affect your Login.gov account information.
-                </p>
-                {# We use a var called 'remove_margin_top' rather than 'add_margin_top' because most fields use this #}
-                {% include "includes/required_fields.html" with remove_margin_top=True %}
-                <form id="finish-profile-setup-form" class="usa-form usa-form--largest" method="post" novalidate>
-                    {% csrf_token %}
-                    <fieldset class="usa-fieldset">
-                        <legend class="usa-sr-only">
-                            Your contact information
-                        </legend>
-
-                        {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly usa-form-readonly--no-border padding-top-2" %}
-                            {% input_with_errors form.full_name %}
-                        {% endwith %}
-                        
-                        <div id="profile-name-fieldset" class="display-none" role="group">
-                            {% with group_classes="usa-form-readonly usa-form-readonly--no-border padding-top-2" %}
-                                {% input_with_errors form.first_name %}
-                            {% endwith %}
-                            
-                            {% with  group_classes="usa-form-readonly padding-top-2" %}
-                                {% input_with_errors form.middle_name %}
-                            {% endwith %}
-                            
-                            {% with  group_classes="usa-form-readonly padding-top-2" %}
-                                {% input_with_errors form.last_name %}
-                            {% endwith %}
-                        </div>
-
-                        {# This field doesn't have the readonly button but it has common design elements from it #}
-                        {% with show_readonly=True group_classes="usa-form-readonly padding-top-2 bold-usa-label" %}
-                            {% with target_blank="true" sublabel_text=email_sublabel_text add_class="display-none" %}
-                                {% input_with_errors form.email %}
-                            {% endwith %}
-                        {% endwith %}
-
-                        {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2" %}
-                            {% input_with_errors form.title %}
-                        {% endwith %}
-
-                        {% with show_edit_button=True show_readonly=True group_classes="usa-form-readonly padding-top-2" %}
-                            {% with add_class="usa-input--medium" %}
-                                {% input_with_errors form.phone %}
-                            {% endwith %}
-                        {% endwith %}
-
-                    </fieldset>
-                    <div>
-
-                        {% if confirm_changes %}
-                            <button type="submit" name="contact_setup_submit_button" class="usa-button">
-                                Save and continue
-                            </button>
-                        {% else %}
-                            <button type="submit" name="contact_setup_save_button" class="usa-button usa-button--outline">
-                                Save
-                            </button>
-                        {% endif %}
+                {% for message in messages %}
+                <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+                    <div class="usa-alert__body">
+                    {{ message }}
                     </div>
-                {% block form_fields %}{% endblock %}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% include "includes/form_errors.html" with form=form %}
+
+                {% if confirm_changes and not going_to_specific_page %}
+                <a href="{% url 'home' %}" class="breadcrumb__back">
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+                    </svg>
+                
+                    <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+                    Back to manage your domains
+                    </p>
+                </a>
+                {% endif %}
+
+                {% include "includes/finish_profile_form.html" with form=form %}
             </main>
         </div>
     </div>
 </div>
-
 {% endblock content %}
 
 {% block footer %}

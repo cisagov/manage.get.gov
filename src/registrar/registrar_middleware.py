@@ -36,6 +36,16 @@ class CheckUserProfileMiddleware:
 
         # Check if setup is not finished
         finished_setup = hasattr(request.user, "finished_setup") and request.user.finished_setup
+        if hasattr(request.user, "finished_setup"):
+            user_values = [
+                request.user.contact.first_name,
+                request.user.contact.last_name,
+                request.user.contact.title,
+                request.user.contact.phone
+            ]
+            if None in user_values:
+                finished_setup = False
+
         if request.user.is_authenticated and not finished_setup:
             return self._handle_setup_not_finished(request)
 
