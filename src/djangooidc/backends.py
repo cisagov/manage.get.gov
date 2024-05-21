@@ -23,7 +23,6 @@ class OpenIdConnectBackend(ModelBackend):
     def authenticate(self, request, **kwargs):
         logger.debug("kwargs %s" % kwargs)
         user = None
-
         if not kwargs or "sub" not in kwargs.keys():
             return user
 

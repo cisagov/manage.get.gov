@@ -113,12 +113,10 @@ def login_callback(request):
                 user.save()
 
             login(request, user)
-
             logger.info("Successfully logged in user %s" % user)
 
             # Clear the flag if the exception is not caught
             request.session.pop("redirect_attempted", None)
-
             return redirect(request.session.get("next", "/"))
         else:
             raise o_e.BannedUser()

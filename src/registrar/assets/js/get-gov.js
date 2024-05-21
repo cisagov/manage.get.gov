@@ -920,11 +920,9 @@ function hideDeletedForms() {
 
   function showInputOnErrorFields(){
     document.addEventListener('DOMContentLoaded', function() {
-      let form = document.querySelector("#finish-profile-setup-form");
-      console.log(`form: ${form}`)
       // Get all input elements within the form
+      let form = document.querySelector("#finish-profile-setup-form");
       let inputs = form ? form.querySelectorAll("input") : null;
-      console.log(`look: ${inputs}`)
       if (!inputs) {
         return null;
       }
@@ -933,13 +931,11 @@ function hideDeletedForms() {
       inputs.forEach(function(input) {
         let fieldName = input.name;
         let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
-        console.log(`fieldName: ${inputs} vs err message ${errorMessage}`)
         if (!fieldName || !errorMessage) {
           return null;
         }
 
         let editButton = document.querySelector(`#${fieldName}__edit-button`);
-        console.log(`edit button is ${editButton} vs id #${fieldName}__edit-button`)
         if (editButton){
           // Show the input field of the field that errored out 
           editButton.click();
