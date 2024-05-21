@@ -85,7 +85,7 @@ class Client(oic.Client):
     def create_authn_request(
         self,
         session,
-        do_biometric_auth=False,
+        do_step_up_auth=False,
         extra_args=None,
     ):
         """Step 2: Construct a login URL at OP's domain and send the user to it."""
@@ -103,7 +103,7 @@ class Client(oic.Client):
                 "nonce": session["nonce"],
                 "redirect_uri": self.registration_response["redirect_uris"][0],
             }
-            if do_biometric_auth:
+            if do_step_up_auth:
                 self._set_args_for_biometric_auth_request(session, request_args)
             else:
                 request_args["acr_values"] = self.behaviour.get("acr_value")

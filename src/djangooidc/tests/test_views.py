@@ -184,7 +184,7 @@ class ViewsTest(TestCase):
             # patch that the request does not require step up auth
             # TEST
             # test the login callback url
-            with patch("djangooidc.views._requires_biometric_auth", return_value=False):
+            with patch("djangooidc.views._requires_step_up_auth", return_value=False):
                 response = self.client.get(reverse("openid_login_callback"))
             # ASSERTIONS
             # assert the redirect url is the same as the 'next' value set in session
@@ -224,7 +224,7 @@ class ViewsTest(TestCase):
             # mock that callback returns user_info; this is the expected behavior
             mock_client.callback.side_effect = self.user_info
             # patch that the request does not require step up auth
-            with patch("djangooidc.views._requires_biometric_auth", return_value=False):
+            with patch("djangooidc.views._requires_step_up_auth", return_value=False):
                 with patch("djangooidc.views._initialize_client") as mock_init_client:
                     with patch("djangooidc.views._client_is_none") as mock_client_is_none:
                         # mock the client to initially be None
@@ -252,7 +252,7 @@ class ViewsTest(TestCase):
         # mock that callback returns user_info; this is the expected behavior
         mock_client.callback.side_effect = self.user_info
         # patch that the request does not require step up auth
-        with patch("djangooidc.views._requires_biometric_auth", return_value=False), patch(
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
             "djangooidc.views._initialize_client"
         ) as mock_init_client:
             with patch("djangooidc.views._client_is_none", return_value=True):
@@ -285,7 +285,7 @@ class ViewsTest(TestCase):
         # mock that callback returns user_info; this is the expected behavior
         mock_client.callback.side_effect = self.user_info
         # patch that the request does not require step up auth
-        with patch("djangooidc.views._requires_biometric_auth", return_value=False), patch(
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
             "djangooidc.views._initialize_client"
         ) as mock_init_client:
             with patch("djangooidc.views._client_is_none", return_value=True):
@@ -319,7 +319,7 @@ class ViewsTest(TestCase):
         td, _ = TransitionDomain.objects.get_or_create(username="test@example.com", domain_name="test123.gov")
 
         # patch that the request does not require step up auth
-        with patch("djangooidc.views._requires_biometric_auth", return_value=False), patch(
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
             "djangooidc.views._initialize_client"
         ) as mock_init_client:
             with patch("djangooidc.views._client_is_none", return_value=True):
@@ -353,7 +353,7 @@ class ViewsTest(TestCase):
         vip, _ = VerifiedByStaff.objects.get_or_create(email="test@example.com")
 
         # patch that the request does not require step up auth
-        with patch("djangooidc.views._requires_biometric_auth", return_value=False), patch(
+        with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
             "djangooidc.views._initialize_client"
         ) as mock_init_client:
             with patch("djangooidc.views._client_is_none", return_value=True):
@@ -374,7 +374,7 @@ class ViewsTest(TestCase):
                 self.assertEqual(created_user.verification_type, User.VerificationTypeChoices.VERIFIED_BY_STAFF)
 
     def test_login_callback_no_step_up_auth(self, mock_client):
-        """Walk through login_callback when _requires_biometric_auth returns False
+        """Walk through login_callback when _requires_step_up_auth returns False
         and assert that we have a redirect to /"""
         with less_console_noise():
             # SETUP
@@ -386,7 +386,7 @@ class ViewsTest(TestCase):
             # patch that the request does not require step up auth
             # TEST
             # test the login callback url
-            with patch("djangooidc.views._requires_biometric_auth", return_value=False):
+            with patch("djangooidc.views._requires_step_up_auth", return_value=False):
                 response = self.client.get(reverse("openid_login_callback"))
             # ASSERTIONS
             # assert that redirect is to / when no 'next' is set
@@ -403,7 +403,7 @@ class ViewsTest(TestCase):
 
             # Ensure that the CLIENT instance used in login_callback is the mock
             # patch _requires_step_up_auth to return True
-            with patch("djangooidc.views._requires_biometric_auth", return_value=True), patch(
+            with patch("djangooidc.views._requires_step_up_auth", return_value=True), patch(
                 "djangooidc.views.CLIENT.create_authn_request"
             ) as mock_create_authn_request:
                 # TEST
@@ -411,7 +411,7 @@ class ViewsTest(TestCase):
                 login_callback(request)
 
             # ASSERTIONS
-            # create_authn_request only gets called when _requires_biometric_auth is True.
+            # create_authn_request only gets called when _requires_step_up_auth is True.
             # The acr_value should be blank here
             self.assertEqual(request.session["acr_value"], "")
             self.assertEqual(request.session["needs_biometric_validation"], True)
@@ -419,26 +419,26 @@ class ViewsTest(TestCase):
             # And create_authn_request was called again
             mock_create_authn_request.assert_called_once()
 
-    def test_login_callback_does_not_requires_biometric_auth(self, mock_client):
-        """Invoke login_callback passing it a request when _requires_biometric_auth returns False
+    def test_login_callback_does_not_requires_step_up_auth(self, mock_client):
+        """Invoke login_callback passing it a request when _requires_step_up_auth returns False
         and assert that session is not updated and create_authn_request (mock) is not called.
 
-        Possibly redundant with test_login_callback_requires_biometric_auth"""
+        Possibly redundant with test_login_callback_requires_step_up_auth"""
         with less_console_noise():
             # MOCK
             # Create a mock request
             request = self.factory.get("/some-url")
             request.session = {"acr_value": ""}
             # Ensure that the CLIENT instance used in login_callback is the mock
-            # patch _requires_biometric_auth to return False
-            with patch("djangooidc.views._requires_biometric_auth", return_value=False), patch(
+            # patch _requires_step_up_auth to return False
+            with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(
                 "djangooidc.views.CLIENT.create_authn_request", return_value=MagicMock()
             ) as mock_create_authn_request:
                 # TEST
                 # test the login callback
                 login_callback(request)
             # ASSERTIONS
-            # create_authn_request only gets called when _requires_biometric_auth is True
+            # create_authn_request only gets called when _requires_step_up_auth is True
             # and it changes this acr_value in request.session
             # Assert that acr_value is NOT updated by testing that it is still an empty string
             self.assertEqual(request.session["acr_value"], "")
@@ -454,7 +454,7 @@ class ViewsTest(TestCase):
             mock_client.callback.side_effect = self.user_info
             mock_auth.return_value = None
             # TEST
-            with patch("djangooidc.views._requires_biometric_auth", return_value=False):
+            with patch("djangooidc.views._requires_step_up_auth", return_value=False):
                 response = self.client.get(reverse("openid_login_callback"))
             # ASSERTIONS
             self.assertEqual(response.status_code, 401)
