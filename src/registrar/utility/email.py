@@ -75,14 +75,16 @@ def send_templated_email(
                 aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
                 config=settings.BOTO_CONFIG,
             )
-            send_email_with_attachment(
+            send_raw_email_with_attachment(
                 settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, attachment_file, ses_client
             )
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
 
+def send_templated_email_with_attachment(sender, recipient, template_name, template_data):
+    return
 
-def send_email_with_attachment(sender, recipient, subject, body, attachment_file, ses_client):
+def send_raw_email_with_attachment(sender, recipient, subject, body, attachment_file, ses_client):
     # Create a multipart/mixed parent container
     msg = MIMEMultipart("mixed")
     msg["Subject"] = subject

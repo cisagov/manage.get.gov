@@ -185,7 +185,7 @@ class TestEmails(TestCase):
         self.assertRegex(body, r"5557\n\n----")
 
     @boto3_mocking.patching
-    def test_send_email_with_attachment(self):
+    def test_raw_send_email_with_attachment(self):
         with boto3_mocking.clients.handler_for("ses", self.mock_client_class):
             sender_email = "sender@example.com"
             recipient_email = "recipient@example.com"
@@ -195,7 +195,7 @@ class TestEmails(TestCase):
             current_date = datetime.now().strftime("%m%d%Y")
             current_filename = f"domain-metadata-{current_date}.zip"
 
-            email.send_email_with_attachment(
+            email.send_raw_email_with_attachment(
                 sender_email, recipient_email, subject, body, attachment_file, self.mock_client
             )
             # Assert that the `send_raw_email` method of the mocked SES client was called with the expected params
