@@ -51,10 +51,12 @@
             {% endwith %}
         </div>
 
-        {# This field doesn't have the readonly button but it has common design elements from it #}
-        {% with show_readonly=True group_classes="usa-form-readonly padding-top-2 bold-usa-label" %}
-            {% with target_blank="true" sublabel_text=email_sublabel_text add_class="display-none" %}
-                {% input_with_errors form.email %}
+        {% public_site_url "help/account-management/#get-help-with-login.gov" as login_help_url %}
+        {% with link_href=login_help_url show_readonly=True group_classes="usa-form-readonly padding-top-2 bold-usa-label" add_class="display-none"%}
+            {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with your Login.gov account." %}
+                {% with link_text="Get help with your Login.gov account" target_blank=True do_not_show_max_chars=True %}
+                    {% input_with_errors form.email %}
+                {% endwith %}
             {% endwith %}
         {% endwith %}
 

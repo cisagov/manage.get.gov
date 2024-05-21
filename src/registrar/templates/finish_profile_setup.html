@@ -8,41 +8,12 @@
     {% include "includes/gov_extended_logo.html" with logo_clickable=False %}
 {% endblock %}
 
-{% block content %}
-<div class="grid-container">
-    <div class="grid-row grid-gap">
-        <div class="tablet:grid-col">
-            <main id="main-content" class="grid-container">
-                {# messages block is under the back breadcrumb link #}
-                {% if messages %}
-                {% for message in messages %}
-                <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
-                    <div class="usa-alert__body">
-                    {{ message }}
-                    </div>
-                </div>
-                {% endfor %}
-                {% endif %}
-                {% include "includes/form_errors.html" with form=form %}
-
-                {% if confirm_changes and not going_to_specific_page %}
-                <a href="{% url 'home' %}" class="breadcrumb__back">
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                    <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
-                    </svg>
-                
-                    <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-                    Back to manage your domains
-                    </p>
-                </a>
-                {% endif %}
-
-                {% include "includes/finish_profile_form.html" with form=form %}
-            </main>
-        </div>
+{# Add the new form #}
+{% block content_bottom %}
+    {% include "includes/finish_profile_form.html" with form=form %}
     </div>
-</div>
-{% endblock content %}
+</main>
+{% endblock content_bottom %}
 
 {% block footer %}
     {% include "includes/footer.html" %}

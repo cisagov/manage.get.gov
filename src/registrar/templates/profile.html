@@ -8,16 +8,6 @@ Edit your User Profile |
 {% block content %}
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
-    <a href="{% url 'home' %}" class="breadcrumb__back">
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-      <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
-      </svg>
-  
-      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-      Go to manage your domains
-      </p>
-    </a>
-    {# messages block is under the back breadcrumb link #}
     {% if messages %}
     {% for message in messages %}
     <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
@@ -28,7 +18,23 @@ Edit your User Profile |
     {% endfor %}
     {% endif %}
     {% include "includes/form_errors.html" with form=form %}
-    {% include "includes/profile_form.html" with form=form %}
+
+    {% if show_back_button %}
+      <a href="{% url 'home' %}" class="breadcrumb__back">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+        <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+        </svg>
+    
+        <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+          {{ profile_back_button_text }}
+        </p>
+      </a>
+    {% endif %}
+{% endblock content %}
+
+{% block content_bottom %}
+  {% include "includes/profile_form.html" with form=form %}
   </div>
 </main>
-{% endblock content %}
+{% endblock %}
+

@@ -56,6 +56,11 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         context = super().get_context_data(**kwargs)
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
+
+        # The text for the back button on this page
+        context["profile_back_button_text"] = "Go to manage your domains"
+        context["show_back_button"] = True
+
         return context
 
     def get_success_url(self):
@@ -104,43 +109,34 @@ class FinishProfileSetupView(UserProfileView):
         Enums for each type of redirection. Enforces behaviour on `get_redirect_url()`.
 
         - HOME: We want to redirect to reverse("home")
-        - BACK_TO_SELF: We want to redirect back to reverse("finish-user-profile-setup")
+        - BACK_TO_SELF: We want to redirect back to this page
         - TO_SPECIFIC_PAGE: We want to redirect to the page specified in the queryparam "redirect"
         - COMPLETE_SETUP: Indicates that we want to navigate BACK_TO_SELF, but the subsequent
         redirect after the next POST should be either HOME or TO_SPECIFIC_PAGE
         """
 
         HOME = "home"
+        TO_SPECIFIC_PAGE = "domain_request"
         BACK_TO_SELF = "back_to_self"
         COMPLETE_SETUP = "complete_setup"
-        TO_SPECIFIC_PAGE = "domain_request"
 
     def get_context_data(self, **kwargs):
 
         context = super().get_context_data(**kwargs)
-        context["email_sublabel_text"] = self._email_sublabel_text()
+
+        # Hide the back button by default
+        context["show_back_button"] = False
 
         if self.redirect_type == self.RedirectType.COMPLETE_SETUP:
             context["confirm_changes"] = True
 
-        if "redirect_viewname" in self.session:
-            context["going_to_specific_page"] = True
-            context["redirect_button_text"] = "Continue to your request"
+            if "redirect_viewname" not in self.session:
+                context["show_back_button"] = True
+            else:
+                context["going_to_specific_page"] = True
+                context["redirect_button_text"] = "Continue to your request"
 
         return context
-
-    def _email_sublabel_text(self):
-        """Returns the lengthy sublabel for the email field"""
-        help_url = public_site_url("help/account-management/#get-help-with-login.gov")
-        return mark_safe(
-            "We recommend using your work email for your .gov account. "
-            "If the wrong email is displayed below, you’ll need to update your Login.gov account "
-            f'and log back in. <a class="usa-link" href={help_url}>Get help with your Login.gov account.</a>'
-        )  # nosec
-
-    def get_success_message(self, cleaned_data):
-        """Content of the returned success message"""
-        return "Your profile has been successfully updated."
 
     @method_decorator(csrf_protect)
     def dispatch(self, request, *args, **kwargs):
