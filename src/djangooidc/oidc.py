@@ -247,6 +247,12 @@ class Client(oic.Client):
             raise o_e.AuthenticationFailed(locator=state)
         info_response_dict = info_response.to_dict()
 
+        # Define vtm/vtr information on the user dictionary so we can track this in one location.
+        # If a user has this information, then they are bumped up in terms of verification level.
+        if session.get("needs_step_up_auth") is True:
+            info_response_dict["vtm"] = session.get("vtm", "")
+            info_response_dict["vtr"] = session.get("vtr", "")
+
         logger.debug("user info: %s" % info_response_dict)
         return info_response_dict
 
