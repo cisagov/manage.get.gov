@@ -16,9 +16,7 @@ from registrar.models import (
 from registrar.views.utility.permission_views import UserProfilePermissionView
 from waffle.decorators import flag_is_active, waffle_flag
 
-from registrar.templatetags.url_helpers import public_site_url
 from registrar.models.utility.generic_helper import replace_url_queryparams
-from django.utils.safestring import mark_safe
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 
@@ -102,8 +100,6 @@ class FinishProfileSetupView(UserProfileView):
     form_class = FinishSetupProfileForm
     model = Contact
 
-    redirect_type = None
-
     class RedirectType(Enum):
         """
         Enums for each type of redirection. Enforces behaviour on `get_redirect_url()`.
@@ -119,6 +115,9 @@ class FinishProfileSetupView(UserProfileView):
         TO_SPECIFIC_PAGE = "domain_request"
         BACK_TO_SELF = "back_to_self"
         COMPLETE_SETUP = "complete_setup"
+
+    redirect_type = None
+    all_redirect_types = [r.value for r in RedirectType]
 
     def get_context_data(self, **kwargs):
 
@@ -153,9 +152,7 @@ class FinishProfileSetupView(UserProfileView):
 
         # Update redirect type based on the query parameter if present
         redirect_type = request.GET.get("redirect", self.RedirectType.BACK_TO_SELF.value)
-
-        all_redirect_types = [r.value for r in self.RedirectType]
-        if redirect_type in all_redirect_types:
+        if redirect_type in self.all_redirect_types:
             self.redirect_type = self.RedirectType(redirect_type)
         else:
             # If the redirect type is undefined, then we assume that
@@ -178,11 +175,8 @@ class FinishProfileSetupView(UserProfileView):
                 # Logic for when the 'Save' button is clicked
                 self.redirect_type = self.RedirectType.COMPLETE_SETUP
             elif "contact_setup_submit_button" in request.POST:
-                if "redirect_viewname" in self.session:
-                    self.redirect_type = self.RedirectType.TO_SPECIFIC_PAGE
-                else:
-                    self.redirect_type = self.RedirectType.HOME
-
+                specific_redirect = "redirect_viewname" in self.session
+                self.redirect_type = self.RedirectType.TO_SPECIFIC_PAGE if specific_redirect else self.RedirectType.HOME
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
@@ -211,7 +205,7 @@ class FinishProfileSetupView(UserProfileView):
         base_url = ""
         try:
             if self.redirect_type in self_redirect:
-                base_url = reverse("finish-user-profile-setup", kwargs={"pk": self.object.pk})
+                base_url = reverse("finish-user-profile-setup")
             elif self.redirect_type == self.RedirectType.TO_SPECIFIC_PAGE:
                 # We only allow this session value to use viewnames,
                 # because this restricts what can be redirected to.

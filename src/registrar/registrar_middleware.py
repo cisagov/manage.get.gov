@@ -26,7 +26,7 @@ class CheckUserProfileMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        """Runs pre-processing logic for each view. Checks for the 
+        """Runs pre-processing logic for each view. Checks for the
         finished_setup flag on the current user. If they haven't done so,
         then we redirect them to the finish setup page."""
         # Check that the user is "opted-in" to the profile feature flag

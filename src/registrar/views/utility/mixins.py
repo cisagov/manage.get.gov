@@ -8,8 +8,6 @@ from registrar.models import (
     DomainInvitation,
     DomainInformation,
     UserDomainRole,
-    Contact,
-    User,
 )
 import logging
 
