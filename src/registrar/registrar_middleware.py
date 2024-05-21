@@ -2,7 +2,7 @@
 Contains middleware used in settings.py
 """
 
-from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from urllib.parse import parse_qs
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 from waffle.decorators import flag_is_active
@@ -41,7 +41,7 @@ class CheckUserProfileMiddleware:
                 request.user.contact.first_name,
                 request.user.contact.last_name,
                 request.user.contact.title,
-                request.user.contact.phone
+                request.user.contact.phone,
             ]
             if None in user_values:
                 finished_setup = False
@@ -51,7 +51,7 @@ class CheckUserProfileMiddleware:
 
         # Continue processing the view
         return None
-    
+
     def _handle_setup_not_finished(self, request):
         setup_page = reverse("finish-user-profile-setup", kwargs={"pk": request.user.contact.pk})
         logout_page = reverse("logout")

@@ -89,7 +89,6 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         return None
 
 
-
 class FinishProfileSetupView(UserProfileView):
     """This view forces the user into providing additional details that
     we may have missed from Login.gov"""
@@ -123,7 +122,7 @@ class FinishProfileSetupView(UserProfileView):
 
         if self.redirect_type == self.RedirectType.COMPLETE_SETUP:
             context["confirm_changes"] = True
-        
+
         if "redirect_viewname" in self.session:
             context["going_to_specific_page"] = True
             context["redirect_button_text"] = "Continue to your request"
@@ -138,7 +137,6 @@ class FinishProfileSetupView(UserProfileView):
             "If the wrong email is displayed below, you’ll need to update your Login.gov account "
             f'and log back in. <a class="usa-link" href={help_url}>Get help with your Login.gov account.</a>'
         )  # nosec
-        
 
     def get_success_message(self, cleaned_data):
         """Content of the returned success message"""
@@ -185,7 +183,7 @@ class FinishProfileSetupView(UserProfileView):
             if self.redirect_type in completed_states:
                 self.request.user.finished_setup = True
                 self.request.user.save()
-            
+
             if "contact_setup_save_button" in request.POST:
                 # Logic for when the 'Save' button is clicked
                 self.redirect_type = self.RedirectType.COMPLETE_SETUP
@@ -227,10 +225,7 @@ class FinishProfileSetupView(UserProfileView):
         """
 
         # These redirect types redirect to the same page
-        self_redirect = [
-            self.RedirectType.BACK_TO_SELF,
-            self.RedirectType.COMPLETE_SETUP
-        ]
+        self_redirect = [self.RedirectType.BACK_TO_SELF, self.RedirectType.COMPLETE_SETUP]
 
         # Maps the redirect type to a URL
         base_url = ""
@@ -256,4 +251,3 @@ class FinishProfileSetupView(UserProfileView):
         # Generate the full url from the given query params
         full_url = replace_url_queryparams(base_url, query_params)
         return full_url
-

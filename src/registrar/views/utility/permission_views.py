@@ -161,4 +161,3 @@ class UserProfilePermissionView(UserProfilePermission, DetailView, abc.ABC):
     @abc.abstractmethod
     def template_name(self):
         raise NotImplementedError
-

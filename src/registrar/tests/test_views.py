@@ -522,6 +522,7 @@ class HomeTests(TestWithUser):
 
 class FinishUserProfileTests(TestWithUser, WebTest):
     """A series of tests that target the finish setup page for user profile"""
+
     def setUp(self):
         super().setUp()
         self.user.title = None
@@ -541,11 +542,11 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         Domain.objects.all().delete()
         Website.objects.all().delete()
         Contact.objects.all().delete()
-    
+
     def _set_session_cookie(self):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-    
+
     def _submit_form_webtest(self, form, follow=False):
         page = form.submit()
         self._set_session_cookie()
@@ -583,7 +584,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertEqual(completed_setup_page.status_code, 200)
             # Assert that we're on the home page
             self.assertContains(completed_setup_page, "Manage your domain")
-    
+
     @less_console_noise_decorator
     def test_new_user_goes_to_domain_request_with_profile_feature_on(self):
         """Tests that a new user is redirected to the domain request page when profile_feature is on"""
@@ -619,17 +620,16 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(completed_setup_page, "How we’ll reach you")
             self.assertContains(completed_setup_page, "Your contact information")
 
-
     @less_console_noise_decorator
     def test_new_user_with_profile_feature_off(self):
         """Tests that a new user is not redirected to the profile setup page when profile_feature is off"""
         with override_flag("profile_feature", active=False):
             response = self.client.get("/")
         self.assertNotContains(response, "Finish setting up your profile")
-    
+
     @less_console_noise_decorator
     def test_new_user_goes_to_domain_request_with_profile_feature_off(self):
-        """Tests that a new user is redirected to the domain request page 
+        """Tests that a new user is redirected to the domain request page
         when profile_feature is off but not the setup page"""
         with override_flag("profile_feature", active=False):
             response = self.client.get("/request/")
