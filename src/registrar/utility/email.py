@@ -55,6 +55,9 @@ def send_templated_email(
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
 
+    html_example = "<div><b>HTML email template example</b></div> \
+    Questions? Visit our site <a href="https://get.gov/">get.gov.</a>"
+
     try:
         if attachment_file is None:
             ses_client.send_email(
@@ -63,7 +66,10 @@ def send_templated_email(
                 Content={
                     "Simple": {
                         "Subject": {"Data": subject},
-                        "Body": {"Text": {"Data": email_body}},
+                        "Body": {
+                            "Html": {"Data": html_example}
+                            "Text": {"Data": email_body}
+                        },
                     },
                 },
             )
@@ -80,9 +86,6 @@ def send_templated_email(
             )
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
-
-def send_templated_email_with_attachment(sender, recipient, template_name, template_data):
-    return
 
 def send_raw_email_with_attachment(sender, recipient, subject, body, attachment_file, ses_client):
     # Create a multipart/mixed parent container
