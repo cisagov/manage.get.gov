@@ -1063,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                   <use xlink:href="/public/img/sprite.svg#${request.state === 'deleted' || request.state === 'on hold' ? 'visibility' : 'settings'}"></use>
                 </svg>
-                ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain.name : 'New domain request'}</span>
+                ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
               </a>
             </td>
             <td>${deleteButton}</td>
