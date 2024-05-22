@@ -15,6 +15,7 @@ from registrar.models.user import User
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
+from waffle.decorators import flag_is_active, waffle_flag
 
 from .utility import (
     DomainRequestPermissionView,
@@ -400,7 +401,15 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
         step_list = []
+        excluded_steps = [
+            Step.YOUR_CONTACT
+        ]
+        should_exclude = flag_is_active(self.request, "profile_feature")
         for step in Step:
+
+            if should_exclude and step in excluded_steps:
+                continue
+
             condition = self.WIZARD_CONDITIONS.get(step, True)
             if callable(condition):
                 condition = condition(self)
@@ -539,6 +548,10 @@ class Purpose(DomainRequestWizard):
 class YourContact(DomainRequestWizard):
     template_name = "domain_request_your_contact.html"
     forms = [forms.YourContactForm]
+
+    @waffle_flag("!profile_feature")  # type: ignore
+    def dispatch(self, request, *args, **kwargs):  # type: ignore
+        return super().dispatch(request, *args, **kwargs)
 
 
 class OtherContacts(DomainRequestWizard):

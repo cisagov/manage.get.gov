@@ -59,7 +59,7 @@ class TestWithUser(MockEppLib):
         self.user = get_user_model().objects.create(
             username=username, first_name=first_name, last_name=last_name, email=email, phone=phone
         )
-        title="test title"
+        title = "test title"
         self.user.contact.title = title
         self.user.save()
 
