@@ -48,7 +48,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_domain_request_form_intro_is_skipped_when_edit_access(self):
         """Tests that user is NOT presented with intro acknowledgement page when accessed through 'edit'"""
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
-        detail_page = self.app.get(f'/domain-request/{domain_request.id}/edit/')
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}/edit/")
         # Check that the response is a redirect
         self.assertEqual(detail_page.status_code, 302)
         # You can access the 'Location' header to get the redirect URL
@@ -2399,7 +2399,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
 
-        detail_page = self.app.get(f'/domain-request/{domain_request.id}')
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
@@ -2416,7 +2416,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
 
-        detail_page = self.app.get(f'/domain-request/{domain_request.id}')
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
@@ -2428,7 +2428,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
 
-        detail_page = self.app.get(f'/domain-request/{domain_request.id}')
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
@@ -2450,7 +2450,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
             target_status_code=200,
             fetch_redirect_response=True,
         )
-        response = self.client.get('/get-domain-requests-json/')
+        response = self.client.get("/get-domain-requests-json/")
         self.assertContains(response, "Withdrawn")
 
     def test_domain_request_withdraw_no_permissions(self):
@@ -2460,7 +2460,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
 
-        detail_page = self.app.get(f'/domain-request/{domain_request.id}')
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
@@ -2532,8 +2532,8 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
 
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
 
-        response = self.app.get(f'/domain-request/{domain_request.id}/edit/')
-         # django-webtest does not handle cookie-based sessions well because it keeps
+        response = self.app.get(f"/domain-request/{domain_request.id}/edit/")
+        # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
@@ -2590,7 +2590,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         )
         domain_request.other_contacts.set([contact_2])
 
-        response = self.app.get(f'/domain-request/{domain_request.id}/edit/')
+        response = self.app.get(f"/domain-request/{domain_request.id}/edit/")
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here

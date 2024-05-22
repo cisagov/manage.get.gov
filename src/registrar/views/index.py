@@ -13,7 +13,6 @@ def index(request):
 
         context["domain_requests"] = domain_requests
 
-
         # Determine if the user will see domain requests that they can delete
         has_deletable_domain_requests = deletable_domain_requests.exists()
         context["has_deletable_domain_requests"] = has_deletable_domain_requests
@@ -52,4 +51,3 @@ def _get_domain_requests(request):
     deletable_domain_requests = domain_requests.filter(status__in=valid_statuses)
 
     return (domain_requests, deletable_domain_requests)
-

@@ -195,8 +195,8 @@ urlpatterns = [
         views.DomainDeleteUserView.as_view(http_method_names=["post"]),
         name="domain-user-delete",
     ),
-    path('get-domains-json/', get_domains_json, name='get_domains_json'),
-    path('get-domain-requests-json/', get_domain_requests_json, name='get_domain_requests_json'),
+    path("get-domains-json/", get_domains_json, name="get_domains_json"),
+    path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

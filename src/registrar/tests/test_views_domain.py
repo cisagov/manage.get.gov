@@ -239,7 +239,7 @@ class TestDomainDetail(TestDomainOverview):
 
             igorville = Domain.objects.get(name="igorville.gov")
             self.assertEquals(igorville.state, Domain.State.UNKNOWN)
-            detail_page = self.app.get(f'/domain/{igorville.id}')
+            detail_page = self.app.get(f"/domain/{igorville.id}")
             self.assertContains(detail_page, "Expired")
 
             self.assertNotContains(detail_page, "DNS needed")

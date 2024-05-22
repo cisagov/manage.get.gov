@@ -164,9 +164,7 @@ class HomeTests(TestWithUser):
         deleted_text = "This domain has been removed and " "is no longer registered to your organization."
         dns_needed_text = "Before this domain can be used, "
         ready_text = "This domain has name servers and is ready for use."
-        on_hold_text = (
-            "This domain is administratively paused, "
-        )
+        on_hold_text = "This domain is administratively paused, "
         deleted_text = "This domain has been removed and " "is no longer registered to your organization."
         # Generate a mapping of domain names, the state, and expected messages for the subtest
         test_cases = [
