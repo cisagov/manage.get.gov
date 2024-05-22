@@ -5336,36 +5336,6 @@ modal = {
         item.addEventListener("click", toggleModal);
       });
     });
-
-    // Check for the presence of the testerPixel element
-    const intervalId = setInterval(() => {
-      console.log('testing');
-      const testerPixel = document.querySelector('.testerPixel');
-      if (testerPixel) {
-          clearInterval(intervalId);
-          console.log('found it');
-
-
-          document.querySelectorAll('.late-loading-modal-trigger').forEach(item => {
-            // Turn anchor links into buttons because of
-            // VoiceOver on Safari
-            if (item.nodeName === "A") {
-              item.setAttribute("role", "button");
-              item.addEventListener("click", e => e.preventDefault());
-            }
-    
-            // Can uncomment when aria-haspopup="dialog" is supported
-            // https://a11ysupport.io/tech/aria/aria-haspopup_attribute
-            // Most screen readers support aria-haspopup, but might announce
-            // as opening a menu if "dialog" is not supported.
-            // item.setAttribute("aria-haspopup", "dialog");
-    
-            item.addEventListener("click", toggleModal);
-          });
-
-
-      }
-    }, 100); // Check every 100ms
   },
   teardown(root) {
     selectOrMatches(MODAL, root).forEach(modalWindow => {
@@ -5384,6 +5354,7 @@ modal = {
   }
 };
 module.exports = modal;
+window.modal = modal;
 
 },{"../../uswds-core/src/js/config":35,"../../uswds-core/src/js/utils/focus-trap":47,"../../uswds-core/src/js/utils/scrollbar-width":51,"../../uswds-core/src/js/utils/select-or-matches":52}],29:[function(require,module,exports){
 "use strict";
@@ -5854,7 +5825,7 @@ const {
   prefix: PREFIX
 } = require("../../uswds-core/src/js/config");
 const isElementInViewport = require("../../uswds-core/src/js/utils/is-in-viewport");
-const TOOLTIP = `.${PREFIX}-tooltip`;
+const TOOLTIP = `svg.${PREFIX}-tooltip`;
 const TOOLTIP_TRIGGER = `.${PREFIX}-tooltip__trigger`;
 const TOOLTIP_TRIGGER_CLASS = `${PREFIX}-tooltip__trigger`;
 const TOOLTIP_CLASS = `${PREFIX}-tooltip`;
@@ -6188,6 +6159,7 @@ const tooltip = behavior({
   hide: hideToolTip
 });
 module.exports = tooltip;
+window.tooltip = tooltip;
 
 },{"../../uswds-core/src/js/config":35,"../../uswds-core/src/js/utils/behavior":45,"../../uswds-core/src/js/utils/is-in-viewport":48,"../../uswds-core/src/js/utils/select-or-matches":52}],34:[function(require,module,exports){
 "use strict";

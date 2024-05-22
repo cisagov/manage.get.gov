@@ -836,6 +836,29 @@ function hideDeletedForms() {
 })();
 
 
+function initializeTooltips() {
+  function checkTooltip() {
+    //console.log('Checking for tooltip...');
+    if (window.tooltip && typeof window.tooltip.init === 'function') {
+        console.log('Tooltip is available, initializing...');
+        window.tooltip.init();
+    } else {
+        console.log('Tooltip not available, retrying...');
+        // Retry after a short delay
+        setTimeout(checkTooltip, 100);
+    }
+  }
+  checkTooltip();
+}
+
+function initializeModals() {
+  window.modal.on();
+}
+
+function unloadModals() {
+  window.modal.off();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   let currentPage = 1;
   let currentSortBy = 'id';
@@ -885,13 +908,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 aria-label="Status Information"
                 role="tooltip"
               >
-                <use aria-hidden="true" xlink:href="{% static 'img/sprite.svg' %}#info_outline"></use>
+                <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
               </svg>
             </td>
             <td>
               <a href="/domain/${domain.id}">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="{% static 'img/sprite.svg' %}#${domain.state === 'deleted' || domain.state === 'on hold' ? 'visibility' : 'settings'}"></use>
+                  <use xlink:href="/public/img/sprite.svg#${domain.state === 'deleted' || domain.state === 'on hold' ? 'visibility' : 'settings'}"></use>
                 </svg>
                 ${domain.state === 'deleted' || domain.state === 'on hold' ? 'View' : 'Manage'} <span class="usa-sr-only">${domain.name}</span>
               </a>
@@ -899,6 +922,7 @@ document.addEventListener('DOMContentLoaded', function() {
           `;
           domainList.appendChild(row);
         });
+        initializeTooltips();
 
         updatePagination(data.page, data.num_pages, data.has_previous, data.has_next);
           currentPage = page;
@@ -908,6 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .catch(error => console.error('Error fetching domains:', error));
   }
 
+  
   function updatePagination(currentPage, numPages, hasPrevious, hasNext) {
     const paginationContainer = document.querySelector('#domains-pagination .usa-pagination__list');
     paginationContainer.innerHTML = '';
@@ -918,7 +943,7 @@ document.addEventListener('DOMContentLoaded', function() {
       prevPageItem.innerHTML = `
         <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
           <svg class="usa-icon" aria-hidden="true" role="img">
-            <use xlink:href="{% static 'img/sprite.svg' %}#navigate_before"></use>
+            <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
           </svg>
           <span class="usa-pagination__link-text">Previous</span>
         </a>
@@ -948,7 +973,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
           <span class="usa-pagination__link-text">Next</span>
           <svg class="usa-icon" aria-hidden="true" role="img">
-            <use xlink:href="{% static 'img/sprite.svg' %}#navigate_next"></use>
+            <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
           </svg>
         </a>
       `;
@@ -997,8 +1022,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const tbody = document.querySelector('.dotgov-table__domain-requests tbody');
         tbody.innerHTML = '';
 
+        unloadModals();
         data.domain_requests.forEach(request => {
-          const domainName = request.requested_domain ? request.requested_domain.name : `New domain request (${new Date(request.created_at).toLocaleString()} UTC)`;
+          const domainName = request.requested_domain ? request.requested_domain : `New domain request (${new Date(request.created_at).toLocaleString()} UTC)`;
           const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString() : 'Not submitted';
           const actionUrl = (request.status === 'Started' || request.status === 'Withdrawn') ? `/domain-request/${request.id}/edit` : `/domain-request/${request.id}`;
           const actionLabel = (request.status === 'Started' || request.status === 'Withdrawn') ? 'Edit' : 'Manage';
@@ -1012,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', function() {
               data-open-modal
             >
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                <use xlink:href="/static/img/sprite.svg#delete"></use>
+                <use xlink:href="/public/img/sprite.svg#delete"></use>
               </svg> Delete <span class="usa-sr-only">${domainName}</span>
             </a>` : '';
 
@@ -1034,13 +1060,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 aria-label="Status Information"
                 role="tooltip"
               >
-                <use aria-hidden="true" xlink:href="/static/img/sprite.svg#info_outline"></use>
+                <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
               </svg>
             </td>
             <td>
               <a href="${actionUrl}">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="/static/img/sprite.svg#${request.state === 'deleted' || request.state === 'on hold' ? 'visibility' : 'settings'}"></use>
+                  <use xlink:href="/public/img/sprite.svg#${request.state === 'deleted' || request.state === 'on hold' ? 'visibility' : 'settings'}"></use>
                 </svg>
                 ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain.name : 'New domain request'}</span>
               </a>
@@ -1049,6 +1075,8 @@ document.addEventListener('DOMContentLoaded', function() {
           `;
           tbody.appendChild(row);
         });
+        initializeTooltips();
+        initializeModals();
 
         updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next);
         currentPage = page;
@@ -1073,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', function() {
       prevPageItem.innerHTML = `
         <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
           <svg class="usa-icon" aria-hidden="true" role="img">
-            <use xlink:href="/static/img/sprite.svg#navigate_before"></use>
+            <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
           </svg>
           <span class="usa-pagination__link-text">Previous</span>
         </a>
@@ -1103,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
           <span class="usa-pagination__link-text">Next</span>
           <svg class="usa-icon" aria-hidden="true" role="img">
-            <use xlink:href="/static/img/sprite.svg#navigate_next"></use>
+            <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
           </svg>
         </a>
       `;
