@@ -925,9 +925,9 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeTooltips();
 
         updatePagination(data.page, data.num_pages, data.has_previous, data.has_next);
-          currentPage = page;
-          currentSortBy = sortBy;
-          currentOrder = order;
+        currentPage = page;
+        currentSortBy = sortBy;
+        currentOrder = order;
       })
       .catch(error => console.error('Error fetching domains:', error));
   }
@@ -986,7 +986,10 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.dotgov-table th[data-sortable]').forEach(header => {
     header.addEventListener('click', function() {
       const sortBy = this.getAttribute('data-sortable');
-      const order = currentOrder === 'asc' ? 'desc' : 'asc';
+      let order = 'asc';
+      if (sortBy === currentSortBy) {
+        order = currentOrder === 'asc' ? 'desc' : 'asc';
+      }
       loadPage(1, sortBy, order);
     });
   });
@@ -1128,7 +1131,10 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.dotgov-table__domain-requests th[data-sortable]').forEach(header => {
     header.addEventListener('click', function() {
       const sortBy = this.getAttribute('data-sortable');
-      const order = currentOrder === 'asc' ? 'desc' : 'asc';
+      let order = 'asc';
+      if (sortBy === currentSortBy) {
+        order = currentOrder === 'asc' ? 'desc' : 'asc';
+      }
       loadDomainRequestsPage(1, sortBy, order);
     });
   });
