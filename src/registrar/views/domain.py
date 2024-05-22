@@ -778,11 +778,13 @@ class DomainAddUserView(DomainFormBaseView):
         """Make a Domain invitation for this email and redirect with a message."""
         # Check to see if an invite has already been sent (NOTE: we do not want to create an invite just yet.)
         try:
+            invite = DomainInvitation.objects.get(email=email_address, domain=self.object)
             # that invitation already existed
-            messages.warning(
-                self.request,
-                f"{email_address} has already been invited to this domain.",
-            )
+            if invite is not None:
+                messages.warning(
+                    self.request,
+                    f"{email_address} has already been invited to this domain.",
+                )
         except DomainInvitation.DoesNotExist:
             # Try to send the invitation.  If it succeeds, add it to the DomainInvitation table.
             try:
