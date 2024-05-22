@@ -76,9 +76,9 @@
         <caption class="sr-only">Your domain requests</caption>
         <thead>
           <tr>
-            <th data-sortable scope="col" role="columnheader">Domain name</th>
-            <th data-sortable scope="col" role="columnheader">Date submitted</th>
-            <th data-sortable scope="col" role="columnheader">Status</th>
+            <th data-sortable="requested_domain" scope="col" role="columnheader">Domain name</th>
+            <th data-sortable="submission_date" scope="col" role="columnheader">Date submitted</th>
+            <th data-sortable="status" scope="col" role="columnheader">Status</th>
             <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
             <th scope="col" role="columnheader"><span class="usa-sr-only">Delete Action</span></th>
           </tr>
@@ -91,29 +91,6 @@
       {% for domain_request in domain_requests %}
         {% if has_deletable_domain_requests %}
           {% if domain_request.status == "started" or domain_request.status == "withdrawn"  %}
-          <!-- <a
-            role="button"
-            id="button-toggle-delete-domain-alert-{{ domain_request.id }}"
-            href="#toggle-delete-domain-alert-{{ domain_request.id }}"
-            class="usa-button--unstyled text-no-underline"
-            aria-controls="toggle-delete-domain-alert-{{ domain_request.id }}"
-            data-open-modal
-          >
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-              <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-            </svg>
-            {% with prefix="New domain request ("%}
-              {% with date=domain_request.created_at|date:"DATETIME_FORMAT"%}
-                {% with name_default=prefix|add:date|add:" UTC)"%}
-                  {% if domain_request.requested_domain is not None %}
-                    Delete <span class="usa-sr-only">{{ domain_request.requested_domain.name }}</span>
-                  {% else %}
-                    Delete <span class="usa-sr-only">{{ name_default }}</span>
-                  {% endif %}
-                {% endwith %}
-              {% endwith %}
-            {% endwith %}
-          </a> -->
           <div
             class="usa-modal"
             id="toggle-delete-domain-alert-{{ domain_request.id }}"

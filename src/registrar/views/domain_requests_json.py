@@ -12,6 +12,12 @@ def get_domain_requests_json(request):
     domain_requests = DomainRequest.objects.filter(creator=request.user).exclude(
         status=DomainRequest.DomainRequestStatus.APPROVED
     )
+    # Handle sorting
+    sort_by = request.GET.get('sort_by', 'id')  # Default to 'id'
+    order = request.GET.get('order', 'asc')  # Default to 'asc'
+    if order == 'desc':
+        sort_by = f'-{sort_by}'
+    domain_requests = domain_requests.order_by(sort_by)
     page_number = request.GET.get('page', 1)
     paginator = Paginator(domain_requests, 2)  # Adjust the number of items per page as needed
     page_obj = paginator.get_page(page_number)

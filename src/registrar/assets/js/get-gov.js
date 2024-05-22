@@ -1052,16 +1052,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
             <td data-label="Status">
               ${request.status}
-              <svg 
-                class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
-                data-position="top"
-                title="${request.get_state_help_text}"
-                focusable="true"
-                aria-label="Status Information"
-                role="tooltip"
-              >
-                <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
-              </svg>
             </td>
             <td>
               <a href="${actionUrl}">
@@ -1075,18 +1065,12 @@ document.addEventListener('DOMContentLoaded', function() {
           `;
           tbody.appendChild(row);
         });
-        initializeTooltips();
         initializeModals();
 
         updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next);
         currentPage = page;
         currentSortBy = sortBy;
         currentOrder = order;
-
-        // Add the testerPixel element to the DOM
-        const testerPixel = document.createElement('span');
-        testerPixel.classList.add('display-none', 'testerPixel');
-        document.body.appendChild(testerPixel);
       })
       .catch(error => console.error('Error fetching domain requests:', error));
   }

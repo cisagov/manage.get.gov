@@ -16,7 +16,7 @@ def get_domains_json(request):
 
     # Handle sorting
     sort_by = request.GET.get('sort_by', 'id')  # Default to 'id'
-    order = request.GET.get('order', 'desc')  # Default to 'asc'
+    order = request.GET.get('order', 'asc')  # Default to 'asc'
 
     if sort_by == 'state_display':
         # Fetch the objects and sort them in Python
