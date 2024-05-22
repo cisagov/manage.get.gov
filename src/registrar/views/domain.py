@@ -795,7 +795,8 @@ class DomainAddUserView(DomainFormBaseView):
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
-        """Add the specified user on this domain."""
+        """Add the specified user on this domain. 
+        Throws EmailSendingError."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
         # look up a user with that email
@@ -808,7 +809,19 @@ class DomainAddUserView(DomainFormBaseView):
             # if user already exists then just send an email
             try:
                 self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+            except EmailSendingError:
+                logger.warn(
+                    "Could not send email invitation (EmailSendingError)",
+                    self.object,
+                    exc_info=True,
+                )
+                messages.warning(self.request, "Could not send email invitation.")
             except Exception:
+                logger.warn(
+                    "Could not send email invitation (Other Exception)",
+                    self.object,
+                    exc_info=True,
+                )
                 messages.warning(self.request, "Could not send email invitation.")
 
         try:
