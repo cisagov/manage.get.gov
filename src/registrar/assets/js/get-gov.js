@@ -937,6 +937,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const paginationContainer = document.querySelector('#domains-pagination .usa-pagination__list');
     paginationContainer.innerHTML = '';
 
+    paginationContainer.classList.toggle('display-none', numPages <= 1);
+
     if (hasPrevious) {
       const prevPageItem = document.createElement('li');
       prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
@@ -1024,8 +1026,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         unloadModals();
         data.domain_requests.forEach(request => {
-          const domainName = request.requested_domain ? request.requested_domain : `New domain request (${new Date(request.created_at).toLocaleString()} UTC)`;
-          const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString() : 'Not submitted';
+          const domainName = request.requested_domain ? request.requested_domain : `New domain request <span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString()} UTC)</span>`;
+          const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString() : `<span class="text-base">Not submitted</span>`;
           const actionUrl = (request.status === 'Started' || request.status === 'Withdrawn') ? `/domain-request/${request.id}/edit` : `/domain-request/${request.id}`;
           const actionLabel = (request.status === 'Started' || request.status === 'Withdrawn') ? 'Edit' : 'Manage';
           const deleteButton = request.is_deletable ? `
@@ -1078,6 +1080,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateDomainRequestsPagination(currentPage, numPages, hasPrevious, hasNext) {
     const paginationContainer = document.querySelector('#domain-requests-pagination .usa-pagination__list');
     paginationContainer.innerHTML = '';
+
+    paginationContainer.classList.toggle('display-none', numPages <= 1);
 
     if (hasPrevious) {
       const prevPageItem = document.createElement('li');
