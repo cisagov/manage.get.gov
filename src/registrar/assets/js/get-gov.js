@@ -838,123 +838,133 @@ function hideDeletedForms() {
 
 document.addEventListener('DOMContentLoaded', function() {
   let currentPage = 1;
-        let currentSortBy = 'id';
-        let currentOrder = 'asc';
+  let currentSortBy = 'id';
+  let currentOrder = 'asc';
+  let domainsWrapper = document.querySelector('.domains-wrapper');
+  let noDomainsWrapper = document.querySelector('.no-domains-wrapper');
 
   function loadPage(page, sortBy = currentSortBy, order = currentOrder) {
-      fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
-          .then(response => response.json())
-          .then(data => {
-              if (data.error) {
-                  alert(data.error);
-                  return;
-              }
+    fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
 
-              const domainList = document.querySelector('.dotgov-table__registered-domains tbody');
-              domainList.innerHTML = '';
+        if (data.domains.length) {
+          domainsWrapper.classList.remove('display-none');
+          noDomainsWrapper.classList.add('display-none');
+        } else {
+          domainsWrapper.classList.add('display-none');
+          noDomainsWrapper.classList.remove('display-none');
+        }
 
-              data.domains.forEach(domain => {
-                const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
-                const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
-                
-                  const row = document.createElement('tr');
-                  row.innerHTML = `
-                      <th scope="row" role="rowheader" data-label="Domain name">
-                          ${domain.name}
-                      </th>
-                      <td data-sort-value="${expirationDateSortValue}" data-label="Expires">
-                          ${expirationDate ? expirationDate.toLocaleDateString() : ''}
-                      </td>
-                      <td data-label="Status">
-                          ${domain.state_display}
-                          <svg 
-                              class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
-                              data-position="top"
-                              title="${domain.get_state_help_text}"
-                              focusable="true"
-                              aria-label="Status Information"
-                              role="tooltip"
-                          >
-                              <use aria-hidden="true" xlink:href="{% static 'img/sprite.svg' %}#info_outline"></use>
-                          </svg>
-                      </td>
-                      <td>
-                          <a href="/domain/${domain.id}">
-                              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                                  <use xlink:href="{% static 'img/sprite.svg' %}#${domain.state === 'deleted' || domain.state === 'on hold' ? 'visibility' : 'settings'}"></use>
-                              </svg>
-                              ${domain.state === 'deleted' || domain.state === 'on hold' ? 'View' : 'Manage'} <span class="usa-sr-only">${domain.name}</span>
-                          </a>
-                      </td>
-                  `;
-                  domainList.appendChild(row);
-              });
+        const domainList = document.querySelector('.dotgov-table__registered-domains tbody');
+        domainList.innerHTML = '';
 
-              updatePagination(data.page, data.num_pages, data.has_previous, data.has_next);
-                    currentPage = page;
-                    currentSortBy = sortBy;
-                    currentOrder = order;
-          })
-          .catch(error => console.error('Error fetching domains:', error));
+        data.domains.forEach(domain => {
+          const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
+          const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
+          
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <th scope="row" role="rowheader" data-label="Domain name">
+              ${domain.name}
+            </th>
+            <td data-sort-value="${expirationDateSortValue}" data-label="Expires">
+              ${expirationDate ? expirationDate.toLocaleDateString() : ''}
+            </td>
+            <td data-label="Status">
+              ${domain.state_display}
+              <svg 
+                class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
+                data-position="top"
+                title="${domain.get_state_help_text}"
+                focusable="true"
+                aria-label="Status Information"
+                role="tooltip"
+              >
+                <use aria-hidden="true" xlink:href="{% static 'img/sprite.svg' %}#info_outline"></use>
+              </svg>
+            </td>
+            <td>
+              <a href="/domain/${domain.id}">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                  <use xlink:href="{% static 'img/sprite.svg' %}#${domain.state === 'deleted' || domain.state === 'on hold' ? 'visibility' : 'settings'}"></use>
+                </svg>
+                ${domain.state === 'deleted' || domain.state === 'on hold' ? 'View' : 'Manage'} <span class="usa-sr-only">${domain.name}</span>
+              </a>
+            </td>
+          `;
+          domainList.appendChild(row);
+        });
+
+        updatePagination(data.page, data.num_pages, data.has_previous, data.has_next);
+          currentPage = page;
+          currentSortBy = sortBy;
+          currentOrder = order;
+      })
+      .catch(error => console.error('Error fetching domains:', error));
   }
 
   function updatePagination(currentPage, numPages, hasPrevious, hasNext) {
-      const paginationContainer = document.querySelector('#domains-pagination .usa-pagination__list');
-      paginationContainer.innerHTML = '';
+    const paginationContainer = document.querySelector('#domains-pagination .usa-pagination__list');
+    paginationContainer.innerHTML = '';
 
-      if (hasPrevious) {
-          const prevPageItem = document.createElement('li');
-          prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-          prevPageItem.innerHTML = `
-              <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
-                  <svg class="usa-icon" aria-hidden="true" role="img">
-                      <use xlink:href="{% static 'img/sprite.svg' %}#navigate_before"></use>
-                  </svg>
-                  <span class="usa-pagination__link-text">Previous</span>
-              </a>
-          `;
-          prevPageItem.querySelector('a').addEventListener('click', () => loadPage(currentPage - 1));
-          paginationContainer.appendChild(prevPageItem);
-      }
+    if (hasPrevious) {
+      const prevPageItem = document.createElement('li');
+      prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+      prevPageItem.innerHTML = `
+        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
+          <svg class="usa-icon" aria-hidden="true" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#navigate_before"></use>
+          </svg>
+          <span class="usa-pagination__link-text">Previous</span>
+        </a>
+      `;
+      prevPageItem.querySelector('a').addEventListener('click', () => loadPage(currentPage - 1));
+      paginationContainer.appendChild(prevPageItem);
+    }
 
-      for (let i = 1; i <= numPages; i++) {
-          const pageItem = document.createElement('li');
-          pageItem.className = 'usa-pagination__item usa-pagination__page-no';
-          pageItem.innerHTML = `
-              <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Page ${i}">${i}</a>
-          `;
-          if (i === currentPage) {
-              pageItem.querySelector('a').classList.add('usa-current');
-              pageItem.querySelector('a').setAttribute('aria-current', 'page');
-          }
-          pageItem.querySelector('a').addEventListener('click', () => loadPage(i));
-          paginationContainer.appendChild(pageItem);
+    for (let i = 1; i <= numPages; i++) {
+      const pageItem = document.createElement('li');
+      pageItem.className = 'usa-pagination__item usa-pagination__page-no';
+      pageItem.innerHTML = `
+        <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Page ${i}">${i}</a>
+      `;
+      if (i === currentPage) {
+        pageItem.querySelector('a').classList.add('usa-current');
+        pageItem.querySelector('a').setAttribute('aria-current', 'page');
       }
+      pageItem.querySelector('a').addEventListener('click', () => loadPage(i));
+      paginationContainer.appendChild(pageItem);
+    }
 
-      if (hasNext) {
-          const nextPageItem = document.createElement('li');
-          nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-          nextPageItem.innerHTML = `
-              <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
-                  <span class="usa-pagination__link-text">Next</span>
-                  <svg class="usa-icon" aria-hidden="true" role="img">
-                      <use xlink:href="{% static 'img/sprite.svg' %}#navigate_next"></use>
-                  </svg>
-              </a>
-          `;
-          nextPageItem.querySelector('a').addEventListener('click', () => loadPage(currentPage + 1));
-          paginationContainer.appendChild(nextPageItem);
-      }
+    if (hasNext) {
+      const nextPageItem = document.createElement('li');
+      nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+      nextPageItem.innerHTML = `
+        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
+          <span class="usa-pagination__link-text">Next</span>
+          <svg class="usa-icon" aria-hidden="true" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#navigate_next"></use>
+          </svg>
+        </a>
+      `;
+      nextPageItem.querySelector('a').addEventListener('click', () => loadPage(currentPage + 1));
+      paginationContainer.appendChild(nextPageItem);
+    }
   }
 
   // Add event listeners to table headers for sorting
   document.querySelectorAll('.dotgov-table th[data-sortable]').forEach(header => {
     header.addEventListener('click', function() {
-        const sortBy = this.getAttribute('data-sortable');
-        const order = currentOrder === 'asc' ? 'desc' : 'asc';
-        loadPage(1, sortBy, order);
+      const sortBy = this.getAttribute('data-sortable');
+      const order = currentOrder === 'asc' ? 'desc' : 'asc';
+      loadPage(1, sortBy, order);
     });
-});
+  });
 
   // Load the first page initially
   loadPage(1);
@@ -964,129 +974,151 @@ document.addEventListener('DOMContentLoaded', function() {
   let currentPage = 1;
   let currentSortBy = 'id';
   let currentOrder = 'asc';
+  let domainRequestsWrapper = document.querySelector('.domain-requests-wrapper');
+  let noDomainRequestsWrapper = document.querySelector('.no-domain-requests-wrapper');
 
   function loadDomainRequestsPage(page, sortBy = currentSortBy, order = currentOrder) {
-      fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
-          .then(response => response.json())
-          .then(data => {
-              if (data.error) {
-                  alert(data.error);
-                  return;
-              }
+    fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
 
-              const tbody = document.querySelector('.dotgov-table__domain-requests tbody');
-              tbody.innerHTML = '';
+        if (data.domain_requests.length) {
+          domainRequestsWrapper.classList.remove('display-none');
+          noDomainRequestsWrapper.classList.add('display-none');
+        } else {
+          domainRequestsWrapper.classList.add('display-none');
+          noDomainRequestsWrapper.classList.remove('display-none');
+        }
 
-              data.domain_requests.forEach(request => {
-                  const domainName = request.requested_domain ? request.requested_domain.name : `New domain request (${new Date(request.created_at).toLocaleString()} UTC)`;
-                  const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString() : 'Not submitted';
-                  const actionUrl = (request.status === 'Started' || request.status === 'Withdrawn') ? `/edit-domain-request/${request.id}` : `/domain-request-status/${request.id}`;
-                  const actionLabel = (request.status === 'Started' || request.status === 'Withdrawn') ? 'Edit' : 'Manage';
-                  const deleteButton = request.is_deletable ? `
-                      <a role="button" href="/domain-request-delete/${request.id}" class="usa-button--unstyled text-no-underline">
-                          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                              <use xlink:href="/static/img/sprite.svg#delete"></use>
-                          </svg> Delete
-                      </a>` : '';
+        const tbody = document.querySelector('.dotgov-table__domain-requests tbody');
+        tbody.innerHTML = '';
 
-                  const row = document.createElement('tr');
-                  row.innerHTML = `
-                      <th scope="row" role="rowheader" data-label="Domain name">
-                          ${domainName}
-                      </th>
-                      <td data-sort-value="${new Date(request.submission_date).getTime()}" data-label="Date submitted">
-                          ${submissionDate}
-                      </td>
-                      <td data-label="Status">
-                          ${request.state_display}
-                          <svg 
-                              class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
-                              data-position="top"
-                              title="${request.get_state_help_text}"
-                              focusable="true"
-                              aria-label="Status Information"
-                              role="tooltip"
-                          >
-                              <use aria-hidden="true" xlink:href="/static/img/sprite.svg#info_outline"></use>
-                          </svg>
-                      </td>
-                      <td>
-                          <a href="${actionUrl}">
-                              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                                  <use xlink:href="/static/img/sprite.svg#${request.state === 'deleted' || request.state === 'on hold' ? 'visibility' : 'settings'}"></use>
-                              </svg>
-                              ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain.name : 'New domain request'}</span>
-                          </a>
-                      </td>
-                      <td>${deleteButton}</td>
-                  `;
-                  tbody.appendChild(row);
-              });
+        data.domain_requests.forEach(request => {
+          const domainName = request.requested_domain ? request.requested_domain.name : `New domain request (${new Date(request.created_at).toLocaleString()} UTC)`;
+          const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString() : 'Not submitted';
+          const actionUrl = (request.status === 'Started' || request.status === 'Withdrawn') ? `/domain-request/${request.id}/edit` : `/domain-request/${request.id}`;
+          const actionLabel = (request.status === 'Started' || request.status === 'Withdrawn') ? 'Edit' : 'Manage';
+          const deleteButton = request.is_deletable ? `
+            <a 
+              role="button" 
+              id="button-toggle-delete-domain-alert-${request.id}"
+              href="#toggle-delete-domain-alert-${request.id}"
+              class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
+              aria-controls="toggle-delete-domain-alert-${request.id}"
+              data-open-modal
+            >
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                <use xlink:href="/static/img/sprite.svg#delete"></use>
+              </svg> Delete <span class="usa-sr-only">${domainName}</span>
+            </a>` : '';
 
-              updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next);
-              currentPage = page;
-              currentSortBy = sortBy;
-              currentOrder = order;
-          })
-          .catch(error => console.error('Error fetching domain requests:', error));
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <th scope="row" role="rowheader" data-label="Domain name">
+              ${domainName}
+            </th>
+            <td data-sort-value="${new Date(request.submission_date).getTime()}" data-label="Date submitted">
+              ${submissionDate}
+            </td>
+            <td data-label="Status">
+              ${request.status}
+              <svg 
+                class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
+                data-position="top"
+                title="${request.get_state_help_text}"
+                focusable="true"
+                aria-label="Status Information"
+                role="tooltip"
+              >
+                <use aria-hidden="true" xlink:href="/static/img/sprite.svg#info_outline"></use>
+              </svg>
+            </td>
+            <td>
+              <a href="${actionUrl}">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                  <use xlink:href="/static/img/sprite.svg#${request.state === 'deleted' || request.state === 'on hold' ? 'visibility' : 'settings'}"></use>
+                </svg>
+                ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain.name : 'New domain request'}</span>
+              </a>
+            </td>
+            <td>${deleteButton}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next);
+        currentPage = page;
+        currentSortBy = sortBy;
+        currentOrder = order;
+
+        // Add the testerPixel element to the DOM
+        const testerPixel = document.createElement('span');
+        testerPixel.classList.add('display-none', 'testerPixel');
+        document.body.appendChild(testerPixel);
+      })
+      .catch(error => console.error('Error fetching domain requests:', error));
   }
 
   function updateDomainRequestsPagination(currentPage, numPages, hasPrevious, hasNext) {
-      const paginationContainer = document.querySelector('#domain-requests-pagination .usa-pagination__list');
-      paginationContainer.innerHTML = '';
+    const paginationContainer = document.querySelector('#domain-requests-pagination .usa-pagination__list');
+    paginationContainer.innerHTML = '';
 
-      if (hasPrevious) {
-          const prevPageItem = document.createElement('li');
-          prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-          prevPageItem.innerHTML = `
-              <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
-                  <svg class="usa-icon" aria-hidden="true" role="img">
-                      <use xlink:href="/static/img/sprite.svg#navigate_before"></use>
-                  </svg>
-                  <span class="usa-pagination__link-text">Previous</span>
-              </a>
-          `;
-          prevPageItem.querySelector('a').addEventListener('click', () => loadDomainRequestsPage(currentPage - 1));
-          paginationContainer.appendChild(prevPageItem);
-      }
+    if (hasPrevious) {
+      const prevPageItem = document.createElement('li');
+      prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+      prevPageItem.innerHTML = `
+        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
+          <svg class="usa-icon" aria-hidden="true" role="img">
+            <use xlink:href="/static/img/sprite.svg#navigate_before"></use>
+          </svg>
+          <span class="usa-pagination__link-text">Previous</span>
+        </a>
+      `;
+      prevPageItem.querySelector('a').addEventListener('click', () => loadDomainRequestsPage(currentPage - 1));
+      paginationContainer.appendChild(prevPageItem);
+    }
 
-      for (let i = 1; i <= numPages; i++) {
-          const pageItem = document.createElement('li');
-          pageItem.className = 'usa-pagination__item usa-pagination__page-no';
-          pageItem.innerHTML = `
-              <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Page ${i}">${i}</a>
-          `;
-          if (i === currentPage) {
-              pageItem.querySelector('a').classList.add('usa-current');
-              pageItem.querySelector('a').setAttribute('aria-current', 'page');
-          }
-          pageItem.querySelector('a').addEventListener('click', () => loadDomainRequestsPage(i));
-          paginationContainer.appendChild(pageItem);
+    for (let i = 1; i <= numPages; i++) {
+      const pageItem = document.createElement('li');
+      pageItem.className = 'usa-pagination__item usa-pagination__page-no';
+      pageItem.innerHTML = `
+        <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Page ${i}">${i}</a>
+      `;
+      if (i === currentPage) {
+        pageItem.querySelector('a').classList.add('usa-current');
+        pageItem.querySelector('a').setAttribute('aria-current', 'page');
       }
+      pageItem.querySelector('a').addEventListener('click', () => loadDomainRequestsPage(i));
+      paginationContainer.appendChild(pageItem);
+    }
 
-      if (hasNext) {
-          const nextPageItem = document.createElement('li');
-          nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-          nextPageItem.innerHTML = `
-              <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
-                  <span class="usa-pagination__link-text">Next</span>
-                  <svg class="usa-icon" aria-hidden="true" role="img">
-                      <use xlink:href="/static/img/sprite.svg#navigate_next"></use>
-                  </svg>
-              </a>
-          `;
-          nextPageItem.querySelector('a').addEventListener('click', () => loadDomainRequestsPage(currentPage + 1));
-          paginationContainer.appendChild(nextPageItem);
-      }
+    if (hasNext) {
+      const nextPageItem = document.createElement('li');
+      nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+      nextPageItem.innerHTML = `
+        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
+          <span class="usa-pagination__link-text">Next</span>
+          <svg class="usa-icon" aria-hidden="true" role="img">
+            <use xlink:href="/static/img/sprite.svg#navigate_next"></use>
+          </svg>
+        </a>
+      `;
+      nextPageItem.querySelector('a').addEventListener('click', () => loadDomainRequestsPage(currentPage + 1));
+      paginationContainer.appendChild(nextPageItem);
+    }
   }
 
   // Add event listeners to table headers for sorting
   document.querySelectorAll('.dotgov-table__domain-requests th[data-sortable]').forEach(header => {
-      header.addEventListener('click', function() {
-          const sortBy = this.getAttribute('data-sortable');
-          const order = currentOrder === 'asc' ? 'desc' : 'asc';
-          loadDomainRequestsPage(1, sortBy, order);
-      });
+    header.addEventListener('click', function() {
+      const sortBy = this.getAttribute('data-sortable');
+      const order = currentOrder === 'asc' ? 'desc' : 'asc';
+      loadDomainRequestsPage(1, sortBy, order);
+    });
   });
 
   // Load the first page initially

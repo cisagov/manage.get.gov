@@ -25,41 +25,42 @@
 
   <section class="section--outlined">
     <h2>Domains</h2>
-    {% if page_obj %}
-    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__registered-domains">
-      <caption class="sr-only">Your registered domains</caption>
-      <thead>
-        <tr>
-          <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
-          <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
-          <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
-          <th 
-            scope="col" 
-            role="columnheader" 
-          >
-            <span class="usa-sr-only">Action</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- AJAX will populate this tbody -->
-      </tbody>
-    </table>
-    <div
-      class="usa-sr-only usa-table__announcement-region"
-      aria-live="polite"
-    ></div>
-    {% else %}
-    <p>You don't have any registered domains.</p>
-    <p class="maxw-none clearfix">
-      <a href="https://get.gov/help/faq/#do-not-see-my-domain" class="float-right-tablet display-flex flex-align-start usa-link" target="_blank">
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-          <use xlink:href="{%static 'img/sprite.svg'%}#help_outline"></use>
-        </svg>
-        Why don't I see my domain when I sign in to the registrar?
-      </a>
-    </p>
-    {% endif %}
+    <div class="domains-wrapper display-none">
+      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__registered-domains">
+        <caption class="sr-only">Your registered domains</caption>
+        <thead>
+          <tr>
+            <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
+            <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
+            <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
+            <th 
+              scope="col" 
+              role="columnheader" 
+            >
+              <span class="usa-sr-only">Action</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- AJAX will populate this tbody -->
+        </tbody>
+      </table>
+      <div
+        class="usa-sr-only usa-table__announcement-region"
+        aria-live="polite"
+      ></div>
+    </div>
+    <div class="no-domains-wrapper display-none">
+      <p>You don't have any registered domains.</p>
+      <p class="maxw-none clearfix">
+        <a href="https://get.gov/help/faq/#do-not-see-my-domain" class="float-right-tablet display-flex flex-align-start usa-link" target="_blank">
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#help_outline"></use>
+          </svg>
+          Why don't I see my domain when I sign in to the registrar?
+        </a>
+      </p>
+    </div>
   </section>
 
   <nav aria-label="Pagination" class="usa-pagination" id="domains-pagination">
@@ -70,37 +71,93 @@
 
   <section class="section--outlined">
     <h2>Domain requests</h2>
-    {% if domain_requests %}
-    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__domain-requests">
-      <caption class="sr-only">Your domain requests</caption>
-      <thead>
-        <tr>
-          <th data-sortable scope="col" role="columnheader">Domain name</th>
-          <th data-sortable scope="col" role="columnheader">Date submitted</th>
-          <th data-sortable scope="col" role="columnheader">Status</th>
-          <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
-          {% if has_deletable_domain_requests %}
-          <th scope="col" role="columnheader"><span class="usa-sr-only">Delete Action</span></th>
+    <div class="domain-requests-wrapper display-none">
+      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__domain-requests">
+        <caption class="sr-only">Your domain requests</caption>
+        <thead>
+          <tr>
+            <th data-sortable scope="col" role="columnheader">Domain name</th>
+            <th data-sortable scope="col" role="columnheader">Date submitted</th>
+            <th data-sortable scope="col" role="columnheader">Status</th>
+            <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
+            <th scope="col" role="columnheader"><span class="usa-sr-only">Delete Action</span></th>
+          </tr>
+        </thead>
+        <tbody id="domain-requests-tbody">
+          <!-- AJAX will populate this tbody -->
+        </tbody>
+      </table>
+
+      {% for domain_request in domain_requests %}
+        {% if has_deletable_domain_requests %}
+          {% if domain_request.status == "started" or domain_request.status == "withdrawn"  %}
+          <!-- <a
+            role="button"
+            id="button-toggle-delete-domain-alert-{{ domain_request.id }}"
+            href="#toggle-delete-domain-alert-{{ domain_request.id }}"
+            class="usa-button--unstyled text-no-underline"
+            aria-controls="toggle-delete-domain-alert-{{ domain_request.id }}"
+            data-open-modal
+          >
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+            </svg>
+            {% with prefix="New domain request ("%}
+              {% with date=domain_request.created_at|date:"DATETIME_FORMAT"%}
+                {% with name_default=prefix|add:date|add:" UTC)"%}
+                  {% if domain_request.requested_domain is not None %}
+                    Delete <span class="usa-sr-only">{{ domain_request.requested_domain.name }}</span>
+                  {% else %}
+                    Delete <span class="usa-sr-only">{{ name_default }}</span>
+                  {% endif %}
+                {% endwith %}
+              {% endwith %}
+            {% endwith %}
+          </a> -->
+          <div
+            class="usa-modal"
+            id="toggle-delete-domain-alert-{{ domain_request.id }}"
+            aria-labelledby="Are you sure you want to continue?"
+            aria-describedby="Domain will be removed"
+            data-force-action
+          >
+            <form method="POST" action="{% url "domain-request-delete" pk=domain_request.id %}">
+              {% if domain_request.requested_domain is None %}
+                {% if domain_request.created_at %}
+                  {% with prefix="(created " %}
+                    {% with formatted_date=domain_request.created_at|date:"DATETIME_FORMAT" %}
+                      {% with modal_content=prefix|add:formatted_date|add:" UTC)" %}
+                        {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete this domain request?" modal_description="This will remove the domain request "|add:modal_content|add:" from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                      {% endwith %}
+                    {% endwith %}
+                  {% endwith %}
+                {% else %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete New domain request?" modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                {% endif %}
+              {% else %}
+                {% with modal_heading_value=domain_request.requested_domain.name|add:"?" %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete" heading_value=modal_heading_value modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                {% endwith %}
+              {% endif %}
+            </form>
+          </div>
           {% endif %}
-        </tr>
-      </thead>
-      <tbody id="domain-requests-tbody">
-        <!-- AJAX will populate this tbody -->
-      </tbody>
-    </table>
-    <div
-      class="usa-sr-only usa-table__announcement-region"
-      aria-live="polite"
-    ></div>
-    <nav aria-label="Pagination" class="usa-pagination" id="domain-requests-pagination">
-      <ul class="usa-pagination__list">
-        <!-- Pagination links will be dynamically populated by JS -->
-      </ul>
-    </nav>
-    {% else %}
-    <p>You haven't requested any domains.</p>
-    <!-- <p><a href="{% url 'domain-request:' %}" class="usa-button">Start a new domain request</a></p> -->
-    {% endif %}
+        {% endif %}
+      {% endfor %}
+
+      <div
+        class="usa-sr-only usa-table__announcement-region"
+        aria-live="polite"
+      ></div>
+      <nav aria-label="Pagination" class="usa-pagination" id="domain-requests-pagination">
+        <ul class="usa-pagination__list">
+          <!-- Pagination links will be dynamically populated by JS -->
+        </ul>
+      </nav>
+    </div>
+    <div class="no-domain-requests-wrapper display-none">
+      <p>You haven't requested any domains.</p>
+  </div>  
   </section>
 
   {# Note: Reimplement this after MVP #}
