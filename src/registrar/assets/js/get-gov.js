@@ -985,7 +985,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Add event listeners to table headers for sorting
-  document.querySelectorAll('.dotgov-table th[data-sortable]').forEach(header => {
+  document.querySelectorAll('.dotgov-table__registered-domains th[data-sortable]').forEach(header => {
     header.addEventListener('click', function() {
       const sortBy = this.getAttribute('data-sortable');
       let order = 'asc';
