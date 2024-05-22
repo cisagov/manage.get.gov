@@ -374,108 +374,109 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         }
         return [key for key, value in history_dict.items() if value]
 
-    def _is_federal_complete(self):
-        # Federal -> "Federal government branch" page can't be empty + Federal Agency selection can't be None
-        return not (self.domain_request.federal_type is None or self.domain_request.federal_agency is None)
+    # def _is_federal_complete(self):
+    #     # Federal -> "Federal government branch" page can't be empty + Federal Agency selection can't be None
+    #     return not (self.domain_request.federal_type is None or self.domain_request.federal_agency is None)
 
-    def _is_interstate_complete(self):
-        # Interstate -> "About your organization" page can't be empty
-        return self.domain_request.about_your_organization is not None
+    # def _is_interstate_complete(self):
+    #     # Interstate -> "About your organization" page can't be empty
+    #     return self.domain_request.about_your_organization is not None
 
-    def _is_state_or_territory_complete(self):
-        # State -> ""Election office" page can't be empty
-        return self.domain_request.is_election_board is not None
+    # def _is_state_or_territory_complete(self):
+    #     # State -> ""Election office" page can't be empty
+    #     return self.domain_request.is_election_board is not None
 
-    def _is_tribal_complete(self):
-        # Tribal -> "Tribal name" and "Election office" page can't be empty
-        return self.domain_request.tribe_name is not None and self.domain_request.is_election_board is not None
+    # def _is_tribal_complete(self):
+    #     # Tribal -> "Tribal name" and "Election office" page can't be empty
+    #     return self.domain_request.tribe_name is not None and self.domain_request.is_election_board is not None
 
-    def _is_county_complete(self):
-        # County -> "Election office" page can't be empty
-        return self.domain_request.is_election_board is not None
+    # def _is_county_complete(self):
+    #     # County -> "Election office" page can't be empty
+    #     return self.domain_request.is_election_board is not None
 
-    def _is_city_complete(self):
-        # City -> "Election office" page can't be empty
-        return self.domain_request.is_election_board is not None
+    # def _is_city_complete(self):
+    #     # City -> "Election office" page can't be empty
+    #     return self.domain_request.is_election_board is not None
 
-    def _is_special_district_complete(self):
-        # Special District -> "Election office" and "About your organization" page can't be empty
-        return (
-            self.domain_request.is_election_board is not None
-            and self.domain_request.about_your_organization is not None
-        )
+    # def _is_special_district_complete(self):
+    #     # Special District -> "Election office" and "About your organization" page can't be empty
+    #     return (
+    #         self.domain_request.is_election_board is not None
+    #         and self.domain_request.about_your_organization is not None
+    #     )
 
-    def _is_organization_name_and_address_complete(self):
-        return not (
-            self.domain_request.organization_name is None
-            or self.domain_request.address_line1 is None
-            or self.domain_request.city is None
-            or self.domain_request.state_territory is None
-            or self.domain_request.zipcode is None
-        )
+    # def _is_organization_name_and_address_complete(self):
+    #     return not (
+    #         self.domain_request.organization_name is None
+    #         or self.domain_request.address_line1 is None
+    #         or self.domain_request.city is None
+    #         or self.domain_request.state_territory is None
+    #         or self.domain_request.zipcode is None
+    #     )
 
-    def _is_authorizing_official_complete(self):
-        return self.domain_request.authorizing_official is not None
+    # def _is_authorizing_official_complete(self):
+    #     return self.domain_request.authorizing_official is not None
 
-    def _is_requested_domain_complete(self):
-        return self.domain_request.requested_domain is not None
+    # def _is_requested_domain_complete(self):
+    #     return self.domain_request.requested_domain is not None
 
-    def _is_purpose_complete(self):
-        return self.domain_request.purpose is not None
+    # def _is_purpose_complete(self):
+    #     return self.domain_request.purpose is not None
 
-    def _is_submitter_complete(self):
-        return self.domain_request.submitter is not None
+    # def _is_submitter_complete(self):
+    #     return self.domain_request.submitter is not None
 
-    def _is_other_contacts_complete(self):
-        return self.domain_request.other_contacts is not None
+    # def _is_other_contacts_complete(self):
+    #     return self.domain_request.other_contacts is not None
 
-    def _is_additional_details_complete(self):
-        return not (
-            self.domain_request.has_cisa_representative is None
-            or self.domain_request.has_anything_else_text is None
-            # RARE EDGE CASE: You click yes on having a cisa rep, but you dont type in email (should block in form)
-            or (
-                self.domain_request.has_cisa_representative is True
-                and self.domain_request.cisa_representative_email is None
-            )
-            or self.domain_request.is_policy_acknowledged is None
-        )
+    # def _is_additional_details_complete(self):
+    #     return not (
+    #         self.domain_request.has_cisa_representative is None
+    #         or self.domain_request.has_anything_else_text is None
+    #         # RARE EDGE CASE: You click yes on having a cisa rep, but you dont type in email (should block in form)
+    #         or (
+    #             self.domain_request.has_cisa_representative is True
+    #             and self.domain_request.cisa_representative_email is None
+    #         )
+    #         or self.domain_request.is_policy_acknowledged is None
+    #     )
 
-    def _is_general_form_complete(self):
-        return (
-            self._is_organization_name_and_address_complete()
-            and self._is_authorizing_official_complete()
-            and self._is_requested_domain_complete()
-            and self._is_purpose_complete()
-            and self._is_submitter_complete()
-            and self._is_other_contacts_complete()
-            and self._is_additional_details_complete()
-        )
+    # def _is_general_form_complete(self):
+    #     return (
+    #         self._is_organization_name_and_address_complete()
+    #         and self._is_authorizing_official_complete()
+    #         and self._is_requested_domain_complete()
+    #         and self._is_purpose_complete()
+    #         and self._is_submitter_complete()
+    #         and self._is_other_contacts_complete()
+    #         and self._is_additional_details_complete()
+    #     )
 
-    def _form_complete(self):
-        if self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
-            is_complete = self._is_federal_complete()
-        elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.INTERSTATE:
-            is_complete = self._is_interstate_complete()
-        elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.STATE_OR_TERRITORY:
-            is_complete = self._is_state_or_territory_complete()
-        elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL:
-            is_complete = self._is_tribal_complete()
-        elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.COUNTY:
-            is_complete = self._is_county_complete()
-        elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.CITY:
-            is_complete = self._is_city_complete()
-        elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.SPECIAL_DISTRICT:
-            is_complete = self._is_special_district_complete()
-        else:
-            is_complete = False
+    # def _form_complete(self):
+    #     if self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
+    #         is_complete = self._is_federal_complete()
+    #     elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.INTERSTATE:
+    #         is_complete = self._is_interstate_complete()
+    #     elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.STATE_OR_TERRITORY:
+    #         is_complete = self._is_state_or_territory_complete()
+    #     elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL:
+    #         is_complete = self._is_tribal_complete()
+    #     elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.COUNTY:
+    #         is_complete = self._is_county_complete()
+    #     elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.CITY:
+    #         is_complete = self._is_city_complete()
+    #     elif self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.SPECIAL_DISTRICT:
+    #         is_complete = self._is_special_district_complete()
+    #     else:
+    #         # NOTE: This shouldn't happen, this is only if somehow they didn't choose an org type
+    #         is_complete = False
 
-        if not is_complete or not self._is_general_form_complete():
-            print("!!!! We are in the False if statement - form is not complete")
-            return False
+    #     if not is_complete or not self._is_general_form_complete():
+    #         print("!!!! We are in the False if statement - form is not complete")
+    #         return False
 
-        print("!!!! We are in the True if statement - form is complete")
-        return True
+    #     print("!!!! We are in the True if statement - form is complete")
+    #     return True
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
@@ -483,7 +484,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # Concatenate the modal header that we'll pass to the modal.
 
         context_stuff = {}
-        if self._form_complete():
+        if DomainRequest._form_complete(self.domain_request):
             print("!!!!!!!in form complete section")
             modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
             context_stuff = {
@@ -773,7 +774,7 @@ class Review(DomainRequestWizard):
     forms = []  # type: ignore
 
     def get_context_data(self):
-        if self._form_complete() is False:
+        if DomainRequest._form_complete(self.domain_request) is False:
             logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()
         context["Step"] = Step.__members__

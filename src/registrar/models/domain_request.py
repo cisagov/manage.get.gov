@@ -938,3 +938,107 @@ class DomainRequest(TimeStampedModel):
         for field in opts.many_to_many:
             data[field.name] = field.value_from_object(self)
         return data
+
+    def _is_federal_complete(self):
+        # Federal -> "Federal government branch" page can't be empty + Federal Agency selection can't be None
+        return not (self.federal_type is None or self.federal_agency is None)
+
+    def _is_interstate_complete(self):
+        # Interstate -> "About your organization" page can't be empty
+        return self.about_your_organization is not None
+
+    def _is_state_or_territory_complete(self):
+        # State -> ""Election office" page can't be empty
+        return self.is_election_board is not None
+
+    def _is_tribal_complete(self):
+        # Tribal -> "Tribal name" and "Election office" page can't be empty
+        return self.tribe_name is not None and self.is_election_board is not None
+
+    def _is_county_complete(self):
+        # County -> "Election office" page can't be empty
+        return self.is_election_board is not None
+
+    def _is_city_complete(self):
+        # City -> "Election office" page can't be empty
+        return self.is_election_board is not None
+
+    def _is_special_district_complete(self):
+        # Special District -> "Election office" and "About your organization" page can't be empty
+        return (
+            self.is_election_board is not None
+            and self.about_your_organization is not None
+        )
+
+    def _is_organization_name_and_address_complete(self):
+        return not (
+            self.organization_name is None
+            or self.address_line1 is None
+            or self.city is None
+            or self.state_territory is None
+            or self.zipcode is None
+        )
+
+    def _is_authorizing_official_complete(self):
+        return self.authorizing_official is not None
+
+    def _is_requested_domain_complete(self):
+        return self.requested_domain is not None
+
+    def _is_purpose_complete(self):
+        return self.purpose is not None
+
+    def _is_submitter_complete(self):
+        return self.submitter is not None
+
+    def _is_other_contacts_complete(self):
+        return self.other_contacts is not None
+
+    def _is_additional_details_complete(self):
+        return not (
+            self.has_cisa_representative is None
+            or self.has_anything_else_text is None
+            # RARE EDGE CASE: You click yes on having a cisa rep, but you dont type in email (should block in form)
+            or (
+                self.has_cisa_representative is True
+                and self.cisa_representative_email is None
+            )
+            or self.is_policy_acknowledged is None
+        )
+
+    def _is_general_form_complete(self):
+        return (
+            self._is_organization_name_and_address_complete()
+            and self._is_authorizing_official_complete()
+            and self._is_requested_domain_complete()
+            and self._is_purpose_complete()
+            and self._is_submitter_complete()
+            and self._is_other_contacts_complete()
+            and self._is_additional_details_complete()
+        )
+
+    def _form_complete(self):
+        if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
+            is_complete = self._is_federal_complete()
+        elif self.generic_org_type == DomainRequest.OrganizationChoices.INTERSTATE:
+            is_complete = self._is_interstate_complete()
+        elif self.generic_org_type == DomainRequest.OrganizationChoices.STATE_OR_TERRITORY:
+            is_complete = self._is_state_or_territory_complete()
+        elif self.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL:
+            is_complete = self._is_tribal_complete()
+        elif self.generic_org_type == DomainRequest.OrganizationChoices.COUNTY:
+            is_complete = self._is_county_complete()
+        elif self.generic_org_type == DomainRequest.OrganizationChoices.CITY:
+            is_complete = self._is_city_complete()
+        elif self.generic_org_type == DomainRequest.OrganizationChoices.SPECIAL_DISTRICT:
+            is_complete = self._is_special_district_complete()
+        else:
+            # NOTE: This shouldn't happen, this is only if somehow they didn't choose an org type
+            is_complete = False
+
+        if not is_complete or not self._is_general_form_complete():
+            print("!!!! We are in the False if statement - form is not complete")
+            return False
+
+        print("!!!! We are in the True if statement - form is complete")
+        return True
