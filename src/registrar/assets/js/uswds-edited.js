@@ -5542,12 +5542,14 @@ const getColumnHeaders = table => {
  * to the default state (ready to sort ascending) if it's no longer sorted
  * @param {HTMLTableHeaderCellElement} header
  */
-const updateSortLabel = header => {
-  const headerName = header.innerText;
+const updateSortLabel = (header, headerName) => {
+  if (headerName == null)
+    headerName = header.innerText;
   const sortedAscending = header.getAttribute(SORTED) === ASCENDING;
   const isSorted = header.getAttribute(SORTED) === ASCENDING || header.getAttribute(SORTED) === DESCENDING || false;
   const headerLabel = `${headerName}', sortable column, currently ${isSorted ? `${sortedAscending ? `sorted ${ASCENDING}` : `sorted ${DESCENDING}`}` : "unsorted"}`;
   const headerButtonLabel = `Click to sort by ${headerName} in ${sortedAscending ? DESCENDING : ASCENDING} order.`;
+  // console.log( header.innerText)
   header.setAttribute("aria-label", headerLabel);
   header.querySelector(SORT_BUTTON).setAttribute("title", headerButtonLabel);
 };
@@ -5645,7 +5647,7 @@ const toggleSort = (header, isAscending) => {
  * @param {HTMLTableHeaderCellElement} header
  */
 
-const createHeaderButton = header => {
+const createHeaderButton = (header, headerName) => {
   const buttonEl = document.createElement("button");
   buttonEl.setAttribute("tabindex", "0");
   buttonEl.classList.add(SORT_BUTTON_CLASS);
@@ -5664,7 +5666,7 @@ const createHeaderButton = header => {
   </svg>
   `;
   header.appendChild(buttonEl);
-  updateSortLabel(header);
+  updateSortLabel(header, headerName);
 };
 const table = behavior({
   [CLICK]: {
@@ -5676,7 +5678,11 @@ const table = behavior({
 }, {
   init(root) {
     const sortableHeaders = select(SORTABLE_HEADER, root);
-    sortableHeaders.forEach(header => createHeaderButton(header));
+    sortableHeaders.forEach(header => { 
+      console.log(header.innerText);
+      createHeaderButton(header, header.innerText);
+      console.log(header.innerText);
+     });
     const firstSorted = sortableHeaders.filter(header => header.getAttribute(SORTED) === ASCENDING || header.getAttribute(SORTED) === DESCENDING)[0];
     if (typeof firstSorted === "undefined") {
       // no sortable headers found

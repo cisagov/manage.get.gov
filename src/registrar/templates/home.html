@@ -87,6 +87,10 @@
           <!-- AJAX will populate this tbody -->
         </tbody>
       </table>
+      <div
+        class="usa-sr-only usa-table__announcement-region"
+        aria-live="polite"
+      ></div>
 
       {% for domain_request in domain_requests %}
         {% if has_deletable_domain_requests %}
@@ -122,10 +126,6 @@
         {% endif %}
       {% endfor %}
 
-      <div
-        class="usa-sr-only usa-table__announcement-region"
-        aria-live="polite"
-      ></div>
       <nav aria-label="Pagination" class="usa-pagination flex-justify-end" id="domain-requests-pagination">
         <ul class="usa-pagination__list">
           <!-- Pagination links will be dynamically populated by JS -->
