@@ -5549,7 +5549,6 @@ const updateSortLabel = (header, headerName) => {
   const isSorted = header.getAttribute(SORTED) === ASCENDING || header.getAttribute(SORTED) === DESCENDING || false;
   const headerLabel = `${headerName}', sortable column, currently ${isSorted ? `${sortedAscending ? `sorted ${ASCENDING}` : `sorted ${DESCENDING}`}` : "unsorted"}`;
   const headerButtonLabel = `Click to sort by ${headerName} in ${sortedAscending ? DESCENDING : ASCENDING} order.`;
-  // console.log( header.innerText)
   header.setAttribute("aria-label", headerLabel);
   header.querySelector(SORT_BUTTON).setAttribute("title", headerButtonLabel);
 };
@@ -5679,9 +5678,7 @@ const table = behavior({
   init(root) {
     const sortableHeaders = select(SORTABLE_HEADER, root);
     sortableHeaders.forEach(header => { 
-      console.log(header.innerText);
       createHeaderButton(header, header.innerText);
-      console.log(header.innerText);
      });
     const firstSorted = sortableHeaders.filter(header => header.getAttribute(SORTED) === ASCENDING || header.getAttribute(SORTED) === DESCENDING)[0];
     if (typeof firstSorted === "undefined") {
