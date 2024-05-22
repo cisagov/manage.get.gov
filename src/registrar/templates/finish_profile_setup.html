@@ -5,7 +5,7 @@
 
 {# Disable the redirect  #}
 {% block logo %}
-    {% include "includes/gov_extended_logo.html" with logo_clickable=False %}
+    {% include "includes/gov_extended_logo.html" with logo_clickable=confirm_changes %}
 {% endblock %}
 
 {# Add the new form #}
@@ -16,5 +16,5 @@
 {% endblock content_bottom %}
 
 {% block footer %}
-    {% include "includes/footer.html" %}
+    {% include "includes/footer.html" with show_manage_your_domains=confirm_changes %}
 {% endblock footer %}

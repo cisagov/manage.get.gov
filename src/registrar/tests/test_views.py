@@ -55,9 +55,13 @@ class TestWithUser(MockEppLib):
         first_name = "First"
         last_name = "Last"
         email = "info@example.com"
+        phone = "8003111234"
         self.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email
+            username=username, first_name=first_name, last_name=last_name, email=email, phone=phone
         )
+        title="test title"
+        self.user.contact.title = title
+        self.user.save()
 
         username_incomplete = "test_user_incomplete"
         first_name_2 = "Incomplete"
@@ -671,7 +675,7 @@ class UserProfileTests(TestWithUser, WebTest):
         assume that the same test results hold true for 401 and 403."""
         with override_flag("profile_feature", active=True):
             with self.assertRaises(Exception):
-                response = self.client.get(reverse("home"))
+                response = self.client.get(reverse("home"), follow=True)
                 self.assertEqual(response.status_code, 500)
                 self.assertContains(response, "Your profile")
 
@@ -691,49 +695,49 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_home_page_main_nav_with_profile_feature_on(self):
         """test that Your profile is in main nav of home page when profile_feature is on"""
         with override_flag("profile_feature", active=True):
-            response = self.client.get("/")
+            response = self.client.get("/", follow=True)
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_home_page_main_nav_with_profile_feature_off(self):
         """test that Your profile is not in main nav of home page when profile_feature is off"""
         with override_flag("profile_feature", active=False):
-            response = self.client.get("/")
+            response = self.client.get("/", follow=True)
         self.assertNotContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_new_request_main_nav_with_profile_feature_on(self):
         """test that Your profile is in main nav of new request when profile_feature is on"""
         with override_flag("profile_feature", active=True):
-            response = self.client.get("/request/")
+            response = self.client.get("/request/", follow=True)
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_new_request_main_nav_with_profile_feature_off(self):
         """test that Your profile is not in main nav of new request when profile_feature is off"""
         with override_flag("profile_feature", active=False):
-            response = self.client.get("/request/")
+            response = self.client.get("/request/", follow=True)
         self.assertNotContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_user_profile_main_nav_with_profile_feature_on(self):
         """test that Your profile is in main nav of user profile when profile_feature is on"""
         with override_flag("profile_feature", active=True):
-            response = self.client.get("/user-profile")
+            response = self.client.get("/user-profile", follow=True)
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_user_profile_returns_404_when_feature_off(self):
         """test that Your profile returns 404 when profile_feature is off"""
         with override_flag("profile_feature", active=False):
-            response = self.client.get("/user-profile")
+            response = self.client.get("/user-profile", follow=True)
         self.assertEqual(response.status_code, 404)
 
     @less_console_noise_decorator
     def test_domain_detail_profile_feature_on(self):
         """test that domain detail view when profile_feature is on"""
         with override_flag("profile_feature", active=True):
-            response = self.client.get(reverse("domain", args=[self.domain.pk]))
+            response = self.client.get(reverse("domain", args=[self.domain.pk]), follow=True)
         self.assertContains(response, "Your profile")
         self.assertNotContains(response, "Your contact information")
 
@@ -741,14 +745,14 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_domain_your_contact_information_when_profile_feature_off(self):
         """test that Your contact information is accessible when profile_feature is off"""
         with override_flag("profile_feature", active=False):
-            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information")
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
         self.assertContains(response, "Your contact information")
 
     @less_console_noise_decorator
     def test_domain_your_contact_information_when_profile_feature_on(self):
         """test that Your contact information is not accessible when profile feature is on"""
         with override_flag("profile_feature", active=True):
-            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information")
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
         self.assertEqual(response.status_code, 404)
 
     @less_console_noise_decorator
@@ -765,9 +769,9 @@ class UserProfileTests(TestWithUser, WebTest):
             submitter=contact_user,
         )
         with override_flag("profile_feature", active=True):
-            response = self.client.get(f"/domain-request/{domain_request.id}")
+            response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
             self.assertContains(response, "Your profile")
-            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw")
+            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
             self.assertContains(response, "Your profile")
         # cleanup
         domain_request.delete()
@@ -787,9 +791,9 @@ class UserProfileTests(TestWithUser, WebTest):
             submitter=contact_user,
         )
         with override_flag("profile_feature", active=False):
-            response = self.client.get(f"/domain-request/{domain_request.id}")
+            response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
             self.assertNotContains(response, "Your profile")
-            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw")
+            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
             self.assertNotContains(response, "Your profile")
         # cleanup
         domain_request.delete()
@@ -800,16 +804,14 @@ class UserProfileTests(TestWithUser, WebTest):
         """test user profile form submission"""
         self.app.set_user(self.user.username)
         with override_flag("profile_feature", active=True):
-            profile_page = self.app.get(reverse("user-profile"))
+            profile_page = self.app.get(reverse("user-profile")).follow()
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             profile_form = profile_page.form
             profile_page = profile_form.submit()
 
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            # assert that first result contains errors
-            self.assertContains(profile_page, "Enter your title")
-            self.assertContains(profile_page, "Enter your phone number")
+
             profile_form = profile_page.form
             profile_form["title"] = "sample title"
             profile_form["phone"] = "(201) 555-1212"
