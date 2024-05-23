@@ -5354,6 +5354,7 @@ modal = {
   }
 };
 module.exports = modal;
+// modified uswds.js to add modal module to window so that it is accessible to other js
 window.modal = modal;
 
 },{"../../uswds-core/src/js/config":35,"../../uswds-core/src/js/utils/focus-trap":47,"../../uswds-core/src/js/utils/scrollbar-width":51,"../../uswds-core/src/js/utils/select-or-matches":52}],29:[function(require,module,exports){
@@ -5543,6 +5544,7 @@ const getColumnHeaders = table => {
  * @param {HTMLTableHeaderCellElement} header
  */
 const updateSortLabel = (header, headerName) => {
+  // modified original function to add headerName, as there were instances where tooltip had several lines of extraneous spaces
   if (headerName == null)
     headerName = header.innerText;
   const sortedAscending = header.getAttribute(SORTED) === ASCENDING;
@@ -5647,6 +5649,7 @@ const toggleSort = (header, isAscending) => {
  */
 
 const createHeaderButton = (header, headerName) => {
+  // modified original function to add headerName, as there were instances where tooltip had several lines of extraneous spaces
   const buttonEl = document.createElement("button");
   buttonEl.setAttribute("tabindex", "0");
   buttonEl.classList.add(SORT_BUTTON_CLASS);
@@ -5678,6 +5681,7 @@ const table = behavior({
   init(root) {
     const sortableHeaders = select(SORTABLE_HEADER, root);
     sortableHeaders.forEach(header => { 
+      // modified original function to add headerName, as there were instances where tooltip had several lines of extraneous spaces
       createHeaderButton(header, header.innerText);
      });
     const firstSorted = sortableHeaders.filter(header => header.getAttribute(SORTED) === ASCENDING || header.getAttribute(SORTED) === DESCENDING)[0];
@@ -6162,6 +6166,7 @@ const tooltip = behavior({
   hide: hideToolTip
 });
 module.exports = tooltip;
+// modified uswds.js to add tooltip module to window so that it is accessible to other js
 window.tooltip = tooltip;
 
 },{"../../uswds-core/src/js/config":35,"../../uswds-core/src/js/utils/behavior":45,"../../uswds-core/src/js/utils/is-in-viewport":48,"../../uswds-core/src/js/utils/select-or-matches":52}],34:[function(require,module,exports){

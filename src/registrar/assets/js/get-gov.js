@@ -835,15 +835,18 @@ function hideDeletedForms() {
   HookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null)
 })();
 
-
+/**
+ * Initialize USWDS tooltips by calling initialization method.  Requires that uswds-edited.js
+ * be loaded before get-gov.js.  uswds-edited.js adds the tooltip module to the window to be
+ * accessible directly in get-gov.js
+ * 
+ */
 function initializeTooltips() {
   function checkTooltip() {
-    //console.log('Checking for tooltip...');
+    // Check that the tooltip library is loaded, and if not, wait and retry
     if (window.tooltip && typeof window.tooltip.init === 'function') {
-        console.log('Tooltip is available, initializing...');
         window.tooltip.init();
     } else {
-        console.log('Tooltip not available, retrying...');
         // Retry after a short delay
         setTimeout(checkTooltip, 100);
     }
@@ -851,14 +854,36 @@ function initializeTooltips() {
   checkTooltip();
 }
 
+/**
+ * Initialize USWDS modals by calling on method.  Requires that uswds-edited.js be loaded
+ * before get-gov.js.  uswds-edited.js adds the modal module to the window to be accessible
+ * directly in get-gov.js.
+ * initializeModals adds modal-related DOM elements, based on other DOM elements existing in 
+ * the page.  It needs to be called only once for any particular DOM element; otherwise, it
+ * will initialize improperly.  Therefore, if DOM elements change dynamically and include
+ * DOM elements with modal classes, unloadModals needs to be called before initializeModals.
+ * 
+ */
 function initializeModals() {
   window.modal.on();
 }
 
+/**
+ * Unload existing USWDS modals by calling off method.  Requires that uswds-edited.js be
+ * loaded before get-gov.js.  uswds-edited.js adds the modal module to the window to be
+ * accessible directly in get-gov.js.
+ * See note above with regards to calling this method relative to initializeModals.
+ * 
+ */
 function unloadModals() {
   window.modal.off();
 }
 
+/**
+ * An IIFE that listens for DOM Content to be loaded, then executes.  This function
+ * initializes the domains list and associated functionality on the home page of the app.
+ *
+ */
 document.addEventListener('DOMContentLoaded', function() {
   let currentPage = 1;
   let currentSortBy = 'id';
@@ -866,7 +891,15 @@ document.addEventListener('DOMContentLoaded', function() {
   let domainsWrapper = document.querySelector('.domains-wrapper');
   let noDomainsWrapper = document.querySelector('.no-domains-wrapper');
 
+  /**
+   * Loads rows in the domains list, as well as updates pagination around the domains list
+   * based on the supplied attributes.
+   * @param {*} page - the page number of the results (starts with 1)
+   * @param {*} sortBy - the sort column option
+   * @param {*} order - the sort order {asc, desc}
+   */
   function loadPage(page, sortBy = currentSortBy, order = currentOrder) {
+    //fetch json of page of domains, given page # and sort
     fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
       .then(response => response.json())
       .then(data => {
@@ -875,6 +908,7 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
 
+        // handle the display of proper messaging in the event that no domains exist in the list
         if (data.domains.length) {
           domainsWrapper.classList.remove('display-none');
           noDomainsWrapper.classList.add('display-none');
@@ -883,6 +917,7 @@ document.addEventListener('DOMContentLoaded', function() {
           noDomainsWrapper.classList.remove('display-none');
         }
 
+        // identify the DOM element where the domain list will be inserted into the DOM
         const domainList = document.querySelector('.dotgov-table__registered-domains tbody');
         domainList.innerHTML = '';
 
@@ -922,8 +957,10 @@ document.addEventListener('DOMContentLoaded', function() {
           `;
           domainList.appendChild(row);
         });
+        // initialize tool tips immediately after the associated DOM elements are added
         initializeTooltips();
 
+        // update pagination
         updatePagination(data.page, data.num_pages, data.has_previous, data.has_next);
         currentPage = page;
         currentSortBy = sortBy;
@@ -932,11 +969,19 @@ document.addEventListener('DOMContentLoaded', function() {
       .catch(error => console.error('Error fetching domains:', error));
   }
 
-  
+  /**
+   * Update the pagination below the domains list.
+   * @param {*} currentPage - the current page number (starting with 1)
+   * @param {*} numPages - the number of pages indicated by the domains list response
+   * @param {*} hasPrevious - if there is a page of results prior to the current page
+   * @param {*} hasNext - if there is a page of results after the current page
+   */
   function updatePagination(currentPage, numPages, hasPrevious, hasNext) {
+    // identify the DOM element where the pagination will be inserted
     const paginationContainer = document.querySelector('#domains-pagination .usa-pagination__list');
     paginationContainer.innerHTML = '';
 
+    // pagination should only be displayed if there are more than one pages of results
     paginationContainer.classList.toggle('display-none', numPages <= 1);
 
     if (hasPrevious) {
@@ -989,9 +1034,12 @@ document.addEventListener('DOMContentLoaded', function() {
     header.addEventListener('click', function() {
       const sortBy = this.getAttribute('data-sortable');
       let order = 'asc';
+      // sort order will be ascending, unless the currently sorted column is ascending, and the user
+      // is selecting the same column to sort in descending order
       if (sortBy === currentSortBy) {
         order = currentOrder === 'asc' ? 'desc' : 'asc';
       }
+      // load the results with the updated sort
       loadPage(1, sortBy, order);
     });
   });
@@ -1000,6 +1048,11 @@ document.addEventListener('DOMContentLoaded', function() {
   loadPage(1);
 });
 
+/**
+ * An IIFE that listens for DOM Content to be loaded, then executes.  This function
+ * initializes the domain requests list and associated functionality on the home page of the app.
+ *
+ */
 document.addEventListener('DOMContentLoaded', function() {
   let currentPage = 1;
   let currentSortBy = 'id';
@@ -1007,7 +1060,15 @@ document.addEventListener('DOMContentLoaded', function() {
   let domainRequestsWrapper = document.querySelector('.domain-requests-wrapper');
   let noDomainRequestsWrapper = document.querySelector('.no-domain-requests-wrapper');
 
+  /**
+   * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
+   * based on the supplied attributes.
+   * @param {*} page - the page number of the results (starts with 1)
+   * @param {*} sortBy - the sort column option
+   * @param {*} order - the sort order {asc, desc}
+   */
   function loadDomainRequestsPage(page, sortBy = currentSortBy, order = currentOrder) {
+    //fetch json of page of domain requests, given page # and sort
     fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
       .then(response => response.json())
       .then(data => {
@@ -1016,6 +1077,7 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
 
+        // handle the display of proper messaging in the event that no domain requests exist in the list
         if (data.domain_requests.length) {
           domainRequestsWrapper.classList.remove('display-none');
           noDomainRequestsWrapper.classList.add('display-none');
@@ -1024,9 +1086,12 @@ document.addEventListener('DOMContentLoaded', function() {
           noDomainRequestsWrapper.classList.remove('display-none');
         }
 
+        // identify the DOM element where the domain request list will be inserted into the DOM
         const tbody = document.querySelector('.dotgov-table__domain-requests tbody');
         tbody.innerHTML = '';
 
+        // remove any existing modal elements from the DOM so they can be properly re-initialized
+        // after the DOM content changes and there are new delete modal buttons added
         unloadModals();
         data.domain_requests.forEach(request => {
           const domainName = request.requested_domain ? request.requested_domain : `New domain request <span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString()} UTC)</span>`;
@@ -1070,8 +1135,10 @@ document.addEventListener('DOMContentLoaded', function() {
           `;
           tbody.appendChild(row);
         });
+        // initialize modals immediately after the DOM content is updated
         initializeModals();
 
+        // update the pagination after the domain requests list is updated
         updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next);
         currentPage = page;
         currentSortBy = sortBy;
@@ -1080,7 +1147,15 @@ document.addEventListener('DOMContentLoaded', function() {
       .catch(error => console.error('Error fetching domain requests:', error));
   }
 
+  /**
+   * Update the pagination below the domain requests list.
+   * @param {*} currentPage - the current page number (starting with 1)
+   * @param {*} numPages - the number of pages indicated by the domain request list response
+   * @param {*} hasPrevious - if there is a page of results prior to the current page
+   * @param {*} hasNext - if there is a page of results after the current page
+   */
   function updateDomainRequestsPagination(currentPage, numPages, hasPrevious, hasNext) {
+    // identify the DOM element where pagination is contained
     const paginationContainer = document.querySelector('#domain-requests-pagination .usa-pagination__list');
     paginationContainer.innerHTML = '';
 
@@ -1136,6 +1211,8 @@ document.addEventListener('DOMContentLoaded', function() {
     header.addEventListener('click', function() {
       const sortBy = this.getAttribute('data-sortable');
       let order = 'asc';
+      // sort order will be ascending, unless the currently sorted column is ascending, and the user
+      // is selecting the same column to sort in descending order
       if (sortBy === currentSortBy) {
         order = currentOrder === 'asc' ? 'desc' : 'asc';
       }

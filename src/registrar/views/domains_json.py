@@ -41,7 +41,6 @@ def get_domains_json(request):
             "state": domain.state,
             "state_display": domain.state_display(),
             "get_state_help_text": domain.get_state_help_text(),
-            # Add other fields as necessary
         }
         for domain in page_obj.object_list
     ]

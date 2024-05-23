@@ -185,11 +185,10 @@ class HomeTests(TestWithUser):
                     user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
                 )
 
-                # Grab the response
+                # Grab the json response for domain list
                 response = self.client.get("/get-domains-json/")
 
-                # Make sure the user can actually see the domain.
-                # We expect two instances because of SR content.
+                # Make sure the domain is in the list.
                 self.assertContains(response, domain_name, count=1)
 
                 # Check that we have the right text content.
@@ -208,11 +207,10 @@ class HomeTests(TestWithUser):
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
 
-        # Grab the response
+        # Grab the json response of the domains list
         response = self.client.get("/get-domains-json/")
 
-        # Make sure the user can actually see the domain.
-        # We expect two instances because of SR content.
+        # Make sure the domain is in the response
         self.assertContains(response, "expired.gov", count=1)
 
         # Check that we have the right text content.
@@ -229,9 +227,10 @@ class HomeTests(TestWithUser):
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
 
-        # Grab the response
+        # Grab the json response of the domains list
         response = self.client.get("/get-domains-json/")
 
+        # Make sure domain is in the response
         self.assertContains(response, "imexpired.gov", count=1)
 
         # Make sure the expiration date is None
@@ -248,9 +247,10 @@ class HomeTests(TestWithUser):
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain_2, role=UserDomainRole.Roles.MANAGER)
 
-        # Grab the response
+        # Grab the json response of the domains list
         response = self.client.get("/get-domains-json/")
 
+        # Make sure the response contains the domain
         self.assertContains(response, "notexpired.gov", count=1)
 
         # Make sure the expiration date is None

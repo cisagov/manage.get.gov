@@ -20,13 +20,14 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         UserDomainRole.objects.create(user=self.user, domain=self.domain3)
 
     def test_get_domains_json_unauthenticated(self):
-        # Logout the user
+        """ for an unauthenticated user, test that the user is redirected for auth """
         self.app.reset()
 
         response = self.client.get(reverse("get_domains_json"))
         self.assertEqual(response.status_code, 302)
 
     def test_get_domains_json_authenticated(self):
+        """ Test that an authenticated user gets the list of 3 domains."""
         response = self.app.get(reverse("get_domains_json"))
         self.assertEqual(response.status_code, 200)
         data = response.json
@@ -45,6 +46,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         self.assertIn(self.domain3.id, domain_ids)
 
     def test_pagination(self):
+        """ Test that pagination is correct in the response """
         response = self.app.get(reverse("get_domains_json"), {"page": 1})
         self.assertEqual(response.status_code, 200)
         data = response.json
@@ -56,6 +58,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["num_pages"], 1)
 
     def test_sorting(self):
+        """ test that sorting works properly in the response """
         response = self.app.get(reverse("get_domains_json"), {"sort_by": "expiration_date", "order": "desc"})
         self.assertEqual(response.status_code, 200)
         data = response.json
@@ -73,6 +76,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(expiration_dates, sorted(expiration_dates))
 
     def test_sorting_by_state_display(self):
+        """ test that the state_display sorting works properly """
         response = self.app.get(reverse("get_domains_json"), {"sort_by": "state_display", "order": "asc"})
         self.assertEqual(response.status_code, 200)
         data = response.json
