@@ -230,7 +230,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
                 context = self.get_context_data()
-                logger.debug("CONTEXT profile flag is %s" % context["has_profile_feature_flag"])
                 return render(request, "domain_request_intro.html", context=context)
             else:
                 return self.goto(self.steps.first)
