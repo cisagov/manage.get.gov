@@ -594,7 +594,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
+        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
         (
             "Permissions",
             {
@@ -625,7 +625,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
+        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
         (
             "Permissions",
             {
@@ -651,7 +651,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     analyst_readonly_fields = [
         "Personal Info",
         "first_name",
+        "middle_name",
         "last_name",
+        "title",
         "email",
         "Permissions",
         "is_active",
@@ -1170,7 +1172,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "is_election_board")
+    readonly_fields = ("other_contacts", "is_election_board", "federal_agency")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1435,6 +1437,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "current_websites",
         "alternative_domains",
         "is_election_board",
+        "federal_agency",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -1876,7 +1879,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    readonly_fields = ["state", "expiration_date", "first_ready", "deleted"]
+    readonly_fields = ("state", "expiration_date", "first_ready", "deleted", "federal_agency")
 
     # Table ordering
     ordering = ["name"]
