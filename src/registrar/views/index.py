@@ -37,6 +37,13 @@ def index(request):
     return render(request, "home.html", context)
 
 
+
+def index_2(request, num_domain):
+    """This page is available to anyone without logging in."""
+    context = {}
+    context["num_domains"] = num_domain
+    return render(request, "home_2.html", context)
+
 def _get_domain_requests(request):
     """Given the current request,
     get all DomainRequests that are associated with the UserDomainRole object.

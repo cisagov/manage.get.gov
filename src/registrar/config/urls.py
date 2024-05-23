@@ -55,6 +55,7 @@ for step, view in [
 
 urlpatterns = [
     path("", views.index, name="home"),
+    path("home-2/<int:num_domain>", views.index_2, name="home2"),
     path(
         "admin/logout/",
         RedirectView.as_view(pattern_name="logout", permanent=False),
