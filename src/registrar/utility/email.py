@@ -51,7 +51,7 @@ def send_templated_email(
         )
         logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
     except Exception as exc:
-        logger.debug(f"E-mail unable to send! Could not access the SES client.")
+        logger.debug("E-mail unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
 
     destination = {"ToAddresses": [to_address]}

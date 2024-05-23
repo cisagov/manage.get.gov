@@ -797,7 +797,7 @@ class DomainAddUserView(DomainFormBaseView):
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
-        """Add the specified user on this domain. 
+        """Add the specified user on this domain.
         Throws EmailSendingError."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
