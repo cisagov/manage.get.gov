@@ -126,9 +126,12 @@ html[data-theme="light"] {
     .usa-table td {
         background-color: transparent;
     }
-    // #deleted-objects a {
-    //     color: #005288;
-    // }
+
+    // Sets darker color on delete page links.
+    // Remove when dark mode successfully applies to Django delete page.
+    .delete-confirmation .content a {
+        color: #005288;
+    }
 }
 
 // Firefox needs this to be specifically set
@@ -151,6 +154,11 @@ html[data-theme="dark"] {
     }
     .usa-table td {
         background-color: transparent;
+    }
+    // Sets darker color on delete page links.
+    // Remove when dark mode successfully applies to Django delete page.
+    .delete-confirmation .content a {
+        color: #005288;
     }
 }
 
