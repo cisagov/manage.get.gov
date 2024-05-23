@@ -43,7 +43,11 @@ class UserProfileForm(forms.ModelForm):
             self.fields[field_name].required = True
 
         # Set custom form label
+        self.fields["first_name"].label = "First name / given name"
         self.fields["middle_name"].label = "Middle name (optional)"
+        self.fields["last_name"].label = "Last name / family name"
+        self.fields["title"].label = "Title or role in your organization"
+        self.fields["email"].label = "Organizational email"
 
         # Set custom error messages
         self.fields["first_name"].error_messages = {"required": "Enter your first name / given name."}
