@@ -250,6 +250,8 @@ class Client(oic.Client):
         # Define vtm/vtr information on the user dictionary so we can track this in one location.
         # If a user has this information, then they are bumped up in terms of verification level.
         if session.get("needs_step_up_auth") is True:
+            if "ial" in info_response_dict:
+                info_response_dict.pop("ial")
             info_response_dict["vtm"] = session.get("vtm", "")
             info_response_dict["vtr"] = session.get("vtr", "")
 

@@ -165,7 +165,9 @@ def _requires_step_up_auth(userinfo) -> bool:
     """
     uuid = userinfo.get("sub", "")
     email = userinfo.get("email", "")
-    if not userinfo.get("vtm") or not userinfo.get("vtr"):
+    # This value is returned after successful auth
+    user_verified = userinfo.get("vot", "")
+    if not userinfo.get("vtm") or not userinfo.get("vtr") or not user_verified:
         # The acr of this attempt is not at the highest level
         # so check if the user needs the higher level
         return User.needs_identity_verification(email, uuid)
