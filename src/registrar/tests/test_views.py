@@ -804,7 +804,7 @@ class UserProfileTests(TestWithUser, WebTest):
         """test user profile form submission"""
         self.app.set_user(self.user.username)
         with override_flag("profile_feature", active=True):
-            profile_page = self.app.get(reverse("user-profile")).follow()
+            profile_page = self.app.get(reverse("user-profile"))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             profile_form = profile_page.form
