@@ -23,7 +23,6 @@ from .utility import (
     DomainRequestWizardPermissionView,
 )
 
-from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -401,9 +400,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
         step_list = []
-        excluded_steps = [
-            Step.YOUR_CONTACT
-        ]
+        excluded_steps = [Step.YOUR_CONTACT]
         should_exclude = flag_is_active(self.request, "profile_feature")
         for step in Step:
 

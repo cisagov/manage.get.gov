@@ -61,7 +61,7 @@ class TestWithUser(MockEppLib):
         )
         title = "test title"
         self.user.contact.title = title
-        self.user.save()
+        self.user.contact.save()
 
         username_incomplete = "test_user_incomplete"
         first_name_2 = "Incomplete"
@@ -737,7 +737,7 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_domain_detail_profile_feature_on(self):
         """test that domain detail view when profile_feature is on"""
         with override_flag("profile_feature", active=True):
-            response = self.client.get(reverse("domain", args=[self.domain.pk]), follow=True)
+            response = self.client.get(reverse("domain", args=[self.domain.pk]))
         self.assertContains(response, "Your profile")
         self.assertNotContains(response, "Your contact information")
 
