@@ -1124,7 +1124,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "generic_org_type",
                     "is_election_board",
                     "organization_type",
                 ]
@@ -1171,7 +1170,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "generic_org_type", "is_election_board")
+    readonly_fields = ("other_contacts", "is_election_board")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1385,7 +1384,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "generic_org_type",
                     "is_election_board",
                     "organization_type",
                 ]
@@ -1436,7 +1434,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "other_contacts",
         "current_websites",
         "alternative_domains",
-        "generic_org_type",
         "is_election_board",
     )
 
