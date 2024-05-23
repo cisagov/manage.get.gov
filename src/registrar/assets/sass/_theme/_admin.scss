@@ -724,3 +724,14 @@ div.dja__model-description{
 .text-underline {
     text-decoration: underline !important;
 }
+
+//-- Override some styling for the USWDS summary box (per design quidance for ticket #2055
+.usa-summary-box {
+    background: #{$dhs-blue-10};
+    border-color: #{$dhs-blue-30};
+    max-width: 72ex;
+    word-wrap: break-word;
+}
+.usa-summary-box h3 {
+    color: #{$dhs-blue-60};
+}
