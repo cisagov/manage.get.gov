@@ -8,6 +8,7 @@ from django.template.loader import get_template
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from waffle import switch_is_active
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,9 @@ def send_templated_email(
     context as Django's HTML templates. context gives additional information
     that the template may use.
     """
+    if switch_is_active("disable_email_sending"):
+        raise EmailSendingError("Could not send email. Email sending is disabled due to switch 'disable_email_sending'.")
+
     logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
     template = get_template(template_name)
     email_body = template.render(context=context)

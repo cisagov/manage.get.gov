@@ -329,9 +329,16 @@ SERVER_EMAIL = "root@get.gov"
 # If Waffle encounters a reference to a flag that is not in the database, should Waffle create the flag?
 WAFFLE_CREATE_MISSING_FLAGS = True
 
+# If Waffle encounters a reference to a switch that is not in the database, should Waffle create the switch?
+WAFFLE_CREATE_MISSING_SWITCHES = True
+
 # The model that will be used to keep track of flags. Extends AbstractUserFlag.
 # Used to replace the default flag class (for customization purposes).
 WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
+
+# The model that will be used to keep track of switches. Extends AbstractBaseSwitch.
+# Used to replace the default switch class (for customization purposes).
+WAFFLE_SWITCH_MODEL = "registrar.WaffleSwitch"
 
 # endregion
 
