@@ -1006,22 +1006,18 @@ class DomainRequest(TimeStampedModel):
     def _is_additional_details_complete(self):
         return (
             (
-                (self.has_cisa_representative is True and self.cisa_representative_email is not None and self.cisa_representative_email != '')
-                or self.has_cisa_representative is False
+                self.has_cisa_representative is True
+                and self.cisa_representative_email is not None
+                and self.cisa_representative_email != ""
             )
-            and 
-            (
-                
-                (self.has_anything_else_text is True and self.anything_else is not None and self.anything_else != '')
-                or self.has_anything_else_text is False
-             
-            )
+            or self.has_cisa_representative is False
+        ) and (
+            (self.has_anything_else_text is True and self.anything_else is not None and self.anything_else != "")
+            or self.has_anything_else_text is False
         )
-    
-    # def _is_policy_acknoledgment_complete(self):
-    #     return (
 
-    #     )
+    def _is_policy_acknowledgement_complete(self):
+        return self.is_policy_acknowledged is not None
 
     def _is_general_form_complete(self):
         return (
@@ -1032,6 +1028,7 @@ class DomainRequest(TimeStampedModel):
             and self._is_submitter_complete()
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()
+            and self._is_policy_acknowledgement_complete()
         )
 
     def _form_complete(self):

@@ -475,7 +475,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         num_pages_tested = 0
         # elections, type_of_work, tribal_government
         SKIPPED_PAGES = 3
-        num_pages = len(self.TITLES) - SKIPPED_PAGES
+        # num_pages = len(self.TITLES) - SKIPPED_PAGES
 
         intro_page = self.app.get(reverse("domain-request:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -748,15 +748,11 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         requirements_form["requirements-is_policy_acknowledged"] = True
 
-
         # Before we go to the review page, let's remove some of the data from the request:
         domain_request = DomainRequest.objects.get()  # there's only one
 
         domain_request.generic_org_type = None
         domain_request.save()
-
-
-
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -793,8 +789,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertNotContains(review_page, "You are about to submit a domain request for city.gov")
         self.assertContains(review_page, "You can’t submit this request because it’s incomplete.")
 
-
-        # DO WE NEED TO BLOCK SUBMISSIONS WITH INCIMPLETE FORMS ON THE BACKEND @Alysia?
+        # DO WE NEED TO BLOCK SUBMISSIONS WITH INCOMPLETE FORMS ON THE BACKEND @Alysia?
 
         # final submission results in a redirect to the "finished" URL
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
