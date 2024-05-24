@@ -749,7 +749,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         requirements_form["requirements-is_policy_acknowledged"] = True
 
 
-
         # Before we go to the review page, let's remove some of the data from the request:
         domain_request = DomainRequest.objects.get()  # there's only one
 

@@ -965,10 +965,7 @@ class DomainRequest(TimeStampedModel):
 
     def _is_special_district_complete(self):
         # Special District -> "Election office" and "About your organization" page can't be empty
-        return (
-            self.is_election_board is not None
-            and self.about_your_organization is not None
-        )
+        return self.is_election_board is not None and self.about_your_organization is not None
 
     def _is_organization_name_and_address_complete(self):
         return not (
@@ -992,17 +989,26 @@ class DomainRequest(TimeStampedModel):
         return self.submitter is not None
 
     def _is_other_contacts_complete(self):
-        return self.other_contacts is not None
+        # If the object even exists and double check for
+        if (
+            self.has_other_contacts()
+            and self.other_contacts.filter(
+                first_name__isnull=False,
+                last_name__isnull=False,
+                title__isnull=False,
+                email__isnull=False,
+                phone__isnull=False,
+            ).exists()
+        ):
+            return True
+        return False
 
     def _is_additional_details_complete(self):
         return not (
             self.has_cisa_representative is None
             or self.has_anything_else_text is None
             # RARE EDGE CASE: You click yes on having a cisa rep, but you dont type in email (should block in form)
-            or (
-                self.has_cisa_representative is True
-                and self.cisa_representative_email is None
-            )
+            or (self.has_cisa_representative is True and self.cisa_representative_email is None)
             or self.is_policy_acknowledged is None
         )
 
