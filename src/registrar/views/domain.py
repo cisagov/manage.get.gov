@@ -735,7 +735,7 @@ class DomainAddUserView(DomainFormBaseView):
         email: string- email to send to
         add_success: bool- default True indicates:
         adding a success message to the view if the email sending succeeds
-        
+
         raises EmailSendingError
         """
 
