@@ -2232,6 +2232,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "generic_org_type",
                 "is_election_board",
+                "federal_agency",
                 "id",
                 "created_at",
                 "updated_at",
@@ -2286,6 +2287,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "generic_org_type",
                 "is_election_board",
+                "federal_agency",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -2314,6 +2316,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "generic_org_type",
                 "is_election_board",
+                "federal_agency",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
@@ -3172,6 +3175,7 @@ class TestDomainInformationAdmin(TestCase):
                 "other_contacts",
                 "generic_org_type",
                 "is_election_board",
+                "federal_agency",
                 "creator",
                 "type_of_work",
                 "more_organization_information",
@@ -3534,7 +3538,7 @@ class TestMyUserAdmin(TestCase):
                         )
                     },
                 ),
-                ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
+                ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
                 ("Permissions", {"fields": ("is_active", "groups")}),
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
             )
