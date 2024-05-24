@@ -129,7 +129,7 @@ html[data-theme="light"] {
 
     // Sets darker color on delete page links.
     // Remove when dark mode successfully applies to Django delete page.
-    .delete-confirmation .content a {
+    .delete-confirmation .content a:not(.button)  {
         color: #005288;
     }
 }
@@ -157,7 +157,7 @@ html[data-theme="dark"] {
     }
     // Sets darker color on delete page links.
     // Remove when dark mode successfully applies to Django delete page.
-    .delete-confirmation .content a {
+    .delete-confirmation .content a:not(.button)  {
         color: #005288;
     }
 }
