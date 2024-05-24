@@ -734,7 +734,10 @@ class DomainAddUserView(DomainFormBaseView):
         does not make a domain information object
         email: string- email to send to
         add_success: bool- default True indicates:
-          adding a success message to the view if the email sending succeeds"""
+        adding a success message to the view if the email sending succeeds
+        
+        raises EmailSendingError
+        """
 
         # Set a default email address to send to for staff
         requestor_email = settings.DEFAULT_FROM_EMAIL
