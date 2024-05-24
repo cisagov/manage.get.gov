@@ -1004,13 +1004,24 @@ class DomainRequest(TimeStampedModel):
         return False
 
     def _is_additional_details_complete(self):
-        return not (
-            self.has_cisa_representative is None
-            or self.has_anything_else_text is None
-            # RARE EDGE CASE: You click yes on having a cisa rep, but you dont type in email (should block in form)
-            or (self.has_cisa_representative is True and self.cisa_representative_email is None)
-            or self.is_policy_acknowledged is None
+        return (
+            (
+                (self.has_cisa_representative is True and self.cisa_representative_email is not None and self.cisa_representative_email != '')
+                or self.has_cisa_representative is False
+            )
+            and 
+            (
+                
+                (self.has_anything_else_text is True and self.anything_else is not None and self.anything_else != '')
+                or self.has_anything_else_text is False
+             
+            )
         )
+    
+    # def _is_policy_acknoledgment_complete(self):
+    #     return (
+
+    #     )
 
     def _is_general_form_complete(self):
         return (

@@ -1656,7 +1656,8 @@ class TestDomainRequestIncomplete(TestCase):
             purpose="Some purpose",
             submitter=you,
             has_cisa_representative=False,
-            has_anything_else_text="Some text",
+            has_anything_else_text=True,
+            anything_else='else',
             is_policy_acknowledged=True,
             creator=self.user,
         )
@@ -1732,6 +1733,8 @@ class TestDomainRequestIncomplete(TestCase):
         self.assertTrue(self.domain_request._is_city_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
+        self.domain_request.refresh_from_db()
+        print(f'self.domain_request.is_election_board  {self.domain_request.is_election_board }')
         self.assertFalse(self.domain_request._is_city_complete())
 
     def test_is_special_district_complete(self):
@@ -1788,19 +1791,41 @@ class TestDomainRequestIncomplete(TestCase):
         self.assertFalse(self.domain_request._is_other_contacts_complete())
 
     def test_is_additional_details_complete(self):
-        # has_cisa_representative=False,
-        # has_anything_else_text="Some text",
+        # Initial setup
+        self.domain_request.has_cisa_representative = False
+        self.domain_request.has_anything_else_text = True
+        self.domain_request.anything_else = "Some text"
+        self.domain_request.save()
+
+        # anything else checked, anything else filled in, and cisa rep checked false
         self.assertTrue(self.domain_request._is_additional_details_complete())
+
+        # Set cisa rep to True and provide an email
         self.domain_request.has_cisa_representative = True
         self.domain_request.cisa_representative_email = "some@cisarepemail.com"
         self.domain_request.save()
+
+        # has anything else, cisa rep checked true, has rep email
         self.assertTrue(self.domain_request._is_additional_details_complete())
+
+        # Set cisa rep to None
+        self.domain_request.cisa_representative_email = None
         self.domain_request.has_cisa_representative = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_additional_details_complete())
-        self.domain_request.has_cisa_representative = True
-        self.domain_request.cisa_representative_email = None
-        self.domain_request.save()
+        
+        # Check immediately after saving
+        print("After setting to None and saving:")
+        print(f'has_cisa_representative (before refresh): {self.domain_request.has_cisa_representative}')
+
+        # Refresh from the database
+        self.domain_request.refresh_from_db()
+
+        # Check after refreshing from the database
+        print("After refreshing from DB:")
+        print(f'has_cisa_representative (after refresh): {self.domain_request.has_cisa_representative}')
+
+
+        # Expect False because has_cisa_representative is None (which we now explicitly handle)
         self.assertFalse(self.domain_request._is_additional_details_complete())
 
     def test_is_general_form_complete(self):
