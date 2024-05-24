@@ -9,7 +9,6 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from waffle import switch_is_active
-from django.conf import settings
 
 
 logger = logging.getLogger(__name__)
@@ -38,7 +37,8 @@ def send_templated_email(
     Raises EmailSendingError if SES client could not be accessed
     """
     if switch_is_active("disable_email_sending") and not settings.IS_PRODUCTION:
-        raise EmailSendingError("Could not send email. Email sending is disabled due to switch 'disable_email_sending'.")
+        message = "Could not send email. Email sending is disabled due to switch 'disable_email_sending'."
+        raise EmailSendingError(message)
 
     template = get_template(template_name)
     email_body = template.render(context=context)

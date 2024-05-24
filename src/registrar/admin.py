@@ -2309,6 +2309,7 @@ class UserGroupAdmin(AuditedAdmin):
 
 class WaffleFlagAdmin(FlagAdmin):
     """Custom admin implementation of django-waffle's Flag class"""
+
     class Meta:
         """Contains meta information about this class"""
 
@@ -2318,11 +2319,13 @@ class WaffleFlagAdmin(FlagAdmin):
 
 class WaffleSwitchAdmin(SwitchAdmin):
     """Custom admin implementation of django-waffle's Switch class"""
+
     class Meta:
         """Contains meta information about this class"""
 
         model = models.WaffleSwitch
         fields = "__all__"
+
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
