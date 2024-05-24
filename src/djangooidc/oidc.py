@@ -15,7 +15,6 @@ from oic.oic.message import AccessTokenResponse
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 from oic.utils import keyio
 
-
 from . import exceptions as o_e
 
 __author__ = "roland"
@@ -85,7 +84,6 @@ class Client(oic.Client):
     def create_authn_request(
         self,
         session,
-        do_step_up_auth=False,
         extra_args=None,
     ):
         """Step 2: Construct a login URL at OP's domain and send the user to it."""
@@ -102,11 +100,10 @@ class Client(oic.Client):
                 "state": session["state"],
                 "nonce": session["nonce"],
                 "redirect_uri": self.registration_response["redirect_uris"][0],
+                # acr_value may be passed in session if overriding, as in the case
+                # of step up auth, otherwise get from settings.py
+                "acr_values": session.get("acr_value") or self.behaviour.get("acr_value"),
             }
-            if do_step_up_auth:
-                self._set_args_for_biometric_auth_request(session, request_args)
-            else:
-                request_args["acr_values"] = self.behaviour.get("acr_value")
 
             if extra_args is not None:
                 request_args.update(extra_args)
@@ -117,35 +114,6 @@ class Client(oic.Client):
 
         logger.debug("request args: %s" % request_args)
 
-        url, headers = self._prepare_authn_request(request_args, state)  # C901 too complex
-
-        try:
-            # create the redirect object
-            response = HttpResponseRedirect(str(url))
-            # add headers to the object, if any
-            if headers:
-                for key, value in headers.items():
-                    response[key] = value
-
-        except Exception as err:
-            logger.error(err)
-            logger.error("Failed to create redirect object for %s" % state)
-            raise o_e.InternalError(locator=state)
-
-        return response
-
-    def _set_args_for_biometric_auth_request(self, session, request_args):
-        if "acr_value" in session:
-            session.pop("acr_value")
-        request_args["vtr"] = session.get("vtr")
-        request_args["vtm"] = session.get("vtm")
-
-    def _prepare_authn_request(self, request_args, state):
-        """
-        Constructs an authorization request. Then, assembles the url, body, headers, and cis.
-
-        Returns the assembled url and associated header information: `(url, headers)`
-        """
         try:
             # prepare the request for sending
             cis = self.construct_AuthorizationRequest(request_args=request_args)
@@ -158,7 +126,6 @@ class Client(oic.Client):
                 method="GET",
                 request_args=request_args,
             )
-
             logger.debug("body: %s" % body)
             logger.debug("URL: %s" % url)
             logger.debug("headers: %s" % headers)
@@ -167,7 +134,19 @@ class Client(oic.Client):
             logger.error("Failed to prepare request for %s" % state)
             raise o_e.InternalError(locator=state)
 
-        return (url, headers)
+        try:
+            # create the redirect object
+            response = HttpResponseRedirect(str(url))
+            # add headers to the object, if any
+            if headers:
+                for key, value in headers.items():
+                    response[key] = value
+        except Exception as err:
+            logger.error(err)
+            logger.error("Failed to create redirect object for %s" % state)
+            raise o_e.InternalError(locator=state)
+
+        return response
 
     def callback(self, unparsed_response, session):
         """Step 3: Receive OP's response, request an access token, and user info."""
@@ -245,18 +224,9 @@ class Client(oic.Client):
         if isinstance(info_response, ErrorResponse):
             logger.error("Unable to get user info (%s) for %s" % (info_response.get("error", ""), state))
             raise o_e.AuthenticationFailed(locator=state)
-        info_response_dict = info_response.to_dict()
 
-        # Define vtm/vtr information on the user dictionary so we can track this in one location.
-        # If a user has this information, then they are bumped up in terms of verification level.
-        if session.get("needs_step_up_auth") is True:
-            if "ial" in info_response_dict:
-                info_response_dict.pop("ial")
-            info_response_dict["vtm"] = session.get("vtm", "")
-            info_response_dict["vtr"] = session.get("vtr", "")
-
-        logger.debug("user info: %s" % info_response_dict)
-        return info_response_dict
+        logger.debug("user info: %s" % info_response)
+        return info_response.to_dict()
 
     def _request_token(self, state, code, session):
         """Request a token from OP to allow us to then request user info."""
@@ -315,20 +285,14 @@ class Client(oic.Client):
         super(Client, self).store_response(resp, info)
 
     def get_default_acr_value(self):
-        """Returns the acr_value from settings.
-        This helper function is called from djangooidc views."""
+        """returns the acr_value from settings
+        this helper function is called from djangooidc views"""
         return self.behaviour.get("acr_value")
 
-    def get_vtm_value(self):
-        """Returns the vtm value from settings.
-        This helper function is called from djangooidc views."""
-        return self.behaviour.get("vtm")
-
-    def get_vtr_value(self, cleaned=True):
-        """Returns the vtr value from settings.
-        This helper function is called from djangooidc views."""
-        vtr = self.behaviour.get("vtr")
-        return json.dumps(vtr) if cleaned else vtr
+    def get_step_up_acr_value(self):
+        """returns the step_up_acr_value from settings
+        this helper function is called from djangooidc views"""
+        return self.behaviour.get("step_up_acr_value")
 
     def __repr__(self):
         return "Client {} {} {}".format(
