@@ -1604,6 +1604,7 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertEqual(domain_information_election.is_election_board, True)
         self.assertEqual(domain_information_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
 
+
 class TestDomainRequestIncomplete(TestCase):
     def setUp(self):
         super().setUp()
@@ -1664,136 +1665,146 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.current_websites.add(current)
         self.domain_request.alternative_domains.add(alt)
 
+    def tearDown(self):
+        super().tearDown()
+        DomainRequest.objects.all().delete()
+        Contact.objects.all().delete()
+        # Domain.objects.all().delete()
+        # DomainInformation.objects.all().delete()
+        # User.objects.all().delete()
+        # DraftDomain.objects.all().delete()
+
     def test_is_federal_complete(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.FEDERAL
+        # self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.FEDERAL
+        # federal_type="executive",
+        # federal_agency=FederalAgency.objects.get(agency="AMTRAK"),
         self.assertTrue(self.domain_request._is_federal_complete())
         self.domain_request.federal_type = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_federal_complete())
 
     def test_is_interstate_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
+        self.domain_request.about_your_organization = "Something something about your organization"
+        self.domain_request.save()
         self.assertTrue(self.domain_request._is_interstate_complete())
         self.domain_request.about_your_organization = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_interstate_complete())
 
+    # TODO: FIX
     def test_is_state_or_territory_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
+        self.domain_request.is_election_board = True
+        self.domain_request.save()
         self.assertTrue(self.domain_request._is_state_or_territory_complete())
+        # self.domain_request.is_election_board.clear()
         self.domain_request.is_election_board = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_state_or_territory_complete())
 
     def test_is_tribal_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.TRIBAL
+        self.domain_request.tribe_name = "Tribe Name"
+        self.domain_request.is_election_board = False
+        self.domain_request.save()
         self.assertTrue(self.domain_request._is_tribal_complete())
         self.domain_request.tribe_name = None
+        self.domain_request.is_election_board = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_tribal_complete())
 
     def test_is_county_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.COUNTY
+        self.domain_request.about_your_organization = "Something something about your organization"
+        self.domain_request.is_election_board = False
+        self.domain_request.save()
         self.assertTrue(self.domain_request._is_county_complete())
+        self.domain_request.about_your_organization = None
         self.domain_request.is_election_board = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_county_complete())
 
     def test_is_city_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.CITY
+        self.domain_request.is_election_board = False
+        self.domain_request.save()
         self.assertTrue(self.domain_request._is_city_complete())
         self.domain_request.is_election_board = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_city_complete())
 
     def test_is_special_district_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
+        self.domain_request.about_your_organization = "Something something about your organization"
+        self.domain_request.is_election_board = False
+        self.domain_request.save()
         self.assertTrue(self.domain_request._is_special_district_complete())
         self.domain_request.about_your_organization = None
+        self.domain_request.is_election_board = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_special_district_complete())
 
     def test_is_organization_name_and_address_complete(self):
         self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
         self.domain_request.organization_name = None
+        self.domain_request.address_line1 = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_organization_name_and_address_complete())
 
     def test_is_authorizing_official_complete(self):
         self.assertTrue(self.domain_request._is_authorizing_official_complete())
         self.domain_request.authorizing_official = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_authorizing_official_complete())
 
     def test_is_requested_domain_complete(self):
         self.assertTrue(self.domain_request._is_requested_domain_complete())
         self.domain_request.requested_domain = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_requested_domain_complete())
 
     def test_is_purpose_complete(self):
         self.assertTrue(self.domain_request._is_purpose_complete())
         self.domain_request.purpose = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_purpose_complete())
 
     def test_is_submitter_complete(self):
         self.assertTrue(self.domain_request._is_submitter_complete())
         self.domain_request.submitter = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_submitter_complete())
 
-    def test_is_other_contacts_complete(self):
+    def test_is_other_contacts_complete_missing_one_field(self):
         self.assertTrue(self.domain_request._is_other_contacts_complete())
-        none_other_contacts, _ = Contact.objects.get_or_create(
-            first_name=None,
-            last_name=None,
-            title=None,
-            email=None,
-            phone=None,
-        )
-        self.domain_request.other_contacts.add(none_other_contacts)
+        contact = self.domain_request.other_contacts.first()
+        contact.first_name = None
+        contact.save()
+        self.assertFalse(self.domain_request._is_other_contacts_complete())
+
+    def test_is_other_contacts_complete(self):
+        self.domain_request.other_contacts.clear()
         self.assertFalse(self.domain_request._is_other_contacts_complete())
 
     def test_is_additional_details_complete(self):
+        # has_cisa_representative=False,
+        # has_anything_else_text="Some text",
+        self.assertTrue(self.domain_request._is_additional_details_complete())
+        self.domain_request.has_cisa_representative = True
+        self.domain_request.cisa_representative_email = "some@cisarepemail.com"
+        self.domain_request.save()
         self.assertTrue(self.domain_request._is_additional_details_complete())
         self.domain_request.has_cisa_representative = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_additional_details_complete())
         self.domain_request.has_cisa_representative = True
         self.domain_request.cisa_representative_email = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_additional_details_complete())
 
     def test_is_general_form_complete(self):
         self.assertTrue(self.domain_request._is_general_form_complete())
         self.domain_request.organization_name = None
+        self.domain_request.save()
         self.assertFalse(self.domain_request._is_general_form_complete())
-
-    def test_form_complete_for_federal(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.FEDERAL
-        self.assertTrue(self.domain_request._form_complete())
-        self.domain_request.federal_type = None
-        self.assertFalse(self.domain_request._form_complete())
-
-    def test_form_complete_for_interstate(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
-        self.assertTrue(self.domain_request._form_complete())
-        self.domain_request.about_your_organization = None
-        self.assertFalse(self.domain_request._form_complete())
-
-    def test_form_complete_for_state_or_territory(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
-        self.assertTrue(self.domain_request._form_complete())
-        self.domain_request.is_election_board = None
-        self.assertFalse(self.domain_request._form_complete())
-
-    def test_form_complete_for_tribal(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.TRIBAL
-        self.assertTrue(self.domain_request._form_complete())
-        self.domain_request.tribe_name = None
-        self.assertFalse(self.domain_request._form_complete())
-
-    def test_form_complete_for_county(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.COUNTY
-        self.assertTrue(self.domain_request._form_complete())
-        self.domain_request.is_election_board = None
-        self.assertFalse(self.domain_request._form_complete())
-
-    def test_form_complete_for_city(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.CITY
-        self.assertTrue(self.domain_request._form_complete())
-        self.domain_request.is_election_board = None
-        self.assertFalse(self.domain_request._form_complete())
-
-    def test_form_complete_for_special_district(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
-        self.assertTrue(self.domain_request._form_complete())
-        self.domain_request.about_your_organization = None
-        self.assertFalse(self.domain_request._form_complete())

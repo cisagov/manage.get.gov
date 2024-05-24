@@ -521,7 +521,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(type_result["Location"], "/request/tribal_government/")
         # num_pages_tested += 1
 
-        # -- TRIBAL PAGE -- 
+        # -- TRIBAL PAGE --
         type_form = type_page.forms[0]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
@@ -537,11 +537,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         # print("$$$$$$$$$$$$$$$$$$$ AFTER", session.request)
         print("$$$$$$$$$$$$$$$$$$$ AFTER", session.values())
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # Org type is filled in 
+        # Org type is filled in
         self.assertContains(review_page, "Tribal")
         self.assertContains(review_page, "Incomplete", count=9)
 
-        # In theory we just need to check that tribal is incomplete 
+        # In theory we just need to check that tribal is incomplete
         # I don't need to re-look at any of these underneath
         # self.assertContains(review_page, "Executive")
         # self.assertContains(review_page, "You can’t submit this request")
@@ -567,7 +567,6 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # # and the step is on the sidebar list.
         # self.assertContains(tribal_government_page, self.TITLES[Step.TRIBAL_GOVERNMENT])
-
 
         # # ---- ORG CONTACT PAGE  ----
         # # Follow the redirect to the next form page
@@ -811,7 +810,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # # Review page contains all the previously entered data
         # # Let's make sure the long org name is displayed
         # self.assertContains(review_page, "Incomplete")
-        # In theory we just need to check that tribal is incomplete 
+        # In theory we just need to check that tribal is incomplete
         # I don't need to re-look at any of these underneath
         # self.assertContains(review_page, "Executive")
         # self.assertContains(review_page, "Testorg")
