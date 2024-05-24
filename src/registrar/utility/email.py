@@ -34,11 +34,12 @@ def send_templated_email(
     template_name and subject_template_name are relative to the same template
     context as Django's HTML templates. context gives additional information
     that the template may use.
+
+    Raises EmailSendingError if SES client could not be accessed
     """
     if switch_is_active("disable_email_sending") and not settings.IS_PRODUCTION:
         raise EmailSendingError("Could not send email. Email sending is disabled due to switch 'disable_email_sending'.")
 
-    logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
     template = get_template(template_name)
     email_body = template.render(context=context)
 
@@ -53,7 +54,9 @@ def send_templated_email(
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             config=settings.BOTO_CONFIG,
         )
+        logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
     except Exception as exc:
+        logger.debug("E-mail unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
 
     destination = {"ToAddresses": [to_address]}
