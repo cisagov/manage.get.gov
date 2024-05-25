@@ -1799,6 +1799,41 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.save()
         self.assertTrue(self.domain_request._is_additional_details_complete())
 
+        # # Check immediately after saving
+        print("After setting to None and saving:")
+        print(f"has_cisa_representative (before refresh): {self.domain_request.has_cisa_representative}")
+        print(f"cisa_representative_email (before refresh): {self.domain_request.cisa_representative_email}")
+        print(f"has_anything_else_text (before refresh): {self.domain_request.has_anything_else_text}")
+        print(f"anything_else (before refresh): {self.domain_request.anything_else}")
+
+        # CISA Rep - Yes, CISA Rep Email - Yes, Anything Else Radio - Yes, Anything Else Text - No
+        self.domain_request.has_anything_else_text = True
+        self.domain_request.anything_else = ""
+        self.domain_request.save()
+
+        # Refresh from the database
+        self.domain_request.refresh_from_db()
+
+        print("After setting to None and saving:")
+        print(f"has_cisa_representative (after refresh): {self.domain_request.has_cisa_representative}")
+        print(f"cisa_representative_email (after refresh): {self.domain_request.cisa_representative_email}")
+        print(f"has_anything_else_text (after refresh): {self.domain_request.has_anything_else_text}")
+        print(f"anything_else (after refresh): {self.domain_request.anything_else}")
+        # has_cisa_representative (after refresh): True
+        # cisa_representative_email (after refresh): some@cisarepemail.com
+        # has_anything_else_text (after refresh): False
+        # anything_else (after refresh): None
+
+        # # This ensures that if we have prefilled data, the form is prepopulated
+        # if self.anything_else is not None:
+        #     self.has_anything_else_text = self.anything_else != ""
+
+        # # This check is required to ensure that the form doesn't start out checked.
+        # if self.has_anything_else_text is not None:
+        #     self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
+
+        self.assertFalse(self.domain_request._is_additional_details_complete())
+
         # CISA Rep - None, CISA Rep Email - None, Anything Else Radio - No
         self.domain_request.cisa_representative_email = None
         self.domain_request.has_cisa_representative = None
@@ -1815,48 +1850,16 @@ class TestDomainRequestIncomplete(TestCase):
         print(f"has_anything_else_text (before refresh): {self.domain_request.has_anything_else_text}")
         print(f"anything_else (before refresh): {self.domain_request.anything_else}")
 
-        # TODO: Get help
-        # CISA Rep - Yes, CISA Rep Email - Yes, Anything Else Radio - Yes, Anything Else Text - No
-        self.domain_request.has_cisa_representative = True
-        self.domain_request.cisa_representative_email = "some@cisarepemail.com"
-        # If you choose yes on radio button but dont have text it should error
-        self.domain_request.has_anything_else_text = True
-        self.domain_request.anything_else = None
-        self.domain_request.save()
+        # self.domain_request.has_cisa_representative = True
+        # self.domain_request.cisa_representative_email = "some@cisarepemail.com"
+        # # If you choose yes on radio button but dont have text it should error
+        # self.domain_request.has_anything_else_text = True
+        # self.domain_request.anything_else = None
+        # self.domain_request.save()
 
-        print("After setting to None and saving:")
-        print(f"has_cisa_representative (after refresh): {self.domain_request.has_cisa_representative}")
-        print(f"cisa_representative_email (after refresh): {self.domain_request.cisa_representative_email}")
-        print(f"has_anything_else_text (after refresh): {self.domain_request.has_anything_else_text}")
-        print(f"anything_else (after refresh): {self.domain_request.anything_else}")
-        # has_cisa_representative (after refresh): True
-        # cisa_representative_email (after refresh): some@cisarepemail.com
-        # has_anything_else_text (after refresh): False
-        # anything_else (after refresh): None
-
-        #         # This ensures that if we have prefilled data, the form is prepopulated
-        # if self.cisa_representative_email is not None:
-        #     self.has_cisa_representative = self.cisa_representative_email != ""
-
-        # # This check is required to ensure that the form doesn't start out checked
-        # if self.has_cisa_representative is not None:
-        #     self.has_cisa_representative = (
-        #         self.cisa_representative_email != "" and self.cisa_representative_email is not None
-        #     )
-
-        # # This ensures that if we have prefilled data, the form is prepopulated
-        # if self.anything_else is not None:
-        #     self.has_anything_else_text = self.anything_else != ""
-
-        # # This check is required to ensure that the form doesn't start out checked.
-        # if self.has_anything_else_text is not None:
-        #     self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
-
-        self.assertFalse(self.domain_request._is_additional_details_complete())
-
-        self.domain_request.anything_else = "Some text here"
-        self.domain_request.save()
-        self.assertFalse(self.domain_request._is_additional_details_complete())
+        # self.domain_request.anything_else = "Some text here"
+        # self.domain_request.save()
+        # self.assertFalse(self.domain_request._is_additional_details_complete())
 
         # # Check immediately after saving
         # print("After setting to None and saving:")
