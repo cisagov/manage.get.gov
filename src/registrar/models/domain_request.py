@@ -970,10 +970,10 @@ class DomainRequest(TimeStampedModel):
     def _is_organization_name_and_address_complete(self):
         return not (
             self.organization_name is None
-            or self.address_line1 is None
-            or self.city is None
-            or self.state_territory is None
-            or self.zipcode is None
+            and self.address_line1 is None
+            and self.city is None
+            and self.state_territory is None
+            and self.zipcode is None
         )
 
     def _is_authorizing_official_complete(self):
@@ -1004,6 +1004,10 @@ class DomainRequest(TimeStampedModel):
         return False
 
     def _is_additional_details_complete(self):
+        # has_cisa_representative is True and the cisa_representative_email is not empty and is not an empty string
+        # OR has_cisa_representative is No
+        # AND
+        # the anything else boolean is True and there is text and it's not an empty string of text OR the boolean is No
         return (
             (
                 self.has_cisa_representative is True

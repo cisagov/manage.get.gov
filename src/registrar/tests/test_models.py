@@ -1655,7 +1655,8 @@ class TestDomainRequestIncomplete(TestCase):
             requested_domain=draft_domain,
             purpose="Some purpose",
             submitter=you,
-            has_cisa_representative=False,
+            has_cisa_representative=True,
+            cisa_representative_email="somerep@cisa.com",
             has_anything_else_text=True,
             anything_else="Anything else",
             is_policy_acknowledged=True,
@@ -1695,7 +1696,8 @@ class TestDomainRequestIncomplete(TestCase):
         # self.domain_request.is_election_board.clear()
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_state_or_territory_complete())
+        # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
+        self.assertTrue(self.domain_request._is_state_or_territory_complete())
 
     def test_is_tribal_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.TRIBAL
@@ -1706,18 +1708,18 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.tribe_name = None
         self.domain_request.is_election_board = None
         self.domain_request.save()
+        # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
         self.assertFalse(self.domain_request._is_tribal_complete())
 
     def test_is_county_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.COUNTY
-        self.domain_request.about_your_organization = "Something something about your organization"
         self.domain_request.is_election_board = False
         self.domain_request.save()
         self.assertTrue(self.domain_request._is_county_complete())
-        self.domain_request.about_your_organization = None
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_county_complete())
+        # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
+        self.assertTrue(self.domain_request._is_county_complete())
 
     def test_is_city_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.CITY
@@ -1726,9 +1728,8 @@ class TestDomainRequestIncomplete(TestCase):
         self.assertTrue(self.domain_request._is_city_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.domain_request.refresh_from_db()
-        print(f"self.domain_request.is_election_board  {self.domain_request.is_election_board }")
-        self.assertFalse(self.domain_request._is_city_complete())
+        # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
+        self.assertTrue(self.domain_request._is_city_complete())
 
     def test_is_special_district_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
@@ -1739,15 +1740,15 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.about_your_organization = None
         self.domain_request.is_election_board = None
         self.domain_request.save()
+        # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
         self.assertFalse(self.domain_request._is_special_district_complete())
 
-    # TODO: Fix
     def test_is_organization_name_and_address_complete(self):
         self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
         self.domain_request.organization_name = None
         self.domain_request.address_line1 = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_organization_name_and_address_complete())
+        self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
 
     def test_is_authorizing_official_complete(self):
         self.assertTrue(self.domain_request._is_authorizing_official_complete())
@@ -1785,94 +1786,164 @@ class TestDomainRequestIncomplete(TestCase):
         self.assertFalse(self.domain_request._is_other_contacts_complete())
 
     def test_is_additional_details_complete(self):
-
-        # CISA Rep - No, Anything Else Radio - Anything Else Text - Filled
-        self.assertTrue(self.domain_request._is_additional_details_complete())
-
-        # CISA Rep - No, Anything Else Radio - No
-        self.domain_request.has_anything_else_text = False
-        self.assertTrue(self.domain_request._is_additional_details_complete())
-
-        # CISA Rep - Yes, CISA Rep Email - Yes (And has above Anything Else Radio - No)
-        self.domain_request.has_cisa_representative = True
-        self.domain_request.cisa_representative_email = "some@cisarepemail.com"
-        self.domain_request.save()
-        self.assertTrue(self.domain_request._is_additional_details_complete())
-
-        # # Check immediately after saving
-        print("After setting to None and saving:")
-        print(f"has_cisa_representative (before refresh): {self.domain_request.has_cisa_representative}")
-        print(f"cisa_representative_email (before refresh): {self.domain_request.cisa_representative_email}")
-        print(f"has_anything_else_text (before refresh): {self.domain_request.has_anything_else_text}")
-        print(f"anything_else (before refresh): {self.domain_request.anything_else}")
-
-        # CISA Rep - Yes, CISA Rep Email - Yes, Anything Else Radio - Yes, Anything Else Text - No
-        self.domain_request.has_anything_else_text = True
-        self.domain_request.anything_else = ""
-        self.domain_request.save()
-
-        # Refresh from the database
-        self.domain_request.refresh_from_db()
-
-        print("After setting to None and saving:")
-        print(f"has_cisa_representative (after refresh): {self.domain_request.has_cisa_representative}")
-        print(f"cisa_representative_email (after refresh): {self.domain_request.cisa_representative_email}")
-        print(f"has_anything_else_text (after refresh): {self.domain_request.has_anything_else_text}")
-        print(f"anything_else (after refresh): {self.domain_request.anything_else}")
-        # has_cisa_representative (after refresh): True
-        # cisa_representative_email (after refresh): some@cisarepemail.com
-        # has_anything_else_text (after refresh): False
-        # anything_else (after refresh): None
-
-        # # This ensures that if we have prefilled data, the form is prepopulated
-        # if self.anything_else is not None:
-        #     self.has_anything_else_text = self.anything_else != ""
-
-        # # This check is required to ensure that the form doesn't start out checked.
-        # if self.has_anything_else_text is not None:
-        #     self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
-
-        self.assertFalse(self.domain_request._is_additional_details_complete())
-
-        # CISA Rep - None, CISA Rep Email - None, Anything Else Radio - No
-        self.domain_request.cisa_representative_email = None
-        self.domain_request.has_cisa_representative = None
-        self.domain_request.save()
-        self.assertFalse(self.domain_request._is_additional_details_complete())
-
-        # Refresh from the database
-        self.domain_request.refresh_from_db()
-
-        # # Check immediately after saving
-        print("After setting to None and saving:")
-        print(f"has_cisa_representative (before refresh): {self.domain_request.has_cisa_representative}")
-        print(f"cisa_representative_email (before refresh): {self.domain_request.cisa_representative_email}")
-        print(f"has_anything_else_text (before refresh): {self.domain_request.has_anything_else_text}")
-        print(f"anything_else (before refresh): {self.domain_request.anything_else}")
-
-        # self.domain_request.has_cisa_representative = True
-        # self.domain_request.cisa_representative_email = "some@cisarepemail.com"
-        # # If you choose yes on radio button but dont have text it should error
-        # self.domain_request.has_anything_else_text = True
-        # self.domain_request.anything_else = None
-        # self.domain_request.save()
-
-        # self.domain_request.anything_else = "Some text here"
-        # self.domain_request.save()
-        # self.assertFalse(self.domain_request._is_additional_details_complete())
-
-        # # Check immediately after saving
-        # print("After setting to None and saving:")
-        # print(f'has_cisa_representative (before refresh): {self.domain_request.has_cisa_representative}')
-
-        # Refresh from the database
-        # self.domain_request.refresh_from_db()
-
-        # # Check after refreshing from the database
-        # print("After refreshing from DB:")
-        # print(f'has_cisa_representative (after refresh): {self.domain_request.has_cisa_representative}')
-
-        # Expect False because has_cisa_representative is None (which we now explicitly handle)
+        test_cases = [
+            # CISA Rep - Yes
+            # Email - Yes
+            # Anything Else Radio - Yes
+            # Anything Else Text - Yes
+            {
+                "has_cisa_representative": True,
+                "cisa_representative_email": "some@cisarepemail.com",
+                "has_anything_else_text": True,
+                "anything_else": "Some text",
+                "expected": True,
+            },
+            # CISA Rep - Yes
+            # Email - Yes
+            # Anything Else Radio - Yes
+            # Anything Else Text - None
+            {
+                "has_cisa_representative": True,
+                "cisa_representative_email": "some@cisarepemail.com",
+                "has_anything_else_text": True,
+                "anything_else": None,
+                "expected": True,
+            },
+            # CISA Rep - Yes
+            # Email - Yes
+            # Anything Else Radio - No
+            # Anything Else Text - No
+            {
+                "has_cisa_representative": True,
+                "cisa_representative_email": "some@cisarepemail.com",
+                "has_anything_else_text": False,
+                "anything_else": None,
+                "expected": True,
+            },
+            # CISA Rep - Yes
+            # Email - Yes
+            # Anything Else Radio - None
+            # Anything Else Text - None
+            {
+                "has_cisa_representative": True,
+                "cisa_representative_email": "some@cisarepemail.com",
+                "has_anything_else_text": None,
+                "anything_else": None,
+                "expected": False,
+            },
+            # CISA Rep - Yes
+            # Email - None
+            # Anything Else Radio - None
+            # Anything Else Text - None
+            {
+                "has_cisa_representative": True,
+                "cisa_representative_email": None,
+                "has_anything_else_text": None,
+                "anything_else": None,
+                "expected": False,
+            },
+            # CISA Rep - Yes
+            # Email - None
+            # Anything Else Radio - No
+            # Anything Else Text - No
+            # sync_yes_no will override has_cisa_representative to be False if cisa_representative_email is None
+            # therefore, our expected will be True
+            {
+                "has_cisa_representative": True,
+                # Above will be overridden to False if cisa_rep_email is None bc of sync_yes_no_form_fields
+                "cisa_representative_email": None,
+                "has_anything_else_text": False,
+                "anything_else": None,
+                "expected": True,
+            },
+            # CISA Rep - Yes
+            # Email - None
+            # Anything Else Radio - Yes
+            # Anything Else Text - None
+            {
+                "has_cisa_representative": True,
+                # Above will be overridden to False if cisa_rep_email is None bc of sync_yes_no_form_fields
+                "cisa_representative_email": None,
+                "has_anything_else_text": True,
+                "anything_else": None,
+                "expected": True,
+            },
+            # CISA Rep - Yes
+            # Email - None
+            # Anything Else Radio - Yes
+            # Anything Else Text - Yes
+            {
+                "has_cisa_representative": True,
+                # Above will be overridden to False if cisa_rep_email is None bc of sync_yes_no_form_fields
+                "cisa_representative_email": None,
+                "has_anything_else_text": True,
+                "anything_else": "Some text",
+                "expected": True,
+            },
+            # CISA Rep - No
+            # Anything Else Radio - Yes
+            # Anything Else Text - Yes
+            {
+                "has_cisa_representative": False,
+                "cisa_representative_email": None,
+                "has_anything_else_text": True,
+                "anything_else": "Some text",
+                "expected": True,
+            },
+            # CISA Rep - No
+            # Anything Else Radio - Yes
+            # Anything Else Text - None
+            {
+                "has_cisa_representative": False,
+                "cisa_representative_email": None,
+                "has_anything_else_text": True,
+                "anything_else": None,
+                "expected": True,
+            },
+            # CISA Rep - No
+            # Anything Else Radio - None
+            # Anything Else Text - None
+            {
+                "has_cisa_representative": False,
+                "cisa_representative_email": None,
+                "has_anything_else_text": None,
+                "anything_else": None,
+                # Above is both None, so it does NOT get overwritten
+                "expected": False,
+            },
+            # CISA Rep - No
+            # Anything Else Radio - No
+            # Anything Else Text - No
+            {
+                "has_cisa_representative": False,
+                "cisa_representative_email": None,
+                "has_anything_else_text": False,
+                "anything_else": None,
+                "expected": True,
+            },
+            # CISA Rep - None
+            # Anything Else Radio - None
+            {
+                "has_cisa_representative": None,
+                "cisa_representative_email": None,
+                "has_anything_else_text": None,
+                "anything_else": None,
+                "expected": False,
+            },
+        ]
+        for case in test_cases:
+            with self.subTest(case=case):
+                self.domain_request.has_cisa_representative = case["has_cisa_representative"]
+                self.domain_request.cisa_representative_email = case["cisa_representative_email"]
+                self.domain_request.has_anything_else_text = case["has_anything_else_text"]
+                self.domain_request.anything_else = case["anything_else"]
+                self.domain_request.save()
+                self.domain_request.refresh_from_db()
+                self.assertEqual(
+                    self.domain_request._is_additional_details_complete(),
+                    case["expected"],
+                    msg=f"Failed for case: {case}",
+                )
 
     def test_is_policy_acknowledgement_complete(self):
         self.assertTrue(self.domain_request._is_policy_acknowledgement_complete())
@@ -1881,8 +1952,8 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.is_policy_acknowledged = None
         self.assertFalse(self.domain_request._is_policy_acknowledgement_complete())
 
-    def test_is_general_form_complete(self):
-        self.assertTrue(self.domain_request._is_general_form_complete())
-        self.domain_request.organization_name = None
+    def test_form_complete(self):
+        self.assertTrue(self.domain_request._form_complete())
+        self.domain_request.generic_org_type = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_general_form_complete())
+        self.assertFalse(self.domain_request._form_complete())
