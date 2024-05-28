@@ -119,9 +119,19 @@ class Contact(TimeStampedModel):
                 self.user.last_name = self.last_name
                 updated = True
 
+            # Update middle_name if necessary
+            if not self.user.middle_name:
+                self.user.middle_name = self.middle_name
+                updated = True
+
             # Update phone if necessary
             if not self.user.phone:
                 self.user.phone = self.phone
+                updated = True
+
+            # Update title if necessary
+            if not self.user.title:
+                self.user.title = self.title
                 updated = True
 
             # Save user if any updates were made
