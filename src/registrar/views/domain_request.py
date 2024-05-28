@@ -22,7 +22,7 @@ from .utility import (
     DomainRequestWizardPermissionView,
 )
 
-from waffle.decorators import flag_is_active
+from waffle.decorators import flag_is_active, waffle_flag
 
 logger = logging.getLogger(__name__)
 
@@ -406,6 +406,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 condition = condition(self)
             if condition:
                 step_list.append(step)
+
+        if flag_is_active(self.request, "profile_feature"):
+            step_list.remove(Step.YOUR_CONTACT)
+
         return step_list
 
     def goto(self, step):
@@ -539,6 +543,10 @@ class Purpose(DomainRequestWizard):
 class YourContact(DomainRequestWizard):
     template_name = "domain_request_your_contact.html"
     forms = [forms.YourContactForm]
+
+    @waffle_flag("!profile_feature")  # type: ignore
+    def dispatch(self, request, *args, **kwargs):  # type: ignore
+        return super().dispatch(request, *args, **kwargs)
 
 
 class OtherContacts(DomainRequestWizard):
