@@ -95,10 +95,12 @@ def input_with_errors(context, field=None):  # noqa: C901
         elif key == "show_edit_button":
             # Hide the primary input field.
             # Used such that we can toggle it with JS
-            if "display-none" not in classes and isinstance(value, bool) and value:
+            if "display-none" not in classes:
                 classes.append("display-none")
-            # Set this as a context value so we know what we're going to display
-            context["show_edit_button"] = value
+            
+            # Tag that this form contains the edit button.
+            if "usa-form-editable" not in group_classes:
+                group_classes.append("usa-form-editable")
 
     attrs["id"] = field.auto_id
 

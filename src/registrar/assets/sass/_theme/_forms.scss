@@ -15,9 +15,6 @@
 
 .usa-form--extra-large {
   max-width: none;
-  .usa-summary-box {
-    max-width: 600px;
-  }
 }
 
 .usa-form--text-width {
@@ -30,7 +27,7 @@
   }
 }
 
-.usa-form-readonly {
+.usa-form-editable {
   border-top: 2px #{$dhs-dark-gray-15} solid;
 
   .bold-usa-label label.usa-label{
@@ -41,14 +38,14 @@
     font-weight: bold;
   }
 
-  &.usa-form-readonly--no-border {
+  &.usa-form-editable--no-border {
     border-top: None;
     margin-top: 0px !important;
   }
 
 }
 
-.usa-form-readonly > .usa-form-group:first-of-type {
+.usa-form-editable > .usa-form-group:first-of-type {
   margin-top: unset;
 }
 

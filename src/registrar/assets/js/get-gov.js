@@ -873,7 +873,7 @@ function hideDeletedForms() {
     let fieldId = getInputFieldId(fieldName)
     let inputField = document.querySelector(fieldId);
 
-    let nameFieldset = document.querySelector("#profile-name-fieldset");
+    let nameFieldset = document.querySelector("#profile-name-group");
     if (nameFieldset){
       nameFieldset.classList.remove("display-none");
     }

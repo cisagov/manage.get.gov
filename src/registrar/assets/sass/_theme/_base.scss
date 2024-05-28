@@ -198,3 +198,16 @@ abbr[title] {
     height: 1.25em !important;
   }
 }
+
+// Define some styles for the .gov header/logo
+.usa-logo button {
+  color: #{$dhs-dark-gray-85};
+  font-weight: 700;
+  font-family: family('sans');
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.usa-logo button.usa-button--unstyled.disabled-button:hover{
+  color: #{$dhs-dark-gray-85};
+}

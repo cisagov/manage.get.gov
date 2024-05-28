@@ -96,10 +96,6 @@ class FinishProfileSetupView(UserProfileView):
     """This view forces the user into providing additional details that
     we may have missed from Login.gov"""
 
-    template_name = "finish_profile_setup.html"
-    form_class = FinishSetupProfileForm
-    model = Contact
-
     class RedirectType(Enum):
         """
         Enums for each type of redirection. Enforces behaviour on `get_redirect_url()`.
@@ -116,8 +112,17 @@ class FinishProfileSetupView(UserProfileView):
         BACK_TO_SELF = "back_to_self"
         COMPLETE_SETUP = "complete_setup"
 
-    redirect_type = None
-    all_redirect_types = [r.value for r in RedirectType]
+        @classmethod
+        def get_all_redirect_types(cls) -> list[str]:
+            """Returns the value of every redirect type defined in this enum."""
+            return [r.value for r in cls]
+
+    template_name = "finish_profile_setup.html"
+    form_class = FinishSetupProfileForm
+    model = Contact
+
+    all_redirect_types = RedirectType.get_all_redirect_types()
+    redirect_type: RedirectType
 
     def get_context_data(self, **kwargs):
 
@@ -151,16 +156,18 @@ class FinishProfileSetupView(UserProfileView):
         """
 
         # Update redirect type based on the query parameter if present
-        redirect_type = request.GET.get("redirect", self.RedirectType.BACK_TO_SELF.value)
-        if redirect_type in self.all_redirect_types:
-            self.redirect_type = self.RedirectType(redirect_type)
+        default_redirect_value = self.RedirectType.BACK_TO_SELF.value
+        redirect_value = request.GET.get("redirect", default_redirect_value)
+
+        if redirect_value in self.all_redirect_types:
+            # If the redirect value is a preexisting value in our enum, set it to that.
+            self.redirect_type = self.RedirectType(redirect_value)
         else:
-            # If the redirect type is undefined, then we assume that
-            # we are specifying a particular page to redirect to.
+            # If the redirect type is undefined, then we assume that we are specifying a particular page to redirect to.
             self.redirect_type = self.RedirectType.TO_SPECIFIC_PAGE
 
             # Store the page that we want to redirect to for later use
-            request.session["redirect_viewname"] = str(redirect_type)
+            request.session["redirect_viewname"] = str(redirect_value)
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -183,8 +190,7 @@ class FinishProfileSetupView(UserProfileView):
 
     def get_success_url(self):
         """Redirect to the nameservers page for the domain."""
-        redirect_url = self.get_redirect_url()
-        return redirect_url
+        return self.get_redirect_url()
 
     def get_redirect_url(self):
         """
@@ -220,7 +226,7 @@ class FinishProfileSetupView(UserProfileView):
         query_params = {}
 
         # Quote cleans up the value so that it can be used in a url
-        if self.redirect_type:
+        if self.redirect_type and self.redirect_type.value:
             query_params["redirect"] = quote(self.redirect_type.value)
 
         # Generate the full url from the given query params
