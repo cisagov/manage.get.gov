@@ -24,8 +24,6 @@ from .utility import (
 
 from waffle.decorators import flag_is_active
 
-from waffle.decorators import flag_is_active
-
 logger = logging.getLogger(__name__)
 
 
