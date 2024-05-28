@@ -43,5 +43,6 @@ def get_domain_requests_json(request):
             "has_previous": page_obj.has_previous(),
             "page": page_obj.number,
             "num_pages": paginator.num_pages,
+            "total": domain_requests.count(),
         }
     )

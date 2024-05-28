@@ -880,6 +880,33 @@ function unloadModals() {
 }
 
 /**
+ * Helper function that scrolls to an element
+ * @param {string} attributeName - The string "class" or "id"
+ * @param {string} attributeValue - The class or id name
+ */
+function ScrollToElement(attributeName, attributeValue) {
+  let targetEl = null;
+  
+  if (attributeName === 'class') {
+    targetEl = document.getElementsByClassName(attributeValue)[0];
+  } else if (attributeName === 'id') {
+    targetEl = document.getElementById(attributeValue);
+  } else {
+    console.log('Error: unknown attribute name provided.');
+    return; // Exit the function if an invalid attributeName is provided
+  }
+
+  if (targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    window.scrollTo({
+      top: rect.top + scrollTop,
+      behavior: 'smooth' // Optional: for smooth scrolling
+    });
+  }
+}
+
+/**
  * An IIFE that listens for DOM Content to be loaded, then executes.  This function
  * initializes the domains list and associated functionality on the home page of the app.
  *
@@ -890,6 +917,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let currentOrder = 'asc';
   let domainsWrapper = document.querySelector('.domains-wrapper');
   let noDomainsWrapper = document.querySelector('.no-domains-wrapper');
+  let hasLoaded = false;
 
   /**
    * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -897,8 +925,9 @@ document.addEventListener('DOMContentLoaded', function() {
    * @param {*} page - the page number of the results (starts with 1)
    * @param {*} sortBy - the sort column option
    * @param {*} order - the sort order {asc, desc}
+   * @param {*} loaded - control for the scrollToElement functionality
    */
-  function loadPage(page, sortBy = currentSortBy, order = currentOrder) {
+  function loadPage(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
     //fetch json of page of domains, given page # and sort
     fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
       .then(response => response.json())
@@ -959,9 +988,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         // initialize tool tips immediately after the associated DOM elements are added
         initializeTooltips();
+        if (loaded)
+          ScrollToElement('id', 'domains-header');
+
+        hasLoaded = true;
 
         // update pagination
-        updatePagination(data.page, data.num_pages, data.has_previous, data.has_next);
+        updateDomainsPagination(data.page, data.num_pages, data.has_previous, data.has_next, data.total);
         currentPage = page;
         currentSortBy = sortBy;
         currentOrder = order;
@@ -976,19 +1009,23 @@ document.addEventListener('DOMContentLoaded', function() {
    * @param {*} hasPrevious - if there is a page of results prior to the current page
    * @param {*} hasNext - if there is a page of results after the current page
    */
-  function updatePagination(currentPage, numPages, hasPrevious, hasNext) {
+  function updateDomainsPagination(currentPage, numPages, hasPrevious, hasNext, totalItems) {
     // identify the DOM element where the pagination will be inserted
+    const counterContainer = document.querySelector('#domains-pagination .usa-pagination__counter');
     const paginationContainer = document.querySelector('#domains-pagination .usa-pagination__list');
+    counterContainer.innerHTML = '';
     paginationContainer.innerHTML = '';
 
     // pagination should only be displayed if there are more than one pages of results
     paginationContainer.classList.toggle('display-none', numPages <= 1);
 
+    counterContainer.innerHTML = `${totalItems} Domains`;
+  
     if (hasPrevious) {
       const prevPageItem = document.createElement('li');
       prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
       prevPageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
+        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domains previous page">
           <svg class="usa-icon" aria-hidden="true" role="img">
             <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
           </svg>
@@ -1003,7 +1040,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const pageItem = document.createElement('li');
       pageItem.className = 'usa-pagination__item usa-pagination__page-no';
       pageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Page ${i}">${i}</a>
+        <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Domains page ${i}">${i}</a>
       `;
       if (i === currentPage) {
         pageItem.querySelector('a').classList.add('usa-current');
@@ -1017,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const nextPageItem = document.createElement('li');
       nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
       nextPageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
+        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Domains next page">
           <span class="usa-pagination__link-text">Next</span>
           <svg class="usa-icon" aria-hidden="true" role="img">
             <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
@@ -1059,6 +1096,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let currentOrder = 'asc';
   let domainRequestsWrapper = document.querySelector('.domain-requests-wrapper');
   let noDomainRequestsWrapper = document.querySelector('.no-domain-requests-wrapper');
+  let hasLoaded = false;
 
   /**
    * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
@@ -1066,8 +1104,9 @@ document.addEventListener('DOMContentLoaded', function() {
    * @param {*} page - the page number of the results (starts with 1)
    * @param {*} sortBy - the sort column option
    * @param {*} order - the sort order {asc, desc}
+   * @param {*} loaded - control for the scrollToElement functionality
    */
-  function loadDomainRequestsPage(page, sortBy = currentSortBy, order = currentOrder) {
+  function loadDomainRequestsPage(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
     //fetch json of page of domain requests, given page # and sort
     fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
       .then(response => response.json())
@@ -1137,9 +1176,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         // initialize modals immediately after the DOM content is updated
         initializeModals();
+        if (loaded)
+          ScrollToElement('id', 'domain-requests-header');
+
+        hasLoaded = true;
 
         // update the pagination after the domain requests list is updated
-        updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next);
+        updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next, data.total);
         currentPage = page;
         currentSortBy = sortBy;
         currentOrder = order;
@@ -1154,18 +1197,23 @@ document.addEventListener('DOMContentLoaded', function() {
    * @param {*} hasPrevious - if there is a page of results prior to the current page
    * @param {*} hasNext - if there is a page of results after the current page
    */
-  function updateDomainRequestsPagination(currentPage, numPages, hasPrevious, hasNext) {
+  function updateDomainRequestsPagination(currentPage, numPages, hasPrevious, hasNext, totalItems) {
     // identify the DOM element where pagination is contained
+    const counterContainer = document.querySelector('#domain-requests-pagination .usa-pagination__counter');
     const paginationContainer = document.querySelector('#domain-requests-pagination .usa-pagination__list');
+    counterContainer.innerHTML = '';
     paginationContainer.innerHTML = '';
 
+    // pagination should only be displayed if there are more than one pages of results
     paginationContainer.classList.toggle('display-none', numPages <= 1);
+
+    counterContainer.innerHTML = `${totalItems} Domain requests`;
 
     if (hasPrevious) {
       const prevPageItem = document.createElement('li');
       prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
       prevPageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
+        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domain requests previous page">
           <svg class="usa-icon" aria-hidden="true" role="img">
             <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
           </svg>
@@ -1180,7 +1228,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const pageItem = document.createElement('li');
       pageItem.className = 'usa-pagination__item usa-pagination__page-no';
       pageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Page ${i}">${i}</a>
+        <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Domain requests page ${i}">${i}</a>
       `;
       if (i === currentPage) {
         pageItem.querySelector('a').classList.add('usa-current');
@@ -1194,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const nextPageItem = document.createElement('li');
       nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
       nextPageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
+        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Domain requests next page">
           <span class="usa-pagination__link-text">Next</span>
           <svg class="usa-icon" aria-hidden="true" role="img">
             <use xlink:href="/public/img/sprite.svg#navigate_next"></use>

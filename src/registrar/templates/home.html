@@ -24,7 +24,7 @@
   </p>
 
   <section class="section--outlined">
-    <h2>Domains</h2>
+    <h2 id="domains-header">Domains</h2>
     <div class="domains-wrapper display-none">
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__registered-domains">
         <caption class="sr-only">Your registered domains</caption>
@@ -62,15 +62,17 @@
       </p>
     </div>
   </section>
-
-  <nav aria-label="Pagination" class="usa-pagination flex-justify-end" id="domains-pagination">
+  <nav aria-label="Pagination" class="usa-pagination flex-justify" id="domains-pagination">
+    <span class="usa-pagination__counter padding-top-1 padding-left-2">
+      <!-- Count will be dynamically populated by JS -->
+    </span>
     <ul class="usa-pagination__list">
       <!-- Pagination links will be dynamically populated by JS -->
     </ul>
   </nav>
 
   <section class="section--outlined">
-    <h2>Domain requests</h2>
+    <h2 id="domain-requests-header">Domain requests</h2>
     <div class="domain-requests-wrapper display-none">
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__domain-requests">
         <caption class="sr-only">Your domain requests</caption>
@@ -126,16 +128,19 @@
         {% endif %}
       {% endfor %}
 
-      <nav aria-label="Pagination" class="usa-pagination flex-justify-end" id="domain-requests-pagination">
-        <ul class="usa-pagination__list">
-          <!-- Pagination links will be dynamically populated by JS -->
-        </ul>
-      </nav>
     </div>
     <div class="no-domain-requests-wrapper display-none">
       <p>You haven't requested any domains.</p>
   </div>  
   </section>
+  <nav aria-label="Pagination" class="usa-pagination flex-justify" id="domain-requests-pagination">
+    <span class="usa-pagination__counter padding-top-1 padding-left-2">
+      <!-- Count will be dynamically populated by JS -->
+    </span>
+    <ul class="usa-pagination__list">
+      <!-- Pagination links will be dynamically populated by JS -->
+    </ul>
+  </nav>
 
   {# Note: Reimplement this after MVP #}
   <!--
