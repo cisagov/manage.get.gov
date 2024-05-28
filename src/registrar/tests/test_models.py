@@ -1637,7 +1637,6 @@ class TestDomainRequestIncomplete(TestCase):
             email="testy2@town.com",
             phone="(555) 555 5557",
         )
-        # domain, _ = Domain.objects.get_or_create(name="MeowardMeowardMeoward.gov")
         alt, _ = Website.objects.get_or_create(website="MeowardMeowardMeoward1.gov")
         current, _ = Website.objects.get_or_create(website="MeowardMeowardMeoward.com")
         self.domain_request = DomainRequest.objects.create(
