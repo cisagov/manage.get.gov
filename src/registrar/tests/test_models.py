@@ -1655,6 +1655,7 @@ class TestDomainRequestIncomplete(TestCase):
             requested_domain=draft_domain,
             purpose="Some purpose",
             submitter=you,
+            no_other_contacts_rationale=None,
             has_cisa_representative=True,
             cisa_representative_email="somerep@cisa.com",
             has_anything_else_text=True,
@@ -1781,8 +1782,22 @@ class TestDomainRequestIncomplete(TestCase):
         contact.save()
         self.assertFalse(self.domain_request._is_other_contacts_complete())
 
-    def test_is_other_contacts_complete(self):
+    def test_is_other_contacts_complete_all_none(self):
         self.domain_request.other_contacts.clear()
+        self.assertFalse(self.domain_request._is_other_contacts_complete())
+
+    def test_is_other_contacts_False_and_has_rationale(self):
+        # Click radio button "No" for no other contacts and give rationale
+        self.domain_request.other_contacts.clear()
+        self.domain_request.other_contacts.exists = False
+        self.domain_request.no_other_contacts_rationale = "Some rationale"
+        self.assertTrue(self.domain_request._is_other_contacts_complete())
+
+    def test_is_other_contacts_False_and_NO_rationale(self):
+        # Click radio button "No" for no other contacts and DONT give rationale
+        self.domain_request.other_contacts.clear()
+        self.domain_request.other_contacts.exists = False
+        self.domain_request.no_other_contacts_rationale = None
         self.assertFalse(self.domain_request._is_other_contacts_complete())
 
     def test_is_additional_details_complete(self):

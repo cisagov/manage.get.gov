@@ -989,7 +989,7 @@ class DomainRequest(TimeStampedModel):
         return self.submitter is not None
 
     def _is_other_contacts_complete(self):
-        # If the object even exists and double check for
+        # If the object even exists and double check each part is filled out
         if (
             self.has_other_contacts()
             and self.other_contacts.filter(
@@ -999,6 +999,8 @@ class DomainRequest(TimeStampedModel):
                 email__isnull=False,
                 phone__isnull=False,
             ).exists()
+            # Radio button is No + has rationale
+            or (self.has_other_contacts() is False and self.no_other_contacts_rationale is not None)
         ):
             return True
         return False
@@ -1030,7 +1032,7 @@ class DomainRequest(TimeStampedModel):
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
             and self._is_submitter_complete()
-            and self._is_other_contacts_complete()
+            and self._is_other_contacts_complete()  # -- ISSUE HERE
             and self._is_additional_details_complete()
             and self._is_policy_acknowledgement_complete()
         )
@@ -1055,8 +1057,6 @@ class DomainRequest(TimeStampedModel):
             is_complete = False
 
         if not is_complete or not self._is_general_form_complete():
-            print("!!!! We are in the False if statement - form is not complete")
             return False
 
-        print("!!!! We are in the True if statement - form is complete")
         return True

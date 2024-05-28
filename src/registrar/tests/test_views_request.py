@@ -473,9 +473,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @boto3_mocking.patching
     def test_domain_request_form_submission_incomplete(self):
         num_pages_tested = 0
-        # elections, type_of_work, tribal_government
-        SKIPPED_PAGES = 3
-        # num_pages = len(self.TITLES) - SKIPPED_PAGES
+        # skipping elections, type_of_work, tribal_government
 
         intro_page = self.app.get(reverse("domain-request:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -772,7 +770,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         review_page = requirements_result.follow()
-        review_form = review_page.forms[0]
+        # review_form = review_page.forms[0]
 
         # Review page contains all the previously entered data
         # Let's make sure the long org name is displayed
@@ -788,24 +786,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the view > domain_request_form > modal
         self.assertNotContains(review_page, "You are about to submit a domain request for city.gov")
         self.assertContains(review_page, "You can’t submit this request because it’s incomplete.")
-
-        # DO WE NEED TO BLOCK SUBMISSIONS WITH INCOMPLETE FORMS ON THE BACKEND @Alysia?
-
-        # final submission results in a redirect to the "finished" URL
-        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # with less_console_noise():
-        #     review_result = review_form.submit()
-
-        # self.assertEqual(review_result.status_code, 302)
-        # self.assertEqual(review_result["Location"], "/request/finished/")
-        # num_pages_tested += 1
-
-        # # following this redirect is a GET request, so include the cookie
-        # # here too.
-        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # with less_console_noise():
-        #     final_result = review_result.follow()
-        # self.assertContains(final_result, "Thanks for your domain request!")
 
     # This is the start of a test to check an existing domain_request, it currently
     # does not work and results in errors as noted in:

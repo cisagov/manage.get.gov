@@ -381,12 +381,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request):
-            print("!!!!!!!in form complete section")
             modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
             context_stuff = {
                 "form_titles": self.TITLES,
                 "steps": self.steps,
-                # Add information about which steps should be unlocked
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
                 "modal_button": modal_button,
@@ -397,7 +395,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "review_form_is_complete": True,
             }
         else:  # form is not complete
-            print("!!!!!!! form is not complete")
             modal_button = '<button type="button" ' 'class="usa-button" ' " data-close-modal>Return to request</button>"
             context_stuff = {
                 "form_titles": self.TITLES,
