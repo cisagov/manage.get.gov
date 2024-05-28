@@ -385,7 +385,6 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             # because for this fields we are creating an individual
             # instance of the Select. For the other fields we use the for loop to set
             # the class's required attribute to true.
-            "federal_agency": forms.TextInput,
             "organization_name": forms.TextInput,
             "address_line1": forms.TextInput,
             "address_line2": forms.TextInput,
