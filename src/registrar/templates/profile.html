@@ -32,7 +32,7 @@ Edit your User Profile |
     {% include "includes/form_errors.html" with form=form %}
 
     <h1>Your profile</h1>
-    <p>We <a href="https://get.gov/domains/requirements/#what-.gov-domain-registrants-must-do" target="_blank">require</a> that you maintain accurate contact information. The details you provide will only be used to support the administration of .gov and won’t be made public.</p>
+    <p>We <a href="{% public_site_url 'domains/requirements/#what-.gov-domain-registrants-must-do' %}" target="_blank">require</a> that you maintain accurate contact information. The details you provide will only be used to support the administration of .gov and won’t be made public.</p>
     
     <h2>Contact information</h2>
     <p>Review the details below and update any required information. Note that editing this information won’t affect your Login.gov account information.</p>
@@ -41,35 +41,33 @@ Edit your User Profile |
 
     <form class="usa-form usa-form--large" method="post" novalidate>
       {% csrf_token %}
-      <fieldset class="usa-fieldset">
 
-        {% input_with_errors form.first_name %}
+      {% input_with_errors form.first_name %}
 
-        {% input_with_errors form.middle_name %}
-    
-        {% input_with_errors form.last_name %}
-    
-        {% input_with_errors form.title %}
+      {% input_with_errors form.middle_name %}
+  
+      {% input_with_errors form.last_name %}
+  
+      {% input_with_errors form.title %}
 
-        {% public_site_url "help/account-management/#get-help-with-login.gov" as login_help_url %}
+      {% public_site_url "help/account-management/#get-help-with-login.gov" as login_help_url %}
 
-        {% with link_href=login_help_url %}
-          {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with your Login.gov account." %}
-            {% with link_text="Get help with your Login.gov account" %}
-              {% with target_blank=True %}
-                {% with do_not_show_max_chars=True %}
-                  {% input_with_errors form.email %}
-                {% endwith %}
+      {% with link_href=login_help_url %}
+        {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with your Login.gov account." %}
+          {% with link_text="Get help with your Login.gov account" %}
+            {% with target_blank=True %}
+              {% with do_not_show_max_chars=True %}
+                {% input_with_errors form.email %}
               {% endwith %}
             {% endwith %}
           {% endwith %}
         {% endwith %}
-    
-        {% with add_class="usa-input--medium" %}
-          {% input_with_errors form.phone %}
-        {% endwith %}
+      {% endwith %}
+  
+      {% with add_class="usa-input--medium" %}
+        {% input_with_errors form.phone %}
+      {% endwith %}
 
-      </fieldset>
       <button type="submit" class="usa-button">Save</button>
     </form>
 </main>
