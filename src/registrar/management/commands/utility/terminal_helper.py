@@ -64,14 +64,6 @@ class PopulateScriptTemplate(ABC):
     Contains an ABC for generic populate scripts
     """
 
-    def get_objects_to_update(self, sender, filter_conditions):
-        """Given a model of type 'object', perform a filter operation on
-        filter_conditions and return the result.
-        
-        For example: User.objects.filter(contact__isnull: False)
-        """
-        return sender.objects.filter(**filter_conditions)
-
     def mass_populate_field(self, sender, filter_conditions, fields_to_update):
         """Loops through each valid "sender" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using populate_function.
@@ -79,7 +71,7 @@ class PopulateScriptTemplate(ABC):
         You must define populate_field before you can use this function.
         """
 
-        objects = self.get_objects_to_update(sender, filter_conditions)
+        objects = sender.objects.filter(**filter_conditions)
 
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
