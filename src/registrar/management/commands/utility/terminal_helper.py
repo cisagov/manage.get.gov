@@ -64,14 +64,22 @@ class PopulateScriptTemplate(ABC):
     Contains an ABC for generic populate scripts
     """
 
-    def mass_populate_field(self, sender, filter_conditions, fields_to_update):
+    def get_objects_to_update(self, sender, filter_conditions):
+        """Given a model of type 'object', perform a filter operation on
+        filter_conditions and return the result.
+        
+        For example: User.objects.filter(contact__isnull: False)
+        """
+        return sender.objects.filter(**filter_conditions)
+
+    def mass_populate_field(self, sender, filter_conditions, objects_to_update):
         """Loops through each valid "sender" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using populate_function.
 
         You must define populate_field before you can use this function.
         """
 
-        objects = sender.objects.filter(**filter_conditions)
+        objects = self.get_objects_to_update(sender, filter_conditions)
 
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
@@ -79,7 +87,7 @@ class PopulateScriptTemplate(ABC):
             info_to_inspect=f"""
             ==Proposed Changes==
             Number of {sender} objects to change: {len(objects)}
-            These fields will be updated on each record: {fields_to_update}
+            These fields will be updated on each record: {objects_to_update}
             """,
             prompt_title="Do you wish to patch this data?",
         )
@@ -87,23 +95,23 @@ class PopulateScriptTemplate(ABC):
 
         to_update: List[sender] = []
         failed_to_update: List[sender] = []
-        for updated_object in objects:
+        for item in objects:
             try:
-                self.populate_field(updated_object)
-                to_update.append(updated_object)
+                self.populate_field(item)
+                to_update.append(item)
             except Exception as err:
-                failed_to_update.append(updated_object)
+                failed_to_update.append(item)
                 logger.error(err)
-                logger.error(f"{TerminalColors.FAIL}" f"Failed to update {updated_object}" f"{TerminalColors.ENDC}")
+                logger.error(f"{TerminalColors.FAIL}" f"Failed to update {item}" f"{TerminalColors.ENDC}")
 
         # Do a bulk update on the first_ready field
-        ScriptDataHelper.bulk_update_fields(sender, to_update, fields_to_update)
+        ScriptDataHelper.bulk_update_fields(sender, to_update, objects_to_update)
 
         # Log what happened
         TerminalHelper.log_script_run_summary(to_update, failed_to_update, skipped=[], debug=True)
 
     @abstractmethod
-    def populate_field(self, field_to_update):
+    def populate_field(self, object_to_update):
         """Defines how we update each field. Must be defined before using mass_populate_field."""
         raise NotImplementedError
 
