@@ -134,7 +134,7 @@
 
   {% block usa_overlay %}<div class="usa-overlay"></div>{% endblock %}
   {% block banner %}
-  <header class="usa-header usa-header-basic">
+  <header class="usa-header usa-header--basic">
     <div class="usa-nav-container">
       <div class="usa-navbar">
           {% block logo %}
@@ -147,19 +147,25 @@
         <button type="button" class="usa-menu-btn">Menu</button>
       </div>
       {% block usa_nav %}
-      <nav class="usa-nav" aria-label="Primary navigation,">
+      <nav class="usa-nav" aria-label="Primary navigation">
         <button type="button" class="usa-nav__close">
           <img src="/public/img/usa-icons/close.svg" role="img" alt="Close" />
         </button>
-        <ul class="usa-nav__primary usa-accordion display-flex flex-align-center">
+        <ul class="usa-nav__primary usa-accordion">
           <li class="usa-nav__primary-item">
             {% if user.is_authenticated %}
-            <span>{{ user.email }}</span>
+            <span class="usa-nav__primary-username">{{ user.email }}</span>
           </li>
-          <li class="usa-nav__primary-item display-flex flex-align-center margin-left-2">
-            <span class="text-base"> | </span>
+          {% if has_profile_feature_flag %}
+          <li class="usa-nav__primary-item">
+            {% url 'user-profile' as user_profile_url %}
+            <a class="usa-nav-link {% if request.path == user_profile_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+                <span class="text-primary">Your profile</span>
+            </a>
+          </li>
+          {% endif %}
+          <li class="usa-nav__primary-item">
             <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>
-          </li>
             {% else %}
             <a href="{% url 'login' %}"><span>Sign in</span></a>
             {% endif %}

@@ -2230,7 +2230,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
-                "generic_org_type",
                 "is_election_board",
                 "federal_agency",
                 "id",
@@ -2285,7 +2284,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
-                "generic_org_type",
                 "is_election_board",
                 "federal_agency",
                 "creator",
@@ -2314,7 +2312,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
-                "generic_org_type",
                 "is_election_board",
                 "federal_agency",
             ]
@@ -3173,7 +3170,6 @@ class TestDomainInformationAdmin(TestCase):
 
             expected_fields = [
                 "other_contacts",
-                "generic_org_type",
                 "is_election_board",
                 "federal_agency",
                 "creator",
