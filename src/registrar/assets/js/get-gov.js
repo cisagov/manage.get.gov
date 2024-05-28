@@ -842,21 +842,14 @@ function hideDeletedForms() {
  */
 (function finishUserSetupListener() {
 
-  function getInputFieldId(fieldName){
-    return `#id_${fieldName}`
-  }
-
-  function getReadonlyFieldId(fieldName){
-    return `#${fieldName}__edit-button-readonly`
+  function getInputField(fieldName){
+    return document.querySelector(`#id_${fieldName}`)
   }
 
   // Shows the hidden input field and hides the readonly one
   function showInputFieldHideReadonlyField(fieldName, button) {
-    let inputId = getInputFieldId(fieldName)
-    let inputField = document.querySelector(inputId)
-
-    let readonlyId = getReadonlyFieldId(fieldName)
-    let readonlyField = document.querySelector(readonlyId)
+    let inputField = getInputField(fieldName)
+    let readonlyField = document.querySelector(`#${fieldName}__edit-button-readonly`)
 
     readonlyField.classList.toggle('display-none');
     inputField.classList.toggle('display-none');
@@ -868,18 +861,16 @@ function hideDeletedForms() {
     }
   }
 
-  function handleFullNameField(fieldName) {
+  function handleFullNameField(fieldName = "full_name") {
     // Remove the display-none class from the nearest parent div
-    let fieldId = getInputFieldId(fieldName)
-    let inputField = document.querySelector(fieldId);
-
     let nameFieldset = document.querySelector("#profile-name-group");
     if (nameFieldset){
       nameFieldset.classList.remove("display-none");
     }
 
+    // Hide the "full_name" field
+    let inputField = getInputField(fieldName);
     if (inputField) {
-      // Hide the "full_name" field
       inputFieldParentDiv = inputField.closest("div");
       if (inputFieldParentDiv) {
         inputFieldParentDiv.classList.add("display-none");
@@ -893,11 +884,12 @@ function hideDeletedForms() {
       button.disabled = true
 
       if (fieldName == "full_name"){
-        handleFullNameField(fieldName);
+        handleFullNameField();
       }else {
         showInputFieldHideReadonlyField(fieldName, button);
       }
       
+      // Hide the button itself
       button.classList.add("display-none");
 
       // Unlock after it completes
