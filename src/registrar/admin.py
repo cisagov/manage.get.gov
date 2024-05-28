@@ -594,7 +594,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "phone", "title")}),
+        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
         (
             "Permissions",
             {
@@ -625,7 +625,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "phone", "title")}),
+        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
         (
             "Permissions",
             {
@@ -654,7 +654,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "middle_name",
         "last_name",
         "title",
-        "phone",
         "email",
         "Permissions",
         "is_active",
