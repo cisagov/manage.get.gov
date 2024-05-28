@@ -22,6 +22,8 @@ from .utility import (
     DomainRequestWizardPermissionView,
 )
 
+from waffle.decorators import flag_is_active
+
 logger = logging.getLogger(__name__)
 
 
@@ -376,8 +378,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
-        # Build the submit button that we'll pass to the modal.
-        # Concatenate the modal header that we'll pass to the modal.
 
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request):
@@ -393,6 +393,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
                 You’ll only be able to withdraw your request.",
                 "review_form_is_complete": True,
+                "has_profile_feature_flag": flag_is_active(self.request, "profile_feature"),
             }
         else:  # form is not complete
             modal_button = '<button type="button" ' 'class="usa-button" ' " data-close-modal>Return to request</button>"
@@ -406,6 +407,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "modal_description": "You can’t submit this request because it’s incomplete.\
                 Click return to request and complete the sections that are missing information.",
                 "review_form_is_complete": False,
+                "has_profile_feature_flag": flag_is_active(self.request, "profile_feature"),
             }
         return context_stuff
 
