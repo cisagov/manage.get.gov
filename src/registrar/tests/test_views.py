@@ -666,6 +666,8 @@ class UserProfileTests(TestWithUser, WebTest):
         self.role.delete()
         self.domain.delete()
         Contact.objects.all().delete()
+        DraftDomain.objects.all().delete()
+        DomainRequest.objects.all().delete()
 
     @less_console_noise_decorator
     def error_500_main_nav_with_profile_feature_turned_on(self):
@@ -773,9 +775,6 @@ class UserProfileTests(TestWithUser, WebTest):
             self.assertContains(response, "Your profile")
             response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
             self.assertContains(response, "Your profile")
-        # cleanup
-        domain_request.delete()
-        site.delete()
 
     @less_console_noise_decorator
     def test_request_when_profile_feature_off(self):
