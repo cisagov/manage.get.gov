@@ -80,6 +80,17 @@ class User(AbstractUser):
         db_index=True,
     )
 
+    middle_name = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    title = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="title / role",
+    )
+
     verification_type = models.CharField(
         choices=VerificationTypeChoices.choices,
         null=True,
