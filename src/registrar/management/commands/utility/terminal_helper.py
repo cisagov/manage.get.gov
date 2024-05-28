@@ -103,7 +103,7 @@ class PopulateScriptTemplate(ABC):
         TerminalHelper.log_script_run_summary(to_update, failed_to_update, skipped=[], debug=True)
 
     @abstractmethod
-    def populate_field(self, object_to_update):
+    def populate_field(self, field_to_update):
         """Defines how we update each field. Must be defined before using mass_populate_field."""
         raise NotImplementedError
 
