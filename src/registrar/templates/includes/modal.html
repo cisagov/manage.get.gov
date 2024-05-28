@@ -39,13 +39,15 @@
                                 Cancel
                             </button>
                         </form>
-                    {% elif not is_domain_request_form or review_form_is_complete %}
+                    {% elif is_domain_request_form or review_form_is_complete %}
+                        <!-- CANCEL BUTTON SHOULD NOT DISPLAY HERE -->
+                    {% else %}
                         <button
                             type="submit"
                             class="usa-button usa-button--unstyled padding-105 text-center"
                             data-close-modal
                         >
-                            Cancel
+                            Cancel YOU SHOULD NOT SEE THIS
                         </button>
                     {% endif %}
                 </li>
