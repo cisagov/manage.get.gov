@@ -72,7 +72,7 @@ class PopulateScriptTemplate(ABC):
         """
         return sender.objects.filter(**filter_conditions)
 
-    def mass_populate_field(self, sender, filter_conditions, objects_to_update):
+    def mass_populate_field(self, sender, filter_conditions, fields_to_update):
         """Loops through each valid "sender" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using populate_function.
 
@@ -87,7 +87,7 @@ class PopulateScriptTemplate(ABC):
             info_to_inspect=f"""
             ==Proposed Changes==
             Number of {sender} objects to change: {len(objects)}
-            These fields will be updated on each record: {objects_to_update}
+            These fields will be updated on each record: {fields_to_update}
             """,
             prompt_title="Do you wish to patch this data?",
         )
@@ -95,17 +95,17 @@ class PopulateScriptTemplate(ABC):
 
         to_update: List[sender] = []
         failed_to_update: List[sender] = []
-        for item in objects:
+        for updated_object in objects:
             try:
-                self.populate_field(item)
-                to_update.append(item)
+                self.populate_field(updated_object)
+                to_update.append(updated_object)
             except Exception as err:
-                failed_to_update.append(item)
+                failed_to_update.append(updated_object)
                 logger.error(err)
-                logger.error(f"{TerminalColors.FAIL}" f"Failed to update {item}" f"{TerminalColors.ENDC}")
+                logger.error(f"{TerminalColors.FAIL}" f"Failed to update {updated_object}" f"{TerminalColors.ENDC}")
 
         # Do a bulk update on the first_ready field
-        ScriptDataHelper.bulk_update_fields(sender, to_update, objects_to_update)
+        ScriptDataHelper.bulk_update_fields(sender, to_update, fields_to_update)
 
         # Log what happened
         TerminalHelper.log_script_run_summary(to_update, failed_to_update, skipped=[], debug=True)
