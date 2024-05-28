@@ -33,7 +33,7 @@
             Your contact information
         </legend>
 
-        {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable--no-border padding-top-2" %}
+        {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable usa-form-editable--no-border padding-top-2" %}
             {% input_with_errors form.full_name %}
         {% endwith %}
         
@@ -52,7 +52,7 @@
         </div>
 
         {% public_site_url "help/account-management/#get-help-with-login.gov" as login_help_url %}
-        {% with show_readonly=True add_class="display-none" group_classes="usa-form-editable padding-top-2 bold-usa-label" %}
+        {% with show_readonly=True add_class="display-none" group_classes="usa-form-editable usa-form-editable padding-top-2 bold-usa-label" %}
             {% with link_href=login_help_url %}
                 {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with your Login.gov account." %}
                     {% with link_text="Get help with your Login.gov account" target_blank=True do_not_show_max_chars=True %}
@@ -62,11 +62,11 @@
             {% endwith %}
         {% endwith %}
 
-        {% with show_edit_button=True show_readonly=True group_classes="padding-top-2" %}
+        {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable padding-top-2" %}
             {% input_with_errors form.title %}
         {% endwith %}
 
-        {% with show_edit_button=True show_readonly=True group_classes="padding-top-2" %}
+        {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable padding-top-2" %}
             {% with add_class="usa-input--medium" %}
                 {% input_with_errors form.phone %}
             {% endwith %}

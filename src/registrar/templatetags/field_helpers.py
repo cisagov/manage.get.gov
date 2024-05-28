@@ -97,10 +97,6 @@ def input_with_errors(context, field=None):  # noqa: C901
             # Used such that we can toggle it with JS
             if "display-none" not in classes:
                 classes.append("display-none")
-            
-            # Tag that this form contains the edit button.
-            if "usa-form-editable" not in group_classes:
-                group_classes.append("usa-form-editable")
 
     attrs["id"] = field.auto_id
 

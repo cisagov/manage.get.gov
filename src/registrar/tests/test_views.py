@@ -628,9 +628,12 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             completed_setup_page = self._submit_form_webtest(finish_setup_page.form, follow=True)
 
             self.assertEqual(completed_setup_page.status_code, 200)
+
             # Assert that we're on the domain request page
-            self.assertContains(completed_setup_page, "How we’ll reach you")
-            self.assertContains(completed_setup_page, "Your contact information")
+            self.assertNotContains(completed_setup_page, "Finish setting up your profile")
+            self.assertNotContains(completed_setup_page, "What contact information should we use to reach you?")
+
+            self.assertContains(completed_setup_page, "You’re about to start your .gov domain request")
 
     @less_console_noise_decorator
     def test_new_user_with_profile_feature_off(self):
@@ -645,8 +648,11 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         when profile_feature is off but not the setup page"""
         with override_flag("profile_feature", active=False):
             response = self.client.get("/request/")
-        self.assertContains(response, "How we’ll reach you")
-        self.assertContains(response, "Your contact information")
+
+        self.assertNotContains(response, "Finish setting up your profile")
+        self.assertNotContains(response, "What contact information should we use to reach you?")
+
+        self.assertContains(response, "You’re about to start your .gov domain request")
 
 
 class UserProfileTests(TestWithUser, WebTest):
@@ -806,11 +812,6 @@ class UserProfileTests(TestWithUser, WebTest):
             profile_page = self.app.get(reverse("user-profile"))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            profile_form = profile_page.form
-            profile_page = profile_form.submit()
-
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
             profile_form = profile_page.form
             profile_form["title"] = "sample title"
             profile_form["phone"] = "(201) 555-1212"
