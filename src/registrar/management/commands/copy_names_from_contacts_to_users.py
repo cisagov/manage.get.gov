@@ -111,7 +111,6 @@ class Command(BaseCommand):
                     {TerminalColors.ENDC}""",  # noqa
                 )
 
-
                 # Get the fields that exist on both User and Contact. Excludes id.
                 common_fields = DomainHelper.get_common_fields(User, Contact)
                 if "email" in common_fields:
