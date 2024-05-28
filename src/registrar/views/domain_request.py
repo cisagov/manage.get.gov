@@ -396,7 +396,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "has_profile_feature_flag": flag_is_active(self.request, "profile_feature"),
             }
         else:  # form is not complete
-            modal_button = '<button type="button" ' 'class="usa-button" ' " data-close-modal>Return to request</button>"
+            modal_button = '<button type="submit" ' 'class="usa-button" ' " data-close-modal>Return to request</button>"
             context_stuff = {
                 "form_titles": self.TITLES,
                 "steps": self.steps,
