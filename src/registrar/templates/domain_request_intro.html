@@ -13,34 +13,7 @@
         <p>We’ll use the information you provide to verify your organization’s eligibility for a .gov domain. We’ll also verify that the domain you request meets our guidelines.</p>
         <h2>Time to complete the form</h2>
         <p>If you have <a href="{% public_site_url 'domains/before/#information-you%E2%80%99ll-need-to-complete-the-domain-request-form' %}" target="_blank" class="usa-link">all the information you need</a>,
-          completing your domain request might take around 15 minutes.</p>
-        
-        <h2>How we’ll reach you</h2>
-        <p>
-          While reviewing your domain request, we may need to reach out with questions. 
-          We’ll also email you when we complete our review. 
-          If the contact information below is not correct, visit <a href="#">your profile</a> to make updates.
-        </p>
-
-        <div
-          class="usa-summary-box"
-          role="region"
-          aria-labelledby="contact-information"
-        >
-          <div class="usa-summary-box__body">
-            <h3 class="usa-summary-box__heading">
-              Your contact information
-            </h3>
-            <div class="usa-summary-box__text">
-              <ul>
-                <li>Full name: <b>{{ user.contact.get_formatted_name }}</b></li>
-                <li>Organization email: <b>{{ user.contact.email }}</b></li>
-                <li>Title or role in your organization: <b>{{ user.contact.title }}</b></li>
-                <li>Phone: <b>{{ user.contact.phone }}</b></li>
-              </ul>
-            </div>
-          </div>
-        </div>
+           completing your domain request might take around 15 minutes.</p>
 
 {% block form_buttons %}
         <div class="stepnav">

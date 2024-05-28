@@ -931,6 +931,8 @@ function hideDeletedForms() {
       inputs.forEach(function(input) {
         let fieldName = input.name;
         let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
+
+        // If no error message is found, do nothing
         if (!fieldName || !errorMessage) {
           return null;
         }

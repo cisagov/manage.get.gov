@@ -220,7 +220,8 @@ class FinishProfileSetupView(UserProfileView):
         query_params = {}
 
         # Quote cleans up the value so that it can be used in a url
-        query_params["redirect"] = quote(self.redirect_type.value)
+        if self.redirect_type:
+            query_params["redirect"] = quote(self.redirect_type.value)
 
         # Generate the full url from the given query params
         full_url = replace_url_queryparams(base_url, query_params)
