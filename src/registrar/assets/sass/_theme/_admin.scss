@@ -151,9 +151,6 @@ html[data-theme="dark"] {
     }
 }
 
-.usa-table td {
-    border-bottom: 1px solid var(--hairline-color);
-}
 
 #branding h1 a:link, #branding h1 a:visited {
     color: var(--primary-fg);
@@ -181,6 +178,18 @@ div#content > h2 {
     .usa-table--striped tbody tr:nth-child(odd) td,
     .usa-table--striped tbody tr:nth-child(odd) th,
     .usa-table td,
+    .usa-table th {
+        background-color: transparent;
+    }
+}
+
+.change-form {
+    .usa-table--striped tbody tr:nth-child(odd) td,
+    .usa-table--striped tbody tr:nth-child(odd) th,
+    .usa-table td,
+    .usa-table th {
+        background-color: transparent;
+    }
     .usa-table th {
         background-color: transparent;
     }
