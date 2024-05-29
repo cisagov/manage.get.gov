@@ -10,14 +10,19 @@ Edit your User Profile |
 {% block content %}
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
-    <a href="{% url 'home' %}" class="breadcrumb__back">
+    <a href="{% if not return_to_request %}{% url 'home' %}{% else %}{% url 'domain-request:' %}{% endif %}" class="breadcrumb__back">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
       <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
       </svg>
-  
+      {% if not return_to_request %}
       <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
       Back to manage your domains
       </p>
+      {% else %}
+      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+        Go back to your domain request
+      </p>
+      {% endif %}
     </a>
     {# messages block is under the back breadcrumb link #}
     {% if messages %}
