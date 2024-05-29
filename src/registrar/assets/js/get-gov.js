@@ -1017,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // pagination should only be displayed if there are more than one pages of results
     paginationContainer.classList.toggle('display-none', numPages <= 1);
 
-    counterContainer.innerHTML = `${totalItems} Domains`;
+    counterContainer.innerHTML = `${totalItems} Domain${totalItems > 1 ? 's' : ''}`;
   
     if (hasPrevious) {
       const prevPageItem = document.createElement('li');
@@ -1203,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // pagination should only be displayed if there are more than one pages of results
     paginationContainer.classList.toggle('display-none', numPages <= 1);
 
-    counterContainer.innerHTML = `${totalItems} Domain requests`;
+    counterContainer.innerHTML = `${totalItems} Domain request${totalItems > 1 ? 's' : ''}`;
 
     if (hasPrevious) {
       const prevPageItem = document.createElement('li');
