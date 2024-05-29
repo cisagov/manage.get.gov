@@ -912,7 +912,6 @@ function ScrollToElement(attributeName, attributeValue) {
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let currentPage = 1;
   let currentSortBy = 'id';
   let currentOrder = 'asc';
   let domainsWrapper = document.querySelector('.domains-wrapper');
@@ -927,7 +926,7 @@ document.addEventListener('DOMContentLoaded', function() {
    * @param {*} order - the sort order {asc, desc}
    * @param {*} loaded - control for the scrollToElement functionality
    */
-  function loadPage(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+  function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
     //fetch json of page of domains, given page # and sort
     fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
       .then(response => response.json())
@@ -995,7 +994,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // update pagination
         updateDomainsPagination(data.page, data.num_pages, data.has_previous, data.has_next, data.total);
-        currentPage = page;
         currentSortBy = sortBy;
         currentOrder = order;
       })
@@ -1032,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <span class="usa-pagination__link-text">Previous</span>
         </a>
       `;
-      prevPageItem.querySelector('a').addEventListener('click', () => loadPage(currentPage - 1));
+      prevPageItem.querySelector('a').addEventListener('click', () => loadDomains(currentPage - 1));
       paginationContainer.appendChild(prevPageItem);
     }
 
@@ -1046,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pageItem.querySelector('a').classList.add('usa-current');
         pageItem.querySelector('a').setAttribute('aria-current', 'page');
       }
-      pageItem.querySelector('a').addEventListener('click', () => loadPage(i));
+      pageItem.querySelector('a').addEventListener('click', () => loadDomains(i));
       paginationContainer.appendChild(pageItem);
     }
 
@@ -1061,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </svg>
         </a>
       `;
-      nextPageItem.querySelector('a').addEventListener('click', () => loadPage(currentPage + 1));
+      nextPageItem.querySelector('a').addEventListener('click', () => loadDomains(currentPage + 1));
       paginationContainer.appendChild(nextPageItem);
     }
   }
@@ -1077,12 +1075,12 @@ document.addEventListener('DOMContentLoaded', function() {
         order = currentOrder === 'asc' ? 'desc' : 'asc';
       }
       // load the results with the updated sort
-      loadPage(1, sortBy, order);
+      loadDomains(1, sortBy, order);
     });
   });
 
   // Load the first page initially
-  loadPage(1);
+  loadDomains(1);
 });
 
 /**
@@ -1091,7 +1089,6 @@ document.addEventListener('DOMContentLoaded', function() {
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let currentPage = 1;
   let currentSortBy = 'id';
   let currentOrder = 'asc';
   let domainRequestsWrapper = document.querySelector('.domain-requests-wrapper');
@@ -1106,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', function() {
    * @param {*} order - the sort order {asc, desc}
    * @param {*} loaded - control for the scrollToElement functionality
    */
-  function loadDomainRequestsPage(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+  function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
     //fetch json of page of domain requests, given page # and sort
     fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
       .then(response => response.json())
@@ -1183,7 +1180,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // update the pagination after the domain requests list is updated
         updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next, data.total);
-        currentPage = page;
         currentSortBy = sortBy;
         currentOrder = order;
       })
@@ -1220,7 +1216,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <span class="usa-pagination__link-text">Previous</span>
         </a>
       `;
-      prevPageItem.querySelector('a').addEventListener('click', () => loadDomainRequestsPage(currentPage - 1));
+      prevPageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(currentPage - 1));
       paginationContainer.appendChild(prevPageItem);
     }
 
@@ -1234,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pageItem.querySelector('a').classList.add('usa-current');
         pageItem.querySelector('a').setAttribute('aria-current', 'page');
       }
-      pageItem.querySelector('a').addEventListener('click', () => loadDomainRequestsPage(i));
+      pageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(i));
       paginationContainer.appendChild(pageItem);
     }
 
@@ -1249,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </svg>
         </a>
       `;
-      nextPageItem.querySelector('a').addEventListener('click', () => loadDomainRequestsPage(currentPage + 1));
+      nextPageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(currentPage + 1));
       paginationContainer.appendChild(nextPageItem);
     }
   }
@@ -1264,10 +1260,10 @@ document.addEventListener('DOMContentLoaded', function() {
       if (sortBy === currentSortBy) {
         order = currentOrder === 'asc' ? 'desc' : 'asc';
       }
-      loadDomainRequestsPage(1, sortBy, order);
+      loadDomainRequests(1, sortBy, order);
     });
   });
 
   // Load the first page initially
-  loadDomainRequestsPage(1);
+  loadDomainRequests(1);
 });
