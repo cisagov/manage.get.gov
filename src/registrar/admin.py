@@ -555,6 +555,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     resource_classes = [UserResource]
 
     form = MyUserAdminForm
+    change_form_template = "django/admin/user_change_form.html"
 
     class Meta:
         """Contains meta information about this class"""
@@ -672,8 +673,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
     search_help_text = "Search by first name, last name, or email."
-
-    change_form_template = "django/admin/email_clipboard_change_form.html"
 
     def get_search_results(self, request, queryset, search_term):
         """
