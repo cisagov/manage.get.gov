@@ -151,6 +151,10 @@ html[data-theme="dark"] {
     }
 }
 
+.usa-table td {
+    border-bottom: 1px solid var(--hairline-color);
+}
+
 #branding h1 a:link, #branding h1 a:visited {
     color: var(--primary-fg);
 }
