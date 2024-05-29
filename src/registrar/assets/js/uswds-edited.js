@@ -1,3 +1,7 @@
+/*
+* Ctrl-F DOTGOV for modifications to USWDS compiled code. 
+*/
+
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 
@@ -5354,7 +5358,7 @@ modal = {
   }
 };
 module.exports = modal;
-// modified uswds.js to add modal module to window so that it is accessible to other js
+// DOTGOV: modified uswds.js to add modal module to window so that it is accessible to other js
 window.modal = modal;
 
 },{"../../uswds-core/src/js/config":35,"../../uswds-core/src/js/utils/focus-trap":47,"../../uswds-core/src/js/utils/scrollbar-width":51,"../../uswds-core/src/js/utils/select-or-matches":52}],29:[function(require,module,exports){
@@ -6166,7 +6170,7 @@ const tooltip = behavior({
   hide: hideToolTip
 });
 module.exports = tooltip;
-// modified uswds.js to add tooltip module to window so that it is accessible to other js
+// DOTGOV: modified uswds.js to add tooltip module to window so that it is accessible to other js
 window.tooltip = tooltip;
 
 },{"../../uswds-core/src/js/config":35,"../../uswds-core/src/js/utils/behavior":45,"../../uswds-core/src/js/utils/is-in-viewport":48,"../../uswds-core/src/js/utils/select-or-matches":52}],34:[function(require,module,exports){

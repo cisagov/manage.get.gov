@@ -932,7 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         if (data.error) {
-          alert(data.error);
+          console.log('Error in AJAX call: ' + data.error);
           return;
         }
 
@@ -1109,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         if (data.error) {
-          alert(data.error);
+          console.log('Error in AJAX call: ' + data.error);
           return;
         }
 
