@@ -988,9 +988,9 @@ class DomainRequest(TimeStampedModel):
     def _is_submitter_complete(self):
         return self.submitter is not None
 
-    def _is_other_contacts_complete(self):
-        # If the object even exists and double check each part is filled out
-        if (
+    def _has_other_contacts_and_filled(self):
+        # Other Contacts Radio button is Yes and if all required fields are filled
+        return (
             self.has_other_contacts()
             and self.other_contacts.filter(
                 first_name__isnull=False,
@@ -999,28 +999,33 @@ class DomainRequest(TimeStampedModel):
                 email__isnull=False,
                 phone__isnull=False,
             ).exists()
-            # Radio button is No + has rationale
-            or (self.has_other_contacts() is False and self.no_other_contacts_rationale is not None)
-        ):
+        )
+
+    def _has_no_other_contacts_gives_rationale(self):
+        # Other Contacts Radio button is No and a rationale is provided
+        return self.has_other_contacts() is False and self.no_other_contacts_rationale is not None
+
+    def _is_other_contacts_complete(self):
+        if self._has_other_contacts_and_filled() or self._has_no_other_contacts_gives_rationale():
             return True
         return False
 
-    def _is_additional_details_complete(self):
-        # has_cisa_representative is True and the cisa_representative_email is not empty and is not an empty string
-        # OR has_cisa_representative is No
-        # AND
-        # the anything else boolean is True and there is text and it's not an empty string of text OR the boolean is No
+    def _cisa_rep_and_email_check(self):
+        # Has a CISA rep + email is NOT empty or NOT an empty string OR doesn't have CISA rep
         return (
-            (
-                self.has_cisa_representative is True
-                and self.cisa_representative_email is not None
-                and self.cisa_representative_email != ""
-            )
-            or self.has_cisa_representative is False
-        ) and (
-            (self.has_anything_else_text is True and self.anything_else is not None and self.anything_else != "")
-            or self.has_anything_else_text is False
-        )
+            self.has_cisa_representative is True
+            and self.cisa_representative_email is not None
+            and self.cisa_representative_email != ""
+        ) or self.has_cisa_representative is False
+
+    def _anything_else_radio_button_and_text_field_check(self):
+        # Anything else boolean is True + filled text field and it's not an empty string OR the boolean is No
+        return (
+            self.has_anything_else_text is True and self.anything_else is not None and self.anything_else != ""
+        ) or self.has_anything_else_text is False
+
+    def _is_additional_details_complete(self):
+        return self._cisa_rep_and_email_check() and self._anything_else_radio_button_and_text_field_check()
 
     def _is_policy_acknowledgement_complete(self):
         return self.is_policy_acknowledged is not None
@@ -1038,23 +1043,24 @@ class DomainRequest(TimeStampedModel):
         )
 
     def _form_complete(self):
-        if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
-            is_complete = self._is_federal_complete()
-        elif self.generic_org_type == DomainRequest.OrganizationChoices.INTERSTATE:
-            is_complete = self._is_interstate_complete()
-        elif self.generic_org_type == DomainRequest.OrganizationChoices.STATE_OR_TERRITORY:
-            is_complete = self._is_state_or_territory_complete()
-        elif self.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL:
-            is_complete = self._is_tribal_complete()
-        elif self.generic_org_type == DomainRequest.OrganizationChoices.COUNTY:
-            is_complete = self._is_county_complete()
-        elif self.generic_org_type == DomainRequest.OrganizationChoices.CITY:
-            is_complete = self._is_city_complete()
-        elif self.generic_org_type == DomainRequest.OrganizationChoices.SPECIAL_DISTRICT:
-            is_complete = self._is_special_district_complete()
-        else:
-            # NOTE: This shouldn't happen, this is only if somehow they didn't choose an org type
-            is_complete = False
+        match self.generic_org_type:
+            case DomainRequest.OrganizationChoices.FEDERAL:
+                is_complete = self._is_federal_complete()
+            case DomainRequest.OrganizationChoices.INTERSTATE:
+                is_complete = self._is_interstate_complete()
+            case DomainRequest.OrganizationChoices.STATE_OR_TERRITORY:
+                is_complete = self._is_state_or_territory_complete()
+            case DomainRequest.OrganizationChoices.TRIBAL:
+                is_complete = self._is_tribal_complete()
+            case DomainRequest.OrganizationChoices.COUNTY:
+                is_complete = self._is_county_complete()
+            case DomainRequest.OrganizationChoices.CITY:
+                is_complete = self._is_city_complete()
+            case DomainRequest.OrganizationChoices.SPECIAL_DISTRICT:
+                is_complete = self._is_special_district_complete()
+            case _:
+                # NOTE: Shouldn't happen, this is only if somehow they didn't choose an org type
+                is_complete = False
 
         if not is_complete or not self._is_general_form_complete():
             return False

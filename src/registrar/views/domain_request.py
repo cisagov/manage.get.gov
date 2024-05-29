@@ -22,7 +22,7 @@ from .utility import (
     DomainRequestWizardPermissionView,
 )
 
-from waffle.decorators import flag_is_active
+from waffle.decorators import flag_is_active, waffle_flag
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +230,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         context = self.get_context_data()
         if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
-                return render(request, "domain_request_intro.html", context)
+                context = self.get_context_data()
+                return render(request, "domain_request_intro.html", context=context)
             else:
                 return self.goto(self.steps.first)
 
@@ -378,6 +379,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
+        has_profile_flag = flag_is_active(self.request, "profile_feature")
+        logger.debug("PROFILE FLAG is %s" % has_profile_flag)
 
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request):
@@ -393,9 +396,17 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
                 You’ll only be able to withdraw your request.",
                 "review_form_is_complete": True,
-                "has_profile_feature_flag": flag_is_active(self.request, "profile_feature"),
+                # Use the profile waffle feature flag to toggle profile features throughout domain requests
+                "has_profile_feature_flag": has_profile_flag,
+                "user": self.request.user,
             }
         else:  # form is not complete
+            # modal_button = '<button type="submit" ' 'class="usa-button" ' " data-close-modal onclick=window.location.href=window.location.origin' + '/request/review' data-close-modal>Return to request</button>"
+            # modal_button = '<button type="submit" class="usa-button" data-close-modal formnovalidate onclick="this.closest(\'.usa-modal\').style.display=\'none\'">Return to request</button>'
+            # modal_button = (
+            #     '<button type="submit" class="usa-button" data-close-modal formnovalidate '
+            #     'onclick="this.closest(\'.usa-modal\').style.display=\'none\'" data-close-modal>Return to request</button>'
+            # )
             modal_button = '<button type="submit" ' 'class="usa-button" ' " data-close-modal>Return to request</button>"
             context_stuff = {
                 "form_titles": self.TITLES,
@@ -407,7 +418,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "modal_description": "You can’t submit this request because it’s incomplete.\
                 Click return to request and complete the sections that are missing information.",
                 "review_form_is_complete": False,
-                "has_profile_feature_flag": flag_is_active(self.request, "profile_feature"),
+                "has_profile_feature_flag": has_profile_flag,
+                "user": self.request.user,
             }
         return context_stuff
 
@@ -420,6 +432,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 condition = condition(self)
             if condition:
                 step_list.append(step)
+
+        if flag_is_active(self.request, "profile_feature"):
+            step_list.remove(Step.YOUR_CONTACT)
+
         return step_list
 
     def goto(self, step):
@@ -553,6 +569,10 @@ class Purpose(DomainRequestWizard):
 class YourContact(DomainRequestWizard):
     template_name = "domain_request_your_contact.html"
     forms = [forms.YourContactForm]
+
+    @waffle_flag("!profile_feature")  # type: ignore
+    def dispatch(self, request, *args, **kwargs):  # type: ignore
+        return super().dispatch(request, *args, **kwargs)
 
 
 class OtherContacts(DomainRequestWizard):
