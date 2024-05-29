@@ -401,13 +401,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "user": self.request.user,
             }
         else:  # form is not complete
-            # modal_button = '<button type="submit" ' 'class="usa-button" ' " data-close-modal onclick=window.location.href=window.location.origin' + '/request/review' data-close-modal>Return to request</button>"
-            # modal_button = '<button type="submit" class="usa-button" data-close-modal formnovalidate onclick="this.closest(\'.usa-modal\').style.display=\'none\'">Return to request</button>'
-            # modal_button = (
-            #     '<button type="submit" class="usa-button" data-close-modal formnovalidate '
-            #     'onclick="this.closest(\'.usa-modal\').style.display=\'none\'" data-close-modal>Return to request</button>'
-            # )
-            modal_button = '<button type="submit" ' 'class="usa-button" ' " data-close-modal>Return to request</button>"
+            modal_button = (
+                '<button type="button" class="usa-button" data-close-modal '
+                'data-pa11y-ignore="true">Return to request</button>'
+            )
             context_stuff = {
                 "form_titles": self.TITLES,
                 "steps": self.steps,
