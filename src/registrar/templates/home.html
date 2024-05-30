@@ -63,7 +63,7 @@
     </div>
   </section>
   <nav aria-label="Pagination" class="usa-pagination flex-justify" id="domains-pagination">
-    <span class="usa-pagination__counter padding-top-1 padding-left-2">
+    <span class="usa-pagination__counter text-base-dark padding-left-2">
       <!-- Count will be dynamically populated by JS -->
     </span>
     <ul class="usa-pagination__list">
@@ -96,7 +96,7 @@
 
       {% for domain_request in domain_requests %}
         {% if has_deletable_domain_requests %}
-          {% if domain_request.status == "started" or domain_request.status == "withdrawn"  %}
+          {% if domain_request.status == STATUS_STARTED or domain_request.status == STATUS_WITHDRAWN  %}
           <div
             class="usa-modal"
             id="toggle-delete-domain-alert-{{ domain_request.id }}"
