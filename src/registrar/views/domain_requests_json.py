@@ -2,14 +2,12 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from registrar.models import DomainRequest
 from django.utils.dateformat import format
+from django.contrib.auth.decorators import login_required
 
-
+@login_required
 def get_domain_requests_json(request):
     """Given the current request,
     get all domain requests that are associated with the request user and exclude the APPROVED ones"""
-
-    if not request.user.is_authenticated:
-        return JsonResponse({"error": "User not authenticated"}, status=401)
 
     domain_requests = DomainRequest.objects.filter(creator=request.user).exclude(
         status=DomainRequest.DomainRequestStatus.APPROVED

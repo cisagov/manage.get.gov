@@ -912,180 +912,183 @@ function ScrollToElement(attributeName, attributeValue) {
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let currentSortBy = 'id';
-  let currentOrder = 'asc';
   let domainsWrapper = document.querySelector('.domains-wrapper');
-  let noDomainsWrapper = document.querySelector('.no-domains-wrapper');
-  let hasLoaded = false;
 
-  /**
-   * Loads rows in the domains list, as well as updates pagination around the domains list
-   * based on the supplied attributes.
-   * @param {*} page - the page number of the results (starts with 1)
-   * @param {*} sortBy - the sort column option
-   * @param {*} order - the sort order {asc, desc}
-   * @param {*} loaded - control for the scrollToElement functionality
-   */
-  function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
-    //fetch json of page of domains, given page # and sort
-    fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          console.log('Error in AJAX call: ' + data.error);
-          return;
-        }
+  if (domainsWrapper) {
+    let currentSortBy = 'id';
+    let currentOrder = 'asc';
+    let noDomainsWrapper = document.querySelector('.no-domains-wrapper');
+    let hasLoaded = false;
 
-        // handle the display of proper messaging in the event that no domains exist in the list
-        if (data.domains.length) {
-          domainsWrapper.classList.remove('display-none');
-          noDomainsWrapper.classList.add('display-none');
-        } else {
-          domainsWrapper.classList.add('display-none');
-          noDomainsWrapper.classList.remove('display-none');
-        }
+    /**
+     * Loads rows in the domains list, as well as updates pagination around the domains list
+     * based on the supplied attributes.
+     * @param {*} page - the page number of the results (starts with 1)
+     * @param {*} sortBy - the sort column option
+     * @param {*} order - the sort order {asc, desc}
+     * @param {*} loaded - control for the scrollToElement functionality
+     */
+    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+      //fetch json of page of domains, given page # and sort
+      fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            console.log('Error in AJAX call: ' + data.error);
+            return;
+          }
 
-        // identify the DOM element where the domain list will be inserted into the DOM
-        const domainList = document.querySelector('.dotgov-table__registered-domains tbody');
-        domainList.innerHTML = '';
+          // handle the display of proper messaging in the event that no domains exist in the list
+          if (data.domains.length) {
+            domainsWrapper.classList.remove('display-none');
+            noDomainsWrapper.classList.add('display-none');
+          } else {
+            domainsWrapper.classList.add('display-none');
+            noDomainsWrapper.classList.remove('display-none');
+          }
 
-        data.domains.forEach(domain => {
-          const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
-          const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
-          const actionUrl = domain.action_url;
-          
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <th scope="row" role="rowheader" data-label="Domain name">
-              ${domain.name}
-            </th>
-            <td data-sort-value="${expirationDateSortValue}" data-label="Expires">
-              ${expirationDate ? expirationDate.toLocaleDateString() : ''}
-            </td>
-            <td data-label="Status">
-              ${domain.state_display}
-              <svg 
-                class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
-                data-position="top"
-                title="${domain.get_state_help_text}"
-                focusable="true"
-                aria-label="Status Information"
-                role="tooltip"
-              >
-                <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
-              </svg>
-            </td>
-            <td>
-              <a href="${actionUrl}">
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="/public/img/sprite.svg#${domain.state === 'deleted' || domain.state === 'on hold' ? 'visibility' : 'settings'}"></use>
+          // identify the DOM element where the domain list will be inserted into the DOM
+          const domainList = document.querySelector('.dotgov-table__registered-domains tbody');
+          domainList.innerHTML = '';
+
+          data.domains.forEach(domain => {
+            const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
+            const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
+            const actionUrl = domain.action_url;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <th scope="row" role="rowheader" data-label="Domain name">
+                ${domain.name}
+              </th>
+              <td data-sort-value="${expirationDateSortValue}" data-label="Expires">
+                ${expirationDate ? expirationDate.toLocaleDateString() : ''}
+              </td>
+              <td data-label="Status">
+                ${domain.state_display}
+                <svg 
+                  class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
+                  data-position="top"
+                  title="${domain.get_state_help_text}"
+                  focusable="true"
+                  aria-label="Status Information"
+                  role="tooltip"
+                >
+                  <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
                 </svg>
-                ${domain.state === 'deleted' || domain.state === 'on hold' ? 'View' : 'Manage'} <span class="usa-sr-only">${domain.name}</span>
-              </a>
-            </td>
-          `;
-          domainList.appendChild(row);
-        });
-        // initialize tool tips immediately after the associated DOM elements are added
-        initializeTooltips();
-        if (loaded)
-          ScrollToElement('id', 'domains-header');
+              </td>
+              <td>
+                <a href="${actionUrl}">
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#${domain.state === 'deleted' || domain.state === 'on hold' ? 'visibility' : 'settings'}"></use>
+                  </svg>
+                  ${domain.state === 'deleted' || domain.state === 'on hold' ? 'View' : 'Manage'} <span class="usa-sr-only">${domain.name}</span>
+                </a>
+              </td>
+            `;
+            domainList.appendChild(row);
+          });
+          // initialize tool tips immediately after the associated DOM elements are added
+          initializeTooltips();
+          if (loaded)
+            ScrollToElement('id', 'domains-header');
 
-        hasLoaded = true;
+          hasLoaded = true;
 
-        // update pagination
-        updateDomainsPagination(data.page, data.num_pages, data.has_previous, data.has_next, data.total);
-        currentSortBy = sortBy;
-        currentOrder = order;
-      })
-      .catch(error => console.error('Error fetching domains:', error));
-  }
-
-  /**
-   * Update the pagination below the domains list.
-   * @param {*} currentPage - the current page number (starting with 1)
-   * @param {*} numPages - the number of pages indicated by the domains list response
-   * @param {*} hasPrevious - if there is a page of results prior to the current page
-   * @param {*} hasNext - if there is a page of results after the current page
-   */
-  function updateDomainsPagination(currentPage, numPages, hasPrevious, hasNext, totalItems) {
-    // identify the DOM element where the pagination will be inserted
-    const paginationContainer = document.querySelector('#domains-pagination');
-    const paginationCounter = document.querySelector('#domains-pagination .usa-pagination__counter');
-    const paginationButtons = document.querySelector('#domains-pagination .usa-pagination__list');
-    paginationCounter.innerHTML = '';
-    paginationButtons.innerHTML = '';
-
-    // Buttons should only be displayed if there are more than one pages of results
-    paginationButtons.classList.toggle('display-none', numPages <= 1);
-
-    // Counter should only be displayed if there is more than 1 item
-    paginationContainer.classList.toggle('display-none', totalItems < 1);
-
-    paginationCounter.innerHTML = `${totalItems} domain${totalItems > 1 ? 's' : ''}`;
-  
-    if (hasPrevious) {
-      const prevPageItem = document.createElement('li');
-      prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-      prevPageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domains previous page">
-          <svg class="usa-icon" aria-hidden="true" role="img">
-            <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
-          </svg>
-          <span class="usa-pagination__link-text">Previous</span>
-        </a>
-      `;
-      prevPageItem.querySelector('a').addEventListener('click', () => loadDomains(currentPage - 1));
-      paginationButtons.appendChild(prevPageItem);
+          // update pagination
+          updateDomainsPagination(data.page, data.num_pages, data.has_previous, data.has_next, data.total);
+          currentSortBy = sortBy;
+          currentOrder = order;
+        })
+        .catch(error => console.error('Error fetching domains:', error));
     }
 
-    for (let i = 1; i <= numPages; i++) {
-      const pageItem = document.createElement('li');
-      pageItem.className = 'usa-pagination__item usa-pagination__page-no';
-      pageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Domains page ${i}">${i}</a>
-      `;
-      if (i === currentPage) {
-        pageItem.querySelector('a').classList.add('usa-current');
-        pageItem.querySelector('a').setAttribute('aria-current', 'page');
+    /**
+     * Update the pagination below the domains list.
+     * @param {*} currentPage - the current page number (starting with 1)
+     * @param {*} numPages - the number of pages indicated by the domains list response
+     * @param {*} hasPrevious - if there is a page of results prior to the current page
+     * @param {*} hasNext - if there is a page of results after the current page
+     */
+    function updateDomainsPagination(currentPage, numPages, hasPrevious, hasNext, totalItems) {
+      // identify the DOM element where the pagination will be inserted
+      const paginationContainer = document.querySelector('#domains-pagination');
+      const paginationCounter = document.querySelector('#domains-pagination .usa-pagination__counter');
+      const paginationButtons = document.querySelector('#domains-pagination .usa-pagination__list');
+      paginationCounter.innerHTML = '';
+      paginationButtons.innerHTML = '';
+
+      // Buttons should only be displayed if there are more than one pages of results
+      paginationButtons.classList.toggle('display-none', numPages <= 1);
+
+      // Counter should only be displayed if there is more than 1 item
+      paginationContainer.classList.toggle('display-none', totalItems < 1);
+
+      paginationCounter.innerHTML = `${totalItems} domain${totalItems > 1 ? 's' : ''}`;
+    
+      if (hasPrevious) {
+        const prevPageItem = document.createElement('li');
+        prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+        prevPageItem.innerHTML = `
+          <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domains previous page">
+            <svg class="usa-icon" aria-hidden="true" role="img">
+              <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
+            </svg>
+            <span class="usa-pagination__link-text">Previous</span>
+          </a>
+        `;
+        prevPageItem.querySelector('a').addEventListener('click', () => loadDomains(currentPage - 1));
+        paginationButtons.appendChild(prevPageItem);
       }
-      pageItem.querySelector('a').addEventListener('click', () => loadDomains(i));
-      paginationButtons.appendChild(pageItem);
-    }
 
-    if (hasNext) {
-      const nextPageItem = document.createElement('li');
-      nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-      nextPageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Domains next page">
-          <span class="usa-pagination__link-text">Next</span>
-          <svg class="usa-icon" aria-hidden="true" role="img">
-            <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
-          </svg>
-        </a>
-      `;
-      nextPageItem.querySelector('a').addEventListener('click', () => loadDomains(currentPage + 1));
-      paginationButtons.appendChild(nextPageItem);
-    }
-  }
-
-  // Add event listeners to table headers for sorting
-  document.querySelectorAll('.dotgov-table__registered-domains th[data-sortable]').forEach(header => {
-    header.addEventListener('click', function() {
-      const sortBy = this.getAttribute('data-sortable');
-      let order = 'asc';
-      // sort order will be ascending, unless the currently sorted column is ascending, and the user
-      // is selecting the same column to sort in descending order
-      if (sortBy === currentSortBy) {
-        order = currentOrder === 'asc' ? 'desc' : 'asc';
+      for (let i = 1; i <= numPages; i++) {
+        const pageItem = document.createElement('li');
+        pageItem.className = 'usa-pagination__item usa-pagination__page-no';
+        pageItem.innerHTML = `
+          <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Domains page ${i}">${i}</a>
+        `;
+        if (i === currentPage) {
+          pageItem.querySelector('a').classList.add('usa-current');
+          pageItem.querySelector('a').setAttribute('aria-current', 'page');
+        }
+        pageItem.querySelector('a').addEventListener('click', () => loadDomains(i));
+        paginationButtons.appendChild(pageItem);
       }
-      // load the results with the updated sort
-      loadDomains(1, sortBy, order);
+
+      if (hasNext) {
+        const nextPageItem = document.createElement('li');
+        nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+        nextPageItem.innerHTML = `
+          <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Domains next page">
+            <span class="usa-pagination__link-text">Next</span>
+            <svg class="usa-icon" aria-hidden="true" role="img">
+              <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
+            </svg>
+          </a>
+        `;
+        nextPageItem.querySelector('a').addEventListener('click', () => loadDomains(currentPage + 1));
+        paginationButtons.appendChild(nextPageItem);
+      }
+    }
+
+    // Add event listeners to table headers for sorting
+    document.querySelectorAll('.dotgov-table__registered-domains th[data-sortable]').forEach(header => {
+      header.addEventListener('click', function() {
+        const sortBy = this.getAttribute('data-sortable');
+        let order = 'asc';
+        // sort order will be ascending, unless the currently sorted column is ascending, and the user
+        // is selecting the same column to sort in descending order
+        if (sortBy === currentSortBy) {
+          order = currentOrder === 'asc' ? 'desc' : 'asc';
+        }
+        // load the results with the updated sort
+        loadDomains(1, sortBy, order);
+      });
     });
-  });
 
-  // Load the first page initially
-  loadDomains(1);
+    // Load the first page initially
+    loadDomains(1);
+  }
 });
 
 /**
@@ -1094,185 +1097,188 @@ document.addEventListener('DOMContentLoaded', function() {
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let currentSortBy = 'id';
-  let currentOrder = 'asc';
   let domainRequestsWrapper = document.querySelector('.domain-requests-wrapper');
-  let noDomainRequestsWrapper = document.querySelector('.no-domain-requests-wrapper');
-  let hasLoaded = false;
 
-  /**
-   * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
-   * based on the supplied attributes.
-   * @param {*} page - the page number of the results (starts with 1)
-   * @param {*} sortBy - the sort column option
-   * @param {*} order - the sort order {asc, desc}
-   * @param {*} loaded - control for the scrollToElement functionality
-   */
-  function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
-    //fetch json of page of domain requests, given page # and sort
-    fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          console.log('Error in AJAX call: ' + data.error);
-          return;
-        }
+  if (domainRequestsWrapper) {
+    let currentSortBy = 'id';
+    let currentOrder = 'asc';
+    let noDomainRequestsWrapper = document.querySelector('.no-domain-requests-wrapper');
+    let hasLoaded = false;
 
-        // handle the display of proper messaging in the event that no domain requests exist in the list
-        if (data.domain_requests.length) {
-          domainRequestsWrapper.classList.remove('display-none');
-          noDomainRequestsWrapper.classList.add('display-none');
-        } else {
-          domainRequestsWrapper.classList.add('display-none');
-          noDomainRequestsWrapper.classList.remove('display-none');
-        }
+    /**
+     * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
+     * based on the supplied attributes.
+     * @param {*} page - the page number of the results (starts with 1)
+     * @param {*} sortBy - the sort column option
+     * @param {*} order - the sort order {asc, desc}
+     * @param {*} loaded - control for the scrollToElement functionality
+     */
+    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+      //fetch json of page of domain requests, given page # and sort
+      fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            console.log('Error in AJAX call: ' + data.error);
+            return;
+          }
 
-        // identify the DOM element where the domain request list will be inserted into the DOM
-        const tbody = document.querySelector('.dotgov-table__domain-requests tbody');
-        tbody.innerHTML = '';
+          // handle the display of proper messaging in the event that no domain requests exist in the list
+          if (data.domain_requests.length) {
+            domainRequestsWrapper.classList.remove('display-none');
+            noDomainRequestsWrapper.classList.add('display-none');
+          } else {
+            domainRequestsWrapper.classList.add('display-none');
+            noDomainRequestsWrapper.classList.remove('display-none');
+          }
 
-        // remove any existing modal elements from the DOM so they can be properly re-initialized
-        // after the DOM content changes and there are new delete modal buttons added
-        unloadModals();
-        data.domain_requests.forEach(request => {
-          const domainName = request.requested_domain ? request.requested_domain : `New domain request <span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString()} UTC)</span>`;
-          const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString() : `<span class="text-base">Not submitted</span>`;
-          const actionUrl = request.action_url;
-          const actionLabel = request.action_label;
-          const deleteButton = request.is_deletable ? `
-            <a 
-              role="button" 
-              id="button-toggle-delete-domain-alert-${request.id}"
-              href="#toggle-delete-domain-alert-${request.id}"
-              class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
-              aria-controls="toggle-delete-domain-alert-${request.id}"
-              data-open-modal
-            >
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                <use xlink:href="/public/img/sprite.svg#delete"></use>
-              </svg> Delete <span class="usa-sr-only">${domainName}</span>
-            </a>` : '';
+          // identify the DOM element where the domain request list will be inserted into the DOM
+          const tbody = document.querySelector('.dotgov-table__domain-requests tbody');
+          tbody.innerHTML = '';
 
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <th scope="row" role="rowheader" data-label="Domain name">
-              ${domainName}
-            </th>
-            <td data-sort-value="${new Date(request.submission_date).getTime()}" data-label="Date submitted">
-              ${submissionDate}
-            </td>
-            <td data-label="Status">
-              ${request.status}
-            </td>
-            <td>
-              <a href="${actionUrl}">
+          // remove any existing modal elements from the DOM so they can be properly re-initialized
+          // after the DOM content changes and there are new delete modal buttons added
+          unloadModals();
+          data.domain_requests.forEach(request => {
+            const domainName = request.requested_domain ? request.requested_domain : `New domain request <span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString()} UTC)</span>`;
+            const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString() : `<span class="text-base">Not submitted</span>`;
+            const actionUrl = request.action_url;
+            const actionLabel = request.action_label;
+            const deleteButton = request.is_deletable ? `
+              <a 
+                role="button" 
+                id="button-toggle-delete-domain-alert-${request.id}"
+                href="#toggle-delete-domain-alert-${request.id}"
+                class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                aria-controls="toggle-delete-domain-alert-${request.id}"
+                data-open-modal
+              >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="/public/img/sprite.svg#${request.state === 'deleted' || request.state === 'on hold' ? 'visibility' : 'settings'}"></use>
-                </svg>
-                ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
-              </a>
-            </td>
-            <td>${deleteButton}</td>
-          `;
-          tbody.appendChild(row);
-        });
-        // initialize modals immediately after the DOM content is updated
-        initializeModals();
-        if (loaded)
-          ScrollToElement('id', 'domain-requests-header');
+                  <use xlink:href="/public/img/sprite.svg#delete"></use>
+                </svg> Delete <span class="usa-sr-only">${domainName}</span>
+              </a>` : '';
 
-        hasLoaded = true;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <th scope="row" role="rowheader" data-label="Domain name">
+                ${domainName}
+              </th>
+              <td data-sort-value="${new Date(request.submission_date).getTime()}" data-label="Date submitted">
+                ${submissionDate}
+              </td>
+              <td data-label="Status">
+                ${request.status}
+              </td>
+              <td>
+                <a href="${actionUrl}">
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#${request.state === 'deleted' || request.state === 'on hold' ? 'visibility' : 'settings'}"></use>
+                  </svg>
+                  ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
+                </a>
+              </td>
+              <td>${deleteButton}</td>
+            `;
+            tbody.appendChild(row);
+          });
+          // initialize modals immediately after the DOM content is updated
+          initializeModals();
+          if (loaded)
+            ScrollToElement('id', 'domain-requests-header');
 
-        // update the pagination after the domain requests list is updated
-        updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next, data.total);
-        currentSortBy = sortBy;
-        currentOrder = order;
-      })
-      .catch(error => console.error('Error fetching domain requests:', error));
-  }
+          hasLoaded = true;
 
-  /**
-   * Update the pagination below the domain requests list.
-   * @param {*} currentPage - the current page number (starting with 1)
-   * @param {*} numPages - the number of pages indicated by the domain request list response
-   * @param {*} hasPrevious - if there is a page of results prior to the current page
-   * @param {*} hasNext - if there is a page of results after the current page
-   */
-  function updateDomainRequestsPagination(currentPage, numPages, hasPrevious, hasNext, totalItems) {
-    // identify the DOM element where pagination is contained
-    const paginationContainer = document.querySelector('#domain-requests-pagination');
-    const paginationCounter = document.querySelector('#domain-requests-pagination .usa-pagination__counter');
-    const paginationButtons = document.querySelector('#domain-requests-pagination .usa-pagination__list');
-    paginationCounter.innerHTML = '';
-    paginationButtons.innerHTML = '';
-
-    // Buttons should only be displayed if there are more than one pages of results
-    paginationButtons.classList.toggle('display-none', numPages <= 1);
-
-    // Counter should only be displayed if there is more than 1 item
-    paginationContainer.classList.toggle('display-none', totalItems < 1);
-
-    paginationCounter.innerHTML = `${totalItems} domain request${totalItems > 1 ? 's' : ''}`;
-
-    if (hasPrevious) {
-      const prevPageItem = document.createElement('li');
-      prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-      prevPageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domain requests previous page">
-          <svg class="usa-icon" aria-hidden="true" role="img">
-            <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
-          </svg>
-          <span class="usa-pagination__link-text">Previous</span>
-        </a>
-      `;
-      prevPageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(currentPage - 1));
-      paginationButtons.appendChild(prevPageItem);
+          // update the pagination after the domain requests list is updated
+          updateDomainRequestsPagination(data.page, data.num_pages, data.has_previous, data.has_next, data.total);
+          currentSortBy = sortBy;
+          currentOrder = order;
+        })
+        .catch(error => console.error('Error fetching domain requests:', error));
     }
 
-    for (let i = 1; i <= numPages; i++) {
-      const pageItem = document.createElement('li');
-      pageItem.className = 'usa-pagination__item usa-pagination__page-no';
-      pageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Domain requests page ${i}">${i}</a>
-      `;
-      if (i === currentPage) {
-        pageItem.querySelector('a').classList.add('usa-current');
-        pageItem.querySelector('a').setAttribute('aria-current', 'page');
+    /**
+     * Update the pagination below the domain requests list.
+     * @param {*} currentPage - the current page number (starting with 1)
+     * @param {*} numPages - the number of pages indicated by the domain request list response
+     * @param {*} hasPrevious - if there is a page of results prior to the current page
+     * @param {*} hasNext - if there is a page of results after the current page
+     */
+    function updateDomainRequestsPagination(currentPage, numPages, hasPrevious, hasNext, totalItems) {
+      // identify the DOM element where pagination is contained
+      const paginationContainer = document.querySelector('#domain-requests-pagination');
+      const paginationCounter = document.querySelector('#domain-requests-pagination .usa-pagination__counter');
+      const paginationButtons = document.querySelector('#domain-requests-pagination .usa-pagination__list');
+      paginationCounter.innerHTML = '';
+      paginationButtons.innerHTML = '';
+
+      // Buttons should only be displayed if there are more than one pages of results
+      paginationButtons.classList.toggle('display-none', numPages <= 1);
+
+      // Counter should only be displayed if there is more than 1 item
+      paginationContainer.classList.toggle('display-none', totalItems < 1);
+
+      paginationCounter.innerHTML = `${totalItems} domain request${totalItems > 1 ? 's' : ''}`;
+
+      if (hasPrevious) {
+        const prevPageItem = document.createElement('li');
+        prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+        prevPageItem.innerHTML = `
+          <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domain requests previous page">
+            <svg class="usa-icon" aria-hidden="true" role="img">
+              <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
+            </svg>
+            <span class="usa-pagination__link-text">Previous</span>
+          </a>
+        `;
+        prevPageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(currentPage - 1));
+        paginationButtons.appendChild(prevPageItem);
       }
-      pageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(i));
-      paginationButtons.appendChild(pageItem);
-    }
 
-    if (hasNext) {
-      const nextPageItem = document.createElement('li');
-      nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-      nextPageItem.innerHTML = `
-        <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Domain requests next page">
-          <span class="usa-pagination__link-text">Next</span>
-          <svg class="usa-icon" aria-hidden="true" role="img">
-            <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
-          </svg>
-        </a>
-      `;
-      nextPageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(currentPage + 1));
-      paginationButtons.appendChild(nextPageItem);
-    }
-  }
-
-  // Add event listeners to table headers for sorting
-  document.querySelectorAll('.dotgov-table__domain-requests th[data-sortable]').forEach(header => {
-    header.addEventListener('click', function() {
-      const sortBy = this.getAttribute('data-sortable');
-      let order = 'asc';
-      // sort order will be ascending, unless the currently sorted column is ascending, and the user
-      // is selecting the same column to sort in descending order
-      if (sortBy === currentSortBy) {
-        order = currentOrder === 'asc' ? 'desc' : 'asc';
+      for (let i = 1; i <= numPages; i++) {
+        const pageItem = document.createElement('li');
+        pageItem.className = 'usa-pagination__item usa-pagination__page-no';
+        pageItem.innerHTML = `
+          <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Domain requests page ${i}">${i}</a>
+        `;
+        if (i === currentPage) {
+          pageItem.querySelector('a').classList.add('usa-current');
+          pageItem.querySelector('a').setAttribute('aria-current', 'page');
+        }
+        pageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(i));
+        paginationButtons.appendChild(pageItem);
       }
-      loadDomainRequests(1, sortBy, order);
+
+      if (hasNext) {
+        const nextPageItem = document.createElement('li');
+        nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+        nextPageItem.innerHTML = `
+          <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Domain requests next page">
+            <span class="usa-pagination__link-text">Next</span>
+            <svg class="usa-icon" aria-hidden="true" role="img">
+              <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
+            </svg>
+          </a>
+        `;
+        nextPageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(currentPage + 1));
+        paginationButtons.appendChild(nextPageItem);
+      }
+    }
+
+    // Add event listeners to table headers for sorting
+    document.querySelectorAll('.dotgov-table__domain-requests th[data-sortable]').forEach(header => {
+      header.addEventListener('click', function() {
+        const sortBy = this.getAttribute('data-sortable');
+        let order = 'asc';
+        // sort order will be ascending, unless the currently sorted column is ascending, and the user
+        // is selecting the same column to sort in descending order
+        if (sortBy === currentSortBy) {
+          order = currentOrder === 'asc' ? 'desc' : 'asc';
+        }
+        loadDomainRequests(1, sortBy, order);
+      });
     });
-  });
 
-  // Load the first page initially
-  loadDomainRequests(1);
+    // Load the first page initially
+    loadDomainRequests(1);
+  }
 });

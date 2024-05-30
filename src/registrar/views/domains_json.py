@@ -1,14 +1,12 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from registrar.models import UserDomainRole, Domain
+from django.contrib.auth.decorators import login_required
 
-
+@login_required
 def get_domains_json(request):
     """Given the current request,
     get all domains that are associated with the UserDomainRole object"""
-
-    if not request.user.is_authenticated:
-        return JsonResponse({"error": "User not authenticated"}, status=401)
 
     user_domain_roles = UserDomainRole.objects.filter(user=request.user)
     domain_ids = user_domain_roles.values_list("domain_id", flat=True)
