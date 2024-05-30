@@ -402,8 +402,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             }
         else:  # form is not complete
             modal_button = (
-                '<button type="button" class="usa-button" data-close-modal '
-                'data-pa11y-ignore="true">Return to request</button>'
+                "<!-- pa11y-ignore-next-line WCAG2AA.Principle2.Guideline2_2.2_2_1.H91 -->"
+                '<button type="button" class="usa-button" data-close-modal>Return to request</button>'
             )
             context_stuff = {
                 "form_titles": self.TITLES,
