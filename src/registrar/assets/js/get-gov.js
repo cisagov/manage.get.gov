@@ -952,6 +952,7 @@ document.addEventListener('DOMContentLoaded', function() {
         data.domains.forEach(domain => {
           const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
           const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
+          const actionUrl = domain.action_url;
           
           const row = document.createElement('tr');
           row.innerHTML = `
@@ -975,7 +976,7 @@ document.addEventListener('DOMContentLoaded', function() {
               </svg>
             </td>
             <td>
-              <a href="/domain/${domain.id}">
+              <a href="${actionUrl}">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                   <use xlink:href="/public/img/sprite.svg#${domain.state === 'deleted' || domain.state === 'on hold' ? 'visibility' : 'settings'}"></use>
                 </svg>
@@ -1132,8 +1133,8 @@ document.addEventListener('DOMContentLoaded', function() {
         data.domain_requests.forEach(request => {
           const domainName = request.requested_domain ? request.requested_domain : `New domain request <span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString()} UTC)</span>`;
           const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString() : `<span class="text-base">Not submitted</span>`;
-          const actionUrl = (request.status === 'Started' || request.status === 'Withdrawn') ? `/domain-request/${request.id}/edit` : `/domain-request/${request.id}`;
-          const actionLabel = (request.status === 'Started' || request.status === 'Withdrawn') ? 'Edit' : 'Manage';
+          const actionUrl = request.action_url;
+          const actionLabel = request.action_label;
           const deleteButton = request.is_deletable ? `
             <a 
               role="button" 

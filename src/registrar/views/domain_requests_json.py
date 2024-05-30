@@ -1,6 +1,8 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from registrar.models import DomainRequest
+from django.utils.dateformat import format
+from django.utils.dateparse import parse_datetime
 
 
 def get_domain_requests_json(request):
@@ -28,10 +30,26 @@ def get_domain_requests_json(request):
             "requested_domain": domain_request.requested_domain.name if domain_request.requested_domain else None,
             "submission_date": domain_request.submission_date,
             "status": domain_request.get_status_display(),
-            "created_at": domain_request.created_at,
+            "created_at": format(domain_request.created_at, 'c'),  # Serialize to ISO 8601
             "id": domain_request.id,
             "is_deletable": domain_request.status
             in [DomainRequest.DomainRequestStatus.STARTED, DomainRequest.DomainRequestStatus.WITHDRAWN],
+            "action_url": (
+                f"/domain-request/{domain_request.id}/edit" 
+                if domain_request.status in [
+                    DomainRequest.DomainRequestStatus.STARTED, 
+                    DomainRequest.DomainRequestStatus.WITHDRAWN
+                ] 
+                else f"/domain-request/{domain_request.id}"
+            ),
+            "action_label": (
+                "Edit" 
+                if domain_request.status in [
+                    DomainRequest.DomainRequestStatus.STARTED, 
+                    DomainRequest.DomainRequestStatus.WITHDRAWN
+                ] 
+                else "Manage"
+            ),
         }
         for domain_request in page_obj
     ]
