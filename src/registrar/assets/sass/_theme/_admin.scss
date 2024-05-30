@@ -190,8 +190,8 @@ div#content > h2 {
     .usa-table th {
         background-color: transparent;
     }
-    .usa-table th {
-        background-color: transparent;
+    .usa-table td {
+        border-bottom: 1px solid var(--hairline-color);
     }
 }
 
