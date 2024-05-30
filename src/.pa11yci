@@ -5,27 +5,28 @@
     },
     "urls": [
         {
-            ["http://localhost:8080/",
-            "http://localhost:8080/health/",
-            "http://localhost:8080/request/",
-            "http://localhost:8080/request/organization/",
-            "http://localhost:8080/request/org_federal/",
-            "http://localhost:8080/request/org_election/",
-            "http://localhost:8080/request/org_contact/",
-            "http://localhost:8080/request/authorizing_official/",
-            "http://localhost:8080/request/current_sites/",
-            "http://localhost:8080/request/dotgov_domain/",
-            "http://localhost:8080/request/purpose/",
-            "http://localhost:8080/request/your_contact/",
-            "http://localhost:8080/request/other_contacts/",
-            "http://localhost:8080/request/anything_else/",
-            "http://localhost:8080/request/requirements/",
-            "http://localhost:8080/request/finished/",
-            "http://localhost:8080/user-profile/"
+            "urls": [
+                "http://localhost:8080/",
+                "http://localhost:8080/health/",
+                "http://localhost:8080/request/",
+                "http://localhost:8080/request/organization/",
+                "http://localhost:8080/request/org_federal/",
+                "http://localhost:8080/request/org_election/",
+                "http://localhost:8080/request/org_contact/",
+                "http://localhost:8080/request/authorizing_official/",
+                "http://localhost:8080/request/current_sites/",
+                "http://localhost:8080/request/dotgov_domain/",
+                "http://localhost:8080/request/purpose/",
+                "http://localhost:8080/request/your_contact/",
+                "http://localhost:8080/request/other_contacts/",
+                "http://localhost:8080/request/anything_else/",
+                "http://localhost:8080/request/requirements/",
+                "http://localhost:8080/request/finished/",
+                "http://localhost:8080/user-profile/"
             ],
             "ignore": [
                 "WCAG2AA.Principle2.Guideline2_2.2_2_1.H91"
-            ],
+            ]
         }
     ]
 }
