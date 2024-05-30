@@ -21,8 +21,5 @@
         "http://localhost:8080/request/requirements/",
         "http://localhost:8080/request/finished/",
         "http://localhost:8080/user-profile/"
-    ],
-    "ignore": [
-        "WCAG2AA.Principle2.Guideline2_2.2_2_1.H91"
     ]
 }
