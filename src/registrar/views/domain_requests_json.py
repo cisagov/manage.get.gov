@@ -4,6 +4,7 @@ from registrar.models import DomainRequest
 from django.utils.dateformat import format
 from django.contrib.auth.decorators import login_required
 
+
 @login_required
 def get_domain_requests_json(request):
     """Given the current request,
@@ -34,14 +35,32 @@ def get_domain_requests_json(request):
             "action_url": (
                 f"/domain-request/{domain_request.id}/edit"
                 if domain_request.status
-                in [DomainRequest.DomainRequestStatus.STARTED, DomainRequest.DomainRequestStatus.WITHDRAWN]
+                in [
+                    DomainRequest.DomainRequestStatus.STARTED,
+                    DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+                    DomainRequest.DomainRequestStatus.WITHDRAWN,
+                ]
                 else f"/domain-request/{domain_request.id}"
             ),
             "action_label": (
                 "Edit"
                 if domain_request.status
-                in [DomainRequest.DomainRequestStatus.STARTED, DomainRequest.DomainRequestStatus.WITHDRAWN]
+                in [
+                    DomainRequest.DomainRequestStatus.STARTED,
+                    DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+                    DomainRequest.DomainRequestStatus.WITHDRAWN,
+                ]
                 else "Manage"
+            ),
+            "svg_icon": (
+                "edit"
+                if domain_request.status
+                in [
+                    DomainRequest.DomainRequestStatus.STARTED,
+                    DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+                    DomainRequest.DomainRequestStatus.WITHDRAWN,
+                ]
+                else "settings"
             ),
         }
         for domain_request in page_obj

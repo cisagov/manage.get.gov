@@ -30,10 +30,6 @@ def index(request):
             )
             context["modal_button"] = modal_button
 
-        # Status constants
-        context["STATUS_STARTED"] = DomainRequest.DomainRequestStatus.STARTED
-        context["STATUS_WITHDRAWN"] = DomainRequest.DomainRequestStatus.WITHDRAWN
-
     return render(request, "home.html", context)
 
 

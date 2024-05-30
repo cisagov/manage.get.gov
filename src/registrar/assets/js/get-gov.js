@@ -980,9 +980,9 @@ document.addEventListener('DOMContentLoaded', function() {
               <td>
                 <a href="${actionUrl}">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#${domain.state === 'deleted' || domain.state === 'on hold' ? 'visibility' : 'settings'}"></use>
+                    <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
                   </svg>
-                  ${domain.state === 'deleted' || domain.state === 'on hold' ? 'View' : 'Manage'} <span class="usa-sr-only">${domain.name}</span>
+                  ${domain.action_label} <span class="usa-sr-only">${domain.name}</span>
                 </a>
               </td>
             `;
@@ -1030,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const prevPageItem = document.createElement('li');
         prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
         prevPageItem.innerHTML = `
-          <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domains previous page">
+          <a href="#" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domains previous page">
             <svg class="usa-icon" aria-hidden="true" role="img">
               <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
             </svg>
@@ -1045,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const pageItem = document.createElement('li');
         pageItem.className = 'usa-pagination__item usa-pagination__page-no';
         pageItem.innerHTML = `
-          <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Domains page ${i}">${i}</a>
+          <a href="#" class="usa-pagination__button" aria-label="Domains page ${i}">${i}</a>
         `;
         if (i === currentPage) {
           pageItem.querySelector('a').classList.add('usa-current');
@@ -1059,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const nextPageItem = document.createElement('li');
         nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
         nextPageItem.innerHTML = `
-          <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Domains next page">
+          <a href="#" class="usa-pagination__link usa-pagination__next-page" aria-label="Domains next page">
             <span class="usa-pagination__link-text">Next</span>
             <svg class="usa-icon" aria-hidden="true" role="img">
               <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
@@ -1172,7 +1172,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <td>
                 <a href="${actionUrl}">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#${request.state === 'deleted' || request.state === 'on hold' ? 'visibility' : 'settings'}"></use>
+                    <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
                   </svg>
                   ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
                 </a>
@@ -1223,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const prevPageItem = document.createElement('li');
         prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
         prevPageItem.innerHTML = `
-          <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domain requests previous page">
+          <a href="#" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domain requests previous page">
             <svg class="usa-icon" aria-hidden="true" role="img">
               <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
             </svg>
@@ -1238,7 +1238,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const pageItem = document.createElement('li');
         pageItem.className = 'usa-pagination__item usa-pagination__page-no';
         pageItem.innerHTML = `
-          <a href="javascript:void(0);" class="usa-pagination__button" aria-label="Domain requests page ${i}">${i}</a>
+          <a href="#" class="usa-pagination__button" aria-label="Domain requests page ${i}">${i}</a>
         `;
         if (i === currentPage) {
           pageItem.querySelector('a').classList.add('usa-current');
@@ -1252,7 +1252,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const nextPageItem = document.createElement('li');
         nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
         nextPageItem.innerHTML = `
-          <a href="javascript:void(0);" class="usa-pagination__link usa-pagination__next-page" aria-label="Domain requests next page">
+          <a href="#" class="usa-pagination__link usa-pagination__next-page" aria-label="Domain requests next page">
             <span class="usa-pagination__link-text">Next</span>
             <svg class="usa-icon" aria-hidden="true" role="img">
               <use xlink:href="/public/img/sprite.svg#navigate_next"></use>

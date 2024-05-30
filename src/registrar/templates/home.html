@@ -96,7 +96,7 @@
 
       {% for domain_request in domain_requests %}
         {% if has_deletable_domain_requests %}
-          {% if domain_request.status == STATUS_STARTED or domain_request.status == STATUS_WITHDRAWN  %}
+          {% if domain_request.status == domain_request.DomainRequestStatus.STARTED or domain_request.status == domain_request.DomainRequestStatus.WITHDRAWN  %}
           <div
             class="usa-modal"
             id="toggle-delete-domain-alert-{{ domain_request.id }}"
