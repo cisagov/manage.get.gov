@@ -23,7 +23,6 @@
         "http://localhost:8080/user-profile/"
     ],
     "ignore": [
-        "notice",
-        "warnings"
+        "WCAG2AA.Principle2.Guideline2_2.2_2_1.H91"
     ]
 }
