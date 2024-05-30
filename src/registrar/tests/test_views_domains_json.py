@@ -58,6 +58,8 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         state_displays = [domain["state_display"] for domain in data["domains"]]
         get_state_help_texts = [domain["get_state_help_text"] for domain in data["domains"]]
         action_urls = [domain["action_url"] for domain in data["domains"]]
+        action_labels = [domain["action_label"] for domain in data["domains"]]
+        svg_icons = [domain["svg_icon"] for domain in data["domains"]]
 
         # Check fields for each domain
         for i, expected_domain in enumerate(expected_domains):
@@ -75,6 +77,30 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             self.assertEqual(expected_domain.get_state_help_text(), get_state_help_texts[i])
 
             self.assertEqual(f"/domain/{expected_domain.id}", action_urls[i])
+
+            # Check action_label
+            action_label_expected = (
+                "View"
+                if expected_domains[i].state
+                in [
+                    Domain.State.DELETED,
+                    Domain.State.ON_HOLD,
+                ]
+                else "Manage"
+            )
+            self.assertEqual(action_label_expected, action_labels[i])
+
+            # Check svg_icon
+            svg_icon_expected = (
+                "visibility"
+                if expected_domains[i].state
+                in [
+                    Domain.State.DELETED,
+                    Domain.State.ON_HOLD,
+                ]
+                else "settings"
+            )
+            self.assertEqual(svg_icon_expected, svg_icons[i])
 
     def test_pagination(self):
         """Test that pagination is correct in the response"""

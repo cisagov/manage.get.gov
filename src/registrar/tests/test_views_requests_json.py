@@ -5,7 +5,7 @@ from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_datetime
 
 
-class DomainRequestViewTest(TestWithUser, WebTest):
+class GetRequestsJsonTest(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
@@ -131,6 +131,9 @@ class DomainRequestViewTest(TestWithUser, WebTest):
         created_ats = [request["created_at"] for request in data["domain_requests"]]
         ids = [request["id"] for request in data["domain_requests"]]
         is_deletables = [request["is_deletable"] for request in data["domain_requests"]]
+        action_urls = [request["action_url"] for request in data["domain_requests"]]
+        action_labels = [request["action_label"] for request in data["domain_requests"]]
+        svg_icons = [request["svg_icon"] for request in data["domain_requests"]]
 
         # Check fields for each domain request
         for i in range(10):
@@ -152,6 +155,45 @@ class DomainRequestViewTest(TestWithUser, WebTest):
                 DomainRequest.DomainRequestStatus.WITHDRAWN,
             ]
             self.assertEqual(is_deletable_expected, is_deletables[i])
+
+            # Check action_url
+            action_url_expected = (
+                f"/domain-request/{self.domain_requests[i].id}/edit"
+                if self.domain_requests[i].status
+                in [
+                    DomainRequest.DomainRequestStatus.STARTED,
+                    DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+                    DomainRequest.DomainRequestStatus.WITHDRAWN,
+                ]
+                else f"/domain-request/{self.domain_requests[i].id}"
+            )
+            self.assertEqual(action_url_expected, action_urls[i])
+
+            # Check action_label
+            action_label_expected = (
+                "Edit"
+                if self.domain_requests[i].status
+                in [
+                    DomainRequest.DomainRequestStatus.STARTED,
+                    DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+                    DomainRequest.DomainRequestStatus.WITHDRAWN,
+                ]
+                else "Manage"
+            )
+            self.assertEqual(action_label_expected, action_labels[i])
+
+            # Check svg_icon
+            svg_icon_expected = (
+                "edit"
+                if self.domain_requests[i].status
+                in [
+                    DomainRequest.DomainRequestStatus.STARTED,
+                    DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+                    DomainRequest.DomainRequestStatus.WITHDRAWN,
+                ]
+                else "settings"
+            )
+            self.assertEqual(svg_icon_expected, svg_icons[i])
 
     def test_pagination(self):
         """Test that pagination works properly. There are 11 total non-approved requests and
