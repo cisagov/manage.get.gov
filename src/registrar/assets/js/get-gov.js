@@ -1010,15 +1010,19 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   function updateDomainsPagination(currentPage, numPages, hasPrevious, hasNext, totalItems) {
     // identify the DOM element where the pagination will be inserted
-    const counterContainer = document.querySelector('#domains-pagination .usa-pagination__counter');
-    const paginationContainer = document.querySelector('#domains-pagination .usa-pagination__list');
-    counterContainer.innerHTML = '';
-    paginationContainer.innerHTML = '';
+    const paginationContainer = document.querySelector('#domains-pagination');
+    const paginationCounter = document.querySelector('#domains-pagination .usa-pagination__counter');
+    const paginationButtons = document.querySelector('#domains-pagination .usa-pagination__list');
+    paginationCounter.innerHTML = '';
+    paginationButtons.innerHTML = '';
 
-    // pagination should only be displayed if there are more than one pages of results
-    paginationContainer.classList.toggle('display-none', numPages <= 1);
+    // Buttons should only be displayed if there are more than one pages of results
+    paginationButtons.classList.toggle('display-none', numPages <= 1);
 
-    counterContainer.innerHTML = `${totalItems} Domain${totalItems > 1 ? 's' : ''}`;
+    // Counter should only be displayed if there is more than 1 item
+    paginationContainer.classList.toggle('display-none', totalItems < 1);
+
+    paginationCounter.innerHTML = `${totalItems} domain${totalItems > 1 ? 's' : ''}`;
   
     if (hasPrevious) {
       const prevPageItem = document.createElement('li');
@@ -1032,7 +1036,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </a>
       `;
       prevPageItem.querySelector('a').addEventListener('click', () => loadDomains(currentPage - 1));
-      paginationContainer.appendChild(prevPageItem);
+      paginationButtons.appendChild(prevPageItem);
     }
 
     for (let i = 1; i <= numPages; i++) {
@@ -1046,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pageItem.querySelector('a').setAttribute('aria-current', 'page');
       }
       pageItem.querySelector('a').addEventListener('click', () => loadDomains(i));
-      paginationContainer.appendChild(pageItem);
+      paginationButtons.appendChild(pageItem);
     }
 
     if (hasNext) {
@@ -1061,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </a>
       `;
       nextPageItem.querySelector('a').addEventListener('click', () => loadDomains(currentPage + 1));
-      paginationContainer.appendChild(nextPageItem);
+      paginationButtons.appendChild(nextPageItem);
     }
   }
 
@@ -1196,15 +1200,19 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   function updateDomainRequestsPagination(currentPage, numPages, hasPrevious, hasNext, totalItems) {
     // identify the DOM element where pagination is contained
-    const counterContainer = document.querySelector('#domain-requests-pagination .usa-pagination__counter');
-    const paginationContainer = document.querySelector('#domain-requests-pagination .usa-pagination__list');
-    counterContainer.innerHTML = '';
-    paginationContainer.innerHTML = '';
+    const paginationContainer = document.querySelector('#domain-requests-pagination');
+    const paginationCounter = document.querySelector('#domain-requests-pagination .usa-pagination__counter');
+    const paginationButtons = document.querySelector('#domain-requests-pagination .usa-pagination__list');
+    paginationCounter.innerHTML = '';
+    paginationButtons.innerHTML = '';
 
-    // pagination should only be displayed if there are more than one pages of results
-    paginationContainer.classList.toggle('display-none', numPages <= 1);
+    // Buttons should only be displayed if there are more than one pages of results
+    paginationButtons.classList.toggle('display-none', numPages <= 1);
 
-    counterContainer.innerHTML = `${totalItems} Domain request${totalItems > 1 ? 's' : ''}`;
+    // Counter should only be displayed if there is more than 1 item
+    paginationContainer.classList.toggle('display-none', totalItems < 1);
+
+    paginationCounter.innerHTML = `${totalItems} domain request${totalItems > 1 ? 's' : ''}`;
 
     if (hasPrevious) {
       const prevPageItem = document.createElement('li');
@@ -1218,7 +1226,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </a>
       `;
       prevPageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(currentPage - 1));
-      paginationContainer.appendChild(prevPageItem);
+      paginationButtons.appendChild(prevPageItem);
     }
 
     for (let i = 1; i <= numPages; i++) {
@@ -1232,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pageItem.querySelector('a').setAttribute('aria-current', 'page');
       }
       pageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(i));
-      paginationContainer.appendChild(pageItem);
+      paginationButtons.appendChild(pageItem);
     }
 
     if (hasNext) {
@@ -1247,7 +1255,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </a>
       `;
       nextPageItem.querySelector('a').addEventListener('click', () => loadDomainRequests(currentPage + 1));
-      paginationContainer.appendChild(nextPageItem);
+      paginationButtons.appendChild(nextPageItem);
     }
   }
 
