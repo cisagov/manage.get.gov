@@ -71,7 +71,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
         # Preserve queryparams and add them back to the url
         base_url = reverse("user-profile")
-        new_redirect = replace_url_queryparams(base_url, query_params) if query_params else base_url
+        new_redirect = replace_url_queryparams(base_url, query_params, convert_list_to_csv=True)
         return new_redirect
 
     def post(self, request, *args, **kwargs):

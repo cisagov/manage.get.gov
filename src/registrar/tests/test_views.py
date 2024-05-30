@@ -598,6 +598,16 @@ class UserProfileTests(TestWithUser, WebTest):
         self.assertEqual(response.status_code, 404)
 
     @less_console_noise_decorator
+    def test_user_profile_back_button_when_coming_from_domain_request(self):
+        """tests user profile when profile_feature is on,
+        and when they are redirected from the domain request page"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get("/user-profile?return_to_request=True")
+        self.assertContains(response, "Your profile")
+        self.assertContains(response, "Go back to your domain request")
+        self.assertNotContains(response, "Back to manage your domains")
+
+    @less_console_noise_decorator
     def test_domain_detail_profile_feature_on(self):
         """test that domain detail view when profile_feature is on"""
         with override_flag("profile_feature", active=True):

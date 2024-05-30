@@ -10,21 +10,7 @@ Edit your User Profile |
 {% block content %}
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
-    <a href="{% if not return_to_request %}{% url 'home' %}{% else %}{% url 'domain-request:' %}{% endif %}" class="breadcrumb__back">
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-      <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
-      </svg>
-      {% if not return_to_request %}
-      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-      Back to manage your domains
-      </p>
-      {% else %}
-      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-        Go back to your domain request
-      </p>
-      {% endif %}
-    </a>
-    {# messages block is under the back breadcrumb link #}
+    {# messages block #}
     {% if messages %}
     {% for message in messages %}
     <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
@@ -35,6 +21,21 @@ Edit your User Profile |
     {% endfor %}
     {% endif %}
     {% include "includes/form_errors.html" with form=form %}
+    
+    <a href="{% if not return_to_request %}{% url 'home' %}{% else %}{% url 'domain-request:' %}{% endif %}" class="breadcrumb__back">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+      <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+      </svg>
+      {% if not return_to_request %}
+      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+      Back to manage your domains
+      </p>
+      {% else %}
+      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+      Go back to your domain request
+      </p>
+      {% endif %}
+    </a>
 
     <h1>Your profile</h1>
     <p>We <a href="{% public_site_url 'domains/requirements/#what-.gov-domain-registrants-must-do' %}" target="_blank">require</a> that you maintain accurate contact information. The details you provide will only be used to support the administration of .gov and won’t be made public.</p>
