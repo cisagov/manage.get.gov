@@ -31,7 +31,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
 
         response = self.client.get(reverse("get_domains_json"))
         self.assertEqual(response.status_code, 302)
-    
+
     def test_get_domains_json_authenticated(self):
         """Test that an authenticated user gets the list of 3 domains."""
         response = self.app.get(reverse("get_domains_json"))
@@ -65,16 +65,16 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             self.assertEqual(expected_domain.name, names[i])
             self.assertEqual(expected_domain.expiration_date, expiration_dates[i])
             self.assertEqual(expected_domain.state, states[i])
-            
+
             # Parsing the expiration date from string to date
             parsed_expiration_date = parse_date(expiration_dates[i])
             expected_domain.expiration_date = parsed_expiration_date
-            
+
             # Check state_display and get_state_help_text
             self.assertEqual(expected_domain.state_display(), state_displays[i])
             self.assertEqual(expected_domain.get_state_help_text(), get_state_help_texts[i])
-            
-            self.assertEqual(f'/domain/{expected_domain.id}', action_urls[i])
+
+            self.assertEqual(f"/domain/{expected_domain.id}", action_urls[i])
 
     def test_pagination(self):
         """Test that pagination is correct in the response"""

@@ -2,7 +2,6 @@ from registrar.models import DomainRequest
 from django.urls import reverse
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
-from datetime import datetime
 from django.utils.dateparse import parse_datetime
 
 
@@ -136,19 +135,23 @@ class DomainRequestViewTest(TestWithUser, WebTest):
         # Check fields for each domain request
         for i in range(10):
             self.assertNotEqual(data["domain_requests"][i]["status"], "Approved")
-            self.assertEqual(self.domain_requests[i].requested_domain.name if self.domain_requests[i].requested_domain else None, requested_domains[i])
+            self.assertEqual(
+                self.domain_requests[i].requested_domain.name if self.domain_requests[i].requested_domain else None,
+                requested_domains[i],
+            )
             self.assertEqual(self.domain_requests[i].submission_date, submission_dates[i])
             self.assertEqual(self.domain_requests[i].get_status_display(), statuses[i])
-            self.assertEqual(parse_datetime(self.domain_requests[i].created_at.isoformat()), parse_datetime(created_ats[i]))
+            self.assertEqual(
+                parse_datetime(self.domain_requests[i].created_at.isoformat()), parse_datetime(created_ats[i])
+            )
             self.assertEqual(self.domain_requests[i].id, ids[i])
 
             # Check is_deletable
             is_deletable_expected = self.domain_requests[i].status in [
                 DomainRequest.DomainRequestStatus.STARTED,
-                DomainRequest.DomainRequestStatus.WITHDRAWN
+                DomainRequest.DomainRequestStatus.WITHDRAWN,
             ]
             self.assertEqual(is_deletable_expected, is_deletables[i])
-
 
     def test_pagination(self):
         """Test that pagination works properly. There are 11 total non-approved requests and
