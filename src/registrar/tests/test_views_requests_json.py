@@ -3,7 +3,6 @@ from django.urls import reverse
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_datetime
-from django.urls import reverse
 
 
 class GetRequestsJsonTest(TestWithUser, WebTest):
@@ -159,14 +158,14 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
             # Check action_url
             action_url_expected = (
-                reverse('edit-domain-request', kwargs={'pk': self.domain_requests[i].id})
+                reverse("edit-domain-request", kwargs={"pk": self.domain_requests[i].id})
                 if self.domain_requests[i].status
                 in [
                     DomainRequest.DomainRequestStatus.STARTED,
                     DomainRequest.DomainRequestStatus.ACTION_NEEDED,
                     DomainRequest.DomainRequestStatus.WITHDRAWN,
                 ]
-                else reverse('domain-request-status', kwargs={'pk': self.domain_requests[i].id})
+                else reverse("domain-request-status", kwargs={"pk": self.domain_requests[i].id})
             )
             self.assertEqual(action_url_expected, action_urls[i])
 
