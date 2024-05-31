@@ -1,0 +1,11 @@
+@use "uswds-core" as *;
+
+.usa-pagination {
+    flex-wrap: wrap;
+}
+
+@include at-media(desktop) {
+    .usa-pagination {
+        flex-wrap: nowrap;
+    }
+}

@@ -20,7 +20,7 @@ def get_domain_requests_json(request):
         sort_by = f"-{sort_by}"
     domain_requests = domain_requests.order_by(sort_by)
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(domain_requests, 10)
+    paginator = Paginator(domain_requests, 1)
     page_obj = paginator.get_page(page_number)
 
     domain_requests_data = [
