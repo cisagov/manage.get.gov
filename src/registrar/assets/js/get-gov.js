@@ -880,33 +880,6 @@ function unloadModals() {
 }
 
 /**
- * Helper function that scrolls to an element
- * @param {string} attributeName - The string "class" or "id"
- * @param {string} attributeValue - The class or id name
- */
-function ScrollToElement(attributeName, attributeValue) {
-  let targetEl = null;
-  
-  if (attributeName === 'class') {
-    targetEl = document.getElementsByClassName(attributeValue)[0];
-  } else if (attributeName === 'id') {
-    targetEl = document.getElementById(attributeValue);
-  } else {
-    console.log('Error: unknown attribute name provided.');
-    return; // Exit the function if an invalid attributeName is provided
-  }
-
-  if (targetEl) {
-    const rect = targetEl.getBoundingClientRect();
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    window.scrollTo({
-      top: rect.top + scrollTop,
-      behavior: 'smooth' // Optional: for smooth scrolling
-    });
-  }
-}
-
-/**
  * An IIFE that listens for DOM Content to be loaded, then executes.  This function
  * initializes the domains list and associated functionality on the home page of the app.
  *
@@ -918,7 +891,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
     let noDomainsWrapper = document.querySelector('.no-domains-wrapper');
-    let hasLoaded = false;
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -926,9 +898,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} page - the page number of the results (starts with 1)
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
-     * @param {*} loaded - control for the scrollToElement functionality
      */
-    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+    function loadDomains(page, sortBy = currentSortBy, order = currentOrder) {
       //fetch json of page of domains, given page # and sort
       fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
         .then(response => response.json())
@@ -990,8 +961,6 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           // initialize tool tips immediately after the associated DOM elements are added
           initializeTooltips();
-          if (loaded)
-            ScrollToElement('id', 'domains-header');
 
           hasLoaded = true;
 
@@ -1030,7 +999,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const prevPageItem = document.createElement('li');
         prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
         prevPageItem.innerHTML = `
-          <a href="#" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domains previous page">
+          <a href="#domains-header" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domains previous page">
             <svg class="usa-icon" aria-hidden="true" role="img">
               <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
             </svg>
@@ -1045,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const pageItem = document.createElement('li');
         pageItem.className = 'usa-pagination__item usa-pagination__page-no';
         pageItem.innerHTML = `
-          <a href="#" class="usa-pagination__button" aria-label="Domains page ${i}">${i}</a>
+          <a href="#domains-header" class="usa-pagination__button" aria-label="Domains page ${i}">${i}</a>
         `;
         if (i === currentPage) {
           pageItem.querySelector('a').classList.add('usa-current');
@@ -1059,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const nextPageItem = document.createElement('li');
         nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
         nextPageItem.innerHTML = `
-          <a href="#" class="usa-pagination__link usa-pagination__next-page" aria-label="Domains next page">
+          <a href="#domains-header" class="usa-pagination__link usa-pagination__next-page" aria-label="Domains next page">
             <span class="usa-pagination__link-text">Next</span>
             <svg class="usa-icon" aria-hidden="true" role="img">
               <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
@@ -1103,7 +1072,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
     let noDomainRequestsWrapper = document.querySelector('.no-domain-requests-wrapper');
-    let hasLoaded = false;
 
     /**
      * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
@@ -1111,9 +1079,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} page - the page number of the results (starts with 1)
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
-     * @param {*} loaded - control for the scrollToElement functionality
      */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder) {
       //fetch json of page of domain requests, given page # and sort
       fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
         .then(response => response.json())
@@ -1183,8 +1150,6 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           // initialize modals immediately after the DOM content is updated
           initializeModals();
-          if (loaded)
-            ScrollToElement('id', 'domain-requests-header');
 
           hasLoaded = true;
 
@@ -1223,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const prevPageItem = document.createElement('li');
         prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
         prevPageItem.innerHTML = `
-          <a href="#" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domain requests previous page">
+          <a href="#domain-requests-header" class="usa-pagination__link usa-pagination__previous-page" aria-label="Domain requests previous page">
             <svg class="usa-icon" aria-hidden="true" role="img">
               <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
             </svg>
@@ -1238,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const pageItem = document.createElement('li');
         pageItem.className = 'usa-pagination__item usa-pagination__page-no';
         pageItem.innerHTML = `
-          <a href="#" class="usa-pagination__button" aria-label="Domain requests page ${i}">${i}</a>
+          <a href="#domain-requests-header" class="usa-pagination__button" aria-label="Domain requests page ${i}">${i}</a>
         `;
         if (i === currentPage) {
           pageItem.querySelector('a').classList.add('usa-current');
@@ -1252,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const nextPageItem = document.createElement('li');
         nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
         nextPageItem.innerHTML = `
-          <a href="#" class="usa-pagination__link usa-pagination__next-page" aria-label="Domain requests next page">
+          <a href="#domain-requests-header" class="usa-pagination__link usa-pagination__next-page" aria-label="Domain requests next page">
             <span class="usa-pagination__link-text">Next</span>
             <svg class="usa-icon" aria-hidden="true" role="img">
               <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
