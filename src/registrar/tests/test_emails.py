@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock
 
 from django.test import TestCase
-from waffle.testutils import override_switch
+from waffle.testutils import override_flag
 from registrar.utility import email
 from registrar.utility.email import send_templated_email
 from .common import completed_domain_request, less_console_noise
@@ -18,7 +18,7 @@ class TestEmails(TestCase):
         self.mock_client = self.mock_client_class.return_value
 
     @boto3_mocking.patching
-    @override_switch("disable_email_sending", active=True)
+    @override_flag("disable_email_sending", active=True)
     def test_disable_email_switch(self):
         """Test if the 'disable_email_sending' stops emails from being sent """
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
