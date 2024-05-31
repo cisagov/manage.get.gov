@@ -2705,7 +2705,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         review_page = self.app.get(reverse("domain-request:review"))
         self.assertContains(review_page, "toggle-submit-domain-request")
-        self.assertContains(review_page, "YYour request form is incomplete")
+        self.assertContains(review_page, "Your request form is incomplete")
 
 
 class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
