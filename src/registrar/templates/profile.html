@@ -1,27 +1,75 @@
 {% extends 'base.html' %}
 
+
 {% block title %}
 Edit your User Profile |
 {% endblock title %}
+{% load static url_helpers %}
+{% load field_helpers %}
 
 {% block content %}
 <main id="main-content" class="grid-container">
-  <form class="usa-form usa-form--large" method="post" enctype="multipart/form-data">
-    <fieldset class="usa-fieldset">
-      <legend class="usa-legend usa-legend--large">Your profile</legend>
-      <p>
-      Required fields are marked with an asterisk (<abbr
-        title="required"
-        class="usa-hint usa-hint--required"
-        >*</abbr>).
+  <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
+    <a href="{% url 'home' %}" class="breadcrumb__back">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+      <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+      </svg>
+  
+      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+      Back to manage your domains
       </p>
-      {% for field in profile_form %}
-      <label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
-      {{ field }}
-      {% endfor %}
-  </fieldset>
-    <button type="submit" class="usa-button usa-button--big">Save Changes</button>
-  </form>
+    </a>
+    {# messages block is under the back breadcrumb link #}
+    {% if messages %}
+    {% for message in messages %}
+    <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+        <div class="usa-alert__body">
+        {{ message }}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% include "includes/form_errors.html" with form=form %}
+
+    <h1>Your profile</h1>
+    <p>We <a href="{% public_site_url 'domains/requirements/#what-.gov-domain-registrants-must-do' %}" target="_blank">require</a> that you maintain accurate contact information. The details you provide will only be used to support the administration of .gov and won’t be made public.</p>
+    
+    <h2>Contact information</h2>
+    <p>Review the details below and update any required information. Note that editing this information won’t affect your Login.gov account information.</p>
+
+    {% include "includes/required_fields.html" %}
+
+    <form class="usa-form usa-form--large" method="post" novalidate>
+      {% csrf_token %}
+
+      {% input_with_errors form.first_name %}
+
+      {% input_with_errors form.middle_name %}
+  
+      {% input_with_errors form.last_name %}
+  
+      {% input_with_errors form.title %}
+
+      {% public_site_url "help/account-management/#get-help-with-login.gov" as login_help_url %}
+
+      {% with link_href=login_help_url %}
+        {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with your Login.gov account." %}
+          {% with link_text="Get help with your Login.gov account" %}
+            {% with target_blank=True %}
+              {% with do_not_show_max_chars=True %}
+                {% input_with_errors form.email %}
+              {% endwith %}
+            {% endwith %}
+          {% endwith %}
+        {% endwith %}
+      {% endwith %}
+  
+      {% with add_class="usa-input--medium" %}
+        {% input_with_errors form.phone %}
+      {% endwith %}
+
+      <button type="submit" class="usa-button">Save</button>
+    </form>
 </main>
 {% endblock content %}
 

@@ -33,4 +33,5 @@ exports.init = uswds.init;
 exports.compile = uswds.compile;
 exports.watch = uswds.watch;
 exports.copyAssets = uswds.copyAssets
+exports.updateUswds = uswds.updateUswds
                                                                                   
