@@ -244,6 +244,14 @@ class DomainRequest(TimeStampedModel):
         ORGANIZATION_ELIGIBILITY = "org_not_eligible", "Org not eligible for a .gov domain"
         NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
+    
+    class ActionNeededReasons(models.TextChoices):
+        """Defines common"""
+        ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
+        QUESTIONABLE_AUTHORIZING_OFFICIAL = ("questionable_authorizing_official" , "Questionable authorizing official")
+        ALREADY_HAS_DOMAINS = ("ALREADY_HAS_DOMAINS", "Already has domains")
+        BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
+        OTHER = ("other", "Other (no auto-email sent)")
 
     # #### Internal fields about the domain request #####
     status = FSMField(
@@ -254,6 +262,12 @@ class DomainRequest(TimeStampedModel):
 
     rejection_reason = models.TextField(
         choices=RejectionReasons.choices,
+        null=True,
+        blank=True,
+    )
+
+    action_needed_reason = models.TextField(
+        choices=ActionNeededReasons.choices,
         null=True,
         blank=True,
     )

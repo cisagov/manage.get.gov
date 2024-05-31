@@ -216,6 +216,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         status = cleaned_data.get("status")
         investigator = cleaned_data.get("investigator")
         rejection_reason = cleaned_data.get("rejection_reason")
+        action_needed_reason = cleaned_data.get("action_needed_reason")
 
         # Get the old status
         initial_status = self.initial.get("status", None)
@@ -239,6 +240,8 @@ class DomainRequestAdminForm(forms.ModelForm):
         # If the status is rejected, a rejection reason must exist
         if status == DomainRequest.DomainRequestStatus.REJECTED:
             self._check_for_valid_rejection_reason(rejection_reason)
+        elif status == DomainRequest.DomainRequestStatus.IN_REVIEW:
+            self._check_for_valid_action_needed_reason(action_needed_reason)
 
         return cleaned_data
 
@@ -259,6 +262,23 @@ class DomainRequestAdminForm(forms.ModelForm):
 
         if error_message is not None:
             self.add_error("rejection_reason", error_message)
+
+        return is_valid
+
+    def _check_for_valid_action_needed_reason(self, action_needed_reason) -> bool:
+        """
+        Checks if the action_needed_reason field is not none.
+        Adds form errors on failure.
+        """
+        is_valid = False
+        error_message = None
+        if action_needed_reason is None or action_needed_reason == "":
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_ACTION_NEEDED_REASON)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("action_needed_reason", error_message)
 
         return is_valid
 
@@ -1361,6 +1381,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "status",
                     "rejection_reason",
+                    "action_needed_reason",
                     "investigator",
                     "creator",
                     "submitter",
