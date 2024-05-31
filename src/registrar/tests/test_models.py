@@ -1687,13 +1687,11 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.save()
         self.assertFalse(self.domain_request._is_interstate_complete())
 
-    # TODO: FIX
     def test_is_state_or_territory_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         self.domain_request.is_election_board = True
         self.domain_request.save()
         self.assertTrue(self.domain_request._is_state_or_territory_complete())
-        # self.domain_request.is_election_board.clear()
         self.domain_request.is_election_board = None
         self.domain_request.save()
         # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
