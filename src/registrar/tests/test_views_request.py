@@ -785,7 +785,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # The next assert also tests for the passed requested domain context from
         # the view > domain_request_form > modal
         self.assertNotContains(review_page, "You are about to submit a domain request for city.gov")
-        self.assertContains(review_page, "You can’t submit this request because it’s incomplete.")
+        self.assertContains(review_page, "Your request form is incomplete.")
 
     # This is the start of a test to check an existing domain_request, it currently
     # does not work and results in errors as noted in:
@@ -2705,7 +2705,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         review_page = self.app.get(reverse("domain-request:review"))
         self.assertContains(review_page, "toggle-submit-domain-request")
-        self.assertContains(review_page, "You can’t submit this request because it’s incomplete.")
+        self.assertContains(review_page, "Your request form is incomplete.")
 
 
 class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
