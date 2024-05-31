@@ -105,7 +105,7 @@ html[data-theme="light"] {
       --close-button-bg: #333333;
       --close-button-hover-bg: #666666;
     }
-    
+
     // Dark mode django (bug due to scss cascade) and USWDS tables
     .change-list .usa-table,
     .change-list .usa-table--striped tbody tr:nth-child(odd) td,
@@ -125,12 +125,6 @@ html[data-theme="light"] {
     }
     .usa-table td {
         background-color: transparent;
-    }
-
-    // Sets darker color on delete page links.
-    // Remove when dark mode successfully applies to Django delete page.
-    .delete-confirmation .content a:not(.button)  {
-        color: #005288;
     }
 }
 
@@ -154,11 +148,6 @@ html[data-theme="dark"] {
     }
     .usa-table td {
         background-color: transparent;
-    }
-    // Sets darker color on delete page links.
-    // Remove when dark mode successfully applies to Django delete page.
-    .delete-confirmation .content a:not(.button)  {
-        color: #005288;
     }
 }
 
