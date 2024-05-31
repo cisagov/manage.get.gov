@@ -1166,9 +1166,10 @@ document.addEventListener('DOMContentLoaded', function() {
           unloadModals();
           data.domain_requests.forEach(request => {
             const domainName = request.requested_domain ? request.requested_domain : `New domain request <span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString()} UTC)</span>`;
-            const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString() : `<span class="text-base">Not submitted</span>`;
             const actionUrl = request.action_url;
             const actionLabel = request.action_label;
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
             const deleteButton = request.is_deletable ? `
               <a 
                 role="button" 

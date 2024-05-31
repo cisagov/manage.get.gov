@@ -1413,7 +1413,7 @@ class TestDomainOrganization(TestDomainOverview):
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
-        org_name_page.form["federal_agency"] = "Department of State"
+        org_name_page.form["federal_agency"] = FederalAgency.objects.filter(agency="Department of State").get().id
         org_name_page.form["city"] = "Faketown"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1422,9 +1422,8 @@ class TestDomainOrganization(TestDomainOverview):
         success_result_page = org_name_page.form.submit()
         self.assertEqual(success_result_page.status_code, 200)
 
-        # Check for the old and new value
-        self.assertContains(success_result_page, federal_agency.id)
-        self.assertNotContains(success_result_page, "Department of State")
+        # Check that the agency has not changed
+        self.assertEqual(self.domain_information.federal_agency.agency, "AMTRAK")
 
         # Do another check on the form itself
         form = success_result_page.forms[0]

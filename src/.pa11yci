@@ -19,6 +19,7 @@
         "http://localhost:8080/request/other_contacts/",
         "http://localhost:8080/request/anything_else/",
         "http://localhost:8080/request/requirements/",
-        "http://localhost:8080/request/finished/"
+        "http://localhost:8080/request/finished/",
+        "http://localhost:8080/user-profile/"
     ]
 }
