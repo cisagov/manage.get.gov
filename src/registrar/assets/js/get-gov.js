@@ -1152,6 +1152,17 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+const utcDateString = (dateString) => {
+  const date = new Date(dateString);
+  const utcYear = date.getUTCFullYear();
+  const utcMonth = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+  const utcDay = date.getUTCDate().toString().padStart(2, '0');
+  const utcHours = date.getUTCHours().toString().padStart(2, '0');
+  const utcMinutes = date.getUTCMinutes().toString().padStart(2, '0');
+  
+  return `${utcMonth} ${utcDay}, ${utcYear}, ${utcHours}:${utcMinutes} UTC`;
+};
+
 /**
  * An IIFE that listens for DOM Content to be loaded, then executes.  This function
  * initializes the domain requests list and associated functionality on the home page of the app.
@@ -1202,7 +1213,7 @@ document.addEventListener('DOMContentLoaded', function() {
           unloadModals();
           data.domain_requests.forEach(request => {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString('en-US', options)} UTC)</span>`;
+            const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${utcDateString(request.created_at)})</span>`;
             const actionUrl = request.action_url;
             const actionLabel = request.action_label;
             const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
