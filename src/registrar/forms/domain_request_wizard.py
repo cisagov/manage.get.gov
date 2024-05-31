@@ -649,11 +649,11 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
 class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     cisa_representative_first_name = forms.CharField(
         label="First name / given name",
-        error_messages={"required": "Enter your first name / given name."},
+        error_messages={"required": "Enter the first name / given name of the CISA regional representative."},
     )
     cisa_representative_last_name = forms.CharField(
         label="Last name / family name",
-        error_messages={"required": "Enter your last name / family name."},
+        error_messages={"required": "Enter the last name / family name of the CISA regional representative."},
     )
     cisa_representative_email = forms.EmailField(
         label="Your representative’s email (optional)",
