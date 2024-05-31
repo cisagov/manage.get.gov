@@ -41,7 +41,7 @@ def get_domains_json(request):
             "state": domain.state,
             "state_display": domain.state_display(),
             "get_state_help_text": domain.get_state_help_text(),
-            "action_url": reverse('domain', kwargs={'pk': domain.id}),
+            "action_url": reverse("domain", kwargs={"pk": domain.id}),
             "action_label": ("View" if domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD] else "Manage"),
             "svg_icon": ("visibility" if domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD] else "settings"),
         }
