@@ -671,7 +671,6 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     )
 
 
-
 class CisaRepresentativeYesNoForm(BaseYesNoForm):
     """Yes/no toggle for the CISA regions question on additional details"""
 

@@ -1457,7 +1457,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "cisa_representative_first_name",
         "cisa_representative_last_name",
         "cisa_representative_email",
-]
+    ]
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",

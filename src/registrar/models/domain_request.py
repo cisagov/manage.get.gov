@@ -470,7 +470,7 @@ class DomainRequest(TimeStampedModel):
         verbose_name="CISA regional representative first name",
         db_index=True,
     )
-    
+
     cisa_representative_last_name = models.CharField(
         null=True,
         blank=True,
