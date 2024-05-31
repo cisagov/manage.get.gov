@@ -971,9 +971,9 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
   }
 
   // Add first page and ellipsis if necessary
-  if (currentPage > 3) {
+  if (currentPage > 2) {
     paginationButtons.appendChild(createPageItem(1));
-    if (currentPage > 4) {
+    if (currentPage > 3) {
       const ellipsis = document.createElement('li');
       ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
       ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
@@ -988,8 +988,8 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
   }
 
   // Add last page and ellipsis if necessary
-  if (currentPage < numPages - 2) {
-    if (currentPage < numPages - 3) {
+  if (currentPage < numPages - 1) {
+    if (currentPage < numPages - 2) {
       const ellipsis = document.createElement('li');
       ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
       ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
