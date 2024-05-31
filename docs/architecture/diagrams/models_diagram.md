@@ -5,9 +5,9 @@ This is an auto-generated diagram of our data models generated with the
 using the command
 
 ```bash
-$ docker compose app ./manage.py generate_puml --include registrar
+$ docker compose exec app ./manage.py generate_puml --include registrar
 ```
-
+Note: You must uncomment `puml_generator` from  `INSTALLED_APPS` in settings.py and docker-compose down and up before running the above command
 ![Complete data models diagram](./models_diagram.svg)
 
 <details>
