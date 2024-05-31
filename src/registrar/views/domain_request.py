@@ -22,6 +22,8 @@ from .utility import (
     DomainRequestWizardPermissionView,
 )
 
+from waffle.decorators import flag_is_active, waffle_flag
+
 logger = logging.getLogger(__name__)
 
 
@@ -225,14 +227,15 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         #     will NOT be redirected. The purpose of this is to allow code to
         #     send users "to the domain request wizard" without needing to
         #     know which view is first in the list of steps.
+        context = self.get_context_data()
         if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
-                return render(request, "domain_request_intro.html")
+                context = self.get_context_data()
+                return render(request, "domain_request_intro.html", context=context)
             else:
                 return self.goto(self.steps.first)
 
         self.steps.current = current_url
-        context = self.get_context_data()
         context["forms"] = self.get_forms()
 
         # if pending requests exist and user does not have approved domains,
@@ -384,7 +387,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         else:
             modal_heading = "You are about to submit an incomplete request"
 
-        return {
+        has_profile_flag = flag_is_active(self.request, "profile_feature")
+        logger.debug("PROFILE FLAG is %s" % has_profile_flag)
+
+        context = {
             "form_titles": self.TITLES,
             "steps": self.steps,
             # Add information about which steps should be unlocked
@@ -392,7 +398,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             "is_federal": self.domain_request.is_federal(),
             "modal_button": modal_button,
             "modal_heading": modal_heading,
+            # Use the profile waffle feature flag to toggle profile features throughout domain requests
+            "has_profile_feature_flag": has_profile_flag,
+            "user": self.request.user,
         }
+        return context
 
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
@@ -403,6 +413,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 condition = condition(self)
             if condition:
                 step_list.append(step)
+
+        if flag_is_active(self.request, "profile_feature"):
+            step_list.remove(Step.YOUR_CONTACT)
+
         return step_list
 
     def goto(self, step):
@@ -536,6 +550,10 @@ class Purpose(DomainRequestWizard):
 class YourContact(DomainRequestWizard):
     template_name = "domain_request_your_contact.html"
     forms = [forms.YourContactForm]
+
+    @waffle_flag("!profile_feature")  # type: ignore
+    def dispatch(self, request, *args, **kwargs):  # type: ignore
+        return super().dispatch(request, *args, **kwargs)
 
 
 class OtherContacts(DomainRequestWizard):
@@ -695,6 +713,13 @@ class Finished(DomainRequestWizard):
 class DomainRequestStatus(DomainRequestPermissionView):
     template_name = "domain_request_status.html"
 
+    def get_context_data(self, **kwargs):
+        """Extend get_context_data to add has_profile_feature_flag to context"""
+        context = super().get_context_data(**kwargs)
+        # This is a django waffle flag which toggles features based off of the "flag" table
+        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
+        return context
+
 
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
@@ -704,6 +729,13 @@ class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """
 
     template_name = "domain_request_withdraw_confirmation.html"
+
+    def get_context_data(self, **kwargs):
+        """Extend get_context_data to add has_profile_feature_flag to context"""
+        context = super().get_context_data(**kwargs)
+        # This is a django waffle flag which toggles features based off of the "flag" table
+        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
+        return context
 
 
 class DomainRequestWithdrawn(DomainRequestPermissionWithdrawView):

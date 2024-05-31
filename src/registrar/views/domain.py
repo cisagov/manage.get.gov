@@ -59,7 +59,7 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
-
+from waffle.decorators import flag_is_active, waffle_flag
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +101,13 @@ class DomainBaseView(DomainPermissionView):
         """
         domain_pk = "domain:" + str(self.kwargs.get("pk"))
         self.session[domain_pk] = self.object
+
+    def get_context_data(self, **kwargs):
+        """Extend get_context_data to add has_profile_feature_flag to context"""
+        context = super().get_context_data(**kwargs)
+        # This is a django waffle flag which toggles features based off of the "flag" table
+        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
+        return context
 
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
@@ -568,6 +575,10 @@ class DomainYourContactInformationView(DomainFormBaseView):
     template_name = "domain_your_contact_information.html"
     form_class = ContactForm
 
+    @waffle_flag("!profile_feature")  # type: ignore
+    def dispatch(self, request, *args, **kwargs):  # type: ignore
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
@@ -734,7 +745,10 @@ class DomainAddUserView(DomainFormBaseView):
         does not make a domain information object
         email: string- email to send to
         add_success: bool- default True indicates:
-          adding a success message to the view if the email sending succeeds"""
+        adding a success message to the view if the email sending succeeds
+
+        raises EmailSendingError
+        """
 
         # Set a default email address to send to for staff
         requestor_email = settings.DEFAULT_FROM_EMAIL
@@ -762,33 +776,43 @@ class DomainAddUserView(DomainFormBaseView):
                     "requestor_email": requestor_email,
                 },
             )
-        except EmailSendingError:
-            messages.warning(self.request, "Could not send email invitation.")
+        except EmailSendingError as exc:
             logger.warn(
                 "Could not sent email invitation to %s for domain %s",
                 email,
                 self.object,
                 exc_info=True,
             )
+            raise EmailSendingError("Could not send email invitation.") from exc
         else:
             if add_success:
                 messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
-        invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
-        if not created:
+        # Check to see if an invite has already been sent (NOTE: we do not want to create an invite just yet.)
+        try:
+            invite = DomainInvitation.objects.get(email=email_address, domain=self.object)
             # that invitation already existed
-            messages.warning(
-                self.request,
-                f"{email_address} has already been invited to this domain.",
-            )
-        else:
-            self._send_domain_invitation_email(email=email_address, requestor=requestor)
+            if invite is not None:
+                messages.warning(
+                    self.request,
+                    f"{email_address} has already been invited to this domain.",
+                )
+        except DomainInvitation.DoesNotExist:
+            # Try to send the invitation.  If it succeeds, add it to the DomainInvitation table.
+            try:
+                self._send_domain_invitation_email(email=email_address, requestor=requestor)
+            except EmailSendingError:
+                messages.warning(self.request, "Could not send email invitation.")
+            else:
+                # (NOTE: only create a domainInvitation if the e-mail sends correctly)
+                DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
-        """Add the specified user on this domain."""
+        """Add the specified user on this domain.
+        Throws EmailSendingError."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
         # look up a user with that email
@@ -799,7 +823,22 @@ class DomainAddUserView(DomainFormBaseView):
             return self._make_invitation(requested_email, requestor)
         else:
             # if user already exists then just send an email
-            self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+            try:
+                self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+            except EmailSendingError:
+                logger.warn(
+                    "Could not send email invitation (EmailSendingError)",
+                    self.object,
+                    exc_info=True,
+                )
+                messages.warning(self.request, "Could not send email invitation.")
+            except Exception:
+                logger.warn(
+                    "Could not send email invitation (Other Exception)",
+                    self.object,
+                    exc_info=True,
+                )
+                messages.warning(self.request, "Could not send email invitation.")
 
         try:
             UserDomainRole.objects.create(
