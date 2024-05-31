@@ -206,13 +206,25 @@ class DomainInformation(TimeStampedModel):
         verbose_name="Additional details",
     )
 
-    cisa_representative = models.ForeignKey(
-        "registrar.Contact",
+    cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        related_name="cisa_representative_domain_requests_information",
-        on_delete=models.PROTECT,
-        help_text='Cisa Representative listed under "additional information" in the request form',
+        verbose_name="CISA regional representative email",
+        max_length=320,
+    )
+
+    cisa_representative_first_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative first name",
+        db_index=True,
+    )
+    
+    cisa_representative_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative last name",
+        db_index=True,
     )
 
     is_policy_acknowledged = models.BooleanField(

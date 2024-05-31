@@ -895,12 +895,9 @@ def completed_domain_request(  # noqa
     if has_alternative_gov_domain:
         domain_request.alternative_domains.add(alt)
     if has_cisa_representative:
-        cisa_representative, _ = Contact.objects.get_or_create(
-            first_name="CISA-first-name",
-            last_name="CISA-last-name",
-            email="cisaRep@igorville.gov",
-        )
-        domain_request.cisa_representative = cisa_representative
+        domain_request.cisa_representative_first_name="CISA-first-name"
+        domain_request.cisa_representative_last_name="CISA-last-name"
+        domain_request.cisa_representative_email="cisaRep@igorville.gov"
 
     return domain_request
 

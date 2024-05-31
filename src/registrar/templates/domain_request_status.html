@@ -118,7 +118,15 @@
 
     {# We always show this field even if None #}
     {% if DomainRequest %}
-      {% include "includes/summary_item.html" with title='Additional details' sub_header_text='CISA regional representative' value=DomainRequest.cisa_representative contact='true' custom_text_for_value_none='No' heading_level=heading_level %}
+      <h3 class="register-form-review-header">CISA Regional Representative</h3>
+      <ul class="usa-list usa-list--unstyled margin-top-0">
+        {% if domain_request.cisa_representative_first_name %}
+          {{domain_request.cisa_representative_first_name}} {{domain_request.cisa_representative_last_name}}
+        {% else %}
+          No
+        {% endif %}
+      </ul>
+
       <h3 class="register-form-review-header">Anything else</h3>
       <ul class="usa-list usa-list--unstyled margin-top-0">
         {% if DomainRequest.anything_else %}
@@ -128,7 +136,6 @@
         {% endif %}
       </ul>
     {% endif %}
-
   {% endwith %}
   </div>
 

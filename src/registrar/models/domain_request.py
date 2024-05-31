@@ -457,13 +457,25 @@ class DomainRequest(TimeStampedModel):
         help_text="Determines if the user has a anything_else or not",
     )
 
-    cisa_representative = models.ForeignKey(
-        "registrar.Contact",
+    cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        related_name="cisa_representative_domain_requests",
-        on_delete=models.PROTECT,
-        help_text='Cisa Representative listed under "additional information" in the request form',
+        verbose_name="CISA regional representative email",
+        max_length=320,
+    )
+
+    cisa_representative_first_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative first name",
+        db_index=True,
+    )
+    
+    cisa_representative_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative last name",
+        db_index=True,
     )
 
     # This is a drop-in replacement for an has_cisa_representative() function.
@@ -536,17 +548,18 @@ class DomainRequest(TimeStampedModel):
         We handle that here for def save().
         """
 
-        cisa_rep_is_not_none = self.cisa_representative is not None
-        cisa_first_name = None
-
         # This ensures that if we have prefilled data, the form is prepopulated
-        if cisa_rep_is_not_none:
-            cisa_first_name = self.cisa_representative.first_name
-            self.has_cisa_representative = cisa_first_name is not None and cisa_first_name != ""
+        # NOTE: this relies on the fact that the first and last names of a CISA representative
+        # are required fields.  Because of this, we can simplify the check to only look at the
+        # first name to determine whether or not a CISA representative was provided.
+        if self.cisa_representative_first_name is not None:
+            self.has_cisa_representative = self.cisa_representative_first_name != ""
 
         # This check is required to ensure that the form doesn't start out checked
         if self.has_cisa_representative is not None:
-            self.has_cisa_representative = cisa_first_name is not None and cisa_first_name != ""
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
+            )
 
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.anything_else is not None:

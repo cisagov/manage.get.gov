@@ -1376,7 +1376,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "authorizing_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
-                    "cisa_representative",
+                    "cisa_representative_first_name",
+                    "cisa_representative_last_name",
+                    "cisa_representative_email",
                 ]
             },
         ),
@@ -1452,8 +1454,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
-        "cisa_representative",
-    ]
+        "cisa_representative_first_name",
+        "cisa_representative_last_name",
+        "cisa_representative_email",
+]
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",

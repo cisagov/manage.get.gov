@@ -157,8 +157,16 @@
 
         {% if step == Step.ADDITIONAL_DETAILS %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"Incomplete" %}
-            {% include "includes/summary_item.html" with title=title sub_header_text='CISA regional representative' value=domain_request.cisa_representative contact='true' heading_level=heading_level editable=True edit_link=domain_request_url  custom_text_for_value_none='No' %}
+          {% with title=form_titles|get_item:step value=domain_request.requested_domain.has_additional_details|default:"Incomplete" %}
+            {% include "includes/summary_item.html" with title="Additional Details" value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
+            <h3 class="register-form-review-header">CISA Regional Representative</h3>
+            <ul class="usa-list usa-list--unstyled margin-top-0">
+              {% if domain_request.cisa_representative_first_name %}
+                {{domain_request.cisa_representative_first_name}} {{domain_request.cisa_representative_last_name}}
+              {% else %}
+                No
+              {% endif %}
+            </ul>
           {% endwith %}
 
             <h3 class="register-form-review-header">Anything else</h3>

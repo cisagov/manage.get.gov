@@ -379,9 +379,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_details_result = additional_details_form.submit()
         # validate that data from this step are being saved
         domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.cisa_representative.first_name, "CISA-first-name")
-        self.assertEqual(domain_request.cisa_representative.last_name, "CISA-last-name")
-        self.assertEqual(domain_request.cisa_representative.email, "FakeEmail@gmail.com")
+        self.assertEqual(domain_request.cisa_representative_first_name, "CISA-first-name")
+        self.assertEqual(domain_request.cisa_representative_last_name, "CISA-last-name")
+        self.assertEqual(domain_request.cisa_representative_email, "FakeEmail@gmail.com")
         self.assertEqual(domain_request.anything_else, "Nothing else.")
         # the post request should return a redirect to the next form in
         # the domain request page
@@ -815,7 +815,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def test_yes_no_form_inits_yes_for_cisa_representative_and_anything_else(self):
         """On the Additional Details page, the yes/no form gets initialized with YES selected
-        for both yes/no radios if the domain request has a value for cisa_representative and
+        for both yes/no radios if the domain request has a values for cisa_representative_first_name and
         anything_else"""
 
         domain_request = completed_domain_request(user=self.user, has_anything_else=True, has_cisa_representative=True)
@@ -905,16 +905,16 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When a user submits the Additional Details form with no selected for all fields,
         the domain request's data gets wiped when submitted"""
         domain_request = completed_domain_request(name="nocisareps.gov", user=self.user)
-        domain_request.cisa_representative.first_name = "cisa-firstname1"
-        domain_request.cisa_representative.last_name = "cisa-lastname1"
-        domain_request.cisa_representative.email = "fake@faketown.gov"
+        domain_request.cisa_representative_first_name = "cisa-firstname1"
+        domain_request.cisa_representative_last_name = "cisa-lastname1"
+        domain_request.cisa_representative_email = "fake@faketown.gov"
         domain_request.save()
 
         # Make sure we have the data we need for the test
         self.assertEqual(domain_request.anything_else, "There is more")
-        self.assertEqual(domain_request.cisa_representative.first_name, "cisa-firstname1")
-        self.assertEqual(domain_request.cisa_representative.last_name, "cisa-lastname1")
-        self.assertEqual(domain_request.cisa_representative.email, "fake@faketown.gov")
+        self.assertEqual(domain_request.cisa_representative_first_name, "cisa-firstname1")
+        self.assertEqual(domain_request.cisa_representative_last_name, "cisa-lastname1")
+        self.assertEqual(domain_request.cisa_representative_email, "fake@faketown.gov")
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
@@ -947,16 +947,20 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # Verify that the anything_else and cisa_representative have been deleted from the DB
+        # Verify that the anything_else and cisa_representative information have been deleted from the DB
         domain_request = DomainRequest.objects.get(requested_domain__name="nocisareps.gov")
 
         # Check that our data has been cleared
         self.assertEqual(domain_request.anything_else, None)
-        self.assertEqual(domain_request.cisa_representative, None)
+        self.assertEqual(domain_request.cisa_representative_first_name, None)
+        self.assertEqual(domain_request.cisa_representative_last_name, None)
+        self.assertEqual(domain_request.cisa_representative_email, None)
 
         # Double check the yes/no fields
         self.assertEqual(domain_request.has_anything_else_text, False)
-        self.assertEqual(domain_request.has_cisa_representative, False)
+        self.assertEqual(domain_request.cisa_representative_first_name, None)
+        self.assertEqual(domain_request.cisa_representative_last_name, None)
+        self.assertEqual(domain_request.cisa_representative_email, None)
 
     def test_submitting_additional_details_populates_cisa_representative_and_anything_else(self):
         """When a user submits the Additional Details form,
@@ -967,7 +971,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Make sure we have the data we need for the test
         self.assertEqual(domain_request.anything_else, None)
-        self.assertEqual(domain_request.cisa_representative, None)
+        self.assertEqual(domain_request.cisa_representative_first_name, None)
 
         # These fields should not be selected at all, since we haven't initialized the form yet
         self.assertEqual(domain_request.has_anything_else_text, None)
@@ -1000,13 +1004,13 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # Verify that the anything_else and cisa_representative exist in the db
+        # Verify that the anything_else and cisa_representative information exist in the db
         domain_request = DomainRequest.objects.get(requested_domain__name="cisareps.gov")
 
         self.assertEqual(domain_request.anything_else, "redandblue")
-        self.assertEqual(domain_request.cisa_representative.first_name, "cisa-firstname")
-        self.assertEqual(domain_request.cisa_representative.last_name, "cisa-lastname")
-        self.assertEqual(domain_request.cisa_representative.email, "test@faketest.gov")
+        self.assertEqual(domain_request.cisa_representative_first_name, "cisa-firstname")
+        self.assertEqual(domain_request.cisa_representative_last_name, "cisa-lastname")
+        self.assertEqual(domain_request.cisa_representative_email, "test@faketest.gov")
 
         self.assertEqual(domain_request.has_cisa_representative, True)
         self.assertEqual(domain_request.has_anything_else_text, True)
