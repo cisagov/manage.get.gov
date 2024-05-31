@@ -34,7 +34,7 @@ def get_domain_requests_json(request):
             "is_deletable": domain_request.status
             in [DomainRequest.DomainRequestStatus.STARTED, DomainRequest.DomainRequestStatus.WITHDRAWN],
             "action_url": (
-                reverse("edit-domain-request", kwargs={"pk": domain_requests.id})
+                reverse("edit-domain-request", kwargs={"id": domain_request.id})
                 if domain_request.status
                 in [
                     DomainRequest.DomainRequestStatus.STARTED,

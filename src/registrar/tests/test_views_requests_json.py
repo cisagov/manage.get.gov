@@ -158,7 +158,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
             # Check action_url
             action_url_expected = (
-                reverse("edit-domain-request", kwargs={"pk": self.domain_requests[i].id})
+                reverse("edit-domain-request", kwargs={"id": self.domain_requests[i].id})
                 if self.domain_requests[i].status
                 in [
                     DomainRequest.DomainRequestStatus.STARTED,
