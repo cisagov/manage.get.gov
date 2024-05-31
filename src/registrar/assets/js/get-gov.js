@@ -1065,9 +1065,9 @@ document.addEventListener('DOMContentLoaded', function() {
           domainList.innerHTML = '';
 
           data.domains.forEach(domain => {
-            const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             const expirationDate = domain.expiration_date ? new Date(domain.expiration_date).toLocaleDateString('en-US', options) : null;
+            const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
             
             const row = document.createElement('tr');
@@ -1200,7 +1200,7 @@ document.addEventListener('DOMContentLoaded', function() {
           unloadModals();
           data.domain_requests.forEach(request => {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            const domainName = request.requested_domain ? request.requested_domain : `New domain request <span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString('en-US', options)} UTC)</span>`;
+            const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString('en-US', options)} UTC)</span>`;
             const actionUrl = request.action_url;
             const actionLabel = request.action_label;
             const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
