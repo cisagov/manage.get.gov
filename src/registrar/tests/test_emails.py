@@ -3,10 +3,12 @@
 from unittest.mock import MagicMock
 
 from django.test import TestCase
+from waffle.testutils import override_switch
+from registrar.utility import email
+from registrar.utility.email import send_templated_email
 from .common import completed_domain_request, less_console_noise
 
 from datetime import datetime
-from registrar.utility import email
 import boto3_mocking  # type: ignore
 
 
@@ -14,6 +16,24 @@ class TestEmails(TestCase):
     def setUp(self):
         self.mock_client_class = MagicMock()
         self.mock_client = self.mock_client_class.return_value
+
+    @boto3_mocking.patching
+    @override_switch("disable_email_sending", active=True)
+    def test_disable_email_switch(self):
+        """Test if the 'disable_email_sending' stops emails from being sent """
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            expected_message = "Email sending is disabled due to"
+            with self.assertRaisesRegex(email.EmailSendingError, expected_message):
+                send_templated_email(
+                    "test content",
+                    "test subject",
+                    "doesnotexist@igorville.com",
+                    context={"domain_request": self},
+                    bcc_address=None,
+                )
+        
+        # Assert that an email wasn't sent
+        self.assertFalse(self.mock_client.send_email.called)
 
     @boto3_mocking.patching
     def test_submission_confirmation(self):
