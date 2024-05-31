@@ -411,8 +411,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "is_federal": self.domain_request.is_federal(),
                 "modal_button": modal_button,
                 "modal_heading": "You can’t submit this request",
-                "modal_description": "You can’t submit this request because it’s incomplete.\
-                Click return to request and complete the sections that are missing information.",
+                "modal_description": 'This request cannot be submitted yet.\
+                Return to the request and visit the steps that are marked as "incomplete."',
                 "review_form_is_complete": False,
                 "has_profile_feature_flag": has_profile_flag,
                 "user": self.request.user,
