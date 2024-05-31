@@ -1065,8 +1065,9 @@ document.addEventListener('DOMContentLoaded', function() {
           domainList.innerHTML = '';
 
           data.domains.forEach(domain => {
-            const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const expirationDate = domain.expiration_date ? new Date(domain.expiration_date).toLocaleDateString('en-US', options) : null;
             const actionUrl = domain.action_url;
             
             const row = document.createElement('tr');
@@ -1198,10 +1199,10 @@ document.addEventListener('DOMContentLoaded', function() {
           // after the DOM content changes and there are new delete modal buttons added
           unloadModals();
           data.domain_requests.forEach(request => {
-            const domainName = request.requested_domain ? request.requested_domain : `New domain request <span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString()} UTC)</span>`;
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const domainName = request.requested_domain ? request.requested_domain : `New domain request <span class="text-base font-body-xs">(${new Date(request.created_at).toLocaleString('en-US', options)} UTC)</span>`;
             const actionUrl = request.action_url;
             const actionLabel = request.action_label;
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
             const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
             const deleteButton = request.is_deletable ? `
               <a 
