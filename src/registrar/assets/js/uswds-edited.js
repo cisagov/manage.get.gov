@@ -22,6 +22,13 @@
  * https://developer.mozilla.org/en-US/docs/Web/API/Element/classList
  */
 
+/**
+ * Edits made for dotgov project:
+ *  - tooltip exposed to window to be accessible in other js files
+ *  - modal exposed to window to be accessible in other js files
+ *  - fixed bug in createHeaderButton which added newlines to header button tooltips
+ */
+
 if ("document" in window.self) {
   // Full polyfill for browsers with no classList support
   // Including IE < Edge missing SVGElement.classList
