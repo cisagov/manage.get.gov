@@ -1066,9 +1066,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
           data.domains.forEach(domain => {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            const expirationDate = domain.expiration_date ? new Date(domain.expiration_date).toLocaleDateString('en-US', options) : null;
+            const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
+            const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : null;
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
+
             
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -1076,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${domain.name}
               </th>
               <td data-sort-value="${expirationDateSortValue}" data-label="Expires">
-                ${expirationDate ? expirationDate.toLocaleDateString() : ''}
+                ${expirationDateFormatted}
               </td>
               <td data-label="Status">
                 ${domain.state_display}
