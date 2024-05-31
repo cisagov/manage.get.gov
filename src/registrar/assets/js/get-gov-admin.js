@@ -296,28 +296,46 @@ function initializeWidgetOnList(list, parentId) {
 }
 
 /** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
- * status select and to show/hide the rejection reason
+ * status select and to show/hide fields like rejection reason or action needed reason
 */
 (function (){
-    let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+    // Hides or shows a given field based off of the current value of the given status selector,
+    // and stores its state in the session.
+    function showHideFieldsOnStatusChange(elementToHide, statusToShowOn, sessionObjectName) {
+        if (elementToHide) {
+            let statusSelect = document.getElementById('id_status')
+            
+            let shouldHide = statusSelect.value != statusToShowOn
+            // Initial handling of parentFormGroup display
+            hideOrShowDomObject(elementToHide, hideObject=shouldHide)
+    
+            // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
+            statusSelect.addEventListener('change', function() {
+                // Hide the object only if we're in an invalid state
+                shouldHide = statusSelect.value != statusToShowOn
 
-    if (rejectionReasonFormGroup) {
-        let statusSelect = document.getElementById('id_status')
+                // Hide the action needed field if we're on a different status type
+                hideOrShowDomObject(elementToHide, hideObject=shouldHide)
 
-        // Initial handling of rejectionReasonFormGroup display
-        if (statusSelect.value != 'rejected')
-            rejectionReasonFormGroup.style.display = 'none';
+                // Add a key to our session storage to track if we should hide the object automatically
+                // (to catch the edge case where you click the back button)
+                if (!shouldHide){
+                    sessionStorage.removeItem(sessionObjectName);
+                }else {
+                    sessionStorage.setItem(sessionObjectName, 'true');
+                }
+            });
+        }
+    }
 
-        // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
-        statusSelect.addEventListener('change', function() {
-            if (statusSelect.value == 'rejected') {
-                rejectionReasonFormGroup.style.display = 'block';
-                sessionStorage.removeItem('hideRejectionReason');
-            } else {
-                rejectionReasonFormGroup.style.display = 'none';
-                sessionStorage.setItem('hideRejectionReason', 'true');
+    function hideOrShowDomObject(object, hideObject){
+        if (object){
+            if (hideObject){
+                object.classList.add("display-none");
+            }else {
+                object.classList.remove("display-none");
             }
-        });
+        }
     }
 
     // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
@@ -325,17 +343,39 @@ function initializeWidgetOnList(list, parentId) {
     // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
     // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
     // accurately for this edge case, we use cache and test for the back/forward navigation.
-    const observer = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-          if (entry.type === "back_forward") {
-            if (sessionStorage.getItem('hideRejectionReason'))
-                document.querySelector('.field-rejection_reason').style.display = 'none';
-            else
-                document.querySelector('.field-rejection_reason').style.display = 'block';
-          }
+    function handleBackButtonObserver(fieldsToObserve) {
+        const observer = new PerformanceObserver((list) => {
+            list.getEntries().forEach((entry) => {
+                if (entry.type === "back_forward") {
+                    fieldsToObserve.forEach((fieldName) => {
+                        fieldClass = `.field-${fieldName}`
+                        field = document.querySelector(fieldClass)
+                        if (field) {
+                            shouldHideField = sessionStorage.getItem(`hide_${fieldName}`)
+                            hideOrShowDomObject(field, hideObject=shouldHideField)
+                        }else {
+                            console.error(`Could not find field with class ${fieldClass}`)
+                        }
+                    });
+                }
+            });
         });
-    });
-    observer.observe({ type: "navigation" });
+        observer.observe({ type: "navigation" });
+    }
+
+    function handleStatusChanges() {
+        // Show/hide the rejection reason
+        let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+        showHideFieldsOnStatusChange(rejectionReasonFormGroup, "rejected", "hide_rejection_reason");
+        
+        // Show/hude the action needed reason
+        let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
+        showHideFieldsOnStatusChange(actionNeededReasonFormGroup, "action_needed", "hide_action_needed_reason");
+    }
+    handleStatusChanges();
+
+    fieldsToObserve = ["rejection_reason", "action_needed_reason"]
+    handleBackButtonObserver(fieldsToObserve);
 })();
 
 /** An IIFE for toggling the submit bar on domain request forms

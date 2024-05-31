@@ -1584,6 +1584,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
             # because we clean up the rejection reason in the transition in the model.
             error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
+        elif obj.status == models.DomainRequest.DomainRequestStatus.ACTION_NEEDED and not obj.action_needed_reason:
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_ACTION_NEEDED_REASON)
         else:
             # This is an fsm in model which will throw an error if the
             # transition condition is violated, so we roll back the
