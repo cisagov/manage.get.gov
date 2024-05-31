@@ -410,7 +410,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
                 "modal_button": modal_button,
-                "modal_heading": "You can’t submit this request",
+                "modal_heading": "Your request form is incomplete",
                 "modal_description": 'This request cannot be submitted yet.\
                 Return to the request and visit the steps that are marked as "incomplete."',
                 "review_form_is_complete": False,
