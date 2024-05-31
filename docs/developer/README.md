@@ -406,10 +406,8 @@ This function is triggered by the post_save event on the User model, designed to
 
 2. For Existing Users: For users logging in subsequent times, the function ensures that any updates from Login.gov are applied to the associated User record. However, it does not alter any existing Contact records.
 
-## Disable email sending (toggling the disable_email_sending switch)
-Feature switches are booleans that behave like environment variables that you can toggle through the DB.
-This switch globally disables our email sending feature. Using it is as simple as checking a box.
+## Disable email sending (toggling the disable_email_sending flag)
 1. On the app, navigate to `\admin`.
-2. Under models, click `Waffle switches`.
+2. Under models, click `Waffle flags`.
 3. Click the `disable_email_sending` record. This should exist by default, if not - create one with that name.
-4. (Important) Enable the checkbox for the field `Active`. This field overrides all other settings 
+4. (Important) Set the field `everyone` to `Yes`. This field overrides all other settings 

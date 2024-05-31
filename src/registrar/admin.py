@@ -2317,16 +2317,6 @@ class WaffleFlagAdmin(FlagAdmin):
         fields = "__all__"
 
 
-class WaffleSwitchAdmin(SwitchAdmin):
-    """Custom admin implementation of django-waffle's Switch class"""
-
-    class Meta:
-        """Contains meta information about this class"""
-
-        model = models.WaffleSwitch
-        fields = "__all__"
-
-
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
 admin.site.register(LogEntry, CustomLogEntryAdmin)
@@ -2352,7 +2342,7 @@ admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
-admin.site.register(models.WaffleSwitch, WaffleSwitchAdmin)
 
-# Unregister Sample from the waffle library
+# Unregister Switch and Sample from the waffle library
+admin.site.unregister(Switch)
 admin.site.unregister(Sample)
