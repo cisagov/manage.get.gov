@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from waffle.admin import FlagAdmin, SwitchAdmin
+from waffle.admin import FlagAdmin
 from waffle.models import Sample
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes

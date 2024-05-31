@@ -19,7 +19,7 @@ class TestEmails(TestCase):
 
     @boto3_mocking.patching
     @override_flag("disable_email_sending", active=True)
-    def test_disable_email_switch(self):
+    def test_disable_email_flag(self):
         """Test if the 'disable_email_sending' stops emails from being sent """
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             expected_message = "Email sending is disabled due to"

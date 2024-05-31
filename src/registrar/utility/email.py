@@ -38,7 +38,7 @@ def send_templated_email(
     """
 
     if flag_is_active(None, "disable_email_sending") and not settings.IS_PRODUCTION:
-        message = "Could not send email. Email sending is disabled due to switch 'disable_email_sending'."
+        message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
         raise EmailSendingError(message)
 
     template = get_template(template_name)
