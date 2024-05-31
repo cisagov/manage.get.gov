@@ -3,6 +3,7 @@ from django.core.paginator import Paginator
 from registrar.models import DomainRequest
 from django.utils.dateformat import format
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 
 
 @login_required
@@ -33,14 +34,14 @@ def get_domain_requests_json(request):
             "is_deletable": domain_request.status
             in [DomainRequest.DomainRequestStatus.STARTED, DomainRequest.DomainRequestStatus.WITHDRAWN],
             "action_url": (
-                f"/domain-request/{domain_request.id}/edit"
+                reverse("edit-domain-request", kwargs={"pk": domain_requests.id})
                 if domain_request.status
                 in [
                     DomainRequest.DomainRequestStatus.STARTED,
                     DomainRequest.DomainRequestStatus.ACTION_NEEDED,
                     DomainRequest.DomainRequestStatus.WITHDRAWN,
                 ]
-                else f"/domain-request/{domain_request.id}"
+                else reverse("domain-request-status", kwargs={"pk": domain_request.id})
             ),
             "action_label": (
                 "Edit"
