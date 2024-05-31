@@ -28,7 +28,7 @@ def get_domains_json(request):
             sort_by = f"-{sort_by}"
         objects = objects.order_by(sort_by)
 
-    paginator = Paginator(objects, 2)
+    paginator = Paginator(objects, 5)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 

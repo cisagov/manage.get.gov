@@ -880,11 +880,38 @@ function unloadModals() {
 }
 
 /**
+ * Helper function that scrolls to an element
+ * @param {string} attributeName - The string "class" or "id"
+ * @param {string} attributeValue - The class or id name
+ */
+function ScrollToElement(attributeName, attributeValue) {
+  let targetEl = null;
+
+  if (attributeName === 'class') {
+    targetEl = document.getElementsByClassName(attributeValue)[0];
+  } else if (attributeName === 'id') {
+    targetEl = document.getElementById(attributeValue);
+  } else {
+    console.log('Error: unknown attribute name provided.');
+    return; // Exit the function if an invalid attributeName is provided
+  }
+
+  if (targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    window.scrollTo({
+      top: rect.top + scrollTop,
+      behavior: 'smooth' // Optional: for smooth scrolling
+    });
+  }
+}
+
+/**
  * Generalized function to update pagination for a list.
  * @param {string} itemName - The name displayed in the counter
  * @param {string} paginationSelector - CSS selector for the pagination container.
  * @param {string} counterSelector - CSS selector for the pagination counter.
- * @param {string} headerAnchor - ID of the header element to anchor the links to.
+ * @param {string} headerAnchor - CSS selector for the header element to anchor the links to.
  * @param {Function} loadPageFunction - Function to call when a page link is clicked.
  * @param {number} currentPage - The current page number (starting with 1).
  * @param {number} numPages - The total number of pages.
@@ -911,7 +938,7 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
     const prevPageItem = document.createElement('li');
     prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
     prevPageItem.innerHTML = `
-      <a href="#${headerAnchor}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
+      <a href="${headerAnchor}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
         <svg class="usa-icon" aria-hidden="true" role="img">
           <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
         </svg>
@@ -930,7 +957,7 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
     const pageItem = document.createElement('li');
     pageItem.className = 'usa-pagination__item usa-pagination__page-no';
     pageItem.innerHTML = `
-      <a href="#${headerAnchor}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
+      <a href="${headerAnchor}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
     `;
     if (page === currentPage) {
       pageItem.querySelector('a').classList.add('usa-current');
@@ -976,7 +1003,7 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
     const nextPageItem = document.createElement('li');
     nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
     nextPageItem.innerHTML = `
-      <a href="#${headerAnchor}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
+      <a href="${headerAnchor}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
         <span class="usa-pagination__link-text">Next</span>
         <svg class="usa-icon" aria-hidden="true" role="img">
           <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
@@ -1004,6 +1031,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
     let noDomainsWrapper = document.querySelector('.no-domains-wrapper');
+    let hasLoaded = false;
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1011,8 +1039,9 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} page - the page number of the results (starts with 1)
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
+     * @param {*} loaded - control for the scrollToElement functionality
      */
-    function loadDomains(page, sortBy = currentSortBy, order = currentOrder) {
+    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
       //fetch json of page of domains, given page # and sort
       fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
         .then(response => response.json())
@@ -1074,6 +1103,8 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           // initialize tool tips immediately after the associated DOM elements are added
           initializeTooltips();
+          if (loaded)
+            ScrollToElement('id', 'domains-header');
 
           hasLoaded = true;
 
@@ -1082,7 +1113,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'domain',
             '#domains-pagination',
             '#domains-pagination .usa-pagination__counter',
-            'domains-header',
+            '#domains-header',
             loadDomains,
             data.page,
             data.num_pages,
@@ -1130,6 +1161,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
     let noDomainRequestsWrapper = document.querySelector('.no-domain-requests-wrapper');
+    let hasLoaded = false;
 
     /**
      * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
@@ -1137,8 +1169,9 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} page - the page number of the results (starts with 1)
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
+     * @param {*} loaded - control for the scrollToElement functionality
      */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder) {
+    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
       //fetch json of page of domain requests, given page # and sort
       fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
         .then(response => response.json())
@@ -1209,6 +1242,8 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           // initialize modals immediately after the DOM content is updated
           initializeModals();
+          if (loaded)
+            ScrollToElement('id', 'domain-requests-header');
 
           hasLoaded = true;
 
@@ -1217,7 +1252,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'domain request',
             '#domain-requests-pagination',
             '#domain-requests-pagination .usa-pagination__counter',
-            'domain-requests-header',
+            '#domain-requests-header',
             loadDomainRequests,
             data.page,
             data.num_pages,
