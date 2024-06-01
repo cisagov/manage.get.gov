@@ -30,7 +30,7 @@ from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
-from import_export import resources
+from import_export import resources, results
 from import_export.admin import ImportExportModelAdmin
 
 from django.utils.translation import gettext_lazy as _
@@ -2250,6 +2250,46 @@ class PublicContactResource(resources.ModelResource):
 
     class Meta:
         model = models.PublicContact
+
+    def import_row(
+        self,
+        row,
+        instance_loader,
+        using_transactions=True,
+        dry_run=False,
+        raise_errors=None,
+        **kwargs
+    ):
+        """Override kwargs skip_epp_save and set to True"""
+        kwargs['skip_epp_save'] = True
+        return super().import_row(
+            row,
+            instance_loader,
+            using_transactions=using_transactions,
+            dry_run=dry_run,
+            raise_errors=raise_errors,
+            **kwargs
+        )
+
+    def save_instance(
+        self, instance, is_create, using_transactions=True, dry_run=False
+    ):
+        """Override save_instance setting skip_epp_save to True
+        """
+        self.before_save_instance(instance, using_transactions, dry_run)
+        if self._meta.use_bulk:
+            if is_create:
+                self.create_instances.append(instance)
+            else:
+                self.update_instances.append(instance)
+        else:
+            if not using_transactions and dry_run:
+                # we don't have transactions and we want to do a dry_run
+                pass
+            else:
+                instance.save(skip_epp_save=True)
+        self.after_save_instance(instance, using_transactions, dry_run)
+
 
 class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom PublicContact admin class."""

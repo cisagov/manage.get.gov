@@ -16,7 +16,7 @@ class Command(BaseCommand):
         """Extracts CSV files from a zip archive and imports them into the respective tables"""
         table_names = [
             "User", "Contact", "Domain", "Host", "HostIp", "DraftDomain", "Website",
-            "DomainRequest", "DomainInformation", "UserDomainRole"
+            "DomainRequest", "DomainInformation", "UserDomainRole", "PublicContact"
         ]
         
         # Ensure the tmp directory exists
@@ -54,7 +54,7 @@ class Command(BaseCommand):
             with open(csv_filename, "r") as csvfile:
                 #dataset = resource_instance.import_data(csvfile.read())
                 dataset = tablib.Dataset().load(csvfile.read(), format='csv')
-            result = resource_instance.import_data(dataset, dry_run=False)
+            result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=True)
             
             if result.has_errors():
                 logger.error(f"Errors occurred while importing {csv_filename}: {result.row_errors()}")

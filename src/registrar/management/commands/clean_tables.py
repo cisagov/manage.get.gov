@@ -12,7 +12,7 @@ class Command(BaseCommand):
         """Delete all rows from a list of tables"""
         table_names = [
             "DomainInformation", "DomainRequest", "Domain", "User", "Contact", 
-            "Website", "DraftDomain", "HostIp", "Host"
+            "Website", "DraftDomain", "HostIp", "Host", "PublicContact"
         ]
         
         for table_name in table_names:
