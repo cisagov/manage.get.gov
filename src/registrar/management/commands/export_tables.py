@@ -15,7 +15,7 @@ class Command(BaseCommand):
         """Generates CSV files for specified tables and creates a zip archive"""
         table_names = [
             "User", "Contact", "Domain", "DomainRequest", "DomainInformation", 
-            "UserDomainRole", "DraftDomain", "Website", "HostIp", "Host"
+            "UserDomainRole", "DraftDomain", "Website", "HostIp", "Host", "PublicContact"
         ]
         
         # Ensure the tmp directory exists
