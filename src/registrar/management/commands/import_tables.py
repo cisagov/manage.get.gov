@@ -1,0 +1,85 @@
+import logging
+import os
+import pyzipper
+import tablib
+from django.apps import apps
+from django.db import transaction
+from django.core.management import BaseCommand
+import registrar.admin
+
+logger = logging.getLogger(__name__)
+
+class Command(BaseCommand):
+    help = "Imports tables from a zip file, exported_tables.zip, containing CSV files in the tmp directory."
+
+    def handle(self, **options):
+        """Extracts CSV files from a zip archive and imports them into the respective tables"""
+        table_names = [
+            "User", "Contact", "Domain", "Host", "HostIp", "DraftDomain", "Website",
+            "DomainRequest", "DomainInformation", "UserDomainRole"
+        ]
+        
+        # Ensure the tmp directory exists
+        os.makedirs("tmp", exist_ok=True)
+
+        # Unzip the file
+        zip_filename = "tmp/exported_tables.zip"
+        if not os.path.exists(zip_filename):
+            logger.error(f"Zip file {zip_filename} does not exist.")
+            return
+        
+        with pyzipper.AESZipFile(zip_filename, 'r') as zipf:
+            zipf.extractall("tmp")
+            logger.info(f"Extracted zip file {zip_filename} into tmp directory")
+
+        # Import each CSV file
+        for table_name in table_names:
+            self.import_table(table_name)
+
+    def import_table(self, table_name):
+        """Import data from a CSV file into the given table"""
+        resourcename = f"{table_name}Resource"
+        csv_filename = f"tmp/{table_name}.csv"
+        try:
+            if not os.path.exists(csv_filename):
+                logger.error(f"CSV file {csv_filename} not found.")
+                return
+
+            # if table_name is Contact, clean the table first
+            if table_name == "Contact":
+                self.clean_table(table_name)
+
+            resourceclass = getattr(registrar.admin, resourcename)
+            resource_instance = resourceclass()
+            with open(csv_filename, "r") as csvfile:
+                #dataset = resource_instance.import_data(csvfile.read())
+                dataset = tablib.Dataset().load(csvfile.read(), format='csv')
+            result = resource_instance.import_data(dataset, dry_run=False)
+            
+            if result.has_errors():
+                logger.error(f"Errors occurred while importing {csv_filename}: {result.row_errors()}")
+            else:
+                logger.info(f"Successfully imported {csv_filename} into {table_name}")
+
+        except AttributeError:
+            logger.error(f"Resource class {resourcename} not found in registrar.admin")
+        except Exception as e:
+            logger.error(f"Failed to import {csv_filename}: {e}")
+        finally:
+            if os.path.exists(csv_filename):
+                os.remove(csv_filename)
+                logger.info(f"Removed temporary file {csv_filename}")
+
+    def clean_table(self, table_name):
+        """Delete all rows in the given table"""
+        try:
+            # Get the model class dynamically
+            model = apps.get_model('registrar', table_name)
+            # Use a transaction to ensure database integrity
+            with transaction.atomic():
+                model.objects.all().delete()
+            logger.info(f"Successfully cleaned table {table_name}")
+        except LookupError:
+            logger.error(f"Model for table {table_name} not found.")
+        except Exception as e:
+            logger.error(f"Error cleaning table {table_name}: {e}")
