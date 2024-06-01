@@ -30,7 +30,7 @@ from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
-from import_export import resources, results
+from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 
 from django.utils.translation import gettext_lazy as _
