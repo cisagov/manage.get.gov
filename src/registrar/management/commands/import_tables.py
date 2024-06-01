@@ -3,6 +3,7 @@ import os
 import pyzipper
 import tablib
 from django.apps import apps
+from django.conf import settings
 from django.db import transaction
 from django.core.management import BaseCommand
 import registrar.admin
@@ -14,6 +15,11 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         """Extracts CSV files from a zip archive and imports them into the respective tables"""
+
+        if settings.IS_PRODUCTION:
+            logger.error("import_tables cannot be run in production")
+            return
+
         table_names = [
             "User", "Contact", "Domain", "Host", "HostIp", "DraftDomain", "Website",
             "DomainRequest", "DomainInformation", "UserDomainRole", "PublicContact"

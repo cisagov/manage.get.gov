@@ -1,4 +1,5 @@
 import logging
+from django.conf import settings
 from django.core.management import BaseCommand
 from django.apps import apps
 from django.db import transaction
@@ -10,9 +11,14 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         """Delete all rows from a list of tables"""
+
+        if settings.IS_PRODUCTION:
+            logger.error("clean_tables cannot be run in production")
+            return
+        
         table_names = [
-            "DomainInformation", "DomainRequest", "Domain", "User", "Contact", 
-            "Website", "DraftDomain", "HostIp", "Host", "PublicContact"
+            "DomainInformation", "DomainRequest", "PublicContact", "Domain", "User",
+            "Contact", "Website", "DraftDomain", "HostIp", "Host"
         ]
         
         for table_name in table_names:

@@ -11,6 +11,11 @@ Simple scripts are provided as detailed below.
 To export from the source environment, run the following command from src directory:
 manage.py export_tables
 
+On a sandbox, connect to the sandbox (getgov-stable in ex below) and run the command:
+cf ssh getgov-stable
+/tmp/lifecycle/shell
+./manage.py export_tables
+
 This exports a file, exported_tables.zip, to the tmp directory
 
 For reference, the zip file will contain the following tables in csv form:
@@ -27,12 +32,12 @@ For reference, the zip file will contain the following tables in csv form:
 * HostIP
 
 After exporting the file from the target environment, scp the exported_tables.zip
-file from the target environment to local.
+file from the target environment to local.  Run the below commands from local.
 
 Get passcode by running:
 cf ssh-code
 
-scp file from app (app is getgov-stable in example below) to local cwd:
+scp file from app (app is getgov-stable in example below) to local tmp:
 scp -P 2222 -o User=cf:$(cf curl /v3/apps/$(cf app getgov-stable --guid)/processes | jq -r '.resources[] | select(.type=="web") | .guid')/0 ssh.fr.cloud.gov:app/tmp/exported_tables.zip .
 when prompted, supply the passcode retrieved in the 'cf ssh-code' command
 
