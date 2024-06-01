@@ -6,33 +6,41 @@ import registrar.admin
 
 logger = logging.getLogger(__name__)
 
+
 class Command(BaseCommand):
-    help = (
-        "Exports tables in csv format to zip file in tmp directory."
-    )
+    help = "Exports tables in csv format to zip file in tmp directory."
 
     def handle(self, **options):
         """Generates CSV files for specified tables and creates a zip archive"""
         table_names = [
-            "User", "Contact", "Domain", "DomainRequest", "DomainInformation", 
-            "UserDomainRole", "DraftDomain", "Website", "HostIp", "Host", "PublicContact"
+            "User",
+            "Contact",
+            "Domain",
+            "DomainRequest",
+            "DomainInformation",
+            "UserDomainRole",
+            "DraftDomain",
+            "Website",
+            "HostIp",
+            "Host",
+            "PublicContact",
         ]
-        
+
         # Ensure the tmp directory exists
         os.makedirs("tmp", exist_ok=True)
-        
+
         for table_name in table_names:
             self.export_table(table_name)
 
         # Create a zip file containing all the CSV files
         zip_filename = "tmp/exported_tables.zip"
-        with pyzipper.AESZipFile(zip_filename, 'w', compression=pyzipper.ZIP_DEFLATED) as zipf:
+        with pyzipper.AESZipFile(zip_filename, "w", compression=pyzipper.ZIP_DEFLATED) as zipf:
             for table_name in table_names:
                 csv_filename = f"tmp/{table_name}.csv"
                 if os.path.exists(csv_filename):
                     zipf.write(csv_filename, os.path.basename(csv_filename))
                     logger.info(f"Added {csv_filename} to zip archive {zip_filename}")
-        
+
         # Remove the CSV files after adding them to the zip file
         for table_name in table_names:
             csv_filename = f"tmp/{table_name}.csv"

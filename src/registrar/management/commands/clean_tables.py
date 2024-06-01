@@ -6,6 +6,7 @@ from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
+
 class Command(BaseCommand):
     help = "Clean tables in database to prepare for import."
 
@@ -15,12 +16,20 @@ class Command(BaseCommand):
         if settings.IS_PRODUCTION:
             logger.error("clean_tables cannot be run in production")
             return
-        
+
         table_names = [
-            "DomainInformation", "DomainRequest", "PublicContact", "Domain", "User",
-            "Contact", "Website", "DraftDomain", "HostIp", "Host"
+            "DomainInformation",
+            "DomainRequest",
+            "PublicContact",
+            "Domain",
+            "User",
+            "Contact",
+            "Website",
+            "DraftDomain",
+            "HostIp",
+            "Host",
         ]
-        
+
         for table_name in table_names:
             self.clean_table(table_name)
 
@@ -28,7 +37,7 @@ class Command(BaseCommand):
         """Delete all rows in the given table"""
         try:
             # Get the model class dynamically
-            model = apps.get_model('registrar', table_name)
+            model = apps.get_model("registrar", table_name)
             # Use a transaction to ensure database integrity
             with transaction.atomic():
                 model.objects.all().delete()

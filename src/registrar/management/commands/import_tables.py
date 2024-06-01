@@ -10,6 +10,7 @@ import registrar.admin
 
 logger = logging.getLogger(__name__)
 
+
 class Command(BaseCommand):
     help = "Imports tables from a zip file, exported_tables.zip, containing CSV files in the tmp directory."
 
@@ -21,10 +22,19 @@ class Command(BaseCommand):
             return
 
         table_names = [
-            "User", "Contact", "Domain", "Host", "HostIp", "DraftDomain", "Website",
-            "DomainRequest", "DomainInformation", "UserDomainRole", "PublicContact"
+            "User",
+            "Contact",
+            "Domain",
+            "Host",
+            "HostIp",
+            "DraftDomain",
+            "Website",
+            "DomainRequest",
+            "DomainInformation",
+            "UserDomainRole",
+            "PublicContact",
         ]
-        
+
         # Ensure the tmp directory exists
         os.makedirs("tmp", exist_ok=True)
 
@@ -33,8 +43,8 @@ class Command(BaseCommand):
         if not os.path.exists(zip_filename):
             logger.error(f"Zip file {zip_filename} does not exist.")
             return
-        
-        with pyzipper.AESZipFile(zip_filename, 'r') as zipf:
+
+        with pyzipper.AESZipFile(zip_filename, "r") as zipf:
             zipf.extractall("tmp")
             logger.info(f"Extracted zip file {zip_filename} into tmp directory")
 
@@ -58,10 +68,10 @@ class Command(BaseCommand):
             resourceclass = getattr(registrar.admin, resourcename)
             resource_instance = resourceclass()
             with open(csv_filename, "r") as csvfile:
-                #dataset = resource_instance.import_data(csvfile.read())
-                dataset = tablib.Dataset().load(csvfile.read(), format='csv')
+                # dataset = resource_instance.import_data(csvfile.read())
+                dataset = tablib.Dataset().load(csvfile.read(), format="csv")
             result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=True)
-            
+
             if result.has_errors():
                 logger.error(f"Errors occurred while importing {csv_filename}: {result.row_errors()}")
             else:
@@ -80,7 +90,7 @@ class Command(BaseCommand):
         """Delete all rows in the given table"""
         try:
             # Get the model class dynamically
-            model = apps.get_model('registrar', table_name)
+            model = apps.get_model("registrar", table_name)
             # Use a transaction to ensure database integrity
             with transaction.atomic():
                 model.objects.all().delete()
