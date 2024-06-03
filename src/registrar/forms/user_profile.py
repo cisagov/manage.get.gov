@@ -60,6 +60,10 @@ class UserProfileForm(forms.ModelForm):
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
 
+        if self.instance and self.instance.phone:
+            print(f"what is the instace? {self.instance.phone}")
+            self.fields["phone"].initial = self.instance.phone.as_national
+
         DomainHelper.disable_field(self.fields["email"], disable_required=True)
 
 

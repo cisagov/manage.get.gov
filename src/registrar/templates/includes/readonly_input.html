@@ -1,4 +1,4 @@
-{% load static field_helpers url_helpers %}
+{% load static field_helpers url_helpers custom_filters %}
 
 <div id="{{field.name}}__edit-button-readonly" class="margin-top-2 margin-bottom-1 input-with-edit-button {% if not field.value and field.field.required %}input-with-edit-button__error{% endif %}">
     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
@@ -9,6 +9,10 @@
         {%endif %}
     </svg>
     <div class="display-inline padding-left-05 margin-left-3 readonly-field {% if not field.field.required %}text-base{% endif %}">
+        {% if field.name != "phone" %}
         {{ field.value }}
+        {% else %}
+        {{ field.value|format_phone }}
+        {% endif %}
     </div>
 </div>

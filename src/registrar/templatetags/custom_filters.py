@@ -2,6 +2,8 @@ import logging
 from django import template
 import re
 from registrar.models.domain_request import DomainRequest
+from phonenumber_field.phonenumber import PhoneNumber
+from phonenumber_field.widgets import RegionalPhoneNumberWidget
 
 register = template.Library()
 logger = logging.getLogger(__name__)
@@ -133,3 +135,13 @@ def get_region(state):
         return regions.get(state.upper(), "N/A")
     else:
         return None
+
+@register.filter
+def format_phone(value):
+    """Converts a phonenumber to a national format"""
+    if value:
+        phone_number = value
+        if isinstance(value, str):
+            phone_number = PhoneNumber.from_string(value)
+        return phone_number.as_national
+    return value

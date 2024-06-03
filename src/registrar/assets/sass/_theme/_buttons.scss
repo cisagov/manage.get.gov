@@ -1,4 +1,5 @@
 @use "uswds-core" as *;
+@use "cisa_colors" as *;
 
 /* Make "placeholder" links visually obvious */
 a[href$="todo"]::after {
