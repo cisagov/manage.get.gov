@@ -374,7 +374,7 @@ function initializeWidgetOnList(list, parentId) {
     }
     handleStatusChanges();
 
-    fieldsToObserve = ["rejection_reason", "action_needed_reason"]
+    let fieldsToObserve = ["rejection_reason", "action_needed_reason"]
     handleBackButtonObserver(fieldsToObserve);
 })();
 
