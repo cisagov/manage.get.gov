@@ -47,11 +47,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def test_domain_request_form_intro_is_skipped_when_edit_access(self):
         """Tests that user is NOT presented with intro acknowledgement page when accessed through 'edit'"""
-        completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "city.gov")
-        # click the "Edit" link
-        detail_page = home_page.click("Edit", index=0)
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}/edit/")
         # Check that the response is a redirect
         self.assertEqual(detail_page.status_code, 302)
         # You can access the 'Location' header to get the redirect URL
@@ -2425,10 +2422,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
 
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "city.gov")
-        # click the "Manage" link
-        detail_page = home_page.click("Manage", index=0)
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
@@ -2445,10 +2439,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
 
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "city.gov")
-        # click the "Manage" link
-        detail_page = home_page.click("Manage", index=0)
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
@@ -2460,10 +2451,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
 
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "city.gov")
-        # click the "Manage" link
-        detail_page = home_page.click("Manage", index=0)
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
@@ -2485,8 +2473,8 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
             target_status_code=200,
             fetch_redirect_response=True,
         )
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "Withdrawn")
+        response = self.client.get("/get-domain-requests-json/")
+        self.assertContains(response, "Withdrawn")
 
     def test_domain_request_withdraw_no_permissions(self):
         """Can't withdraw domain requests as a restricted user."""
@@ -2495,10 +2483,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
 
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "city.gov")
-        # click the "Manage" link
-        detail_page = home_page.click("Manage", index=0)
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
@@ -2568,21 +2553,14 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
     def test_unlocked_steps_full_domain_request(self):
         """Test when all fields in the domain request are filled."""
 
-        completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
-        # Make a request to the home page
-        home_page = self.app.get("/")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+
+        response = self.app.get(f"/domain-request/{domain_request.id}/edit/")
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # Assert that the response contains "city.gov"
-        self.assertContains(home_page, "city.gov")
-
-        # Click the "Edit" link
-        response = home_page.click("Edit", index=0)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Check if the response is a redirect
@@ -2635,20 +2613,12 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         )
         domain_request.other_contacts.set([contact_2])
 
-        # Make a request to the home page
-        home_page = self.app.get("/")
+        response = self.app.get(f"/domain-request/{domain_request.id}/edit/")
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # Assert that the response contains "city.gov"
-        self.assertContains(home_page, "igorville.gov")
-
-        # Click the "Edit" link
-        response = home_page.click("Edit", index=0)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Check if the response is a redirect

@@ -291,13 +291,13 @@ We use the [CSS Block Element Modifier (BEM)](https://getbem.com/naming/) naming
 
 ### Upgrading USWDS and other JavaScript packages
 
-Version numbers can be manually controlled in `package.json`. Edit that, if desired.
-
-Now run `docker-compose run node npm update`.
-
-Then run `docker-compose up` to recompile and recopy the assets.
-
-Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
+1. Version numbers can be manually controlled in `package.json`. Edit that, if desired.
+2. Now run `docker-compose run node npm update`.
+3. Then run `docker-compose up` to recompile and recopy the assets, or run `docker-compose updateUswds` if your docker is already up.
+4. Make note of the dotgov changes in uswds-edited.js.
+5. Copy over the newly compiled code from uswds.js into uswds-edited.js.
+6. Put back the dotgov changes you made note of into uswds-edited.js.
+7. Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
 
 ## Finite State Machines
 
