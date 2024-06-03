@@ -4,6 +4,7 @@
 
 from enum import Enum
 import logging
+
 from urllib.parse import quote
 
 from django.contrib import messages
