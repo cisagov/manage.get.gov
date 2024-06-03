@@ -98,6 +98,24 @@ class User(AbstractUser):
         help_text="The means through which this user was verified",
     )
 
+    @property
+    def finished_setup(self):
+        """
+        Tracks if the user finished their profile setup or not. This is so
+        we can globally enforce that new users provide additional account information before proceeding.
+        """
+
+        # Change this to self once the user and contact objects are merged.
+        # For now, since they are linked, lets test on the underlying contact object.
+        user_info = self.contact  # noqa
+        user_values = [
+            user_info.first_name,
+            user_info.last_name,
+            user_info.title,
+            user_info.phone,
+        ]
+        return None not in user_values
+
     def __str__(self):
         # this info is pulled from Login.gov
         if self.first_name or self.last_name:

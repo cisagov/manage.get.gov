@@ -162,7 +162,7 @@ MIDDLEWARE = [
     # django-cors-headers: listen to cors responses
     "corsheaders.middleware.CorsMiddleware",
     # custom middleware to stop caching from CloudFront
-    "registrar.no_cache_middleware.NoCacheMiddleware",
+    "registrar.registrar_middleware.NoCacheMiddleware",
     # serve static assets in production
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
@@ -188,6 +188,7 @@ MIDDLEWARE = [
     "auditlog.middleware.AuditlogMiddleware",
     # Used for waffle feature flags
     "waffle.middleware.WaffleMiddleware",
+    "registrar.registrar_middleware.CheckUserProfileMiddleware",
 ]
 
 # application object used by Django’s built-in servers (e.g. `runserver`)
