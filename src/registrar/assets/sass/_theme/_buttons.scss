@@ -7,11 +7,16 @@ a[href$="todo"]::after {
   content: " [link TBD]";
   font-style: italic;
 }
-  
+
+a.usa-link {
+  color: #{$dhs-blue};
+}
+
 a.breadcrumb__back {
   display:flex;
   align-items: center;
   margin-bottom: units(2.5);
+  color: #{$dhs-blue};
   &:visited {
     color: color('primary');
   }
