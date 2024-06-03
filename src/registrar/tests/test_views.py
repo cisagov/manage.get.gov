@@ -174,31 +174,14 @@ class HomeTests(TestWithUser):
         self.assertContains(response, "You don't have any registered domains.")
         self.assertContains(response, "Why don't I see my domain when I sign in to the registrar?")
 
-    def test_home_lists_domain_requests(self):
-        response = self.client.get("/")
-        self.assertNotContains(response, "igorville.gov")
-        site = DraftDomain.objects.create(name="igorville.gov")
-        domain_request = DomainRequest.objects.create(creator=self.user, requested_domain=site)
-        response = self.client.get("/")
-
-        # count = 7 because of screenreader content
-        self.assertContains(response, "igorville.gov", count=7)
-
-        # clean up
-        domain_request.delete()
-
     def test_state_help_text(self):
         """Tests if each domain state has help text"""
 
         # Get the expected text content of each state
         deleted_text = "This domain has been removed and " "is no longer registered to your organization."
-        dns_needed_text = "Before this domain can be used, " "you’ll need to add name server addresses."
+        dns_needed_text = "Before this domain can be used, "
         ready_text = "This domain has name servers and is ready for use."
-        on_hold_text = (
-            "This domain is administratively paused, "
-            "so it can’t be edited and won’t resolve in DNS. "
-            "Contact help@get.gov for details."
-        )
+        on_hold_text = "This domain is administratively paused, "
         deleted_text = "This domain has been removed and " "is no longer registered to your organization."
         # Generate a mapping of domain names, the state, and expected messages for the subtest
         test_cases = [
@@ -219,12 +202,11 @@ class HomeTests(TestWithUser):
                     user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
                 )
 
-                # Grab the home page
-                response = self.client.get("/")
+                # Grab the json response for domain list
+                response = self.client.get("/get-domains-json/")
 
-                # Make sure the user can actually see the domain.
-                # We expect two instances because of SR content.
-                self.assertContains(response, domain_name, count=2)
+                # Make sure the domain is in the list.
+                self.assertContains(response, domain_name, count=1)
 
                 # Check that we have the right text content.
                 self.assertContains(response, expected_message, count=1)
@@ -235,19 +217,18 @@ class HomeTests(TestWithUser):
 
     def test_state_help_text_expired(self):
         """Tests if each domain state has help text when expired"""
-        expired_text = "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
+        expired_text = "This domain has expired, but it is still online. "
         test_domain, _ = Domain.objects.get_or_create(name="expired.gov", state=Domain.State.READY)
         test_domain.expiration_date = date(2011, 10, 10)
         test_domain.save()
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
 
-        # Grab the home page
-        response = self.client.get("/")
+        # Grab the json response of the domains list
+        response = self.client.get("/get-domains-json/")
 
-        # Make sure the user can actually see the domain.
-        # We expect two instances because of SR content.
-        self.assertContains(response, "expired.gov", count=2)
+        # Make sure the domain is in the response
+        self.assertContains(response, "expired.gov", count=1)
 
         # Check that we have the right text content.
         self.assertContains(response, expired_text, count=1)
@@ -256,19 +237,18 @@ class HomeTests(TestWithUser):
         """Tests if each domain state has help text when expiration date is None"""
 
         # == Test a expiration of None for state ready. This should be expired. == #
-        expired_text = "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
+        expired_text = "This domain has expired, but it is still online. "
         test_domain, _ = Domain.objects.get_or_create(name="imexpired.gov", state=Domain.State.READY)
         test_domain.expiration_date = None
         test_domain.save()
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
 
-        # Grab the home page
-        response = self.client.get("/")
+        # Grab the json response of the domains list
+        response = self.client.get("/get-domains-json/")
 
-        # Make sure the user can actually see the domain.
-        # We expect two instances because of SR content.
-        self.assertContains(response, "imexpired.gov", count=2)
+        # Make sure domain is in the response
+        self.assertContains(response, "imexpired.gov", count=1)
 
         # Make sure the expiration date is None
         self.assertEqual(test_domain.expiration_date, None)
@@ -277,19 +257,18 @@ class HomeTests(TestWithUser):
         self.assertContains(response, expired_text, count=1)
 
         # == Test a expiration of None for state unknown. This should not display expired text. == #
-        unknown_text = "Before this domain can be used, " "you’ll need to add name server addresses."
+        unknown_text = "Before this domain can be used, "
         test_domain_2, _ = Domain.objects.get_or_create(name="notexpired.gov", state=Domain.State.UNKNOWN)
         test_domain_2.expiration_date = None
         test_domain_2.save()
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain_2, role=UserDomainRole.Roles.MANAGER)
 
-        # Grab the home page
-        response = self.client.get("/")
+        # Grab the json response of the domains list
+        response = self.client.get("/get-domains-json/")
 
-        # Make sure the user can actually see the domain.
-        # We expect two instances because of SR content.
-        self.assertContains(response, "notexpired.gov", count=2)
+        # Make sure the response contains the domain
+        self.assertContains(response, "notexpired.gov", count=1)
 
         # Make sure the expiration date is None
         self.assertEqual(test_domain_2.expiration_date, None)
@@ -304,14 +283,6 @@ class HomeTests(TestWithUser):
         domain_request = DomainRequest.objects.create(
             creator=self.user, requested_domain=site, status=DomainRequest.DomainRequestStatus.WITHDRAWN
         )
-
-        # Ensure that igorville.gov exists on the page
-        home_page = self.client.get("/")
-        self.assertContains(home_page, "igorville.gov")
-
-        # Check if the delete button exists. We can do this by checking for its id and text content.
-        self.assertContains(home_page, "Delete")
-        self.assertContains(home_page, "button-toggle-delete-domain-alert-1")
 
         # Trigger the delete logic
         response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
@@ -328,14 +299,6 @@ class HomeTests(TestWithUser):
         domain_request = DomainRequest.objects.create(
             creator=self.user, requested_domain=site, status=DomainRequest.DomainRequestStatus.STARTED
         )
-
-        # Ensure that igorville.gov exists on the page
-        home_page = self.client.get("/")
-        self.assertContains(home_page, "igorville.gov")
-
-        # Check if the delete button exists. We can do this by checking for its id and text content.
-        self.assertContains(home_page, "Delete")
-        self.assertContains(home_page, "button-toggle-delete-domain-alert-1")
 
         # Trigger the delete logic
         response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
