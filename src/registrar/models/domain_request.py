@@ -704,9 +704,10 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("in_review")
-
-        if self.status == self.DomainRequestStatus.REJECTED:
+        elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
+        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.action_needed_reason = None
 
         literal = DomainRequest.DomainRequestStatus.IN_REVIEW
         # Check if the tuple exists, then grab its value
@@ -736,8 +737,7 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
-
-        if self.status == self.DomainRequestStatus.REJECTED:
+        elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
         literal = DomainRequest.DomainRequestStatus.ACTION_NEEDED
@@ -793,6 +793,8 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
+        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.action_needed_reason = None
 
         # == Send out an email == #
         self._send_status_update_email(
