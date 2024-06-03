@@ -2305,6 +2305,8 @@ class UserGroupAdmin(AuditedAdmin):
 
 
 class WaffleFlagAdmin(FlagAdmin):
+    """Custom admin implementation of django-waffle's Flag class"""
+
     class Meta:
         """Contains meta information about this class"""
 
@@ -2338,6 +2340,6 @@ admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
 
-# Unregister Sample and Switch from the waffle library
-admin.site.unregister(Sample)
+# Unregister Switch and Sample from the waffle library
 admin.site.unregister(Switch)
+admin.site.unregister(Sample)

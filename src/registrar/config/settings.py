@@ -326,7 +326,7 @@ SERVER_EMAIL = "root@get.gov"
 # endregion
 
 # region: Waffle feature flags-----------------------------------------------------------###
-# If Waffle encounters a reference to a flag that is not in the database, should Waffle create the flag?
+# If Waffle encounters a reference to a flag that is not in the database, create the flag automagically.
 WAFFLE_CREATE_MISSING_FLAGS = True
 
 # The model that will be used to keep track of flags. Extends AbstractUserFlag.
