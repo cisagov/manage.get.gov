@@ -126,6 +126,12 @@ html[data-theme="light"] {
     .usa-table td {
         background-color: transparent;
     }
+
+    // Sets darker color on delete page links.
+    // Remove when dark mode successfully applies to Django delete page.
+    .delete-confirmation .content a:not(.button)  {
+        color: color('primary');
+    }
 }
 
 // Firefox needs this to be specifically set
@@ -149,6 +155,12 @@ html[data-theme="dark"] {
     .usa-table td {
         background-color: transparent;
     }
+
+    // Sets darker color on delete page links.
+    // Remove when dark mode successfully applies to Django delete page.
+    .delete-confirmation .content a:not(.button)  {
+        color: color('primary');
+    }
 }
 
 #branding h1 a:link, #branding h1 a:visited {
@@ -171,6 +183,14 @@ div#content > h2 {
     padding: 0;
     color: var(--link-fg);
     margin: units(2) 0 units(1) 0;
+}
+
+.module ul.padding-0 {
+    padding: 0 !important;
+}
+
+.module ul.margin-0 {
+    margin: 0 !important;
 }
 
 .change-list {
@@ -707,7 +727,7 @@ div.dja__model-description{
 
     a, a:link, a:visited {
         font-size: medium;
-        color: #005288 !important;
+        color: color('primary') !important;
     }
 
     &.dja__model-description--no-overflow {
@@ -723,4 +743,16 @@ div.dja__model-description{
 
 .text-underline {
     text-decoration: underline !important;
+}
+
+//-- Override some styling for the USWDS summary box (per design quidance for ticket #2055
+.usa-summary-box {
+    background: #{$dhs-blue-10};
+    border-color: #{$dhs-blue-30};
+    max-width: 72ex;
+    word-wrap: break-word;
+}
+
+.usa-summary-box h3 {
+    color: #{$dhs-blue-60};
 }

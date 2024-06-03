@@ -15,6 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
+from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
@@ -752,6 +753,23 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             # Return restrictive Read-only fields for analysts and
             # users who might not belong to groups
             return self.analyst_readonly_fields
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Add user's related domains and requests to context"""
+        obj = self.get_object(request, object_id)
+
+        domain_requests = DomainRequest.objects.filter(creator=obj).exclude(
+            Q(status=DomainRequest.DomainRequestStatus.STARTED) | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
+        )
+        sort_by = request.GET.get("sort_by", "requested_domain__name")
+        domain_requests = domain_requests.order_by(sort_by)
+
+        user_domain_roles = UserDomainRole.objects.filter(user=obj)
+        domain_ids = user_domain_roles.values_list("domain_id", flat=True)
+        domains = Domain.objects.filter(id__in=domain_ids).exclude(state=Domain.State.DELETED)
+
+        extra_context = {"domain_requests": domain_requests, "domains": domains}
+        return super().change_view(request, object_id, form_url, extra_context)
 
 
 class HostIPInline(admin.StackedInline):
