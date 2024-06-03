@@ -54,6 +54,7 @@ class Command(BaseCommand):
 
     def import_table(self, table_name):
         """Import data from a CSV file into the given table"""
+
         resourcename = f"{table_name}Resource"
         csv_filename = f"tmp/{table_name}.csv"
         try:
@@ -68,7 +69,6 @@ class Command(BaseCommand):
             resourceclass = getattr(registrar.admin, resourcename)
             resource_instance = resourceclass()
             with open(csv_filename, "r") as csvfile:
-                # dataset = resource_instance.import_data(csvfile.read())
                 dataset = tablib.Dataset().load(csvfile.read(), format="csv")
             result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=True)
 
