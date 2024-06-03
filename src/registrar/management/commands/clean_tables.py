@@ -4,6 +4,8 @@ from django.core.management import BaseCommand
 from django.apps import apps
 from django.db import transaction
 
+from registrar.management.commands.utility.terminal_helper import TerminalHelper
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,6 +18,24 @@ class Command(BaseCommand):
         if settings.IS_PRODUCTION:
             logger.error("clean_tables cannot be run in production")
             return
+        
+        TerminalHelper.prompt_for_execution(
+            system_exit_on_terminate=True,
+            info_to_inspect=f"""
+            This script will delete all rows from the following tables:
+             * Contact
+             * Domain
+             * DomainInformation
+             * DomainRequest
+             * DraftDomain
+             * Host
+             * HostIp
+             * PublicContact
+             * User
+             * Website
+            """,
+            prompt_title="Do you wish to proceed with these changes?",
+        )
 
         table_names = [
             "DomainInformation",

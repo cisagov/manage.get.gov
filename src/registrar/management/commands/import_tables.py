@@ -63,6 +63,9 @@ class Command(BaseCommand):
                 return
 
             # if table_name is Contact, clean the table first
+            # User table is loaded before Contact, and signals create
+            # rows in Contact table which break the import, so need
+            # to be cleaned again before running import on Contact table
             if table_name == "Contact":
                 self.clean_table(table_name)
 
