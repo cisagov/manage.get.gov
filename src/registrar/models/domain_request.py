@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Union
-
+import os
 import logging
 
 from django.apps import apps
@@ -249,7 +249,7 @@ class DomainRequest(TimeStampedModel):
         """Defines common"""
         ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
         QUESTIONABLE_AUTHORIZING_OFFICIAL = ("questionable_authorizing_official" , "Questionable authorizing official")
-        ALREADY_HAS_DOMAINS = ("ALREADY_HAS_DOMAINS", "Already has domains")
+        ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
         BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
         OTHER = ("other", "Other (no auto-email sent)")
 
@@ -725,7 +725,7 @@ class DomainRequest(TimeStampedModel):
         target=DomainRequestStatus.ACTION_NEEDED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
-    def action_needed(self):
+    def action_needed(self, send_email=True):
         """Send back an domain request that is under investigation or rejected.
 
         This action is logged.
@@ -744,6 +744,37 @@ class DomainRequest(TimeStampedModel):
         # Check if the tuple is setup correctly, then grab its value
         action_needed = literal if literal is not None else "Action Needed"
         logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
+
+        # Send out an email if an action needed reason exists
+        if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
+            self._send_action_needed_reason_email(send_email)
+
+    def _send_action_needed_reason_email(self, send_email=True):
+        """Sends out an automatic email for each valid action needed reason provided"""
+
+        email_template_name: str = ""
+        email_template_subject_name: str = ""
+        can_send_email = True
+        match self.action_needed_reason:
+            # Add to this match if you need to pass in a custom filename for these templates.
+            case self.ActionNeededReasons.OTHER, _:
+                # Unknown and other are default cases - do nothing
+                can_send_email = False
+        
+        if can_send_email:
+            # Assumes that the template name matches the action needed reason if nothing is specified.
+            # This is so you can override if you need, or have this taken care of for you.
+            if not email_template_name and not email_template_subject_name:
+                reason = self.action_needed_reason.value
+                email_template_name = f"{reason}.txt"
+                email_template_subject_name = f"{reason}_subject.txt"
+
+            self._send_status_update_email(
+                new_status="action needed",
+                email_template=f"emails/action_needed_reasons/{email_template_name}",
+                email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
+                send_email=send_email,
+            )
 
     @transition(
         field="status",

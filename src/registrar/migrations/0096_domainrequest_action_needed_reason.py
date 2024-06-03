@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 choices=[
                     ("eligibility_unclear", "Unclear organization eligibility"),
                     ("questionable_authorizing_official", "Questionable authorizing official"),
-                    ("ALREADY_HAS_DOMAINS", "Already has domains"),
+                    ("already_has_domains", "Already has domains"),
                     ("bad_name", "Doesn’t meet naming requirements"),
                     ("other", "Other (no auto-email sent)"),
                 ],
