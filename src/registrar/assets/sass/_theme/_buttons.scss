@@ -9,7 +9,7 @@ a[href$="todo"]::after {
   font-style: italic;
 }
 
-a.usa-link {
+a.usa-link.usa-link--always-blue {
   color: #{$dhs-blue};
 }
 
