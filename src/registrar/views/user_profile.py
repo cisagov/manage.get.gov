@@ -19,7 +19,6 @@ from registrar.models.utility.generic_helper import replace_url_queryparams
 from registrar.views.utility.permission_views import UserProfilePermissionView
 from waffle.decorators import flag_is_active, waffle_flag
 
-from registrar.models.utility.generic_helper import replace_url_queryparams
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 
