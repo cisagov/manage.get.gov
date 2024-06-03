@@ -370,7 +370,7 @@ function initializeWidgetOnList(list, parentId) {
         
         // Show/hude the action needed reason
         let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
-        showHideFieldsOnStatusChange(actionNeededReasonFormGroup, "action_needed", "hide_action_needed_reason");
+        showHideFieldsOnStatusChange(actionNeededReasonFormGroup, "action needed", "hide_action_needed_reason");
     }
     handleStatusChanges();
 

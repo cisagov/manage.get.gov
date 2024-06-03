@@ -240,7 +240,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         # If the status is rejected, a rejection reason must exist
         if status == DomainRequest.DomainRequestStatus.REJECTED:
             self._check_for_valid_rejection_reason(rejection_reason)
-        elif status == DomainRequest.DomainRequestStatus.IN_REVIEW:
+        elif status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
             self._check_for_valid_action_needed_reason(action_needed_reason)
 
         return cleaned_data
