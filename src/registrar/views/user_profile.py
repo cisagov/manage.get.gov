@@ -3,7 +3,7 @@
 """
 
 import logging
-from urllib.parse import parse_qs, unquote, urlencode
+from urllib.parse import parse_qs, unquote
 
 from django.contrib import messages
 from django.views.generic.edit import FormMixin
