@@ -20,16 +20,22 @@ Edit your User Profile |
     {% include "includes/form_errors.html" with form=form %}
 
     {% if show_back_button %}
-      <a href="{% url 'home' %}" class="breadcrumb__back">
+      <a href="{% if not return_to_request %}{% url 'home' %}{% else %}{% url 'domain-request:' %}{% endif %}" class="breadcrumb__back">
         <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
         <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
         </svg>
-    
+        {% if not return_to_request %}
         <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
           {{ profile_back_button_text }}
         </p>
+        {% else %}
+        <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+          Go back to your domain request
+        </p>
+        {% endif %}
       </a>
     {% endif %}
+
 {% endblock content %}
 
 {% block content_bottom %}
