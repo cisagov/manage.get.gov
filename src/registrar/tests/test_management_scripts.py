@@ -788,8 +788,12 @@ class TestCleanTables(TestCase):
     def test_command_logs_error_in_production(self):
         """Test that the handle method does not process in production"""
         with less_console_noise():
-            call_command("clean_tables")
-            self.logger_mock.error.assert_called_with("clean_tables cannot be run in production")
+            with patch(
+              "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                return_value=True,
+            ):
+                call_command("clean_tables")
+                self.logger_mock.error.assert_called_with("clean_tables cannot be run in production")
 
     @override_settings(IS_PRODUCTION=False)
     def test_command_cleans_tables(self):
@@ -799,45 +803,53 @@ class TestCleanTables(TestCase):
                 model_mock = MagicMock()
                 get_model_mock.return_value = model_mock
 
-                call_command("clean_tables")
+                with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                    return_value=True,
+                ):
+                    call_command("clean_tables")
 
-                table_names = [
-                    "DomainInformation",
-                    "DomainRequest",
-                    "PublicContact",
-                    "Domain",
-                    "User",
-                    "Contact",
-                    "Website",
-                    "DraftDomain",
-                    "HostIp",
-                    "Host",
-                ]
+                    table_names = [
+                        "DomainInformation",
+                        "DomainRequest",
+                        "PublicContact",
+                        "Domain",
+                        "User",
+                        "Contact",
+                        "Website",
+                        "DraftDomain",
+                        "HostIp",
+                        "Host",
+                    ]
 
-                # Check that each model's delete method was called
-                for table_name in table_names:
-                    get_model_mock.assert_any_call("registrar", table_name)
-                    model_mock.objects.all().delete.assert_called()
+                    # Check that each model's delete method was called
+                    for table_name in table_names:
+                        get_model_mock.assert_any_call("registrar", table_name)
+                        model_mock.objects.all().delete.assert_called()
 
-                self.logger_mock.info.assert_any_call("Successfully cleaned table DomainInformation")
+                    self.logger_mock.info.assert_any_call("Successfully cleaned table DomainInformation")
 
     @override_settings(IS_PRODUCTION=False)
     def test_command_handles_nonexistent_model(self):
         """Test that exceptions for non existent models are handled properly within the handle method"""
         with less_console_noise():
             with patch("django.apps.apps.get_model", side_effect=LookupError):
-                call_command("clean_tables")
-                # Assert that the error message was logged for any of the table names
-                self.logger_mock.error.assert_any_call("Model for table DomainInformation not found.")
-                self.logger_mock.error.assert_any_call("Model for table DomainRequest not found.")
-                self.logger_mock.error.assert_any_call("Model for table PublicContact not found.")
-                self.logger_mock.error.assert_any_call("Model for table Domain not found.")
-                self.logger_mock.error.assert_any_call("Model for table User not found.")
-                self.logger_mock.error.assert_any_call("Model for table Contact not found.")
-                self.logger_mock.error.assert_any_call("Model for table Website not found.")
-                self.logger_mock.error.assert_any_call("Model for table DraftDomain not found.")
-                self.logger_mock.error.assert_any_call("Model for table HostIp not found.")
-                self.logger_mock.error.assert_any_call("Model for table Host not found.")
+                with patch(
+                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                        return_value=True,
+                ):
+                    call_command("clean_tables")
+                    # Assert that the error message was logged for any of the table names
+                    self.logger_mock.error.assert_any_call("Model for table DomainInformation not found.")
+                    self.logger_mock.error.assert_any_call("Model for table DomainRequest not found.")
+                    self.logger_mock.error.assert_any_call("Model for table PublicContact not found.")
+                    self.logger_mock.error.assert_any_call("Model for table Domain not found.")
+                    self.logger_mock.error.assert_any_call("Model for table User not found.")
+                    self.logger_mock.error.assert_any_call("Model for table Contact not found.")
+                    self.logger_mock.error.assert_any_call("Model for table Website not found.")
+                    self.logger_mock.error.assert_any_call("Model for table DraftDomain not found.")
+                    self.logger_mock.error.assert_any_call("Model for table HostIp not found.")
+                    self.logger_mock.error.assert_any_call("Model for table Host not found.")
 
     @override_settings(IS_PRODUCTION=False)
     def test_command_logs_other_exceptions(self):
@@ -848,9 +860,13 @@ class TestCleanTables(TestCase):
                 get_model_mock.return_value = model_mock
                 model_mock.objects.all().delete.side_effect = Exception("Some error")
 
-                call_command("clean_tables")
+                with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                    return_value=True,
+                ):
+                    call_command("clean_tables")
 
-                self.logger_mock.error.assert_any_call("Error cleaning table DomainInformation: Some error")
+                    self.logger_mock.error.assert_any_call("Error cleaning table DomainInformation: Some error")
 
 
 class TestExportTables(MockEppLib):

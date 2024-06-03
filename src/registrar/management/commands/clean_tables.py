@@ -18,10 +18,10 @@ class Command(BaseCommand):
         if settings.IS_PRODUCTION:
             logger.error("clean_tables cannot be run in production")
             return
-        
+
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            info_to_inspect="""
             This script will delete all rows from the following tables:
              * Contact
              * Domain
