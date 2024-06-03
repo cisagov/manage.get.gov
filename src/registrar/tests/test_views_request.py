@@ -366,9 +366,9 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         additional_details_form["additional_details-has_cisa_representative"] = "True"
         additional_details_form["additional_details-has_anything_else_text"] = "True"
-        additional_details_form["additional_details-first_name"] = "CISA-first-name"
-        additional_details_form["additional_details-last_name"] = "CISA-last-name"
-        additional_details_form["additional_details-email"] = "FakeEmail@gmail.com"
+        additional_details_form["additional_details-cisa_representative_first_name"] = "CISA-first-name"
+        additional_details_form["additional_details-cisa_representative_last_name"] = "CISA-last-name"
+        additional_details_form["additional_details-cisa_representative_email"] = "FakeEmail@gmail.com"
         additional_details_form["additional_details-anything_else"] = "Nothing else."
 
         # test next button
@@ -991,9 +991,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Set fields to true, and set data on those fields
         additional_details_form["additional_details-has_cisa_representative"] = "True"
         additional_details_form["additional_details-has_anything_else_text"] = "True"
-        additional_details_form["additional_details-first_name"] = "cisa-firstname"
-        additional_details_form["additional_details-last_name"] = "cisa-lastname"
-        additional_details_form["additional_details-email"] = "test@faketest.gov"
+        additional_details_form["additional_details-cisa_representative_first_name"] = "cisa-firstname"
+        additional_details_form["additional_details-cisa_representative_last_name"] = "cisa-lastname"
+        additional_details_form["additional_details-cisa_representative_email"] = "test@faketest.gov"
         additional_details_form["additional_details-anything_else"] = "redandblue"
 
         # Submit the form

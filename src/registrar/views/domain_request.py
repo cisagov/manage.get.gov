@@ -388,7 +388,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             modal_heading = "You are about to submit an incomplete request"
 
         has_profile_flag = flag_is_active(self.request, "profile_feature")
-        logger.debug("PROFILE FLAG is %s" % has_profile_flag)
 
         context = {
             "form_titles": self.TITLES,
