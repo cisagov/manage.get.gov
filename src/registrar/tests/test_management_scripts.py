@@ -789,7 +789,7 @@ class TestCleanTables(TestCase):
         """Test that the handle method does not process in production"""
         with less_console_noise():
             with patch(
-              "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
                 return_value=True,
             ):
                 call_command("clean_tables")
@@ -804,7 +804,7 @@ class TestCleanTables(TestCase):
                 get_model_mock.return_value = model_mock
 
                 with patch(
-                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
                     return_value=True,
                 ):
                     call_command("clean_tables")
@@ -836,7 +836,7 @@ class TestCleanTables(TestCase):
             with patch("django.apps.apps.get_model", side_effect=LookupError):
                 with patch(
                     "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                        return_value=True,
+                    return_value=True,
                 ):
                     call_command("clean_tables")
                     # Assert that the error message was logged for any of the table names
@@ -861,7 +861,7 @@ class TestCleanTables(TestCase):
                 model_mock.objects.all().delete.side_effect = Exception("Some error")
 
                 with patch(
-                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
                     return_value=True,
                 ):
                     call_command("clean_tables")
