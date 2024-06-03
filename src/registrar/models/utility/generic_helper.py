@@ -5,6 +5,7 @@ import logging
 from typing import Any
 from urllib.parse import urlparse, urlunparse, urlencode
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -269,18 +270,24 @@ class CreateOrUpdateOrganizationTypeHelper:
             return True
 
 
-def replace_url_queryparams(url_to_modify: str, query_params: dict[Any, list]):
+def replace_url_queryparams(url_to_modify: str, query_params, convert_list_to_csv=False):
     """
     Replaces the query parameters of a given URL.
     Because this replaces them, this can be used to either add, delete, or modify.
-
     Args:
         url_to_modify (str): The URL whose query parameters need to be modified.
         query_params (dict): Dictionary of query parameters to use.
-
+        convert_list_to_csv (bool): If the queryparam contains a list of items,
+        convert it to a csv representation instead.
     Returns:
         str: The modified URL with the updated query parameters.
     """
+
+    # Ensure each key in query_params maps to a single value, not a list
+    if convert_list_to_csv:
+        for key, value in query_params.items():
+            if isinstance(value, list):
+                query_params[key] = ",".join(value)
 
     # Split the URL into parts
     url_parts = list(urlparse(url_to_modify))
