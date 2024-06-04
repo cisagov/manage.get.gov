@@ -1590,7 +1590,9 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            other = DomainRequest.ActionNeededReasons.OTHER
+            in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
+            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
@@ -1598,7 +1600,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to ACTION_NEEDED
@@ -1648,7 +1650,9 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            other = domain_request.ActionNeededReasons.OTHER
+            in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
+            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
@@ -1656,7 +1660,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to ACTION_NEEDED
@@ -2300,6 +2304,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "updated_at",
                 "status",
                 "rejection_reason",
+                "action_needed_reason",
                 "federal_agency",
                 "creator",
                 "investigator",
@@ -2457,6 +2462,10 @@ class TestDomainRequestAdmin(MockEppLib):
                 stack.enter_context(patch.object(messages, "error"))
 
                 domain_request.status = another_state
+
+                if another_state == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
+                    domain_request.action_needed_reason = domain_request.ActionNeededReasons.BAD_NAME
+
                 domain_request.rejection_reason = rejection_reason
 
                 self.admin.save_model(request, domain_request, None, True)
