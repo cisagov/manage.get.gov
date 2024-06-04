@@ -1041,8 +1041,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        self.assertContains(response, "Enter your first name / given name.")
-        self.assertContains(response, "Enter your last name / family name.")
+        self.assertContains(response, "Enter the first name / given name of the CISA regional representative.")
+        self.assertContains(response, "Enter the last name / family name of the CISA regional representative.")
 
     def test_if_anything_else_yes_no_form_is_yes_then_field_is_required(self):
         """Applicants with a anything else must provide a value"""
