@@ -9,8 +9,8 @@ STATUS: Action needed
 ORGANIZATION ALREADY HAS A .GOV DOMAIN
 We've reviewed your domain request, but your organization already has at least one other .gov domain. We need more information about your rationale for registering another .gov domain. 
 In general, there are two reasons we will approve an additional domain:
-You determine a current .gov domain name will be replaced
-We determine an additional domain name is appropriate
+- You determine a current .gov domain name will be replaced
+- We determine an additional domain name is appropriate
 
 
 WE LIMIT ADDITIONAL DOMAIN NAMES 
@@ -28,6 +28,7 @@ Using a subdomain of an existing domain (e.g., service.domain.gov) is a common a
 ACTION NEEDED
 FOR A REPLACEMENT DOMAIN: If you’re requesting a new domain that will replace your current domain name, we can allow for a transition period where both are registered to your organization. Afterwards, we will reclaim and retire the legacy name. 
 Reply to this email. Tell us how many months your organization needs to maintain your current .gov domain and conduct a transition to a new one. Detail why that period of time is needed.
+
 FOR AN ADDITIONAL DOMAIN: If you’re requesting an additional domain and not replacing your existing one, we’ll need more information to support that request. 
 Reply to this email. Detail why you believe another domain is necessary for your organization, and why a subdomain won’t meet your needs. 
 

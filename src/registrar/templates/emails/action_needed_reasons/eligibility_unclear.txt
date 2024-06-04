@@ -8,8 +8,7 @@ STATUS: Action needed
 
 ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS
 We've reviewed your domain request, but we need more information about the organization you represent:
-
-{{ domain_request.organization_name }}
+- {{ domain_request.organization_name }}
 
 .Gov domains are only available to official US-based government organizations, not simply those that provide a public benefit. We lack clear documentation that demonstrates your organization is eligible for a .gov domain. 
 

@@ -8,8 +8,8 @@ STATUS: Action needed
 
 AUTHORIZING OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS
 We've reviewed your domain request, but we need more information about the authorizing official listed on the request: 
-{{ domain_request.authorizing_official.get_formatted_name }}
-{{ domain_request.authorizing_official.title }}
+- {{ domain_request.authorizing_official.get_formatted_name }}
+- {{ domain_request.authorizing_official.title }}
 
 We expect an authorizing official to be someone in a role of significant, executive responsibility within the organization. Our guidelines are open-ended to accommodate the wide variety of government organizations that are eligible for .gov domains, but the person you listed does not meet our expectations for your type of organization. Read more about our guidelines for authorizing officials. <https://get.gov/domains/eligibility/>
 

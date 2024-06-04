@@ -765,7 +765,7 @@ class DomainRequest(TimeStampedModel):
             # Assumes that the template name matches the action needed reason if nothing is specified.
             # This is so you can override if you need, or have this taken care of for you.
             if not email_template_name and not email_template_subject_name:
-                reason = self.action_needed_reason.value
+                reason = self.action_needed_reason
                 email_template_name = f"{reason}.txt"
                 email_template_subject_name = f"{reason}_subject.txt"
 
