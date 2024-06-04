@@ -2245,8 +2245,45 @@ class DraftDomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return response
 
 
-class PublicContactAdmin(ListHeaderAdmin):
+class PublicContactResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.PublicContact
+
+    def import_row(self, row, instance_loader, using_transactions=True, dry_run=False, raise_errors=None, **kwargs):
+        """Override kwargs skip_epp_save and set to True"""
+        kwargs["skip_epp_save"] = True
+        return super().import_row(
+            row,
+            instance_loader,
+            using_transactions=using_transactions,
+            dry_run=dry_run,
+            raise_errors=raise_errors,
+            **kwargs,
+        )
+
+    def save_instance(self, instance, is_create, using_transactions=True, dry_run=False):
+        """Override save_instance setting skip_epp_save to True"""
+        self.before_save_instance(instance, using_transactions, dry_run)
+        if self._meta.use_bulk:
+            if is_create:
+                self.create_instances.append(instance)
+            else:
+                self.update_instances.append(instance)
+        elif not using_transactions and dry_run:
+            # we don't have transactions and we want to do a dry_run
+            pass
+        else:
+            instance.save(skip_epp_save=True)
+        self.after_save_instance(instance, using_transactions, dry_run)
+
+
+class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom PublicContact admin class."""
+
+    resource_classes = [PublicContactResource]
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
     autocomplete_fields = ["domain"]
@@ -2305,6 +2342,8 @@ class UserGroupAdmin(AuditedAdmin):
 
 
 class WaffleFlagAdmin(FlagAdmin):
+    """Custom admin implementation of django-waffle's Flag class"""
+
     class Meta:
         """Contains meta information about this class"""
 
@@ -2338,6 +2377,6 @@ admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
 
-# Unregister Sample and Switch from the waffle library
-admin.site.unregister(Sample)
+# Unregister Switch and Sample from the waffle library
 admin.site.unregister(Switch)
+admin.site.unregister(Sample)

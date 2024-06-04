@@ -2,7 +2,7 @@
 Template include for form fields with classes and their corresponding
 error messages, if necessary.
 {% endcomment %}
-
+{% load static field_helpers url_helpers %}
 {% load custom_filters %}
 
 {% load widget_tweaks %}
@@ -27,7 +27,11 @@ error messages, if necessary.
 {% endif %}
 
   {% if not field.widget_type == "checkbox" %}
-    {% include "django/forms/label.html" %}
+    {% if show_edit_button %}
+      {% include "includes/label_with_edit_button.html" with bold_label=True %}
+    {% else %}
+      {% include "django/forms/label.html" %}
+    {% endif %}
   {% endif %}
 
   {% if sublabel_text %}
@@ -58,6 +62,11 @@ error messages, if necessary.
   {% if append_gov %}
     <div class="display-flex flex-align-center">
   {% endif %}
+
+  {% if show_readonly %}
+    {% include "includes/readonly_input.html" %}
+  {% endif %}
+
   {# this is the input field, itself #}
   {% include widget.template_name %}
 

@@ -15,12 +15,12 @@
         <p>We’ll use the information you provide to verify your organization’s eligibility for a .gov domain. We’ll also verify that the domain you request meets our guidelines.</p>
         <h2>Time to complete the form</h2>
         <p>If you have <a href="{% public_site_url 'domains/before/#information-you%E2%80%99ll-need-to-complete-the-domain-request-form' %}" target="_blank" class="usa-link">all the information you need</a>,
-           completing your domain request might take around 15 minutes.</p>
-       {% if has_profile_feature_flag %}
-       <h2>How we’ll reach you</h2>
-       <p>While reviewing your domain request, we may need to reach out with questions. We’ll also email you when we complete our review If the contact information below is not correct, visit <a href="" target="_blank" class="usa-link">your profile</a> to make updates.</p>
-       {% include "includes/profile_information.html" with user=user%}
-       {% endif %}
+          completing your domain request might take around 15 minutes.</p>
+        {% if has_profile_feature_flag %}
+        <h2>How we’ll reach you</h2>
+        <p>While reviewing your domain request, we may need to reach out with questions. We’ll also email you when we complete our review If the contact information below is not correct, visit <a href="{% url 'user-profile' %}?return_to_request=True" class="usa-link">your profile</a> to make updates.</p>
+        {% include "includes/profile_information.html" with user=user%}
+        {% endif %}
         
 
 {% block form_buttons %}

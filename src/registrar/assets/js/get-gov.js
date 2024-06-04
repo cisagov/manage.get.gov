@@ -1248,3 +1248,125 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDomainRequests(1);
   }
 });
+
+
+
+/**
+ * An IIFE that hooks up the edit buttons on the finish-user-setup page
+ */
+(function finishUserSetupListener() {
+
+  function getInputField(fieldName){
+    return document.querySelector(`#id_${fieldName}`)
+  }
+
+  // Shows the hidden input field and hides the readonly one
+  function showInputFieldHideReadonlyField(fieldName, button) {
+    let inputField = getInputField(fieldName)
+    let readonlyField = document.querySelector(`#${fieldName}__edit-button-readonly`)
+
+    readonlyField.classList.toggle('display-none');
+    inputField.classList.toggle('display-none');
+
+    // Toggle the bold style on the grid row
+    let gridRow = button.closest(".grid-col-2").closest(".grid-row")
+    if (gridRow){
+      gridRow.classList.toggle("bold-usa-label")
+    }
+  }
+
+  function handleFullNameField(fieldName = "full_name") {
+    // Remove the display-none class from the nearest parent div
+    let nameFieldset = document.querySelector("#profile-name-group");
+    if (nameFieldset){
+      nameFieldset.classList.remove("display-none");
+    }
+
+    // Hide the "full_name" field
+    let inputField = getInputField(fieldName);
+    if (inputField) {
+      inputFieldParentDiv = inputField.closest("div");
+      if (inputFieldParentDiv) {
+        inputFieldParentDiv.classList.add("display-none");
+      }
+    }
+  }
+
+  function handleEditButtonClick(fieldName, button){
+    button.addEventListener('click', function() {
+      // Lock the edit button while this operation occurs
+      button.disabled = true
+
+      if (fieldName == "full_name"){
+        handleFullNameField();
+      }else {
+        showInputFieldHideReadonlyField(fieldName, button);
+      }
+      
+      // Hide the button itself
+      button.classList.add("display-none");
+
+      // Unlock after it completes
+      button.disabled = false
+    });
+  }
+
+  function setupListener(){
+    document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
+      // Get the "{field_name}" and "edit-button"
+      let fieldIdParts = button.id.split("__")
+      if (fieldIdParts && fieldIdParts.length > 0){
+        let fieldName = fieldIdParts[0]
+        
+        // When the edit button is clicked, show the input field under it
+        handleEditButtonClick(fieldName, button);
+      }
+    });
+  }
+
+  function showInputOnErrorFields(){
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get all input elements within the form
+      let form = document.querySelector("#finish-profile-setup-form");
+      let inputs = form ? form.querySelectorAll("input") : null;
+      if (!inputs) {
+        return null;
+      }
+
+      let fullNameButtonClicked = false
+      inputs.forEach(function(input) {
+        let fieldName = input.name;
+        let errorMessage = document.querySelector(`#id_${fieldName}__error-message`);
+
+        // If no error message is found, do nothing
+        if (!fieldName || !errorMessage) {
+          return null;
+        }
+
+        let editButton = document.querySelector(`#${fieldName}__edit-button`);
+        if (editButton){
+          // Show the input field of the field that errored out 
+          editButton.click();
+        }
+
+        // If either the full_name field errors out,
+        // or if any of its associated fields do - show all name related fields.
+        let nameFields = ["first_name", "middle_name", "last_name"];
+        if (nameFields.includes(fieldName) && !fullNameButtonClicked){
+          // Click the full name button if any of its related fields error out
+          fullNameButton = document.querySelector("#full_name__edit-button");
+          if (fullNameButton) {
+            fullNameButton.click();
+            fullNameButtonClicked = true;
+          }
+        }
+      });  
+    });
+  };
+
+  // Hookup all edit buttons to the `handleEditButtonClick` function
+  setupListener();
+
+  // Show the input fields if an error exists
+  showInputOnErrorFields();
+})();
