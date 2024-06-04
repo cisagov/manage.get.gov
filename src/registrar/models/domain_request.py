@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import Union
-import os
 import logging
 
 from django.apps import apps
@@ -244,11 +243,12 @@ class DomainRequest(TimeStampedModel):
         ORGANIZATION_ELIGIBILITY = "org_not_eligible", "Org not eligible for a .gov domain"
         NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
-    
+
     class ActionNeededReasons(models.TextChoices):
-        """Defines common"""
+        """Defines common action needed reasons for domain requests"""
+
         ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
-        QUESTIONABLE_AUTHORIZING_OFFICIAL = ("questionable_authorizing_official" , "Questionable authorizing official")
+        QUESTIONABLE_AUTHORIZING_OFFICIAL = ("questionable_authorizing_official", "Questionable authorizing official")
         ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
         BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
         OTHER = ("other", "Other (no auto-email sent)")
@@ -752,23 +752,26 @@ class DomainRequest(TimeStampedModel):
     def _send_action_needed_reason_email(self, send_email=True):
         """Sends out an automatic email for each valid action needed reason provided"""
 
+        # Store the filenames of the template and template subject
         email_template_name: str = ""
         email_template_subject_name: str = ""
+
+        # Check for the "type" of action needed reason.
         can_send_email = True
         match self.action_needed_reason:
             # Add to this match if you need to pass in a custom filename for these templates.
             case self.ActionNeededReasons.OTHER, _:
                 # Unknown and other are default cases - do nothing
                 can_send_email = False
-        
-        if can_send_email:
-            # Assumes that the template name matches the action needed reason if nothing is specified.
-            # This is so you can override if you need, or have this taken care of for you.
-            if not email_template_name and not email_template_subject_name:
-                reason = self.action_needed_reason
-                email_template_name = f"{reason}.txt"
-                email_template_subject_name = f"{reason}_subject.txt"
 
+        # Assumes that the template name matches the action needed reason if nothing is specified.
+        # This is so you can override if you need, or have this taken care of for you.
+        if not email_template_name and not email_template_subject_name:
+            email_template_name = f"{self.action_needed_reason}.txt"
+            email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
+
+        # If we can, try to send out an email as long as send_email=True
+        if can_send_email:
             self._send_status_update_email(
                 new_status="action needed",
                 email_template=f"emails/action_needed_reasons/{email_template_name}",

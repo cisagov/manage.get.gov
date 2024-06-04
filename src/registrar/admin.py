@@ -270,14 +270,9 @@ class DomainRequestAdminForm(forms.ModelForm):
         Checks if the action_needed_reason field is not none.
         Adds form errors on failure.
         """
-        is_valid = False
-        error_message = None
-        if action_needed_reason is None or action_needed_reason == "":
+        is_valid = action_needed_reason is not None and action_needed_reason != ""
+        if not is_valid:
             error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_ACTION_NEEDED_REASON)
-        else:
-            is_valid = True
-
-        if error_message is not None:
             self.add_error("action_needed_reason", error_message)
 
         return is_valid

@@ -328,6 +328,7 @@ function initializeWidgetOnList(list, parentId) {
         }
     }
 
+    // Adds or removes the display-none class to object depending on the value of boolean hideObject
     function hideOrShowDomObject(object, hideObject){
         if (object){
             if (hideObject){
@@ -346,10 +347,13 @@ function initializeWidgetOnList(list, parentId) {
     function handleBackButtonObserver(fieldsToObserve) {
         const observer = new PerformanceObserver((list) => {
             list.getEntries().forEach((entry) => {
+                // This currently only handles the navigation buttons
                 if (entry.type === "back_forward") {
+                    // For each field we specify...
                     fieldsToObserve.forEach((fieldName) => {
                         fieldClass = `.field-${fieldName}`
                         field = document.querySelector(fieldClass)
+                        // ...Grab its related session object to determine if it should be visible or not
                         if (field) {
                             shouldHideField = sessionStorage.getItem(`hide_${fieldName}`)
                             hideOrShowDomObject(field, hideObject=shouldHideField)
@@ -363,17 +367,30 @@ function initializeWidgetOnList(list, parentId) {
         observer.observe({ type: "navigation" });
     }
 
+    // Links the given field we want to show/hide with a given value of the status selector,
+    // and maintains this state with a given session object. 
+    // For now, we assume that the session object follows this pattern: `hide_${field_name}`
     function handleStatusChanges() {
         // Show/hide the rejection reason
         let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+
+        // element to hide, statusToShowOn, sessionObjectName
         showHideFieldsOnStatusChange(rejectionReasonFormGroup, "rejected", "hide_rejection_reason");
         
-        // Show/hude the action needed reason
+        // Show/hide the action needed reason
         let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
+
+        // element to hide, statusToShowOn, sessionObjectName
         showHideFieldsOnStatusChange(actionNeededReasonFormGroup, "action needed", "hide_action_needed_reason");
     }
+
+    // Hookup the fields that we want to programatically show/hide depending on the current value of the status field.
+    // Add your field name to this function if you are adding another dynamic field.
     handleStatusChanges();
 
+    // Add an observer to each field to track when the back button is pressed. This is so
+    // our current state doesn't get wiped by browser events.
+    // Add a field name to this array if you are adding another dynamic field.
     let fieldsToObserve = ["rejection_reason", "action_needed_reason"]
     handleBackButtonObserver(fieldsToObserve);
 })();
