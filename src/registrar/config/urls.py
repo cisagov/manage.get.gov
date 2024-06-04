@@ -21,6 +21,8 @@ from registrar.views.admin_views import (
 )
 
 from registrar.views.domain_request import Step
+from registrar.views.domain_requests_json import get_domain_requests_json
+from registrar.views.domains_json import get_domains_json
 from registrar.views.utility import always_404
 from api.views import available, get_current_federal, get_current_full
 
@@ -179,6 +181,16 @@ urlpatterns = [
         name="domain-users-add",
     ),
     path(
+        "finish-profile-setup",
+        views.FinishProfileSetupView.as_view(),
+        name="finish-user-profile-setup",
+    ),
+    path(
+        "user-profile",
+        views.UserProfileView.as_view(),
+        name="user-profile",
+    ),
+    path(
         "invitation/<int:pk>/delete",
         views.DomainInvitationDeleteView.as_view(http_method_names=["post"]),
         name="invitation-delete",
@@ -193,6 +205,8 @@ urlpatterns = [
         views.DomainDeleteUserView.as_view(http_method_names=["post"]),
         name="domain-user-delete",
     ),
+    path("get-domains-json/", get_domains_json, name="get_domains_json"),
+    path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error
@@ -206,6 +220,7 @@ urlpatterns = [
 # Rather than dealing with that, we keep everything centralized in one location.
 # This way, we can share a view for djangooidc, and other pages as we see fit.
 handler500 = "registrar.views.utility.error_views.custom_500_error_view"
+handler403 = "registrar.views.utility.error_views.custom_403_error_view"
 
 # we normally would guard these with `if settings.DEBUG` but tests run with
 # DEBUG = False even when these apps have been loaded because settings.DEBUG
