@@ -405,3 +405,9 @@ This function is triggered by the post_save event on the User model, designed to
 1. For New Users: Upon the creation of a new user, it checks for an existing `Contact` by email. If no matching contact is found, it creates a new Contact using the user's details from Login.gov. If a matching contact is found, it associates this contact with the user. In cases where multiple contacts with the same email exist, it logs a warning and associates the first contact found.
 
 2. For Existing Users: For users logging in subsequent times, the function ensures that any updates from Login.gov are applied to the associated User record. However, it does not alter any existing Contact records.
+
+## Disable email sending (toggling the disable_email_sending flag)
+1. On the app, navigate to `\admin`.
+2. Under models, click `Waffle flags`.
+3. Click the `disable_email_sending` record. This should exist by default, if not - create one with that name.
+4. (Important) Set the field `everyone` to `Yes`. This field overrides all other settings 

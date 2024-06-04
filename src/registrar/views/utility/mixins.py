@@ -296,7 +296,6 @@ class UserDeleteDomainRolePermission(PermissionsLoginMixin):
         domain_pk = self.kwargs["pk"]
         user_pk = self.kwargs["user_pk"]
 
-        # Check if the user is authenticated
         if not self.request.user.is_authenticated:
             return False
 
@@ -393,6 +392,8 @@ class UserProfilePermission(PermissionsLoginMixin):
 
         If the user is authenticated, they have access
         """
+
+        # Check if the user is authenticated
         if not self.request.user.is_authenticated:
             return False
 

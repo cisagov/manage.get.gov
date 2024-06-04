@@ -379,29 +379,44 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
-        # Build the submit button that we'll pass to the modal.
-        modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
-        # Concatenate the modal header that we'll pass to the modal.
-        if self.domain_request.requested_domain:
-            modal_heading = "You are about to submit a domain request for " + str(self.domain_request.requested_domain)
-        else:
-            modal_heading = "You are about to submit an incomplete request"
-
         has_profile_flag = flag_is_active(self.request, "profile_feature")
 
-        context = {
-            "form_titles": self.TITLES,
-            "steps": self.steps,
-            # Add information about which steps should be unlocked
-            "visited": self.storage.get("step_history", []),
-            "is_federal": self.domain_request.is_federal(),
-            "modal_button": modal_button,
-            "modal_heading": modal_heading,
-            # Use the profile waffle feature flag to toggle profile features throughout domain requests
-            "has_profile_feature_flag": has_profile_flag,
-            "user": self.request.user,
-        }
-        return context
+        context_stuff = {}
+        if DomainRequest._form_complete(self.domain_request):
+            modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
+            context_stuff = {
+                "not_form": False,
+                "form_titles": self.TITLES,
+                "steps": self.steps,
+                "visited": self.storage.get("step_history", []),
+                "is_federal": self.domain_request.is_federal(),
+                "modal_button": modal_button,
+                "modal_heading": "You are about to submit a domain request for "
+                + str(self.domain_request.requested_domain),
+                "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
+                You’ll only be able to withdraw your request.",
+                "review_form_is_complete": True,
+                # Use the profile waffle feature flag to toggle profile features throughout domain requests
+                "has_profile_feature_flag": has_profile_flag,
+                "user": self.request.user,
+            }
+        else:  # form is not complete
+            modal_button = '<button type="button" class="usa-button" data-close-modal>Return to request</button>'
+            context_stuff = {
+                "not_form": True,
+                "form_titles": self.TITLES,
+                "steps": self.steps,
+                "visited": self.storage.get("step_history", []),
+                "is_federal": self.domain_request.is_federal(),
+                "modal_button": modal_button,
+                "modal_heading": "Your request form is incomplete",
+                "modal_description": 'This request cannot be submitted yet.\
+                Return to the request and visit the steps that are marked as "incomplete."',
+                "review_form_is_complete": False,
+                "has_profile_feature_flag": has_profile_flag,
+                "user": self.request.user,
+            }
+        return context_stuff
 
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
@@ -669,6 +684,8 @@ class Review(DomainRequestWizard):
     forms = []  # type: ignore
 
     def get_context_data(self):
+        if DomainRequest._form_complete(self.domain_request) is False:
+            logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()
         context["Step"] = Step.__members__
         context["domain_request"] = self.domain_request

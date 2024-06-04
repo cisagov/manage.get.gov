@@ -181,6 +181,11 @@ urlpatterns = [
         name="domain-users-add",
     ),
     path(
+        "finish-profile-setup",
+        views.FinishProfileSetupView.as_view(),
+        name="finish-user-profile-setup",
+    ),
+    path(
         "user-profile",
         views.UserProfileView.as_view(),
         name="user-profile",

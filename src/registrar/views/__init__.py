@@ -14,6 +14,6 @@ from .domain import (
     DomainInvitationDeleteView,
     DomainDeleteUserView,
 )
-from .user_profile import UserProfileView
+from .user_profile import UserProfileView, FinishProfileSetupView
 from .health import *
 from .index import *
