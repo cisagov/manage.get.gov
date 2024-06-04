@@ -1,0 +1,29 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi, {{ domain_request.submitter.first_name }}.
+We've identified an action that you’ll need to complete before we continue reviewing your .gov domain request.
+DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
+REQUEST RECEIVED ON: {{ domain_request.submission_date|date }}
+STATUS: Action needed
+
+
+DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS
+We've reviewed your domain request and, unfortunately, it does not meet our naming requirements. 
+Domains should uniquely identify a government organization and be clear to the general public. Read more about naming requirements for your type of organization <https://get.gov/domains/choosing/>. 
+
+
+ACTION NEEDED
+First, we need you to identify a new domain name that meets our naming requirements for your type of organization. Then, log in to the registrar and update the name in your domain request. <https://manage.get.gov/> Once you submit your updated request, we’ll resume the adjudication process.
+If you have questions or want to discuss potential domain names, reply to this email.
+
+
+THANK YOU
+.Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <http://cisa.gov/>
+{% endautoescape %}
