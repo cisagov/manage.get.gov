@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import pyzipper
@@ -14,12 +15,18 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Imports tables from a zip file, exported_tables.zip, containing CSV files in the tmp directory."
 
+    def add_arguments(self, parser):
+        """Add command line arguments."""
+        parser.add_argument('--skipEppSave', default=True, action=argparse.BooleanOptionalAction)
+
     def handle(self, **options):
         """Extracts CSV files from a zip archive and imports them into the respective tables"""
 
         if settings.IS_PRODUCTION:
             logger.error("import_tables cannot be run in production")
             return
+
+        self.skip_epp_save = options.get("skipEppSave")
 
         table_names = [
             "User",
@@ -73,7 +80,7 @@ class Command(BaseCommand):
             resource_instance = resourceclass()
             with open(csv_filename, "r") as csvfile:
                 dataset = tablib.Dataset().load(csvfile.read(), format="csv")
-            result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=True)
+            result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=self.skip_epp_save)
 
             if result.has_errors():
                 logger.error(f"Errors occurred while importing {csv_filename}: {result.row_errors()}")

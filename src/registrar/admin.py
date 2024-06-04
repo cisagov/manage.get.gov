@@ -2252,17 +2252,45 @@ class PublicContactResource(resources.ModelResource):
     class Meta:
         model = models.PublicContact
 
-    def import_row(self, row, instance_loader, using_transactions=True, dry_run=False, raise_errors=None, **kwargs):
-        """Override kwargs skip_epp_save and set to True"""
-        kwargs["skip_epp_save"] = True
-        return super().import_row(
-            row,
-            instance_loader,
-            using_transactions=using_transactions,
-            dry_run=dry_run,
-            raise_errors=raise_errors,
+    def __init__(self):
+        """Sets global variables for code tidyness"""
+        super().__init__()
+        self.skip_epp_save=False
+
+    def import_data(
+        self,
+        dataset,
+        dry_run=False,
+        raise_errors=False,
+        use_transactions=None,
+        collect_failed_rows=False,
+        rollback_on_validation_errors=False,
+        **kwargs
+    ):
+        """Override import_data to set self.skip_epp_save if in kwargs"""
+        self.skip_epp_save = kwargs.get('skip_epp_save', False)
+        return super().import_data(
+            dataset,
+            dry_run,
+            raise_errors,
+            use_transactions,
+            collect_failed_rows,
+            rollback_on_validation_errors,
             **kwargs,
         )
+
+    # def import_row(self, row, instance_loader, using_transactions=True, dry_run=False, raise_errors=None, **kwargs):
+    #     """Override kwargs skip_epp_save and set to True"""
+    #     kwargs["skip_epp_save"] = True
+    #     super().import_data()
+    #     return super().import_row(
+    #         row,
+    #         instance_loader,
+    #         using_transactions=using_transactions,
+    #         dry_run=dry_run,
+    #         raise_errors=raise_errors,
+    #         **kwargs,
+    #     )
 
     def save_instance(self, instance, is_create, using_transactions=True, dry_run=False):
         """Override save_instance setting skip_epp_save to True"""
@@ -2276,7 +2304,7 @@ class PublicContactResource(resources.ModelResource):
             # we don't have transactions and we want to do a dry_run
             pass
         else:
-            instance.save(skip_epp_save=True)
+            instance.save(skip_epp_save=self.skip_epp_save)
         self.after_save_instance(instance, using_transactions, dry_run)
 
 
