@@ -2464,7 +2464,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 domain_request.status = another_state
 
                 if another_state == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
-                    domain_request.action_needed_reason = domain_request.ActionNeededReasons.BAD_NAME
+                    domain_request.action_needed_reason = domain_request.ActionNeededReasons.OTHER
 
                 domain_request.rejection_reason = rejection_reason
 
