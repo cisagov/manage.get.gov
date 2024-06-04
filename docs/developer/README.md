@@ -320,16 +320,6 @@ it may help to resync your laptop with time.nist.gov:
 sudo sntp -sS time.nist.gov
 ```
 
-### Settings
-The config for the connection pool exists inside the `settings.py` file.
-| Name                     | Purpose                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------- |
-| EPP_CONNECTION_POOL_SIZE | Determines the number of concurrent sockets that should exist in the pool.                        |
-| POOL_KEEP_ALIVE          | Determines the interval in which we ping open connections in seconds. Calculated as POOL_KEEP_ALIVE / EPP_CONNECTION_POOL_SIZE |
-| POOL_TIMEOUT             | Determines how long we try to keep a pool alive for, before restarting it.                        |
-
-Consider updating the `POOL_TIMEOUT` or `POOL_KEEP_ALIVE` periods if the pool often restarts. If the pool only restarts after a period of inactivity, update `POOL_KEEP_ALIVE`. If it restarts during the EPP call itself, then `POOL_TIMEOUT` needs to be updated.
-
 ## Adding a S3 instance to your sandbox
 This can either be done through the CLI, or through the cloud.gov dashboard. Generally, it is better to do it through the dashboard as it handles app binding for you. 
 
