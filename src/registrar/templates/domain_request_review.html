@@ -163,6 +163,9 @@
             <ul class="usa-list usa-list--unstyled margin-top-0">
               {% if domain_request.cisa_representative_first_name %}
                 {{domain_request.cisa_representative_first_name}} {{domain_request.cisa_representative_last_name}}
+                {% if domain_request.cisa_representative_email %}
+                {{domain_request.cisa_representative_email}} 
+                {% endif %}
               {% else %}
                 No
               {% endif %}
