@@ -3,6 +3,7 @@ from django.core.paginator import Paginator
 from registrar.models import UserDomainRole, Domain
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
+from django.db.models import Q
 
 
 @login_required
@@ -14,10 +15,17 @@ def get_domains_json(request):
     domain_ids = user_domain_roles.values_list("domain_id", flat=True)
 
     objects = Domain.objects.filter(id__in=domain_ids)
+    unfiltered_total = objects.count()
 
     # Handle sorting
     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
     order = request.GET.get("order", "asc")  # Default to 'asc'
+    search_term = request.GET.get("search_term")
+
+    if search_term:
+        objects = objects.filter(
+            Q(name__icontains=search_term)
+        )
 
     if sort_by == "state_display":
         # Fetch the objects and sort them in Python
@@ -56,5 +64,6 @@ def get_domains_json(request):
             "has_previous": page_obj.has_previous(),
             "has_next": page_obj.has_next(),
             "total": paginator.count,
+            "unfiltered_total": unfiltered_total,
         }
     )

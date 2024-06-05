@@ -5709,9 +5709,15 @@ const table = behavior({
   },
   TABLE,
   SORTABLE_HEADER,
-  SORT_BUTTON
+  SORT_BUTTON,
+  // DOTGOV: Export unsetSort
+  unsetHeader(header) {
+    unsetSort(header);
+  }
 });
 module.exports = table;
+// DOTGOV: modified uswds.js to add table module to window so that it is accessible to other js
+window.table = table;
 
 },{"../../uswds-core/src/js/config":35,"../../uswds-core/src/js/events":36,"../../uswds-core/src/js/utils/behavior":45,"../../uswds-core/src/js/utils/sanitizer":50,"../../uswds-core/src/js/utils/select":53}],32:[function(require,module,exports){
 "use strict";

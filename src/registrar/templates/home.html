@@ -23,10 +23,35 @@
     </a>
   </p>
 
-  <section class="section--outlined">
-    <h2 id="domains-header">Domains</h2>
-    <div class="domains-wrapper display-none">
-      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__registered-domains">
+  <section class="section--outlined domains">
+    <div class="grid-row">
+      <div class="mobile:grid-col-12 desktop:grid-col-6">
+        <h2 id="domains-header flex-6">Domains</h2>
+      </div>
+      <div class="mobile:grid-col-12 desktop:grid-col-6">
+        <section aria-label="Domains search component" class="flex-6 margin-y-2">
+          <form class="usa-search usa-search--small" role="search">
+            <label class="usa-sr-only" for="domains__search-field">Search</label>
+            <input
+              class="usa-input"
+              id="domains__search-field"
+              type="search"
+              name="search"
+              placeholder="Search domains by name"
+            />
+            <button class="usa-button" type="submit" id="domains__search-field-submit">
+              <img
+                src="{% static 'img/usa-icons-bg/search--white.svg' %}"
+                class="usa-search__submit-icon"
+                alt="Search"
+              />
+            </button>
+          </form>
+        </section>
+      </div>
+    </div>
+    <div class="domains__table-wrapper display-none">
+      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked domains__table">
         <caption class="sr-only">Your registered domains</caption>
         <thead>
           <tr>
@@ -50,7 +75,7 @@
         aria-live="polite"
       ></div>
     </div>
-    <div class="no-domains-wrapper display-none">
+    <div class="domains__no-data display-none">
       <p>You don't have any registered domains.</p>
       <p class="maxw-none clearfix">
         <a href="https://get.gov/help/faq/#do-not-see-my-domain" class="float-right-tablet display-flex flex-align-start usa-link" target="_blank">
@@ -60,6 +85,10 @@
           Why don't I see my domain when I sign in to the registrar?
         </a>
       </p>
+    </div>
+    <div class="domains__no-search-results display-none">
+      <p>Nothing, nada, zilch.</p>
+      <p>Reset your search or try a different search term.</p>
     </div>
   </section>
   <nav aria-label="Pagination" class="usa-pagination flex-justify" id="domains-pagination">
@@ -71,10 +100,35 @@
     </ul>
   </nav>
 
-  <section class="section--outlined">
-    <h2 id="domain-requests-header">Domain requests</h2>
-    <div class="domain-requests-wrapper display-none">
-      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table__domain-requests">
+  <section class="section--outlined domain-requests">
+    <div class="grid-row">
+      <div class="mobile:grid-col-12 desktop:grid-col-6">
+        <h2 id="domain-requests-header flex-6">Domain requests</h2>
+      </div>
+      <div class="mobile:grid-col-12 desktop:grid-col-6">
+        <section aria-label="Domain requests search component" class="flex-6 margin-y-2">
+          <form class="usa-search usa-search--small" role="search">
+            <label class="usa-sr-only" for="domain-requests__search-field">Search</label>
+            <input
+              class="usa-input"
+              id="domain-requests__search-field"
+              type="search"
+              name="search"
+              placeholder="Search requests by domain name"
+            />
+            <button class="usa-button" type="submit" id="domain-requests__search-field-submit">
+              <img
+                src="{% static 'img/usa-icons-bg/search--white.svg' %}"
+                class="usa-search__submit-icon"
+                alt="Search"
+              />
+            </button>
+          </form>
+        </section>
+      </div>
+    </div>
+    <div class="domain-requests__table-wrapper display-none">
+      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked domain-requests__table">
         <caption class="sr-only">Your domain requests</caption>
         <thead>
           <tr>
@@ -129,9 +183,13 @@
       {% endfor %}
 
     </div>
-    <div class="no-domain-requests-wrapper display-none">
+    <div class="domain-requests__no-data display-none">
       <p>You haven't requested any domains.</p>
-  </div>  
+    </div>
+    <div class="domain-requests__no-search-results display-none">
+      <p>Nothing, nada, zilch.</p>
+      <p>Reset your search or try a different search term.</p>
+    </div> 
   </section>
   <nav aria-label="Pagination" class="usa-pagination flex-justify" id="domain-requests-pagination">
     <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">

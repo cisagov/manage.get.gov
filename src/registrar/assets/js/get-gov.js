@@ -918,8 +918,9 @@ function ScrollToElement(attributeName, attributeValue) {
  * @param {boolean} hasPrevious - Whether there is a page before the current page.
  * @param {boolean} hasNext - Whether there is a page after the current page.
  * @param {number} totalItems - The total number of items.
+ * @param {string} searchTerm - The search term
  */
-function updatePagination(itemName, paginationSelector, counterSelector, headerAnchor, loadPageFunction, currentPage, numPages, hasPrevious, hasNext, totalItems) {
+function updatePagination(itemName, paginationSelector, counterSelector, headerAnchor, loadPageFunction, currentPage, numPages, hasPrevious, hasNext, totalItems, searchTerm) {
   const paginationContainer = document.querySelector(paginationSelector);
   const paginationCounter = document.querySelector(counterSelector);
   const paginationButtons = document.querySelector(`${paginationSelector} .usa-pagination__list`);
@@ -932,7 +933,7 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
   // Counter should only be displayed if there is more than 1 item
   paginationContainer.classList.toggle('display-none', totalItems < 1);
 
-  paginationCounter.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}`;
+  paginationCounter.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}${searchTerm ? ' for ' + searchTerm : ''}`;
 
   if (hasPrevious) {
     const prevPageItem = document.createElement('li');
@@ -1018,6 +1019,28 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
   }
 }
 
+const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
+  const { unfiltered_total, total } = data;
+
+  const showElement = (element) => element.classList.remove('display-none');
+  const hideElement = (element) => element.classList.add('display-none');
+
+  if (unfiltered_total) {
+    if (total) {
+      showElement(dataWrapper);
+      hideElement(noSearchResultsWrapper);
+      hideElement(noDataWrapper);
+    } else {
+      hideElement(dataWrapper);
+      showElement(noSearchResultsWrapper);
+      hideElement(noDataWrapper);
+    }
+  } else {
+    hideElement(dataWrapper);
+    hideElement(noSearchResultsWrapper);
+    showElement(noDataWrapper);
+  }
+};
 
 /**
  * An IIFE that listens for DOM Content to be loaded, then executes.  This function
@@ -1025,13 +1048,19 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let domainsWrapper = document.querySelector('.domains-wrapper');
+  let domainsWrapper = document.querySelector('.domains__table-wrapper');
 
   if (domainsWrapper) {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
-    let noDomainsWrapper = document.querySelector('.no-domains-wrapper');
+    let noDomainsWrapper = document.querySelector('.domains__no-data');
+    let noSearchResultsWrapper = document.querySelector('.domains__no-search-results');
     let hasLoaded = false;
+    let currentSearchTerm = ''
+    let domainsSearchInput = document.getElementById('domains__search-field');
+    let domainsSearchSubmit = document.getElementById('domains__search-field-submit');
+    let tableHeaders = document.querySelectorAll('.domains__table th[data-sortable]');
+    let tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region')
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1040,10 +1069,11 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
      * @param {*} loaded - control for the scrollToElement functionality
+     * @param {*} searchTerm - the search term
      */
-    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, searchTerm = currentSearchTerm) {
       //fetch json of page of domains, given page # and sort
-      fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
+      fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
@@ -1051,17 +1081,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
 
-          // handle the display of proper messaging in the event that no domains exist in the list
-          if (data.domains.length) {
-            domainsWrapper.classList.remove('display-none');
-            noDomainsWrapper.classList.add('display-none');
-          } else {
-            domainsWrapper.classList.add('display-none');
-            noDomainsWrapper.classList.remove('display-none');
-          }
+          // handle the display of proper messaging in the event that no domains exist in the list or search returns no results
+          updateDisplay(data, domainsWrapper, noDomainsWrapper, noSearchResultsWrapper);
 
           // identify the DOM element where the domain list will be inserted into the DOM
-          const domainList = document.querySelector('.dotgov-table__registered-domains tbody');
+          const domainList = document.querySelector('.domains__table tbody');
           domainList.innerHTML = '';
 
           data.domains.forEach(domain => {
@@ -1122,7 +1146,8 @@ document.addEventListener('DOMContentLoaded', function() {
             data.num_pages,
             data.has_previous,
             data.has_next,
-            data.total
+            data.total,
+            currentSearchTerm
           );
           currentSortBy = sortBy;
           currentOrder = order;
@@ -1133,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
 
     // Add event listeners to table headers for sorting
-    document.querySelectorAll('.dotgov-table__registered-domains th[data-sortable]').forEach(header => {
+    tableHeaders.forEach(header => {
       header.addEventListener('click', function() {
         const sortBy = this.getAttribute('data-sortable');
         let order = 'asc';
@@ -1147,6 +1172,23 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
 
+    domainsSearchSubmit.addEventListener('click', function(e) {
+      e.preventDefault();
+      currentSearchTerm = domainsSearchInput.value;
+      loadDomains(1, 'id', 'asc');
+      resetheaders();
+    })
+
+    // Reset UI and accessibility
+    function resetheaders() {
+      tableHeaders.forEach(header => {
+       // unset sort UI in headers
+        window.table.unsetHeader(header);
+      });
+      // Reset the announcement region
+      tableAnnouncementRegion.innerHTML = '';
+    }
+
     // Load the first page initially
     loadDomains(1);
   }
@@ -1157,10 +1199,13 @@ const utcDateString = (dateString) => {
   const utcYear = date.getUTCFullYear();
   const utcMonth = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
   const utcDay = date.getUTCDate().toString().padStart(2, '0');
-  const utcHours = date.getUTCHours().toString().padStart(2, '0');
+  let utcHours = date.getUTCHours();
   const utcMinutes = date.getUTCMinutes().toString().padStart(2, '0');
-  
-  return `${utcMonth} ${utcDay}, ${utcYear}, ${utcHours}:${utcMinutes} UTC`;
+
+  const ampm = utcHours >= 12 ? 'PM' : 'AM';
+  utcHours = utcHours % 12 || 12;  // Convert to 12-hour format, '0' hours should be '12'
+
+  return `${utcMonth} ${utcDay}, ${utcYear}, ${utcHours}:${utcMinutes} ${ampm} UTC`;
 };
 
 /**
@@ -1169,13 +1214,19 @@ const utcDateString = (dateString) => {
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let domainRequestsWrapper = document.querySelector('.domain-requests-wrapper');
+  let domainRequestsWrapper = document.querySelector('.domain-requests__table-wrapper');
 
   if (domainRequestsWrapper) {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
-    let noDomainRequestsWrapper = document.querySelector('.no-domain-requests-wrapper');
+    let noDomainRequestsWrapper = document.querySelector('.domain-requests__no-data');
+    let noSearchResultsWrapper = document.querySelector('.domain-requests__no-search-results');
     let hasLoaded = false;
+    let currentSearchTerm = ''
+    let domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
+    let domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
+    let tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
+    let tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region')
 
     /**
      * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
@@ -1184,10 +1235,11 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
      * @param {*} loaded - control for the scrollToElement functionality
+     * @param {*} searchTerm - the search term
      */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, searchTerm = currentSearchTerm) {
       //fetch json of page of domain requests, given page # and sort
-      fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
+      fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
@@ -1195,17 +1247,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
 
-          // handle the display of proper messaging in the event that no domain requests exist in the list
-          if (data.domain_requests.length) {
-            domainRequestsWrapper.classList.remove('display-none');
-            noDomainRequestsWrapper.classList.add('display-none');
-          } else {
-            domainRequestsWrapper.classList.add('display-none');
-            noDomainRequestsWrapper.classList.remove('display-none');
-          }
+          // handle the display of proper messaging in the event that no requests exist in the list or search returns no results
+          updateDisplay(data, domainRequestsWrapper, noDomainRequestsWrapper, noSearchResultsWrapper);
 
           // identify the DOM element where the domain request list will be inserted into the DOM
-          const tbody = document.querySelector('.dotgov-table__domain-requests tbody');
+          const tbody = document.querySelector('.domain-requests__table tbody');
           tbody.innerHTML = '';
 
           // remove any existing modal elements from the DOM so they can be properly re-initialized
@@ -1272,7 +1318,8 @@ document.addEventListener('DOMContentLoaded', function() {
             data.num_pages,
             data.has_previous,
             data.has_next,
-            data.total
+            data.total,
+            currentSearchTerm
           );
           currentSortBy = sortBy;
           currentOrder = order;
@@ -1281,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add event listeners to table headers for sorting
-    document.querySelectorAll('.dotgov-table__domain-requests th[data-sortable]').forEach(header => {
+    tableHeaders.forEach(header => {
       header.addEventListener('click', function() {
         const sortBy = this.getAttribute('data-sortable');
         let order = 'asc';
@@ -1293,6 +1340,23 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDomainRequests(1, sortBy, order);
       });
     });
+
+    domainRequestsSearchSubmit.addEventListener('click', function(e) {
+      e.preventDefault();
+      currentSearchTerm = domainRequestsSearchInput.value;
+      loadDomainRequests(1, 'id', 'asc');
+      resetheaders();
+    })
+
+    // Reset UI and accessibility
+    function resetheaders() {
+      tableHeaders.forEach(header => {
+       // unset sort UI in headers
+        window.table.unsetHeader(header);
+      });
+      // Reset the announcement region
+      tableAnnouncementRegion.innerHTML = '';
+    }
 
     // Load the first page initially
     loadDomainRequests(1);

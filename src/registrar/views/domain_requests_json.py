@@ -4,6 +4,7 @@ from registrar.models import DomainRequest
 from django.utils.dateformat import format
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
+from django.db.models import Q
 
 
 @login_required
@@ -14,9 +15,18 @@ def get_domain_requests_json(request):
     domain_requests = DomainRequest.objects.filter(creator=request.user).exclude(
         status=DomainRequest.DomainRequestStatus.APPROVED
     )
+    unfiltered_total = domain_requests.count()
+
     # Handle sorting
     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
     order = request.GET.get("order", "asc")  # Default to 'asc'
+    search_term = request.GET.get("search_term")
+
+    if search_term:
+        domain_requests = domain_requests.filter(
+            Q(requested_domain__name__icontains=search_term)
+        )
+
     if order == "desc":
         sort_by = f"-{sort_by}"
     domain_requests = domain_requests.order_by(sort_by)
@@ -75,5 +85,6 @@ def get_domain_requests_json(request):
             "page": page_obj.number,
             "num_pages": paginator.num_pages,
             "total": paginator.count,
+            "unfiltered_total": unfiltered_total,
         }
     )
