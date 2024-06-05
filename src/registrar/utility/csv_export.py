@@ -770,7 +770,7 @@ class DomainRequestExport:
             "Other contacts": request.get('all_other_contacts'),
             "CISA regional representative": request.get('cisa_representative_email'),  # TODO - same problem as before
             "Current websites": request.get('all_current_websites'),
-            "Investigator": request.get('investigator'),
+            "Investigator": request.get('investigator_email'),
         }
 
         row = [FIELDS.get(column, "") for column in columns]
@@ -936,6 +936,7 @@ class DomainRequestExport:
                 distinct=True
             ),
             federal_agency_name = F("federal_agency__agency"),
+            investigator_email = F("investigator__email"),
             human_readable_election_board=Case(
                 When(is_election_board=True, then=Value("Yes")),
                 When(is_election_board=False, then=Value("No")),
@@ -964,6 +965,8 @@ class DomainRequestExport:
             'authorizing_official__last_name', 
             'authorizing_official__email', 
             'authorizing_official__title',
+            # Investigator
+            "investigator_email",
             # Existing fields
             "id",
             'submission_date', 
@@ -981,19 +984,21 @@ class DomainRequestExport:
         )
 
         for request in requests_dict:
-            # Handle the domain_type field
+            # Handle the domain_type field. Defaults to the wrong format.
             org_type = request.get("generic_org_type")
-            request["domain_type"] = None
             if org_type:
                 readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type)
                 request["domain_type"] = readable_org_type
             
-            # Handle the federal_type field. Defaults to the wrong variant.
+            # Handle the federal_type field. Defaults to the wrong format.
             federal_type = request.get("federal_type")
             if federal_type:
                 request["human_readable_federal_type"] = DomainRequest.BranchChoices.get_branch_label(federal_type)
-            else:
-                request["human_readable_federal_type"] = None
+            
+            # Handle the status field. Defaults to the wrong format.
+            status = request.get("status")
+            if status:
+                request["status_display"] = DomainRequest.DomainRequestStatus.get_status_label(status)
 
         return requests_dict
 
@@ -1035,6 +1040,9 @@ class DomainRequestExport:
 
         `f"{cisa_rep} | {anything_else}" If anything_else or cisa_rep else None`
         """
+
+        # TODO this should be replaced with cisa_representative_first_name and cisa_representative_last_name
+        # When that PR gets merged
         additional_details_query = Case(
             # Check if either cisa_representative_email or anything_else is not null
             # TODO - touch up on this

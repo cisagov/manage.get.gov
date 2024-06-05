@@ -43,6 +43,11 @@ class DomainRequest(TimeStampedModel):
         REJECTED = "rejected", "Rejected"
         INELIGIBLE = "ineligible", "Ineligible"
 
+        @classmethod
+        def get_status_label(cls, status_name: str):
+            """Returns the associated label for a given status name"""
+            return cls(status_name).label if status_name else None
+
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
         ALASKA = "AK", "Alaska (AK)"
