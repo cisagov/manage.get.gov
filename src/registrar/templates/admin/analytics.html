@@ -49,6 +49,14 @@
                   </svg><span class="margin-left-05">Current federal</span>
                 </a>
             </li>
+            {# TODO: move this and rename it #}
+            <li class="usa-button-group__item">
+              <a href="{% url 'export_data_domain_requests_full' %}" class="button" role="button">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+                </svg><span class="margin-left-05">Current domain request full</span>
+              </a>
+          </li>
           </ul>
         </div>
       </div>

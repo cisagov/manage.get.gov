@@ -164,6 +164,15 @@ class ExportDataFederal(View):
         return response
 
 
+class ExportDomainRequestDataFull(View):
+    def get(self, request, *args, **kwargs):
+        # Smaller export based on 1
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="current-full-domain-request.csv"'
+        csv_export.DomainRequestExport.export_full_domain_request_report(response)
+        return response
+
+
 class ExportDataDomainsGrowth(View):
     def get(self, request, *args, **kwargs):
         # Get start_date and end_date from the request's GET parameters
@@ -191,7 +200,7 @@ class ExportDataRequestsGrowth(View):
         response["Content-Disposition"] = f'attachment; filename="requests-{start_date}-to-{end_date}.csv"'
         # For #999: set export_data_domain_growth_to_csv to return the resulting queryset, which we can then use
         # in context to display this data in the template.
-        csv_export.export_data_requests_growth_to_csv(response, start_date, end_date)
+        csv_export.DomainRequestExport.export_data_requests_growth_to_csv(response, start_date, end_date)
 
         return response
 
