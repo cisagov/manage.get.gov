@@ -1130,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           // initialize tool tips immediately after the associated DOM elements are added
           initializeTooltips();
-          if (loaded)
+          if (hasLoaded)
             ScrollToElement('id', 'domains-header');
 
           hasLoaded = true;
@@ -1214,6 +1214,7 @@ const utcDateString = (dateString) => {
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
+  let domainRequestsSectionWrapper = document.querySelector('.domain-requests');
   let domainRequestsWrapper = document.querySelector('.domain-requests__table-wrapper');
 
   if (domainRequestsWrapper) {
@@ -1227,6 +1228,39 @@ document.addEventListener('DOMContentLoaded', function() {
     let domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
     let tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
     let tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region')
+
+    function deleteDomainRequest(domainRequestPk) {
+      const csrfToken = getCsrfToken();
+
+      // Create FormData object and append the CSRF token
+      const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&delete-domain-request=`;
+
+
+      fetch(`/domain-request/${domainRequestPk}/delete`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData
+      })
+      .then(response => {
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+      })
+      .then(data => {
+          console.log('response', data);
+          // Perform any additional actions, e.g., updating the UI
+      })
+      .catch(error => console.error('Error fetching domain requests:', error));
+  }
+  
+  // Helper function to get the CSRF token from the cookie
+  function getCsrfToken() {
+    return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+}
+
 
     /**
      * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
@@ -1257,25 +1291,131 @@ document.addEventListener('DOMContentLoaded', function() {
           // remove any existing modal elements from the DOM so they can be properly re-initialized
           // after the DOM content changes and there are new delete modal buttons added
           unloadModals();
+
+          let needsDeleteColumn = false;
+
+          data.domain_requests.forEach(request => {
+            if (request.is_deletable)
+              needsDeleteColumn = true;
+          });
+
+          // Remove existing delete th and td if they exist
+          let existingDeleteTh =  document.querySelector('.delete-header');
+          if (!needsDeleteColumn) {
+            if (existingDeleteTh)
+              existingDeleteTh.remove();
+          } else {
+            if (!existingDeleteTh) {
+              const delheader = document.createElement('th');
+              delheader.setAttribute('scope', 'col');
+              delheader.setAttribute('role', 'columnheader');
+              delheader.setAttribute('class', 'delete-header');
+              delheader.innerHTML = `
+                <span class="usa-sr-only">Delete Action</span>`;
+              let tableHeaderRow = document.querySelector('.domain-requests__table thead tr');
+              tableHeaderRow.appendChild(delheader);
+            }
+          }
+
           data.domain_requests.forEach(request => {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${utcDateString(request.created_at)})</span>`;
             const actionUrl = request.action_url;
             const actionLabel = request.action_label;
             const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
-            const deleteButton = request.is_deletable ? `
-              <a 
-                role="button" 
-                id="button-toggle-delete-domain-alert-${request.id}"
-                href="#toggle-delete-domain-alert-${request.id}"
-                class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
-                aria-controls="toggle-delete-domain-alert-${request.id}"
-                data-open-modal
-              >
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="/public/img/sprite.svg#delete"></use>
-                </svg> Delete <span class="usa-sr-only">${domainName}</span>
-              </a>` : '';
+            
+            
+            let modalTrigger = '';
+
+            if (request.is_deletable) {
+
+              let modalHeading = '';
+              let modalDescription = '';
+
+              if (request.requested_domain) {
+                modalHeading = `Are you sure you want to delete ${request.requested_domain}?`;
+                modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+              } else {
+                if (request.created_at) {
+                  modalHeading = 'Are you sure you want to delete this domain request?';
+                  modalDescription = `This will remove the domain request (created ${utcDateString(request.created_at)}) from the .gov registrar. This action cannot be undone`;
+                } else {
+                  modalHeading = 'Are you sure you want to delete New domain request?';
+                  modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+                }
+              }
+
+              modalTrigger = `
+                <a 
+                  role="button" 
+                  id="button-toggle-delete-domain-alert-${request.id}"
+                  href="#toggle-delete-domain-alert-${request.id}"
+                  class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                  aria-controls="toggle-delete-domain-alert-${request.id}"
+                  data-open-modal
+                >
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#delete"></use>
+                  </svg> Delete <span class="usa-sr-only">${domainName}</span>
+                </a>`
+
+              const modalSubmit = `
+                <button type="button"
+                class="usa-button usa-button--secondary usa-moda__submit"
+                data-pk = ${request.id}
+                name="delete-domain-request">Yes, delete request</button>
+              `
+
+              const modal = document.createElement('div');
+              modal.setAttribute('class', 'usa-modal');
+              modal.setAttribute('id', `toggle-delete-domain-alert-${request.id}`);
+              modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
+              modal.setAttribute('aria-describedby', 'Domain will be removed');
+              modal.setAttribute('data-force-action', '');
+
+              modal.innerHTML = `
+                <div class="usa-modal__content">
+                  <div class="usa-modal__main">
+                    <h2 class="usa-modal__heading" id="modal-1-heading">
+                      ${modalHeading}
+                    </h2>
+                    <div class="usa-prose">
+                      <p id="modal-1-description">
+                        ${modalDescription}
+                      </p>
+                    </div>
+                    <div class="usa-modal__footer">
+                        <ul class="usa-button-group">
+                          <li class="usa-button-group__item">
+                            ${modalSubmit}
+                          </li>      
+                          <li class="usa-button-group__item">
+                              <button
+                                  type="button"
+                                  class="usa-button usa-button--unstyled padding-105 text-center"
+                                  data-close-modal
+                              >
+                                  Cancel
+                              </button>
+                          </li>
+                        </ul>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="usa-button usa-modal__close"
+                    aria-label="Close this window"
+                    data-close-modal
+                  >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                      <use xlink:href="/public/img/sprite.svg#close"></use>
+                    </svg>
+                  </button>
+                </div>
+              `
+
+              domainRequestsSectionWrapper.appendChild(modal);
+            }
 
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -1296,13 +1436,25 @@ document.addEventListener('DOMContentLoaded', function() {
                   ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
                 </a>
               </td>
-              <td>${deleteButton}</td>
+              ${needsDeleteColumn ? '<td>'+modalTrigger+'</td>' : ''}
             `;
             tbody.appendChild(row);
           });
           // initialize modals immediately after the DOM content is updated
           initializeModals();
-          if (loaded)
+
+          let subbmitButtons = document.querySelectorAll('.usa-moda__submit');
+          subbmitButtons.forEach(button => {
+            button.addEventListener('click', function() {
+              pk = button.getAttribute('data-pk');
+              console.log('pk ' + pk);
+              deleteDomainRequest(pk);
+              loadDomainRequests(1, 'id', 'asc');
+            });
+          });
+
+
+          if (hasLoaded)
             ScrollToElement('id', 'domain-requests-header');
 
           hasLoaded = true;

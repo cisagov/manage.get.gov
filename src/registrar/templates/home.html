@@ -23,6 +23,9 @@
     </a>
   </p>
 
+  <!-- CSRF token -->
+  {% csrf_token %}
+
   <section class="section--outlined domains">
     <div class="grid-row">
       <div class="mobile:grid-col-12 desktop:grid-col-6">
@@ -136,7 +139,7 @@
             <th data-sortable="submission_date" scope="col" role="columnheader">Date submitted</th>
             <th data-sortable="status" scope="col" role="columnheader">Status</th>
             <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
-            <th scope="col" role="columnheader"><span class="usa-sr-only">Delete Action</span></th>
+            <!-- AJAX will conditionally add a th for delete actions -->
           </tr>
         </thead>
         <tbody id="domain-requests-tbody">
@@ -147,41 +150,6 @@
         class="usa-sr-only usa-table__announcement-region"
         aria-live="polite"
       ></div>
-
-      {% for domain_request in domain_requests %}
-        {% if has_deletable_domain_requests %}
-          {% if domain_request.status == domain_request.DomainRequestStatus.STARTED or domain_request.status == domain_request.DomainRequestStatus.WITHDRAWN  %}
-          <div
-            class="usa-modal"
-            id="toggle-delete-domain-alert-{{ domain_request.id }}"
-            aria-labelledby="Are you sure you want to continue?"
-            aria-describedby="Domain will be removed"
-            data-force-action
-          >
-            <form method="POST" action="{% url "domain-request-delete" pk=domain_request.id %}">
-              {% if domain_request.requested_domain is None %}
-                {% if domain_request.created_at %}
-                  {% with prefix="(created " %}
-                    {% with formatted_date=domain_request.created_at|date:"DATETIME_FORMAT" %}
-                      {% with modal_content=prefix|add:formatted_date|add:" UTC)" %}
-                        {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete this domain request?" modal_description="This will remove the domain request "|add:modal_content|add:" from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
-                      {% endwith %}
-                    {% endwith %}
-                  {% endwith %}
-                {% else %}
-                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete New domain request?" modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
-                {% endif %}
-              {% else %}
-                {% with modal_heading_value=domain_request.requested_domain.name|add:"?" %}
-                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete" heading_value=modal_heading_value modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
-                {% endwith %}
-              {% endif %}
-            </form>
-          </div>
-          {% endif %}
-        {% endif %}
-      {% endfor %}
-
     </div>
     <div class="domain-requests__no-data display-none">
       <p>You haven't requested any domains.</p>
