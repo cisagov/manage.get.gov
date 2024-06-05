@@ -1,0 +1,14 @@
+@use "uswds-core" as *;
+
+.usa-pagination {
+    flex-wrap: wrap;
+    .usa-current {
+        background-color: color('base-dark');
+    }
+}
+
+@include at-media(desktop) {
+    .usa-pagination {
+        flex-wrap: nowrap;
+    }
+}
