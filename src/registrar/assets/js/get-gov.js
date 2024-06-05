@@ -1189,6 +1189,20 @@ document.addEventListener('DOMContentLoaded', function() {
       tableAnnouncementRegion.innerHTML = '';
     }
 
+    function resetSearch() {
+      domainsSearchInput.value = '';
+      loadDomains(1, 'id', 'asc', hasLoaded, '');
+
+      resetheaders();
+    }
+
+    resetButton = document.querySelector('.domains__reset-button');
+    if (resetButton) {
+      resetButton.addEventListener('click', function() {
+        resetSearch();
+      });
+    }
+
     // Load the first page initially
     loadDomains(1);
   }
@@ -1248,19 +1262,14 @@ document.addEventListener('DOMContentLoaded', function() {
               throw new Error(`HTTP error! status: ${response.status}`);
           }
           loadDomainRequests(pageToDisplay, currentSortBy, currentOrder, hasLoaded, currentSearchTerm);
-          //return response.json();
       })
-      // .then(data => {
-      //     console.log('response', data);
-      //     // Perform any additional actions, e.g., updating the UI
-      // })
       .catch(error => console.error('Error fetching domain requests:', error));
   }
   
   // Helper function to get the CSRF token from the cookie
   function getCsrfToken() {
     return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
-}
+  }
 
 
     /**
