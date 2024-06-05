@@ -723,6 +723,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         additional_details_form["additional_details-has_cisa_representative"] = "True"
         additional_details_form["additional_details-has_anything_else_text"] = "True"
+        additional_details_form["additional_details-cisa_representative_first_name"] = "cisa-first-name"
+        additional_details_form["additional_details-cisa_representative_last_name"] = "cisa-last-name"
         additional_details_form["additional_details-cisa_representative_email"] = "FakeEmail@gmail.com"
         additional_details_form["additional_details-anything_else"] = "Nothing else."
 
@@ -731,6 +733,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_details_result = additional_details_form.submit()
         # validate that data from this step are being saved
         domain_request = DomainRequest.objects.get()  # there's only one
+        self.assertEqual(domain_request.cisa_representative_first_name, "cisa-first-name")
+        self.assertEqual(domain_request.cisa_representative_last_name, "cisa-last-name")
         self.assertEqual(domain_request.cisa_representative_email, "FakeEmail@gmail.com")
         self.assertEqual(domain_request.anything_else, "Nothing else.")
         # the post request should return a redirect to the next form in
