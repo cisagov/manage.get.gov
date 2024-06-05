@@ -31,6 +31,17 @@ class User(AbstractUser):
     will be updated if any updates are made to it through Login.gov.
     """
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["username"]),
+            models.Index(fields=["email"]),
+        ]
+
+        permissions = [
+            ("analyst_access_permission", "Analyst Access Permission"),
+            ("full_access_permission", "Full Access Permission"),
+        ]
+
     class VerificationTypeChoices(models.TextChoices):
         """
         Users achieve access to our system in a few different ways.
@@ -77,7 +88,6 @@ class User(AbstractUser):
         null=True,
         blank=True,
         help_text="Phone",
-        db_index=True,
     )
 
     middle_name = models.CharField(
@@ -281,9 +291,3 @@ class User(AbstractUser):
         """
 
         self.check_domain_invitations_on_login()
-
-    class Meta:
-        permissions = [
-            ("analyst_access_permission", "Analyst Access Permission"),
-            ("full_access_permission", "Full Access Permission"),
-        ]
