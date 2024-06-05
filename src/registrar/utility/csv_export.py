@@ -1,20 +1,12 @@
 import csv
 import logging
 from datetime import datetime
-from django.db.models import QuerySet
-from registrar.models.domain import Domain
-from registrar.models.domain_invitation import DomainInvitation
-from registrar.models.domain_request import DomainRequest
-from registrar.models.domain_information import DomainInformation
-from django.db.models import Value, Case, When, CharField, Count, Q
+from registrar.models import Domain, DomainInvitation, DomainRequest, DomainInformation, User, PublicContact, UserDomainRole
+from django.db.models import QuerySet, Value, Case, When, CharField, Count, Q, F, Value, CharField
 from django.utils import timezone
 from django.core.paginator import Paginator
-from django.db.models import F, Value, CharField
 from django.db.models.functions import Concat, Coalesce
 from django.contrib.postgres.aggregates import StringAgg
-
-from registrar.models.public_contact import PublicContact
-from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.enums import DefaultEmail
 
 logger = logging.getLogger(__name__)
@@ -731,7 +723,7 @@ class DomainRequestExport:
             rows = []
             for request in page.object_list:
                 try:
-                    row = parse_row_for_requests(columns, request)
+                    row = DomainRequestExport.parse_row_for_requests(columns, request)
                     rows.append(row)
                 except ValueError as err:
                     logger.error(f"csv_export -> Error when parsing row: {err}")
@@ -751,11 +743,11 @@ class DomainRequestExport:
             "Domain request": request.get('requested_domain_name'),
             "Submitted at": request.get('submission_date'),  # TODO - different format?
             "Status": request.get('status_display'),
-            "Domain type": request.get('request_type'),  # todo - revisit this, redundant fields
-            "Federal type": request.get('federal_type'),
-            "Federal agency": request.get('federal_agency'),
+            "Domain type": request.get('domain_type'),
+            "Federal type": request.get("human_readable_federal_type"),
+            "Federal agency": request.get('federal_agency_name'),
             "Organization name": request.get('organization_name'),
-            "Election office": request.get('is_election_board'),
+            "Election office": request.get("human_readable_election_board"),
             "City": request.get('city'),
             "State/territory": request.get('state_territory'),
             "Region": None,  # TODO - what is this field?
@@ -772,7 +764,7 @@ class DomainRequestExport:
             "AO last name":  request.get('authorizing_official__last_name', ""),
             "AO email": request.get('authorizing_official__email', ""),
             "AO title/role": request.get('authorizing_official__title', ""),
-            # End pf AO
+            # End of AO
             "Request purpose": request.get('purpose'),
             "Request additional details": request.get('additional_details'),
             "Other contacts": request.get('all_other_contacts'),
@@ -818,12 +810,31 @@ class DomainRequestExport:
         parsed_requests = all_requests.annotate(
             requested_domain_name=DomainRequestExport.get_requested_domain_name_query(),
             approved_domain_name=F('approved_domain__name'),
-            request_type=DomainRequestExport.get_request_type_query(),
         ).values(
             "requested_domain_name",
-            "request_type",
+            "generic_org_type",
+            "federal_type",
             "submission_date"
         )
+
+        # Set the domain_type field.
+        # Relies on a python function, get_organization_type_display, so we have to
+        # do this manually.
+
+        for request in parsed_requests:
+            # Handle the domain_type field. Defaults to the wrong variant.
+            org_type = request.get("generic_org_type")
+            federal_type = request.get("federal_type")
+
+            request["domain_type"] = None
+            if org_type:
+                readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type)
+                if federal_type:
+                    readable_federal_type = DomainRequest.BranchChoices.get_branch_label(federal_type)
+                    request["domain_type"] = f"{readable_org_type} - {readable_federal_type}"
+                else:
+                    request["domain_type"] = readable_org_type
+
         DomainRequestExport.write_csv_for_requests(writer, columns, parsed_requests, should_write_header=True)
 
     @staticmethod
@@ -882,7 +893,7 @@ class DomainRequestExport:
 
         Annotations (python-readable equivalents):
             - requested_domain_name: `requested_domain.name If requested_domain.name is not None else default_message`.
-            - request_type: `f"{organization_type} | {federal_type}" If request.federal_type is not None else organization_type`.
+            - request_type: `f"{generic_org_type} | {federal_type}" If request.federal_type is not None else generic_org_type`.
             - additional_details: `f"{cisa_rep} | {anything_else}" If anything_else or cisa_rep else None`.
             - all_other_contacts: `[f"{c.first_name} {c.last_name} {c.email}" for c in request.other_contacts.all()].join(" | ")`.
             - all_current_websites: `# [w.website for w in request.current_websites.all()].join(" | ")`.
@@ -890,12 +901,15 @@ class DomainRequestExport:
         """  # noqa
 
         # As stated, this is equivalent to performing a bunch of if-statement like operations to
-        # each of these fields inside a for loop. However, we want to avoid that for the sake 
+        # each of these fields inside a for loop. However, we want to avoid that for the sake
         # of performance - especially on many-to-many fields (which would require repeated DB calls in the loop).
         # By doing these operations in the DB, we save a lot of computation time.
+
+        # We can do this for most fields, except ones that require us to grab .label (such as generic_org_type).
+        # For those fields, they will otherwise just return the value representation so we parse those manually.
+
         parsed_requests = requests_to_convert.annotate(
             requested_domain_name=DomainRequestExport.get_requested_domain_name_query(),
-            request_type=DomainRequestExport.get_request_type_query(),
             additional_details=DomainRequestExport.get_additional_details_query(),
             all_other_contacts=StringAgg(
                 Concat('other_contacts__first_name', Value(' '), 'other_contacts__last_name', Value(' '), 'other_contacts__email'),
@@ -904,18 +918,29 @@ class DomainRequestExport:
             ),
             all_current_websites=StringAgg('current_websites__website', delimiter=' | ', distinct=True),
             all_alternative_domains=StringAgg('alternative_domains__website', delimiter=' | ', distinct=True),
+
+            # TODO - this is returning the wrong count
             creator_approved_domains_count=Count(
-                'creator__domainrequest_set', 
-                filter=Q(status=DomainRequest.DomainRequestStatus.APPROVED), distinct=True
+                'creator__domain_requests_created__id', 
+                filter=Q(creator__domain_requests_created__status=DomainRequest.DomainRequestStatus.APPROVED),
+                distinct=True
             ),
+            # TODO - this is returning the wrong count
             creator_active_requests_count=Count(
-                'creator__domainrequest_set', 
-                filter=Q(status__in=[
+                'creator__domain_requests_created__id', 
+                filter=Q(creator__domain_requests_created__status__in=[
                     DomainRequest.DomainRequestStatus.SUBMITTED,
                     DomainRequest.DomainRequestStatus.IN_REVIEW,
                     DomainRequest.DomainRequestStatus.ACTION_NEEDED
                 ]), 
                 distinct=True
+            ),
+            federal_agency_name = F("federal_agency__agency"),
+            human_readable_election_board=Case(
+                When(is_election_board=True, then=Value("Yes")),
+                When(is_election_board=False, then=Value("No")),
+                default=Value("N/A"),
+                output_field=CharField()
             )
         )
 
@@ -925,8 +950,9 @@ class DomainRequestExport:
             'all_other_contacts', 
             'all_current_websites', 
             'additional_details',
-            'request_type', 
             'requested_domain_name', 
+            "federal_agency_name",
+            "human_readable_election_board",
             # Creator
             'creator__first_name', 
             'creator__last_name', 
@@ -939,18 +965,35 @@ class DomainRequestExport:
             'authorizing_official__email', 
             'authorizing_official__title',
             # Existing fields
+            "id",
             'submission_date', 
             'status', 
             'federal_type',
-            'federal_agency', 
             'organization_name', 
             'is_election_board', 
             'city', 
             'state_territory',
             'purpose', 
             'cisa_representative_email', 
-            'investigator', 
+            'investigator',
+            "generic_org_type",
+            "federal_type",
         )
+
+        for request in requests_dict:
+            # Handle the domain_type field
+            org_type = request.get("generic_org_type")
+            request["domain_type"] = None
+            if org_type:
+                readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type)
+                request["domain_type"] = readable_org_type
+            
+            # Handle the federal_type field. Defaults to the wrong variant.
+            federal_type = request.get("federal_type")
+            if federal_type:
+                request["human_readable_federal_type"] = DomainRequest.BranchChoices.get_branch_label(federal_type)
+            else:
+                request["human_readable_federal_type"] = None
 
         return requests_dict
 
@@ -979,29 +1022,6 @@ class DomainRequestExport:
         )
 
         return requested_domain_name_query
-
-    @staticmethod
-    def get_request_type_query():
-        """
-        A SQL case statement for DomainRequest.organization_type and DomainRequest.federal_type.
-
-        When ran, returns a concatenation of organization_type and federal_type - seperated by " - ".
-        If federal_type is null, then we just return the organization_type.
-
-        Equivalent to: 
-
-        `f"{organization_type} | {federal_type}" If request.federal_type is not None else organization_type`
-        """
-        request_type_query = Case(
-            When(
-                federal_type__isnull=False, 
-                then=Concat('organization_type', Value(' - '), 'federal_type')
-            ),
-            default=F('organization_type'),
-            output_field=CharField(),
-        )
-
-        return request_type_query
 
         
     @staticmethod

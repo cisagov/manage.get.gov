@@ -124,6 +124,11 @@ class DomainRequest(TimeStampedModel):
         SPECIAL_DISTRICT = "special_district", "Special district"
         SCHOOL_DISTRICT = "school_district", "School district"
 
+        @classmethod
+        def get_org_label(cls, org_name: str):
+            """Returns the associated label for a given org name"""
+            return cls(org_name).label if org_name else None
+
     class OrgChoicesElectionOffice(models.TextChoices):
         """
         Primary organization choices for Django admin:
@@ -229,6 +234,11 @@ class DomainRequest(TimeStampedModel):
         EXECUTIVE = "executive", "Executive"
         JUDICIAL = "judicial", "Judicial"
         LEGISLATIVE = "legislative", "Legislative"
+
+        @classmethod
+        def get_branch_label(cls, branch_name: str):
+            """Returns the associated label for a given org name"""
+            return cls(branch_name).label if branch_name else None
 
     class RejectionReasons(models.TextChoices):
         DOMAIN_PURPOSE = "purpose_not_met", "Purpose requirements not met"
