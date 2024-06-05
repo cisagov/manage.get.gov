@@ -1762,11 +1762,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     if next_char.isdigit():
                         should_apply_default_filter = True
 
+        # Select domain request to change -> Domain requests
+        if extra_context is None:
+            extra_context = {}
+            extra_context["tabtitle"] = "Domain requests"
+
         if should_apply_default_filter:
             # modify the GET of the request to set the selected filter
             modified_get = copy.deepcopy(request.GET)
             modified_get["status__in"] = "submitted,in review,action needed"
             request.GET = modified_get
+
         response = super().changelist_view(request, extra_context=extra_context)
         return response
 
@@ -1774,14 +1780,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
         return super().change_view(request, object_id, form_url, extra_context)
-
-    # Select domain request to change -> Domain requests
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Domain requests"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
