@@ -23,9 +23,19 @@ def get_domain_requests_json(request):
     search_term = request.GET.get("search_term")
 
     if search_term:
-        domain_requests = domain_requests.filter(
-            Q(requested_domain__name__icontains=search_term)
-        )
+        search_term_lower = search_term.lower()
+        new_domain_request_text = "new domain request"
+    
+        # Check if the search term is a substring of 'New domain request'
+        if search_term_lower in new_domain_request_text:
+            domain_requests = domain_requests.filter(
+                Q(requested_domain__name__icontains=search_term) |
+                Q(requested_domain__isnull=True) 
+            )
+        else:
+            domain_requests = domain_requests.filter(
+                Q(requested_domain__name__icontains=search_term)
+            )
 
     if order == "desc":
         sort_by = f"-{sort_by}"
