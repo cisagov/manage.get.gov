@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from registrar.models import DomainRequest
 from waffle.decorators import flag_is_active
 
 

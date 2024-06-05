@@ -1108,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', function() {
           data.domains.forEach(domain => {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
-            const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : null;
+            const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
 

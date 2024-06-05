@@ -1,5 +1,7 @@
 from registrar.models import DomainRequest
 from django.urls import reverse
+
+from registrar.models.draft_domain import DraftDomain
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_datetime
@@ -10,32 +12,37 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
 
+        lamb_chops, _ = DraftDomain.objects.get_or_create(name="lamb-chops.gov")
+        short_ribs, _ = DraftDomain.objects.get_or_create(name="short-ribs.gov")
+        beef_chuck, _ = DraftDomain.objects.get_or_create(name="beef-chuck.gov")
+        stew_beef, _ = DraftDomain.objects.get_or_create(name="stew-beef.gov")
+
         # Create domain requests for the user
         self.domain_requests = [
             DomainRequest.objects.create(
                 creator=self.user,
-                requested_domain=None,
+                requested_domain=lamb_chops,
                 submission_date="2024-01-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-01-01",
             ),
             DomainRequest.objects.create(
                 creator=self.user,
-                requested_domain=None,
+                requested_domain=short_ribs,
                 submission_date="2024-02-01",
                 status=DomainRequest.DomainRequestStatus.WITHDRAWN,
                 created_at="2024-02-01",
             ),
             DomainRequest.objects.create(
                 creator=self.user,
-                requested_domain=None,
+                requested_domain=beef_chuck,
                 submission_date="2024-03-01",
                 status=DomainRequest.DomainRequestStatus.REJECTED,
                 created_at="2024-03-01",
             ),
             DomainRequest.objects.create(
                 creator=self.user,
-                requested_domain=None,
+                requested_domain=stew_beef,
                 submission_date="2024-04-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-04-01",
@@ -194,6 +201,61 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
                 else "settings"
             )
             self.assertEqual(svg_icon_expected, svg_icons[i])
+
+    def test_get_domain_requests_json_search(self):
+        """Test search."""
+        # Define your URL variables as a dictionary
+        url_vars = {"search_term": "lamb"}  # Modify with your actual variables
+
+        # Use the params parameter to include URL variables
+        response = self.app.get(reverse("get_domain_requests_json"), params=url_vars)
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertFalse(data["has_next"])
+        self.assertFalse(data["has_previous"])
+        self.assertEqual(data["num_pages"], 1)
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["unfiltered_total"], 12)
+
+        # Check the number of domain requests
+        self.assertEqual(len(data["domain_requests"]), 1)
+
+        # Extract fields from response
+        requested_domains = [request["requested_domain"] for request in data["domain_requests"]]
+
+        self.assertEqual(
+            self.domain_requests[0].requested_domain.name,
+            requested_domains[0],
+        )
+
+    def test_get_domain_requests_json_search_new_domains(self):
+        """Test search when looking up New domain requests"""
+        # Define your URL variables as a dictionary
+        url_vars = {"search_term": "ew"}  # Modify with your actual variables
+
+        # Use the params parameter to include URL variables
+        response = self.app.get(reverse("get_domain_requests_json"), params=url_vars)
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        pagination_fields = ["page", "has_next", "has_previous", "num_pages", "total", "unfiltered_total"]
+        expected_pagination_values = [1, False, False, 1, 9, 12]
+        for field, expected_value in zip(pagination_fields, expected_pagination_values):
+            self.assertEqual(data[field], expected_value)
+
+        # Check the number of domain requests
+        self.assertEqual(len(data["domain_requests"]), 9)
+
+        # Extract fields from response
+        requested_domains = [request.get("requested_domain") for request in data["domain_requests"]]
+
+        expected_domain_values = ["stew-beef.gov"] + [None] * 8
+        for expected_value, actual_value in zip(expected_domain_values, requested_domains):
+            self.assertEqual(expected_value, actual_value)
 
     def test_pagination(self):
         """Test that pagination works properly. There are 11 total non-approved requests and

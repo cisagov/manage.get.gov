@@ -102,6 +102,35 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             )
             self.assertEqual(svg_icon_expected, svg_icons[i])
 
+    def test_get_domains_json_search(self):
+        """Test search."""
+        # Define your URL variables as a dictionary
+        url_vars = {"search_term": "e2"}  # Modify with your actual variables
+
+        # Use the params parameter to include URL variables
+        response = self.app.get(reverse("get_domains_json"), params=url_vars)
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertFalse(data["has_next"])
+        self.assertFalse(data["has_previous"])
+        self.assertEqual(data["num_pages"], 1)
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["unfiltered_total"], 3)
+
+        # Check the number of domain requests
+        self.assertEqual(len(data["domains"]), 1)
+
+        # Extract fields from response
+        domains = [request["name"] for request in data["domains"]]
+
+        self.assertEqual(
+            self.domain2.name,
+            domains[0],
+        )
+
     def test_pagination(self):
         """Test that pagination is correct in the response"""
         response = self.app.get(reverse("get_domains_json"), {"page": 1})

@@ -23,9 +23,7 @@ def get_domains_json(request):
     search_term = request.GET.get("search_term")
 
     if search_term:
-        objects = objects.filter(
-            Q(name__icontains=search_term)
-        )
+        objects = objects.filter(Q(name__icontains=search_term))
 
     if sort_by == "state_display":
         # Fetch the objects and sort them in Python
