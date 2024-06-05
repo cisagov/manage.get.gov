@@ -30,12 +30,8 @@
     {% if subtitle %}
         {{ subtitle }} | 
     {% endif %}
-    {% if title == "Audit log administration" %}
-        Audit log |
-    {% elif title == "Select log entry to change" %}
-      Log entries | 
-    {% elif title == "Select log entry to view" %}
-      Log entries | 
+    {% if tabtitle %}
+        {{ tabtitle }} |
     {% else %}
         {{ title }} |
     {% endif %}
