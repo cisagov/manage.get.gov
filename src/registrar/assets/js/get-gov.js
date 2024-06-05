@@ -1019,6 +1019,10 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
   }
 }
 
+/**
+ * A helper that toggles content/ no content/ no search results
+ *
+*/
 const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
   const { unfiltered_total, total } = data;
 
@@ -1040,6 +1044,19 @@ const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper)
     hideElement(noSearchResultsWrapper);
     showElement(noDataWrapper);
   }
+};
+
+/**
+ * A helper that resets sortable table headers
+ *
+*/
+const unsetHeader = (header) => {
+  header.removeAttribute('aria-sort');
+  let headerName = header.innerText;
+  const headerLabel = `${headerName}', sortable column, currently unsorted"`;
+  const headerButtonLabel = `Click to sort by ascending order.`;
+  header.setAttribute("aria-label", headerLabel);
+  header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
 };
 
 /**
@@ -1130,9 +1147,10 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           // initialize tool tips immediately after the associated DOM elements are added
           initializeTooltips();
-          if (hasLoaded)
-            ScrollToElement('id', 'domains-header');
 
+          // Do not scroll on first page load
+          if (loaded)
+            ScrollToElement('id', 'domains-header');
           hasLoaded = true;
 
           // update pagination
@@ -1155,8 +1173,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => console.error('Error fetching domains:', error));
     }
-
-    
 
     // Add event listeners to table headers for sorting
     tableHeaders.forEach(header => {
@@ -1183,8 +1199,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset UI and accessibility
     function resetheaders() {
       tableHeaders.forEach(header => {
-       // unset sort UI in headers
-        window.table.unsetHeader(header);
+        // unset sort UI in headers
+        unsetHeader(header);
       });
       // Reset the announcement region
       tableAnnouncementRegion.innerHTML = '';
@@ -1243,34 +1259,38 @@ document.addEventListener('DOMContentLoaded', function() {
     let tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
     let tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region')
 
+    /**
+     * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
+     * @param {*} domainRequestPk - the identifier for the request that we're deleting
+     * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
+    */
     function deleteDomainRequest(domainRequestPk,pageToDisplay) {
+      // Get csrf token
       const csrfToken = getCsrfToken();
-
       // Create FormData object and append the CSRF token
       const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&delete-domain-request=`;
 
-
       fetch(`/domain-request/${domainRequestPk}/delete`, {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: formData
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData
       })
       .then(response => {
-          if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          loadDomainRequests(pageToDisplay, currentSortBy, currentOrder, hasLoaded, currentSearchTerm);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        // Update data and UI
+        loadDomainRequests(pageToDisplay, currentSortBy, currentOrder, hasLoaded, currentSearchTerm);
       })
       .catch(error => console.error('Error fetching domain requests:', error));
-  }
+    }
   
-  // Helper function to get the CSRF token from the cookie
-  function getCsrfToken() {
-    return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
-  }
-
+    // Helper function to get the CSRF token from the cookie
+    function getCsrfToken() {
+      return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    }
 
     /**
      * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
@@ -1334,11 +1354,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const actionLabel = request.action_label;
             const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
             
-            
+            // Even if the request is not deletable, we may need this empty string for the td if the deletable column is displayed
             let modalTrigger = '';
 
+            // If the request is deletable, create modal body and insert it
             if (request.is_deletable) {
-
               let modalHeading = '';
               let modalDescription = '';
 
@@ -1450,9 +1470,11 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             tbody.appendChild(row);
           });
+
           // initialize modals immediately after the DOM content is updated
           initializeModals();
 
+          // Now the DOM and modals are ready, add listeners to the submit buttons
           const modals = document.querySelectorAll('.usa-modal__content');
 
           modals.forEach(modal => {
@@ -1460,7 +1482,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const closeButton = modal.querySelector('.usa-modal__close');
             submitButton.addEventListener('click', function() {
               pk = submitButton.getAttribute('data-pk');
+              // Close the modal to remove the USWDS UI locl classes
               closeButton.click();
+              // If we're deleteing the last item on a page that is not page 1, we'll need to refresh the display to the previous page
               let pageToDisplay = data.page;
               if (data.total == 1 && data.unfiltered_total > 1) {
                 pageToDisplay--;
@@ -1469,9 +1493,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
           });
 
-          if (hasLoaded)
+          // Do not scroll on first page load
+          if (loaded)
             ScrollToElement('id', 'domain-requests-header');
-
           hasLoaded = true;
 
           // update the pagination after the domain requests list is updated
@@ -1519,8 +1543,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset UI and accessibility
     function resetheaders() {
       tableHeaders.forEach(header => {
-       // unset sort UI in headers
-        window.table.unsetHeader(header);
+        // unset sort UI in headers
+        unsetHeader(header);
       });
       // Reset the announcement region
       tableAnnouncementRegion.innerHTML = '';

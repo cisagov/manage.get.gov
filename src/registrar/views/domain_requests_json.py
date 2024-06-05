@@ -27,6 +27,8 @@ def get_domain_requests_json(request):
         new_domain_request_text = "new domain request"
     
         # Check if the search term is a substring of 'New domain request'
+        # If yes, we should return domain requests that do not have a
+        # requested_domain (those display as New domain request in the UI)
         if search_term_lower in new_domain_request_text:
             domain_requests = domain_requests.filter(
                 Q(requested_domain__name__icontains=search_term) |
