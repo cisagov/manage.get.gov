@@ -5709,7 +5709,7 @@ const table = behavior({
   },
   TABLE,
   SORTABLE_HEADER,
-  SORT_BUTTON,
+  SORT_BUTTON
 });
 module.exports = table;
 
