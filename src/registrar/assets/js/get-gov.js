@@ -1151,6 +1151,7 @@ document.addEventListener('DOMContentLoaded', function() {
           );
           currentSortBy = sortBy;
           currentOrder = order;
+          currentSearchTerm = searchTerm;
         })
         .catch(error => console.error('Error fetching domains:', error));
     }
@@ -1192,7 +1193,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetSearch() {
       domainsSearchInput.value = '';
       loadDomains(1, 'id', 'asc', hasLoaded, '');
-
       resetheaders();
     }
 
@@ -1490,6 +1490,7 @@ document.addEventListener('DOMContentLoaded', function() {
           );
           currentSortBy = sortBy;
           currentOrder = order;
+          currentSearchTerm = searchTerm;
         })
         .catch(error => console.error('Error fetching domain requests:', error));
     }
@@ -1523,6 +1524,19 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       // Reset the announcement region
       tableAnnouncementRegion.innerHTML = '';
+    }
+
+    function resetSearch() {
+      domainRequestsSearchInput.value = '';
+      loadDomainRequests(1, 'id', 'asc', hasLoaded, '');
+      resetheaders();
+    }
+
+    resetButton = document.querySelector('.domain-requests__reset-button');
+    if (resetButton) {
+      resetButton.addEventListener('click', function() {
+        resetSearch();
+      });
     }
 
     // Load the first page initially
