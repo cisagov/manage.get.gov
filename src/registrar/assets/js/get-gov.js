@@ -1229,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
     let tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region')
 
-    function deleteDomainRequest(domainRequestPk) {
+    function deleteDomainRequest(domainRequestPk,pageToDisplay) {
       const csrfToken = getCsrfToken();
 
       // Create FormData object and append the CSRF token
@@ -1247,12 +1247,13 @@ document.addEventListener('DOMContentLoaded', function() {
           if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
           }
-          return response.json();
+          loadDomainRequests(pageToDisplay, currentSortBy, currentOrder, hasLoaded, currentSearchTerm);
+          //return response.json();
       })
-      .then(data => {
-          console.log('response', data);
-          // Perform any additional actions, e.g., updating the UI
-      })
+      // .then(data => {
+      //     console.log('response', data);
+      //     // Perform any additional actions, e.g., updating the UI
+      // })
       .catch(error => console.error('Error fetching domain requests:', error));
   }
   
@@ -1361,7 +1362,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
               const modalSubmit = `
                 <button type="button"
-                class="usa-button usa-button--secondary usa-moda__submit"
+                class="usa-button usa-button--secondary usa-modal__submit"
                 data-pk = ${request.id}
                 name="delete-domain-request">Yes, delete request</button>
               `
@@ -1443,16 +1444,21 @@ document.addEventListener('DOMContentLoaded', function() {
           // initialize modals immediately after the DOM content is updated
           initializeModals();
 
-          let subbmitButtons = document.querySelectorAll('.usa-moda__submit');
-          subbmitButtons.forEach(button => {
-            button.addEventListener('click', function() {
-              pk = button.getAttribute('data-pk');
-              console.log('pk ' + pk);
-              deleteDomainRequest(pk);
-              loadDomainRequests(1, 'id', 'asc');
+          const modals = document.querySelectorAll('.usa-modal__content');
+
+          modals.forEach(modal => {
+            const submitButton = modal.querySelector('.usa-modal__submit');
+            const closeButton = modal.querySelector('.usa-modal__close');
+            submitButton.addEventListener('click', function() {
+              pk = submitButton.getAttribute('data-pk');
+              closeButton.click();
+              let pageToDisplay = data.page;
+              if (data.total == 1 && data.unfiltered_total > 1) {
+                pageToDisplay--;
+              }
+              deleteDomainRequest(pk, pageToDisplay);
             });
           });
-
 
           if (hasLoaded)
             ScrollToElement('id', 'domain-requests-header');
