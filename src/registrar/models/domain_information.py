@@ -22,6 +22,16 @@ class DomainInformation(TimeStampedModel):
     the domain request once approved, so copying them that way we can make changes
     after its approved. Most fields here are copied from DomainRequest."""
 
+    class Meta:
+        """Contains meta information about this class"""
+
+        indexes = [
+            models.Index(fields=["domain"]),
+            models.Index(fields=["domain_request"]),
+        ]
+
+        verbose_name_plural = "Domain information"
+
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
     # use the short names in Django admin
@@ -111,7 +121,6 @@ class DomainInformation(TimeStampedModel):
     organization_name = models.CharField(
         null=True,
         blank=True,
-        db_index=True,
     )
     address_line1 = models.CharField(
         null=True,
@@ -138,7 +147,6 @@ class DomainInformation(TimeStampedModel):
         max_length=10,
         null=True,
         blank=True,
-        db_index=True,
         verbose_name="zip code",
     )
     urbanization = models.CharField(
@@ -350,6 +358,3 @@ class DomainInformation(TimeStampedModel):
     def _get_many_to_many_fields():
         """Returns a set of each field.name that has the many to many relation"""
         return {field.name for field in DomainInformation._meta.many_to_many}  # type: ignore
-
-    class Meta:
-        verbose_name_plural = "Domain information"
