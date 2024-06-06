@@ -1514,19 +1514,11 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, True)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-        # Revert back to in review to reset for the next assert
-        domain_request.status = DomainRequest.DomainRequestStatus.IN_REVIEW
-        domain_request.save()
-
         # Test the email sent out for bad_name
         bad_name = DomainRequest.ActionNeededReasons.BAD_NAME
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=bad_name)
         self.assert_email_is_accurate("DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS", 1, EMAIL, True)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
-
-        # Revert back to in review to reset for the next assert
-        domain_request.status = DomainRequest.DomainRequestStatus.IN_REVIEW
-        domain_request.save()
 
         # Test the email sent out for eligibility_unclear
         eligibility_unclear = DomainRequest.ActionNeededReasons.ELIGIBILITY_UNCLEAR
@@ -1534,19 +1526,11 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assert_email_is_accurate("ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", 2, EMAIL, True)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-        # Revert back to in review to reset for the next assert
-        domain_request.status = DomainRequest.DomainRequestStatus.IN_REVIEW
-        domain_request.save()
-
         # Test the email sent out for questionable_ao
         questionable_ao = DomainRequest.ActionNeededReasons.QUESTIONABLE_AUTHORIZING_OFFICIAL
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_ao)
         self.assert_email_is_accurate("AUTHORIZING OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, True)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
-
-        # Revert back to in review to reset for the next assert
-        domain_request.status = DomainRequest.DomainRequestStatus.IN_REVIEW
-        domain_request.save()
 
         # Assert that no other emails are sent on OTHER
         other = DomainRequest.ActionNeededReasons.OTHER
