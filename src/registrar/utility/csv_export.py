@@ -748,6 +748,27 @@ class DomainRequestExport:
     def parse_row_for_requests(columns, request):
         """Given a set of columns, generate a new row from cleaned column data"""
 
+        # Handle the domain_type field. Defaults to the wrong format.
+        org_type = request.get("generic_org_type")
+        if org_type and request.get("domain_type") is None:
+            readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type)
+            request["domain_type"] = readable_org_type
+
+        # Handle the federal_type field. Defaults to the wrong format.
+        federal_type = request.get("federal_type")
+        if federal_type:
+            request["human_readable_federal_type"] = DomainRequest.BranchChoices.get_branch_label(federal_type)
+
+        # Handle the status field. Defaults to the wrong format.
+        status = request.get("status")
+        if status:
+            request["status_display"] = DomainRequest.DomainRequestStatus.get_status_label(status)
+
+        # Handle the region field.
+        state_territory = request.get("state_territory")
+        if state_territory:
+            request["region"] = get_region(state_territory)
+
         # create a dictionary of fields which can be included in output
         FIELDS = {
             "Domain request": request.get("requested_domain_name"),
@@ -896,13 +917,13 @@ class DomainRequestExport:
         Returns:
             QuerySet: An annotated queryset that includes both original and annotated fields.
 
-        Annotations (python-readable equivalents):
+        Annotations (examples of python-readable equivalents):
             - requested_domain_name: `requested_domain.name If requested_domain.name is not None else default_message`.
             - request_type: `f"{generic_org_type} | {federal_type}" If request.federal_type is not None else generic_org_type`.
             - additional_details: `f"{cisa_rep} | {anything_else}" If anything_else or cisa_rep else None`.
             - all_other_contacts: `[f"{c.first_name} {c.last_name} {c.email}" for c in request.other_contacts.all()].join(" | ")`.
-            - all_current_websites: `# [w.website for w in request.current_websites.all()].join(" | ")`.
-            - all_alternative_domains: `# [d.website for d in request.alternative_domains.all()].join(" | ")`.
+            - all_current_websites: `[w.website for w in request.current_websites.all()].join(" | ")`.
+            - all_alternative_domains: `[d.website for d in request.alternative_domains.all()].join(" | ")`.
         """  # noqa
 
         # As stated, this is equivalent to performing a bunch of if-statement like operations to
@@ -963,30 +984,6 @@ class DomainRequestExport:
             "generic_org_type",
             "federal_type",
         )
-
-        # We can't natively call python functions from the ORM.
-        # Thus in any place where we do  that, we have to handle it here.
-        for request in requests_dict:
-            # Handle the domain_type field. Defaults to the wrong format.
-            org_type = request.get("generic_org_type")
-            if org_type:
-                readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type)
-                request["domain_type"] = readable_org_type
-
-            # Handle the federal_type field. Defaults to the wrong format.
-            federal_type = request.get("federal_type")
-            if federal_type:
-                request["human_readable_federal_type"] = DomainRequest.BranchChoices.get_branch_label(federal_type)
-
-            # Handle the status field. Defaults to the wrong format.
-            status = request.get("status")
-            if status:
-                request["status_display"] = DomainRequest.DomainRequestStatus.get_status_label(status)
-
-            # Handle the region field.
-            state_territory = request.get("state_territory")
-            if state_territory:
-                request["region"] = get_region(state_territory)
 
         return requests_dict
 
