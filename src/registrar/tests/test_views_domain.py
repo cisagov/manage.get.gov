@@ -222,27 +222,6 @@ class TestDomainDetail(TestDomainOverview):
         self.assertContains(detail_page, "igorville.gov")
         self.assertContains(detail_page, "Status")
 
-    def test_unknown_domain_does_not_show_as_expired_on_homepage(self):
-        """An UNKNOWN domain does not show as expired on the homepage.
-        It shows as 'DNS needed'"""
-        # At the time of this test's writing, there are 6 UNKNOWN domains inherited
-        # from constructors. Let's reset.
-        with less_console_noise():
-            Domain.objects.all().delete()
-            UserDomainRole.objects.all().delete()
-            self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-            home_page = self.app.get("/")
-            self.assertNotContains(home_page, "igorville.gov")
-            self.role, _ = UserDomainRole.objects.get_or_create(
-                user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
-            )
-            home_page = self.app.get("/")
-            self.assertContains(home_page, "igorville.gov")
-            igorville = Domain.objects.get(name="igorville.gov")
-            self.assertEquals(igorville.state, Domain.State.UNKNOWN)
-            self.assertNotContains(home_page, "Expired")
-            self.assertContains(home_page, "DNS needed")
-
     def test_unknown_domain_does_not_show_as_expired_on_detail_page(self):
         """An UNKNOWN domain should not exist on the detail_page anymore.
         It shows as 'DNS needed'"""
@@ -258,11 +237,9 @@ class TestDomainDetail(TestDomainOverview):
                 user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
             )
 
-            home_page = self.app.get("/")
-            self.assertContains(home_page, "igorville.gov")
             igorville = Domain.objects.get(name="igorville.gov")
             self.assertEquals(igorville.state, Domain.State.UNKNOWN)
-            detail_page = home_page.click("Manage", index=0)
+            detail_page = self.app.get(f"/domain/{igorville.id}")
             self.assertContains(detail_page, "Expired")
 
             self.assertNotContains(detail_page, "DNS needed")
@@ -274,26 +251,18 @@ class TestDomainDetail(TestDomainOverview):
         with less_console_noise():
             self.user.status = User.RESTRICTED
             self.user.save()
-            home_page = self.app.get("/")
-            self.assertContains(home_page, "igorville.gov")
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
 
     def test_domain_detail_allowed_for_on_hold(self):
         """Test that the domain overview page displays for on hold domain"""
         with less_console_noise():
-            home_page = self.app.get("/")
-            self.assertContains(home_page, "on-hold.gov")
-
             # View domain overview page
             detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_on_hold.id}))
             self.assertNotContains(detail_page, "Edit")
 
     def test_domain_detail_see_just_nameserver(self):
         with less_console_noise():
-            home_page = self.app.get("/")
-            self.assertContains(home_page, "justnameserver.com")
-
             # View nameserver on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_just_nameserver.id}))
 
@@ -303,9 +272,6 @@ class TestDomainDetail(TestDomainOverview):
 
     def test_domain_detail_see_nameserver_and_ip(self):
         with less_console_noise():
-            home_page = self.app.get("/")
-            self.assertContains(home_page, "nameserverwithip.gov")
-
             # View nameserver on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_with_ip.id}))
 
@@ -1643,8 +1609,6 @@ class TestDomainSecurityEmail(TestDomainOverview):
         management pages share the same permissions class"""
         self.user.status = User.RESTRICTED
         self.user.save()
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "igorville.gov")
         with less_console_noise():
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)

@@ -65,6 +65,14 @@ class Domain(TimeStampedModel, DomainHelper):
        domain meets the required checks.
     """
 
+    class Meta:
+        """Contains meta information about this class"""
+
+        indexes = [
+            models.Index(fields=["name"]),
+            models.Index(fields=["state"]),
+        ]
+
     def __init__(self, *args, **kwargs):
         self._cache = {}
         super(Domain, self).__init__(*args, **kwargs)
@@ -1061,6 +1069,15 @@ class Domain(TimeStampedModel, DomainHelper):
             return True
         now = timezone.now().date()
         return self.expiration_date < now
+
+    def state_display(self):
+        """Return the display status of the domain."""
+        if self.is_expired() and self.state != self.State.UNKNOWN:
+            return "Expired"
+        elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
+            return "DNS needed"
+        else:
+            return self.state.capitalize()
 
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.
