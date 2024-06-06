@@ -41,6 +41,9 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         form = self.form_class(instance=self.object)
         context = self.get_context_data(object=self.object, form=form)
 
+        if hasattr(self.object, "finished_setup") and not self.object.finished_setup:
+            context["show_confirmation_modal"]
+
         return_to_request = request.GET.get("return_to_request")
         if return_to_request:
             context["return_to_request"] = True
