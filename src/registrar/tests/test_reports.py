@@ -681,7 +681,7 @@ class ExportDataTest(MockDb, MockEppLib):
             }
 
             all_requests = DomainRequest.objects.filter(**filter_condition).order_by(*sort_fields).distinct()
-            extra = all_requests.values("requested_domain_name", "generic_org_type", "federal_type", "submission_date")
+            extra = all_requests.values("generic_org_type", "federal_type", "submission_date")
             DomainRequestExport.write_csv_for_requests(
                 writer, columns, all_requests, extra_request_fields=extra, should_write_header=True
             )

@@ -748,7 +748,7 @@ class DomainRequestExport:
         writer.writerows(total_body_rows)
 
     @staticmethod
-    def parse_row_for_requests(columns, request: DomainRequest, extra_fields: QuerySet):
+    def parse_row_for_requests(columns, request: DomainRequest, extra_fields: dict):
         """
         Given a set of columns and a request dictionary,
         generate a new row from cleaned column data
@@ -849,10 +849,8 @@ class DomainRequestExport:
 
         all_requests = DomainRequest.objects.filter(**filter_condition).order_by(*sort_fields).distinct()
 
-        # Convert the request to a querystring for faster processing. Only grab what we need.
-        annotations = all_requests.annotate(
-            requested_domain_name=DomainRequestExport.get_requested_domain_name_query(),
-        ).values("requested_domain_name", "generic_org_type", "federal_type", "submission_date")
+        # Convert the request to a querystring. Only grab what we need.
+        annotations = all_requests.values("generic_org_type", "federal_type", "submission_date")
 
         # Override the default value for domain_type
         for request in annotations:
