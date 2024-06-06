@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models.functions import Concat, Coalesce
 from django.contrib.postgres.aggregates import StringAgg
+from registrar.models.utility.generic_helper import Timer
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.enums import DefaultEmail
 
@@ -719,21 +720,25 @@ class DomainRequestExport:
         writer,
         columns,
         requests,
+        extra_request_fields=None,
         should_write_header=True,
     ):
         """Receives params from the parent methods and outputs a CSV with filtered and sorted requests.
         Works with write_header as long as the same writer object is passed."""
 
+        if extra_request_fields:
+            extra_request_fields_dict = {request["id"]: request for request in extra_request_fields}
+
         # Reduce the memory overhead when performing the write operation
         paginator = Paginator(requests, 1000)
         total_body_rows = []
-
         for page_num in paginator.page_range:
             page = paginator.page(page_num)
             rows = []
             for request in page.object_list:
                 try:
-                    row = DomainRequestExport.parse_row_for_requests(columns, request)
+                    extra = extra_request_fields_dict.get(request.id) if extra_request_fields else None
+                    row = DomainRequestExport.parse_row_for_requests(columns, request, extra)
                     rows.append(row)
                 except ValueError as err:
                     logger.error(f"csv_export -> Error when parsing row: {err}")
@@ -745,63 +750,70 @@ class DomainRequestExport:
         writer.writerows(total_body_rows)
 
     @staticmethod
-    def parse_row_for_requests(columns, request):
-        """Given a set of columns, generate a new row from cleaned column data"""
+    def parse_row_for_requests(columns, request: DomainRequest, extra_fields: QuerySet):
+        """
+        Given a set of columns and a request dictionary, 
+        generate a new row from cleaned column data
+        """
 
         # Handle the domain_type field. Defaults to the wrong format.
-        org_type = request.get("generic_org_type")
-        if org_type and request.get("domain_type") is None:
+        org_type = request.organization_type
+        if org_type and extra_fields.get("domain_type") is None:
             readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type)
-            request["domain_type"] = readable_org_type
+            extra_fields["domain_type"] = readable_org_type
 
         # Handle the federal_type field. Defaults to the wrong format.
-        federal_type = request.get("federal_type")
-        if federal_type and request.get("human_readable_federal_type") is None:
-            request["human_readable_federal_type"] = DomainRequest.BranchChoices.get_branch_label(federal_type)
+        federal_type = request.federal_type
+        if federal_type and extra_fields.get("human_readable_federal_type") is None:
+            extra_fields["human_readable_federal_type"] = DomainRequest.BranchChoices.get_branch_label(federal_type)
 
         # Handle the status field. Defaults to the wrong format.
-        status = request.get("status")
-        if status and request.get("status_display") is None:
-            request["status_display"] = DomainRequest.DomainRequestStatus.get_status_label(status)
+        status = request.status
+        if status and extra_fields.get("status_display") is None:
+            extra_fields["status_display"] = DomainRequest.DomainRequestStatus.get_status_label(status)
 
         # Handle the region field.
-        state_territory = request.get("state_territory")
-        if state_territory and request.get("region") is None:
-            request["region"] = get_region(state_territory)
+        state_territory = request.state_territory
+        if state_territory and extra_fields.get("region") is None:
+            extra_fields["region"] = get_region(state_territory)
+
+        human_readable_election_board = "N/A"
+        if request.is_election_board is not None:
+            human_readable_election_board = "Yes" if request.is_election_board else "No"
 
         # create a dictionary of fields which can be included in output
         FIELDS = {
-            "Domain request": request.get("requested_domain_name"),
-            "Submitted at": request.get("submission_date"),
-            "Status": request.get("status_display"),
-            "Domain type": request.get("domain_type"),
-            "Federal type": request.get("human_readable_federal_type"),
-            "Federal agency": request.get("federal_agency_name"),
-            "Organization name": request.get("organization_name"),
-            "Election office": request.get("human_readable_election_board"),
-            "City": request.get("city"),
-            "State/territory": request.get("state_territory"),
-            "Region": request.get("region"),
-            # Creator
-            "Creator first name": request.get("creator__first_name", ""),
-            "Creator last name": request.get("creator__last_name", ""),
-            "Creator email": request.get("creator__email", ""),
-            "Creator approved domains count": request.get("creator_approved_domains_count", 0),
-            "Creator active requests count": request.get("creator_active_requests_count", 0),
-            # End of creator
-            "Alternative domains": request.get("all_alternative_domains"),
-            # AO
-            "AO first name": request.get("authorizing_official__first_name", ""),
-            "AO last name": request.get("authorizing_official__last_name", ""),
-            "AO email": request.get("authorizing_official__email", ""),
-            "AO title/role": request.get("authorizing_official__title", ""),
-            # End of AO
-            "Request purpose": request.get("purpose"),
-            "Request additional details": request.get("additional_details"),
-            "Other contacts": request.get("all_other_contacts"),
-            "CISA regional representative": request.get("cisa_representative_email"),  # TODO - same problem as before
-            "Current websites": request.get("all_current_websites"),
-            "Investigator": request.get("investigator_email"),
+            # Precomputed fields (generated in the DB)
+            "Domain request": extra_fields.get("requested_domain_name"),
+            "Status": extra_fields.get("status_display"),
+            "Domain type": extra_fields.get("domain_type"),
+            "Federal type": extra_fields.get("human_readable_federal_type"),
+            "Federal agency": extra_fields.get("federal_agency__agency"),
+            "Region": extra_fields.get("region"),
+            # Creator - performs substantially better when accessed this way
+            "Creator first name": extra_fields.get("creator__first_name", ""),
+            "Creator last name": extra_fields.get("creator__last_name", ""),
+            "Creator email": extra_fields.get("creator__email", ""),
+            "Creator approved domains count": extra_fields.get("creator_approved_domains_count", 0),
+            "Creator active requests count": extra_fields.get("creator_active_requests_count", 0),
+            "Alternative domains": extra_fields.get("all_alternative_domains"),
+            # AO - performs substantially better when accessed this way
+            "AO first name": extra_fields.get("authorizing_official__first_name", ""),
+            "AO last name": extra_fields.get("authorizing_official__last_name", ""),
+            "AO email": extra_fields.get("authorizing_official__email", ""),
+            "AO title/role": extra_fields.get("authorizing_official__title", ""),
+            "Request additional details": extra_fields.get("additional_details"),
+            "Other contacts": extra_fields.get("all_other_contacts"),
+            "Current websites": extra_fields.get("all_current_websites"),
+            # Normal fields
+            "Organization name": request.organization_name,
+            "Election office": human_readable_election_board,
+            "City": request.city,
+            "State/territory": request.state_territory,
+            "Request purpose": request.purpose,
+            "CISA regional representative": request.cisa_representative_email,
+            "Investigator": request.investigator.email if request.investigator else None,
+            "Submitted at": request.submission_date,
         }
 
         row = [FIELDS.get(column, "") for column in columns]
@@ -838,13 +850,12 @@ class DomainRequestExport:
         all_requests = DomainRequest.objects.filter(**filter_condition).order_by(*sort_fields).distinct()
 
         # Convert the request to a querystring for faster processing. Only grab what we need.
-        parsed_requests = all_requests.annotate(
+        annotations = all_requests.annotate(
             requested_domain_name=DomainRequestExport.get_requested_domain_name_query(),
-            approved_domain_name=F("approved_domain__name"),
         ).values("requested_domain_name", "generic_org_type", "federal_type", "submission_date")
 
         # Override the default value for domain_type
-        for request in parsed_requests:
+        for request in annotations:
             # Handle the domain_type field. Defaults to the wrong variant.
             org_type = request.get("generic_org_type")
             federal_type = request.get("federal_type")
@@ -858,7 +869,7 @@ class DomainRequestExport:
                 else:
                     request["domain_type"] = readable_org_type
 
-        DomainRequestExport.write_csv_for_requests(writer, columns, parsed_requests, should_write_header=True)
+        DomainRequestExport.write_csv_for_requests(writer, columns, all_requests, annotations, should_write_header=True)
 
     @staticmethod
     def export_full_domain_request_report(csv_file):
@@ -898,9 +909,9 @@ class DomainRequestExport:
             "requested_domain__name",
         ]
         requests = DomainRequest.objects.exclude(status__in=excluded_statuses).order_by(*order_by).distinct()
-        parsed_requests = DomainRequestExport.annotate_and_prepare_domain_request_data(requests)
+        extra_fields = DomainRequestExport.annotate_and_prepare_domain_request_data(requests)
 
-        DomainRequestExport.write_csv_for_requests(writer, columns, parsed_requests, should_write_header=True)
+        DomainRequestExport.write_csv_for_requests(writer, columns, requests, extra_fields, should_write_header=True)
 
     @staticmethod
     def annotate_and_prepare_domain_request_data(requests_to_convert: QuerySet[DomainRequest]) -> QuerySet:
@@ -916,7 +927,6 @@ class DomainRequestExport:
 
         Annotations (examples of python-readable equivalents):
             - requested_domain_name: `requested_domain.name If requested_domain.name is not None else default_message`.
-            - request_type: `f"{generic_org_type} | {federal_type}" If request.federal_type is not None else generic_org_type`.
             - additional_details: `f"{cisa_rep} | {anything_else}" If anything_else or cisa_rep else None`.
             - all_other_contacts: `[f"{c.first_name} {c.last_name} {c.email}" for c in request.other_contacts.all()].join(" | ")`.
             - all_current_websites: `[w.website for w in request.current_websites.all()].join(" | ")`.
@@ -936,53 +946,35 @@ class DomainRequestExport:
             additional_details=DomainRequestExport.get_additional_details_query(),
             creator_approved_domains_count=DomainRequestExport.get_creator_approved_domains_count_query(),
             creator_active_requests_count=DomainRequestExport.get_creator_active_requests_count_query(),
-            human_readable_election_board=DomainRequestExport.get_human_readable_election_board_query(),
             all_other_contacts=DomainRequestExport.get_all_other_contacts_query(),
             all_current_websites=StringAgg("current_websites__website", delimiter=" | ", distinct=True),
             all_alternative_domains=StringAgg("alternative_domains__website", delimiter=" | ", distinct=True),
-            federal_agency_name=F("federal_agency__agency"),
-            investigator_email=F("investigator__email"),
         )
 
-        requests_dict = parsed_requests.values(
+        requests_queryset = parsed_requests.values(
             # Custom fields
             "all_alternative_domains",
             "all_other_contacts",
             "all_current_websites",
             "additional_details",
-            "requested_domain_name",
-            "federal_agency_name",
-            "human_readable_election_board",
-            # Creator
-            "creator__first_name",
-            "creator__last_name",
-            "creator__email",
             "creator_approved_domains_count",
             "creator_active_requests_count",
+            # Existing fields
+            "id",
             # AO
             "authorizing_official__first_name",
             "authorizing_official__last_name",
             "authorizing_official__email",
             "authorizing_official__title",
-            # Investigator
-            "investigator_email",
-            # Existing fields
-            "id",
-            "submission_date",
-            "status",
-            "federal_type",
-            "organization_name",
-            "is_election_board",
-            "city",
-            "state_territory",
-            "purpose",
-            "cisa_representative_email",
-            "investigator",
-            "generic_org_type",
-            "federal_type",
+            # Creator
+            "creator__first_name",
+            "creator__last_name",
+            "creator__email",
+            # Federal agency name
+            "federal_agency__agency",
         )
 
-        return requests_dict
+        return requests_queryset
 
     # ============================================================= #
     # Helper functions for django ORM queries.                      #
@@ -1085,17 +1077,4 @@ class DomainRequestExport:
             ),
             distinct=True,
         )
-        return query
-
-    @staticmethod
-    def get_human_readable_election_board_query():
-        """ """
-
-        query = Case(
-            When(is_election_board=True, then=Value("Yes")),
-            When(is_election_board=False, then=Value("No")),
-            default=Value("N/A"),
-            output_field=CharField(),
-        )
-
         return query
