@@ -34,6 +34,7 @@
       <div class="mobile:grid-col-12 desktop:grid-col-6">
         <section aria-label="Domains search component" class="flex-6 margin-y-2">
           <form class="usa-search usa-search--small" role="search">
+            {% csrf_token %}
             <label class="usa-sr-only" for="domains__search-field">Search</label>
             <input
               class="usa-input"
@@ -111,6 +112,7 @@
       <div class="mobile:grid-col-12 desktop:grid-col-6">
         <section aria-label="Domain requests search component" class="flex-6 margin-y-2">
           <form class="usa-search usa-search--small" role="search">
+            {% csrf_token %}
             <label class="usa-sr-only" for="domain-requests__search-field">Search</label>
             <input
               class="usa-input"
