@@ -766,7 +766,7 @@ class DomainRequestExport:
 
         # Handle the region field.
         state_territory = request.get("state_territory")
-        if state_territory and request.get["region"] is None:
+        if state_territory and request.get("region") is None:
             request["region"] = get_region(state_territory)
 
         # create a dictionary of fields which can be included in output
