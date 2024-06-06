@@ -761,3 +761,10 @@ div.dja__model-description{
 .usa-summary-box h3 {
     color: #{$dhs-blue-60};
 }
+
+.analytics-button-group {
+    flex-wrap: wrap;
+    a {
+        min-width: 160px !important;
+    }
+}

@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models.functions import Concat, Coalesce
 from django.contrib.postgres.aggregates import StringAgg
+from registrar.templatetags.custom_filters import get_region
 from registrar.utility.enums import DefaultEmail
 
 logger = logging.getLogger(__name__)
@@ -750,7 +751,7 @@ class DomainRequestExport:
         # create a dictionary of fields which can be included in output
         FIELDS = {
             "Domain request": request.get("requested_domain_name"),
-            "Submitted at": request.get("submission_date"),  # TODO - different format?
+            "Submitted at": request.get("submission_date"),
             "Status": request.get("status_display"),
             "Domain type": request.get("domain_type"),
             "Federal type": request.get("human_readable_federal_type"),
@@ -759,7 +760,7 @@ class DomainRequestExport:
             "Election office": request.get("human_readable_election_board"),
             "City": request.get("city"),
             "State/territory": request.get("state_territory"),
-            "Region": None,  # TODO - what is this field?
+            "Region": request.get("region"),
             # Creator
             "Creator first name": request.get("creator__first_name", ""),
             "Creator last name": request.get("creator__last_name", ""),
@@ -963,6 +964,8 @@ class DomainRequestExport:
             "federal_type",
         )
 
+        # We can't natively call python functions from the ORM.
+        # Thus in any place where we do  that, we have to handle it here.
         for request in requests_dict:
             # Handle the domain_type field. Defaults to the wrong format.
             org_type = request.get("generic_org_type")
@@ -979,6 +982,11 @@ class DomainRequestExport:
             status = request.get("status")
             if status:
                 request["status_display"] = DomainRequest.DomainRequestStatus.get_status_label(status)
+
+            # Handle the region field.
+            state_territory = request.get("state_territory")
+            if state_territory:
+                request["region"] = get_region(state_territory)
 
         return requests_dict
 
@@ -1018,17 +1026,21 @@ class DomainRequestExport:
         """
 
         # TODO this should be replaced with cisa_representative_first_name and cisa_representative_last_name
-        # When that PR gets merged
         additional_details_query = Case(
-            # Check if either cisa_representative_email or anything_else is not null
-            # TODO - touch up on this
             When(
                 cisa_representative_email__isnull=False,
+                anything_else__isnull=False,
                 then=Concat(F("cisa_representative_email"), Value(delimiter), F("anything_else")),
             ),
             When(
+                cisa_representative_email__isnull=True,
                 anything_else__isnull=False,
-                then=Concat(F("cisa_representative_email"), Value(delimiter), F("anything_else")),
+                then=F("anything_else"),
+            ),
+            When(
+                cisa_representative_email__isnull=False,
+                anything_else__isnull=True,
+                then=F("cisa_representative_email"),
             ),
             default=Value(default_message),
             output_field=CharField(),
