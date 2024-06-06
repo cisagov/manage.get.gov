@@ -291,13 +291,13 @@ We use the [CSS Block Element Modifier (BEM)](https://getbem.com/naming/) naming
 
 ### Upgrading USWDS and other JavaScript packages
 
-Version numbers can be manually controlled in `package.json`. Edit that, if desired.
-
-Now run `docker-compose run node npm update`.
-
-Then run `docker-compose up` to recompile and recopy the assets.
-
-Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
+1. Version numbers can be manually controlled in `package.json`. Edit that, if desired.
+2. Now run `docker-compose run node npm update`.
+3. Then run `docker-compose up` to recompile and recopy the assets, or run `docker-compose updateUswds` if your docker is already up.
+4. Make note of the dotgov changes in uswds-edited.js.
+5. Copy over the newly compiled code from uswds.js into uswds-edited.js.
+6. Put back the dotgov changes you made note of into uswds-edited.js.
+7. Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
 
 ## Finite State Machines
 
@@ -395,3 +395,9 @@ This function is triggered by the post_save event on the User model, designed to
 1. For New Users: Upon the creation of a new user, it checks for an existing `Contact` by email. If no matching contact is found, it creates a new Contact using the user's details from Login.gov. If a matching contact is found, it associates this contact with the user. In cases where multiple contacts with the same email exist, it logs a warning and associates the first contact found.
 
 2. For Existing Users: For users logging in subsequent times, the function ensures that any updates from Login.gov are applied to the associated User record. However, it does not alter any existing Contact records.
+
+## Disable email sending (toggling the disable_email_sending flag)
+1. On the app, navigate to `\admin`.
+2. Under models, click `Waffle flags`.
+3. Click the `disable_email_sending` record. This should exist by default, if not - create one with that name.
+4. (Important) Set the field `everyone` to `Yes`. This field overrides all other settings 

@@ -1,0 +1,14 @@
+
+{% load static field_helpers url_helpers %}
+<div class="grid-row {% if bold_label %}bold-usa-label{% endif %}">
+    <div class="grid-col">
+      {% include "django/forms/label.html" %}
+    </div>
+    <div class="grid-col-2 text-right">
+      <button type="button" id="{{field.name}}__edit-button" class="usa-button usa-button--unstyled readonly-edit-button">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+          <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
+        </svg>Edit
+      </button>
+    </div>
+</div>

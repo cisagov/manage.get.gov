@@ -2,7 +2,7 @@
 Template include for form fields with classes and their corresponding
 error messages, if necessary.
 {% endcomment %}
-
+{% load static field_helpers url_helpers %}
 {% load custom_filters %}
 
 {% load widget_tweaks %}
@@ -27,17 +27,21 @@ error messages, if necessary.
 {% endif %}
 
   {% if not field.widget_type == "checkbox" %}
-    {% include "django/forms/label.html" %}
+    {% if show_edit_button %}
+      {% include "includes/label_with_edit_button.html" with bold_label=True %}
+    {% else %}
+      {% include "django/forms/label.html" %}
+    {% endif %}
   {% endif %}
 
   {% if sublabel_text %}
     <p id="{{ widget.attrs.id }}__sublabel" class="text-base margin-top-2px margin-bottom-1">
-      {% comment %} If the link_text appears more than once, the first instance will be a link and the other instances will be ignored {% endcomment %}
+      {# If the link_text appears more than once, the first instance will be a link and the other instances will be ignored #}
       {% if link_text and link_text in sublabel_text %}
         {% with link_index=sublabel_text|find_index:link_text %}
           {{ sublabel_text|slice:link_index }}
-          {% comment %} HTML will convert a new line into a space, resulting with a space before the fullstop in case link_text is at the end of sublabel_text, hence the unfortunate line below {% endcomment %}
-          <a {% if external_link == "true" %}rel="noopener noreferrer" class="usa-link usa-link--external" {% endif %}{% if target_blank == "true" %}target="_blank" {% endif %}href="{{ link_href }}">{{ link_text }}</a>{% with sublabel_part_after=sublabel_text|slice_after:link_text %}{{ sublabel_part_after }}{% endwith %}
+          {# HTML will convert a new line into a space, resulting with a space before the fullstop in case link_text is at the end of sublabel_text, hence the unfortunate line below #}
+          <a {% if external_link %}rel="noopener noreferrer" class="usa-link usa-link--external" {% endif %}{% if target_blank == "true" %}target="_blank" {% endif %}href="{{ link_href }}">{{ link_text }}</a>{% with sublabel_part_after=sublabel_text|slice_after:link_text %}{{ sublabel_part_after }}{% endwith %}
         {% endwith %}
       {% else %}
         {{ sublabel_text }}
@@ -58,6 +62,11 @@ error messages, if necessary.
   {% if append_gov %}
     <div class="display-flex flex-align-center">
   {% endif %}
+
+  {% if show_readonly %}
+    {% include "includes/readonly_input.html" %}
+  {% endif %}
+
   {# this is the input field, itself #}
   {% include widget.template_name %}
 
@@ -76,7 +85,7 @@ error messages, if necessary.
   </div>
 {% endif %}
 
-{% if widget.attrs.maxlength %}
+{% if widget.attrs.maxlength and not do_not_show_max_chars %}
   <span
     id="{{ widget.attrs.id }}__message"
     class="usa-character-count__message"
