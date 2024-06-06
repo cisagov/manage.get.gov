@@ -681,13 +681,10 @@ class ExportDataTest(MockDb, MockEppLib):
             }
 
             all_requests = DomainRequest.objects.filter(**filter_condition).order_by(*sort_fields).distinct()
-            all_requests_dict = all_requests.values(
-                "requested_domain_name", 
-                "generic_org_type", 
-                "federal_type", 
-                "submission_date"
+            extra = all_requests.values("requested_domain_name", "generic_org_type", "federal_type", "submission_date")
+            DomainRequestExport.write_csv_for_requests(
+                writer, columns, all_requests, extra_request_fields=extra, should_write_header=True
             )
-            DomainRequestExport.write_csv_for_requests(writer, columns, requests=all_requests_dict, should_write_header=True)
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -695,9 +692,7 @@ class ExportDataTest(MockDb, MockEppLib):
             # We expect READY domains first, created between today-2 and today+2, sorted by created_at then name
             # and DELETED domains deleted between today-2 and today+2, sorted by deleted then name
             expected_content = (
-                "Domain request,Domain type\n"
-                "city3.gov,Federal - Executive\n"
-                "city4.gov,Federal - Executive\n"
+                "Domain request,Domain type\n" "city3.gov,Federal - Executive\n" "city4.gov,Federal - Executive\n"
             )
 
             # Normalize line endings and remove commas,

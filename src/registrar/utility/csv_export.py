@@ -6,11 +6,10 @@ from registrar.models import (
     DomainInvitation,
     DomainRequest,
     DomainInformation,
-    User,
     PublicContact,
     UserDomainRole,
 )
-from django.db.models import QuerySet, Value, Case, When, CharField, Count, Q, F, Value, CharField
+from django.db.models import QuerySet, Value, Case, When, CharField, Count, Q, F
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models.functions import Concat, Coalesce
@@ -751,7 +750,7 @@ class DomainRequestExport:
     @staticmethod
     def parse_row_for_requests(columns, request: DomainRequest, extra_fields: QuerySet):
         """
-        Given a set of columns and a request dictionary, 
+        Given a set of columns and a request dictionary,
         generate a new row from cleaned column data
         """
 
@@ -779,7 +778,7 @@ class DomainRequestExport:
         human_readable_election_board = "N/A"
         if request.is_election_board is not None:
             human_readable_election_board = "Yes" if request.is_election_board else "No"
-        
+
         requested_domain = request.requested_domain
         if extra_fields.get("requested_domain_name") is None:
             extra_fields["requested_domain_name"] = getattr(requested_domain, "name", "No requested domain")
@@ -909,13 +908,14 @@ class DomainRequestExport:
             "status",
             "requested_domain__name",
         ]
-        requests = DomainRequest.objects.select_related(
-            "creator", "authorizing_official", "federal_agency", "investigator", "requested_domain"
-        ).exclude(
-            status__in=excluded_statuses
-        ).order_by(
-            *order_by
-        ).distinct()
+        requests = (
+            DomainRequest.objects.select_related(
+                "creator", "authorizing_official", "federal_agency", "investigator", "requested_domain"
+            )
+            .exclude(status__in=excluded_statuses)
+            .order_by(*order_by)
+            .distinct()
+        )
         extra_fields = DomainRequestExport.annotate_and_prepare_domain_request_data(requests)
 
         DomainRequestExport.write_csv_for_requests(writer, columns, requests, extra_fields, should_write_header=True)
