@@ -933,7 +933,7 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
   // Counter should only be displayed if there is more than 1 item
   paginationContainer.classList.toggle('display-none', totalItems < 1);
 
-  paginationCounter.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}${searchTerm ? ' for ' + searchTerm : ''}`;
+  paginationCounter.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}${searchTerm ? ' for ' + '"' + searchTerm + '"' : ''}`;
 
   if (hasPrevious) {
     const prevPageItem = document.createElement('li');
@@ -1023,11 +1023,13 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
  * A helper that toggles content/ no content/ no search results
  *
 */
-const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
+const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm) => {
   const { unfiltered_total, total } = data;
 
   const showElement = (element) => element.classList.remove('display-none');
   const hideElement = (element) => element.classList.add('display-none');
+  if (searchTermHolder)
+    searchTermHolder.innerHTML = '';
 
   if (unfiltered_total) {
     if (total) {
@@ -1035,6 +1037,8 @@ const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper)
       hideElement(noSearchResultsWrapper);
       hideElement(noDataWrapper);
     } else {
+      if (searchTermHolder)
+        searchTermHolder.innerHTML = currentSearchTerm;
       hideElement(dataWrapper);
       showElement(noSearchResultsWrapper);
       hideElement(noDataWrapper);
@@ -1077,7 +1081,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let domainsSearchInput = document.getElementById('domains__search-field');
     let domainsSearchSubmit = document.getElementById('domains__search-field-submit');
     let tableHeaders = document.querySelectorAll('.domains__table th[data-sortable]');
-    let tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region')
+    let tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region');
+    let searchTermHolder = document.querySelector('.domains__search-term');
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1099,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           // handle the display of proper messaging in the event that no domains exist in the list or search returns no results
-          updateDisplay(data, domainsWrapper, noDomainsWrapper, noSearchResultsWrapper);
+          updateDisplay(data, domainsWrapper, noDomainsWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
           const domainList = document.querySelector('.domains__table tbody');
@@ -1257,7 +1262,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
     let domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
     let tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
-    let tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region')
+    let tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
+    let searchTermHolder = document.querySelector('.domain-requests__search-term');
 
     /**
      * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
@@ -1313,7 +1319,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           // handle the display of proper messaging in the event that no requests exist in the list or search returns no results
-          updateDisplay(data, domainRequestsWrapper, noDomainRequestsWrapper, noSearchResultsWrapper);
+          updateDisplay(data, domainRequestsWrapper, noDomainRequestsWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm);
 
           // identify the DOM element where the domain request list will be inserted into the DOM
           const tbody = document.querySelector('.domain-requests__table tbody');
