@@ -756,17 +756,17 @@ class DomainRequestExport:
 
         # Handle the federal_type field. Defaults to the wrong format.
         federal_type = request.get("federal_type")
-        if federal_type:
+        if federal_type and request.get("human_readable_federal_type") is None:
             request["human_readable_federal_type"] = DomainRequest.BranchChoices.get_branch_label(federal_type)
 
         # Handle the status field. Defaults to the wrong format.
         status = request.get("status")
-        if status:
+        if status and request.get("status_display") is None:
             request["status_display"] = DomainRequest.DomainRequestStatus.get_status_label(status)
 
         # Handle the region field.
         state_territory = request.get("state_territory")
-        if state_territory:
+        if state_territory and request.get["region"] is None:
             request["region"] = get_region(state_territory)
 
         # create a dictionary of fields which can be included in output
@@ -843,10 +843,7 @@ class DomainRequestExport:
             approved_domain_name=F("approved_domain__name"),
         ).values("requested_domain_name", "generic_org_type", "federal_type", "submission_date")
 
-        # Set the domain_type field.
-        # Relies on a python function, get_organization_type_display, so we have to
-        # do this manually.
-
+        # Override the default value for domain_type
         for request in parsed_requests:
             # Handle the domain_type field. Defaults to the wrong variant.
             org_type = request.get("generic_org_type")
