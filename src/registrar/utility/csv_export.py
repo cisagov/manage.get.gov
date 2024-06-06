@@ -799,7 +799,7 @@ class DomainRequestExport:
             "Other contacts": extra_fields.get("all_other_contacts"),
             "Current websites": extra_fields.get("all_current_websites"),
             # Normal fields
-            "Federal agency": request.federal_agency.agency,
+            "Federal agency": request.federal_agency.agency if request.federal_agency else None,
             "AO first name": request.authorizing_official.first_name,
             "AO last name": request.authorizing_official.last_name,
             "AO email": request.authorizing_official.email,
