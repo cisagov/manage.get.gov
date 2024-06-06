@@ -24,9 +24,11 @@ def handle_profile(sender, instance, **kwargs):
     """
 
     first_name = getattr(instance, "first_name", "")
+    middle_name = getattr(instance, "middle_name", "")
     last_name = getattr(instance, "last_name", "")
     email = getattr(instance, "email", "")
     phone = getattr(instance, "phone", "")
+    title = getattr(instance, "title", "")
 
     is_new_user = kwargs.get("created", False)
 
@@ -39,9 +41,11 @@ def handle_profile(sender, instance, **kwargs):
         Contact.objects.create(
             user=instance,
             first_name=first_name,
+            middle_name=middle_name,
             last_name=last_name,
             email=email,
             phone=phone,
+            title=title,
         )
 
     if len(contacts) >= 1 and is_new_user:  # a matching contact
