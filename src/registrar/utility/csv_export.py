@@ -15,7 +15,6 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models.functions import Concat, Coalesce
 from django.contrib.postgres.aggregates import StringAgg
-from registrar.models.utility.generic_helper import Timer
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.enums import DefaultEmail
 
@@ -780,32 +779,34 @@ class DomainRequestExport:
         human_readable_election_board = "N/A"
         if request.is_election_board is not None:
             human_readable_election_board = "Yes" if request.is_election_board else "No"
+        
+        requested_domain = request.requested_domain
+        if extra_fields.get("requested_domain_name") is None:
+            extra_fields["requested_domain_name"] = getattr(requested_domain, "name", "No requested domain")
 
-        # create a dictionary of fields which can be included in output
+        # create a dictionary of fields which can be included in output.
+        # "extra_fields" are precomputed fields (generated in the DB or parsed).
         FIELDS = {
-            # Precomputed fields (generated in the DB)
             "Domain request": extra_fields.get("requested_domain_name"),
             "Status": extra_fields.get("status_display"),
             "Domain type": extra_fields.get("domain_type"),
             "Federal type": extra_fields.get("human_readable_federal_type"),
-            "Federal agency": extra_fields.get("federal_agency__agency"),
             "Region": extra_fields.get("region"),
-            # Creator - performs substantially better when accessed this way
-            "Creator first name": extra_fields.get("creator__first_name", ""),
-            "Creator last name": extra_fields.get("creator__last_name", ""),
-            "Creator email": extra_fields.get("creator__email", ""),
             "Creator approved domains count": extra_fields.get("creator_approved_domains_count", 0),
             "Creator active requests count": extra_fields.get("creator_active_requests_count", 0),
             "Alternative domains": extra_fields.get("all_alternative_domains"),
-            # AO - performs substantially better when accessed this way
-            "AO first name": extra_fields.get("authorizing_official__first_name", ""),
-            "AO last name": extra_fields.get("authorizing_official__last_name", ""),
-            "AO email": extra_fields.get("authorizing_official__email", ""),
-            "AO title/role": extra_fields.get("authorizing_official__title", ""),
             "Request additional details": extra_fields.get("additional_details"),
             "Other contacts": extra_fields.get("all_other_contacts"),
             "Current websites": extra_fields.get("all_current_websites"),
             # Normal fields
+            "Federal agency": request.federal_agency.agency,
+            "AO first name": request.authorizing_official.first_name,
+            "AO last name": request.authorizing_official.last_name,
+            "AO email": request.authorizing_official.email,
+            "AO title/role": request.authorizing_official.title,
+            "Creator first name": request.creator.first_name,
+            "Creator last name": request.creator.last_name,
+            "Creator email": request.creator.email,
             "Organization name": request.organization_name,
             "Election office": human_readable_election_board,
             "City": request.city,
@@ -908,7 +909,13 @@ class DomainRequestExport:
             "status",
             "requested_domain__name",
         ]
-        requests = DomainRequest.objects.exclude(status__in=excluded_statuses).order_by(*order_by).distinct()
+        requests = DomainRequest.objects.select_related(
+            "creator", "authorizing_official", "federal_agency", "investigator", "requested_domain"
+        ).exclude(
+            status__in=excluded_statuses
+        ).order_by(
+            *order_by
+        ).distinct()
         extra_fields = DomainRequestExport.annotate_and_prepare_domain_request_data(requests)
 
         DomainRequestExport.write_csv_for_requests(writer, columns, requests, extra_fields, should_write_header=True)
@@ -926,7 +933,6 @@ class DomainRequestExport:
             QuerySet: An annotated queryset that includes both original and annotated fields.
 
         Annotations (examples of python-readable equivalents):
-            - requested_domain_name: `requested_domain.name If requested_domain.name is not None else default_message`.
             - additional_details: `f"{cisa_rep} | {anything_else}" If anything_else or cisa_rep else None`.
             - all_other_contacts: `[f"{c.first_name} {c.last_name} {c.email}" for c in request.other_contacts.all()].join(" | ")`.
             - all_current_websites: `[w.website for w in request.current_websites.all()].join(" | ")`.
@@ -940,9 +946,7 @@ class DomainRequestExport:
 
         # We can do this for most fields, except ones that require us to grab .label (such as generic_org_type).
         # For those fields, they will otherwise just return the value representation so we parse those manually.
-
         parsed_requests = requests_to_convert.annotate(
-            requested_domain_name=DomainRequestExport.get_requested_domain_name_query(),
             additional_details=DomainRequestExport.get_additional_details_query(),
             creator_approved_domains_count=DomainRequestExport.get_creator_approved_domains_count_query(),
             creator_active_requests_count=DomainRequestExport.get_creator_active_requests_count_query(),
@@ -961,17 +965,6 @@ class DomainRequestExport:
             "creator_active_requests_count",
             # Existing fields
             "id",
-            # AO
-            "authorizing_official__first_name",
-            "authorizing_official__last_name",
-            "authorizing_official__email",
-            "authorizing_official__title",
-            # Creator
-            "creator__first_name",
-            "creator__last_name",
-            "creator__email",
-            # Federal agency name
-            "federal_agency__agency",
         )
 
         return requests_queryset
@@ -980,24 +973,6 @@ class DomainRequestExport:
     # Helper functions for django ORM queries.                      #
     # We are using these rather than pure python for speed reasons. #
     # ============================================================= #
-    @staticmethod
-    def get_requested_domain_name_query(default_message="No requested domain"):
-        """
-        A SQL case statement for DomainRequest.requested_domain.name.
-
-        When ran, returns requested_domain.name if not null. Otherwise, returns default_message.
-
-        Equivalent to:
-
-        `requested_domain.name If requested_domain.name is not None else default_message`
-        """
-        requested_domain_name_query = Case(
-            When(requested_domain__isnull=False, then=F("requested_domain__name")),
-            default=Value(default_message),
-            output_field=CharField(),
-        )
-
-        return requested_domain_name_query
 
     @staticmethod
     def get_additional_details_query(default_message=None, delimiter=" | "):
