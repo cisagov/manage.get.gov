@@ -536,12 +536,39 @@ class DomainRequest(TimeStampedModel):
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
 
+    def _cache_status_and_action_needed_reason(self):
+        """Maintains a cache of properties so we can avoid a DB call"""
+        self._cached_action_needed_reason = self.action_needed_reason
+        self._cached_status = self.status
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Store original values for caching purposes. Used to compare them on save.
+        self._cache_status_and_action_needed_reason()
+
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
 
         super().save(*args, **kwargs)
+
+        # Handle the action needed email. We send one when moving to action_needed,
+        # but we don't send one when we are _already_ in the state and change the reason.
+        self.sync_action_needed_reason()
+
+        # Update the cached values after saving
+        self._cache_status_and_action_needed_reason()
+
+    def sync_action_needed_reason(self):
+        """Checks if we need to send another action needed email"""
+        was_already_action_needed = self._cached_status == self.DomainRequestStatus.ACTION_NEEDED
+        reason_exists = self._cached_action_needed_reason is not None and self.action_needed_reason is not None
+        reason_changed = self._cached_action_needed_reason != self.action_needed_reason
+        if was_already_action_needed and (reason_exists and reason_changed):
+            # We don't send emails out in state "other"
+            if self.action_needed_reason != self.ActionNeededReasons.OTHER:
+                self._send_action_needed_reason_email()
 
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
