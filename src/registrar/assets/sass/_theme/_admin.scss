@@ -756,3 +756,7 @@ div.dja__model-description{
 .usa-summary-box h3 {
     color: #{$dhs-blue-60};
 }
+
+.module caption, .inline-group h2 {
+    text-transform: capitalize;
+}
