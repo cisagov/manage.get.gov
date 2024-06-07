@@ -1261,7 +1261,7 @@ const utcDateString = (dateString) => {
 };
 
 /**
- * An IIFE that listens for DOM Content to be loaded, then executes.  This function
+ * An IIFE that listens for DOM Content to be loaded, then executes. This function
  * initializes the domain requests list and associated functionality on the home page of the app.
  *
  */
