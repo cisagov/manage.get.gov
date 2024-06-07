@@ -711,12 +711,12 @@ def export_data_unmanaged_domains_to_csv(csv_file, start_date, end_date):
 class DomainRequestExport:
     """
     A collection of functions which return csv files regarding the DomainRequest model.
-    Purely organizational -- all functions are independent.
     """
 
     # Get all the field names of the DomainRequest object
     domain_request_fields = set(field.name for field in DomainRequest._meta.get_fields())
 
+    # Get all columns on the full metadata report
     all_columns = [
         "Domain request",
         "Submitted at",
@@ -763,6 +763,7 @@ class DomainRequestExport:
         columns = [
             "Domain request",
             "Domain type",
+            "Federal type",
             "Submitted at",
         ]
 
@@ -775,15 +776,31 @@ class DomainRequestExport:
             "submission_date__gte": start_date_formatted,
         }
 
+        # We don't want to annotate anything, but we do want to access the requested domain name
+        annotations = {}
+        additional_values = ["requested_domain__name"]
+
         all_requests = DomainRequest.objects.filter(**filter_condition).order_by(*sort_fields).distinct()
 
-        annotated_requests = cls.annotate_and_retrieve_fields(all_requests, {"requested_domain__name"})
+        annotated_requests = cls.annotate_and_retrieve_fields(all_requests, annotations, additional_values)
         requests_dict = convert_queryset_to_dict(annotated_requests, is_model=False)
 
         cls.write_csv_for_requests(writer, columns, requests_dict)
-    
+
     @classmethod
     def export_full_domain_request_report(cls, csv_file):
+        """
+        Generates a detailed domain request report to a CSV file.
+
+        Retrieves and annotates DomainRequest objects, excluding 'STARTED' status,
+        with related data optimizations via select/prefetch and annotation.
+
+        Annotated with counts and aggregates of related entities.
+        Converts to dict and writes to CSV using predefined columns.
+
+        Parameters:
+            csv_file (file-like object): Target CSV file.
+        """
         writer = csv.writer(csv_file)
 
         requests = (
@@ -792,17 +809,32 @@ class DomainRequestExport:
             )
             .prefetch_related("current_websites", "other_contacts", "alternative_domains")
             .exclude(status__in=[DomainRequest.DomainRequestStatus.STARTED])
-            .order_by("status","requested_domain__name",)
+            .order_by(
+                "status",
+                "requested_domain__name",
+            )
             .distinct()
         )
 
         # Annotations are custom columns returned to the queryset (AKA: computed in the DB)
+        delimiter = " | "
         annotations = {
             "creator_approved_domains_count": DomainRequestExport.get_creator_approved_domains_count_query(),
             "creator_active_requests_count": DomainRequestExport.get_creator_active_requests_count_query(),
-            "all_other_contacts": DomainRequestExport.get_all_other_contacts_query(),
-            "all_current_websites": StringAgg("current_websites__website", delimiter=" | ", distinct=True),
-            "all_alternative_domains": StringAgg("alternative_domains__website", delimiter=" | ", distinct=True),
+            "all_current_websites": StringAgg("current_websites__website", delimiter=delimiter, distinct=True),
+            "all_alternative_domains": StringAgg("alternative_domains__website", delimiter=delimiter, distinct=True),
+            # Coerce the other contacts object to "{first_name} {last_name} {email}"
+            "all_other_contacts": StringAgg(
+                Concat(
+                    "other_contacts__first_name",
+                    Value(" "),
+                    "other_contacts__last_name",
+                    Value(" "),
+                    "other_contacts__email",
+                ),
+                delimiter=delimiter,
+                distinct=True,
+            ),
         }
 
         # .values can't go two levels deep (just returns the id) - so we have to include this.
@@ -816,7 +848,7 @@ class DomainRequestExport:
             "creator__first_name",
             "creator__last_name",
             "creator__email",
-            "investigator__email"
+            "investigator__email",
         ]
 
         # Convert the domain request queryset to a dictionary (including annotated fields)
@@ -851,27 +883,20 @@ class DomainRequestExport:
         writer.writerows(rows)
 
     @staticmethod
-    def parse_row_for_requests(columns, request, show_expanded_org_type=False):
+    def parse_row_for_requests(columns, request):
         """
-        Given a set of columns and a request dictionary,
-        generate a new row from cleaned column data
+        Given a set of columns and a request dictionary, generate a new row from cleaned column data.
         """
-
-        # FK fields
-        federal_agency = "federal_agency"
-        ao = "authorizing_official"
-        creator = "creator"
-        investigator = "investigator"
 
         # Handle the federal_type field. Defaults to the wrong format.
         federal_type = request.get("federal_type")
-        human_readable_federal_type = DomainRequest.BranchChoices.get_branch_label(federal_type) if federal_type else None
+        human_readable_federal_type = (
+            DomainRequest.BranchChoices.get_branch_label(federal_type) if federal_type else None
+        )
 
-        # Handle the org_type field. Either "Tribal" or "Federal - Executive".
+        # Handle the org_type field
         org_type = request.get("organization_type")
         human_readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type) if org_type else None
-        if human_readable_org_type and human_readable_federal_type and show_expanded_org_type:
-            human_readable_org_type = f"{human_readable_org_type} - {human_readable_federal_type}"
 
         # Handle the status field. Defaults to the wrong format.
         status = request.get("status")
@@ -881,6 +906,7 @@ class DomainRequestExport:
         state_territory = request.get("state_territory")
         region = get_region(state_territory) if state_territory else None
 
+        # Handle the requested_domain field (add a default if None)
         requested_domain = request.get("requested_domain__name")
         requested_domain_name = requested_domain if requested_domain else "No requested domain"
 
@@ -888,9 +914,10 @@ class DomainRequestExport:
         human_readable_election_board = "N/A"
         if request.get("is_election_board") is not None:
             human_readable_election_board = "Yes" if request.is_election_board else "No"
-        
-        # Handle the additional details field. Pipe seperated
-        details = [request.get("cisa_representative_email"), request.get("anything_else")]
+
+        # Handle the additional details field. Pipe sep.
+        cisa_rep = request.get("cisa_representative_email")
+        details = [cisa_rep, request.get("anything_else")]
         additional_details = " | ".join([field for field in details if field is not None])
 
         # create a dictionary of fields which can be included in output.
@@ -911,15 +938,15 @@ class DomainRequestExport:
             "Other contacts": request.get("all_other_contacts"),
             "Current websites": request.get("all_current_websites"),
             # Untouched FK fields - passed into the request dict.
-            "Federal agency": request.get(f"{federal_agency}__agency"),
-            "AO first name": request.get(f"{ao}__first_name"),
-            "AO last name": request.get(f"{ao}__last_name"),
-            "AO email": request.get(f"{ao}__email"),
-            "AO title/role": request.get(f"{ao}__title"),
-            "Creator first name": request.get(f"{creator}__first_name"),
-            "Creator last name": request.get(f"{creator}__last_name"),
-            "Creator email": request.get(f"{creator}__email"),
-            "Investigator": request.get(f"{investigator}__email"),
+            "Federal agency": request.get("federal_agency__agency"),
+            "AO first name": request.get("authorizing_official__first_name"),
+            "AO last name": request.get("authorizing_official__last_name"),
+            "AO email": request.get("authorizing_official__email"),
+            "AO title/role": request.get("authorizing_official__title"),
+            "Creator first name": request.get("creator__first_name"),
+            "Creator last name": request.get("creator__last_name"),
+            "Creator email": request.get("creator__email"),
+            "Investigator": request.get("investigator__email"),
             # Untouched fields
             "Organization name": request.get("organization_name"),
             "City": request.get("city"),
@@ -935,7 +962,7 @@ class DomainRequestExport:
     @classmethod
     def annotate_and_retrieve_fields(cls, requests, annotations, additional_values=None) -> QuerySet:
         """
-        Applies annotations to a queryset and retrieves specified fields, 
+        Applies annotations to a queryset and retrieves specified fields,
         including class-defined and annotation-defined.
 
         Parameters:
@@ -952,7 +979,7 @@ class DomainRequestExport:
 
         if additional_values is None:
             additional_values = []
-        
+
         # We can infer that if we're passing in annotations,
         # we want to grab the result of said annotation.
         if annotations:
@@ -967,25 +994,13 @@ class DomainRequestExport:
     # ============================================================= #
 
     @staticmethod
-    def get_all_other_contacts_query(delimiter=" | "):
-        """ """
-
-        all_other_contacts_query = StringAgg(
-            Concat(
-                "other_contacts__first_name",
-                Value(" "),
-                "other_contacts__last_name",
-                Value(" "),
-                "other_contacts__email",
-            ),
-            delimiter=delimiter,
-            distinct=True,
-        )
-        return all_other_contacts_query
-
-    @staticmethod
     def get_creator_approved_domains_count_query():
-        """ """
+        """
+        Generates a Count query for distinct approved domain requests per creator.
+
+        Returns:
+            Count: Aggregates distinct 'APPROVED' domain requests by creator.
+        """
 
         query = Count(
             "creator__domain_requests_created__id",
@@ -996,7 +1011,12 @@ class DomainRequestExport:
 
     @staticmethod
     def get_creator_active_requests_count_query():
-        """ """
+        """
+        Generates a Count query for distinct approved domain requests per creator.
+
+        Returns:
+            Count: Aggregates distinct 'SUBMITTED', 'IN_REVIEW', and 'ACTION_NEEDED' domain requests by creator.
+        """
 
         query = Count(
             "creator__domain_requests_created__id",
