@@ -31,6 +31,17 @@ class User(AbstractUser):
     will be updated if any updates are made to it through Login.gov.
     """
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["username"]),
+            models.Index(fields=["email"]),
+        ]
+
+        permissions = [
+            ("analyst_access_permission", "Analyst Access Permission"),
+            ("full_access_permission", "Full Access Permission"),
+        ]
+
     class VerificationTypeChoices(models.TextChoices):
         """
         Users achieve access to our system in a few different ways.
@@ -76,8 +87,6 @@ class User(AbstractUser):
     phone = PhoneNumberField(
         null=True,
         blank=True,
-        help_text="Phone",
-        db_index=True,
     )
 
     middle_name = models.CharField(
@@ -97,6 +106,24 @@ class User(AbstractUser):
         blank=True,
         help_text="The means through which this user was verified",
     )
+
+    @property
+    def finished_setup(self):
+        """
+        Tracks if the user finished their profile setup or not. This is so
+        we can globally enforce that new users provide additional account information before proceeding.
+        """
+
+        # Change this to self once the user and contact objects are merged.
+        # For now, since they are linked, lets test on the underlying contact object.
+        user_info = self.contact  # noqa
+        user_values = [
+            user_info.first_name,
+            user_info.last_name,
+            user_info.title,
+            user_info.phone,
+        ]
+        return None not in user_values
 
     def __str__(self):
         # this info is pulled from Login.gov
@@ -263,9 +290,3 @@ class User(AbstractUser):
         """
 
         self.check_domain_invitations_on_login()
-
-    class Meta:
-        permissions = [
-            ("analyst_access_permission", "Analyst Access Permission"),
-            ("full_access_permission", "Full Access Permission"),
-        ]

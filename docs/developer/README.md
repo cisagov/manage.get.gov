@@ -320,16 +320,6 @@ it may help to resync your laptop with time.nist.gov:
 sudo sntp -sS time.nist.gov
 ```
 
-### Settings
-The config for the connection pool exists inside the `settings.py` file.
-| Name                     | Purpose                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------- |
-| EPP_CONNECTION_POOL_SIZE | Determines the number of concurrent sockets that should exist in the pool.                        |
-| POOL_KEEP_ALIVE          | Determines the interval in which we ping open connections in seconds. Calculated as POOL_KEEP_ALIVE / EPP_CONNECTION_POOL_SIZE |
-| POOL_TIMEOUT             | Determines how long we try to keep a pool alive for, before restarting it.                        |
-
-Consider updating the `POOL_TIMEOUT` or `POOL_KEEP_ALIVE` periods if the pool often restarts. If the pool only restarts after a period of inactivity, update `POOL_KEEP_ALIVE`. If it restarts during the EPP call itself, then `POOL_TIMEOUT` needs to be updated.
-
 ## Adding a S3 instance to your sandbox
 This can either be done through the CLI, or through the cloud.gov dashboard. Generally, it is better to do it through the dashboard as it handles app binding for you. 
 
@@ -405,3 +395,9 @@ This function is triggered by the post_save event on the User model, designed to
 1. For New Users: Upon the creation of a new user, it checks for an existing `Contact` by email. If no matching contact is found, it creates a new Contact using the user's details from Login.gov. If a matching contact is found, it associates this contact with the user. In cases where multiple contacts with the same email exist, it logs a warning and associates the first contact found.
 
 2. For Existing Users: For users logging in subsequent times, the function ensures that any updates from Login.gov are applied to the associated User record. However, it does not alter any existing Contact records.
+
+## Disable email sending (toggling the disable_email_sending flag)
+1. On the app, navigate to `\admin`.
+2. Under models, click `Waffle flags`.
+3. Click the `disable_email_sending` record. This should exist by default, if not - create one with that name.
+4. (Important) Set the field `everyone` to `Yes`. This field overrides all other settings 

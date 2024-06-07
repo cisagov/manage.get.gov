@@ -25,11 +25,11 @@
         {% if step == Step.ORGANIZATION_TYPE %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
           {% if domain_request.generic_org_type is not None %}
-            {% with title=form_titles|get_item:step value=domain_request.get_generic_org_type_display|default:"Incomplete" %}
+            {% with title=form_titles|get_item:step value=domain_request.get_generic_org_type_display|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
             {% endwith %}
           {% else %}
-            {% with title=form_titles|get_item:step value="Incomplete" %}
+            {% with title=form_titles|get_item:step value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
             {% endwith %}
           {% endif %}
@@ -37,7 +37,7 @@
 
         {% if step == Step.TRIBAL_GOVERNMENT %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% with title=form_titles|get_item:step value=domain_request.tribe_name|default:"Incomplete" %}
+          {% with title=form_titles|get_item:step value=domain_request.tribe_name|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
           {% if domain_request.federally_recognized_tribe %}<p>Federally-recognized tribe</p>{% endif %}
@@ -47,7 +47,7 @@
 
         {% if step == Step.ORGANIZATION_FEDERAL %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% with title=form_titles|get_item:step value=domain_request.get_federal_type_display|default:"Incomplete" %}
+          {% with title=form_titles|get_item:step value=domain_request.get_federal_type_display|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
         {% endif %}
@@ -66,7 +66,7 @@
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url address='true' %}
             {% endwith %}
           {% else %}
-            {% with title=form_titles|get_item:step value='Incomplete' %}
+            {% with title=form_titles|get_item:step value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
             {% endwith %}
           {% endif %}
@@ -74,7 +74,7 @@
 
         {% if step == Step.ABOUT_YOUR_ORGANIZATION %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% with title=form_titles|get_item:step value=domain_request.about_your_organization|default:"Incomplete" %}
+          {% with title=form_titles|get_item:step value=domain_request.about_your_organization|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
         {% endif %}
@@ -86,7 +86,7 @@
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' %}
             {% endwith %}
           {% else %}
-            {% with title=form_titles|get_item:step value="Incomplete" %}
+            {% with title=form_titles|get_item:step value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
             {% endwith %}
           {% endif %}
@@ -107,7 +107,7 @@
 
         {% if step == Step.DOTGOV_DOMAIN %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"Incomplete" %}
+          {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe%}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
 
@@ -123,7 +123,7 @@
 
         {% if step == Step.PURPOSE %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% with title=form_titles|get_item:step value=domain_request.purpose|default:"Incomplete" %}
+          {% with title=form_titles|get_item:step value=domain_request.purpose|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
           {% endwith %}
         {% endif %}
@@ -135,7 +135,7 @@
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' %}
             {% endwith %}
           {% else %}
-            {% with title=form_titles|get_item:step value="Incomplete" %}
+            {% with title=form_titles|get_item:step value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
             {% endwith %}
           {% endif %}
@@ -148,7 +148,7 @@
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' list='true' %}
             {% endwith %}
           {% else %}
-            {% with title=form_titles|get_item:step value=domain_request.no_other_contacts_rationale|default:"Incomplete" %}
+            {% with title=form_titles|get_item:step value=domain_request.no_other_contacts_rationale|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url %}
             {% endwith %}
           {% endif %}
@@ -157,7 +157,7 @@
 
         {% if step == Step.ADDITIONAL_DETAILS %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"Incomplete" %}
+          {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
             {% include "includes/summary_item.html" with title=title sub_header_text='CISA regional representative' value=domain_request.cisa_representative_email heading_level=heading_level editable=True edit_link=domain_request_url  custom_text_for_value_none='No' %}
           {% endwith %}
 

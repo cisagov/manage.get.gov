@@ -60,4 +60,35 @@ class UserProfileForm(forms.ModelForm):
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
 
+        if self.instance and self.instance.phone:
+            self.fields["phone"].initial = self.instance.phone.as_national
+
         DomainHelper.disable_field(self.fields["email"], disable_required=True)
+
+
+class FinishSetupProfileForm(UserProfileForm):
+    """Form for updating user profile."""
+
+    full_name = forms.CharField(required=True, label="Full name")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # Remove the full name property
+        if "full_name" in cleaned_data:
+            # Delete the full name element as its purely decorative.
+            # We include it as a normal Charfield for all the advantages
+            # and utility that it brings, but we're playing pretend.
+            del cleaned_data["full_name"]
+        return cleaned_data
+
+    def __init__(self, *args, **kwargs):
+        """Override the inerited __init__ method to update the fields."""
+
+        super().__init__(*args, **kwargs)
+
+        # Set custom form label for email
+        self.fields["email"].label = "Organization email"
+        self.fields["title"].label = "Title or role in your organization"
+
+        # Define the "full_name" value
+        self.fields["full_name"].initial = self.instance.get_formatted_name()

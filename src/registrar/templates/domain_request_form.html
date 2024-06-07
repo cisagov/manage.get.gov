@@ -105,7 +105,7 @@
           aria-describedby="Are you sure you want to submit a domain request?"
           data-force-action
         >
-            {% include 'includes/modal.html' with modal_heading=modal_heading|safe modal_description="Once you submit this request, you won’t be able to edit it until we review it. You’ll only be able to withdraw your request." modal_button=modal_button|safe %}
+            {% include 'includes/modal.html' with is_domain_request_form=True review_form_is_complete=review_form_is_complete modal_heading=modal_heading|safe modal_description=modal_description|safe modal_button=modal_button|safe %}
         </div>
 
 {% block after_form_content %}{% endblock %}

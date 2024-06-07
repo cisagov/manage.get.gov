@@ -139,11 +139,7 @@
     <div class="usa-nav-container">
       <div class="usa-navbar">
           {% block logo %}
-            <div class="usa-logo display-inline-block" id="extended-logo">
-              <strong class="usa-logo__text" >
-                <a href="{% url 'home' %}">.gov Registrar </a>
-              </strong>    
-            </div>
+            {% include "includes/gov_extended_logo.html" with logo_clickable=True %}
           {% endblock %}
         <button type="button" class="usa-menu-btn">Menu</button>
       </div>
@@ -160,7 +156,8 @@
           {% if has_profile_feature_flag %}
           <li class="usa-nav__primary-item">
             {% url 'user-profile' as user_profile_url %}
-            <a class="usa-nav-link {% if request.path == user_profile_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+            {% url 'finish-user-profile-setup' as finish_setup_url %}
+            <a class="usa-nav-link {% if request.path == user_profile_url or request.path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
                 <span class="text-primary">Your profile</span>
             </a>
           </li>
@@ -206,7 +203,9 @@
   </div>
   {% endblock wrapper%}
 
-  {% include "includes/footer.html" %}
+  {% block footer %}
+    {% include "includes/footer.html" with show_manage_your_domains=True %}
+  {% endblock footer %}
   </div> <!-- /#wrapper -->
 
   {% block init_js %}{% endblock %}{# useful for vars and other initializations #}
