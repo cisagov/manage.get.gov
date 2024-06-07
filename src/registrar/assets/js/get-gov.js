@@ -1212,6 +1212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     domainsSearchSubmit.addEventListener('click', function(e) {
       e.preventDefault();
       currentSearchTerm = domainsSearchInput.value;
+      // If the search is blank, we match the resetSearch functionality
       if (currentSearchTerm) {
         showElement(resetButton);
       } else {
@@ -1565,6 +1566,7 @@ document.addEventListener('DOMContentLoaded', function() {
     domainRequestsSearchSubmit.addEventListener('click', function(e) {
       e.preventDefault();
       currentSearchTerm = domainRequestsSearchInput.value;
+      // If the search is blank, we match the resetSearch functionality
       if (currentSearchTerm) {
         showElement(resetButton);
       } else {
