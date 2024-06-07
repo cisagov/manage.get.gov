@@ -6,6 +6,7 @@ DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
 REQUEST RECEIVED ON: {{ domain_request.submission_date|date }}
 STATUS: Action needed
 
+----------------------------------------------------------------
 
 AUTHORIZING OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS
 We've reviewed your domain request, but we need more information about the authorizing official listed on the request: 
