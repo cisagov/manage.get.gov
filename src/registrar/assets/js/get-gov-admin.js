@@ -382,6 +382,33 @@ function initializeWidgetOnList(list, parentId) {
 
         // element to hide, statusToShowOn, sessionObjectName
         showHideFieldsOnStatusChange(actionNeededReasonFormGroup, "action needed", "hide_action_needed_reason");
+        
+        // Move the status changelog to below the action needed reason
+        if(actionNeededReasonFormGroup){
+            document.addEventListener('DOMContentLoaded', function() {
+                let statusSelect = document.getElementById('id_status');
+                
+                function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
+                    let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
+                    let statusChangelog = document.getElementById('dja-status-changelog');
+                    if (statusSelect.value === "action needed") {
+                        flexContainer.parentNode.insertBefore(statusChangelog, flexContainer.nextSibling);
+                    } else {
+                        // Move the changelog back to its original location
+                        let statusFlexContainer = statusSelect.closest('.flex-container');
+                        statusFlexContainer.parentNode.insertBefore(statusChangelog, statusFlexContainer.nextSibling);
+                    }
+                }
+                
+                // Call the function on page load
+                moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
+
+                // Add event listener to handle changes to the selector itself
+                statusSelect.addEventListener('change', function() {
+                    moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
+                })
+            });
+        }
     }
 
     // Hookup the fields that we want to programatically show/hide depending on the current value of the status field.
