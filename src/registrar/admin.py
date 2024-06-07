@@ -596,7 +596,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
+        ("Personal info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
         (
             "Permissions",
             {
