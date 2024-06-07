@@ -6,6 +6,7 @@ DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
 REQUEST RECEIVED ON: {{ domain_request.submission_date|date }}
 STATUS: Action needed
 
+----------------------------------------------------------------
 
 DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS
 We've reviewed your domain request and, unfortunately, it does not meet our naming requirements. 
