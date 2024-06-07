@@ -42,14 +42,14 @@ class DomainRequest(TimeStampedModel):
 
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
-        STARTED = "started", "Started"
-        SUBMITTED = "submitted", "Submitted"
         IN_REVIEW = "in review", "In review"
         ACTION_NEEDED = "action needed", "Action needed"
         APPROVED = "approved", "Approved"
-        WITHDRAWN = "withdrawn", "Withdrawn"
         REJECTED = "rejected", "Rejected"
         INELIGIBLE = "ineligible", "Ineligible"
+        SUBMITTED = "submitted", "Submitted"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+        STARTED = "started", "Started"
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
