@@ -298,3 +298,27 @@ def replace_url_queryparams(url_to_modify: str, query_params, convert_list_to_cs
     new_url = urlunparse(url_parts)
 
     return new_url
+
+
+@staticmethod
+def convert_queryset_to_dict(queryset, is_model=True, key="id"):
+    """
+    Transforms a queryset into a dictionary keyed by a specified key (like "id").
+
+    Parameters:
+        requests (QuerySet or list of dicts): Input data.
+        is_model (bool): Indicates if each item in 'queryset' are model instances (True) or dictionaries (False).
+        key (str): Key or attribute to use for the resulting dictionary's keys.
+
+    Returns:
+        dict: Dictionary with keys derived from 'key' and values corresponding to items in 'queryset'.
+    """
+
+    if is_model:
+        request_dict = {getattr(value, key): value for value in queryset}
+    else:
+        # Querysets sometimes contain sets of dictionaries.
+        # Calling .values is an example of this.
+        request_dict = {value[key]: value for value in queryset}
+
+    return request_dict
