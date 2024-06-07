@@ -850,7 +850,7 @@ class DomainRequestExport:
         all_requests = DomainRequest.objects.filter(**filter_condition).order_by(*sort_fields).distinct()
 
         # Convert the request to a querystring. Only grab what we need.
-        annotations = all_requests.values("generic_org_type", "federal_type", "submission_date")
+        annotations = all_requests.values("id", "generic_org_type", "federal_type", "submission_date")
 
         # Override the default value for domain_type
         for request in annotations:
@@ -954,6 +954,8 @@ class DomainRequestExport:
         )
 
         requests_queryset = parsed_requests.values(
+            # Existing fields
+            "id",
             # Custom fields
             "all_alternative_domains",
             "all_other_contacts",
@@ -961,8 +963,6 @@ class DomainRequestExport:
             "additional_details",
             "creator_approved_domains_count",
             "creator_active_requests_count",
-            # Existing fields
-            "id",
         )
 
         return requests_queryset
