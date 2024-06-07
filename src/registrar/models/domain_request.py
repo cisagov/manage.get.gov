@@ -25,6 +25,15 @@ logger = logging.getLogger(__name__)
 class DomainRequest(TimeStampedModel):
     """A registrant's domain request for a new domain."""
 
+    class Meta:
+        """Contains meta information about this class"""
+
+        indexes = [
+            models.Index(fields=["requested_domain"]),
+            models.Index(fields=["approved_domain"]),
+            models.Index(fields=["status"]),
+        ]
+
     # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history
     # If we note any performace degradation due to this addition,
     # we can query the auditlogs table in admin.py and add the results to
@@ -34,14 +43,14 @@ class DomainRequest(TimeStampedModel):
 
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
-        STARTED = "started", "Started"
-        SUBMITTED = "submitted", "Submitted"
         IN_REVIEW = "in review", "In review"
         ACTION_NEEDED = "action needed", "Action needed"
         APPROVED = "approved", "Approved"
-        WITHDRAWN = "withdrawn", "Withdrawn"
         REJECTED = "rejected", "Rejected"
         INELIGIBLE = "ineligible", "Ineligible"
+        SUBMITTED = "submitted", "Submitted"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+        STARTED = "started", "Started"
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
@@ -331,7 +340,6 @@ class DomainRequest(TimeStampedModel):
     organization_name = models.CharField(
         null=True,
         blank=True,
-        db_index=True,
     )
 
     address_line1 = models.CharField(
@@ -360,7 +368,6 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name="zip code",
-        db_index=True,
     )
     urbanization = models.CharField(
         null=True,

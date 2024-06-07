@@ -59,7 +59,6 @@ class TransitionDomain(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Organization name",
-        db_index=True,
     )
     federal_type = models.CharField(
         max_length=50,
@@ -85,7 +84,6 @@ class TransitionDomain(TimeStampedModel):
         blank=True,
         help_text="First name / given name",
         verbose_name="first name",
-        db_index=True,
     )
     middle_name = models.CharField(
         null=True,
@@ -136,7 +134,6 @@ class TransitionDomain(TimeStampedModel):
         blank=True,
         verbose_name="zip code",
         help_text="Zip code",
-        db_index=True,
     )
 
     def __str__(self):
