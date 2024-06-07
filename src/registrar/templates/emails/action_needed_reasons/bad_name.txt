@@ -10,6 +10,7 @@ STATUS: Action needed
 
 DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS
 We've reviewed your domain request and, unfortunately, it does not meet our naming requirements. 
+
 Domains should uniquely identify a government organization and be clear to the general public. Read more about naming requirements for your type of organization <https://get.gov/domains/choosing/>. 
 
 
