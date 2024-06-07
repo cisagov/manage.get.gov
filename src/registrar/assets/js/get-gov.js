@@ -1212,7 +1212,11 @@ document.addEventListener('DOMContentLoaded', function() {
     domainsSearchSubmit.addEventListener('click', function(e) {
       e.preventDefault();
       currentSearchTerm = domainsSearchInput.value;
-      showElement(resetButton);
+      if (currentSearchTerm) {
+        showElement(resetButton);
+      } else {
+        hideElement(resetButton);
+      }
       loadDomains(1, 'id', 'asc');
       resetheaders();
     })
@@ -1561,7 +1565,11 @@ document.addEventListener('DOMContentLoaded', function() {
     domainRequestsSearchSubmit.addEventListener('click', function(e) {
       e.preventDefault();
       currentSearchTerm = domainRequestsSearchInput.value;
-      showElement(resetButton);
+      if (currentSearchTerm) {
+        showElement(resetButton);
+      } else {
+        hideElement(resetButton);
+      }
       loadDomainRequests(1, 'id', 'asc');
       resetheaders();
     })
