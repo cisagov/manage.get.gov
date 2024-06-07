@@ -19,7 +19,8 @@ WE LIMIT ADDITIONAL DOMAIN NAMES
 Our practice is to only approve one domain per online service per government organization, evaluating additional requests on a case-by-case basis. 
 There are two core reasons we limit additional domains:
 - We want to minimize your operational and security load, which increases with each additional domain.
-Fewer domains allow us to take protective, namespace-wide security actions faster and without undue dependencies.  
+- Fewer domains allow us to take protective, namespace-wide security actions faster and without undue dependencies.  
+
 If you’re attempting to claim an additional domain to prevent others from obtaining it, that’s not necessary. .Gov domains are only available to U.S.-based government organizations, and we don’t operate on a first come, first served basis. We'll only assign a domain to the organization whose real name or services actually correspond to the domain name.
 
 
