@@ -1302,6 +1302,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 /**
+ * An IIFE that displays confirmation modal on the user profile page
+ */
+(function userProfileListener() {
+
+  const showConfirmationModalTrigger = document.querySelector('.show-confirmation-modal');
+  if (showConfirmationModalTrigger) {
+    showConfirmationModalTrigger.click();
+  }
+}
+)();
+
+/**
  * An IIFE that hooks up the edit buttons on the finish-user-setup page
  */
 (function finishUserSetupListener() {

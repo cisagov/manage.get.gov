@@ -44,10 +44,12 @@ class CheckUserProfileMiddleware:
         self.regular_excluded_pages = [
             self.setup_page,
             self.logout_page,
+            '/admin',
         ]
         self.other_excluded_pages = [
             self.profile_page,
             self.logout_page,
+            '/admin',
         ]
 
     def __call__(self, request):
@@ -92,7 +94,7 @@ class CheckUserProfileMiddleware:
         custom_redirect = "domain-request:" if request.path == "/request/" else None
 
         # Don't redirect on excluded pages (such as the setup page itself)
-        if not any(request.path.startswith(page) for page in self.excluded_pages):
+        if not any(request.path.startswith(page) for page in self.regular_excluded_pages):
 
             # Preserve the original query parameters, and coerce them into a dict
             query_params = parse_qs(request.META["QUERY_STRING"])
@@ -114,7 +116,7 @@ class CheckUserProfileMiddleware:
         """
 
         # Don't redirect on excluded pages (such as the setup page itself)
-        if not any(request.path.startswith(page) for page in self.excluded_pages):
+        if not any(request.path.startswith(page) for page in self.other_excluded_pages):
             return HttpResponseRedirect(self.profile_page)
         else:
             # Process the view as normal

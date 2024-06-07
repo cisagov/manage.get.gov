@@ -41,8 +41,8 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         form = self.form_class(instance=self.object)
         context = self.get_context_data(object=self.object, form=form)
 
-        if hasattr(self.object, "finished_setup") and not self.object.finished_setup:
-            context["show_confirmation_modal"]
+        if hasattr(self.user, "finished_setup") and not self.user.finished_setup:
+            context["show_confirmation_modal"] = True
 
         return_to_request = request.GET.get("return_to_request")
         if return_to_request:
@@ -70,9 +70,14 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
         # The text for the back button on this page
         context["profile_back_button_text"] = "Go to manage your domains"
-        context["show_back_button"] = True
+        context["show_back_button"] = False
+
+        if hasattr(self.user, "finished_setup") and self.user.finished_setup:
+            context["user_finished_setup"] = True
+            context["show_back_button"] = True
 
         return context
+
 
     def get_success_url(self):
         """Redirect to the user's profile page."""
@@ -96,6 +101,12 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
+        
+    def form_invalid(self, form):
+        """If the form is invalid, conditionally display an additional error."""
+        if hasattr(self.user, "finished_setup") and not self.user.finished_setup:
+            messages.error(self.request, "Before you can manage your domain, we need you to add contact information.")
+        return super().form_invalid(form)
 
     def form_valid(self, form):
         """Handle successful and valid form submissions."""
@@ -108,9 +119,9 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
     def get_object(self, queryset=None):
         """Override get_object to return the logged-in user's contact"""
-        user = self.request.user  # get the logged in user
-        if hasattr(user, "contact"):  # Check if the user has a contact instance
-            return user.contact
+        self.user = self.request.user  # get the logged in user
+        if hasattr(self.user, "contact"):  # Check if the user has a contact instance
+            return self.user.contact
         return None
 
 
