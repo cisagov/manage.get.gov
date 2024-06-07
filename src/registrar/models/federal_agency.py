@@ -1,5 +1,6 @@
 from .utility.time_stamped_model import TimeStampedModel
 from django.db import models
+from django.apps import apps
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,8 +17,21 @@ class FederalAgency(TimeStampedModel):
         help_text="Federal agency",
     )
 
+    federal_type = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        help_text="Federal agency type (executive, legislative, etc.)",
+    )
+
     def __str__(self) -> str:
         return f"{self.agency}"
+
+    @staticmethod
+    def get_branch_choices():
+        """Dynamically get BranchChoices from DomainRequest model to avoid circular import."""
+        DomainRequest = apps.get_model("registrar", "DomainRequest")
+        return DomainRequest.BranchChoices.choices
 
     def create_federal_agencies(apps, schema_editor):
         """This method gets run from a data migration to prepopulate data
