@@ -1020,14 +1020,28 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
 }
 
 /**
+ * Hide element
+ *
+*/
+const hideElement = (element) => {
+  element.classList.add('display-none');
+};
+
+/**
+ * Show element
+ *
+*/
+const showElement = (element) => {
+  element.classList.remove('display-none');
+};
+
+/**
  * A helper that toggles content/ no content/ no search results
  *
 */
 const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm) => {
   const { unfiltered_total, total } = data;
 
-  const showElement = (element) => element.classList.remove('display-none');
-  const hideElement = (element) => element.classList.add('display-none');
   if (searchTermHolder)
     searchTermHolder.innerHTML = '';
 
@@ -1069,20 +1083,21 @@ const unsetHeader = (header) => {
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let domainsWrapper = document.querySelector('.domains__table-wrapper');
+  const domainsWrapper = document.querySelector('.domains__table-wrapper');
 
   if (domainsWrapper) {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
-    let noDomainsWrapper = document.querySelector('.domains__no-data');
-    let noSearchResultsWrapper = document.querySelector('.domains__no-search-results');
+    const noDomainsWrapper = document.querySelector('.domains__no-data');
+    const noSearchResultsWrapper = document.querySelector('.domains__no-search-results');
     let hasLoaded = false;
     let currentSearchTerm = ''
-    let domainsSearchInput = document.getElementById('domains__search-field');
-    let domainsSearchSubmit = document.getElementById('domains__search-field-submit');
-    let tableHeaders = document.querySelectorAll('.domains__table th[data-sortable]');
-    let tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region');
-    let searchTermHolder = document.querySelector('.domains__search-term');
+    const domainsSearchInput = document.getElementById('domains__search-field');
+    const domainsSearchSubmit = document.getElementById('domains__search-field-submit');
+    const tableHeaders = document.querySelectorAll('.domains__table th[data-sortable]');
+    const tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region');
+    const searchTermHolder = document.querySelector('.domains__search-term');
+    const resetButton = document.querySelector('.domains__reset-button');
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1197,6 +1212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     domainsSearchSubmit.addEventListener('click', function(e) {
       e.preventDefault();
       currentSearchTerm = domainsSearchInput.value;
+      showElement(resetButton);
       loadDomains(1, 'id', 'asc');
       resetheaders();
     })
@@ -1213,11 +1229,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function resetSearch() {
       domainsSearchInput.value = '';
+      currentSearchTerm = '';
+      hideElement(resetButton);
       loadDomains(1, 'id', 'asc', hasLoaded, '');
       resetheaders();
     }
 
-    resetButton = document.querySelector('.domains__reset-button');
     if (resetButton) {
       resetButton.addEventListener('click', function() {
         resetSearch();
@@ -1249,21 +1266,22 @@ const utcDateString = (dateString) => {
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let domainRequestsSectionWrapper = document.querySelector('.domain-requests');
-  let domainRequestsWrapper = document.querySelector('.domain-requests__table-wrapper');
+  const domainRequestsSectionWrapper = document.querySelector('.domain-requests');
+  const domainRequestsWrapper = document.querySelector('.domain-requests__table-wrapper');
 
   if (domainRequestsWrapper) {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
-    let noDomainRequestsWrapper = document.querySelector('.domain-requests__no-data');
-    let noSearchResultsWrapper = document.querySelector('.domain-requests__no-search-results');
+    const noDomainRequestsWrapper = document.querySelector('.domain-requests__no-data');
+    const noSearchResultsWrapper = document.querySelector('.domain-requests__no-search-results');
     let hasLoaded = false;
     let currentSearchTerm = ''
-    let domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
-    let domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
-    let tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
-    let tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
-    let searchTermHolder = document.querySelector('.domain-requests__search-term');
+    const domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
+    const domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
+    const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
+    const tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
+    const searchTermHolder = document.querySelector('.domain-requests__search-term');
+    const resetButton = document.querySelector('.domain-requests__reset-button');
 
     /**
      * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
@@ -1543,6 +1561,7 @@ document.addEventListener('DOMContentLoaded', function() {
     domainRequestsSearchSubmit.addEventListener('click', function(e) {
       e.preventDefault();
       currentSearchTerm = domainRequestsSearchInput.value;
+      showElement(resetButton);
       loadDomainRequests(1, 'id', 'asc');
       resetheaders();
     })
@@ -1559,11 +1578,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function resetSearch() {
       domainRequestsSearchInput.value = '';
+      currentSearchTerm = '';
+      hideElement(resetButton);
       loadDomainRequests(1, 'id', 'asc', hasLoaded, '');
       resetheaders();
     }
 
-    resetButton = document.querySelector('.domain-requests__reset-button');
     if (resetButton) {
       resetButton.addEventListener('click', function() {
         resetSearch();
