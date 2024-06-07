@@ -44,12 +44,12 @@ class CheckUserProfileMiddleware:
         self.regular_excluded_pages = [
             self.setup_page,
             self.logout_page,
-            '/admin',
+            "/admin",
         ]
         self.other_excluded_pages = [
             self.profile_page,
             self.logout_page,
-            '/admin',
+            "/admin",
         ]
 
     def __call__(self, request):
@@ -110,10 +110,9 @@ class CheckUserProfileMiddleware:
         else:
             # Process the view as normal
             return None
-        
+
     def _handle_other_user_setup_not_finished(self, request):
-        """Redirects the given user to the profile page to finish setup.
-        """
+        """Redirects the given user to the profile page to finish setup."""
 
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in self.other_excluded_pages):

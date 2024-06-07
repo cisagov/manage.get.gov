@@ -78,7 +78,6 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
         return context
 
-
     def get_success_url(self):
         """Redirect to the user's profile page."""
 
@@ -101,7 +100,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
-        
+
     def form_invalid(self, form):
         """If the form is invalid, conditionally display an additional error."""
         if hasattr(self.user, "finished_setup") and not self.user.finished_setup:

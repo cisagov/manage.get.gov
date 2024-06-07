@@ -69,11 +69,18 @@ class TestWithUser(MockEppLib):
         email_2 = "unicorn@igorville.com"
         # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
         self.incomplete_regular_user = get_user_model().objects.create(
-            username=username_regular_incomplete, first_name=first_name_2, email=email_2, verification_type=User.VerificationTypeChoices.REGULAR
+            username=username_regular_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.REGULAR,
         )
-        # in the case below, other user is representative of GRANDFATHERED, VERIFIED_BY_STAFF, INVITED, FIXTURE_USER, ie. IAL1
+        # in the case below, other user is representative of GRANDFATHERED,
+        # VERIFIED_BY_STAFF, INVITED, FIXTURE_USER, ie. IAL1
         self.incomplete_other_user = get_user_model().objects.create(
-            username=username_other_incomplete, first_name=first_name_2, email=email_2, verification_type=User.VerificationTypeChoices.VERIFIED_BY_STAFF
+            username=username_other_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.VERIFIED_BY_STAFF,
         )
 
     def tearDown(self):
@@ -679,16 +686,13 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
             # Assert that modal does not appear on subsequent submits
             self.assertNotContains(user_profile_page, "domain registrants must maintain accurate contact information")
             # Assert that unique error message appears by testing the message in a specific div
-            html_content = user_profile_page.content.decode('utf-8')
+            html_content = user_profile_page.content.decode("utf-8")
             # Normalize spaces and line breaks in the HTML content
-            normalized_html_content = ' '.join(html_content.split())
+            normalized_html_content = " ".join(html_content.split())
             # Expected string without extra spaces and line breaks
-            expected_string = 'Before you can manage your domain, we need you to add contact information.'
+            expected_string = "Before you can manage your domain, we need you to add contact information."
             # Check for the presence of the <div> element with the specific text
             self.assertIn(f'<div class="usa-alert__body"> {expected_string} </div>', normalized_html_content)
-
-
-            #self.assertContains(user_profile_page, "Before you can manage your domain, we need you to add contact information.")
 
             # We're missing a phone number, so the page should tell us that
             self.assertContains(user_profile_page, "Enter your phone number.")
@@ -696,7 +700,9 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
             # We need to assert that links to manage your domain are not present (in both body and footer)
             self.assertNotContains(user_profile_page, "Manage your domains")
             # Assert the tooltip on the logo, indicating that the logo is not clickable
-            self.assertContains(user_profile_page, 'title="Before you can manage your domains, we need you to add contact information."')
+            self.assertContains(
+                user_profile_page, 'title="Before you can manage your domains, we need you to add contact information."'
+            )
             # Assert that modal does not appear on subsequent submits
             self.assertNotContains(user_profile_page, "domain registrants must maintain accurate contact information")
 
@@ -712,10 +718,12 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
 
             # We need to assert that logo is not clickable and links to manage your domain are not present
             self.assertContains(save_page, "anage your domains", count=2)
-            self.assertNotContains(save_page, "Before you can manage your domains, we need you to add contact information")
+            self.assertNotContains(
+                save_page, "Before you can manage your domains, we need you to add contact information"
+            )
             # Assert that modal does not appear on subsequent submits
             self.assertNotContains(save_page, "domain registrants must maintain accurate contact information")
-            
+
             # Try to navigate back to the home page.
             # This is the same as clicking the back button.
             completed_setup_page = self.app.get(reverse("home"))
