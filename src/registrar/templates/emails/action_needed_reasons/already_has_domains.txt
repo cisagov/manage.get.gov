@@ -6,6 +6,7 @@ DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
 REQUEST RECEIVED ON: {{ domain_request.submission_date|date }}
 STATUS: Action needed
 
+----------------------------------------------------------------
 
 ORGANIZATION ALREADY HAS A .GOV DOMAIN
 We've reviewed your domain request, but your organization already has at least one other .gov domain. We need more information about your rationale for registering another .gov domain. 
