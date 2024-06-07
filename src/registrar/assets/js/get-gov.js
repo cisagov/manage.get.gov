@@ -1225,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset UI and accessibility
     function resetheaders() {
       tableHeaders.forEach(header => {
-        // unset sort UI in headers
+        // Unset sort UI in headers
         unsetHeader(header);
       });
       // Reset the announcement region
