@@ -16,6 +16,7 @@ Domains should uniquely identify a government organization and be clear to the g
 
 ACTION NEEDED
 First, we need you to identify a new domain name that meets our naming requirements for your type of organization. Then, log in to the registrar and update the name in your domain request. <https://manage.get.gov/> Once you submit your updated request, we’ll resume the adjudication process.
+
 If you have questions or want to discuss potential domain names, reply to this email.
 
 
