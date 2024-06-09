@@ -556,16 +556,14 @@ class DomainRequest(TimeStampedModel):
         """
 
         # This ensures that if we have prefilled data, the form is prepopulated
-        # NOTE: this relies on the fact that the first and last names of a CISA representative
-        # are required fields.  Because of this, we can simplify the check to only look at the
-        # first name to determine whether or not a CISA representative was provided.
-        if self.cisa_representative_first_name is not None:
-            self.has_cisa_representative = self.cisa_representative_first_name != ""
-
+        if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
+            self.has_cisa_representative = self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
+        
         # This check is required to ensure that the form doesn't start out checked
         if self.has_cisa_representative is not None:
             self.has_cisa_representative = (
-                self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
+                (self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None)
+                and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
             )
 
         # This ensures that if we have prefilled data, the form is prepopulated
@@ -1034,12 +1032,14 @@ class DomainRequest(TimeStampedModel):
             return True
         return False
 
-    def _cisa_rep_and_email_check(self):
-        # Has a CISA rep + email is NOT empty or NOT an empty string OR doesn't have CISA rep
+    def _cisa_rep_check(self):
+        # Either does not have a CISA rep, OR has a CISA rep + both first name and last name are NOT empty and are NOT an empty string
         return (
             self.has_cisa_representative is True
-            and self.cisa_representative_email is not None
-            and self.cisa_representative_email != ""
+            and self.cisa_representative_first_name is not None
+            and self.cisa_representative_first_name != ""
+            and self.cisa_representative_last_name is not None
+            and self.cisa_representative_last_name != ""
         ) or self.has_cisa_representative is False
 
     def _anything_else_radio_button_and_text_field_check(self):
@@ -1049,7 +1049,7 @@ class DomainRequest(TimeStampedModel):
         ) or self.has_anything_else_text is False
 
     def _is_additional_details_complete(self):
-        return self._cisa_rep_and_email_check() and self._anything_else_radio_button_and_text_field_check()
+        return self._cisa_rep_check() and self._anything_else_radio_button_and_text_field_check()
 
     def _is_policy_acknowledgement_complete(self):
         return self.is_policy_acknowledged is not None

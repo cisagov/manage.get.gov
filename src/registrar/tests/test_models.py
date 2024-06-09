@@ -1800,93 +1800,129 @@ class TestDomainRequestIncomplete(TestCase):
     def test_is_additional_details_complete(self):
         test_cases = [
             # CISA Rep - Yes
+            # Firstname - Yes
+            # Lastname - Yes
             # Email - Yes
             # Anything Else Radio - Yes
             # Anything Else Text - Yes
             {
                 "has_cisa_representative": True,
+                "cisa_representative_first_name": "cisa-first-name",
+                "cisa_representative_last_name": "cisa-last-name",
                 "cisa_representative_email": "some@cisarepemail.com",
                 "has_anything_else_text": True,
                 "anything_else": "Some text",
                 "expected": True,
             },
             # CISA Rep - Yes
+            # Firstname - Yes
+            # Lastname - Yes
             # Email - Yes
             # Anything Else Radio - Yes
             # Anything Else Text - None
             {
                 "has_cisa_representative": True,
+                "cisa_representative_first_name": "cisa-first-name",
+                "cisa_representative_last_name": "cisa-last-name",
                 "cisa_representative_email": "some@cisarepemail.com",
                 "has_anything_else_text": True,
                 "anything_else": None,
                 "expected": True,
             },
             # CISA Rep - Yes
-            # Email - Yes
+            # Firstname - Yes
+            # Lastname - Yes
+            # Email - None >> e-mail is optional so it should not change anything setting this to None
             # Anything Else Radio - No
             # Anything Else Text - No
             {
                 "has_cisa_representative": True,
-                "cisa_representative_email": "some@cisarepemail.com",
+                "cisa_representative_first_name": "cisa-first-name",
+                "cisa_representative_last_name": "cisa-last-name",
+                "cisa_representative_email": None,
                 "has_anything_else_text": False,
                 "anything_else": None,
                 "expected": True,
             },
             # CISA Rep - Yes
-            # Email - Yes
-            # Anything Else Radio - None
-            # Anything Else Text - None
-            {
-                "has_cisa_representative": True,
-                "cisa_representative_email": "some@cisarepemail.com",
-                "has_anything_else_text": None,
-                "anything_else": None,
-                "expected": False,
-            },
-            # CISA Rep - Yes
+            # Firstname - Yes
+            # Lastname - Yes
             # Email - None
             # Anything Else Radio - None
             # Anything Else Text - None
             {
                 "has_cisa_representative": True,
+                "cisa_representative_first_name": "cisa-first-name",
+                "cisa_representative_last_name": "cisa-last-name",
                 "cisa_representative_email": None,
                 "has_anything_else_text": None,
                 "anything_else": None,
                 "expected": False,
             },
             # CISA Rep - Yes
+            # Firstname - None
+            # Lastname - None
+            # Email - None
+            # Anything Else Radio - None
+            # Anything Else Text - None
+            {
+                "has_cisa_representative": True,
+                "cisa_representative_first_name": None,
+                "cisa_representative_last_name": None,
+                "cisa_representative_email": None,
+                "has_anything_else_text": None,
+                "anything_else": None,
+                "expected": False,
+            },
+            # CISA Rep - Yes
+            # Firstname - None
+            # Lastname - None
             # Email - None
             # Anything Else Radio - No
             # Anything Else Text - No
-            # sync_yes_no will override has_cisa_representative to be False if cisa_representative_email is None
+            # sync_yes_no will override has_cisa_representative to be False if cisa_representative_first_name is None
             # therefore, our expected will be True
             {
                 "has_cisa_representative": True,
-                # Above will be overridden to False if cisa_rep_email is None bc of sync_yes_no_form_fields
+                # Above will be overridden to False if cisa_representative_first_name is None bc of sync_yes_no_form_fields
+                "cisa_representative_first_name": None,
+                "cisa_representative_last_name": None,
                 "cisa_representative_email": None,
                 "has_anything_else_text": False,
                 "anything_else": None,
                 "expected": True,
             },
             # CISA Rep - Yes
+            # Firstname - None
+            # Lastname - None
             # Email - None
             # Anything Else Radio - Yes
             # Anything Else Text - None
+            # NOTE: We should never have an instance where only firstname or only lastname are populated (they are both required) 
+            # However, if this happens, the application will default to False for has_cisa_representative
             {
                 "has_cisa_representative": True,
-                # Above will be overridden to False if cisa_rep_email is None bc of sync_yes_no_form_fields
+                # Above will be overridden to False if cisa_representative_first_name is None or
+                # cisa_representative_last_name is None bc of sync_yes_no_form_fields
+                "cisa_representative_first_name": None,
+                "cisa_representative_last_name": None,
                 "cisa_representative_email": None,
                 "has_anything_else_text": True,
                 "anything_else": None,
                 "expected": True,
             },
             # CISA Rep - Yes
+            # Firstname - None
+            # Lastname - None
             # Email - None
             # Anything Else Radio - Yes
             # Anything Else Text - Yes
             {
                 "has_cisa_representative": True,
-                # Above will be overridden to False if cisa_rep_email is None bc of sync_yes_no_form_fields
+                # Above will be overridden to False if cisa_representative_first_name is None or
+                # cisa_representative_last_name is None bc of sync_yes_no_form_fields
+                "cisa_representative_first_name": None,
+                "cisa_representative_last_name": None,
                 "cisa_representative_email": None,
                 "has_anything_else_text": True,
                 "anything_else": "Some text",
@@ -1897,6 +1933,8 @@ class TestDomainRequestIncomplete(TestCase):
             # Anything Else Text - Yes
             {
                 "has_cisa_representative": False,
+                "cisa_representative_first_name": None,
+                "cisa_representative_last_name": None,
                 "cisa_representative_email": None,
                 "has_anything_else_text": True,
                 "anything_else": "Some text",
@@ -1907,6 +1945,8 @@ class TestDomainRequestIncomplete(TestCase):
             # Anything Else Text - None
             {
                 "has_cisa_representative": False,
+                "cisa_representative_first_name": None,
+                "cisa_representative_last_name": None,
                 "cisa_representative_email": None,
                 "has_anything_else_text": True,
                 "anything_else": None,
@@ -1917,6 +1957,8 @@ class TestDomainRequestIncomplete(TestCase):
             # Anything Else Text - None
             {
                 "has_cisa_representative": False,
+                "cisa_representative_first_name": None,
+                "cisa_representative_last_name": None,
                 "cisa_representative_email": None,
                 "has_anything_else_text": None,
                 "anything_else": None,
@@ -1928,6 +1970,8 @@ class TestDomainRequestIncomplete(TestCase):
             # Anything Else Text - No
             {
                 "has_cisa_representative": False,
+                "cisa_representative_first_name": None,
+                "cisa_representative_last_name": None,
                 "cisa_representative_email": None,
                 "has_anything_else_text": False,
                 "anything_else": None,
@@ -1937,6 +1981,8 @@ class TestDomainRequestIncomplete(TestCase):
             # Anything Else Radio - None
             {
                 "has_cisa_representative": None,
+                "cisa_representative_first_name": None,
+                "cisa_representative_last_name": None,
                 "cisa_representative_email": None,
                 "has_anything_else_text": None,
                 "anything_else": None,
