@@ -10,6 +10,7 @@ from registrar.management.commands.utility.terminal_helper import (
 )
 from registrar.models.contact import Contact
 from registrar.models.user import User
+from registrar.models.utility.domain_helper import DomainHelper
 
 logger = logging.getLogger(__name__)
 
@@ -110,15 +111,21 @@ class Command(BaseCommand):
                     {TerminalColors.ENDC}""",  # noqa
                 )
 
-                # ---- UPDATE THE USER IF IT DOES NOT HAVE A FIRST AND LAST NAMES
-                # ---- LET'S KEEP A LIGHT TOUCH
-                if not eligible_user.first_name and not eligible_user.last_name:
-                    # (expression has type "str | None", variable has type "str | int | Combinable")
-                    # so we'll ignore type
-                    eligible_user.first_name = contact.first_name  # type: ignore
-                    eligible_user.last_name = contact.last_name  # type: ignore
-                    eligible_user.save()
-                    processed_user = eligible_user
+                # Get the fields that exist on both User and Contact. Excludes id.
+                common_fields = DomainHelper.get_common_fields(User, Contact)
+                if "email" in common_fields:
+                    # Don't change the email field.
+                    common_fields.remove("email")
+
+                for field in common_fields:
+                    # Grab the value that contact has stored for this field
+                    new_value = getattr(contact, field)
+
+                    # Set it on the user field
+                    setattr(eligible_user, field, new_value)
+
+                eligible_user.save()
+                processed_user = eligible_user
 
                 return (
                     eligible_user,

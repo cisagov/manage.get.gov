@@ -3538,7 +3538,7 @@ class TestMyUserAdmin(TestCase):
                         )
                     },
                 ),
-                ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
+                ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
                 ("Permissions", {"fields": ("is_active", "groups")}),
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
             )

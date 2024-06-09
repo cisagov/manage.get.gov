@@ -87,7 +87,6 @@ class User(AbstractUser):
     phone = PhoneNumberField(
         null=True,
         blank=True,
-        help_text="Phone",
     )
 
     middle_name = models.CharField(
