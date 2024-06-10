@@ -26,7 +26,8 @@ docker compose exec app ./manage.py generate_puml --include registrar
 docker run -v $(pwd):$(pwd) -w $(pwd) -it plantuml/plantuml -tsvg models_diagram.md
 ```
 
-3. Remove the puml file from earlier if you still have it and commit the image and this md file
+3. Remove the puml file from earlier (if you still have it)
+4. Commit the new image and the md file
 
 
 ```plantuml
