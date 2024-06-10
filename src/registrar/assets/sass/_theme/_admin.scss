@@ -763,8 +763,10 @@ div.dja__model-description{
 }
 
 .analytics-button-group {
+    // This button group has too many items
     flex-wrap: wrap;
-    a {
-        min-width: 160px !important;
+    // Fix a weird spacing issue with USWDS a buttons in DJA
+    a.button {
+        padding: 6px 8px 10px 8px;
     }
 }
