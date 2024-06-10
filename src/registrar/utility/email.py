@@ -2,6 +2,7 @@
 
 import boto3
 import logging
+import textwrap
 from datetime import datetime
 from django.conf import settings
 from django.template.loader import get_template
@@ -27,6 +28,7 @@ def send_templated_email(
     bcc_address="",
     context={},
     attachment_file: str = None,
+    wrap_email = False,
 ):
     """Send an email built from a template to one email address.
 
@@ -66,6 +68,11 @@ def send_templated_email(
 
     try:
         if attachment_file is None:
+            # Wrap the email body to a maximum width of 80 characters per line.
+            # Not all email clients support CSS to do this, and our .txt files require parsing.
+            if wrap_email:
+                email_body = wrap_text_and_preserve_paragraphs(email_body, width=80)
+
             ses_client.send_email(
                 FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
                 Destination=destination,
@@ -89,6 +96,26 @@ def send_templated_email(
             )
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
+
+
+def wrap_text_and_preserve_paragraphs(text, width):
+    """
+    Wraps text to `width` preserving newlines; splits on '\n', wraps segments, rejoins with '\n'.
+    Args:
+        text (str): Text to wrap.
+        width (int): Max width per line, default 80.
+    
+    Returns:
+        str: Wrapped text with preserved paragraph structure.
+    """
+    # Split text into paragraphs by newlines
+    paragraphs = text.split('\n')
+
+    # Add \n to any line that exceeds our max length
+    wrapped_paragraphs = [textwrap.fill(paragraph, width=width) for paragraph in paragraphs]
+
+    # Join paragraphs with double newlines
+    return '\n'.join(wrapped_paragraphs)
 
 
 def send_email_with_attachment(sender, recipient, subject, body, attachment_file, ses_client):

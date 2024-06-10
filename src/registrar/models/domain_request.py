@@ -628,7 +628,7 @@ class DomainRequest(TimeStampedModel):
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
     def _send_status_update_email(
-        self, new_status, email_template, email_template_subject, send_email=True, bcc_address=""
+        self, new_status, email_template, email_template_subject, send_email=True, bcc_address="", wrap_email=False
     ):
         """Send a status update email to the submitter.
 
@@ -655,6 +655,7 @@ class DomainRequest(TimeStampedModel):
                 self.submitter.email,
                 context={"domain_request": self},
                 bcc_address=bcc_address,
+                wrap_email=wrap_email,
             )
             logger.info(f"The {new_status} email sent to: {self.submitter.email}")
         except EmailSendingError:
@@ -811,6 +812,7 @@ class DomainRequest(TimeStampedModel):
                 email_template=f"emails/action_needed_reasons/{email_template_name}",
                 email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
                 send_email=send_email,
+                wrap_email=True,
             )
 
     @transition(
