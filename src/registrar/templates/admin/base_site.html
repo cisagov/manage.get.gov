@@ -26,10 +26,21 @@
   <script type="application/javascript" src="{% static 'js/dja-collapse.js' %}" defer></script>
 {% endblock %}
 
-{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+{% block title %}
+    {% if subtitle %}
+        {{ subtitle }} | 
+    {% endif %}
+    {% if tabtitle %}
+        {{ tabtitle }} |
+    {% else %}
+        {{ title }} |
+    {% endif %}
+    {{ site_title|default:_('Django site admin') }}
+{% endblock %}
+
 {% block extrastyle %}{{ block.super }}
 <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}" />
-{% endblock %}
+{% endblock %}        
 
 {% block header %}
   {% if not IS_PRODUCTION %}

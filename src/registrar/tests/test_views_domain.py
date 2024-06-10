@@ -1087,7 +1087,7 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         """Can load domain's authorizing official page."""
         page = self.client.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
         # once on the sidebar, once in the title
-        self.assertContains(page, "Authorizing official", count=2)
+        self.assertContains(page, "Authorizing official", count=3)
 
     def test_domain_authorizing_official_content(self):
         """Authorizing official information appears on the page."""

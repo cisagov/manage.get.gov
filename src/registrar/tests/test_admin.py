@@ -47,6 +47,7 @@ from registrar.models import (
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
+    MockDb,
     MockSESClient,
     AuditedAdminMockData,
     completed_domain_request,
@@ -3494,16 +3495,19 @@ class TestListHeaderAdmin(TestCase):
         User.objects.all().delete()
 
 
-class TestMyUserAdmin(TestCase):
+class TestMyUserAdmin(MockDb):
     def setUp(self):
+        super().setUp()
         admin_site = AdminSite()
         self.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
+        self.staffuser = create_user()
         self.test_helper = GenericTestHelper(admin=self.admin)
 
     def tearDown(self):
         super().tearDown()
+        DomainRequest.objects.all().delete()
         User.objects.all().delete()
 
     @less_console_noise_decorator
@@ -3528,7 +3532,7 @@ class TestMyUserAdmin(TestCase):
         """
         Tests for the correct helper text on this page
         """
-        user = create_user()
+        user = self.staffuser
 
         p = "adminpass"
         self.client.login(username="superuser", password=p)
@@ -3549,10 +3553,11 @@ class TestMyUserAdmin(TestCase):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
 
+    @less_console_noise_decorator
     def test_list_display_without_username(self):
         with less_console_noise():
             request = self.client.request().wsgi_request
-            request.user = create_user()
+            request.user = self.staffuser
 
             list_display = self.admin.get_list_display(request)
             expected_list_display = [
@@ -3578,7 +3583,7 @@ class TestMyUserAdmin(TestCase):
     def test_get_fieldsets_cisa_analyst(self):
         with less_console_noise():
             request = self.client.request().wsgi_request
-            request.user = create_user()
+            request.user = self.staffuser
             fieldsets = self.admin.get_fieldsets(request)
             expected_fieldsets = (
                 (
@@ -3595,6 +3600,97 @@ class TestMyUserAdmin(TestCase):
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
             )
             self.assertEqual(fieldsets, expected_fieldsets)
+
+    def test_analyst_can_see_related_domains_and_requests_in_user_form(self):
+        """Tests if an analyst can see the related domains and domain requests for a user in that user's form"""
+
+        # From MockDb, we have self.meoward_user which we'll use as creator
+        # Create fake domain requests
+        domain_request_started = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED, user=self.meoward_user, name="started.gov"
+        )
+        domain_request_submitted = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.meoward_user, name="submitted.gov"
+        )
+        domain_request_in_review = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=self.meoward_user, name="in-review.gov"
+        )
+        domain_request_withdrawn = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.WITHDRAWN, user=self.meoward_user, name="withdrawn.gov"
+        )
+        domain_request_approved = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.APPROVED, user=self.meoward_user, name="approved.gov"
+        )
+        domain_request_rejected = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.REJECTED, user=self.meoward_user, name="rejected.gov"
+        )
+        domain_request_ineligible = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.INELIGIBLE, user=self.meoward_user, name="ineligible.gov"
+        )
+
+        # From MockDb, we have sel.meoward_user who's admin on
+        # self.domain_1 - READY
+        # self.domain_2 - DNS_NEEDED
+        # self.domain_11 - READY
+        # self.domain_12 - READY
+        # DELETED:
+        domain_deleted, _ = Domain.objects.get_or_create(
+            name="domain_deleted.gov", state=Domain.State.DELETED, deleted=timezone.make_aware(datetime(2024, 4, 2))
+        )
+        _, created = UserDomainRole.objects.get_or_create(
+            user=self.meoward_user, domain=domain_deleted, role=UserDomainRole.Roles.MANAGER
+        )
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/user/{}/change/".format(self.meoward_user.id),
+            follow=True,
+        )
+
+        # Make sure the page loaded and contains the expected domain request names and links to the domain requests
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, domain_request_submitted.requested_domain.name)
+        expected_href = reverse("admin:registrar_domainrequest_change", args=[domain_request_submitted.pk])
+        self.assertContains(response, expected_href)
+
+        self.assertContains(response, domain_request_in_review.requested_domain.name)
+        expected_href = reverse("admin:registrar_domainrequest_change", args=[domain_request_in_review.pk])
+        self.assertContains(response, expected_href)
+
+        self.assertContains(response, domain_request_approved.requested_domain.name)
+        expected_href = reverse("admin:registrar_domainrequest_change", args=[domain_request_approved.pk])
+        self.assertContains(response, expected_href)
+
+        self.assertContains(response, domain_request_rejected.requested_domain.name)
+        expected_href = reverse("admin:registrar_domainrequest_change", args=[domain_request_rejected.pk])
+        self.assertContains(response, expected_href)
+
+        self.assertContains(response, domain_request_ineligible.requested_domain.name)
+        expected_href = reverse("admin:registrar_domainrequest_change", args=[domain_request_ineligible.pk])
+        self.assertContains(response, expected_href)
+
+        # We filter out those requests
+        # STARTED
+        self.assertNotContains(response, domain_request_started.requested_domain.name)
+        expected_href = reverse("admin:registrar_domainrequest_change", args=[domain_request_started.pk])
+        self.assertNotContains(response, expected_href)
+
+        # WITHDRAWN
+        self.assertNotContains(response, domain_request_withdrawn.requested_domain.name)
+        expected_href = reverse("admin:registrar_domainrequest_change", args=[domain_request_withdrawn.pk])
+        self.assertNotContains(response, expected_href)
+
+        # Make sure the page contains the expected domain names and links to the domains
+        self.assertContains(response, self.domain_1.name)
+        expected_href = reverse("admin:registrar_domain_change", args=[self.domain_1.pk])
+        self.assertContains(response, expected_href)
+
+        # We filter out DELETED
+        self.assertNotContains(response, domain_deleted.name)
+        expected_href = reverse("admin:registrar_domain_change", args=[domain_deleted.pk])
+        self.assertNotContains(response, expected_href)
 
 
 class AuditedAdminTest(TestCase):
