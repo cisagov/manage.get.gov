@@ -382,7 +382,6 @@ def export_data_full_to_csv(csv_file):
 
 def export_data_federal_to_csv(csv_file):
     """Federal domains report"""
-
     writer = csv.writer(csv_file)
     # define columns to include in export
     columns = [

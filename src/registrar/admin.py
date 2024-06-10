@@ -383,6 +383,39 @@ class CustomLogEntryAdmin(LogEntryAdmin):
     change_form_template = "admin/change_form_no_submit.html"
     add_form_template = "admin/change_form_no_submit.html"
 
+    # Select log entry to change ->  Log entries
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Log entries"
+        return super().changelist_view(request, extra_context=extra_context)
+
+    # #786: Skipping on updating audit log tab titles for now
+    # def change_view(self, request, object_id, form_url="", extra_context=None):
+    #     if extra_context is None:
+    #         extra_context = {}
+
+    #     log_entry = self.get_object(request, object_id)
+
+    #     if log_entry:
+    #         # Reset title to empty string
+    #         extra_context["subtitle"] = ""
+    #         extra_context["tabtitle"] = ""
+
+    #         object_repr = log_entry.object_repr  # Hold name of the object
+    #         changes = log_entry.changes
+
+    #         # Check if this is a log entry for an addition and related to the contact model
+    #         # Created [name] -> Created [name] contact | Change log entry
+    #         if (
+    #             all(new_value != "None" for field, (old_value, new_value) in changes.items())
+    #             and log_entry.content_type.model == "contact"
+    #         ):
+    #             extra_context["subtitle"] = f"Created {object_repr} contact"
+    #             extra_context["tabtitle"] = "Change log entry"
+
+    #     return super().change_view(request, object_id, form_url, extra_context=extra_context)
+
 
 class AdminSortFields:
     _name_sort = ["first_name", "last_name", "email"]
@@ -594,7 +627,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
+        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -625,7 +658,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "email", "title")}),
+        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -778,6 +811,14 @@ class MyHostAdmin(AuditedAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain or host name."
     inlines = [HostIPInline]
 
+    # Select host to change -> Host
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Host"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
+
 
 class HostIpResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -792,6 +833,14 @@ class HostIpAdmin(AuditedAdmin, ImportExportModelAdmin):
 
     resource_classes = [HostIpResource]
     model = models.HostIP
+
+    # Select host ip to change -> Host ip
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Host IP"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 class ContactResource(resources.ModelResource):
@@ -926,6 +975,14 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
+    # Select contact to change -> Contacts
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Contacts"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
+
 
 class WebsiteResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -1043,6 +1100,21 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         else:
             return response
 
+    # User Domain manager [email] is manager on domain [domain name] ->
+    # Domain manager [email] on [domain name]
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+
+        if object_id:
+            obj = self.get_object(request, object_id)
+            if obj:
+                email = obj.user.email
+                domain_name = obj.domain.name
+                extra_context["subtitle"] = f"Domain manager {email} on {domain_name}"
+
+        return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
+
 
 class DomainInvitationAdmin(ListHeaderAdmin):
     """Custom domain invitation admin class."""
@@ -1078,6 +1150,14 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     readonly_fields = ["status"]
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    # Select domain invitations to change -> Domain invitations
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Domain invitations"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 class DomainInformationResource(resources.ModelResource):
@@ -1218,6 +1298,14 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields  # Read-only fields for analysts
+
+    # Select domain information to change -> Domain information
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Domain information"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 class DomainRequestResource(FsmModelResource):
@@ -1674,11 +1762,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     if next_char.isdigit():
                         should_apply_default_filter = True
 
+        # Select domain request to change -> Domain requests
+        if extra_context is None:
+            extra_context = {}
+            extra_context["tabtitle"] = "Domain requests"
+
         if should_apply_default_filter:
             # modify the GET of the request to set the selected filter
             modified_get = copy.deepcopy(request.GET)
             modified_get["status__in"] = "submitted,in review,action needed"
             request.GET = modified_get
+
         response = super().changelist_view(request, extra_context=extra_context)
         return response
 
@@ -2244,6 +2338,14 @@ class DraftDomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # If no redirection is needed, return the original response
         return response
 
+    # Select draft domain to change -> Draft domains
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Draft domains"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
+
 
 class PublicContactResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -2287,6 +2389,20 @@ class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
     autocomplete_fields = ["domain"]
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+
+        if object_id:
+            obj = self.get_object(request, object_id)
+            if obj:
+                name = obj.name
+                email = obj.email
+                registry_id = obj.registry_id
+                extra_context["subtitle"] = f"{name} <{email}> id: {registry_id}"
+
+        return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
 
 
 class VerifiedByStaffAdmin(ListHeaderAdmin):
@@ -2339,6 +2455,14 @@ class UserGroupAdmin(AuditedAdmin):
     @admin.display(description=_("Group"))
     def user_group(self, obj):
         return obj.name
+
+    # Select user groups to change -> User groups
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "User groups"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 class WaffleFlagAdmin(FlagAdmin):
