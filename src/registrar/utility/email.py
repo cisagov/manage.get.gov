@@ -28,7 +28,7 @@ def send_templated_email(
     bcc_address="",
     context={},
     attachment_file: str = None,
-    wrap_email = False,
+    wrap_email=False,
 ):
     """Send an email built from a template to one email address.
 
@@ -104,18 +104,18 @@ def wrap_text_and_preserve_paragraphs(text, width):
     Args:
         text (str): Text to wrap.
         width (int): Max width per line, default 80.
-    
+
     Returns:
         str: Wrapped text with preserved paragraph structure.
     """
     # Split text into paragraphs by newlines
-    paragraphs = text.split('\n')
+    paragraphs = text.split("\n")
 
     # Add \n to any line that exceeds our max length
     wrapped_paragraphs = [textwrap.fill(paragraph, width=width) for paragraph in paragraphs]
 
     # Join paragraphs with double newlines
-    return '\n'.join(wrapped_paragraphs)
+    return "\n".join(wrapped_paragraphs)
 
 
 def send_email_with_attachment(sender, recipient, subject, body, attachment_file, ses_client):
