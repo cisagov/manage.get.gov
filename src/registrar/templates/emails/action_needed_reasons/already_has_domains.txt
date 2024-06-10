@@ -34,6 +34,7 @@ FOR A REPLACEMENT DOMAIN: If you’re requesting a new domain that will replace 
 Reply to this email. Tell us how many months your organization needs to maintain your current .gov domain and conduct a transition to a new one. Detail why that period of time is needed.
 
 FOR AN ADDITIONAL DOMAIN: If you’re requesting an additional domain and not replacing your existing one, we’ll need more information to support that request. 
+
 Reply to this email. Detail why you believe another domain is necessary for your organization, and why a subdomain won’t meet your needs. 
 
 
