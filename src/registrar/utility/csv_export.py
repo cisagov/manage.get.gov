@@ -9,7 +9,8 @@ from registrar.models import (
     PublicContact,
     UserDomainRole,
 )
-from django.db.models import QuerySet, Value, Case, When, CharField, Count, Q, F
+from django.db.models import QuerySet, Value, CharField, Count, Q, F
+from django.db.models import ManyToManyField
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models.functions import Concat, Coalesce
@@ -713,9 +714,6 @@ class DomainRequestExport:
     A collection of functions which return csv files regarding the DomainRequest model.
     """
 
-    # Get all the field names of the DomainRequest object
-    domain_request_fields = set(field.name for field in DomainRequest._meta.get_fields())
-
     # Get all columns on the full metadata report
     all_columns = [
         "Domain request",
@@ -816,26 +814,8 @@ class DomainRequestExport:
             .distinct()
         )
 
-        # Annotations are custom columns returned to the queryset (AKA: computed in the DB)
-        delimiter = " | "
-        annotations = {
-            "creator_approved_domains_count": DomainRequestExport.get_creator_approved_domains_count_query(),
-            "creator_active_requests_count": DomainRequestExport.get_creator_active_requests_count_query(),
-            "all_current_websites": StringAgg("current_websites__website", delimiter=delimiter, distinct=True),
-            "all_alternative_domains": StringAgg("alternative_domains__website", delimiter=delimiter, distinct=True),
-            # Coerce the other contacts object to "{first_name} {last_name} {email}"
-            "all_other_contacts": StringAgg(
-                Concat(
-                    "other_contacts__first_name",
-                    Value(" "),
-                    "other_contacts__last_name",
-                    Value(" "),
-                    "other_contacts__email",
-                ),
-                delimiter=delimiter,
-                distinct=True,
-            ),
-        }
+        # Annotations are custom columns returned to the queryset (AKA: computed in the DB).
+        annotations = cls._full_domain_request_annotations()
 
         # .values can't go two levels deep (just returns the id) - so we have to include this.
         additional_values = [
@@ -857,6 +837,28 @@ class DomainRequestExport:
 
         # Write the csv file
         cls.write_csv_for_requests(writer, cls.all_columns, requests_dict)
+
+    @classmethod
+    def _full_domain_request_annotations(cls, delimiter=" | "):
+        """Returns the annotations for the full domain request report"""
+        return {
+            "creator_approved_domains_count": DomainRequestExport.get_creator_approved_domains_count_query(),
+            "creator_active_requests_count": DomainRequestExport.get_creator_active_requests_count_query(),
+            "all_current_websites": StringAgg("current_websites__website", delimiter=delimiter, distinct=True),
+            "all_alternative_domains": StringAgg("alternative_domains__website", delimiter=delimiter, distinct=True),
+            # Coerce the other contacts object to "{first_name} {last_name} {email}"
+            "all_other_contacts": StringAgg(
+                Concat(
+                    "other_contacts__first_name",
+                    Value(" "),
+                    "other_contacts__last_name",
+                    Value(" "),
+                    "other_contacts__email",
+                ),
+                delimiter=delimiter,
+                distinct=True,
+            ),
+        }
 
     @staticmethod
     def write_csv_for_requests(
@@ -912,8 +914,9 @@ class DomainRequestExport:
 
         # Handle the election field. N/A if None, "Yes"/"No" if boolean
         human_readable_election_board = "N/A"
-        if request.get("is_election_board") is not None:
-            human_readable_election_board = "Yes" if request.is_election_board else "No"
+        is_election_board = request.get("is_election_board")
+        if is_election_board is not None:
+            human_readable_election_board = "Yes" if is_election_board else "No"
 
         # Handle the additional details field. Pipe sep.
         cisa_rep = request.get("cisa_representative_email")
@@ -960,7 +963,9 @@ class DomainRequestExport:
         return row
 
     @classmethod
-    def annotate_and_retrieve_fields(cls, requests, annotations, additional_values=None) -> QuerySet:
+    def annotate_and_retrieve_fields(
+        cls, requests, annotations, additional_values=None, include_many_to_many=False
+    ) -> QuerySet:
         """
         Applies annotations to a queryset and retrieves specified fields,
         including class-defined and annotation-defined.
@@ -969,13 +974,11 @@ class DomainRequestExport:
             requests (QuerySet): Initial queryset.
             annotations (dict, optional): Fields to compute {field_name: expression}.
             additional_values (list, optional): Extra fields to retrieve; defaults to annotation keys if None.
+            include_many_to_many (bool, optional): Determines if we should include many to many fields or not
 
         Returns:
             QuerySet: Contains dictionaries with the specified fields for each record.
         """
-
-        if annotations is None:
-            annotations = {}
 
         if additional_values is None:
             additional_values = []
@@ -985,7 +988,15 @@ class DomainRequestExport:
         if annotations:
             additional_values.extend(annotations.keys())
 
-        queryset = requests.annotate(**annotations).values(*cls.domain_request_fields, *additional_values)
+        # Get prexisting fields on DomainRequest
+        domain_request_fields = set()
+        for field in DomainRequest._meta.get_fields():
+            # Exclude many to many fields unless we specify
+            many_to_many = isinstance(field, ManyToManyField) and include_many_to_many
+            if many_to_many or not isinstance(field, ManyToManyField):
+                domain_request_fields.add(field.name)
+
+        queryset = requests.annotate(**annotations).values(*domain_request_fields, *additional_values)
         return queryset
 
     # ============================================================= #
