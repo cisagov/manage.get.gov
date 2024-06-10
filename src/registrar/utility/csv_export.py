@@ -922,7 +922,7 @@ class DomainRequestExport:
         # Handle the additional details field. Pipe sep.
         cisa_rep = request.get("cisa_representative_email")
         details = [cisa_rep, request.get("anything_else")]
-        additional_details = " | ".join([field for field in details if field is not None])
+        additional_details = " | ".join([field for field in details if field])
 
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
