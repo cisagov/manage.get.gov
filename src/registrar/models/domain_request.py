@@ -557,14 +557,15 @@ class DomainRequest(TimeStampedModel):
 
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
-            self.has_cisa_representative = self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
-        
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
+            )
+
         # This check is required to ensure that the form doesn't start out checked
         if self.has_cisa_representative is not None:
             self.has_cisa_representative = (
-                (self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None)
-                and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
-            )
+                self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
+            ) and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
 
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.anything_else is not None:
@@ -1033,7 +1034,8 @@ class DomainRequest(TimeStampedModel):
         return False
 
     def _cisa_rep_check(self):
-        # Either does not have a CISA rep, OR has a CISA rep + both first name and last name are NOT empty and are NOT an empty string
+        # Either does not have a CISA rep, OR has a CISA rep + both first name
+        # and last name are NOT empty and are NOT an empty string
         return (
             self.has_cisa_representative is True
             and self.cisa_representative_first_name is not None

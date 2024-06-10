@@ -1884,7 +1884,7 @@ class TestDomainRequestIncomplete(TestCase):
             # therefore, our expected will be True
             {
                 "has_cisa_representative": True,
-                # Above will be overridden to False if cisa_representative_first_name is None bc of sync_yes_no_form_fields
+                # Above will be overridden to False if cisa_representative_first_name is None
                 "cisa_representative_first_name": None,
                 "cisa_representative_last_name": None,
                 "cisa_representative_email": None,
@@ -1898,8 +1898,8 @@ class TestDomainRequestIncomplete(TestCase):
             # Email - None
             # Anything Else Radio - Yes
             # Anything Else Text - None
-            # NOTE: We should never have an instance where only firstname or only lastname are populated (they are both required) 
-            # However, if this happens, the application will default to False for has_cisa_representative
+            # NOTE: We should never have an instance where only firstname or only lastname are populated
+            # (they are both required)
             {
                 "has_cisa_representative": True,
                 # Above will be overridden to False if cisa_representative_first_name is None or
