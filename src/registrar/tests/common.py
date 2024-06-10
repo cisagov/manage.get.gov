@@ -667,7 +667,7 @@ class MockDb(TestCase):
             is_election_board=False,
         )
 
-        meoward_user = get_user_model().objects.create(
+        self.meoward_user = get_user_model().objects.create(
             username="meoward_username", first_name="first_meoward", last_name="last_meoward", email="meoward@rocks.com"
         )
 
@@ -676,7 +676,7 @@ class MockDb(TestCase):
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=meoward_user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
+            user=self.meoward_user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = UserDomainRole.objects.get_or_create(
@@ -688,19 +688,21 @@ class MockDb(TestCase):
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=meoward_user, domain=self.domain_2, role=UserDomainRole.Roles.MANAGER
+            user=self.meoward_user, domain=self.domain_2, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=meoward_user, domain=self.domain_11, role=UserDomainRole.Roles.MANAGER
+            user=self.meoward_user, domain=self.domain_11, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=meoward_user, domain=self.domain_12, role=UserDomainRole.Roles.MANAGER
+            user=self.meoward_user, domain=self.domain_12, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = DomainInvitation.objects.get_or_create(
-            email=meoward_user.email, domain=self.domain_1, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
+            email=self.meoward_user.email,
+            domain=self.domain_1,
+            status=DomainInvitation.DomainInvitationStatus.RETRIEVED,
         )
 
         _, created = DomainInvitation.objects.get_or_create(
