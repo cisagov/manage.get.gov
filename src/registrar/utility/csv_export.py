@@ -817,7 +817,8 @@ class DomainRequestExport:
         # Annotations are custom columns returned to the queryset (AKA: computed in the DB).
         annotations = cls._full_domain_request_annotations()
 
-        # .values can't go two levels deep (just returns the id) - so we have to include this.
+        # The .values returned from annotate_and_retrieve_fields can't go two levels deep 
+        # (just returns the field id of say, "creator") - so we have to include this.
         additional_values = [
             "requested_domain__name",
             "federal_agency__agency",
