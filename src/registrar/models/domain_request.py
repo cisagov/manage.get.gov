@@ -554,19 +554,24 @@ class DomainRequest(TimeStampedModel):
         """Some yes/no forms use a db field to track whether it was checked or not.
         We handle that here for def save().
         """
-
+        logger.debug("\033[91m .....syncing form...... \033[0m") # TODO-nl: delete me!
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
+            logger.debug("\033[91m --> NO NONES \033[0m") # TODO-nl: delete me!
             self.has_cisa_representative = (
                 self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
             )
 
         # This check is required to ensure that the form doesn't start out checked
         if self.has_cisa_representative is not None:
+            logger.debug("\033[91m --> cisa_rep is not none \033[0m") # TODO-nl: delete me!
             self.has_cisa_representative = (
                 self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
             ) and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
 
+        logger.debug("\033[91m") # TODO-nl: delete me!
+        logger.debug(f" --> has_cisa_rep is = {self.has_cisa_representative}!") # TODO-nl: delete me!
+        logger.debug("\033[0m") # TODO-nl: delete me!
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.anything_else is not None:
             self.has_anything_else_text = self.anything_else != ""
@@ -920,10 +925,20 @@ class DomainRequest(TimeStampedModel):
     def has_additional_details(self) -> bool:
         """Combines the has_anything_else_text and has_cisa_representative fields,
         then returns if this domain request has either of them."""
+
         # Split out for linter
-        has_details = False
-        if self.has_anything_else_text or self.has_cisa_representative:
-            has_details = True
+        has_details = True
+
+        if self.has_anything_else_text is None or self.has_cisa_representative is None:
+            has_details = False
+
+        logger.debug("\033[91m ******** Has additional ********") # TODO-nl: delete me!
+        logger.debug(f"""VALUE: {has_details}
+                    
+                        DETAILS:
+                     has_anything_else_text = {self.has_anything_else_text}
+                     has_cisa_representative = {self.has_cisa_representative}""") # TODO-nl: delete me!
+        logger.debug("\033[91m ****************") # TODO-nl: delete me!
 
         return has_details
 
@@ -1036,13 +1051,22 @@ class DomainRequest(TimeStampedModel):
     def _cisa_rep_check(self):
         # Either does not have a CISA rep, OR has a CISA rep + both first name
         # and last name are NOT empty and are NOT an empty string
-        return (
+        logger.debug("\033[91m ******** CISA REP CHECK 2 ********") # TODO-nl: delete me!
+        logger.debug(F"""values: 
+                     has_cisa_representative = {self.has_cisa_representative}
+                     cisa_representative_first_name = {self.cisa_representative_first_name}
+                     cisa_representative_last_name = {self.cisa_representative_last_name}""") # TODO-nl: delete me!
+        logger.debug("\033[0m") # TODO-nl: delete me!
+        to_return = (
             self.has_cisa_representative is True
             and self.cisa_representative_first_name is not None
             and self.cisa_representative_first_name != ""
             and self.cisa_representative_last_name is not None
             and self.cisa_representative_last_name != ""
         ) or self.has_cisa_representative is False
+
+        logger.debug(f"RETURNING: {to_return}") # TODO-nl: delete me!
+        return to_return
 
     def _anything_else_radio_button_and_text_field_check(self):
         # Anything else boolean is True + filled text field and it's not an empty string OR the boolean is No

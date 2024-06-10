@@ -125,6 +125,7 @@ class Command(BaseCommand):
                     if request_is_approved and domain_name is not None and not request.is_election_board:
                         request.is_election_board = domain_name in self.domains_with_election_boards_set
 
+                    self.sync_yes_no_form_fields()
                     self.sync_organization_type(DomainRequest, request)
                     self.request_to_update.append(request)
                     logger.info(f"Updating {request} => {request.organization_type}")
@@ -175,6 +176,7 @@ class Command(BaseCommand):
                     if not info.is_election_board:
                         info.is_election_board = domain_name in self.domains_with_election_boards_set
 
+                    self.sync_yes_no_form_fields()
                     self.sync_organization_type(DomainInformation, info)
 
                     self.di_to_update.append(info)

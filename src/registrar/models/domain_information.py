@@ -255,6 +255,33 @@ class DomainInformation(TimeStampedModel):
         except Exception:
             return ""
 
+    def sync_yes_no_form_fields(self):
+        """Some yes/no forms use a db field to track whether it was checked or not.
+        We handle that here for def save().
+        """
+        logger.debug("\033[96m .....syncing form (domain info)...... \033[0m") # TODO-nl: delete me!
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
+            logger.debug("\033[96m --> NO NONES \033[0m") # TODO-nl: delete me!
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
+            )
+
+        # This check is required to ensure that the form doesn't start out checked
+        if self.has_cisa_representative is not None:
+            logger.debug("\033[96m --> cisa_rep is not none \033[0m") # TODO-nl: delete me!
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
+            ) and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
+
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.anything_else is not None:
+            self.has_anything_else_text = self.anything_else != ""
+
+        # This check is required to ensure that the form doesn't start out checked.
+        if self.has_anything_else_text is not None:
+            self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
+
     def sync_organization_type(self):
         """
         Updates the organization_type (without saving) to match
@@ -289,6 +316,7 @@ class DomainInformation(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
+        self.sync_yes_no_form_fields()
         self.sync_organization_type()
         super().save(*args, **kwargs)
 
