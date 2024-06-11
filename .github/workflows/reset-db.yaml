@@ -17,6 +17,8 @@ on:
           - staging
           - development
           - ag
+          - litterbox
+          - hotgov
           - cb
           - bob
           - meoward
