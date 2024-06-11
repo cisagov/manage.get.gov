@@ -1,6 +1,5 @@
 import logging
 from collections import defaultdict
-import time
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
@@ -107,6 +106,12 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
         Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
     }
+
+    def get_session_data(self, request):
+        """Retrieve 'global' data from session:
+        The homepage sets new_request to True for the first Create domain request."""
+        is_a_new_request = self.request.session.get("new_request", "No data found")
+        return is_a_new_request
 
     def __init__(self):
         super().__init__()
@@ -436,6 +441,16 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return step_list
 
     def goto(self, step):
+        if step == "generic_org_type":
+            # We need to avoid creating a new domain request if the user
+            # clicks the back button
+            self.request.session["new_request"] = False
+        else:
+            # Reset the above logic to be extra safe;
+            # we do not want to stumble into a situation where a user
+            # unkowingly overrites when she thinks she's working on a
+            # new request
+            self.request.session["new_request"] = True
         self.steps.current = step
         return redirect(reverse(f"{self.URL_NAMESPACE}:{step}"))
 
@@ -458,21 +473,16 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
-        current_time = time.time()
-
+        # If a user hits the new request url directly
+        if "new_request" not in request.session:
+            request.session["new_request"] = True
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
             if request.path_info == self.NEW_URL_NAME:
-                last_submit_time = request.session.get("last_submit_time", 0)
 
-                # Check if the last submit was very recent, indicating a back button -> submit sequence
-                if current_time - last_submit_time > 5:  # 5 seconds threshold
-
+                if self.request.session["new_request"] is True:
                     # This will trigger the domain_request getter into creating a new DomainRequest
                     del self.storage
-
-                # Update the last submit time
-                request.session["last_submit_time"] = current_time
 
             return self.goto(self.steps.first)
 
