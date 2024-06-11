@@ -214,6 +214,15 @@ class DomainInformation(TimeStampedModel):
         verbose_name="Additional details",
     )
 
+    # This is a drop-in replacement for a has_anything_else_text() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_anything_else_text = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a anything_else or not",
+    )
+
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
@@ -233,6 +242,15 @@ class DomainInformation(TimeStampedModel):
         blank=True,
         verbose_name="CISA regional representative last name",
         db_index=True,
+    )
+
+    # This is a drop-in replacement for an has_cisa_representative() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_cisa_representative = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a representative email or not",
     )
 
     is_policy_acknowledged = models.BooleanField(
