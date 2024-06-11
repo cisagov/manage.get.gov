@@ -174,5 +174,15 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 {% endif %}
             </span>
         </div>
+    {% elif field.field.name == "investigator" %}
+        <div class="flex-container">
+            <label aria-label="Assign yourself as the investigator"></label>
+            <button id="investigator__assign_self" data-user-id="{{ request.user.id }}" type="button" class="usa-button usa-button--unstyled margin-top-2 margin-bottom-1 margin-left-1 usa-button__small-text text-no-underline">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                    <use xlink:href="/public/img/sprite.svg#person"></use>
+                </svg>
+                <span>Assign to me</span>
+            </button>
+        </div>
     {% endif %}
 {% endblock after_help_text %}
