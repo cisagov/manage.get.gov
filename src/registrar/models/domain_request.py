@@ -141,6 +141,9 @@ class DomainRequest(TimeStampedModel):
         @classmethod
         def get_org_label(cls, org_name: str):
             """Returns the associated label for a given org name"""
+            org_names = org_name.split("_election")
+            if len(org_names) > 0:
+                org_name = org_names[0]
             return cls(org_name).label if org_name else None
 
     class OrgChoicesElectionOffice(models.TextChoices):
