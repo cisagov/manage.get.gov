@@ -812,6 +812,7 @@ class DomainRequest(TimeStampedModel):
                 email_template=f"emails/action_needed_reasons/{email_template_name}",
                 email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
                 send_email=send_email,
+                bcc_address="help@get.gov",
                 wrap_email=True,
             )
 
