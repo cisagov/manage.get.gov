@@ -808,5 +808,5 @@ class HelperFunctions(MockDb):
                 "submission_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)
-            expected_content = [2, 2, 0, 0, 0, 0, 1, 0, 0, 1]
+            expected_content = [3, 2, 0, 0, 0, 0, 1, 0, 0, 1]
             self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)

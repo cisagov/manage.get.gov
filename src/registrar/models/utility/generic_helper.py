@@ -300,7 +300,6 @@ def replace_url_queryparams(url_to_modify: str, query_params, convert_list_to_cs
     return new_url
 
 
-@staticmethod
 def convert_queryset_to_dict(queryset, is_model=True, key="id"):
     """
     Transforms a queryset into a dictionary keyed by a specified key (like "id").
