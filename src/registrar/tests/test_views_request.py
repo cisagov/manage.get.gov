@@ -109,20 +109,44 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         This tests that the domain requests get created only when they should.
         """
+        # Get the intro page
         intro_page = self.app.get(reverse("domain-request:"))
+
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # Select the form
         intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result = intro_form.submit()
 
-        # follow first redirect
+        # Submit the form, this creates 1 Request
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result.follow()
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        response = intro_form.submit(name="submit_button", value="intro_acknowledge")
 
-        # should see results in db
+        # Landing on the next page used to create another 1 request
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response.follow()
+
+        # Check if a new DomainRequest object has been created
         domain_request_count = DomainRequest.objects.count()
         self.assertEqual(domain_request_count, 1)
+
+        # AGAIN right away, this should NOT cause a new request to be created
+        # as a small threshold between 'Continue' submits indicate a use of the
+        # browser back button.
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response = intro_form.submit(name="submit_button", value="intro_acknowledge")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response.follow()
+        domain_request_count = DomainRequest.objects.count()
+        self.assertEqual(domain_request_count, 1)
+
+        # One more time, dropping session which will set the last_submit_time to 0,
+        # therefore increasing the threshold and having us expect the creation of a new request
+        intro_form = intro_page.forms[0]
+        response = intro_form.submit(name="submit_button", value="intro_acknowledge")
+        response.follow()
+        domain_request_count = DomainRequest.objects.count()
+        self.assertEqual(domain_request_count, 2)
 
     @boto3_mocking.patching
     def test_domain_request_form_submission(self):
