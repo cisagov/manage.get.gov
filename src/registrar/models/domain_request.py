@@ -1080,6 +1080,8 @@ class DomainRequest(TimeStampedModel):
                 is_complete = self._is_city_complete()
             case DomainRequest.OrganizationChoices.SPECIAL_DISTRICT:
                 is_complete = self._is_special_district_complete()
+            case DomainRequest.OrganizationChoices.SCHOOL_DISTRICT:
+                is_complete = True
             case _:
                 # NOTE: Shouldn't happen, this is only if somehow they didn't choose an org type
                 is_complete = False
