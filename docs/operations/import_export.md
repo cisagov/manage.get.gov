@@ -35,6 +35,7 @@ For reference, the zip file will contain the following tables in csv form:
 * Websites
 * Host
 * HostIP
+* PublicContact
 
 After exporting the file from the target environment, scp the exported_tables.zip
 file from the target environment to local.  Run the below commands from local.
@@ -81,10 +82,17 @@ For reference, this deletes all rows from the following tables:
 * DraftDomain
 * HostIP
 * Host
+* PublicContact
 
 #### Importing into Target Environment
 
 Once target environment is prepared, files can be imported.
+
+If importing tables from stable environment into an OT&E sandbox, there will be a difference
+between the stable's registry and the sandbox's registry. Therefore, you need to run import_tables
+with --skipEppSave option set to False. If you set to False, it will attempt to save PublicContact
+records to the registry on load. If this is unset, or set to True, it will load the database and not
+attempt to update the registry on load.
 
 To scp the exported_tables.zip file from local to the sandbox, run the following:
 
@@ -107,7 +115,7 @@ cf ssh {target-app}
 example cleaning getgov-backup:
 cf ssh getgov-backup
 /tmp/lifecycle/backup
-./manage.py import_tables
+./manage.py import_tables --skipEppSave=False
 
 For reference, this imports tables in the following order:
 
@@ -121,6 +129,7 @@ For reference, this imports tables in the following order:
 * DomainRequest
 * DomainInformation
 * UserDomainRole
+* PublicContact
 
 Optional step:
 * Run fixtures to load fixture users back in
