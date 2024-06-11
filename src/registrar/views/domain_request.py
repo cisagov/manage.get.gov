@@ -232,11 +232,14 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # is first in the list of steps.
         if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
-                # del self.storage
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
-                # intro page.
-                return render(request, "domain_request_intro.html", context={})
+                # intro page. Only TEMPORARY context needed is has_profile_flag
+                has_profile_flag = flag_is_active(self.request, "profile_feature")
+                context_stuff = {
+                    "has_profile_feature_flag": has_profile_flag
+                }
+                return render(request, "domain_request_intro.html", context=context_stuff)
             else:
                 return self.goto(self.steps.first)
 
