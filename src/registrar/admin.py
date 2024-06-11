@@ -24,6 +24,7 @@ from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
 from . import models
+from .models import FederalAgency
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
