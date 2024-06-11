@@ -19,6 +19,8 @@ from registrar.models import (
 import boto3_mocking
 from registrar.models.transition_domain import TransitionDomain
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
+from registrar.utility.constants import BranchChoices
+
 from .common import MockSESClient, less_console_noise, completed_domain_request, set_domain_request_investigators
 from django_fsm import TransitionNotAllowed
 
@@ -124,7 +126,7 @@ class TestDomainRequest(TestCase):
                 creator=user,
                 investigator=user,
                 generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-                federal_type=DomainRequest.BranchChoices.EXECUTIVE,
+                federal_type=BranchChoices.EXECUTIVE,
                 is_election_board=False,
                 organization_name="Test",
                 address_line1="100 Main St.",
@@ -152,7 +154,7 @@ class TestDomainRequest(TestCase):
             information = DomainInformation.objects.create(
                 creator=user,
                 generic_org_type=DomainInformation.OrganizationChoices.FEDERAL,
-                federal_type=DomainInformation.BranchChoices.EXECUTIVE,
+                federal_type=BranchChoices.EXECUTIVE,
                 is_election_board=False,
                 organization_name="Test",
                 address_line1="100 Main St.",
