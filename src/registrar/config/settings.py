@@ -162,7 +162,7 @@ MIDDLEWARE = [
     # django-cors-headers: listen to cors responses
     "corsheaders.middleware.CorsMiddleware",
     # custom middleware to stop caching from CloudFront
-    "registrar.no_cache_middleware.NoCacheMiddleware",
+    "registrar.registrar_middleware.NoCacheMiddleware",
     # serve static assets in production
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
@@ -188,6 +188,7 @@ MIDDLEWARE = [
     "auditlog.middleware.AuditlogMiddleware",
     # Used for waffle feature flags
     "waffle.middleware.WaffleMiddleware",
+    "registrar.registrar_middleware.CheckUserProfileMiddleware",
 ]
 
 # application object used by Django’s built-in servers (e.g. `runserver`)
@@ -326,7 +327,7 @@ SERVER_EMAIL = "root@get.gov"
 # endregion
 
 # region: Waffle feature flags-----------------------------------------------------------###
-# If Waffle encounters a reference to a flag that is not in the database, should Waffle create the flag?
+# If Waffle encounters a reference to a flag that is not in the database, create the flag automagically.
 WAFFLE_CREATE_MISSING_FLAGS = True
 
 # The model that will be used to keep track of flags. Extends AbstractUserFlag.
@@ -658,6 +659,8 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-litterbox.app.cloud.gov",
+    "getgov-hotgov.app.cloud.gov",
     "getgov-cb.app.cloud.gov",
     "getgov-bob.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",

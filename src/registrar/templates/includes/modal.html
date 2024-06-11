@@ -18,12 +18,18 @@
 
         <div class="usa-modal__footer">
             <ul class="usa-button-group">
+                {% if not_form %}
                 <li class="usa-button-group__item">
-                    <form method="post">
-                        {% csrf_token %}
                         {{ modal_button }}
-                    </form>
-                </li>
+                </li>      
+                {% else %}
+                    <li class="usa-button-group__item">
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ modal_button }}
+                        </form>
+                    </li>
+                {% endif %}
                 <li class="usa-button-group__item">
                     {% comment %} The cancel button the DS form actually triggers a context change in the view,
                     in addition to being a close modal hook {% endcomment %}
@@ -39,7 +45,7 @@
                                 Cancel
                             </button>
                         </form>
-                    {% else %}
+                    {% elif not is_domain_request_form or review_form_is_complete %}
                         <button
                             type="button"
                             class="usa-button usa-button--unstyled padding-105 text-center"

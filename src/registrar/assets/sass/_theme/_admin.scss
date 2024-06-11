@@ -130,7 +130,7 @@ html[data-theme="light"] {
     // Sets darker color on delete page links.
     // Remove when dark mode successfully applies to Django delete page.
     .delete-confirmation .content a:not(.button)  {
-        color: #005288;
+        color: color('primary');
     }
 }
 
@@ -159,9 +159,10 @@ html[data-theme="dark"] {
     // Sets darker color on delete page links.
     // Remove when dark mode successfully applies to Django delete page.
     .delete-confirmation .content a:not(.button)  {
-        color: #005288;
+        color: color('primary');
     }
 }
+
 
 #branding h1 a:link, #branding h1 a:visited {
     color: var(--primary-fg);
@@ -185,12 +186,32 @@ div#content > h2 {
     margin: units(2) 0 units(1) 0;
 }
 
+.module ul.padding-0 {
+    padding: 0 !important;
+}
+
+.module ul.margin-0 {
+    margin: 0 !important;
+}
+
 .change-list {
     .usa-table--striped tbody tr:nth-child(odd) td,
     .usa-table--striped tbody tr:nth-child(odd) th,
     .usa-table td,
     .usa-table th {
         background-color: transparent;
+    }
+}
+
+.change-form {
+    .usa-table--striped tbody tr:nth-child(odd) td,
+    .usa-table--striped tbody tr:nth-child(odd) th,
+    .usa-table td,
+    .usa-table th {
+        background-color: transparent;
+    }
+    .usa-table td {
+        border-bottom: 1px solid var(--hairline-color);
     }
 }
 
@@ -719,7 +740,7 @@ div.dja__model-description{
 
     a, a:link, a:visited {
         font-size: medium;
-        color: #005288 !important;
+        color: color('primary') !important;
     }
 
     &.dja__model-description--no-overflow {
@@ -747,4 +768,8 @@ div.dja__model-description{
 
 .usa-summary-box h3 {
     color: #{$dhs-blue-60};
+}
+
+.module caption, .inline-group h2 {
+    text-transform: capitalize;
 }

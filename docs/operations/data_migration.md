@@ -668,3 +668,32 @@ Example: `cf ssh getgov-za`
 
 #### Step 1: Running the script
 ```docker-compose exec app ./manage.py populate_verification_type```
+
+
+## Copy names from contacts to users
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py copy_names_from_contacts_to_users --debug```
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py copy_names_from_contacts_to_users --debug```
+
+##### Optional parameters
+|   | Parameter                  | Description                                                                 |
+|:-:|:-------------------------- |:----------------------------------------------------------------------------|
+| 1 | **debug**                  | Increases logging detail. Defaults to False.                                |

@@ -16,6 +16,8 @@ on:
           - stable
           - staging
           - development
+          - litterbox
+          - hotgov
           - cb
           - bob
           - meoward
