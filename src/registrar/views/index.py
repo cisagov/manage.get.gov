@@ -31,7 +31,6 @@ def index(request):
             context["modal_button"] = modal_button
 
         # This controls the creation of a new domain request in the wizard
-        print("will set session")
         request.session["new_request"] = True
 
     return render(request, "home.html", context)
