@@ -742,10 +742,14 @@ class MockDb(TestCase):
                 status=DomainRequest.DomainRequestStatus.APPROVED,
                 name="city5.gov",
             )
+            self.domain_request_6 = completed_domain_request(
+                status=DomainRequest.DomainRequestStatus.STARTED,
+                name="city6.gov",
+            )
             self.domain_request_3.submit()
             self.domain_request_4.submit()
+            self.domain_request_6.submit()
 
-            self.domain_request_3.submission_date = get_time_aware_date(datetime(2024, 4, 2))
             other, _ = Contact.objects.get_or_create(
                 first_name="Testy1232",
                 last_name="Tester24",
@@ -764,19 +768,19 @@ class MockDb(TestCase):
             website_2, _ = Website.objects.get_or_create(website="cheeseville.gov")
             website_3, _ = Website.objects.get_or_create(website="https://www.example.com")
             website_4, _ = Website.objects.get_or_create(website="https://www.example2.com")
-            self.domain_request_3.other_contacts.add(other)
-            self.domain_request_3.save()
-            self.domain_request_3.other_contacts.add(other_2)
-            self.domain_request_3.save()
-            self.domain_request_3.alternative_domains.add(website)
-            self.domain_request_3.alternative_domains.add(website_2)
+
+            self.domain_request_3.other_contacts.add(other, other_2)
+            self.domain_request_3.alternative_domains.add(website, website_2)
             self.domain_request_3.current_websites.add(website_3, website_4)
-            self.domain_request_3.current_websites.add(website_4)
             self.domain_request_3.cisa_representative_email = "test@igorville.com"
+            self.domain_request_3.submission_date = get_time_aware_date(datetime(2024, 4, 2))
             self.domain_request_3.save()
 
             self.domain_request_4.submission_date = get_time_aware_date(datetime(2024, 4, 2))
             self.domain_request_4.save()
+
+            self.domain_request_6.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            self.domain_request_6.save()
 
     def tearDown(self):
         super().tearDown()

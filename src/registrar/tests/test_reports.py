@@ -672,6 +672,7 @@ class ExportDataTest(MockDb, MockEppLib):
             columns = [
                 "Domain request",
                 "Domain type",
+                "Federal type"
             ]
             sort_fields = [
                 "requested_domain__name",
@@ -696,7 +697,7 @@ class ExportDataTest(MockDb, MockEppLib):
             expected_content = (
                 "Domain request,Domain type,Federal type\n"
                 "city3.gov,Federal,Executive\n"
-                "city4.gov,Federal,Executive\n"
+                "city6.gov,Federal,Executive\n"
             )
 
             # Normalize line endings and remove commas,
@@ -708,7 +709,7 @@ class ExportDataTest(MockDb, MockEppLib):
 
     @less_console_noise_decorator
     def test_full_domain_request_report(self):
-        """ """
+        """Tests the full domain request report."""
 
         # Create a CSV file in memory
         csv_file = StringIO()
@@ -737,7 +738,7 @@ class ExportDataTest(MockDb, MockEppLib):
         csv_file.seek(0)
         # Read the content into a variable
         csv_content = csv_file.read()
-        print(csv_content)
+
         expected_content = (
             # Header
             "Domain request,Submitted at,Status,Domain type,Federal type,"
@@ -757,7 +758,9 @@ class ExportDataTest(MockDb, MockEppLib):
             " https://www.example2.com | https://www.example.com,\n"
             "city5.gov,,Approved,Federal,Executive,,Testorg,N/A,,NY,2,,,,1,0,"
             "city1.gov,Testy,Tester,testy@town.com,Chief Tester,Purpose of the site,There "
-            "is more,Testy Tester testy2@town.com,,city.com,"
+            "is more,Testy Tester testy2@town.com,,city.com,\n"
+            "city6.gov,2024-04-02,Submitted,Federal,Executive,,Testorg,N/A,,NY,2,,,,0,1,city1.gov,Testy,Tester,"
+            "testy@town.com,Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,"
         )
 
         # Normalize line endings and remove commas,
@@ -809,5 +812,5 @@ class HelperFunctions(MockDb):
                 "submission_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)
-            expected_content = [2, 2, 0, 0, 0, 0, 0, 0, 0, 0]
+            expected_content = [2, 2, 0, 0, 0, 0, 0, 0, 0, 1]
             self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)
