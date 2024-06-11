@@ -12,7 +12,7 @@ from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
-from utils.constants import BranchChoices
+from registrar.utility.constants import BranchChoices
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError

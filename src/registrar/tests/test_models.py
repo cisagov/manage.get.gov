@@ -19,7 +19,7 @@ from registrar.models import (
 import boto3_mocking
 from registrar.models.transition_domain import TransitionDomain
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
-from utils.constants import BranchChoices
+from registrar.utility.constants import BranchChoices
 
 from .common import MockSESClient, less_console_noise, completed_domain_request, set_domain_request_investigators
 from django_fsm import TransitionNotAllowed

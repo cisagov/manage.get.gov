@@ -1,7 +1,7 @@
 from .utility.time_stamped_model import TimeStampedModel
 from django.db import models
 import logging
-from utils.constants import BranchChoices
+from registrar.utility.constants import BranchChoices
 
 logger = logging.getLogger(__name__)
 
