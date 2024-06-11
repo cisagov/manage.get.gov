@@ -296,130 +296,70 @@ function initializeWidgetOnList(list, parentId) {
 }
 
 /** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
- * status select and to show/hide fields like rejection reason or action needed reason
+ * status select and to show/hide the rejection reason
 */
 (function (){
-    // Hides or shows a given field based off of the current value of the given status selector,
-    // and stores its state in the session.
-    function showHideFieldsOnStatusChange(elementToHide, statusToShowOn, sessionObjectName) {
-        if (elementToHide) {
-            let statusSelect = document.getElementById('id_status')
-            
-            let shouldHide = statusSelect.value != statusToShowOn
-            // Initial handling of parentFormGroup display
-            hideOrShowDomObject(elementToHide, hideObject=shouldHide)
-    
-            // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
-            statusSelect.addEventListener('change', function() {
-                // Hide the object only if we're in an invalid state
-                shouldHide = statusSelect.value != statusToShowOn
+    let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+    let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
 
-                // Hide the action needed field if we're on a different status type
-                hideOrShowDomObject(elementToHide, hideObject=shouldHide)
+    if (rejectionReasonFormGroup && actionNeededReasonFormGroup) {
+        let statusSelect = document.getElementById('id_status')
+        let isRejected = statusSelect.value == "rejected"
+        let isActionNeeded = statusSelect.value == "action needed"
 
-                // Add a key to our session storage to track if we should hide the object automatically
-                // (to catch the edge case where you click the back button)
-                if (!shouldHide){
-                    sessionStorage.removeItem(sessionObjectName);
-                }else {
-                    sessionStorage.setItem(sessionObjectName, 'true');
-                }
-            });
-        }
-    }
+        // Initial handling of rejectionReasonFormGroup display
+        showOrHideObject(rejectionReasonFormGroup, show=isRejected)
+        showOrHideObject(actionNeededReasonFormGroup, show=isActionNeeded)
 
-    // Adds or removes the display-none class to object depending on the value of boolean hideObject
-    function hideOrShowDomObject(object, hideObject){
-        if (object){
-            if (hideObject){
-                object.classList.add("display-none");
-            }else {
-                object.classList.remove("display-none");
-            }
-        }
-    }
+        // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
+        statusSelect.addEventListener('change', function() {
+            // Show the rejection reason field if the status is rejected.
+            // Then track if its shown or hidden in our session cache.
+            isRejected = statusSelect.value == "rejected"
+            showOrHideObject(rejectionReasonFormGroup, show=isRejected)
+            addOrRemoveSessionBoolean("showRejectionReason", add=isRejected)
 
-    // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
+            isActionNeeded = statusSelect.value == "action needed"
+            showOrHideObject(actionNeededReasonFormGroup, show=isActionNeeded)
+            addOrRemoveSessionBoolean("showActionNeededReason", add=isActionNeeded)
+        });
+        
+        // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
 
-    // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
-    // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
-    // accurately for this edge case, we use cache and test for the back/forward navigation.
-    function handleBackButtonObserver(fieldsToObserve) {
+        // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
+        // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
+        // accurately for this edge case, we use cache and test for the back/forward navigation.
         const observer = new PerformanceObserver((list) => {
             list.getEntries().forEach((entry) => {
-                // This currently only handles the navigation buttons
-                if (entry.type === "back_forward") {
-                    // For each field we specify...
-                    fieldsToObserve.forEach((fieldName) => {
-                        fieldClass = `.field-${fieldName}`
-                        field = document.querySelector(fieldClass)
-                        // ...Grab its related session object to determine if it should be visible or not
-                        if (field) {
-                            shouldHideField = sessionStorage.getItem(`hide_${fieldName}`)
-                            hideOrShowDomObject(field, hideObject=shouldHideField)
-                        }else {
-                            console.error(`Could not find field with class ${fieldClass}`)
-                        }
-                    });
-                }
+            if (entry.type === "back_forward") {
+                let showRejectionReason = sessionStorage.getItem("showRejectionReason") !== null
+                showOrHideObject(rejectionReasonFormGroup, show=showRejectionReason)
+
+                let hideActionNeededReason = sessionStorage.getItem("showActionNeededReason") !== null
+                showOrHideObject(actionNeededReasonFormGroup, show=hideActionNeededReason)
+            }
             });
         });
         observer.observe({ type: "navigation" });
     }
 
-    // Links the given field we want to show/hide with a given value of the status selector,
-    // and maintains this state with a given session object. 
-    // For now, we assume that the session object follows this pattern: `hide_${field_name}`
-    function handleStatusChanges() {
-        // Show/hide the rejection reason
-        let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
-
-        // element to hide, statusToShowOn, sessionObjectName
-        showHideFieldsOnStatusChange(rejectionReasonFormGroup, "rejected", "hide_rejection_reason");
-        
-        // Show/hide the action needed reason
-        let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
-
-        // element to hide, statusToShowOn, sessionObjectName
-        showHideFieldsOnStatusChange(actionNeededReasonFormGroup, "action needed", "hide_action_needed_reason");
-        
-        // Move the status changelog to below the action needed reason
-        if(actionNeededReasonFormGroup){
-            document.addEventListener('DOMContentLoaded', function() {
-                let statusSelect = document.getElementById('id_status');
-                
-                function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
-                    let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
-                    let statusChangelog = document.getElementById('dja-status-changelog');
-                    if (statusSelect.value === "action needed") {
-                        flexContainer.parentNode.insertBefore(statusChangelog, flexContainer.nextSibling);
-                    } else {
-                        // Move the changelog back to its original location
-                        let statusFlexContainer = statusSelect.closest('.flex-container');
-                        statusFlexContainer.parentNode.insertBefore(statusChangelog, statusFlexContainer.nextSibling);
-                    }
-                }
-                
-                // Call the function on page load
-                moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
-
-                // Add event listener to handle changes to the selector itself
-                statusSelect.addEventListener('change', function() {
-                    moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
-                })
-            });
+    // Adds or removes the display-none class to object depending on the value of boolean show
+    function showOrHideObject(object, show){
+        if (show){
+            object.classList.remove("display-none");
+        }else {
+            object.classList.add("display-none");
         }
     }
 
-    // Hookup the fields that we want to programatically show/hide depending on the current value of the status field.
-    // Add your field name to this function if you are adding another dynamic field.
-    handleStatusChanges();
-
-    // Add an observer to each field to track when the back button is pressed. This is so
-    // our current state doesn't get wiped by browser events.
-    // Add a field name to this array if you are adding another dynamic field.
-    let fieldsToObserve = ["rejection_reason", "action_needed_reason"]
-    handleBackButtonObserver(fieldsToObserve);
+    // Adds or removes a boolean from our session
+    function addOrRemoveSessionBoolean(name, add){
+        if (add) {
+            sessionStorage.setItem(name, "true");
+        }else {
+            sessionStorage.removeItem(name); 
+        }
+    }
 })();
 
 /** An IIFE for toggling the submit bar on domain request forms
