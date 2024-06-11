@@ -202,7 +202,7 @@ class UserFixture:
         },
         {
             "username": "e1e350b1-cfc1-4753-a6cb-3ae6d912f99c",
-            "first_name": "Anna",
+            "first_name": "Anna-Analyst",
             "last_name": "Gingle",
             "email": "annagingle+analyst@truss.works",
         },
