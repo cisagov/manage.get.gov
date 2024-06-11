@@ -12,6 +12,7 @@ from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.constants import BranchChoices
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -233,11 +234,6 @@ class DomainRequest(TimeStampedModel):
             "school_district",
             "School district: a school district that is not part of a local government",
         )
-
-    class BranchChoices(models.TextChoices):
-        EXECUTIVE = "executive", "Executive"
-        JUDICIAL = "judicial", "Judicial"
-        LEGISLATIVE = "legislative", "Legislative"
 
     class RejectionReasons(models.TextChoices):
         DOMAIN_PURPOSE = "purpose_not_met", "Purpose requirements not met"
@@ -1065,6 +1061,8 @@ class DomainRequest(TimeStampedModel):
                 is_complete = self._is_city_complete()
             case DomainRequest.OrganizationChoices.SPECIAL_DISTRICT:
                 is_complete = self._is_special_district_complete()
+            case DomainRequest.OrganizationChoices.SCHOOL_DISTRICT:
+                is_complete = True
             case _:
                 # NOTE: Shouldn't happen, this is only if somehow they didn't choose an org type
                 is_complete = False
