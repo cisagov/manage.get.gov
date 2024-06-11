@@ -102,6 +102,28 @@ class DomainRequestTests(TestWithUser, WebTest):
 
             self.assertContains(type_page, "You cannot submit this request yet")
 
+    def test_domain_request_into_acknowledgement_creates_new_request(self):
+        """
+        We had to solve a bug where the wizard was creating 2 requests on first intro acknowledgement ('continue')
+        The wizard was also creating multiiple requests on 'continue' -> back button -> 'continue' etc.
+
+        This tests that the domain requests get created only when they should.
+        """
+        intro_page = self.app.get(reverse("domain-request:"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # should see results in db
+        domain_request_count = DomainRequest.objects.count()
+        self.assertEqual(domain_request_count, 1)
+
     @boto3_mocking.patching
     def test_domain_request_form_submission(self):
         """

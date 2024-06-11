@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+import time
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
@@ -219,22 +220,22 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             self.storage["domain_request_id"] = kwargs["id"]
             self.storage["step_history"] = self.db_check_for_unlocking_steps()
 
-        # if accessing this class directly, redirect to the first step
-        #     in other words, if `DomainRequestWizard` is called as view
-        #     directly by some redirect or url handler, we'll send users
-        #     either to an acknowledgement page or to the first step in
-        #     the processes (if an edit rather than a new request); subclasses
-        #     will NOT be redirected. The purpose of this is to allow code to
-        #     send users "to the domain request wizard" without needing to
-        #     know which view is first in the list of steps.
-        context = self.get_context_data()
+        # if accessing this class directly, redirect to either to an acknowledgement 
+        # page or to the first step in the processes (if an edit rather than a new request);
+        # subclasseswill NOT be redirected. The purpose of this is to allow code to
+        # send users "to the domain request wizard" without needing to know which view
+        # is first in the list of steps.
         if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
-                context = self.get_context_data()
-                return render(request, "domain_request_intro.html", context=context)
+                # del self.storage
+                # Clear context so the prop getter won't create a request here.
+                # Creating a request will be handled in the post method for the
+                # intro page.
+                return render(request, "domain_request_intro.html", context={})
             else:
                 return self.goto(self.steps.first)
-
+    
+        context = self.get_context_data()
         self.steps.current = current_url
         context["forms"] = self.get_forms()
 
@@ -457,11 +458,24 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
+        current_time = time.time()
 
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
+            print("intro_acknowledge")
             if request.path_info == self.NEW_URL_NAME:
-                del self.storage
+                print("Creating DomainRequest...")
+                last_submit_time = request.session.get('last_submit_time', 0)
+
+                # Check if the last submit was very recent, indicating a back button -> submit sequence
+                if current_time - last_submit_time > 5:  # 5 seconds threshold
+
+                    # This will trigger the domain_request getter into creating a new DomainRequest
+                    del self.storage
+
+                # Update the last submit time
+                request.session['last_submit_time'] = current_time
+
             return self.goto(self.steps.first)
 
         # if accessing this class directly, redirect to the first step
