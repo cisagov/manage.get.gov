@@ -669,11 +669,7 @@ class ExportDataTest(MockDb, MockEppLib):
             # Define columns, sort fields, and filter condition
             # We'll skip submission date because it's dynamic and therefore
             # impossible to set in expected_content
-            columns = [
-                "Domain request",
-                "Domain type",
-                "Federal type"
-            ]
+            columns = ["Domain request", "Domain type", "Federal type"]
             sort_fields = [
                 "requested_domain__name",
             ]
@@ -812,5 +808,5 @@ class HelperFunctions(MockDb):
                 "submission_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)
-            expected_content = [2, 2, 0, 0, 0, 0, 0, 0, 0, 1]
+            expected_content = [2, 2, 0, 0, 0, 0, 1, 0, 0, 1]
             self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)

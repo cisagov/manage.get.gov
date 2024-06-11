@@ -166,6 +166,7 @@ class ExportDataFederal(View):
 
 class ExportDomainRequestDataFull(View):
     """Generates a downloaded report containing all Domain Requests (except started)"""
+
     def get(self, request, *args, **kwargs):
         """Returns a content disposition response for current-full-domain-request.csv"""
         response = HttpResponse(content_type="text/csv")
