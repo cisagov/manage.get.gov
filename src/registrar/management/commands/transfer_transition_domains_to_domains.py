@@ -19,7 +19,7 @@ from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from registrar.models.user import User
 from registrar.models.federal_agency import FederalAgency
-from utils.constants import BranchChoices
+from registrar.utility.constants import BranchChoices
 
 logger = logging.getLogger(__name__)
 

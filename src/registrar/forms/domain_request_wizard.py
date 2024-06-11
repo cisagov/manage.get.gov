@@ -16,7 +16,7 @@ from registrar.forms.utility.wizard_form_helper import (
 from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
-from utils.constants import BranchChoices
+from registrar.utility.constants import BranchChoices
 
 logger = logging.getLogger(__name__)
 

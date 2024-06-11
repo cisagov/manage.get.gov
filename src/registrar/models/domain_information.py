@@ -3,7 +3,7 @@ from django.db import transaction
 
 from registrar.models.utility.domain_helper import DomainHelper
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
-from utils.constants import BranchChoices
+from registrar.utility.constants import BranchChoices
 
 from .domain_request import DomainRequest
 from .utility.time_stamped_model import TimeStampedModel
