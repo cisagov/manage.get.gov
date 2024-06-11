@@ -335,8 +335,8 @@ function initializeWidgetOnList(list, parentId) {
                 let showRejectionReason = sessionStorage.getItem("showRejectionReason") !== null
                 showOrHideObject(rejectionReasonFormGroup, show=showRejectionReason)
 
-                let hideActionNeededReason = sessionStorage.getItem("showActionNeededReason") !== null
-                showOrHideObject(actionNeededReasonFormGroup, show=hideActionNeededReason)
+                let showActionNeededReason = sessionStorage.getItem("showActionNeededReason") !== null
+                showOrHideObject(actionNeededReasonFormGroup, show=showActionNeededReason)
             }
             });
         });
