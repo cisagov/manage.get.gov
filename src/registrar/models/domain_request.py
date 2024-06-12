@@ -805,6 +805,10 @@ class DomainRequest(TimeStampedModel):
             email_template_name = f"{self.action_needed_reason}.txt"
             email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
 
+        bcc_address = ""
+        if settings.IS_PRODUCTION:
+            bcc_address = settings.DEFAULT_FROM_EMAIL
+
         # If we can, try to send out an email as long as send_email=True
         if can_send_email:
             self._send_status_update_email(
@@ -812,7 +816,7 @@ class DomainRequest(TimeStampedModel):
                 email_template=f"emails/action_needed_reasons/{email_template_name}",
                 email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
                 send_email=send_email,
-                bcc_address="help@get.gov",
+                bcc_address=bcc_address,
                 wrap_email=True,
             )
 
