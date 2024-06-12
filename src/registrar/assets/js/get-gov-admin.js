@@ -144,13 +144,13 @@ function openInNewTab(el, removeAttribute = false){
     let investigatorSelect = document.querySelector("#id_investigator");
     let assignSelfButton = document.querySelector("#investigator__assign_self");
     if (investigatorSelect && assignSelfButton) {
+        let selector = django.jQuery(investigatorSelect)
         assignSelfButton.addEventListener('click', function() {
             let currentUserId = this.getAttribute("data-user-id");
             let currentUserName = this.getAttribute("data-user-name");
-            if (currentUserId && currentUserName){
+            if (selector && currentUserId && currentUserName){
                 // Logic borrowed from here:
                 // https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
-                let selector = django.jQuery(investigatorSelect)
                 // Set the value, creating a new option if necessary
                 if (selector.find(`option[value='${currentUserId}']`).length) {
                     selector.val(currentUserId).trigger("change");
@@ -159,9 +159,20 @@ function openInNewTab(el, removeAttribute = false){
                     let currentUser = new Option(currentUserName, currentUserId, true, true);
                     // Append it to the select
                     selector.append(currentUser).trigger("change");
-                } 
+                }
             }else {
                 console.error("Could not assign current user.")
+            }
+        });
+
+        selector.on('change', function() {
+            let selectedValue = this.value;
+            if (selectedValue === "" || selectedValue === null) {
+                // If no investigator is selected, show the 'Assign to Self' button
+                assignSelfButton.parentElement.style.display = 'flex';
+            } else {
+                // If an investigator is selected, hide the 'Assign to Self' button
+                assignSelfButton.parentElement.style.display = 'none';
             }
         });
     }
