@@ -2464,6 +2464,23 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
+class PortfolioAdmin(ListHeaderAdmin):
+    # list_display = ("email", "requestor", "truncated_notes", "created_at")
+    # search_fields = ["email"]
+    # search_help_text = "Search by email."
+    # readonly_fields = [
+    #     "requestor",
+    # ]
+
+    # change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    def save_model(self, request, obj, form, change):
+        # Set the creator field to the current admin user
+        obj.creator = request.user if request.user.is_authenticated else None
+        super().save_model(request, obj, form, change)
+
+
+
 class FederalAgencyAdmin(ListHeaderAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]

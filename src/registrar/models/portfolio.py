@@ -10,34 +10,13 @@ from .utility.time_stamped_model import TimeStampedModel
 
 class Portfolio(TimeStampedModel):
     """
-    TODO: 
+    Portfolio is used for organizing domains/domain-requests into
+    manageable groups.
     """
-
-    class Meta:
-        """Contains meta information about this class"""
-
-        indexes = [
-            models.Index(fields=["user"]),
-            models.Index(fields=["email"]),
-        ]
-
     
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
-        
-    # NOTE: This will be specified in a future ticket
-    # class PortfolioTypes(models.TextChoices):
-    #     TYPE1 = "foo", "foo"
-    #     TYPE2 = "foo", "foo"
-    #     TYPE3 = "foo", "foo"
-    #     TYPE4 = "foo", "foo"
 
-    # NOTE: This will be specified in a future ticket
-    # portfolio_type = models.TextField(
-    #     choices=PortfolioTypes.choices,
-    #     null=True,
-    #     blank=True,
-    # )
 
     # creator- user foreign key- stores who created this model should get the user who is adding 
     # it via django admin if there is a user (aka not done via commandline/ manual means)"""
@@ -54,34 +33,6 @@ class Portfolio(TimeStampedModel):
         null=True,
         blank=True,
     )
-
-    # # domains- many to many to Domain field (nullable)
-    # domains = models.ManyToManyField(
-    #     "registrar.Domain",
-    #     null=True,
-    #     blank=True,
-    #     related_name="portfolio domains",
-    #     verbose_name="portfolio domains",
-    #     # on_delete=models.PROTECT, # TODO: protect this?
-    # )
-
-    # # domain_requests- Many to many to Domain Request field (nullable)
-    # domain_requests = models.ManyToManyField(
-    #     "registrar.DomainRequest",
-    #     null=True,
-    #     blank=True,
-    #     related_name="portfolio domain requests",
-    #     verbose_name="portfolio domain requests",
-    #     # on_delete=models.PROTECT, # TODO: protect this?
-    # )
-
-    # # organization
-    # organization = models.OneToOneField(
-    #     "registrar.Organization",
-    #     null=True,
-    #     blank=True,
-    #   )
-        
         
     # federal agency - FK to fed agency table (Not nullable, should default to the Non-federal agency value in the fed agency table)
     federal_agency = models.ForeignKey(
