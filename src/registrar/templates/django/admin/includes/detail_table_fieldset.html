@@ -86,9 +86,18 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                 {% for key, value in log_entry.changes_display_dict.items %}
                                     {% if key == "status" %}
                                         <tr>
-                                            <td>{{ value.1|default:"None" }}</td>
-                                            <td>{{ log_entry.actor|default:"None" }}</td>
-                                            <td>{{ log_entry.timestamp|default:"None" }}</td>
+                                            <td>{{ value.1|default:"None" }}
+                                                {% for rk, rv in log_entry.changes_display_dict.items %}
+                                                    {% if rk == "rejection reason" %}
+                                                       - {{ rv.1|default:"None" }}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                            <td>
+                                                {{ log_entry.actor|default:"None" }}
+                                                
+                                            </td>
+                                            <td>{{ log_entry.timestamp|date:"Y-m-d H:i:s" }}</td>
                                         </tr>
                                     {% endif %}
                                 {% endfor %}
