@@ -1445,20 +1445,25 @@ class TestDomainRequestAdmin(MockEppLib):
             # The results are filtered by "status in [submitted,in review,action needed]"
             self.assertContains(response, "status in [submitted,in review,action needed]", count=1)
 
-    def transition_state_and_send_email(self, domain_request, status, rejection_reason=None):
+    @less_console_noise_decorator
+    def transition_state_and_send_email(self, domain_request, status, rejection_reason=None, action_needed_reason=None):
         """Helper method for the email test cases."""
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Create a mock request
-                request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+            # Create a mock request
+            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
-                # Modify the domain request's properties
-                domain_request.status = status
+            # Modify the domain request's properties
+            domain_request.status = status
+
+            if rejection_reason:
                 domain_request.rejection_reason = rejection_reason
 
-                # Use the model admin's save_model method
-                self.admin.save_model(request, domain_request, form=None, change=True)
+            if action_needed_reason:
+                domain_request.action_needed_reason = action_needed_reason
+
+            # Use the model admin's save_model method
+            self.admin.save_model(request, domain_request, form=None, change=True)
 
     def assert_email_is_accurate(
         self, expected_string, email_index, email_address, test_that_no_bcc=False, bcc_email_address=""
@@ -1492,6 +1497,57 @@ class TestDomainRequestAdmin(MockEppLib):
         if bcc_email_address:
             bcc_email = kwargs["Destination"]["BccAddresses"][0]
             self.assertEqual(bcc_email, bcc_email_address)
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_action_needed_sends_reason_email_prod_bcc(self):
+        """When an action needed reason is set, an email is sent out and help@get.gov
+        is BCC'd in production"""
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
+        User.objects.filter(email=EMAIL).delete()
+        in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
+        action_needed = DomainRequest.DomainRequestStatus.ACTION_NEEDED
+
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=in_review)
+
+        # Test the email sent out for already_has_domains
+        already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
+        self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Test the email sent out for bad_name
+        bad_name = DomainRequest.ActionNeededReasons.BAD_NAME
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=bad_name)
+        self.assert_email_is_accurate(
+            "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS", 1, EMAIL, bcc_email_address=BCC_EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test the email sent out for eligibility_unclear
+        eligibility_unclear = DomainRequest.ActionNeededReasons.ELIGIBILITY_UNCLEAR
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=eligibility_unclear)
+        self.assert_email_is_accurate(
+            "ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", 2, EMAIL, bcc_email_address=BCC_EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Test the email sent out for questionable_ao
+        questionable_ao = DomainRequest.ActionNeededReasons.QUESTIONABLE_AUTHORIZING_OFFICIAL
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_ao)
+        self.assert_email_is_accurate(
+            "AUTHORIZING OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address=BCC_EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
+
+        # Assert that no other emails are sent on OTHER
+        other = DomainRequest.ActionNeededReasons.OTHER
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=other)
+
+        # Should be unchanged from before
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
 
     def test_save_model_sends_submitted_email(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
@@ -1528,7 +1584,9 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            other = DomainRequest.ActionNeededReasons.OTHER
+            in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
+            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
@@ -1536,7 +1594,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to ACTION_NEEDED
@@ -1586,7 +1644,9 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            other = domain_request.ActionNeededReasons.OTHER
+            in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
+            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
@@ -1594,7 +1654,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.IN_REVIEW)
+            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
             # Move it to ACTION_NEEDED
@@ -2238,6 +2298,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "updated_at",
                 "status",
                 "rejection_reason",
+                "action_needed_reason",
                 "federal_agency",
                 "creator",
                 "investigator",
@@ -2399,6 +2460,10 @@ class TestDomainRequestAdmin(MockEppLib):
                 stack.enter_context(patch.object(messages, "error"))
 
                 domain_request.status = another_state
+
+                if another_state == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
+                    domain_request.action_needed_reason = domain_request.ActionNeededReasons.OTHER
+
                 domain_request.rejection_reason = rejection_reason
 
                 self.admin.save_model(request, domain_request, None, True)
