@@ -2,7 +2,7 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
@@ -39,6 +39,8 @@ from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
 
 from .public_contact import PublicContact
+
+from .user_domain_role import UserDomainRole
 
 logger = logging.getLogger(__name__)
 
@@ -672,11 +674,30 @@ class Domain(TimeStampedModel, DomainHelper):
         remRequest = commands.UpdateDomain(name=self.name)
         remExtension = commands.UpdateDomainDNSSECExtension(**remParams)
         remRequest.add_extension(remExtension)
+        dsdata_change_log = ""
+        current_date_time = datetime.now().strftime("%m%d%Y %H:%M:%S")
+
+        # Get the user's email
+        user_domain_role = UserDomainRole.objects.filter(domain=self).first()
+        user_email = user_domain_role.user.email if user_domain_role else "unknown user"
+
         try:
             if "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None:
                 registry.send(addRequest, cleaned=True)
+                # Adding in DNS data log
+                dsdata_change_log = f"DS Record Change: {current_date_time} {user_email} added a record"
             if "dsData" in _remDnssecdata and _remDnssecdata["dsData"] is not None:
                 registry.send(remRequest, cleaned=True)
+                if dsdata_change_log != "":  # if they add and remove a record at same time
+                    dsdata_change_log += f" and removed a record"
+                else:
+                    # Adding in DNS data log
+                    dsdata_change_log = f"DS Record Change: {current_date_time} {user_email} removed a record"
+            if dsdata_change_log != "":
+                print("$$$ dsdata_change_log is", dsdata_change_log)
+                self.dsdata_last_change = dsdata_change_log
+                self.save()  # Audit log will now record this as a change
+
         except RegistryError as e:
             logger.error("Error updating DNSSEC, code was %s error was %s" % (e.code, e))
             raise e
@@ -1055,6 +1076,12 @@ class Domain(TimeStampedModel, DomainHelper):
         editable=False,
         help_text='Date when this domain first moved into "ready" state; date will never change',
         verbose_name="first ready on",
+    )
+
+    dsdata_last_change = TextField(
+        null=True,
+        blank=True,
+        help_text="Most recent time that ds data was updated",
     )
 
     def isActive(self):
