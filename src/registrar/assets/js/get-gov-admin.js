@@ -146,60 +146,23 @@ function openInNewTab(el, removeAttribute = false){
     if (investigatorSelect && assignSelfButton) {
         assignSelfButton.addEventListener('click', function() {
             let currentUserId = this.getAttribute("data-user-id");
-            let select2Container = investigatorSelect.nextElementSibling.querySelector(".select2-selection");
-
-            // Log the Select2 container to verify it's the correct element
-            console.log(select2Container);
-
-            // Check if the Select2 container exists and trigger a click
-            if (select2Container) {
-                // Create and dispatch a mouse event to mimic user interaction
-                var event = new MouseEvent('mousedown', {
-                    'view': window,
-                    'bubbles': true,
-                    'cancelable': true
-                });
-                select2Container.dispatchEvent(event);
+            let currentUserName = this.getAttribute("data-user-name");
+            if (currentUserId && currentUserName){
+                // Logic borrowed from here:
+                // https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
+                let selector = django.jQuery(investigatorSelect)
+                // Set the value, creating a new option if necessary
+                if (selector.find(`option[value='${currentUserId}']`).length) {
+                    selector.val(currentUserId).trigger("change");
+                } else { 
+                    // Create a DOM Option and pre-select by default
+                    let currentUser = new Option(currentUserName, currentUserId, true, true);
+                    // Append it to the select
+                    selector.append(currentUser).trigger("change");
+                } 
+            }else {
+                console.error("Could not assign current user.")
             }
-
-            // Wait for the dropdown to open and the search field to be visible
-            let searchField = document.querySelector(".select2-search__field");
-            if (searchField) {
-                searchField.value = "Zander Adkinson"; // Set the value you want to search for
-
-                // Trigger input event to filter results based on the entered value
-                var inputEvent = new Event('input', {
-                    'bubbles': true,
-                    'cancelable': true
-                });
-                searchField.dispatchEvent(inputEvent);
-            }
-
-            let observer = new MutationObserver(function(mutations) {
-                mutations.forEach(mutation => {
-                    if (mutation.addedNodes.length) {
-                        let options = document.querySelectorAll("#select2-id_investigator-results .select2-results__option");
-                        options.forEach(option => {
-                            if (option.innerText.trim() === "Zander Adkinson zander.adkinson@ecstech.com") {
-                                option.dispatchEvent(new MouseEvent('mouseup', { 'bubbles': true, 'cancelable': true }));
-                                console.log("Option with the desired text has been selected.");
-                                observer.disconnect(); // Stop observing after the desired action
-                            }
-                        });
-                    }
-                });
-            });
-
-            let resultsContainer = document.querySelector("#select2-id_investigator-results");
-            if (resultsContainer) {
-                observer.observe(resultsContainer, {
-                    childList: true,
-                    subtree: true
-                });
-            }
-    
-
-            // options are here: select2-results__options
         });
     }
 })();
