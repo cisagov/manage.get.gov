@@ -894,9 +894,7 @@ class DomainRequestExport:
 
         # Handle the federal_type field. Defaults to the wrong format.
         federal_type = request.get("federal_type")
-        human_readable_federal_type = (
-            BranchChoices.get_branch_label(federal_type) if federal_type else None
-        )
+        human_readable_federal_type = BranchChoices.get_branch_label(federal_type) if federal_type else None
 
         # Handle the org_type field
         org_type = request.get("generic_org_type") or request.get("organization_type")

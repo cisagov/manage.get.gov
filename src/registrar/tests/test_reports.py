@@ -734,7 +734,7 @@ class ExportDataTest(MockDb, MockEppLib):
         csv_file.seek(0)
         # Read the content into a variable
         csv_content = csv_file.read()
-
+        print(csv_content)
         expected_content = (
             # Header
             "Domain request,Submitted at,Status,Domain type,Federal type,"
@@ -748,13 +748,13 @@ class ExportDataTest(MockDb, MockEppLib):
             "Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
             "city3.gov,2024-04-02,Submitted,Federal,Executive,,Testorg,N/A,,NY,2,,,,0,1,"
             "cheeseville.gov | city1.gov | igorville.gov,Testy,Tester,testy@town.com,Chief Tester,"
-            "Purpose of the site,test@igorville.com | There is more,"
-            "Meow Tester24 te2@town.com | Testy1232 Tester24 te2@town.com "
-            "| Testy Tester testy2@town.com,test@igorville.com,city.com |"
-            " https://www.example2.com | https://www.example.com,\n"
-            "city5.gov,,Approved,Federal,Executive,,Testorg,N/A,,NY,2,,,,1,0,"
-            "city1.gov,Testy,Tester,testy@town.com,Chief Tester,Purpose of the site,There "
-            "is more,Testy Tester testy2@town.com,,city.com,\n"
+            "Purpose of the site,test@igorville.com | There is more,Meow Tester24 te2@town.com | "
+            "Testy1232 Tester24 te2@town.com | Testy Tester testy2@town.com,test@igorville.com,"
+            "city.com | https://www.example2.com | https://www.example.com,\n"
+            "city4.gov,2024-04-02,Submitted,City,Executive,,Testorg,Yes,,NY,2,,,,0,1,city1.gov,Testy,Tester,testy@town.com,"
+            "Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
+            "city5.gov,,Approved,Federal,Executive,,Testorg,N/A,,NY,2,,,,1,0,city1.gov,Testy,Tester,testy@town.com,"
+            "Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
             "city6.gov,2024-04-02,Submitted,Federal,Executive,,Testorg,N/A,,NY,2,,,,0,1,city1.gov,Testy,Tester,"
             "testy@town.com,Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,"
         )
