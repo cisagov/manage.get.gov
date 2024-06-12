@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import Union
-
 import logging
 
 from django.apps import apps
@@ -12,6 +11,7 @@ from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.constants import BranchChoices
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -234,11 +234,6 @@ class DomainRequest(TimeStampedModel):
             "School district: a school district that is not part of a local government",
         )
 
-    class BranchChoices(models.TextChoices):
-        EXECUTIVE = "executive", "Executive"
-        JUDICIAL = "judicial", "Judicial"
-        LEGISLATIVE = "legislative", "Legislative"
-
     class RejectionReasons(models.TextChoices):
         DOMAIN_PURPOSE = "purpose_not_met", "Purpose requirements not met"
         REQUESTOR = "requestor_not_eligible", "Requestor not eligible to make request"
@@ -254,6 +249,15 @@ class DomainRequest(TimeStampedModel):
         NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
 
+    class ActionNeededReasons(models.TextChoices):
+        """Defines common action needed reasons for domain requests"""
+
+        ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
+        QUESTIONABLE_AUTHORIZING_OFFICIAL = ("questionable_authorizing_official", "Questionable authorizing official")
+        ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
+        BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
+        OTHER = ("other", "Other (no auto-email sent)")
+
     # #### Internal fields about the domain request #####
     status = FSMField(
         choices=DomainRequestStatus.choices,  # possible states as an array of constants
@@ -263,6 +267,12 @@ class DomainRequest(TimeStampedModel):
 
     rejection_reason = models.TextField(
         choices=RejectionReasons.choices,
+        null=True,
+        blank=True,
+    )
+
+    action_needed_reason = models.TextField(
+        choices=ActionNeededReasons.choices,
         null=True,
         blank=True,
     )
@@ -529,12 +539,39 @@ class DomainRequest(TimeStampedModel):
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
 
+    def _cache_status_and_action_needed_reason(self):
+        """Maintains a cache of properties so we can avoid a DB call"""
+        self._cached_action_needed_reason = self.action_needed_reason
+        self._cached_status = self.status
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Store original values for caching purposes. Used to compare them on save.
+        self._cache_status_and_action_needed_reason()
+
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
 
         super().save(*args, **kwargs)
+
+        # Handle the action needed email. We send one when moving to action_needed,
+        # but we don't send one when we are _already_ in the state and change the reason.
+        self.sync_action_needed_reason()
+
+        # Update the cached values after saving
+        self._cache_status_and_action_needed_reason()
+
+    def sync_action_needed_reason(self):
+        """Checks if we need to send another action needed email"""
+        was_already_action_needed = self._cached_status == self.DomainRequestStatus.ACTION_NEEDED
+        reason_exists = self._cached_action_needed_reason is not None and self.action_needed_reason is not None
+        reason_changed = self._cached_action_needed_reason != self.action_needed_reason
+        if was_already_action_needed and (reason_exists and reason_changed):
+            # We don't send emails out in state "other"
+            if self.action_needed_reason != self.ActionNeededReasons.OTHER:
+                self._send_action_needed_reason_email()
 
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
@@ -587,7 +624,7 @@ class DomainRequest(TimeStampedModel):
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
     def _send_status_update_email(
-        self, new_status, email_template, email_template_subject, send_email=True, bcc_address=""
+        self, new_status, email_template, email_template_subject, send_email=True, bcc_address="", wrap_email=False
     ):
         """Send a status update email to the submitter.
 
@@ -614,6 +651,7 @@ class DomainRequest(TimeStampedModel):
                 self.submitter.email,
                 context={"domain_request": self},
                 bcc_address=bcc_address,
+                wrap_email=wrap_email,
             )
             logger.info(f"The {new_status} email sent to: {self.submitter.email}")
         except EmailSendingError:
@@ -697,9 +735,10 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("in_review")
-
-        if self.status == self.DomainRequestStatus.REJECTED:
+        elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
+        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.action_needed_reason = None
 
         literal = DomainRequest.DomainRequestStatus.IN_REVIEW
         # Check if the tuple exists, then grab its value
@@ -717,7 +756,7 @@ class DomainRequest(TimeStampedModel):
         target=DomainRequestStatus.ACTION_NEEDED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
-    def action_needed(self):
+    def action_needed(self, send_email=True):
         """Send back an domain request that is under investigation or rejected.
 
         This action is logged.
@@ -729,14 +768,53 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
-
-        if self.status == self.DomainRequestStatus.REJECTED:
+        elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
         literal = DomainRequest.DomainRequestStatus.ACTION_NEEDED
         # Check if the tuple is setup correctly, then grab its value
         action_needed = literal if literal is not None else "Action Needed"
         logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
+
+        # Send out an email if an action needed reason exists
+        if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
+            self._send_action_needed_reason_email(send_email)
+
+    def _send_action_needed_reason_email(self, send_email=True):
+        """Sends out an automatic email for each valid action needed reason provided"""
+
+        # Store the filenames of the template and template subject
+        email_template_name: str = ""
+        email_template_subject_name: str = ""
+
+        # Check for the "type" of action needed reason.
+        can_send_email = True
+        match self.action_needed_reason:
+            # Add to this match if you need to pass in a custom filename for these templates.
+            case self.ActionNeededReasons.OTHER, _:
+                # Unknown and other are default cases - do nothing
+                can_send_email = False
+
+        # Assumes that the template name matches the action needed reason if nothing is specified.
+        # This is so you can override if you need, or have this taken care of for you.
+        if not email_template_name and not email_template_subject_name:
+            email_template_name = f"{self.action_needed_reason}.txt"
+            email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
+
+        bcc_address = ""
+        if settings.IS_PRODUCTION:
+            bcc_address = settings.DEFAULT_FROM_EMAIL
+
+        # If we can, try to send out an email as long as send_email=True
+        if can_send_email:
+            self._send_status_update_email(
+                new_status="action needed",
+                email_template=f"emails/action_needed_reasons/{email_template_name}",
+                email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
+                send_email=send_email,
+                bcc_address=bcc_address,
+                wrap_email=True,
+            )
 
     @transition(
         field="status",
@@ -786,6 +864,8 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
+        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.action_needed_reason = None
 
         # == Send out an email == #
         self._send_status_update_email(

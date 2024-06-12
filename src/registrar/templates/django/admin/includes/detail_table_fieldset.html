@@ -69,8 +69,8 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block after_help_text %}
     {% if field.field.name == "status" and original_object.history.count > 0 %}
-        <div class="flex-container">
-            <label aria-label="Submitter contact details"></label>
+        <div class="flex-container" id="dja-status-changelog">
+            <label aria-label="Status changelog"></label>
             <div>
                 <div class="usa-table-container--scrollable collapse--dgsimple" tabindex="0">
                     <table class="usa-table usa-table--borderless">

@@ -19,6 +19,7 @@ from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from registrar.models.user import User
 from registrar.models.federal_agency import FederalAgency
+from registrar.utility.constants import BranchChoices
 
 logger = logging.getLogger(__name__)
 
@@ -819,7 +820,7 @@ class Command(BaseCommand):
             invitation.save()
 
         valid_org_choices = [(name, value) for name, value in DomainRequest.OrganizationChoices.choices]
-        valid_fed_choices = [value for name, value in DomainRequest.BranchChoices.choices]
+        valid_fed_choices = [value for name, value in BranchChoices.choices]
         valid_agency_choices = FederalAgency.objects.all()
         # ======================================================
         # ================= DOMAIN INFORMATION =================
