@@ -236,9 +236,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 # Creating a request will be handled in the post method for the
                 # intro page. Only TEMPORARY context needed is has_profile_flag
                 has_profile_flag = flag_is_active(self.request, "profile_feature")
-                context_stuff = {
-                    "has_profile_feature_flag": has_profile_flag
-                }
+                context_stuff = {"has_profile_feature_flag": has_profile_flag}
                 return render(request, "domain_request_intro.html", context=context_stuff)
             else:
                 return self.goto(self.steps.first)
