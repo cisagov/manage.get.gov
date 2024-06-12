@@ -692,7 +692,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     dsdata_change_log = f"{user_email} deleted a DS data record"
             if dsdata_change_log != "":
                 self.dsdata_last_change = dsdata_change_log
-                self.save()  # Audit log will now record this as a change
+                self.save()  # audit log will now record this as a change
 
         except RegistryError as e:
             logger.error("Error updating DNSSEC, code was %s error was %s" % (e.code, e))
@@ -1074,11 +1074,11 @@ class Domain(TimeStampedModel, DomainHelper):
         verbose_name="first ready on",
     )
 
-    dsdata_last_change = TextField(
-        null=True,
-        blank=True,
-        help_text="Most recent time that ds data was updated",
-    )
+    # dsdata_last_change = TextField(
+    #     null=True,
+    #     blank=True,
+    #     help_text="Most recent time that ds data was updated",
+    # )
 
     def isActive(self):
         return self.state == Domain.State.CREATED
