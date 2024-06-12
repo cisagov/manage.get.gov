@@ -248,11 +248,6 @@ class DomainRequest(TimeStampedModel):
             "School district: a school district that is not part of a local government",
         )
 
-        @classmethod
-        def get_branch_label(cls, branch_name: str):
-            """Returns the associated label for a given org name"""
-            return cls(branch_name).label if branch_name else None
-
     class RejectionReasons(models.TextChoices):
         DOMAIN_PURPOSE = "purpose_not_met", "Purpose requirements not met"
         REQUESTOR = "requestor_not_eligible", "Requestor not eligible to make request"

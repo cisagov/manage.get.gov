@@ -18,6 +18,8 @@ from django.contrib.postgres.aggregates import StringAgg
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.enums import DefaultEmail
+from registrar.utility.constants import BranchChoices
+
 
 logger = logging.getLogger(__name__)
 
@@ -893,11 +895,11 @@ class DomainRequestExport:
         # Handle the federal_type field. Defaults to the wrong format.
         federal_type = request.get("federal_type")
         human_readable_federal_type = (
-            DomainRequest.BranchChoices.get_branch_label(federal_type) if federal_type else None
+            BranchChoices.get_branch_label(federal_type) if federal_type else None
         )
 
         # Handle the org_type field
-        org_type = request.get("organization_type")
+        org_type = request.get("generic_org_type") or request.get("organization_type")
         human_readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type) if org_type else None
 
         # Handle the status field. Defaults to the wrong format.
