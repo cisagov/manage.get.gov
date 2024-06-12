@@ -752,7 +752,7 @@ class ExportDataTest(MockDb, MockEppLib):
             "Purpose of the site,test@igorville.com | There is more,Meow Tester24 te2@town.com | "
             "Testy1232 Tester24 te2@town.com | Testy Tester testy2@town.com,test@igorville.com,"
             "city.com | https://www.example2.com | https://www.example.com,\n"
-            "city4.gov,2024-04-02,Submitted,City,Executive,,Testorg,Yes,,NY,2,,,,0,1,
+            "city4.gov,2024-04-02,Submitted,City,Executive,,Testorg,Yes,,NY,2,,,,0,1,"
             "city1.gov,Testy,Tester,testy@town.com,"
             "Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
             "city5.gov,,Approved,Federal,Executive,,Testorg,N/A,,NY,2,,,,1,0,city1.gov,Testy,Tester,testy@town.com,"
