@@ -1498,13 +1498,13 @@ class TestDomainRequestAdmin(MockEppLib):
             bcc_email = kwargs["Destination"]["BccAddresses"][0]
             self.assertEqual(bcc_email, bcc_email_address)
 
-    def test_action_needed_sends_reason_email(self):
-        """When an action needed reason is set, an email is sent out."""
-        # TODO CHANGE BEFORE MERGING
-        settings.DEFAULT_FROM_EMAIL
-        BCC_EMAIL = "fake"
+    @override_settings(IS_PRODUCTION=True)
+    def test_action_needed_sends_reason_email_prod_bcc(self):
+        """When an action needed reason is set, an email is sent out and help@get.gov
+        is BCC'd in production"""
         # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
+        BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
         User.objects.filter(email=EMAIL).delete()
         in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
         action_needed = DomainRequest.DomainRequestStatus.ACTION_NEEDED
@@ -1515,25 +1515,31 @@ class TestDomainRequestAdmin(MockEppLib):
         # Test the email sent out for already_has_domains
         already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
-        self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address="help@get.gov")
+        self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test the email sent out for bad_name
         bad_name = DomainRequest.ActionNeededReasons.BAD_NAME
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=bad_name)
-        self.assert_email_is_accurate("DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS", 1, EMAIL, bcc_email_address="help@get.gov")
+        self.assert_email_is_accurate(
+            "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS", 1, EMAIL, bcc_email_address=BCC_EMAIL
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
         # Test the email sent out for eligibility_unclear
         eligibility_unclear = DomainRequest.ActionNeededReasons.ELIGIBILITY_UNCLEAR
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=eligibility_unclear)
-        self.assert_email_is_accurate("ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", 2, EMAIL, bcc_email_address="help@get.gov")
+        self.assert_email_is_accurate(
+            "ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", 2, EMAIL, bcc_email_address=BCC_EMAIL
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
         # Test the email sent out for questionable_ao
         questionable_ao = DomainRequest.ActionNeededReasons.QUESTIONABLE_AUTHORIZING_OFFICIAL
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_ao)
-        self.assert_email_is_accurate("AUTHORIZING OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address="help@get.gov")
+        self.assert_email_is_accurate(
+            "AUTHORIZING OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address=BCC_EMAIL
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
 
         # Assert that no other emails are sent on OTHER
