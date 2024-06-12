@@ -138,44 +138,43 @@ function openInNewTab(el, removeAttribute = false){
 })();
 
 
-/** An IIFE for pages in DjangoAdmin that use a clipboard button
+/** An IIFE for the "Assign to me" button under the investigator field in DomainRequests.
+** This field uses the "select2" selector, rather than the default. 
+** To perform data operations on this - we need to use jQuery rather than vanilla js. 
 */
 (function (){
-    let investigatorSelect = document.querySelector("#id_investigator");
+    let selector = django.jQuery("#id_investigator")
     let assignSelfButton = document.querySelector("#investigator__assign_self");
-    if (investigatorSelect && assignSelfButton) {
-        let selector = django.jQuery(investigatorSelect)
-        assignSelfButton.addEventListener('click', function() {
-            let currentUserId = this.getAttribute("data-user-id");
-            let currentUserName = this.getAttribute("data-user-name");
-            if (selector && currentUserId && currentUserName){
-                // Logic borrowed from here:
-                // https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
-                // Set the value, creating a new option if necessary
-                if (selector.find(`option[value='${currentUserId}']`).length) {
-                    selector.val(currentUserId).trigger("change");
-                } else { 
-                    // Create a DOM Option and pre-select by default
-                    let currentUser = new Option(currentUserName, currentUserId, true, true);
-                    // Append it to the select
-                    selector.append(currentUser).trigger("change");
-                }
-            }else {
-                console.error("Could not assign current user.")
-            }
-        });
-
-        selector.on('change', function() {
-            let selectedValue = this.value;
-            if (selectedValue === "" || selectedValue === null) {
-                // If no investigator is selected, show the 'Assign to Self' button
-                assignSelfButton.parentElement.style.display = 'flex';
-            } else {
-                // If an investigator is selected, hide the 'Assign to Self' button
-                assignSelfButton.parentElement.style.display = 'none';
-            }
-        });
+    if (!selector || !assignSelfButton) {
+        return;
     }
+
+    let currentUserId = assignSelfButton.getAttribute("data-user-id");
+    let currentUserName = assignSelfButton.getAttribute("data-user-name");
+    if (!currentUserId || !currentUserName){
+        console.error("Could not assign current user: no values found.")
+        return;
+    }
+
+    // Hook a click listener to the "Assign to me" button.
+    // Logic borrowed from here: https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
+    assignSelfButton.addEventListener("click", function() {
+        if (selector.find(`option[value='${currentUserId}']`).length) {
+            // Select the value that is associated with the current user.
+            selector.val(currentUserId).trigger("change");
+        } else { 
+            // Create a DOM Option that matches the desired user. Then append it and select it.
+            let userOption = new Option(currentUserName, currentUserId, true, true);
+            selector.append(userOption).trigger("change");
+        }
+    });
+
+    // Listen to any change events, and hide the parent container if investigator has a value.
+    selector.on('change', function() {
+        // The parent container has display type flex.
+        assignSelfButton.parentElement.style.display = this.value ? "none" : "flex";
+    });
+
 })();
 /** An IIFE for pages in DjangoAdmin that use a clipboard button
 */
