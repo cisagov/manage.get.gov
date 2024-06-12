@@ -1074,11 +1074,11 @@ class Domain(TimeStampedModel, DomainHelper):
         verbose_name="first ready on",
     )
 
-    # dsdata_last_change = TextField(
-    #     null=True,
-    #     blank=True,
-    #     help_text="Most recent time that ds data was updated",
-    # )
+    dsdata_last_change = TextField(
+        null=True,
+        blank=True,
+        help_text="Most recent time that ds data was updated",
+    )
 
     def isActive(self):
         return self.state == Domain.State.CREATED
