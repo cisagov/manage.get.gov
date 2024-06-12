@@ -57,6 +57,17 @@ class DomainInformation(TimeStampedModel):
         help_text="Person who submitted the domain request",
     )
 
+
+    # portfolio
+    portfolio = models.OneToOneField(
+        "registrar.Portfolio",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="DomainRequest_portfolio",
+        help_text="Portfolio associated with this domain",
+      )
+
     domain_request = models.OneToOneField(
         "registrar.DomainRequest",
         on_delete=models.PROTECT,
