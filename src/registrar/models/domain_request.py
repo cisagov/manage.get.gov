@@ -287,14 +287,14 @@ class DomainRequest(TimeStampedModel):
     )
 
     # portfolio
-    # portfolio = models.OneToOneField(
-    #     "registrar.Portfolio",
-    #     on_delete=models.PROTECT,
-    #     null=True,
-    #     blank=True,
-    #     related_name="DomainInformation_portfolio",
-    #     help_text="Portfolio associated with this domain",
-    #   )
+    portfolio = models.OneToOneField(
+        "registrar.Portfolio",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="DomainInformation_portfolio",
+        help_text="Portfolio associated with this domain",
+      )
 
     # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field

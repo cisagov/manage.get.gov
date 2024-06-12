@@ -3,10 +3,12 @@ from django_fsm import FSMField  # type: ignore
 
 from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.domain import State
 
 from .utility.time_stamped_model import TimeStampedModel
 
+def get_default_federal_agency():
+    """returns non-federal agency"""
+    return FederalAgency.objects.filter(agency="Non-Federal Agency").first()
 
 class Portfolio(TimeStampedModel):
     """
@@ -16,11 +18,10 @@ class Portfolio(TimeStampedModel):
     
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
-
+    StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
     # creator- user foreign key- stores who created this model should get the user who is adding 
     # it via django admin if there is a user (aka not done via commandline/ manual means)"""
-    # TODO: auto-populate
     creator = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
@@ -40,18 +41,7 @@ class Portfolio(TimeStampedModel):
         on_delete=models.PROTECT,
         help_text="Associated federal agency",
         unique=False,
-        default=FederalAgency.objects.filter(agency="Non-Federal Agency").first()
-    )
-
-    # creator- user foreign key- stores who created this model 
-    # should get the user who is adding it via django admin if there
-    # is a user (aka not done via commandline/ manual means)
-    # TODO: auto-populate
-    creator = models.ForeignKey(
-        "registrar.User",
-        on_delete=models.PROTECT,
-        help_text="Associated user",
-        unique=False
+        default=get_default_federal_agency
     )
 
     # organization type- should match organization types allowed on domain info
@@ -64,7 +54,7 @@ class Portfolio(TimeStampedModel):
     )
 
     # organization name
-    # TODO: org name will be the same as federal agency, if it is federal,
+    # NOTE: org name will be the same as federal agency, if it is federal,
     # otherwise it will be the actual org name. If nothing is entered for
     # org name and it is a federal organization, have this field fill with
     # the federal agency text name.
@@ -90,17 +80,13 @@ class Portfolio(TimeStampedModel):
         null=True,
         blank=True,
     )
-    # state (copied from domain.py -- imports enums from domain.py)
-    state = FSMField(
-        max_length=21,
-        choices=State.choices,
-        default=State.UNKNOWN,
-        # cannot change state directly, particularly in Django admin
-        protected=True,
-        # This must be defined for custom state help messages,
-        # as otherwise the view will purge the help field as it does not exist.
-        help_text=" ",
-        verbose_name="domain state",
+    # state (copied from domain_request.py -- imports enums from domain_request.py)
+    state_territory = models.CharField(
+        max_length=2,
+        choices=StateTerritoryChoices.choices,
+        null=True,
+        blank=True,
+        verbose_name="state / territory",
     )
     # zipcode
     zipcode = models.CharField(
@@ -124,54 +110,3 @@ class Portfolio(TimeStampedModel):
         verbose_name="security contact e-mail",
         max_length=320,
     )
-
-    def save(self, *args, **kwargs):
-        # Call the parent class's save method to perform the actual save
-        super().save(*args, **kwargs)
-
-        # TODO:
-        # ---- auto-populate creator ----
-        # creator- user foreign key- stores who created this model 
-        # should get the user who is adding it via django admin if there
-        # is a user (aka not done via commandline/ manual means)
-
-        # ---- update organization name ----
-        # org name will be the same as federal agency, if it is federal,
-        # otherwise it will be the actual org name. If nothing is entered for
-        # org name and it is a federal organization, have this field fill with
-        # the federal agency text name.
-        is_federal = self.organization_type == self.OrganizationChoices.FEDERAL
-        if is_federal:
-            self.organization_name = DomainRequest.OrganizationChoicesVerbose(self.organization_type) 
-            #NOTE: Is this what is meant by "federal agency text name?"
-
-
-        # -----------------------------------
-        # if self.user:
-        #     updated = False
-
-        #     # Update first name and last name if necessary
-        #     if not self.user.first_name or not self.user.last_name:
-        #         self.user.first_name = self.first_name
-        #         self.user.last_name = self.last_name
-        #         updated = True
-
-        #     # Update phone if necessary
-        #     if not self.user.phone:
-        #         self.user.phone = self.phone
-        #         updated = True
-
-        #     # Save user if any updates were made
-        #     if updated:
-        #         self.user.save()
-        # -----------------------------------
-
-    # def __str__(self):
-    #     if self.first_name or self.last_name:
-    #         return self.get_formatted_name()
-    #     elif self.email:
-    #         return self.email
-    #     elif self.pk:
-    #         return str(self.pk)
-    #     else:
-    #         return ""
