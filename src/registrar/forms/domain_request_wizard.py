@@ -16,6 +16,7 @@ from registrar.forms.utility.wizard_form_helper import (
 from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
+from registrar.utility.constants import BranchChoices
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,7 @@ class TribalGovernmentForm(RegistrarForm):
 
 class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
-        choices=DomainRequest.BranchChoices.choices,
+        choices=BranchChoices.choices,
         widget=forms.RadioSelect,
         error_messages={"required": ("Select the part of the federal government your organization is in.")},
     )

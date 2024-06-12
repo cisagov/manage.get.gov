@@ -3,6 +3,8 @@ from django.db import transaction
 
 from registrar.models.utility.domain_helper import DomainHelper
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
+from registrar.utility.constants import BranchChoices
+
 from .domain_request import DomainRequest
 from .utility.time_stamped_model import TimeStampedModel
 
@@ -36,8 +38,6 @@ class DomainInformation(TimeStampedModel):
 
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
-
-    BranchChoices = DomainRequest.BranchChoices
 
     federal_agency = models.ForeignKey(
         "registrar.FederalAgency",

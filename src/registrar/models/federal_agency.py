@@ -1,6 +1,7 @@
 from .utility.time_stamped_model import TimeStampedModel
 from django.db import models
 import logging
+from registrar.utility.constants import BranchChoices
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,14 @@ class FederalAgency(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Federal agency",
+    )
+
+    federal_type = models.CharField(
+        max_length=20,
+        choices=BranchChoices.choices,
+        null=True,
+        blank=True,
+        help_text="Federal agency type (executive, judicial, legislative, etc.)",
     )
 
     def __str__(self) -> str:
