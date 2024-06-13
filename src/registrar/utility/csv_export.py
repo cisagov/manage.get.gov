@@ -913,7 +913,11 @@ class DomainRequestExport:
             human_readable_election_board = "Yes" if is_election_board else "No"
 
         # Handle the additional details field. Pipe seperated.
-        cisa_rep = request.get("cisa_representative_email")
+        cisa_rep_first = request.get("cisa_representative_first_name")
+        cisa_rep_last = request.get("cisa_representative_last_name")
+        name = [n for n in [cisa_rep_first, cisa_rep_last] if n]
+
+        cisa_rep = " ".join(name) if name else None
         details = [cisa_rep, request.get("anything_else")]
         additional_details = " | ".join([field for field in details if field])
 
