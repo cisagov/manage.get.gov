@@ -369,7 +369,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 or self.domain_request.no_other_contacts_rationale is not None
             ),
             "additional_details": (
-                (self.domain_request.anything_else is not None and self.domain_request.cisa_representative_email)
+                (self.domain_request.anything_else is not None and self.domain_request.has_cisa_representative)
                 or self.domain_request.is_policy_acknowledged is not None
             ),
             "requirements": self.domain_request.is_policy_acknowledged is not None,
@@ -380,7 +380,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def get_context_data(self):
         """Define context for access on all wizard pages."""
         has_profile_flag = flag_is_active(self.request, "profile_feature")
-        logger.debug("PROFILE FLAG is %s" % has_profile_flag)
 
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request):
