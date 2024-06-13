@@ -169,6 +169,14 @@ function openInNewTab(el, removeAttribute = false){
         }
     });
 
+    // Listen to any change events, and hide the parent container if investigator has a value.
+    selector.on('change', function() {
+        // The parent container has display type flex.
+        assignSelfButton.parentElement.style.display = this.value === currentUserId ? "none" : "flex";
+    });
+    
+    
+
 })();
 /** An IIFE for pages in DjangoAdmin that use a clipboard button
 */
