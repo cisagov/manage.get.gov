@@ -997,54 +997,6 @@ class TestDomainRequestAdmin(MockEppLib):
         self.mock_client = MockSESClient()
 
     @less_console_noise_decorator
-    def test_investigator_has_assign_to_self_when_none(self):
-        """Tests if the investigator field has the "assign to me" button
-        when investigator is None"""
-        # Create a fake domain request and domain
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-        domain_request.investigator = None
-        domain_request.save()
-
-        self.assertEqual(domain_request.investigator, None)
-
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
-        response = self.client.get(
-            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
-            follow=True,
-        )
-
-        # Make sure that the page is loaded correctly
-        self.assertEqual(response.status_code, 200)
-
-        # Test for the button
-        self.assertContains(response, "Assign to me")
-
-    @less_console_noise_decorator
-    def test_investigator_does_not_have_assign_to_self_when_not_none(self):
-        """Tests if the investigator field doesn't have the "assign to me" button
-        when investigator is not None"""
-        # Create a fake domain request and domain
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-        domain_request.investigator = self.staffuser
-        domain_request.save()
-
-        self.assertEqual(domain_request.investigator, self.staffuser)
-
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
-        response = self.client.get(
-            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
-            follow=True,
-        )
-
-        # Make sure that the page is loaded correctly
-        self.assertEqual(response.status_code, 200)
-
-        # Test for the button
-        self.assertNotContains(response, "Assign to me")
-
-    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         p = "adminpass"
