@@ -1,6 +1,9 @@
+import glob
 import logging
+import math
 import os
 import pyzipper
+import tablib
 from django.core.management import BaseCommand
 import registrar.admin
 
@@ -37,17 +40,21 @@ class Command(BaseCommand):
         zip_filename = "tmp/exported_tables.zip"
         with pyzipper.AESZipFile(zip_filename, "w", compression=pyzipper.ZIP_DEFLATED) as zipf:
             for table_name in table_names:
-                csv_filename = f"tmp/{table_name}.csv"
-                if os.path.exists(csv_filename):
-                    zipf.write(csv_filename, os.path.basename(csv_filename))
-                    logger.info(f"Added {csv_filename} to zip archive {zip_filename}")
 
-        # Remove the CSV files after adding them to the zip file
-        for table_name in table_names:
-            csv_filename = f"tmp/{table_name}.csv"
-            if os.path.exists(csv_filename):
-                os.remove(csv_filename)
-                logger.info(f"Removed temporary file {csv_filename}")
+                # Define the directory and the pattern
+                tmp_dir = 'tmp'
+                pattern = os.path.join(tmp_dir, f'{table_name}_*.csv')
+                zip_file_path = os.path.join(tmp_dir, 'exported_files.zip')
+
+                # Find all files that match the pattern
+                for file_path in glob.glob(pattern):
+                    # Add each file to the zip archive
+                    zipf.write(file_path, os.path.basename(file_path))
+                    logger.info(f'Added {file_path} to {zip_file_path}')
+                    
+                    # Remove the file after adding to zip
+                    os.remove(file_path)
+                    logger.info(f'Removed {file_path}')
 
     def export_table(self, table_name):
         """Export a given table to a csv file in the tmp directory"""
@@ -55,11 +62,36 @@ class Command(BaseCommand):
         try:
             resourceclass = getattr(registrar.admin, resourcename)
             dataset = resourceclass().export()
-            filename = f"tmp/{table_name}.csv"
-            with open(filename, "w") as outputfile:
-                outputfile.write(dataset.csv)
-            logger.info(f"Successfully exported {table_name} to {filename}")
-        except AttributeError:
-            logger.error(f"Resource class {resourcename} not found in registrar.admin")
+            if not isinstance(dataset, tablib.Dataset):
+                raise ValueError(f"Exported data from {resourcename} is not a tablib.Dataset")
+
+            # Determine the number of rows per file
+            rows_per_file = 10000
+            total_rows = len(dataset)
+
+            # Calculate the number of files needed
+            num_files = math.ceil(total_rows / rows_per_file)
+            logger.info(f'splitting {table_name} into {num_files} files')
+
+            # Split the dataset and export each chunk to a separate file
+            for i in range(num_files):
+                start_row = i * rows_per_file
+                end_row = start_row + rows_per_file
+
+                # Create a new dataset for the chunk
+                chunk = tablib.Dataset(headers=dataset.headers)
+                for row in dataset[start_row:end_row]:
+                    chunk.append(row)
+                    #chunk = dataset[start_row:end_row]
+
+                # Export the chunk to a new file
+                filename = f'tmp/{table_name}_{i + 1}.csv'
+                with open(filename, 'w') as f:
+                    f.write(chunk.export('csv'))
+
+            logger.info(f'Successfully exported {table_name} into {num_files} files.')
+
+        except AttributeError as ae:
+            logger.error(f"Resource class {resourcename} not found in registrar.admin: {ae}")
         except Exception as e:
             logger.error(f"Failed to export {table_name}: {e}")
