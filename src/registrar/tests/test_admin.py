@@ -1055,6 +1055,18 @@ class TestDomainRequestAdmin(MockEppLib):
         accurately and in chronological order.
         """
 
+        def assert_status_count(normalized_content, status, count):
+            """Helper function to assert the count of a status in the HTML content."""
+            self.assertEqual(normalized_content.count(f"<td> {status} </td>"), count)
+
+        def assert_status_order(normalized_content, statuses):
+            """Helper function to assert the order of statuses in the HTML content."""
+            start_index = 0
+            for status in statuses:
+                index = normalized_content.find(f"<td> {status} </td>", start_index)
+                self.assertNotEqual(index, -1, f"Status '{status}' not found in the expected order.")
+                start_index = index + len(status)
+
         # Create a fake domain request and domain
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED)
 
@@ -1069,48 +1081,23 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain_request.requested_domain.name)
 
-        # Table will contain one row for Started
-        self.assertContains(response, "<td>Started</td>", count=1)
-        self.assertNotContains(response, "<td>Submitted</td>")
-
         domain_request.submit()
         domain_request.save()
 
-        response = self.client.get(
-            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
-            follow=True,
-        )
-
-        # Table will contain and extra row for Submitted
-        self.assertContains(response, "<td>Started</td>", count=1)
-        self.assertContains(response, "<td>Submitted</td>", count=1)
-
         domain_request.in_review()
         domain_request.save()
-
-        response = self.client.get(
-            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
-            follow=True,
-        )
-
-        # Table will contain and extra row for In review
-        self.assertContains(response, "<td>Started</td>", count=1)
-        self.assertContains(response, "<td>Submitted</td>", count=1)
-        self.assertContains(response, "<td>In review</td>", count=1)
 
         domain_request.action_needed()
+        domain_request.action_needed_reason = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
         domain_request.save()
 
-        response = self.client.get(
-            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
-            follow=True,
-        )
+        # Let's just change the action needed reason
+        domain_request.action_needed_reason = DomainRequest.ActionNeededReasons.ELIGIBILITY_UNCLEAR
+        domain_request.save()
 
-        # Table will contain and extra row for Action needed
-        self.assertContains(response, "<td>Started</td>", count=1)
-        self.assertContains(response, "<td>Submitted</td>", count=1)
-        self.assertContains(response, "<td>In review</td>", count=1)
-        self.assertContains(response, "<td>Action needed</td>", count=1)
+        domain_request.reject()
+        domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
+        domain_request.save()
 
         domain_request.in_review()
         domain_request.save()
@@ -1119,25 +1106,29 @@ class TestDomainRequestAdmin(MockEppLib):
             "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
             follow=True,
         )
+
+        # Normalize the HTML response content
+        normalized_content = " ".join(response.content.decode("utf-8").split())
 
         # Define the expected sequence of status changes
         expected_status_changes = [
-            "<td>In review</td>",
-            "<td>Action needed</td>",
-            "<td>In review</td>",
-            "<td>Submitted</td>",
-            "<td>Started</td>",
+            "In review",
+            "Rejected - Purpose requirements not met",
+            "Action needed - Unclear organization eligibility",
+            "Action needed - Already has domains",
+            "In review",
+            "Submitted",
+            "Started",
         ]
 
-        # Test for the order of status changes
-        for status_change in expected_status_changes:
-            self.assertContains(response, status_change, html=True)
+        assert_status_order(normalized_content, expected_status_changes)
 
-        # Table now contains 2 rows for Approved
-        self.assertContains(response, "<td>Started</td>", count=1)
-        self.assertContains(response, "<td>Submitted</td>", count=1)
-        self.assertContains(response, "<td>In review</td>", count=2)
-        self.assertContains(response, "<td>Action needed</td>", count=1)
+        assert_status_count(normalized_content, "Started", 1)
+        assert_status_count(normalized_content, "Submitted", 1)
+        assert_status_count(normalized_content, "In review", 2)
+        assert_status_count(normalized_content, "Action needed - Already has domains", 1)
+        assert_status_count(normalized_content, "Action needed - Unclear organization eligibility", 1)
+        assert_status_count(normalized_content, "Rejected - Purpose requirements not met", 1)
 
     def test_collaspe_toggle_button_markup(self):
         """

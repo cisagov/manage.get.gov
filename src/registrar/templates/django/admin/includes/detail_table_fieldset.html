@@ -68,51 +68,52 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endblock field_readonly %}
 
 {% block after_help_text %}
-    {% if field.field.name == "status" and original_object.history.count > 0 %}
-        <div class="flex-container" id="dja-status-changelog">
-            <label aria-label="Status changelog"></label>
-            <div>
-                <div class="usa-table-container--scrollable collapse--dgsimple" tabindex="0">
-                    <table class="usa-table usa-table--borderless">
-                        <thead>
+    {% if field.field.name == "status" and filtered_entries %}
+    <div class="flex-container" id="dja-status-changelog">
+        <label aria-label="Status changelog"></label>
+        <div>
+            <div class="usa-table-container--scrollable collapse--dgsimple" tabindex="0">
+                <table class="usa-table usa-table--borderless">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>User</th>
+                            <th>Changed at</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in filtered_entries %}
                             <tr>
-                                <th>Status</th>
-                                <th>User</th>
-                                <th>Changed at</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log_entry in original_object.history.all %}
-                                {% for key, value in log_entry.changes_display_dict.items %}
-                                    {% if key == "status" %}
-                                        <tr>
-                                            <td>{{ value.1|default:"None" }}
-                                                {% for rk, rv in log_entry.changes_display_dict.items %}
-                                                    {% if rk == "rejection reason" %}
-                                                       - {{ rv.1|default:"None" }}
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </td>
-                                            <td>
-                                                {{ log_entry.actor|default:"None" }}
-                                                
-                                            </td>
-                                            <td>{{ log_entry.timestamp|date:"Y-m-d H:i:s" }}</td>
-                                        </tr>
+                                <td>
+                                    {% if entry.status %}
+                                        {{ entry.status|default:"None" }}
+                                    {% else %}
+                                        Error
                                     {% endif %}
-                                {% endfor %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-2 margin-bottom-1 margin-left-1">
-                    <span>Hide details</span>
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                        <use xlink:href="/public/img/sprite.svg#expand_less"></use>
-                    </svg>
-                </button>
+                                    
+                                    {% if entry.rejection_reason %}
+                                        - {{ entry.rejection_reason|default:"None" }}
+                                    {% endif %}
+                                    
+                                    {% if entry.action_needed_reason %}
+                                        - {{ entry.action_needed_reason|default:"None" }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ entry.actor|default:"None" }}</td>
+                                <td>{{ entry.timestamp|date:"Y-m-d H:i:s" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-2 margin-bottom-1 margin-left-1">
+                <span>Hide details</span>
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                    <use xlink:href="/public/img/sprite.svg#expand_less"></use>
+                </svg>
+            </button>
         </div>
+    </div>
     {% elif field.field.name == "creator" %}
         <div class="flex-container tablet:margin-top-2">
         <label aria-label="Creator contact details"></label>

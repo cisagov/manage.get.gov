@@ -1812,8 +1812,70 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return response
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Display restricted warning,
+        Setup the auditlog trail and pass it in extra context."""
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
+
+        # Retrieve and order audit log entries by timestamp in ascending order
+        audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("timestamp")
+
+        # Initialize variables for tracking status changes and filtered entries
+        filtered_entries = []
+
+        # Process each log entry to filter based on the change criteria
+        for log_entry in audit_log_entries:
+            changes = log_entry.changes
+            status_changed = "status" in changes
+            rejection_reason_changed = "rejection_reason" in changes
+            action_needed_reason_changed = "action_needed_reason" in changes
+
+            # Check if the log entry meets the filtering criteria
+            if status_changed or (not status_changed and (rejection_reason_changed or action_needed_reason_changed)):
+                entry = {}
+
+                # Handle status change
+                if status_changed:
+                    entry["status"] = DomainRequest.DomainRequestStatus(changes["status"][1]).label
+                    # last_status = entry["status"]
+
+                # Handle rejection reason change
+                if rejection_reason_changed:
+                    rejection_reason = changes["rejection_reason"][1]
+                    entry["rejection_reason"] = (
+                        "" if rejection_reason == "None" else DomainRequest.RejectionReasons(rejection_reason).label
+                    )
+                    # Handle case where rejection reason changed but not status
+                    if not status_changed:
+                        entry["status"] = DomainRequest.DomainRequestStatus.REJECTED.label
+
+                # Handle action needed reason change
+                if action_needed_reason_changed:
+                    action_needed_reason = changes["action_needed_reason"][1]
+                    entry["action_needed_reason"] = (
+                        ""
+                        if action_needed_reason == "None"
+                        else DomainRequest.ActionNeededReasons(action_needed_reason).label
+                    )
+                    # Handle case where action needed reason changed but not status
+                    if not status_changed:
+                        entry["status"] = DomainRequest.DomainRequestStatus.ACTION_NEEDED.label
+
+                # Add actor and timestamp information
+                entry["actor"] = log_entry.actor
+                entry["timestamp"] = log_entry.timestamp
+
+                # Append the filtered entry to the list
+                filtered_entries.append(entry)
+
+        # Reverse the filtered entries list to get newest to oldest order
+        filtered_entries.reverse()
+
+        # Initialize extra_context and add filtered entries
+        if extra_context is None:
+            extra_context = {}
+        extra_context["filtered_entries"] = filtered_entries
+
         return super().change_view(request, object_id, form_url, extra_context)
 
 
