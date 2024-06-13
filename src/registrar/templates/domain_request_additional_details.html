@@ -43,7 +43,8 @@
         {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
     </fieldset>
   
-    <div id="anything-else">
+    <div class="margin-top-3" id="anything-else">
+        <p>Provide details below (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</p>
         {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.3.anything_else %}
         {% endwith %}
