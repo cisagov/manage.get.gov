@@ -217,6 +217,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         status = cleaned_data.get("status")
         investigator = cleaned_data.get("investigator")
         rejection_reason = cleaned_data.get("rejection_reason")
+        action_needed_reason = cleaned_data.get("action_needed_reason")
 
         # Get the old status
         initial_status = self.initial.get("status", None)
@@ -240,6 +241,8 @@ class DomainRequestAdminForm(forms.ModelForm):
         # If the status is rejected, a rejection reason must exist
         if status == DomainRequest.DomainRequestStatus.REJECTED:
             self._check_for_valid_rejection_reason(rejection_reason)
+        elif status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
+            self._check_for_valid_action_needed_reason(action_needed_reason)
 
         return cleaned_data
 
@@ -260,6 +263,18 @@ class DomainRequestAdminForm(forms.ModelForm):
 
         if error_message is not None:
             self.add_error("rejection_reason", error_message)
+
+        return is_valid
+
+    def _check_for_valid_action_needed_reason(self, action_needed_reason) -> bool:
+        """
+        Checks if the action_needed_reason field is not none.
+        Adds form errors on failure.
+        """
+        is_valid = action_needed_reason is not None and action_needed_reason != ""
+        if not is_valid:
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_ACTION_NEEDED_REASON)
+            self.add_error("action_needed_reason", error_message)
 
         return is_valid
 
@@ -1166,6 +1181,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     # error.
     readonly_fields = ["status"]
 
+    autocomplete_fields = ["domain"]
+
     change_form_template = "django/admin/email_clipboard_change_form.html"
 
     # Select domain invitations to change -> Domain invitations
@@ -1466,6 +1483,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "status",
                     "rejection_reason",
+                    "action_needed_reason",
                     "investigator",
                     "creator",
                     "submitter",
@@ -1482,6 +1500,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "authorizing_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
+                    "cisa_representative_first_name",
+                    "cisa_representative_last_name",
                     "cisa_representative_email",
                 ]
             },
@@ -1557,6 +1577,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
+        "cisa_representative_first_name",
+        "cisa_representative_last_name",
         "cisa_representative_email",
     ]
     autocomplete_fields = [
@@ -1668,6 +1690,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
             # because we clean up the rejection reason in the transition in the model.
             error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
+        elif obj.status == models.DomainRequest.DomainRequestStatus.ACTION_NEEDED and not obj.action_needed_reason:
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_ACTION_NEEDED_REASON)
         else:
             # This is an fsm in model which will throw an error if the
             # transition condition is violated, so we roll back the

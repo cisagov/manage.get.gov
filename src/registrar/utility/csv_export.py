@@ -310,6 +310,7 @@ def export_data_type_to_csv(csv_file):
     """
     All domains report with extra columns.
     This maps to the "All domain metadata" button.
+    Exports domains of all statuses.
     """
 
     writer = csv.writer(csv_file)
@@ -337,15 +338,8 @@ def export_data_type_to_csv(csv_file):
         "federal_agency",
         "domain__name",
     ]
-    filter_condition = {
-        "domain__state__in": [
-            Domain.State.READY,
-            Domain.State.DNS_NEEDED,
-            Domain.State.ON_HOLD,
-        ],
-    }
     write_csv_for_domains(
-        writer, columns, sort_fields, filter_condition, should_get_domain_managers=True, should_write_header=True
+        writer, columns, sort_fields, filter_condition={}, should_get_domain_managers=True, should_write_header=True
     )
 
 
