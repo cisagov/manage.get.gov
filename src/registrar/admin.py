@@ -1833,7 +1833,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 action_needed_reason_changed = "action_needed_reason" in changes
 
                 # Check if the log entry meets the filtering criteria
-                if status_changed or (not status_changed and (rejection_reason_changed or action_needed_reason_changed)):
+                if status_changed or (
+                    not status_changed and (rejection_reason_changed or action_needed_reason_changed)
+                ):
                     entry = {}
 
                     # Handle status change
@@ -1847,7 +1849,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                         rejection_reason_value = changes.get("rejection_reason", [None, None])[1]
                         if rejection_reason_value:
                             entry["rejection_reason"] = (
-                                "" if rejection_reason_value == "None" else DomainRequest.RejectionReasons(rejection_reason_value).label
+                                ""
+                                if rejection_reason_value == "None"
+                                else DomainRequest.RejectionReasons(rejection_reason_value).label
                             )
                             # Handle case where rejection reason changed but not status
                             if not status_changed:
@@ -1858,7 +1862,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                         action_needed_reason_value = changes.get("action_needed_reason", [None, None])[1]
                         if action_needed_reason_value:
                             entry["action_needed_reason"] = (
-                                "" if action_needed_reason_value == "None" else DomainRequest.ActionNeededReasons(action_needed_reason_value).label
+                                ""
+                                if action_needed_reason_value == "None"
+                                else DomainRequest.ActionNeededReasons(action_needed_reason_value).label
                             )
                             # Handle case where action needed reason changed but not status
                             if not status_changed:
@@ -1875,6 +1881,18 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             logger.error(f"Object with object_id {object_id} does not exist: {e}")
         except Exception as e:
             logger.error(f"An error occurred during change_view: {e}")
+
+        # Reverse the filtered entries list to get newest to oldest order
+        filtered_entries.reverse()
+
+        # Initialize extra_context and add filtered entries
+        if extra_context is None:
+            extra_context = {}
+        extra_context["filtered_entries"] = filtered_entries
+
+        # Call the superclass method with updated extra_context
+        return super().change_view(request, object_id, form_url, extra_context)
+
 
 class TransitionDomainAdmin(ListHeaderAdmin):
     """Custom transition domain admin class."""
