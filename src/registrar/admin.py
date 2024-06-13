@@ -1181,6 +1181,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     # error.
     readonly_fields = ["status"]
 
+    autocomplete_fields = ["domain"]
+
     change_form_template = "django/admin/email_clipboard_change_form.html"
 
     # Select domain invitations to change -> Domain invitations
