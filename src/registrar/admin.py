@@ -1827,54 +1827,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
             # Process each log entry to filter based on the change criteria
             for log_entry in audit_log_entries:
-                changes = log_entry.changes
-                status_changed = "status" in changes
-                rejection_reason_changed = "rejection_reason" in changes
-                action_needed_reason_changed = "action_needed_reason" in changes
-
-                # Check if the log entry meets the filtering criteria
-                if status_changed or (
-                    not status_changed and (rejection_reason_changed or action_needed_reason_changed)
-                ):
-                    entry = {}
-
-                    # Handle status change
-                    if status_changed:
-                        status_value = changes.get("status", [None, None])[1]
-                        if status_value:
-                            entry["status"] = DomainRequest.DomainRequestStatus(status_value).label
-
-                    # Handle rejection reason change
-                    if rejection_reason_changed:
-                        rejection_reason_value = changes.get("rejection_reason", [None, None])[1]
-                        if rejection_reason_value:
-                            entry["rejection_reason"] = (
-                                ""
-                                if rejection_reason_value == "None"
-                                else DomainRequest.RejectionReasons(rejection_reason_value).label
-                            )
-                            # Handle case where rejection reason changed but not status
-                            if not status_changed:
-                                entry["status"] = DomainRequest.DomainRequestStatus.REJECTED.label
-
-                    # Handle action needed reason change
-                    if action_needed_reason_changed:
-                        action_needed_reason_value = changes.get("action_needed_reason", [None, None])[1]
-                        if action_needed_reason_value:
-                            entry["action_needed_reason"] = (
-                                ""
-                                if action_needed_reason_value == "None"
-                                else DomainRequest.ActionNeededReasons(action_needed_reason_value).label
-                            )
-                            # Handle case where action needed reason changed but not status
-                            if not status_changed:
-                                entry["status"] = DomainRequest.DomainRequestStatus.ACTION_NEEDED.label
-
-                    # Add actor and timestamp information
-                    entry["actor"] = log_entry.actor
-                    entry["timestamp"] = log_entry.timestamp
-
-                    # Append the filtered entry to the list
+                entry = self.process_log_entry(log_entry)
+                if entry:
                     filtered_entries.append(entry)
 
         except ObjectDoesNotExist as e:
@@ -1886,12 +1840,62 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         filtered_entries.reverse()
 
         # Initialize extra_context and add filtered entries
-        if extra_context is None:
-            extra_context = {}
+        extra_context = extra_context or {}
         extra_context["filtered_entries"] = filtered_entries
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def process_log_entry(self, log_entry):
+        """Process a log entry and return filtered entry dictionary if applicable."""
+        changes = log_entry.changes
+        status_changed = "status" in changes
+        rejection_reason_changed = "rejection_reason" in changes
+        action_needed_reason_changed = "action_needed_reason" in changes
+
+        # Check if the log entry meets the filtering criteria
+        if status_changed or (not status_changed and (rejection_reason_changed or action_needed_reason_changed)):
+            entry = {}
+
+            # Handle status change
+            if status_changed:
+                status_value = changes.get("status", [None, None])[1]
+                if status_value:
+                    entry["status"] = DomainRequest.DomainRequestStatus(status_value).label
+
+            # Handle rejection reason change
+            if rejection_reason_changed:
+                rejection_reason_value = changes.get("rejection_reason", [None, None])[1]
+                if rejection_reason_value:
+                    entry["rejection_reason"] = (
+                        ""
+                        if rejection_reason_value == "None"
+                        else DomainRequest.RejectionReasons(rejection_reason_value).label
+                    )
+                    # Handle case where rejection reason changed but not status
+                    if not status_changed:
+                        entry["status"] = DomainRequest.DomainRequestStatus.REJECTED.label
+
+            # Handle action needed reason change
+            if action_needed_reason_changed:
+                action_needed_reason_value = changes.get("action_needed_reason", [None, None])[1]
+                if action_needed_reason_value:
+                    entry["action_needed_reason"] = (
+                        ""
+                        if action_needed_reason_value == "None"
+                        else DomainRequest.ActionNeededReasons(action_needed_reason_value).label
+                    )
+                    # Handle case where action needed reason changed but not status
+                    if not status_changed:
+                        entry["status"] = DomainRequest.DomainRequestStatus.ACTION_NEEDED.label
+
+            # Add actor and timestamp information
+            entry["actor"] = log_entry.actor
+            entry["timestamp"] = log_entry.timestamp
+
+            return entry
+
+        return None
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
