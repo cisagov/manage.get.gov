@@ -449,7 +449,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         else:
             # Reset the above logic to be extra safe;
             # we do not want to stumble into a situation where a user
-            # unkowingly overrites when she thinks she's working on a
+            # unknowingly overwrites when she thinks she's working on a
             # new request
             self.request.session["new_request"] = True
         self.steps.current = step
