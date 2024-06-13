@@ -735,18 +735,52 @@ class MockDb(TestCase):
             self.domain_request_4 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 name="city4.gov",
+                is_election_board=True,
+                generic_org_type="city",
             )
             self.domain_request_5 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.APPROVED,
                 name="city5.gov",
             )
+            self.domain_request_6 = completed_domain_request(
+                status=DomainRequest.DomainRequestStatus.STARTED,
+                name="city6.gov",
+            )
             self.domain_request_3.submit()
             self.domain_request_4.submit()
+            self.domain_request_6.submit()
 
+            other, _ = Contact.objects.get_or_create(
+                first_name="Testy1232",
+                last_name="Tester24",
+                title="Another Tester",
+                email="te2@town.com",
+                phone="(555) 555 5557",
+            )
+            other_2, _ = Contact.objects.get_or_create(
+                first_name="Meow",
+                last_name="Tester24",
+                title="Another Tester",
+                email="te2@town.com",
+                phone="(555) 555 5557",
+            )
+            website, _ = Website.objects.get_or_create(website="igorville.gov")
+            website_2, _ = Website.objects.get_or_create(website="cheeseville.gov")
+            website_3, _ = Website.objects.get_or_create(website="https://www.example.com")
+            website_4, _ = Website.objects.get_or_create(website="https://www.example2.com")
+
+            self.domain_request_3.other_contacts.add(other, other_2)
+            self.domain_request_3.alternative_domains.add(website, website_2)
+            self.domain_request_3.current_websites.add(website_3, website_4)
+            self.domain_request_3.cisa_representative_email = "test@igorville.com"
             self.domain_request_3.submission_date = get_time_aware_date(datetime(2024, 4, 2))
-            self.domain_request_4.submission_date = get_time_aware_date(datetime(2024, 4, 2))
             self.domain_request_3.save()
+
+            self.domain_request_4.submission_date = get_time_aware_date(datetime(2024, 4, 2))
             self.domain_request_4.save()
+
+            self.domain_request_6.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            self.domain_request_6.save()
 
     def tearDown(self):
         super().tearDown()
@@ -808,12 +842,13 @@ def create_ready_domain():
 
 
 # TODO in 1793: Remove the federal agency/updated federal agency fields
-def completed_domain_request(
+def completed_domain_request(  # noqa
     has_other_contacts=True,
     has_current_website=True,
     has_alternative_gov_domain=True,
     has_about_your_organization=True,
     has_anything_else=True,
+    has_cisa_representative=True,
     status=DomainRequest.DomainRequestStatus.STARTED,
     user=False,
     submitter=False,
@@ -895,6 +930,10 @@ def completed_domain_request(
         domain_request.current_websites.add(current)
     if has_alternative_gov_domain:
         domain_request.alternative_domains.add(alt)
+    if has_cisa_representative:
+        domain_request.cisa_representative_first_name = "CISA-first-name"
+        domain_request.cisa_representative_last_name = "CISA-last-name"
+        domain_request.cisa_representative_email = "cisaRep@igorville.gov"
 
     return domain_request
 

@@ -2326,6 +2326,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "anything_else",
                 "has_anything_else_text",
                 "cisa_representative_email",
+                "cisa_representative_first_name",
+                "cisa_representative_last_name",
                 "has_cisa_representative",
                 "is_policy_acknowledged",
                 "submission_date",
@@ -2358,6 +2360,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "no_other_contacts_rationale",
                 "anything_else",
                 "is_policy_acknowledged",
+                "cisa_representative_first_name",
+                "cisa_representative_last_name",
                 "cisa_representative_email",
             ]
 

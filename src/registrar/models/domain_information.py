@@ -225,11 +225,43 @@ class DomainInformation(TimeStampedModel):
         verbose_name="Additional details",
     )
 
+    # This is a drop-in replacement for a has_anything_else_text() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_anything_else_text = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a anything_else or not",
+    )
+
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        verbose_name="CISA regional representative",
+        verbose_name="CISA regional representative email",
         max_length=320,
+    )
+
+    cisa_representative_first_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative first name",
+        db_index=True,
+    )
+
+    cisa_representative_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative last name",
+        db_index=True,
+    )
+
+    # This is a drop-in replacement for an has_cisa_representative() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_cisa_representative = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a representative email or not",
     )
 
     is_policy_acknowledged = models.BooleanField(
@@ -251,6 +283,30 @@ class DomainInformation(TimeStampedModel):
                 return f"domain info set up and created by {self.creator}"
         except Exception:
             return ""
+
+    def sync_yes_no_form_fields(self):
+        """Some yes/no forms use a db field to track whether it was checked or not.
+        We handle that here for def save().
+        """
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
+            )
+
+        # This check is required to ensure that the form doesn't start out checked
+        if self.has_cisa_representative is not None:
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
+            ) and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
+
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.anything_else is not None:
+            self.has_anything_else_text = self.anything_else != ""
+
+        # This check is required to ensure that the form doesn't start out checked.
+        if self.has_anything_else_text is not None:
+            self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 
     def sync_organization_type(self):
         """
@@ -286,6 +342,7 @@ class DomainInformation(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
+        self.sync_yes_no_form_fields()
         self.sync_organization_type()
         super().save(*args, **kwargs)
 
