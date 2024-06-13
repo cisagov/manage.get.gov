@@ -33,6 +33,7 @@ from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
+from django.core.exceptions import ObjectDoesNotExist
 
 from django.utils.translation import gettext_lazy as _
 
@@ -1817,67 +1818,63 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
 
-        # Retrieve and order audit log entries by timestamp in ascending order
-        audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("timestamp")
-
         # Initialize variables for tracking status changes and filtered entries
         filtered_entries = []
 
-        # Process each log entry to filter based on the change criteria
-        for log_entry in audit_log_entries:
-            changes = log_entry.changes
-            status_changed = "status" in changes
-            rejection_reason_changed = "rejection_reason" in changes
-            action_needed_reason_changed = "action_needed_reason" in changes
+        try:
+            # Retrieve and order audit log entries by timestamp in ascending order
+            audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("timestamp")
 
-            # Check if the log entry meets the filtering criteria
-            if status_changed or (not status_changed and (rejection_reason_changed or action_needed_reason_changed)):
-                entry = {}
+            # Process each log entry to filter based on the change criteria
+            for log_entry in audit_log_entries:
+                changes = log_entry.changes
+                status_changed = "status" in changes
+                rejection_reason_changed = "rejection_reason" in changes
+                action_needed_reason_changed = "action_needed_reason" in changes
 
-                # Handle status change
-                if status_changed:
-                    entry["status"] = DomainRequest.DomainRequestStatus(changes["status"][1]).label
-                    # last_status = entry["status"]
+                # Check if the log entry meets the filtering criteria
+                if status_changed or (not status_changed and (rejection_reason_changed or action_needed_reason_changed)):
+                    entry = {}
 
-                # Handle rejection reason change
-                if rejection_reason_changed:
-                    rejection_reason = changes["rejection_reason"][1]
-                    entry["rejection_reason"] = (
-                        "" if rejection_reason == "None" else DomainRequest.RejectionReasons(rejection_reason).label
-                    )
-                    # Handle case where rejection reason changed but not status
-                    if not status_changed:
-                        entry["status"] = DomainRequest.DomainRequestStatus.REJECTED.label
+                    # Handle status change
+                    if status_changed:
+                        status_value = changes.get("status", [None, None])[1]
+                        if status_value:
+                            entry["status"] = DomainRequest.DomainRequestStatus(status_value).label
 
-                # Handle action needed reason change
-                if action_needed_reason_changed:
-                    action_needed_reason = changes["action_needed_reason"][1]
-                    entry["action_needed_reason"] = (
-                        ""
-                        if action_needed_reason == "None"
-                        else DomainRequest.ActionNeededReasons(action_needed_reason).label
-                    )
-                    # Handle case where action needed reason changed but not status
-                    if not status_changed:
-                        entry["status"] = DomainRequest.DomainRequestStatus.ACTION_NEEDED.label
+                    # Handle rejection reason change
+                    if rejection_reason_changed:
+                        rejection_reason_value = changes.get("rejection_reason", [None, None])[1]
+                        if rejection_reason_value:
+                            entry["rejection_reason"] = (
+                                "" if rejection_reason_value == "None" else DomainRequest.RejectionReasons(rejection_reason_value).label
+                            )
+                            # Handle case where rejection reason changed but not status
+                            if not status_changed:
+                                entry["status"] = DomainRequest.DomainRequestStatus.REJECTED.label
 
-                # Add actor and timestamp information
-                entry["actor"] = log_entry.actor
-                entry["timestamp"] = log_entry.timestamp
+                    # Handle action needed reason change
+                    if action_needed_reason_changed:
+                        action_needed_reason_value = changes.get("action_needed_reason", [None, None])[1]
+                        if action_needed_reason_value:
+                            entry["action_needed_reason"] = (
+                                "" if action_needed_reason_value == "None" else DomainRequest.ActionNeededReasons(action_needed_reason_value).label
+                            )
+                            # Handle case where action needed reason changed but not status
+                            if not status_changed:
+                                entry["status"] = DomainRequest.DomainRequestStatus.ACTION_NEEDED.label
 
-                # Append the filtered entry to the list
-                filtered_entries.append(entry)
+                    # Add actor and timestamp information
+                    entry["actor"] = log_entry.actor
+                    entry["timestamp"] = log_entry.timestamp
 
-        # Reverse the filtered entries list to get newest to oldest order
-        filtered_entries.reverse()
+                    # Append the filtered entry to the list
+                    filtered_entries.append(entry)
 
-        # Initialize extra_context and add filtered entries
-        if extra_context is None:
-            extra_context = {}
-        extra_context["filtered_entries"] = filtered_entries
-
-        return super().change_view(request, object_id, form_url, extra_context)
-
+        except ObjectDoesNotExist as e:
+            logger.error(f"Object with object_id {object_id} does not exist: {e}")
+        except Exception as e:
+            logger.error(f"An error occurred during change_view: {e}")
 
 class TransitionDomainAdmin(ListHeaderAdmin):
     """Custom transition domain admin class."""
