@@ -1,47 +1,44 @@
 from django.db import models
-from django_fsm import FSMField  # type: ignore
 
 from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
 
 from .utility.time_stamped_model import TimeStampedModel
 
+
 def get_default_federal_agency():
     """returns non-federal agency"""
     return FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+
 
 class Portfolio(TimeStampedModel):
     """
     Portfolio is used for organizing domains/domain-requests into
     manageable groups.
     """
-    
+
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
-    # creator- user foreign key- stores who created this model should get the user who is adding 
+    # creator- user foreign key- stores who created this model should get the user who is adding
     # it via django admin if there is a user (aka not done via commandline/ manual means)"""
-    creator = models.ForeignKey(
-        "registrar.User",
-        on_delete=models.PROTECT,
-        help_text="Associated user",
-        unique=False
-    )
+    creator = models.ForeignKey("registrar.User", on_delete=models.PROTECT, help_text="Associated user", unique=False)
 
     # notes- text field (copy what is done on requests/domains)
     notes = models.TextField(
         null=True,
         blank=True,
     )
-        
-    # federal agency - FK to fed agency table (Not nullable, should default to the Non-federal agency value in the fed agency table)
+
+    # federal agency - FK to fed agency table (Not nullable, should default
+    # to the Non-federal agency value in the fed agency table)
     federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
         help_text="Associated federal agency",
         unique=False,
-        default=get_default_federal_agency
+        default=get_default_federal_agency,
     )
 
     # organization type- should match organization types allowed on domain info

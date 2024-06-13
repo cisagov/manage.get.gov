@@ -37,7 +37,7 @@ __all__ = [
     "TransitionDomain",
     "VerifiedByStaff",
     "WaffleFlag",
-    "Portfolio"
+    "Portfolio",
 ]
 
 auditlog.register(Contact)

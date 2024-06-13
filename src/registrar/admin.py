@@ -2490,10 +2490,9 @@ class PortfolioAdmin(ListHeaderAdmin):
         is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
         if is_federal:
             obj.organization_name = obj.organization_type
-            #NOTE: What is meant by "federal agency text name?"
+            # NOTE: What is meant by "federal agency text name?"
 
         super().save_model(request, obj, form, change)
-
 
 
 class FederalAgencyAdmin(ListHeaderAdmin):
