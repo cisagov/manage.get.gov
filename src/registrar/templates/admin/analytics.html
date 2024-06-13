@@ -27,27 +27,34 @@
       <div class="module height-full">
         <h2>Current domains</h2>
         <div class="padding-top-2 padding-x-2">
-          <ul class="usa-button-group">
+          <ul class="usa-button-group wrapped-button-group">
             <li class="usa-button-group__item">
-                <a href="{% url 'export_data_type' %}" class="button" role="button">
+                <a href="{% url 'export_data_type' %}" class="button text-no-wrap" role="button">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                     <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                   </svg><span class="margin-left-05">All domain metadata</span>
                 </a>
             </li>
             <li class="usa-button-group__item">
-              <a href="{% url 'export_data_full' %}" class="button" role="button">
+              <a href="{% url 'export_data_full' %}" class="button text-no-wrap" role="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                 </svg><span class="margin-left-05">Current full</span>
               </a>
             </li>
             <li class="usa-button-group__item">
-                <a href="{% url 'export_data_federal' %}" class="button" role="button">
+                <a href="{% url 'export_data_federal' %}" class="button text-no-wrap" role="button">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                     <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                   </svg><span class="margin-left-05">Current federal</span>
                 </a>
+            </li>
+            <li class="usa-button-group__item">
+              <a href="{% url 'export_data_domain_requests_full' %}" class="button text-no-wrap" role="button">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+                </svg><span class="margin-left-05">All domain requests metadata</span>
+              </a>
             </li>
           </ul>
         </div>

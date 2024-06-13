@@ -7,7 +7,6 @@
 {% include "includes/required_fields.html" %}
 {% endblock %}
 
-<!-- TODO-NL: (refactor) Breakup into two separate components-->
 {% block form_fields %}
 
     <fieldset class="usa-fieldset margin-top-2">
@@ -24,7 +23,9 @@
       {# forms.0 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
     </fieldset>
 
-    <div id="cisa-representative" class="cisa-representative-form">
+    <div id="cisa-representative" class="cisa-representative-form margin-top-3">
+        {% input_with_errors forms.1.cisa_representative_first_name %}
+        {% input_with_errors forms.1.cisa_representative_last_name %}
         {% input_with_errors forms.1.cisa_representative_email %}
         {# forms.1 is a form for inputting the e-mail of a cisa representative #}
     </div>
