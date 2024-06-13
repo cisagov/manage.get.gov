@@ -1,16 +1,15 @@
 {% extends 'domain_request_form.html' %}
 {% load static field_helpers %}
 
-{% block form_instructions %}
-  <em>These questions are required (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
-{% endblock %}
+
 
 {% block form_required_fields_help_text %}
-{# commented out so it does not appear at this point on this page #}
+{% include "includes/required_fields.html" %}
 {% endblock %}
 
 <!-- TODO-NL: (refactor) Breakup into two separate components-->
 {% block form_fields %}
+
     <fieldset class="usa-fieldset margin-top-2">
       <legend>
         <h2>Are you working with a CISA regional representative on your domain request?</h2>
@@ -18,19 +17,17 @@
       </legend>
 
       <!-- Toggle -->
+      <em>Select one (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
       {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
         {% input_with_errors forms.0.has_cisa_representative %}
       {% endwith %}
       {# forms.0 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
-      <!-- TODO-NL: Hookup forms.0 to yes/no form for cisa representative (backend def)-->
     </fieldset>
 
     <div id="cisa-representative" class="cisa-representative-form">
         {% input_with_errors forms.1.cisa_representative_email %}
         {# forms.1 is a form for inputting the e-mail of a cisa representative #}
-        <!-- TODO-NL: Hookup forms.1 to cisa representative form (backend def) -->
     </div>
-
 
     <fieldset class="usa-fieldset margin-top-2">
         <legend>
@@ -38,11 +35,11 @@
         </legend>
   
         <!-- Toggle -->
+        <em>Select one (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
         {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
           {% input_with_errors forms.2.has_anything_else_text %}
         {% endwith %}
         {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
-        <!-- TODO-NL: Hookup forms.2 to yes/no form for anything else form (backend def)-->
     </fieldset>
   
     <div id="anything-else">
@@ -50,6 +47,5 @@
             {% input_with_errors forms.3.anything_else %}
         {% endwith %}
         {# forms.3 is a form for inputting the e-mail of a cisa representative #}
-        <!-- TODO-NL: Hookup forms.3 to anything else form (backend def) -->
     </div>
 {% endblock %}
