@@ -477,8 +477,22 @@ class DomainRequest(TimeStampedModel):
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        verbose_name="CISA regional representative",
+        verbose_name="CISA regional representative email",
         max_length=320,
+    )
+
+    cisa_representative_first_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative first name",
+        db_index=True,
+    )
+
+    cisa_representative_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative last name",
+        db_index=True,
     )
 
     # This is a drop-in replacement for an has_cisa_representative() function.
@@ -577,16 +591,17 @@ class DomainRequest(TimeStampedModel):
         """Some yes/no forms use a db field to track whether it was checked or not.
         We handle that here for def save().
         """
-
         # This ensures that if we have prefilled data, the form is prepopulated
-        if self.cisa_representative_email is not None:
-            self.has_cisa_representative = self.cisa_representative_email != ""
+        if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
+            )
 
         # This check is required to ensure that the form doesn't start out checked
         if self.has_cisa_representative is not None:
             self.has_cisa_representative = (
-                self.cisa_representative_email != "" and self.cisa_representative_email is not None
-            )
+                self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
+            ) and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
 
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.anything_else is not None:
@@ -984,11 +999,12 @@ class DomainRequest(TimeStampedModel):
     def has_additional_details(self) -> bool:
         """Combines the has_anything_else_text and has_cisa_representative fields,
         then returns if this domain request has either of them."""
-        # Split out for linter
-        has_details = False
-        if self.has_anything_else_text or self.has_cisa_representative:
-            has_details = True
 
+        # Split out for linter
+        has_details = True
+
+        if self.has_anything_else_text is None or self.has_cisa_representative is None:
+            has_details = False
         return has_details
 
     def is_federal(self) -> Union[bool, None]:
@@ -1097,13 +1113,18 @@ class DomainRequest(TimeStampedModel):
             return True
         return False
 
-    def _cisa_rep_and_email_check(self):
-        # Has a CISA rep + email is NOT empty or NOT an empty string OR doesn't have CISA rep
-        return (
+    def _cisa_rep_check(self):
+        # Either does not have a CISA rep, OR has a CISA rep + both first name
+        # and last name are NOT empty and are NOT an empty string
+        to_return = (
             self.has_cisa_representative is True
-            and self.cisa_representative_email is not None
-            and self.cisa_representative_email != ""
+            and self.cisa_representative_first_name is not None
+            and self.cisa_representative_first_name != ""
+            and self.cisa_representative_last_name is not None
+            and self.cisa_representative_last_name != ""
         ) or self.has_cisa_representative is False
+
+        return to_return
 
     def _anything_else_radio_button_and_text_field_check(self):
         # Anything else boolean is True + filled text field and it's not an empty string OR the boolean is No
@@ -1112,7 +1133,7 @@ class DomainRequest(TimeStampedModel):
         ) or self.has_anything_else_text is False
 
     def _is_additional_details_complete(self):
-        return self._cisa_rep_and_email_check() and self._anything_else_radio_button_and_text_field_check()
+        return self._cisa_rep_check() and self._anything_else_radio_button_and_text_field_check()
 
     def _is_policy_acknowledgement_complete(self):
         return self.is_policy_acknowledged is not None
