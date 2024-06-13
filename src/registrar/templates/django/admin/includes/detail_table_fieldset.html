@@ -174,7 +174,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 {% endif %}
             </span>
         </div>
-    {% elif field.field.name == "investigator" and not field.is_readonly and not original_object.investigator %}
+    {% elif field.field.name == "investigator" and not field.is_readonly %}
         <div class="flex-container">
             <label aria-label="Assign yourself as the investigator"></label>
             <button id="investigator__assign_self" 
