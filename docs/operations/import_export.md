@@ -32,6 +32,7 @@ For reference, the zip file will contain the following tables in csv form:
 * DomainInformation
 * DomainUserRole
 * DraftDomain
+* FederalAgency
 * Websites
 * Host
 * HostIP
@@ -76,13 +77,14 @@ For reference, this deletes all rows from the following tables:
 * DomainInformation
 * DomainRequest
 * Domain
-* User (all but the current user)
+* User
 * Contact
 * Websites
 * DraftDomain
 * HostIP
 * Host
 * PublicContact
+* FederalAgency
 
 #### Importing into Target Environment
 
@@ -115,7 +117,7 @@ cf ssh {target-app}
 example cleaning getgov-backup:
 cf ssh getgov-backup
 /tmp/lifecycle/backup
-./manage.py import_tables --skipEppSave=False
+./manage.py import_tables --no-skipEppSave
 
 For reference, this imports tables in the following order:
 
@@ -126,6 +128,7 @@ For reference, this imports tables in the following order:
 * HostIP
 * DraftDomain
 * Websites
+* FederalAgency
 * DomainRequest
 * DomainInformation
 * UserDomainRole

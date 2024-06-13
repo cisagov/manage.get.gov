@@ -18,6 +18,7 @@ class Command(BaseCommand):
             "Domain",
             "DomainRequest",
             "DomainInformation",
+            "FederalAgency",
             "UserDomainRole",
             "DraftDomain",
             "Website",

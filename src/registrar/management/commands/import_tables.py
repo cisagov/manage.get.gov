@@ -36,6 +36,7 @@ class Command(BaseCommand):
             "HostIp",
             "DraftDomain",
             "Website",
+            "FederalAgency",
             "DomainRequest",
             "DomainInformation",
             "UserDomainRole",
@@ -83,7 +84,12 @@ class Command(BaseCommand):
             result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=self.skip_epp_save)
 
             if result.has_errors():
-                logger.error(f"Errors occurred while importing {csv_filename}: {result.row_errors()}")
+                logger.error(f"Errors occurred while importing {csv_filename}:")
+                for row_error in result.row_errors():
+                    row_index = row_error[0]
+                    errors = row_error[1]
+                    for error in errors:
+                        logger.error(f"Row {row_index} - {error.error} - {error.row}")
             else:
                 logger.info(f"Successfully imported {csv_filename} into {table_name}")
 

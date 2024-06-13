@@ -2370,6 +2370,9 @@ class PublicContactResource(resources.ModelResource):
 
     class Meta:
         model = models.PublicContact
+        use_bulk = True
+        batch_size = 1000
+        force_init_instance = True
 
     def __init__(self):
         """Sets global variables for code tidyness"""
@@ -2472,11 +2475,20 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
-class FederalAgencyAdmin(ListHeaderAdmin):
+class FederalAgencyResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.FederalAgency
+
+
+class FederalAgencyAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]
     search_help_text = "Search by agency name."
     ordering = ["agency"]
+    resource_classes = [FederalAgencyResource]
 
 
 class UserGroupAdmin(AuditedAdmin):
