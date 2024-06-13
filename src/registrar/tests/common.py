@@ -808,12 +808,13 @@ def create_ready_domain():
 
 
 # TODO in 1793: Remove the federal agency/updated federal agency fields
-def completed_domain_request(
+def completed_domain_request(  # noqa
     has_other_contacts=True,
     has_current_website=True,
     has_alternative_gov_domain=True,
     has_about_your_organization=True,
     has_anything_else=True,
+    has_cisa_representative=True,
     status=DomainRequest.DomainRequestStatus.STARTED,
     user=False,
     submitter=False,
@@ -895,6 +896,10 @@ def completed_domain_request(
         domain_request.current_websites.add(current)
     if has_alternative_gov_domain:
         domain_request.alternative_domains.add(alt)
+    if has_cisa_representative:
+        domain_request.cisa_representative_first_name = "CISA-first-name"
+        domain_request.cisa_representative_last_name = "CISA-last-name"
+        domain_request.cisa_representative_email = "cisaRep@igorville.gov"
 
     return domain_request
 

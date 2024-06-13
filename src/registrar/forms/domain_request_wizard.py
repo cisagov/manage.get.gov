@@ -648,20 +648,27 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
 
 
 class CisaRepresentativeForm(BaseDeletableRegistrarForm):
+    cisa_representative_first_name = forms.CharField(
+        label="First name / given name",
+        error_messages={"required": "Enter the first name / given name of the CISA regional representative."},
+    )
+    cisa_representative_last_name = forms.CharField(
+        label="Last name / family name",
+        error_messages={"required": "Enter the last name / family name of the CISA regional representative."},
+    )
     cisa_representative_email = forms.EmailField(
-        required=True,
+        label="Your representative’s email (optional)",
         max_length=None,
-        label="Your representative’s email",
+        required=False,
+        error_messages={
+            "invalid": ("Enter your representative’s email address in the required format, like name@example.com."),
+        },
         validators=[
             MaxLengthValidator(
                 320,
                 message="Response must be less than 320 characters.",
             )
         ],
-        error_messages={
-            "invalid": ("Enter your email address in the required format, like name@example.com."),
-            "required": ("Enter the email address of your CISA regional representative."),
-        },
     )
 
 
