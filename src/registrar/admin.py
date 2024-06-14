@@ -2402,19 +2402,6 @@ class PublicContactResource(resources.ModelResource):
             **kwargs,
         )
 
-    # def import_row(self, row, instance_loader, using_transactions=True, dry_run=False, raise_errors=None, **kwargs):
-    #     """Override kwargs skip_epp_save and set to True"""
-    #     kwargs["skip_epp_save"] = True
-    #     super().import_data()
-    #     return super().import_row(
-    #         row,
-    #         instance_loader,
-    #         using_transactions=using_transactions,
-    #         dry_run=dry_run,
-    #         raise_errors=raise_errors,
-    #         **kwargs,
-    #     )
-
     def save_instance(self, instance, is_create, using_transactions=True, dry_run=False):
         """Override save_instance setting skip_epp_save to True"""
         self.before_save_instance(instance, using_transactions, dry_run)
