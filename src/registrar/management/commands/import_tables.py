@@ -18,7 +18,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         """Add command line arguments."""
-        parser.add_argument('--skipEppSave', default=True, action=argparse.BooleanOptionalAction)
+        parser.add_argument("--skipEppSave", default=True, action=argparse.BooleanOptionalAction)
 
     def handle(self, **options):
         """Extracts CSV files from a zip archive and imports them into the respective tables"""
@@ -74,19 +74,20 @@ class Command(BaseCommand):
             self.clean_table(table_name)
 
         # Define the directory and the pattern for csv filenames
-        tmp_dir = 'tmp'
-        pattern = os.path.join(tmp_dir, f'{table_name}_*.csv')
+        tmp_dir = "tmp"
+        #pattern = os.path.join(tmp_dir, f"{table_name}_*.csv")
+        pattern = f"{table_name}_"
 
         resourceclass = getattr(registrar.admin, resourcename)
         resource_instance = resourceclass()
 
         # Find all files that match the pattern
-        for csv_filename in glob.glob(pattern):  
+        matching_files = [file for file in os.listdir(tmp_dir) if file.startswith(pattern)]
+        for csv_filename in matching_files:
             try:
                 with open(csv_filename, "r") as csvfile:
                     dataset = tablib.Dataset().load(csvfile.read(), format="csv")
                 result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=self.skip_epp_save)
-
                 if result.has_errors():
                     logger.error(f"Errors occurred while importing {csv_filename}:")
                     for row_error in result.row_errors():

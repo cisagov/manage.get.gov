@@ -41,20 +41,21 @@ class Command(BaseCommand):
         with pyzipper.AESZipFile(zip_filename, "w", compression=pyzipper.ZIP_DEFLATED) as zipf:
             for table_name in table_names:
 
-                # Define the directory and the pattern
-                tmp_dir = 'tmp'
-                pattern = os.path.join(tmp_dir, f'{table_name}_*.csv')
-                zip_file_path = os.path.join(tmp_dir, 'exported_files.zip')
+                # Define the tmp directory and the file pattern
+                tmp_dir = "tmp"
+                pattern = f"{table_name}_"
+                zip_file_path = os.path.join(tmp_dir, "exported_files.zip")
 
                 # Find all files that match the pattern
-                for file_path in glob.glob(pattern):
+                matching_files = [file for file in os.listdir(tmp_dir) if file.startswith(pattern)]
+                for file_path in matching_files:
                     # Add each file to the zip archive
                     zipf.write(file_path, os.path.basename(file_path))
-                    logger.info(f'Added {file_path} to {zip_file_path}')
-                    
+                    logger.info(f"Added {file_path} to {zip_file_path}")
+
                     # Remove the file after adding to zip
                     os.remove(file_path)
-                    logger.info(f'Removed {file_path}')
+                    logger.info(f"Removed {file_path}")
 
     def export_table(self, table_name):
         """Export a given table to a csv file in the tmp directory"""
@@ -71,7 +72,8 @@ class Command(BaseCommand):
 
             # Calculate the number of files needed
             num_files = math.ceil(total_rows / rows_per_file)
-            logger.info(f'splitting {table_name} into {num_files} files')
+
+            logger.info(f"splitting {table_name} into {num_files} files")
 
             # Split the dataset and export each chunk to a separate file
             for i in range(num_files):
@@ -82,16 +84,15 @@ class Command(BaseCommand):
                 chunk = tablib.Dataset(headers=dataset.headers)
                 for row in dataset[start_row:end_row]:
                     chunk.append(row)
-                    #chunk = dataset[start_row:end_row]
 
                 # Export the chunk to a new file
-                filename = f'tmp/{table_name}_{i + 1}.csv'
-                with open(filename, 'w') as f:
-                    f.write(chunk.export('csv'))
+                filename = f"tmp/{table_name}_{i + 1}.csv"
+                with open(filename, "w") as f:
+                    f.write(chunk.export("csv"))
 
-            logger.info(f'Successfully exported {table_name} into {num_files} files.')
+            logger.info(f"Successfully exported {table_name} into {num_files} files.")
 
         except AttributeError as ae:
-            logger.error(f"Resource class {resourcename} not found in registrar.admin: {ae}")
+            logger.error(f"Resource class {resourcename} not found in registrar.admin")
         except Exception as e:
             logger.error(f"Failed to export {table_name}: {e}")

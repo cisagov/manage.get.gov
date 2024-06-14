@@ -2370,14 +2370,15 @@ class PublicContactResource(resources.ModelResource):
 
     class Meta:
         model = models.PublicContact
-        use_bulk = True
-        batch_size = 1000
-        force_init_instance = True
+        # may want to consider these bulk options in future, so left in as comments
+        # use_bulk = True
+        # batch_size = 1000
+        # force_init_instance = True
 
     def __init__(self):
         """Sets global variables for code tidyness"""
         super().__init__()
-        self.skip_epp_save=False
+        self.skip_epp_save = False
 
     def import_data(
         self,
@@ -2387,10 +2388,10 @@ class PublicContactResource(resources.ModelResource):
         use_transactions=None,
         collect_failed_rows=False,
         rollback_on_validation_errors=False,
-        **kwargs
+        **kwargs,
     ):
         """Override import_data to set self.skip_epp_save if in kwargs"""
-        self.skip_epp_save = kwargs.get('skip_epp_save', False)
+        self.skip_epp_save = kwargs.get("skip_epp_save", False)
         return super().import_data(
             dataset,
             dry_run,
