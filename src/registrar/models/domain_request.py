@@ -256,6 +256,11 @@ class DomainRequest(TimeStampedModel):
         NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
 
+        @classmethod
+        def get_rejection_reason_label(cls, rejection_reason: str):
+            """Returns the associated label for a given rejection reason"""
+            return cls(rejection_reason).label if rejection_reason else None
+
     class ActionNeededReasons(models.TextChoices):
         """Defines common action needed reasons for domain requests"""
 
@@ -264,6 +269,11 @@ class DomainRequest(TimeStampedModel):
         ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
         BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
         OTHER = ("other", "Other (no auto-email sent)")
+
+        @classmethod
+        def get_action_needed_reason_label(cls, action_needed_reason: str):
+            """Returns the associated label for a given action needed reason"""
+            return cls(action_needed_reason).label if action_needed_reason else None
 
     # #### Internal fields about the domain request #####
     status = FSMField(

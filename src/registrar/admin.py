@@ -1864,7 +1864,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if status_changed:
                 _, status_value = changes.get("status")
                 if status_value:
-                    entry["status"] = DomainRequest.DomainRequestStatus(status_value).label
+                    entry["status"] = DomainRequest.DomainRequestStatus.get_status_label(status_value)
 
             # Handle rejection reason change
             if rejection_reason_changed:
@@ -1873,11 +1873,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     entry["rejection_reason"] = (
                         ""
                         if rejection_reason_value == "None"
-                        else DomainRequest.RejectionReasons(rejection_reason_value).label
+                        else DomainRequest.RejectionReasons.get_rejection_reason_label(rejection_reason_value)
                     )
                     # Handle case where rejection reason changed but not status
                     if not status_changed:
-                        entry["status"] = DomainRequest.DomainRequestStatus.REJECTED.label
+                        entry["status"] = DomainRequest.DomainRequestStatus.get_status_label(
+                            DomainRequest.DomainRequestStatus.REJECTED
+                        )
 
             # Handle action needed reason change
             if action_needed_reason_changed:
@@ -1886,11 +1888,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     entry["action_needed_reason"] = (
                         ""
                         if action_needed_reason_value == "None"
-                        else DomainRequest.ActionNeededReasons(action_needed_reason_value).label
+                        else DomainRequest.ActionNeededReasons.get_action_needed_reason_label(
+                            action_needed_reason_value
+                        )
                     )
                     # Handle case where action needed reason changed but not status
                     if not status_changed:
-                        entry["status"] = DomainRequest.DomainRequestStatus.ACTION_NEEDED.label
+                        entry["status"] = DomainRequest.DomainRequestStatus.get_status_label(
+                            DomainRequest.DomainRequestStatus.ACTION_NEEDED
+                        )
 
             # Add actor and timestamp information
             entry["actor"] = log_entry.actor

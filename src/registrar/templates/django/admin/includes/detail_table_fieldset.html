@@ -86,20 +86,20 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                             <tr>
                                 <td>
                                     {% if entry.status %}
-                                        {{ entry.status|default:"None" }}
+                                        {{ entry.status|default:"Error" }}
                                     {% else %}
                                         Error
                                     {% endif %}
                                     
                                     {% if entry.rejection_reason %}
-                                        - {{ entry.rejection_reason|default:"None" }}
+                                        - {{ entry.rejection_reason|default:"Error" }}
                                     {% endif %}
                                     
                                     {% if entry.action_needed_reason %}
-                                        - {{ entry.action_needed_reason|default:"None" }}
+                                        - {{ entry.action_needed_reason|default:"Error" }}
                                     {% endif %}
                                 </td>
-                                <td>{{ entry.actor|default:"None" }}</td>
+                                <td>{{ entry.actor|default:"Error" }}</td>
                                 <td>{{ entry.timestamp|date:"Y-m-d H:i:s" }}</td>
                             </tr>
                         {% endfor %}
