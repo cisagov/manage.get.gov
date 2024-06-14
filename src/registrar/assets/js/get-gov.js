@@ -1354,10 +1354,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
           let needsDeleteColumn = false;
 
-          data.domain_requests.forEach(request => {
-            if (request.is_deletable)
-              needsDeleteColumn = true;
-          });
+          needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
 
           // Remove existing delete th and td if they exist
           let existingDeleteTh =  document.querySelector('.delete-header');
