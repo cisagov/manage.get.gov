@@ -205,7 +205,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
     def test_get_domain_requests_json_search(self):
         """Test search."""
         # Define your URL variables as a dictionary
-        url_vars = {"search_term": "lamb"}  # Modify with your actual variables
+        url_vars = {"search_term": "lamb"}
 
         # Use the params parameter to include URL variables
         response = self.app.get(reverse("get_domain_requests_json"), params=url_vars)
@@ -234,7 +234,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
     def test_get_domain_requests_json_search_new_domains(self):
         """Test search when looking up New domain requests"""
         # Define your URL variables as a dictionary
-        url_vars = {"search_term": "ew"}  # Modify with your actual variables
+        url_vars = {"search_term": "ew"}
 
         # Use the params parameter to include URL variables
         response = self.app.get(reverse("get_domain_requests_json"), params=url_vars)

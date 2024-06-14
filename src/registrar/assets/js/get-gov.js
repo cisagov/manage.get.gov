@@ -17,6 +17,22 @@ var SUCCESS = "success";
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Helper functions.
 
+/**
+ * Hide element
+ *
+*/
+const hideElement = (element) => {
+  element.classList.add('display-none');
+};
+
+/**
+ * Show element
+ *
+*/
+const showElement = (element) => {
+  element.classList.remove('display-none');
+};
+
 /** Makes an element invisible. */
 function makeHidden(el) {
   el.style.position = "absolute";
@@ -1020,22 +1036,6 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
 }
 
 /**
- * Hide element
- *
-*/
-const hideElement = (element) => {
-  element.classList.add('display-none');
-};
-
-/**
- * Show element
- *
-*/
-const showElement = (element) => {
-  element.classList.remove('display-none');
-};
-
-/**
  * A helper that toggles content/ no content/ no search results
  *
 */
@@ -1071,7 +1071,7 @@ const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper,
 const unsetHeader = (header) => {
   header.removeAttribute('aria-sort');
   let headerName = header.innerText;
-  const headerLabel = `${headerName}', sortable column, currently unsorted"`;
+  const headerLabel = `${headerName}, sortable column, currently unsorted"`;
   const headerButtonLabel = `Click to sort by ascending order.`;
   header.setAttribute("aria-label", headerLabel);
   header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
@@ -1219,11 +1219,11 @@ document.addEventListener('DOMContentLoaded', function() {
         hideElement(resetButton);
       }
       loadDomains(1, 'id', 'asc');
-      resetheaders();
+      resetHeaders();
     })
 
     // Reset UI and accessibility
-    function resetheaders() {
+    function resetHeaders() {
       tableHeaders.forEach(header => {
         // Unset sort UI in headers
         unsetHeader(header);
@@ -1237,7 +1237,7 @@ document.addEventListener('DOMContentLoaded', function() {
       currentSearchTerm = '';
       hideElement(resetButton);
       loadDomains(1, 'id', 'asc', hasLoaded, '');
-      resetheaders();
+      resetHeaders();
     }
 
     if (resetButton) {
@@ -1512,9 +1512,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const closeButton = modal.querySelector('.usa-modal__close');
             submitButton.addEventListener('click', function() {
               pk = submitButton.getAttribute('data-pk');
-              // Close the modal to remove the USWDS UI locl classes
+              // Close the modal to remove the USWDS UI local classes
               closeButton.click();
-              // If we're deleteing the last item on a page that is not page 1, we'll need to refresh the display to the previous page
+              // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
               let pageToDisplay = data.page;
               if (data.total == 1 && data.unfiltered_total > 1) {
                 pageToDisplay--;
@@ -1573,11 +1573,11 @@ document.addEventListener('DOMContentLoaded', function() {
         hideElement(resetButton);
       }
       loadDomainRequests(1, 'id', 'asc');
-      resetheaders();
+      resetHeaders();
     })
 
     // Reset UI and accessibility
-    function resetheaders() {
+    function resetHeaders() {
       tableHeaders.forEach(header => {
         // unset sort UI in headers
         unsetHeader(header);
@@ -1591,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', function() {
       currentSearchTerm = '';
       hideElement(resetButton);
       loadDomainRequests(1, 'id', 'asc', hasLoaded, '');
-      resetheaders();
+      resetHeaders();
     }
 
     if (resetButton) {
