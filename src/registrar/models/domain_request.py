@@ -52,6 +52,11 @@ class DomainRequest(TimeStampedModel):
         WITHDRAWN = "withdrawn", "Withdrawn"
         STARTED = "started", "Started"
 
+        @classmethod
+        def get_status_label(cls, status_name: str):
+            """Returns the associated label for a given status name"""
+            return cls(status_name).label if status_name else None
+
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
         ALASKA = "AK", "Alaska (AK)"
@@ -132,6 +137,14 @@ class DomainRequest(TimeStampedModel):
         CITY = "city", "City"
         SPECIAL_DISTRICT = "special_district", "Special district"
         SCHOOL_DISTRICT = "school_district", "School district"
+
+        @classmethod
+        def get_org_label(cls, org_name: str):
+            """Returns the associated label for a given org name"""
+            org_names = org_name.split("_election")
+            if len(org_names) > 0:
+                org_name = org_names[0]
+            return cls(org_name).label if org_name else None
 
     class OrgChoicesElectionOffice(models.TextChoices):
         """
