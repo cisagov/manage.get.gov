@@ -1819,29 +1819,26 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         self.display_restricted_warning(request, obj)
 
         # Initialize variables for tracking status changes and filtered entries
-        filtered_entries = []
+        filtered_audit_log_entries = []
 
         try:
-            # Retrieve and order audit log entries by timestamp in ascending order
-            audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("timestamp")
+            # Retrieve and order audit log entries by timestamp in descending order
+            audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("-timestamp")
 
             # Process each log entry to filter based on the change criteria
             for log_entry in audit_log_entries:
                 entry = self.process_log_entry(log_entry)
                 if entry:
-                    filtered_entries.append(entry)
+                    filtered_audit_log_entries.append(entry)
 
         except ObjectDoesNotExist as e:
             logger.error(f"Object with object_id {object_id} does not exist: {e}")
         except Exception as e:
             logger.error(f"An error occurred during change_view: {e}")
 
-        # Reverse the filtered entries list to get newest to oldest order
-        filtered_entries.reverse()
-
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
-        extra_context["filtered_entries"] = filtered_entries
+        extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
@@ -1859,13 +1856,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
             # Handle status change
             if status_changed:
-                status_value = changes.get("status", [None, None])[1]
+                _, status_value = changes.get("status")
                 if status_value:
                     entry["status"] = DomainRequest.DomainRequestStatus(status_value).label
 
             # Handle rejection reason change
             if rejection_reason_changed:
-                rejection_reason_value = changes.get("rejection_reason", [None, None])[1]
+                _, rejection_reason_value = changes.get("rejection_reason")
                 if rejection_reason_value:
                     entry["rejection_reason"] = (
                         ""
@@ -1878,7 +1875,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
             # Handle action needed reason change
             if action_needed_reason_changed:
-                action_needed_reason_value = changes.get("action_needed_reason", [None, None])[1]
+                _, action_needed_reason_value = changes.get("action_needed_reason")
                 if action_needed_reason_value:
                     entry["action_needed_reason"] = (
                         ""
