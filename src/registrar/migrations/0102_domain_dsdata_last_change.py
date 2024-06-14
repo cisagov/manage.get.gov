@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="domain",
             name="dsdata_last_change",
-            field=models.TextField(blank=True, help_text="Most recent time that ds data was updated", null=True),
+            field=models.TextField(blank=True, help_text="Record of the last change event for ds data", null=True),
         ),
     ]

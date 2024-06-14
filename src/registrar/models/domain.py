@@ -681,11 +681,13 @@ class Domain(TimeStampedModel, DomainHelper):
         user_email = user_domain_role.user.email if user_domain_role else "unknown user"
 
         try:
-            if "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None:
+            added_record = "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None
+            deleted_record = "dsData" in _remDnssecdata and _remDnssecdata["dsData"] is not None
+
+            if added_record:
                 registry.send(addRequest, cleaned=True)
                 dsdata_change_log = f"{user_email} added a DS data record"
-            if "dsData" in _remDnssecdata and _remDnssecdata["dsData"] is not None:
-                registry.send(remRequest, cleaned=True)
+            if deleted_record:
                 if dsdata_change_log != "":  # if they add and remove a record at same time
                     dsdata_change_log = f"{user_email} added and deleted a DS data record"
                 else:
@@ -1077,7 +1079,7 @@ class Domain(TimeStampedModel, DomainHelper):
     dsdata_last_change = TextField(
         null=True,
         blank=True,
-        help_text="Most recent time that ds data was updated",
+        help_text="Record of the last change event for ds data",
     )
 
     def isActive(self):

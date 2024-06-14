@@ -2166,7 +2166,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             domain = Domain.objects.get(name="dnssec-dsdata.gov")
             self.assertIsNotNone(domain.dsdata_last_change)
 
-            initial_change_time = domain.dsdata_last_change
+            initial_change = domain.dsdata_last_change
 
             # Remove dnssec data
             domain.dnssecdata = self.dnssecExtensionRemovingDsData
@@ -2175,7 +2175,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             domain = Domain.objects.get(name="dnssec-dsdata.gov")
             self.assertIsNotNone(domain.dsdata_last_change)
 
-            self.assertNotEqual(domain.dsdata_last_change, initial_change_time)
+            self.assertNotEqual(domain.dsdata_last_change, initial_change)
 
             # get the DNS SEC extension added to the UpdateDomain command and
             # verify that it is properly sent
