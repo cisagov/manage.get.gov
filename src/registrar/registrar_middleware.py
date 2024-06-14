@@ -68,11 +68,10 @@ class CheckUserProfileMiddleware:
             return None
 
         if request.user.is_authenticated:
-            if request.user.verification_type == User.VerificationTypeChoices.REGULAR:
-                if hasattr(request.user, "finished_setup") and not request.user.finished_setup:
+            if hasattr(request.user, "finished_setup") and not request.user.finished_setup:
+                if request.user.verification_type == User.VerificationTypeChoices.REGULAR:
                     return self._handle_regular_user_setup_not_finished(request)
-            else:
-                if hasattr(request.user, "finished_setup") and not request.user.finished_setup:
+                else:
                     return self._handle_other_user_setup_not_finished(request)
 
         # Continue processing the view

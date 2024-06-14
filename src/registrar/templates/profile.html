@@ -49,7 +49,7 @@ Edit your User Profile |
             data-open-modal
             >Open confirmation modal</a>
         <div
-            class="usa-modal is-visible"
+            class="usa-modal usa-modal--lg is-visible"
             id="toggle-confirmation-modal"
             aria-labelledby="Add contact information"
             aria-describedby="Add contact information"
@@ -79,6 +79,16 @@ Edit your User Profile |
                         </ul>
                     </div>
                 </div>
+                <button
+                    type="button"
+                    class="usa-button usa-modal__close"
+                    aria-label="Close this window"
+                    data-close-modal
+                >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                        <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                    </svg>
+                </button>
             </div>
         </div>
     {% endif %}

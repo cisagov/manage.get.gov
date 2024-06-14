@@ -15,6 +15,7 @@ from django.urls import NoReverseMatch, reverse
 from registrar.models import (
     Contact,
 )
+from registrar.models.user import User
 from registrar.models.utility.generic_helper import replace_url_queryparams
 from registrar.views.utility.permission_views import UserProfilePermissionView
 from waffle.decorators import flag_is_active, waffle_flag
@@ -41,7 +42,11 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         form = self.form_class(instance=self.object)
         context = self.get_context_data(object=self.object, form=form)
 
-        if hasattr(self.user, "finished_setup") and not self.user.finished_setup:
+        if (
+            hasattr(self.user, "finished_setup")
+            and not self.user.finished_setup
+            and self.user.verification_type != User.VerificationTypeChoices.REGULAR
+        ):
             context["show_confirmation_modal"] = True
 
         return_to_request = request.GET.get("return_to_request")
