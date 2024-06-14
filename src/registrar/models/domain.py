@@ -688,6 +688,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 registry.send(addRequest, cleaned=True)
                 dsdata_change_log = f"{user_email} added a DS data record"
             if deleted_record:
+                registry.send(remRequest, cleaned=True)
                 if dsdata_change_log != "":  # if they add and remove a record at same time
                     dsdata_change_log = f"{user_email} added and deleted a DS data record"
                 else:
