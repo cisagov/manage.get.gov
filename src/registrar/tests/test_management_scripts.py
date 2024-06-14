@@ -934,13 +934,13 @@ class TestExportTables(MockEppLib):
         # Check that the CSV file was written
         for table_name in table_names:
             # Check that os.remove was called
-            mock_remove.assert_any_call(f"{table_name}_1.csv")
+            mock_remove.assert_any_call(f"tmp/{table_name}_1.csv")
 
         # Check that the zipfile was created and files were added
         mock_zipfile.assert_called_once_with("tmp/exported_tables.zip", "w", compression=pyzipper.ZIP_DEFLATED)
         zipfile_instance = mock_zipfile.return_value.__enter__.return_value
         for table_name in table_names:
-            zipfile_instance.write.assert_any_call(f"{table_name}_1.csv", f"{table_name}_1.csv")
+            zipfile_instance.write.assert_any_call(f"tmp/{table_name}_1.csv", f"{table_name}_1.csv")
 
         # Verify logging for added files
         for table_name in table_names:

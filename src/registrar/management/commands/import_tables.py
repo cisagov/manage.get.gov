@@ -83,7 +83,7 @@ class Command(BaseCommand):
         matching_files = [file for file in os.listdir(tmp_dir) if file.startswith(pattern)]
         for csv_filename in matching_files:
             try:
-                with open(csv_filename, "r") as csvfile:
+                with open(f"tmp/{csv_filename}", "r") as csvfile:
                     dataset = tablib.Dataset().load(csvfile.read(), format="csv")
                 result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=self.skip_epp_save)
                 if result.has_errors():

@@ -49,11 +49,11 @@ class Command(BaseCommand):
                 matching_files = [file for file in os.listdir(tmp_dir) if file.startswith(pattern)]
                 for file_path in matching_files:
                     # Add each file to the zip archive
-                    zipf.write(file_path, os.path.basename(file_path))
+                    zipf.write(f"tmp/{file_path}", os.path.basename(file_path))
                     logger.info(f"Added {file_path} to {zip_file_path}")
 
                     # Remove the file after adding to zip
-                    os.remove(file_path)
+                    os.remove(f"tmp/{file_path}")
                     logger.info(f"Removed {file_path}")
 
     def export_table(self, table_name):
