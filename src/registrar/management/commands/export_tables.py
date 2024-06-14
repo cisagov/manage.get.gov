@@ -1,4 +1,3 @@
-import glob
 import logging
 import math
 import os
@@ -92,7 +91,7 @@ class Command(BaseCommand):
 
             logger.info(f"Successfully exported {table_name} into {num_files} files.")
 
-        except AttributeError as ae:
+        except AttributeError:
             logger.error(f"Resource class {resourcename} not found in registrar.admin")
         except Exception as e:
             logger.error(f"Failed to export {table_name}: {e}")

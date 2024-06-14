@@ -870,8 +870,6 @@ class TestCleanTables(TestCase):
                     self.logger_mock.error.assert_any_call("Error cleaning table DomainInformation: Some error")
 
 
-
-
 class TestExportTables(MockEppLib):
     """Test the export_tables script"""
 
@@ -902,8 +900,18 @@ class TestExportTables(MockEppLib):
 
         # Check that the export_table function was called for each table
         table_names = [
-            "User", "Contact", "Domain", "DomainRequest", "DomainInformation", "FederalAgency",
-            "UserDomainRole", "DraftDomain", "Website", "HostIp", "Host", "PublicContact",
+            "User",
+            "Contact",
+            "Domain",
+            "DomainRequest",
+            "DomainInformation",
+            "FederalAgency",
+            "UserDomainRole",
+            "DraftDomain",
+            "Website",
+            "HostIp",
+            "Host",
+            "PublicContact",
         ]
 
         # Mock directory listing
@@ -1025,7 +1033,7 @@ class TestImportTables(TestCase):
                 "Host",
                 "PublicContact",
             ]
-                
+
             # Mock directory listing
             mock_listdir.side_effect = lambda path: [f"{table}_1.csv" for table in table_names]
 

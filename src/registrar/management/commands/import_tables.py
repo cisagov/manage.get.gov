@@ -1,5 +1,4 @@
 import argparse
-import glob
 import logging
 import os
 import pyzipper
@@ -75,7 +74,6 @@ class Command(BaseCommand):
 
         # Define the directory and the pattern for csv filenames
         tmp_dir = "tmp"
-        #pattern = os.path.join(tmp_dir, f"{table_name}_*.csv")
         pattern = f"{table_name}_"
 
         resourceclass = getattr(registrar.admin, resourcename)
