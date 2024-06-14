@@ -4,6 +4,7 @@ from django.test import Client, RequestFactory
 from io import StringIO
 from registrar.models.domain_request import DomainRequest
 from registrar.models.domain import Domain
+from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.utility.csv_export import (
     export_data_managed_domains_to_csv,
     export_data_unmanaged_domains_to_csv,
@@ -12,7 +13,7 @@ from registrar.utility.csv_export import (
     write_csv_for_domains,
     get_default_start_date,
     get_default_end_date,
-    write_csv_for_requests,
+    DomainRequestExport,
 )
 
 from django.core.management import call_command
@@ -23,6 +24,7 @@ from botocore.exceptions import ClientError
 import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from django.utils import timezone
+from api.tests.common import less_console_noise_decorator
 from .common import MockDb, MockEppLib, less_console_noise, get_time_aware_date
 
 
@@ -667,10 +669,7 @@ class ExportDataTest(MockDb, MockEppLib):
             # Define columns, sort fields, and filter condition
             # We'll skip submission date because it's dynamic and therefore
             # impossible to set in expected_content
-            columns = [
-                "Requested domain",
-                "Organization type",
-            ]
+            columns = ["Domain request", "Domain type", "Federal type"]
             sort_fields = [
                 "requested_domain__name",
             ]
@@ -679,7 +678,12 @@ class ExportDataTest(MockDb, MockEppLib):
                 "submission_date__lte": self.end_date,
                 "submission_date__gte": self.start_date,
             }
-            write_csv_for_requests(writer, columns, sort_fields, filter_condition, should_write_header=True)
+
+            additional_values = ["requested_domain__name"]
+            all_requests = DomainRequest.objects.filter(**filter_condition).order_by(*sort_fields).distinct()
+            annotated_requests = DomainRequestExport.annotate_and_retrieve_fields(all_requests, {}, additional_values)
+            requests_dict = convert_queryset_to_dict(annotated_requests, is_model=False)
+            DomainRequestExport.write_csv_for_requests(writer, columns, requests_dict)
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -687,9 +691,10 @@ class ExportDataTest(MockDb, MockEppLib):
             # We expect READY domains first, created between today-2 and today+2, sorted by created_at then name
             # and DELETED domains deleted between today-2 and today+2, sorted by deleted then name
             expected_content = (
-                "Requested domain,Organization type\n"
-                "city3.gov,Federal - Executive\n"
-                "city4.gov,Federal - Executive\n"
+                "Domain request,Domain type,Federal type\n"
+                "city3.gov,Federal,Executive\n"
+                "city4.gov,City,Executive\n"
+                "city6.gov,Federal,Executive\n"
             )
 
             # Normalize line endings and remove commas,
@@ -698,6 +703,72 @@ class ExportDataTest(MockDb, MockEppLib):
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
 
             self.assertEqual(csv_content, expected_content)
+
+    @less_console_noise_decorator
+    def test_full_domain_request_report(self):
+        """Tests the full domain request report."""
+
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        writer = csv.writer(csv_file)
+
+        # Call the report. Get existing fields from the report itself.
+        annotations = DomainRequestExport._full_domain_request_annotations()
+        additional_values = [
+            "requested_domain__name",
+            "federal_agency__agency",
+            "authorizing_official__first_name",
+            "authorizing_official__last_name",
+            "authorizing_official__email",
+            "authorizing_official__title",
+            "creator__first_name",
+            "creator__last_name",
+            "creator__email",
+            "investigator__email",
+        ]
+        requests = DomainRequest.objects.exclude(status=DomainRequest.DomainRequestStatus.STARTED)
+        annotated_requests = DomainRequestExport.annotate_and_retrieve_fields(requests, annotations, additional_values)
+        requests_dict = convert_queryset_to_dict(annotated_requests, is_model=False)
+        DomainRequestExport.write_csv_for_requests(writer, DomainRequestExport.all_columns, requests_dict)
+
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+        # Read the content into a variable
+        csv_content = csv_file.read()
+        print(csv_content)
+        self.maxDiff = None
+        expected_content = (
+            # Header
+            "Domain request,Submitted at,Status,Domain type,Federal type,"
+            "Federal agency,Organization name,Election office,City,State/territory,"
+            "Region,Creator first name,Creator last name,Creator email,Creator approved domains count,"
+            "Creator active requests count,Alternative domains,AO first name,AO last name,AO email,"
+            "AO title/role,Request purpose,Request additional details,Other contacts,"
+            "CISA regional representative,Current websites,Investigator\n"
+            # Content
+            "city2.gov,,In review,Federal,Executive,,Testorg,N/A,,NY,2,,,,0,1,city1.gov,Testy,Tester,testy@town.com,"
+            "Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
+            "city3.gov,2024-04-02,Submitted,Federal,Executive,,Testorg,N/A,,NY,2,,,,0,1,"
+            "cheeseville.gov | city1.gov | igorville.gov,Testy,Tester,testy@town.com,Chief Tester,"
+            "Purpose of the site,CISA-first-name CISA-last-name | There is more,Meow Tester24 te2@town.com | "
+            "Testy1232 Tester24 te2@town.com | Testy Tester testy2@town.com,test@igorville.com,"
+            "city.com | https://www.example2.com | https://www.example.com,\n"
+            "city4.gov,2024-04-02,Submitted,City,Executive,,Testorg,Yes,,NY,2,,,,0,1,city1.gov,Testy,Tester,"
+            "testy@town.com,Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
+            "Testy Tester testy2@town.com,cisaRep@igorville.gov,city.com,\n"
+            "city5.gov,,Approved,Federal,Executive,,Testorg,N/A,,NY,2,,,,1,0,city1.gov,Testy,Tester,testy@town.com,"
+            "Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
+            "city6.gov,2024-04-02,Submitted,Federal,Executive,,Testorg,N/A,,NY,2,,,,0,1,city1.gov,Testy,Tester,"
+            "testy@town.com,Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
+            "Testy Tester testy2@town.com,cisaRep@igorville.gov,city.com,"
+        )
+
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+
+        self.assertEqual(csv_content, expected_content)
 
 
 class HelperFunctions(MockDb):
@@ -741,5 +812,5 @@ class HelperFunctions(MockDb):
                 "submission_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = get_sliced_requests(filter_condition)
-            expected_content = [2, 2, 0, 0, 0, 0, 0, 0, 0, 0]
+            expected_content = [3, 2, 0, 0, 0, 0, 1, 0, 0, 1]
             self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)
