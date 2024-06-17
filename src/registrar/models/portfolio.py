@@ -21,11 +21,11 @@ class Portfolio(TimeStampedModel):
     OrganizationChoices = DomainRequest.OrganizationChoices
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
-    # creator- user foreign key- stores who created this model should get the user who is adding
-    # it via django admin if there is a user (aka not done via commandline/ manual means)"""
+    # creator - stores who created this model. If no creator is specified in DJA,
+    # then the creator will default to the current request user"""
     creator = models.ForeignKey("registrar.User", on_delete=models.PROTECT, help_text="Associated user", unique=False)
 
-    # notes- text field (copy what is done on requests/domains)
+    # notes - text field (copies what is done on domain requests)
     notes = models.TextField(
         null=True,
         blank=True,
@@ -41,7 +41,7 @@ class Portfolio(TimeStampedModel):
         default=get_default_federal_agency,
     )
 
-    # organization type- should match organization types allowed on domain info
+    # organization type - should match organization types allowed on domain info
     organization_type = models.CharField(
         max_length=255,
         choices=OrganizationChoices.choices,

@@ -2291,7 +2291,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "rejection_reason",
                 "action_needed_reason",
                 "federal_agency",
-                'portfolio',
+                "portfolio",
                 "creator",
                 "investigator",
                 "generic_org_type",
