@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     """Emails a encrypted zip file containing a csv of our domains and domain requests"""
+
     help = (
         "Generates and uploads a domain-metadata.csv file to our S3 bucket "
         "which is based off of all existing Domains."
@@ -65,6 +66,7 @@ class Command(BaseCommand):
                 "report_function": csv_export.DomainRequestExport.export_full_domain_request_report,
             },
         }
+
         # Set the password equal to our content in SECRET_ENCRYPT_METADATA.
         # For local development, this will be "devpwd" unless otherwise set.
         override = settings.SECRET_ENCRYPT_METADATA is None and not settings.IS_PRODUCTION
@@ -80,7 +82,6 @@ class Command(BaseCommand):
             context={"current_date_str": datetime.now().strftime("%Y-%m-%d")},
             attachment_file=encrypted_zip_in_bytes,
         )
-
 
     def get_encrypted_zip(self, zip_filename, reports, password):
         """Helper function for encrypting the attachment file"""
