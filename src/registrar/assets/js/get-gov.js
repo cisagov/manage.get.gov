@@ -1507,8 +1507,13 @@ document.addEventListener('DOMContentLoaded', function() {
           modals.forEach(modal => {
             const submitButton = modal.querySelector('.usa-modal__submit');
             const closeButton = modal.querySelector('.usa-modal__close');
-            submitButton.addEventListener('click', function() {
-              pk = submitButton.getAttribute('data-pk');
+            
+            // Clone the submit button to remove all existing event listeners
+            const newSubmitButton = submitButton.cloneNode(true);
+            submitButton.parentNode.replaceChild(newSubmitButton, submitButton);
+
+            newSubmitButton.addEventListener('click', function() {
+              pk = newSubmitButton.getAttribute('data-pk');
               // Close the modal to remove the USWDS UI local classes
               closeButton.click();
               // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
