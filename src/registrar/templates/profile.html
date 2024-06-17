@@ -5,6 +5,11 @@ Edit your User Profile |
 {% endblock title %}
 {% load static url_helpers %}
 
+{# Disable the redirect  #}
+{% block logo %}
+    {% include "includes/gov_extended_logo.html" with logo_clickable=user_finished_setup %}
+{% endblock %}
+
 {% block content %}
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
@@ -35,6 +40,61 @@ Edit your User Profile |
         {% endif %}
       </a>
     {% endif %}
+    
+    {% if show_confirmation_modal %}
+        <a
+            href="#toggle-confirmation-modal"
+            class="usa-button display-none show-confirmation-modal"
+            aria-controls="toggle-confirmation-modal"
+            data-open-modal
+            >Open confirmation modal</a>
+        <div
+            class="usa-modal usa-modal--lg is-visible"
+            id="toggle-confirmation-modal"
+            aria-labelledby="Add contact information"
+            aria-describedby="Add contact information"
+            data-force-action
+        >
+            <div class="usa-modal__content">
+                <div class="usa-modal__main">
+                    <h2 class="usa-modal__heading" id="modal-1-heading">
+                        Add contact information
+                    </h2>
+                    <div class="usa-prose">
+                        <p id="modal-1-description">
+                            .Gov domain registrants must maintain accurate contact information in the .gov registrar.
+                            Before you can manage your domain, we need you to add your contact information.
+                        </p>
+                    </div>
+                    <div class="usa-modal__footer">
+                        <ul class="usa-button-group">
+                            <li class="usa-button-group__item">
+                                <button
+                                    type="button"
+                                    class="usa-button padding-105 text-center"
+                                    data-close-modal
+                                >
+                                Add contact information
+                                </button>
+                            </li>     
+                        </ul>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    class="usa-button usa-modal__close"
+                    aria-label="Close this window"
+                    data-close-modal
+                >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                        <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    {% endif %}
+
+   
 
 {% endblock content %}
 
@@ -43,3 +103,7 @@ Edit your User Profile |
   </div>
 </main>
 {% endblock content_bottom %}
+
+{% block footer %}
+    {% include "includes/footer.html" with show_manage_your_domains=user_finished_setup %}
+{% endblock footer %}
