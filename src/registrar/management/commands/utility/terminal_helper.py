@@ -59,12 +59,29 @@ class ScriptDataHelper:
             model_class.objects.bulk_update(page.object_list, fields_to_update)
 
 
+
+# This template handles logging and bulk updating for you, for repetitive scripts that update a few fields.
+# It is the ultimate lazy mans shorthand. Don't use this for anything terribly complicated.
+# See the transfer_federal_agency.py file for example usage - its really quite simple!
 class PopulateScriptTemplate(ABC):
     """
     Contains an ABC for generic populate scripts
     """
 
-    prompt_title = "Do you wish to proceed?"
+    # Optional script-global config variables. For the most part, you can leave these untouched.
+    # Defines what prompt_for_execution displays as its header when you first start the script
+    prompt_title: str = "Do you wish to proceed?"
+
+    # Runs str(item) over each item when printing. Use this for prettier run summaries.
+    display_run_summary_items_as_str: bool = False
+
+    # The header when printing the script run summary (after the script finishes)
+    run_summary_header = None
+
+    @abstractmethod
+    def update_record(self, record):
+        """Defines how we update each field. Must be defined before using mass_update_records."""
+        raise NotImplementedError
 
     def mass_update_records(self, sender, filter_conditions, fields_to_update, debug=True):
         """Loops through each valid "sender" object - specified by filter_conditions - and
@@ -108,7 +125,14 @@ class PopulateScriptTemplate(ABC):
         ScriptDataHelper.bulk_update_fields(sender, to_update, fields_to_update)
 
         # Log what happened
-        TerminalHelper.log_script_run_summary(to_update, failed_to_update, to_skip, debug, display_as_str=True)
+        TerminalHelper.log_script_run_summary(
+            to_update,
+            failed_to_update,
+            to_skip,
+            debug=debug,
+            log_header=self.run_summary_header,
+            display_as_str=self.display_run_summary_items_as_str,
+        )
 
     def get_class_name(self, sender) -> str:
         """Returns the class name that we want to display for the terminal prompt.
@@ -121,14 +145,9 @@ class PopulateScriptTemplate(ABC):
         return f"{TerminalColors.FAIL}" f"Failed to update {record}" f"{TerminalColors.ENDC}"
     
     def should_skip_record(self, record) -> bool:  # noqa
-        """Defines the conditions in which we should skip updating a record."""
+        """Defines the condition in which we should skip updating a record."""
         # By default - don't skip
         return False
-
-    @abstractmethod
-    def update_record(self, record):
-        """Defines how we update each field. Must be defined before using mass_populate_field."""
-        raise NotImplementedError
 
 
 
