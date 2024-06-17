@@ -18,6 +18,7 @@ from registrar.views.admin_views import (
     ExportDataType,
     ExportDataUnmanagedDomains,
     AnalyticsView,
+    ExportDomainRequestDataFull,
 )
 
 from registrar.views.domain_request import Step
@@ -65,6 +66,11 @@ urlpatterns = [
         "admin/analytics/export_data_type/",
         ExportDataType.as_view(),
         name="export_data_type",
+    ),
+    path(
+        "admin/analytics/export_data_domain_requests_full/",
+        ExportDomainRequestDataFull.as_view(),
+        name="export_data_domain_requests_full",
     ),
     path(
         "admin/analytics/export_data_full/",

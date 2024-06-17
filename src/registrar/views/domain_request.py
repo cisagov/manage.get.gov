@@ -376,7 +376,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 or self.domain_request.no_other_contacts_rationale is not None
             ),
             "additional_details": (
-                (self.domain_request.anything_else is not None and self.domain_request.cisa_representative_email)
+                (self.domain_request.anything_else is not None and self.domain_request.has_cisa_representative)
                 or self.domain_request.is_policy_acknowledged is not None
             ),
             "requirements": self.domain_request.is_policy_acknowledged is not None,
@@ -387,7 +387,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def get_context_data(self):
         """Define context for access on all wizard pages."""
         has_profile_flag = flag_is_active(self.request, "profile_feature")
-        logger.debug("PROFILE FLAG is %s" % has_profile_flag)
 
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request):
@@ -822,7 +821,8 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         contacts_to_delete, duplicates = self._get_orphaned_contacts(domain_request)
 
         # Delete the DomainRequest
-        response = super().post(request, *args, **kwargs)
+        self.object = self.get_object()
+        self.object.delete()
 
         # Delete orphaned contacts - but only for if they are not associated with a user
         Contact.objects.filter(id__in=contacts_to_delete, user=None).delete()
@@ -834,7 +834,8 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
             duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
             Contact.objects.filter(id__in=duplicates_to_delete, user=None).delete()
 
-        return response
+        # Return a 200 response with an empty body
+        return HttpResponse(status=200)
 
     def _get_orphaned_contacts(self, domain_request: DomainRequest, check_db=False):
         """

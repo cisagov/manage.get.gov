@@ -1901,12 +1901,8 @@ class TestRegistrantDNSSEC(MockEppLib):
         3 - setter adds the UpdateDNSSECExtension extension to the command
         4 - setter causes the getter to call info domain on next get from cache
         5 - getter properly parses dnssecdata from InfoDomain response and sets to cache
-
         """
 
-        # need to use a separate patcher and side_effect for this test, as
-        # response from InfoDomain must be different for different iterations
-        # of the same command
         def side_effect(_request, cleaned):
             if isinstance(_request, commands.InfoDomain):
                 if mocked_send.call_count == 1:
@@ -1924,17 +1920,30 @@ class TestRegistrantDNSSEC(MockEppLib):
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
             domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
+
+            # Check initial dsdata_last_change value (should be None)
+            initial_change = domain.dsdata_last_change
+
+            # Adding dnssec data
             domain.dnssecdata = self.dnssecExtensionWithDsData
-            # get the DNS SEC extension added to the UpdateDomain command and
+
+            # Check dsdata_last_change is updated after adding data
+            domain = Domain.objects.get(name="dnssec-dsdata.gov")
+            self.assertIsNotNone(domain.dsdata_last_change)
+
+            self.assertNotEqual(domain.dsdata_last_change, initial_change)
+
+            # Get the DNS SEC extension added to the UpdateDomain command and
             # verify that it is properly sent
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
-            # assert that the extension on the update matches
+            # Assert that the extension on the update matches
             self.assertEquals(
                 args[0].extensions[0],
                 self.createUpdateExtension(self.dnssecExtensionWithDsData),
             )
-            # test that the dnssecdata getter is functioning properly
+
+            # Test that the dnssecdata getter is functioning properly
             dnssecdata_get = domain.dnssecdata
             mocked_send.assert_has_calls(
                 [
@@ -2129,13 +2138,9 @@ class TestRegistrantDNSSEC(MockEppLib):
         2 - first setter calls UpdateDomain command
         3 - second setter calls InfoDomain command again
         3 - setter then calls UpdateDomain command
-        4 - setter adds the UpdateDNSSECExtension extension to the command with rem
-
+        4 - setter adds the UpdateDNSSExtension extension to the command with rem
         """
 
-        # need to use a separate patcher and side_effect for this test, as
-        # response from InfoDomain must be different for different iterations
-        # of the same command
         def side_effect(_request, cleaned):
             if isinstance(_request, commands.InfoDomain):
                 if mocked_send.call_count == 1:
@@ -2153,10 +2158,25 @@ class TestRegistrantDNSSEC(MockEppLib):
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
             domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
-            # dnssecdata_get_initial = domain.dnssecdata  # call to force initial mock
-            # domain._invalidate_cache()
+
+            # Initial setting of dnssec data
             domain.dnssecdata = self.dnssecExtensionWithDsData
+
+            # Check dsdata_last_change is updated
+            domain = Domain.objects.get(name="dnssec-dsdata.gov")
+            self.assertIsNotNone(domain.dsdata_last_change)
+
+            initial_change = domain.dsdata_last_change
+
+            # Remove dnssec data
             domain.dnssecdata = self.dnssecExtensionRemovingDsData
+
+            # Check that dsdata_last_change is updated again
+            domain = Domain.objects.get(name="dnssec-dsdata.gov")
+            self.assertIsNotNone(domain.dsdata_last_change)
+
+            self.assertNotEqual(domain.dsdata_last_change, initial_change)
+
             # get the DNS SEC extension added to the UpdateDomain command and
             # verify that it is properly sent
             # args[0] is the _request sent to registry

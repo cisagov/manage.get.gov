@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import Union
-
 import logging
 
 from django.apps import apps
@@ -18,8 +17,6 @@ from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
 
-from auditlog.models import AuditlogHistoryField  # type: ignore
-
 logger = logging.getLogger(__name__)
 
 
@@ -36,11 +33,7 @@ class DomainRequest(TimeStampedModel):
         ]
 
     # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history
-    # If we note any performace degradation due to this addition,
-    # we can query the auditlogs table in admin.py and add the results to
-    # extra_context in the change_view method for DomainRequestAdmin.
-    # This is the more straightforward way so trying it first.
-    history = AuditlogHistoryField()
+    # history = AuditlogHistoryField()
 
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
@@ -52,6 +45,11 @@ class DomainRequest(TimeStampedModel):
         SUBMITTED = "submitted", "Submitted"
         WITHDRAWN = "withdrawn", "Withdrawn"
         STARTED = "started", "Started"
+
+        @classmethod
+        def get_status_label(cls, status_name: str):
+            """Returns the associated label for a given status name"""
+            return cls(status_name).label if status_name else None
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
@@ -133,6 +131,14 @@ class DomainRequest(TimeStampedModel):
         CITY = "city", "City"
         SPECIAL_DISTRICT = "special_district", "Special district"
         SCHOOL_DISTRICT = "school_district", "School district"
+
+        @classmethod
+        def get_org_label(cls, org_name: str):
+            """Returns the associated label for a given org name"""
+            org_names = org_name.split("_election")
+            if len(org_names) > 0:
+                org_name = org_names[0]
+            return cls(org_name).label if org_name else None
 
     class OrgChoicesElectionOffice(models.TextChoices):
         """
@@ -250,6 +256,25 @@ class DomainRequest(TimeStampedModel):
         NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
 
+        @classmethod
+        def get_rejection_reason_label(cls, rejection_reason: str):
+            """Returns the associated label for a given rejection reason"""
+            return cls(rejection_reason).label if rejection_reason else None
+
+    class ActionNeededReasons(models.TextChoices):
+        """Defines common action needed reasons for domain requests"""
+
+        ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
+        QUESTIONABLE_AUTHORIZING_OFFICIAL = ("questionable_authorizing_official", "Questionable authorizing official")
+        ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
+        BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
+        OTHER = ("other", "Other (no auto-email sent)")
+
+        @classmethod
+        def get_action_needed_reason_label(cls, action_needed_reason: str):
+            """Returns the associated label for a given action needed reason"""
+            return cls(action_needed_reason).label if action_needed_reason else None
+
     # #### Internal fields about the domain request #####
     status = FSMField(
         choices=DomainRequestStatus.choices,  # possible states as an array of constants
@@ -259,6 +284,12 @@ class DomainRequest(TimeStampedModel):
 
     rejection_reason = models.TextField(
         choices=RejectionReasons.choices,
+        null=True,
+        blank=True,
+    )
+
+    action_needed_reason = models.TextField(
+        choices=ActionNeededReasons.choices,
         null=True,
         blank=True,
     )
@@ -463,8 +494,22 @@ class DomainRequest(TimeStampedModel):
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        verbose_name="CISA regional representative",
+        verbose_name="CISA regional representative email",
         max_length=320,
+    )
+
+    cisa_representative_first_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative first name",
+        db_index=True,
+    )
+
+    cisa_representative_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative last name",
+        db_index=True,
     )
 
     # This is a drop-in replacement for an has_cisa_representative() function.
@@ -525,6 +570,16 @@ class DomainRequest(TimeStampedModel):
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
 
+    def _cache_status_and_action_needed_reason(self):
+        """Maintains a cache of properties so we can avoid a DB call"""
+        self._cached_action_needed_reason = self.action_needed_reason
+        self._cached_status = self.status
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Store original values for caching purposes. Used to compare them on save.
+        self._cache_status_and_action_needed_reason()
+
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_organization_type()
@@ -532,20 +587,38 @@ class DomainRequest(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
+        # Handle the action needed email. We send one when moving to action_needed,
+        # but we don't send one when we are _already_ in the state and change the reason.
+        self.sync_action_needed_reason()
+
+        # Update the cached values after saving
+        self._cache_status_and_action_needed_reason()
+
+    def sync_action_needed_reason(self):
+        """Checks if we need to send another action needed email"""
+        was_already_action_needed = self._cached_status == self.DomainRequestStatus.ACTION_NEEDED
+        reason_exists = self._cached_action_needed_reason is not None and self.action_needed_reason is not None
+        reason_changed = self._cached_action_needed_reason != self.action_needed_reason
+        if was_already_action_needed and (reason_exists and reason_changed):
+            # We don't send emails out in state "other"
+            if self.action_needed_reason != self.ActionNeededReasons.OTHER:
+                self._send_action_needed_reason_email()
+
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
         We handle that here for def save().
         """
-
         # This ensures that if we have prefilled data, the form is prepopulated
-        if self.cisa_representative_email is not None:
-            self.has_cisa_representative = self.cisa_representative_email != ""
+        if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
+            )
 
         # This check is required to ensure that the form doesn't start out checked
         if self.has_cisa_representative is not None:
             self.has_cisa_representative = (
-                self.cisa_representative_email != "" and self.cisa_representative_email is not None
-            )
+                self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
+            ) and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
 
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.anything_else is not None:
@@ -583,7 +656,7 @@ class DomainRequest(TimeStampedModel):
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
     def _send_status_update_email(
-        self, new_status, email_template, email_template_subject, send_email=True, bcc_address=""
+        self, new_status, email_template, email_template_subject, send_email=True, bcc_address="", wrap_email=False
     ):
         """Send a status update email to the submitter.
 
@@ -610,6 +683,7 @@ class DomainRequest(TimeStampedModel):
                 self.submitter.email,
                 context={"domain_request": self},
                 bcc_address=bcc_address,
+                wrap_email=wrap_email,
             )
             logger.info(f"The {new_status} email sent to: {self.submitter.email}")
         except EmailSendingError:
@@ -693,9 +767,10 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("in_review")
-
-        if self.status == self.DomainRequestStatus.REJECTED:
+        elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
+        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.action_needed_reason = None
 
         literal = DomainRequest.DomainRequestStatus.IN_REVIEW
         # Check if the tuple exists, then grab its value
@@ -713,7 +788,7 @@ class DomainRequest(TimeStampedModel):
         target=DomainRequestStatus.ACTION_NEEDED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
-    def action_needed(self):
+    def action_needed(self, send_email=True):
         """Send back an domain request that is under investigation or rejected.
 
         This action is logged.
@@ -725,14 +800,53 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
-
-        if self.status == self.DomainRequestStatus.REJECTED:
+        elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
         literal = DomainRequest.DomainRequestStatus.ACTION_NEEDED
         # Check if the tuple is setup correctly, then grab its value
         action_needed = literal if literal is not None else "Action Needed"
         logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
+
+        # Send out an email if an action needed reason exists
+        if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
+            self._send_action_needed_reason_email(send_email)
+
+    def _send_action_needed_reason_email(self, send_email=True):
+        """Sends out an automatic email for each valid action needed reason provided"""
+
+        # Store the filenames of the template and template subject
+        email_template_name: str = ""
+        email_template_subject_name: str = ""
+
+        # Check for the "type" of action needed reason.
+        can_send_email = True
+        match self.action_needed_reason:
+            # Add to this match if you need to pass in a custom filename for these templates.
+            case self.ActionNeededReasons.OTHER, _:
+                # Unknown and other are default cases - do nothing
+                can_send_email = False
+
+        # Assumes that the template name matches the action needed reason if nothing is specified.
+        # This is so you can override if you need, or have this taken care of for you.
+        if not email_template_name and not email_template_subject_name:
+            email_template_name = f"{self.action_needed_reason}.txt"
+            email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
+
+        bcc_address = ""
+        if settings.IS_PRODUCTION:
+            bcc_address = settings.DEFAULT_FROM_EMAIL
+
+        # If we can, try to send out an email as long as send_email=True
+        if can_send_email:
+            self._send_status_update_email(
+                new_status="action needed",
+                email_template=f"emails/action_needed_reasons/{email_template_name}",
+                email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
+                send_email=send_email,
+                bcc_address=bcc_address,
+                wrap_email=True,
+            )
 
     @transition(
         field="status",
@@ -782,6 +896,8 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
+        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.action_needed_reason = None
 
         # == Send out an email == #
         self._send_status_update_email(
@@ -900,11 +1016,12 @@ class DomainRequest(TimeStampedModel):
     def has_additional_details(self) -> bool:
         """Combines the has_anything_else_text and has_cisa_representative fields,
         then returns if this domain request has either of them."""
-        # Split out for linter
-        has_details = False
-        if self.has_anything_else_text or self.has_cisa_representative:
-            has_details = True
 
+        # Split out for linter
+        has_details = True
+
+        if self.has_anything_else_text is None or self.has_cisa_representative is None:
+            has_details = False
         return has_details
 
     def is_federal(self) -> Union[bool, None]:
@@ -1013,13 +1130,18 @@ class DomainRequest(TimeStampedModel):
             return True
         return False
 
-    def _cisa_rep_and_email_check(self):
-        # Has a CISA rep + email is NOT empty or NOT an empty string OR doesn't have CISA rep
-        return (
+    def _cisa_rep_check(self):
+        # Either does not have a CISA rep, OR has a CISA rep + both first name
+        # and last name are NOT empty and are NOT an empty string
+        to_return = (
             self.has_cisa_representative is True
-            and self.cisa_representative_email is not None
-            and self.cisa_representative_email != ""
+            and self.cisa_representative_first_name is not None
+            and self.cisa_representative_first_name != ""
+            and self.cisa_representative_last_name is not None
+            and self.cisa_representative_last_name != ""
         ) or self.has_cisa_representative is False
+
+        return to_return
 
     def _anything_else_radio_button_and_text_field_check(self):
         # Anything else boolean is True + filled text field and it's not an empty string OR the boolean is No
@@ -1028,7 +1150,7 @@ class DomainRequest(TimeStampedModel):
         ) or self.has_anything_else_text is False
 
     def _is_additional_details_complete(self):
-        return self._cisa_rep_and_email_check() and self._anything_else_radio_button_and_text_field_check()
+        return self._cisa_rep_check() and self._anything_else_radio_button_and_text_field_check()
 
     def _is_policy_acknowledgement_complete(self):
         return self.is_policy_acknowledged is not None

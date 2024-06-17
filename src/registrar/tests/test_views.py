@@ -384,15 +384,15 @@ class HomeTests(TestWithUser):
         )
         domain_request_2.other_contacts.set([contact_shared])
 
-        # Ensure that igorville.gov exists on the page
-        home_page = self.client.get("/")
-        self.assertContains(home_page, "igorville.gov")
+        igorville = DomainRequest.objects.filter(requested_domain__name="igorville.gov")
+        self.assertTrue(igorville.exists())
 
         # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+        self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}))
 
         # igorville is now deleted
-        self.assertNotContains(response, "igorville.gov")
+        igorville = DomainRequest.objects.filter(requested_domain__name="igorville.gov")
+        self.assertFalse(igorville.exists())
 
         # Check if the orphaned contact was deleted
         orphan = Contact.objects.filter(id=contact.id)
@@ -456,13 +456,14 @@ class HomeTests(TestWithUser):
         )
         domain_request_2.other_contacts.set([contact_shared])
 
-        home_page = self.client.get("/")
-        self.assertContains(home_page, "teaville.gov")
+        teaville = DomainRequest.objects.filter(requested_domain__name="teaville.gov")
+        self.assertTrue(teaville.exists())
 
         # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request_2.pk}), follow=True)
+        self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request_2.pk}))
 
-        self.assertNotContains(response, "teaville.gov")
+        teaville = DomainRequest.objects.filter(requested_domain__name="teaville.gov")
+        self.assertFalse(teaville.exists())
 
         # Check if the orphaned contact was deleted
         orphan = Contact.objects.filter(id=contact_shared.id)
