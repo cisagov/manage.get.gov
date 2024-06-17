@@ -107,12 +107,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
     }
 
-    def get_session_data(self, request):
-        """Retrieve 'global' data from session:
-        The homepage sets new_request to True for the first Create domain request."""
-        is_a_new_request = self.request.session.get("new_request", "No data found")
-        return is_a_new_request
-
     def __init__(self):
         super().__init__()
         self.steps = StepsHelper(self)
@@ -445,12 +439,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             # We need to avoid creating a new domain request if the user
             # clicks the back button
             self.request.session["new_request"] = False
-        else:
-            # Reset the above logic to be extra safe;
-            # we do not want to stumble into a situation where a user
-            # unknowingly overwrites when she thinks she's working on a
-            # new request
-            self.request.session["new_request"] = True
         self.steps.current = step
         return redirect(reverse(f"{self.URL_NAMESPACE}:{step}"))
 
