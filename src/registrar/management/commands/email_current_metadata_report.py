@@ -23,7 +23,6 @@ class Command(BaseCommand):
         "which is based off of all existing Domains."
     )
     current_date = datetime.now().strftime("%m%d%Y")
-    email_to: str
 
     def add_arguments(self, parser):
         """Add our two filename arguments."""
@@ -35,31 +34,27 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         """Grabs the directory then creates domain-metadata.csv in that directory"""
-        self.email_to = options.get("emailTo")
+        zip_filename = f"domain-metadata-{self.current_date}.zip"
+        email_to = options.get("emailTo")
 
         # Don't email to DEFAULT_FROM_EMAIL when not prod.
-        if not settings.IS_PRODUCTION and self.email_to == settings.DEFAULT_FROM_EMAIL:
+        if not settings.IS_PRODUCTION and email_to == settings.DEFAULT_FROM_EMAIL:
             raise ValueError(
                 "The --emailTo arg must be specified in non-prod environments, "
                 "and the arg must not equal the DEFAULT_FROM_EMAIL value (aka: help@get.gov)."
             )
 
         logger.info("Generating report...")
-        zip_filename = f"domain-metadata-{self.current_date}.zip"
         try:
-            self.email_current_metadata_report(zip_filename)
+            self.email_current_metadata_report(zip_filename, email_to)
         except Exception as err:
             # TODO - #1317: Notify operations when auto report generation fails
             raise err
         else:
             logger.info(f"Success! Created {zip_filename} and successfully sent out an email!")
 
-    def email_current_metadata_report(self, zip_filename):
-        """Creates a current-metadata.csv file under the specified directory,
-        then uploads it to a AWS S3 bucket. This is done for resiliency
-        reasons in the event our application goes down and/or the email
-        cannot send -- we'll still be able to grab info from the S3
-        instance"""
+    def email_current_metadata_report(self, zip_filename, email_to):
+        """Emails a password protected zip containing domain-metadata and domain-request-metadata"""
         reports = {
             "Domain report": {
                 "report_filename": f"domain-metadata-{self.current_date}.csv",
@@ -81,7 +76,7 @@ class Command(BaseCommand):
         send_templated_email(
             template_name="emails/metadata_body.txt",
             subject_template_name="emails/metadata_subject.txt",
-            to_address=self.email_to,
+            to_address=email_to,
             context={"current_date_str": datetime.now().strftime("%Y-%m-%d")},
             attachment_file=encrypted_zip_in_bytes,
         )
@@ -96,13 +91,10 @@ class Command(BaseCommand):
             zip_filename, "w", compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES
         ) as f_out:
             f_out.setpassword(str.encode(password))
-            for report_name, report_value in reports.items():
-                report_filename = report_value["report_filename"]
-                report_function = report_value["report_function"]
-
-                report = self.write_and_return_report(report_function)
-                f_out.writestr(report_filename, report)
-                logger.info(f"Generated {report_name}")
+            for report_name, report in reports.items():
+                logger.info(f"Generating {report_name}")
+                report = self.write_and_return_report(report["report_function"])
+                f_out.writestr(report["report_filename"], report)
 
         # Get the final report for emailing purposes
         with open(zip_filename, "rb") as file_data:
