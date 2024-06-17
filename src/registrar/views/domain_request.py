@@ -798,7 +798,8 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         contacts_to_delete, duplicates = self._get_orphaned_contacts(domain_request)
 
         # Delete the DomainRequest
-        response = super().post(request, *args, **kwargs)
+        self.object = self.get_object()
+        self.object.delete()
 
         # Delete orphaned contacts - but only for if they are not associated with a user
         Contact.objects.filter(id__in=contacts_to_delete, user=None).delete()
@@ -810,7 +811,8 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
             duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
             Contact.objects.filter(id__in=duplicates_to_delete, user=None).delete()
 
-        return response
+        # Return a 200 response with an empty body
+        return HttpResponse(status=200)
 
     def _get_orphaned_contacts(self, domain_request: DomainRequest, check_db=False):
         """

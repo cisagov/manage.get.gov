@@ -17,6 +17,22 @@ var SUCCESS = "success";
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Helper functions.
 
+/**
+ * Hide element
+ *
+*/
+const hideElement = (element) => {
+  element.classList.add('display-none');
+};
+
+/**
+ * Show element
+ *
+*/
+const showElement = (element) => {
+  element.classList.remove('display-none');
+};
+
 /** Makes an element invisible. */
 function makeHidden(el) {
   el.style.position = "absolute";
@@ -918,8 +934,9 @@ function ScrollToElement(attributeName, attributeValue) {
  * @param {boolean} hasPrevious - Whether there is a page before the current page.
  * @param {boolean} hasNext - Whether there is a page after the current page.
  * @param {number} totalItems - The total number of items.
+ * @param {string} searchTerm - The search term
  */
-function updatePagination(itemName, paginationSelector, counterSelector, headerAnchor, loadPageFunction, currentPage, numPages, hasPrevious, hasNext, totalItems) {
+function updatePagination(itemName, paginationSelector, counterSelector, headerAnchor, loadPageFunction, currentPage, numPages, hasPrevious, hasNext, totalItems, searchTerm) {
   const paginationContainer = document.querySelector(paginationSelector);
   const paginationCounter = document.querySelector(counterSelector);
   const paginationButtons = document.querySelector(`${paginationSelector} .usa-pagination__list`);
@@ -932,7 +949,7 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
   // Counter should only be displayed if there is more than 1 item
   paginationContainer.classList.toggle('display-none', totalItems < 1);
 
-  paginationCounter.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}`;
+  paginationCounter.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}${searchTerm ? ' for ' + '"' + searchTerm + '"' : ''}`;
 
   if (hasPrevious) {
     const prevPageItem = document.createElement('li');
@@ -1018,6 +1035,47 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
   }
 }
 
+/**
+ * A helper that toggles content/ no content/ no search results
+ *
+*/
+const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm) => {
+  const { unfiltered_total, total } = data;
+
+  if (searchTermHolder)
+    searchTermHolder.innerHTML = '';
+
+  if (unfiltered_total) {
+    if (total) {
+      showElement(dataWrapper);
+      hideElement(noSearchResultsWrapper);
+      hideElement(noDataWrapper);
+    } else {
+      if (searchTermHolder)
+        searchTermHolder.innerHTML = currentSearchTerm;
+      hideElement(dataWrapper);
+      showElement(noSearchResultsWrapper);
+      hideElement(noDataWrapper);
+    }
+  } else {
+    hideElement(dataWrapper);
+    hideElement(noSearchResultsWrapper);
+    showElement(noDataWrapper);
+  }
+};
+
+/**
+ * A helper that resets sortable table headers
+ *
+*/
+const unsetHeader = (header) => {
+  header.removeAttribute('aria-sort');
+  let headerName = header.innerText;
+  const headerLabel = `${headerName}, sortable column, currently unsorted"`;
+  const headerButtonLabel = `Click to sort by ascending order.`;
+  header.setAttribute("aria-label", headerLabel);
+  header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
+};
 
 /**
  * An IIFE that listens for DOM Content to be loaded, then executes.  This function
@@ -1025,13 +1083,21 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let domainsWrapper = document.querySelector('.domains-wrapper');
+  const domainsWrapper = document.querySelector('.domains__table-wrapper');
 
   if (domainsWrapper) {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
-    let noDomainsWrapper = document.querySelector('.no-domains-wrapper');
+    const noDomainsWrapper = document.querySelector('.domains__no-data');
+    const noSearchResultsWrapper = document.querySelector('.domains__no-search-results');
     let hasLoaded = false;
+    let currentSearchTerm = ''
+    const domainsSearchInput = document.getElementById('domains__search-field');
+    const domainsSearchSubmit = document.getElementById('domains__search-field-submit');
+    const tableHeaders = document.querySelectorAll('.domains__table th[data-sortable]');
+    const tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region');
+    const searchTermHolder = document.querySelector('.domains__search-term');
+    const resetButton = document.querySelector('.domains__reset-button');
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1040,10 +1106,11 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
      * @param {*} loaded - control for the scrollToElement functionality
+     * @param {*} searchTerm - the search term
      */
-    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, searchTerm = currentSearchTerm) {
       //fetch json of page of domains, given page # and sort
-      fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
+      fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
@@ -1051,23 +1118,17 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
 
-          // handle the display of proper messaging in the event that no domains exist in the list
-          if (data.domains.length) {
-            domainsWrapper.classList.remove('display-none');
-            noDomainsWrapper.classList.add('display-none');
-          } else {
-            domainsWrapper.classList.add('display-none');
-            noDomainsWrapper.classList.remove('display-none');
-          }
+          // handle the display of proper messaging in the event that no domains exist in the list or search returns no results
+          updateDisplay(data, domainsWrapper, noDomainsWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
-          const domainList = document.querySelector('.dotgov-table__registered-domains tbody');
+          const domainList = document.querySelector('.domains__table tbody');
           domainList.innerHTML = '';
 
           data.domains.forEach(domain => {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
-            const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : null;
+            const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
 
@@ -1106,9 +1167,10 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           // initialize tool tips immediately after the associated DOM elements are added
           initializeTooltips();
+
+          // Do not scroll on first page load
           if (loaded)
             ScrollToElement('id', 'domains-header');
-
           hasLoaded = true;
 
           // update pagination
@@ -1122,18 +1184,18 @@ document.addEventListener('DOMContentLoaded', function() {
             data.num_pages,
             data.has_previous,
             data.has_next,
-            data.total
+            data.total,
+            currentSearchTerm
           );
           currentSortBy = sortBy;
           currentOrder = order;
+          currentSearchTerm = searchTerm;
         })
         .catch(error => console.error('Error fetching domains:', error));
     }
 
-    
-
     // Add event listeners to table headers for sorting
-    document.querySelectorAll('.dotgov-table__registered-domains th[data-sortable]').forEach(header => {
+    tableHeaders.forEach(header => {
       header.addEventListener('click', function() {
         const sortBy = this.getAttribute('data-sortable');
         let order = 'asc';
@@ -1147,6 +1209,43 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
 
+    domainsSearchSubmit.addEventListener('click', function(e) {
+      e.preventDefault();
+      currentSearchTerm = domainsSearchInput.value;
+      // If the search is blank, we match the resetSearch functionality
+      if (currentSearchTerm) {
+        showElement(resetButton);
+      } else {
+        hideElement(resetButton);
+      }
+      loadDomains(1, 'id', 'asc');
+      resetHeaders();
+    })
+
+    // Reset UI and accessibility
+    function resetHeaders() {
+      tableHeaders.forEach(header => {
+        // Unset sort UI in headers
+        unsetHeader(header);
+      });
+      // Reset the announcement region
+      tableAnnouncementRegion.innerHTML = '';
+    }
+
+    function resetSearch() {
+      domainsSearchInput.value = '';
+      currentSearchTerm = '';
+      hideElement(resetButton);
+      loadDomains(1, 'id', 'asc', hasLoaded, '');
+      resetHeaders();
+    }
+
+    if (resetButton) {
+      resetButton.addEventListener('click', function() {
+        resetSearch();
+      });
+    }
+
     // Load the first page initially
     loadDomains(1);
   }
@@ -1157,25 +1256,71 @@ const utcDateString = (dateString) => {
   const utcYear = date.getUTCFullYear();
   const utcMonth = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
   const utcDay = date.getUTCDate().toString().padStart(2, '0');
-  const utcHours = date.getUTCHours().toString().padStart(2, '0');
+  let utcHours = date.getUTCHours();
   const utcMinutes = date.getUTCMinutes().toString().padStart(2, '0');
-  
-  return `${utcMonth} ${utcDay}, ${utcYear}, ${utcHours}:${utcMinutes} UTC`;
+
+  const ampm = utcHours >= 12 ? 'PM' : 'AM';
+  utcHours = utcHours % 12 || 12;  // Convert to 12-hour format, '0' hours should be '12'
+
+  return `${utcMonth} ${utcDay}, ${utcYear}, ${utcHours}:${utcMinutes} ${ampm} UTC`;
 };
 
 /**
- * An IIFE that listens for DOM Content to be loaded, then executes.  This function
+ * An IIFE that listens for DOM Content to be loaded, then executes. This function
  * initializes the domain requests list and associated functionality on the home page of the app.
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  let domainRequestsWrapper = document.querySelector('.domain-requests-wrapper');
+  const domainRequestsSectionWrapper = document.querySelector('.domain-requests');
+  const domainRequestsWrapper = document.querySelector('.domain-requests__table-wrapper');
 
   if (domainRequestsWrapper) {
     let currentSortBy = 'id';
     let currentOrder = 'asc';
-    let noDomainRequestsWrapper = document.querySelector('.no-domain-requests-wrapper');
+    const noDomainRequestsWrapper = document.querySelector('.domain-requests__no-data');
+    const noSearchResultsWrapper = document.querySelector('.domain-requests__no-search-results');
     let hasLoaded = false;
+    let currentSearchTerm = ''
+    const domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
+    const domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
+    const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
+    const tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
+    const searchTermHolder = document.querySelector('.domain-requests__search-term');
+    const resetButton = document.querySelector('.domain-requests__reset-button');
+
+    /**
+     * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
+     * @param {*} domainRequestPk - the identifier for the request that we're deleting
+     * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
+    */
+    function deleteDomainRequest(domainRequestPk,pageToDisplay) {
+      // Get csrf token
+      const csrfToken = getCsrfToken();
+      // Create FormData object and append the CSRF token
+      const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&delete-domain-request=`;
+
+      fetch(`/domain-request/${domainRequestPk}/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrfToken,
+        },
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        // Update data and UI
+        loadDomainRequests(pageToDisplay, currentSortBy, currentOrder, hasLoaded, currentSearchTerm);
+      })
+      .catch(error => console.error('Error fetching domain requests:', error));
+    }
+  
+    // Helper function to get the CSRF token from the cookie
+    function getCsrfToken() {
+      return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    }
 
     /**
      * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
@@ -1184,10 +1329,11 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
      * @param {*} loaded - control for the scrollToElement functionality
+     * @param {*} searchTerm - the search term
      */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded) {
+    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, searchTerm = currentSearchTerm) {
       //fetch json of page of domain requests, given page # and sort
-      fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}`)
+      fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
@@ -1195,41 +1341,138 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
 
-          // handle the display of proper messaging in the event that no domain requests exist in the list
-          if (data.domain_requests.length) {
-            domainRequestsWrapper.classList.remove('display-none');
-            noDomainRequestsWrapper.classList.add('display-none');
-          } else {
-            domainRequestsWrapper.classList.add('display-none');
-            noDomainRequestsWrapper.classList.remove('display-none');
-          }
+          // handle the display of proper messaging in the event that no requests exist in the list or search returns no results
+          updateDisplay(data, domainRequestsWrapper, noDomainRequestsWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm);
 
           // identify the DOM element where the domain request list will be inserted into the DOM
-          const tbody = document.querySelector('.dotgov-table__domain-requests tbody');
+          const tbody = document.querySelector('.domain-requests__table tbody');
           tbody.innerHTML = '';
 
           // remove any existing modal elements from the DOM so they can be properly re-initialized
           // after the DOM content changes and there are new delete modal buttons added
           unloadModals();
+
+          let needsDeleteColumn = false;
+
+          needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
+
+          // Remove existing delete th and td if they exist
+          let existingDeleteTh =  document.querySelector('.delete-header');
+          if (!needsDeleteColumn) {
+            if (existingDeleteTh)
+              existingDeleteTh.remove();
+          } else {
+            if (!existingDeleteTh) {
+              const delheader = document.createElement('th');
+              delheader.setAttribute('scope', 'col');
+              delheader.setAttribute('role', 'columnheader');
+              delheader.setAttribute('class', 'delete-header');
+              delheader.innerHTML = `
+                <span class="usa-sr-only">Delete Action</span>`;
+              let tableHeaderRow = document.querySelector('.domain-requests__table thead tr');
+              tableHeaderRow.appendChild(delheader);
+            }
+          }
+
           data.domain_requests.forEach(request => {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${utcDateString(request.created_at)})</span>`;
             const actionUrl = request.action_url;
             const actionLabel = request.action_label;
             const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
-            const deleteButton = request.is_deletable ? `
-              <a 
-                role="button" 
-                id="button-toggle-delete-domain-alert-${request.id}"
-                href="#toggle-delete-domain-alert-${request.id}"
-                class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
-                aria-controls="toggle-delete-domain-alert-${request.id}"
-                data-open-modal
-              >
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="/public/img/sprite.svg#delete"></use>
-                </svg> Delete <span class="usa-sr-only">${domainName}</span>
-              </a>` : '';
+            
+            // Even if the request is not deletable, we may need this empty string for the td if the deletable column is displayed
+            let modalTrigger = '';
+
+            // If the request is deletable, create modal body and insert it
+            if (request.is_deletable) {
+              let modalHeading = '';
+              let modalDescription = '';
+
+              if (request.requested_domain) {
+                modalHeading = `Are you sure you want to delete ${request.requested_domain}?`;
+                modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+              } else {
+                if (request.created_at) {
+                  modalHeading = 'Are you sure you want to delete this domain request?';
+                  modalDescription = `This will remove the domain request (created ${utcDateString(request.created_at)}) from the .gov registrar. This action cannot be undone`;
+                } else {
+                  modalHeading = 'Are you sure you want to delete New domain request?';
+                  modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+                }
+              }
+
+              modalTrigger = `
+                <a 
+                  role="button" 
+                  id="button-toggle-delete-domain-alert-${request.id}"
+                  href="#toggle-delete-domain-alert-${request.id}"
+                  class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                  aria-controls="toggle-delete-domain-alert-${request.id}"
+                  data-open-modal
+                >
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#delete"></use>
+                  </svg> Delete <span class="usa-sr-only">${domainName}</span>
+                </a>`
+
+              const modalSubmit = `
+                <button type="button"
+                class="usa-button usa-button--secondary usa-modal__submit"
+                data-pk = ${request.id}
+                name="delete-domain-request">Yes, delete request</button>
+              `
+
+              const modal = document.createElement('div');
+              modal.setAttribute('class', 'usa-modal');
+              modal.setAttribute('id', `toggle-delete-domain-alert-${request.id}`);
+              modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
+              modal.setAttribute('aria-describedby', 'Domain will be removed');
+              modal.setAttribute('data-force-action', '');
+
+              modal.innerHTML = `
+                <div class="usa-modal__content">
+                  <div class="usa-modal__main">
+                    <h2 class="usa-modal__heading" id="modal-1-heading">
+                      ${modalHeading}
+                    </h2>
+                    <div class="usa-prose">
+                      <p id="modal-1-description">
+                        ${modalDescription}
+                      </p>
+                    </div>
+                    <div class="usa-modal__footer">
+                        <ul class="usa-button-group">
+                          <li class="usa-button-group__item">
+                            ${modalSubmit}
+                          </li>      
+                          <li class="usa-button-group__item">
+                              <button
+                                  type="button"
+                                  class="usa-button usa-button--unstyled padding-105 text-center"
+                                  data-close-modal
+                              >
+                                  Cancel
+                              </button>
+                          </li>
+                        </ul>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="usa-button usa-modal__close"
+                    aria-label="Close this window"
+                    data-close-modal
+                  >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                      <use xlink:href="/public/img/sprite.svg#close"></use>
+                    </svg>
+                  </button>
+                </div>
+              `
+
+              domainRequestsSectionWrapper.appendChild(modal);
+            }
 
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -1250,15 +1493,36 @@ document.addEventListener('DOMContentLoaded', function() {
                   ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
                 </a>
               </td>
-              <td>${deleteButton}</td>
+              ${needsDeleteColumn ? '<td>'+modalTrigger+'</td>' : ''}
             `;
             tbody.appendChild(row);
           });
+
           // initialize modals immediately after the DOM content is updated
           initializeModals();
+
+          // Now the DOM and modals are ready, add listeners to the submit buttons
+          const modals = document.querySelectorAll('.usa-modal__content');
+
+          modals.forEach(modal => {
+            const submitButton = modal.querySelector('.usa-modal__submit');
+            const closeButton = modal.querySelector('.usa-modal__close');
+            submitButton.addEventListener('click', function() {
+              pk = submitButton.getAttribute('data-pk');
+              // Close the modal to remove the USWDS UI local classes
+              closeButton.click();
+              // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
+              let pageToDisplay = data.page;
+              if (data.total == 1 && data.unfiltered_total > 1) {
+                pageToDisplay--;
+              }
+              deleteDomainRequest(pk, pageToDisplay);
+            });
+          });
+
+          // Do not scroll on first page load
           if (loaded)
             ScrollToElement('id', 'domain-requests-header');
-
           hasLoaded = true;
 
           // update the pagination after the domain requests list is updated
@@ -1272,16 +1536,18 @@ document.addEventListener('DOMContentLoaded', function() {
             data.num_pages,
             data.has_previous,
             data.has_next,
-            data.total
+            data.total,
+            currentSearchTerm
           );
           currentSortBy = sortBy;
           currentOrder = order;
+          currentSearchTerm = searchTerm;
         })
         .catch(error => console.error('Error fetching domain requests:', error));
     }
 
     // Add event listeners to table headers for sorting
-    document.querySelectorAll('.dotgov-table__domain-requests th[data-sortable]').forEach(header => {
+    tableHeaders.forEach(header => {
       header.addEventListener('click', function() {
         const sortBy = this.getAttribute('data-sortable');
         let order = 'asc';
@@ -1293,6 +1559,43 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDomainRequests(1, sortBy, order);
       });
     });
+
+    domainRequestsSearchSubmit.addEventListener('click', function(e) {
+      e.preventDefault();
+      currentSearchTerm = domainRequestsSearchInput.value;
+      // If the search is blank, we match the resetSearch functionality
+      if (currentSearchTerm) {
+        showElement(resetButton);
+      } else {
+        hideElement(resetButton);
+      }
+      loadDomainRequests(1, 'id', 'asc');
+      resetHeaders();
+    })
+
+    // Reset UI and accessibility
+    function resetHeaders() {
+      tableHeaders.forEach(header => {
+        // unset sort UI in headers
+        unsetHeader(header);
+      });
+      // Reset the announcement region
+      tableAnnouncementRegion.innerHTML = '';
+    }
+
+    function resetSearch() {
+      domainRequestsSearchInput.value = '';
+      currentSearchTerm = '';
+      hideElement(resetButton);
+      loadDomainRequests(1, 'id', 'asc', hasLoaded, '');
+      resetHeaders();
+    }
+
+    if (resetButton) {
+      resetButton.addEventListener('click', function() {
+        resetSearch();
+      });
+    }
 
     // Load the first page initially
     loadDomainRequests(1);
