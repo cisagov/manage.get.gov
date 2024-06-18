@@ -1,5 +1,5 @@
+from django.core.paginator import Paginator
 import logging
-import math
 import os
 import pyzipper
 import tablib
@@ -56,8 +56,9 @@ class Command(BaseCommand):
                     os.remove(f"tmp/{file_path}")
                     logger.info(f"Removed {file_path}")
 
+
     def export_table(self, table_name):
-        """Export a given table to a csv file in the tmp directory"""
+        """Export a given table to csv files in the tmp directory"""
         resourcename = f"{table_name}Resource"
         try:
             resourceclass = getattr(registrar.admin, resourcename)
@@ -67,25 +68,25 @@ class Command(BaseCommand):
 
             # Determine the number of rows per file
             rows_per_file = 10000
-            total_rows = len(dataset)
 
-            # Calculate the number of files needed
-            num_files = math.ceil(total_rows / rows_per_file)
+            # Use Paginator to handle splitting the dataset
+            paginator = Paginator(dataset.dict, rows_per_file)
+            num_files = paginator.num_pages
 
             logger.info(f"splitting {table_name} into {num_files} files")
 
-            # Split the dataset and export each chunk to a separate file
-            for i in range(num_files):
-                start_row = i * rows_per_file
-                end_row = start_row + rows_per_file
+            # Export each page to a separate file
+            for page_num in paginator.page_range:
+                page = paginator.page(page_num)
 
                 # Create a new dataset for the chunk
                 chunk = tablib.Dataset(headers=dataset.headers)
-                for row in dataset[start_row:end_row]:
+                for row_dict in page.object_list:
+                    row = [row_dict[header] for header in dataset.headers]
                     chunk.append(row)
 
                 # Export the chunk to a new file
-                filename = f"tmp/{table_name}_{i + 1}.csv"
+                filename = f"tmp/{table_name}_{page_num}.csv"
                 with open(filename, "w") as f:
                     f.write(chunk.export("csv"))
 
