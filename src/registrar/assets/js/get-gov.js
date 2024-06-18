@@ -1353,7 +1353,7 @@ document.addEventListener('DOMContentLoaded', function() {
           tbody.innerHTML = '';
 
           // Unload modals will re-inject the DOM with the initial placeholders to allow for .on() in regular use cases
-          // We do NOT want that as it will cause multiple placeholders and therfore multiple inits on delete,
+          // We do NOT want that as it will cause multiple placeholders and therefore multiple inits on delete,
           // which will cause bad delete requests to be sent.
           const preExistingModalPlaceholders = document.querySelectorAll('[data-placeholder-for^="toggle-delete-domain-alert"]');
           preExistingModalPlaceholders.forEach(element => {
