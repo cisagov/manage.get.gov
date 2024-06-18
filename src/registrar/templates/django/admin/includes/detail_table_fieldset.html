@@ -106,12 +106,39 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     </tbody>
                 </table>
             </div>
+            
             <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-2 margin-bottom-1 margin-left-1">
                 <span>Show details</span>
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                     <use xlink:href="/public/img/sprite.svg#expand_more"></use>
                 </svg>
             </button>
+            <button id="show_action_needed_email" domain-request-id="{{original_object.id}}" type="button" class="{% if field.field.value != "action needed" %}display-none{% endif %} collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-2 margin-bottom-1 margin-left-1">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                    <use xlink:href="/public/img/sprite.svg#mail"></use>
+                </svg>
+                <span>Show email</span>
+            </button>
+            {% comment %}
+            <div class="usa-button-group">
+                <li class="usa-button-group__item">
+                    <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-2 margin-bottom-1 margin-left-1">
+                        <span>Show details</span>
+                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                            <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+                        </svg>
+                    </button>
+                </li>
+                <li class="usa-button-group__item">
+                    <button id="show_action_needed_email" domain-request-id="{{original_object.id}}" type="button" class="{% if field.field.value != "action needed" %}display-none{% endif %} collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-2 margin-bottom-1 margin-left-1">
+                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                            <use xlink:href="/public/img/sprite.svg#mail"></use>
+                        </svg>
+                        <span>Show email</span>
+                    </button>
+                </li>
+            </div>
+            {% endcomment %}
         </div>
     </div>
     {% elif field.field.name == "creator" %}

@@ -57,6 +57,7 @@ function openInNewTab(el, removeAttribute = false){
     createPhantomModalFormButtons();
 })();
 
+
 /** An IIFE for DomainRequest to hook a modal to a dropdown option.
  * This intentionally does not interact with createPhantomModalFormButtons()
 */
@@ -517,4 +518,80 @@ function initializeWidgetOnList(list, parentId) {
     if (toggleButton && descriptionDiv) {
         handleShowMoreButton(toggleButton, descriptionDiv)
     }
+})();
+
+
+
+/** An IIFE that hooks up to the "show email" button
+ * which shows the auto generated email on action needed reason
+*/
+(function () {
+    let statusDropdown = document.getElementById("id_status");
+
+    statusDropdown.addEventListener('change', function() {
+        // TODO we should also handle when action needed
+        if (statusDropdown.value != "action needed"){
+            formRow.classList.add("display-none")
+        }
+    });
+
+    let actionNeededDropdownReason = document.getElementById("id_action_needed_reason");
+    // Store the domain request id on this record for simplicity
+    let showEmailButton = document.getElementById("show_action_needed_email");
+    let actionNeededEmail = document.getElementById("id_action_needed_reason_email")
+    let formRow = actionNeededEmail.closest('.form-row');
+    if(actionNeededDropdownReason && showEmailButton && actionNeededEmail && formRow) {
+        actionNeededDropdownReason.addEventListener('change', function() {
+            // TODO on change if not actionneeded on status, hide show email button
+            const pk = showEmailButton.getAttribute("domain-request-id")
+            const reason = actionNeededDropdownReason.value
+            fetch(`/get-domain-requests-json/${pk}/action-needed-email/${reason}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.log('Error in AJAX call: ' + data.error);
+                    return;
+                }
+                
+                let noEmailMessage = document.getElementById("no-email-message");
+                if(data && data.email_body_text) {
+                    actionNeededEmail.value = data.email_body_text
+
+                    // Show the text field
+                    if(actionNeededEmail.classList.contains("display-none")) {
+                        actionNeededEmail.classList.remove("display-none")
+                    }
+
+                    // Hide the message
+                    if(noEmailMessage && !noEmailMessage.classList.contains("display-none")) {
+                        noEmailMessage.classList.add("display-none")
+                    }
+
+                }else if (data && !data.email_body_text) {
+                    if (!noEmailMessage) {
+                        noEmailMessage = document.createElement("p");
+                        noEmailMessage.id = "no-email-message";
+                        noEmailMessage.textContent = "No email will be sent";
+                        actionNeededEmail.parentNode.appendChild(noEmailMessage);
+                    }
+
+                    // Hide the text field
+                    if(!actionNeededEmail.classList.contains("display-none")) {
+                        actionNeededEmail.classList.add("display-none")
+                    }
+
+                    // Show the message
+                    if(noEmailMessage.classList.contains("display-none")) {
+                        noEmailMessage.classList.remove("display-none")
+                    }
+                }
+                console.log(data)
+            });
+        });
+
+        showEmailButton.addEventListener('click', function() {
+            formRow.classList.remove("display-none")
+        });
+    }
+
 })();

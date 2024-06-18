@@ -295,6 +295,11 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
+    action_needed_reason_email = models.TextField(
+        null=True,
+        blank=True,
+    )
+
     federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
@@ -547,7 +552,10 @@ class DomainRequest(TimeStampedModel):
         """Returns the default email associated with the given action needed reason"""
         logger.info(f"reason? {action_needed_reason}")
         if action_needed_reason is None or action_needed_reason == self.ActionNeededReasons.OTHER:
-            return {}
+            return {
+                "subject_text": None,
+                "email_body_text": None,
+            }
 
         # Get the email body
         template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
@@ -606,6 +614,11 @@ class DomainRequest(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
+
+        if self.action_needed_reason and not self.action_needed_reason_email:
+            text = self.get_action_needed_reason_default_email_text(self.action_needed_reason)
+            self.action_needed_reason_email = text.get("email_body_text")
+
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
 
@@ -850,6 +863,9 @@ class DomainRequest(TimeStampedModel):
             case self.ActionNeededReasons.OTHER, _:
                 # Unknown and other are default cases - do nothing
                 can_send_email = False
+
+        # TODO - replace this logic with self.action_needed_reason_email in #1901.
+        # The email content should be dependent on that field.
 
         # Assumes that the template name matches the action needed reason if nothing is specified.
         # This is so you can override if you need, or have this taken care of for you.

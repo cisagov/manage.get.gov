@@ -112,9 +112,7 @@ def get_action_needed_email(request, pk, reason):
     if not has_access:
         raise PermissionDenied("You do not have permission to access this resource.")
     
-    logger.info(f"pk: {pk} reason: {reason}")
     domain_request = DomainRequest.objects.filter(id=pk).first()
-
     reason_dict = domain_request.get_action_needed_reason_default_email_text(reason)
 
     return JsonResponse(
