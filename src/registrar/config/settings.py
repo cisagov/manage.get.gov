@@ -659,6 +659,7 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-ag.app.cloud.gov",
     "getgov-litterbox.app.cloud.gov",
     "getgov-hotgov.app.cloud.gov",
     "getgov-cb.app.cloud.gov",
