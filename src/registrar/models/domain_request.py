@@ -12,6 +12,7 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
+from django.template.loader import get_template
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -540,6 +541,29 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
     )
+
+
+    def get_action_needed_reason_default_email_text(self, action_needed_reason: str):
+        """Returns the default email associated with the given action needed reason"""
+        logger.info(f"reason? {action_needed_reason}")
+        if action_needed_reason is None or action_needed_reason == self.ActionNeededReasons.OTHER:
+            return {}
+
+        # Get the email body
+        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
+        template = get_template(template_path)
+
+        # Get the email subject
+        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
+        subject_template = get_template(template_subject_path)
+
+        # Return the content of the rendered views
+        context = {"domain_request": self}
+        return {
+            "subject_text": subject_template.render(context=context),
+            "email_body_text": template.render(context=context)
+        }
+
 
     def sync_organization_type(self):
         """

@@ -1,3 +1,4 @@
+import logging
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from registrar.models import DomainRequest
@@ -5,6 +6,10 @@ from django.utils.dateformat import format
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
+from django.core.exceptions import PermissionDenied
+
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -96,4 +101,22 @@ def get_domain_requests_json(request):
             "total": paginator.count,
             "unfiltered_total": unfiltered_total,
         }
+    )
+
+
+
+@login_required
+def get_action_needed_email(request, pk, reason):
+    has_access = request.user.is_staff or request.user.is_superuser
+    # TODO also check the perm group 
+    if not has_access:
+        raise PermissionDenied("You do not have permission to access this resource.")
+    
+    logger.info(f"pk: {pk} reason: {reason}")
+    domain_request = DomainRequest.objects.filter(id=pk).first()
+
+    reason_dict = domain_request.get_action_needed_reason_default_email_text(reason)
+
+    return JsonResponse(
+        reason_dict
     )
