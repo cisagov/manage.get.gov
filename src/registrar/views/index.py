@@ -10,4 +10,7 @@ def index(request):
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
 
+        # This controls the creation of a new domain request in the wizard
+        request.session["new_request"] = True
+
     return render(request, "home.html", context)

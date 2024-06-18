@@ -63,11 +63,24 @@ class TestWithUser(MockEppLib):
         self.user.contact.title = title
         self.user.contact.save()
 
-        username_incomplete = "test_user_incomplete"
+        username_regular_incomplete = "test_regular_user_incomplete"
+        username_other_incomplete = "test_other_user_incomplete"
         first_name_2 = "Incomplete"
         email_2 = "unicorn@igorville.com"
-        self.incomplete_user = get_user_model().objects.create(
-            username=username_incomplete, first_name=first_name_2, email=email_2
+        # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
+        self.incomplete_regular_user = get_user_model().objects.create(
+            username=username_regular_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.REGULAR,
+        )
+        # in the case below, other user is representative of GRANDFATHERED,
+        # VERIFIED_BY_STAFF, INVITED, FIXTURE_USER, ie. IAL1
+        self.incomplete_other_user = get_user_model().objects.create(
+            username=username_other_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.VERIFIED_BY_STAFF,
         )
 
     def tearDown(self):
@@ -75,8 +88,7 @@ class TestWithUser(MockEppLib):
         super().tearDown()
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
-        self.user.delete()
-        self.incomplete_user.delete()
+        User.objects.all().delete()
 
 
 class TestEnvironmentVariablesEffects(TestCase):
@@ -526,7 +538,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_new_user_with_profile_feature_on(self):
         """Tests that a new user is redirected to the profile setup page when profile_feature is on"""
-        self.app.set_user(self.incomplete_user.username)
+        self.app.set_user(self.incomplete_regular_user.username)
         with override_flag("profile_feature", active=True):
             # This will redirect the user to the setup page.
             # Follow implicity checks if our redirect is working.
@@ -565,7 +577,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
     def test_new_user_goes_to_domain_request_with_profile_feature_on(self):
         """Tests that a new user is redirected to the domain request page when profile_feature is on"""
 
-        self.app.set_user(self.incomplete_user.username)
+        self.app.set_user(self.incomplete_regular_user.username)
         with override_flag("profile_feature", active=True):
             # This will redirect the user to the setup page
             finish_setup_page = self.app.get(reverse("domain-request:")).follow()
@@ -617,6 +629,106 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.assertNotContains(response, "What contact information should we use to reach you?")
 
         self.assertContains(response, "You’re about to start your .gov domain request")
+
+
+class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
+    """A series of tests that target the user profile page intercept for incomplete IAL1 user profiles."""
+
+    # csrf checks do not work well with WebTest.
+    # We disable them here.
+    csrf_checks = False
+
+    def setUp(self):
+        super().setUp()
+        self.user.title = None
+        self.user.save()
+        self.client.force_login(self.user)
+        self.domain, _ = Domain.objects.get_or_create(name="sampledomain.gov", state=Domain.State.READY)
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+    def tearDown(self):
+        super().tearDown()
+        PublicContact.objects.filter(domain=self.domain).delete()
+        self.role.delete()
+        self.domain.delete()
+        Domain.objects.all().delete()
+        Website.objects.all().delete()
+        Contact.objects.all().delete()
+
+    def _set_session_cookie(self):
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+    def _submit_form_webtest(self, form, follow=False):
+        page = form.submit()
+        self._set_session_cookie()
+        return page.follow() if follow else page
+
+    @less_console_noise_decorator
+    def test_new_user_with_profile_feature_on(self):
+        """Tests that a new user is redirected to the profile setup page when profile_feature is on,
+        and testing that the confirmation modal is present"""
+        self.app.set_user(self.incomplete_other_user.username)
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the user profile page.
+            # Follow implicity checks if our redirect is working.
+            user_profile_page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
+
+            # Assert that we're on the right page by testing for the modal
+            self.assertContains(user_profile_page, "domain registrants must maintain accurate contact information")
+
+            user_profile_page = self._submit_form_webtest(user_profile_page.form)
+
+            self.assertEqual(user_profile_page.status_code, 200)
+
+            # Assert that modal does not appear on subsequent submits
+            self.assertNotContains(user_profile_page, "domain registrants must maintain accurate contact information")
+            # Assert that unique error message appears by testing the message in a specific div
+            html_content = user_profile_page.content.decode("utf-8")
+            # Normalize spaces and line breaks in the HTML content
+            normalized_html_content = " ".join(html_content.split())
+            # Expected string without extra spaces and line breaks
+            expected_string = "Before you can manage your domain, we need you to add contact information."
+            # Check for the presence of the <div> element with the specific text
+            self.assertIn(f'<div class="usa-alert__body"> {expected_string} </div>', normalized_html_content)
+
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(user_profile_page, "Enter your phone number.")
+
+            # We need to assert that links to manage your domain are not present (in both body and footer)
+            self.assertNotContains(user_profile_page, "Manage your domains")
+            # Assert the tooltip on the logo, indicating that the logo is not clickable
+            self.assertContains(
+                user_profile_page, 'title="Before you can manage your domains, we need you to add contact information."'
+            )
+            # Assert that modal does not appear on subsequent submits
+            self.assertNotContains(user_profile_page, "domain registrants must maintain accurate contact information")
+
+            # Add a phone number
+            finish_setup_form = user_profile_page.form
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            save_page = self._submit_form_webtest(finish_setup_form, follow=True)
+
+            self.assertEqual(save_page.status_code, 200)
+            self.assertContains(save_page, "Your profile has been updated.")
+
+            # We need to assert that logo is not clickable and links to manage your domain are not present
+            self.assertContains(save_page, "anage your domains", count=2)
+            self.assertNotContains(
+                save_page, "Before you can manage your domains, we need you to add contact information"
+            )
+            # Assert that modal does not appear on subsequent submits
+            self.assertNotContains(save_page, "domain registrants must maintain accurate contact information")
+
+            # Try to navigate back to the home page.
+            # This is the same as clicking the back button.
+            completed_setup_page = self.app.get(reverse("home"))
+            self.assertContains(completed_setup_page, "Manage your domain")
 
 
 class UserProfileTests(TestWithUser, WebTest):
