@@ -1520,8 +1520,6 @@ document.addEventListener('DOMContentLoaded', function() {
           modals.forEach(modal => {
             const submitButton = modal.querySelector('.usa-modal__submit');
             const closeButton = modal.querySelector('.usa-modal__close');
-
-
             submitButton.addEventListener('click', function() {
               pk = submitButton.getAttribute('data-pk');
               // Close the modal to remove the USWDS UI local classes
