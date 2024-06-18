@@ -56,7 +56,6 @@ class Command(BaseCommand):
                     os.remove(f"tmp/{file_path}")
                     logger.info(f"Removed {file_path}")
 
-
     def export_table(self, table_name):
         """Export a given table to csv files in the tmp directory"""
         resourcename = f"{table_name}Resource"
