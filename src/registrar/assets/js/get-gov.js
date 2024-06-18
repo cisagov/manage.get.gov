@@ -33,6 +33,33 @@ const showElement = (element) => {
   element.classList.remove('display-none');
 };
 
+/**
+ * Helper function that scrolls to an element
+ * @param {string} attributeName - The string "class" or "id"
+ * @param {string} attributeValue - The class or id name
+ */
+function ScrollToElement(attributeName, attributeValue) {
+  let targetEl = null;
+
+  if (attributeName === 'class') {
+    targetEl = document.getElementsByClassName(attributeValue)[0];
+  } else if (attributeName === 'id') {
+    targetEl = document.getElementById(attributeValue);
+  } else {
+    console.log('Error: unknown attribute name provided.');
+    return; // Exit the function if an invalid attributeName is provided
+  }
+
+  if (targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    window.scrollTo({
+      top: rect.top + scrollTop,
+      behavior: 'smooth' // Optional: for smooth scrolling
+    });
+  }
+}
+
 /** Makes an element invisible. */
 function makeHidden(el) {
   el.style.position = "absolute";
@@ -896,33 +923,6 @@ function unloadModals() {
 }
 
 /**
- * Helper function that scrolls to an element
- * @param {string} attributeName - The string "class" or "id"
- * @param {string} attributeValue - The class or id name
- */
-function ScrollToElement(attributeName, attributeValue) {
-  let targetEl = null;
-
-  if (attributeName === 'class') {
-    targetEl = document.getElementsByClassName(attributeValue)[0];
-  } else if (attributeName === 'id') {
-    targetEl = document.getElementById(attributeValue);
-  } else {
-    console.log('Error: unknown attribute name provided.');
-    return; // Exit the function if an invalid attributeName is provided
-  }
-
-  if (targetEl) {
-    const rect = targetEl.getBoundingClientRect();
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    window.scrollTo({
-      top: rect.top + scrollTop,
-      behavior: 'smooth' // Optional: for smooth scrolling
-    });
-  }
-}
-
-/**
  * Generalized function to update pagination for a list.
  * @param {string} itemName - The name displayed in the counter
  * @param {string} paginationSelector - CSS selector for the pagination container.
@@ -1469,7 +1469,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </svg>
                   </button>
                 </div>
-              `
+                `
 
               domainRequestsSectionWrapper.appendChild(modal);
             }
@@ -1507,13 +1507,10 @@ document.addEventListener('DOMContentLoaded', function() {
           modals.forEach(modal => {
             const submitButton = modal.querySelector('.usa-modal__submit');
             const closeButton = modal.querySelector('.usa-modal__close');
-            
-            // Clone the submit button to remove all existing event listeners
-            const newSubmitButton = submitButton.cloneNode(true);
-            submitButton.parentNode.replaceChild(newSubmitButton, submitButton);
 
-            newSubmitButton.addEventListener('click', function() {
-              pk = newSubmitButton.getAttribute('data-pk');
+
+            submitButton.addEventListener('click', function() {
+              pk = submitButton.getAttribute('data-pk');
               // Close the modal to remove the USWDS UI local classes
               closeButton.click();
               // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
