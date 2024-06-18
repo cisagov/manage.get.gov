@@ -2572,8 +2572,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         # org name and it is a federal organization, have this field fill with
         # the federal agency text name.
         is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
-        if is_federal:
-            obj.organization_name = obj.organization_type
+        if is_federal and obj.organization_name is None:
+            obj.organization_name = obj.federal_agency.agency
             # NOTE: What is meant by "federal agency text name?"
 
         super().save_model(request, obj, form, change)
