@@ -20,7 +20,7 @@ class Portfolio(TimeStampedModel):
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
-    
+
     # Stores who created this model. If no creator is specified in DJA,
     # then the creator will default to the current request user"""
     creator = models.ForeignKey("registrar.User", on_delete=models.PROTECT, help_text="Associated user", unique=False)

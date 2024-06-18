@@ -2563,7 +2563,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def save_model(self, request, obj, form, change):
 
-        if not obj.creator is None:
+        if obj.creator is not None:
             # ---- update creator ----
             # Set the creator field to the current admin user
             obj.creator = request.user if request.user.is_authenticated else None
