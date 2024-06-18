@@ -2,7 +2,7 @@ from django.shortcuts import render
 from waffle.decorators import flag_is_active
 
 
-def index(request):
+def index_organizations(request):
     """This page is available to anyone without logging in."""
     context = {}
 
@@ -14,6 +14,6 @@ def index(request):
         # This controls the creation of a new domain request in the wizard
         request.session["new_request"] = True
 
-        print('homepage view')
+        print('homepage organizations view')
 
-    return render(request, "home.html", context)
+    return render(request, "home_organizations.html", context)

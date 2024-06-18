@@ -2,6 +2,7 @@
 Contains middleware used in settings.py
 """
 
+import logging
 from urllib.parse import parse_qs
 from django.urls import reverse
 from django.http import HttpResponseRedirect
@@ -10,6 +11,7 @@ from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
 
+logger = logging.getLogger(__name__)
 
 class NoCacheMiddleware:
     """
@@ -119,3 +121,36 @@ class CheckUserProfileMiddleware:
         else:
             # Process the view as normal
             return None
+        
+class CheckOrganizationMiddleware:
+    """
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.home_organization = reverse("home-organization")
+        self.home = reverse("home")
+        self.json1 = reverse("get_domains_json")
+        self.json2 = reverse("get_domain_requests_json")
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        return response
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        current_path = request.path
+        logger.debug(f"Current path: {current_path}")
+
+        # Avoid infinite loop by skipping the redirect check on the home-organization URL
+        if current_path == self.home_organization or current_path == self.json1 or current_path == self.json2:
+            logger.debug("Skipping middleware check for home-organization URL")
+            return None
+
+        has_organization_feature_flag = flag_is_active(request, "organization_feature")
+        logger.debug(f"Flag is active: {has_organization_feature_flag}")
+
+        if has_organization_feature_flag:
+            logger.debug(f"Redirecting to {self.home_organization}")
+            return HttpResponseRedirect(self.home_organization)
+
+        return None
