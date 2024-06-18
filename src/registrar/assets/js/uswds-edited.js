@@ -5311,17 +5311,14 @@ const cleanUpModal = baseComponent => {
   const modalID = modalWrapper.getAttribute("id");
   const originalLocationPlaceHolder = document.querySelector(`[data-placeholder-for="${modalID}"]`);
   if (originalLocationPlaceHolder) {
-    // DOTGOV
-    // Why is this line here? It seems to be recreating the original placeholder and then adding a
-    // copy of it after that first placeholder, which is netralizing our call of off()
-    // for (let attributeIndex = 0; attributeIndex < originalLocationPlaceHolder.attributes.length; attributeIndex += 1) {
-    //   const attribute = originalLocationPlaceHolder.attributes[attributeIndex];
-    //   if (attribute.name.startsWith('data-original-')) {
-    //     // data-original- is 14 long
-    //     modalContent.setAttribute(attribute.name.substr(14), attribute.value);
-    //   }
-    // }
-    //originalLocationPlaceHolder.after(modalContent);
+    for (let attributeIndex = 0; attributeIndex < originalLocationPlaceHolder.attributes.length; attributeIndex += 1) {
+      const attribute = originalLocationPlaceHolder.attributes[attributeIndex];
+      if (attribute.name.startsWith('data-original-')) {
+        // data-original- is 14 long
+        modalContent.setAttribute(attribute.name.substr(14), attribute.value);
+      }
+    }
+    originalLocationPlaceHolder.after(modalContent);
     originalLocationPlaceHolder.parentElement.removeChild(originalLocationPlaceHolder);
   }
   modalWrapper.parentElement.removeChild(modalWrapper);

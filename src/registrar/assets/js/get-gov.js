@@ -1294,6 +1294,10 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
     */
     function deleteDomainRequest(domainRequestPk,pageToDisplay) {
+      
+      // Use to debug uswds modal issues
+      //console.log('deleteDomainRequest')
+      
       // Get csrf token
       const csrfToken = getCsrfToken();
       // Create FormData object and append the CSRF token
@@ -1347,6 +1351,15 @@ document.addEventListener('DOMContentLoaded', function() {
           // identify the DOM element where the domain request list will be inserted into the DOM
           const tbody = document.querySelector('.domain-requests__table tbody');
           tbody.innerHTML = '';
+
+          // Unload modals will re-inject the DOM with the initial placeholders to allow for .on() in regular use cases
+          // We do NOT want that as it will cause multiple placeholders and therfore multiple inits on delete,
+          // which will cause bad delete requests to be sent.
+          const preExistingModalPlaceholders = document.querySelectorAll('[data-placeholder-for^="toggle-delete-domain-alert"]');
+          preExistingModalPlaceholders.forEach(element => {
+              console.log('found one');
+              element.remove();
+          });
 
           // remove any existing modal elements from the DOM so they can be properly re-initialized
           // after the DOM content changes and there are new delete modal buttons added
