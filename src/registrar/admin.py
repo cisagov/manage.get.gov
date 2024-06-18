@@ -2552,6 +2552,34 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
+class PortfolioAdmin(ListHeaderAdmin):
+    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+    list_display = ("organization_name", "federal_agency", "creator")
+    search_fields = ["organization_name"]
+    search_help_text = "Search by organization name."
+    # readonly_fields = [
+    #     "requestor",
+    # ]
+
+    def save_model(self, request, obj, form, change):
+
+        if obj.creator is not None:
+            # ---- update creator ----
+            # Set the creator field to the current admin user
+            obj.creator = request.user if request.user.is_authenticated else None
+
+        # ---- update organization name ----
+        # org name will be the same as federal agency, if it is federal,
+        # otherwise it will be the actual org name. If nothing is entered for
+        # org name and it is a federal organization, have this field fill with
+        # the federal agency text name.
+        is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+        if is_federal and obj.organization_name is None:
+            obj.organization_name = obj.federal_agency.agency
+
+        super().save_model(request, obj, form, change)
+
+
 class FederalAgencyAdmin(ListHeaderAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]
@@ -2622,6 +2650,7 @@ admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
+admin.site.register(models.Portfolio, PortfolioAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)

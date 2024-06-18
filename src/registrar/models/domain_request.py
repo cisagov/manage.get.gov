@@ -303,6 +303,16 @@ class DomainRequest(TimeStampedModel):
         null=True,
     )
 
+    # portfolio
+    portfolio = models.ForeignKey(
+        "registrar.Portfolio",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="DomainInformation_portfolio",
+        help_text="Portfolio associated with this domain request",
+    )
+
     # This is the domain request user who created this domain request. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
