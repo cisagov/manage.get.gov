@@ -6,9 +6,9 @@ from registrar.models.federal_agency import FederalAgency
 from .utility.time_stamped_model import TimeStampedModel
 
 
-def get_default_federal_agency():
-    """returns non-federal agency"""
-    return FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+# def get_default_federal_agency():
+#     """returns non-federal agency"""
+#     return FederalAgency.objects.filter(agency="Non-Federal Agency").first()
 
 
 class Portfolio(TimeStampedModel):
@@ -20,7 +20,7 @@ class Portfolio(TimeStampedModel):
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
-
+    
     # Stores who created this model. If no creator is specified in DJA,
     # then the creator will default to the current request user"""
     creator = models.ForeignKey("registrar.User", on_delete=models.PROTECT, help_text="Associated user", unique=False)
@@ -35,7 +35,7 @@ class Portfolio(TimeStampedModel):
         on_delete=models.PROTECT,
         help_text="Associated federal agency",
         unique=False,
-        default=get_default_federal_agency,
+        default=FederalAgency.get_non_federal_agency,
     )
 
     organization_type = models.CharField(

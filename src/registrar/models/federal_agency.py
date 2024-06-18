@@ -230,3 +230,8 @@ class FederalAgency(TimeStampedModel):
             FederalAgency.objects.bulk_create(agencies)
         except Exception as e:
             logger.error(f"Error creating federal agencies: {e}")
+
+    @classmethod
+    def get_non_federal_agency(cls):
+        """Returns the non-federal agency."""
+        return FederalAgency.objects.filter(agency="Non-Federal Agency").first()
