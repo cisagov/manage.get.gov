@@ -1233,7 +1233,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio","creator", "submitter", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1482,6 +1482,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             None,
             {
                 "fields": [
+                    "portfolio",
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
