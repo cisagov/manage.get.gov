@@ -2562,9 +2562,11 @@ class PortfolioAdmin(ListHeaderAdmin):
     # ]
 
     def save_model(self, request, obj, form, change):
-        # ---- update creator ----
-        # Set the creator field to the current admin user
-        obj.creator = request.user if request.user.is_authenticated else None
+
+        if not obj.creator is None:
+            # ---- update creator ----
+            # Set the creator field to the current admin user
+            obj.creator = request.user if request.user.is_authenticated else None
 
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,

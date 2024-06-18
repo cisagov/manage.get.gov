@@ -304,7 +304,7 @@ class DomainRequest(TimeStampedModel):
     )
 
     # portfolio
-    portfolio = models.OneToOneField(
+    portfolio = models.ForeignKey(
         "registrar.Portfolio",
         on_delete=models.PROTECT,
         null=True,
