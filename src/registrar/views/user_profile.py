@@ -159,6 +159,7 @@ class FinishProfileSetupView(UserProfileView):
 
         # Get the current form and validate it
         if form.is_valid():
+            self.redirect_page = True
             if "contact_setup_save_button" in request.POST:
                 # Logic for when the 'Save' button is clicked, which indicates
                 # user should stay on this page
