@@ -137,6 +137,47 @@ function openInNewTab(el, removeAttribute = false){
     prepareDjangoAdmin();
 })();
 
+
+/** An IIFE for the "Assign to me" button under the investigator field in DomainRequests.
+** This field uses the "select2" selector, rather than the default. 
+** To perform data operations on this - we need to use jQuery rather than vanilla js. 
+*/
+(function (){
+    let selector = django.jQuery("#id_investigator")
+    let assignSelfButton = document.querySelector("#investigator__assign_self");
+    if (!selector || !assignSelfButton) {
+        return;
+    }
+
+    let currentUserId = assignSelfButton.getAttribute("data-user-id");
+    let currentUserName = assignSelfButton.getAttribute("data-user-name");
+    if (!currentUserId || !currentUserName){
+        console.error("Could not assign current user: no values found.")
+        return;
+    }
+
+    // Hook a click listener to the "Assign to me" button.
+    // Logic borrowed from here: https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
+    assignSelfButton.addEventListener("click", function() {
+        if (selector.find(`option[value='${currentUserId}']`).length) {
+            // Select the value that is associated with the current user.
+            selector.val(currentUserId).trigger("change");
+        } else { 
+            // Create a DOM Option that matches the desired user. Then append it and select it.
+            let userOption = new Option(currentUserName, currentUserId, true, true);
+            selector.append(userOption).trigger("change");
+        }
+    });
+
+    // Listen to any change events, and hide the parent container if investigator has a value.
+    selector.on('change', function() {
+        // The parent container has display type flex.
+        assignSelfButton.parentElement.style.display = this.value === currentUserId ? "none" : "flex";
+    });
+    
+    
+
+})();
 /** An IIFE for pages in DjangoAdmin that use a clipboard button
 */
 (function (){
@@ -300,42 +341,90 @@ function initializeWidgetOnList(list, parentId) {
 */
 (function (){
     let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+    let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
 
-    if (rejectionReasonFormGroup) {
+    if (rejectionReasonFormGroup && actionNeededReasonFormGroup) {
         let statusSelect = document.getElementById('id_status')
+        let isRejected = statusSelect.value == "rejected"
+        let isActionNeeded = statusSelect.value == "action needed"
 
         // Initial handling of rejectionReasonFormGroup display
-        if (statusSelect.value != 'rejected')
-            rejectionReasonFormGroup.style.display = 'none';
+        showOrHideObject(rejectionReasonFormGroup, show=isRejected)
+        showOrHideObject(actionNeededReasonFormGroup, show=isActionNeeded)
 
         // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
         statusSelect.addEventListener('change', function() {
-            if (statusSelect.value == 'rejected') {
-                rejectionReasonFormGroup.style.display = 'block';
-                sessionStorage.removeItem('hideRejectionReason');
-            } else {
-                rejectionReasonFormGroup.style.display = 'none';
-                sessionStorage.setItem('hideRejectionReason', 'true');
-            }
+            // Show the rejection reason field if the status is rejected.
+            // Then track if its shown or hidden in our session cache.
+            isRejected = statusSelect.value == "rejected"
+            showOrHideObject(rejectionReasonFormGroup, show=isRejected)
+            addOrRemoveSessionBoolean("showRejectionReason", add=isRejected)
+
+            isActionNeeded = statusSelect.value == "action needed"
+            showOrHideObject(actionNeededReasonFormGroup, show=isActionNeeded)
+            addOrRemoveSessionBoolean("showActionNeededReason", add=isActionNeeded)
         });
+        
+        // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
+
+        // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
+        // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
+        // accurately for this edge case, we use cache and test for the back/forward navigation.
+        const observer = new PerformanceObserver((list) => {
+            list.getEntries().forEach((entry) => {
+            if (entry.type === "back_forward") {
+                let showRejectionReason = sessionStorage.getItem("showRejectionReason") !== null
+                showOrHideObject(rejectionReasonFormGroup, show=showRejectionReason)
+
+                let showActionNeededReason = sessionStorage.getItem("showActionNeededReason") !== null
+                showOrHideObject(actionNeededReasonFormGroup, show=showActionNeededReason)
+            }
+            });
+        });
+        observer.observe({ type: "navigation" });
     }
 
-    // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
+    // Adds or removes the display-none class to object depending on the value of boolean show
+    function showOrHideObject(object, show){
+        if (show){
+            object.classList.remove("display-none");
+        }else {
+            object.classList.add("display-none");
+        }
+    }
 
-    // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
-    // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
-    // accurately for this edge case, we use cache and test for the back/forward navigation.
-    const observer = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-          if (entry.type === "back_forward") {
-            if (sessionStorage.getItem('hideRejectionReason'))
-                document.querySelector('.field-rejection_reason').style.display = 'none';
-            else
-                document.querySelector('.field-rejection_reason').style.display = 'block';
-          }
-        });
+    // Adds or removes a boolean from our session
+    function addOrRemoveSessionBoolean(name, add){
+        if (add) {
+            sessionStorage.setItem(name, "true");
+        }else {
+            sessionStorage.removeItem(name); 
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        let statusSelect = document.getElementById('id_status');
+        
+        function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
+            let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
+            let statusChangelog = document.getElementById('dja-status-changelog');
+            if (statusSelect.value === "action needed") {
+                flexContainer.parentNode.insertBefore(statusChangelog, flexContainer.nextSibling);
+            } else {
+                // Move the changelog back to its original location
+                let statusFlexContainer = statusSelect.closest('.flex-container');
+                statusFlexContainer.parentNode.insertBefore(statusChangelog, statusFlexContainer.nextSibling);
+            }
+        }
+        
+        // Call the function on page load
+        moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
+
+        // Add event listener to handle changes to the selector itself
+        statusSelect.addEventListener('change', function() {
+            moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
+        })
     });
-    observer.observe({ type: "navigation" });
 })();
 
 /** An IIFE for toggling the submit bar on domain request forms

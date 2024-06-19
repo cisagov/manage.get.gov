@@ -33,6 +33,7 @@ from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
+from django.core.exceptions import ObjectDoesNotExist
 
 from django.utils.translation import gettext_lazy as _
 
@@ -217,6 +218,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         status = cleaned_data.get("status")
         investigator = cleaned_data.get("investigator")
         rejection_reason = cleaned_data.get("rejection_reason")
+        action_needed_reason = cleaned_data.get("action_needed_reason")
 
         # Get the old status
         initial_status = self.initial.get("status", None)
@@ -240,6 +242,8 @@ class DomainRequestAdminForm(forms.ModelForm):
         # If the status is rejected, a rejection reason must exist
         if status == DomainRequest.DomainRequestStatus.REJECTED:
             self._check_for_valid_rejection_reason(rejection_reason)
+        elif status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
+            self._check_for_valid_action_needed_reason(action_needed_reason)
 
         return cleaned_data
 
@@ -260,6 +264,18 @@ class DomainRequestAdminForm(forms.ModelForm):
 
         if error_message is not None:
             self.add_error("rejection_reason", error_message)
+
+        return is_valid
+
+    def _check_for_valid_action_needed_reason(self, action_needed_reason) -> bool:
+        """
+        Checks if the action_needed_reason field is not none.
+        Adds form errors on failure.
+        """
+        is_valid = action_needed_reason is not None and action_needed_reason != ""
+        if not is_valid:
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_ACTION_NEEDED_REASON)
+            self.add_error("action_needed_reason", error_message)
 
         return is_valid
 
@@ -1166,6 +1182,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     # error.
     readonly_fields = ["status"]
 
+    autocomplete_fields = ["domain"]
+
     change_form_template = "django/admin/email_clipboard_change_form.html"
 
     # Select domain invitations to change -> Domain invitations
@@ -1466,6 +1484,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "status",
                     "rejection_reason",
+                    "action_needed_reason",
                     "investigator",
                     "creator",
                     "submitter",
@@ -1482,6 +1501,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "authorizing_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
+                    "cisa_representative_first_name",
+                    "cisa_representative_last_name",
                     "cisa_representative_email",
                 ]
             },
@@ -1557,6 +1578,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
+        "cisa_representative_first_name",
+        "cisa_representative_last_name",
         "cisa_representative_email",
     ]
     autocomplete_fields = [
@@ -1668,6 +1691,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
             # because we clean up the rejection reason in the transition in the model.
             error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
+        elif obj.status == models.DomainRequest.DomainRequestStatus.ACTION_NEEDED and not obj.action_needed_reason:
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_ACTION_NEEDED_REASON)
         else:
             # This is an fsm in model which will throw an error if the
             # transition condition is violated, so we roll back the
@@ -1794,9 +1819,92 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return response
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Display restricted warning,
+        Setup the auditlog trail and pass it in extra context."""
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
+
+        # Initialize variables for tracking status changes and filtered entries
+        filtered_audit_log_entries = []
+
+        try:
+            # Retrieve and order audit log entries by timestamp in descending order
+            audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("-timestamp")
+
+            # Process each log entry to filter based on the change criteria
+            for log_entry in audit_log_entries:
+                entry = self.process_log_entry(log_entry)
+                if entry:
+                    filtered_audit_log_entries.append(entry)
+
+        except ObjectDoesNotExist as e:
+            logger.error(f"Object with object_id {object_id} does not exist: {e}")
+        except Exception as e:
+            logger.error(f"An error occurred during change_view: {e}")
+
+        # Initialize extra_context and add filtered entries
+        extra_context = extra_context or {}
+        extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
+
+        # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def process_log_entry(self, log_entry):
+        """Process a log entry and return filtered entry dictionary if applicable."""
+        changes = log_entry.changes
+        status_changed = "status" in changes
+        rejection_reason_changed = "rejection_reason" in changes
+        action_needed_reason_changed = "action_needed_reason" in changes
+
+        # Check if the log entry meets the filtering criteria
+        if status_changed or (not status_changed and (rejection_reason_changed or action_needed_reason_changed)):
+            entry = {}
+
+            # Handle status change
+            if status_changed:
+                _, status_value = changes.get("status")
+                if status_value:
+                    entry["status"] = DomainRequest.DomainRequestStatus.get_status_label(status_value)
+
+            # Handle rejection reason change
+            if rejection_reason_changed:
+                _, rejection_reason_value = changes.get("rejection_reason")
+                if rejection_reason_value:
+                    entry["rejection_reason"] = (
+                        ""
+                        if rejection_reason_value == "None"
+                        else DomainRequest.RejectionReasons.get_rejection_reason_label(rejection_reason_value)
+                    )
+                    # Handle case where rejection reason changed but not status
+                    if not status_changed:
+                        entry["status"] = DomainRequest.DomainRequestStatus.get_status_label(
+                            DomainRequest.DomainRequestStatus.REJECTED
+                        )
+
+            # Handle action needed reason change
+            if action_needed_reason_changed:
+                _, action_needed_reason_value = changes.get("action_needed_reason")
+                if action_needed_reason_value:
+                    entry["action_needed_reason"] = (
+                        ""
+                        if action_needed_reason_value == "None"
+                        else DomainRequest.ActionNeededReasons.get_action_needed_reason_label(
+                            action_needed_reason_value
+                        )
+                    )
+                    # Handle case where action needed reason changed but not status
+                    if not status_changed:
+                        entry["status"] = DomainRequest.DomainRequestStatus.get_status_label(
+                            DomainRequest.DomainRequestStatus.ACTION_NEEDED
+                        )
+
+            # Add actor and timestamp information
+            entry["actor"] = log_entry.actor
+            entry["timestamp"] = log_entry.timestamp
+
+            return entry
+
+        return None
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
@@ -2463,6 +2571,34 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
+class PortfolioAdmin(ListHeaderAdmin):
+    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+    list_display = ("organization_name", "federal_agency", "creator")
+    search_fields = ["organization_name"]
+    search_help_text = "Search by organization name."
+    # readonly_fields = [
+    #     "requestor",
+    # ]
+
+    def save_model(self, request, obj, form, change):
+
+        if obj.creator is not None:
+            # ---- update creator ----
+            # Set the creator field to the current admin user
+            obj.creator = request.user if request.user.is_authenticated else None
+
+        # ---- update organization name ----
+        # org name will be the same as federal agency, if it is federal,
+        # otherwise it will be the actual org name. If nothing is entered for
+        # org name and it is a federal organization, have this field fill with
+        # the federal agency text name.
+        is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+        if is_federal and obj.organization_name is None:
+            obj.organization_name = obj.federal_agency.agency
+
+        super().save_model(request, obj, form, change)
+
+
 class FederalAgencyResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
     import/export file"""
@@ -2542,6 +2678,7 @@ admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
+admin.site.register(models.Portfolio, PortfolioAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
