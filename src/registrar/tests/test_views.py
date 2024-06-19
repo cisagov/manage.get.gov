@@ -611,10 +611,12 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             finish_setup_form = completed_setup_page.form
 
             # Submit the form using the specific submit button to execute the redirect
-            completed_setup_page = self._submit_form_webtest(finish_setup_form, follow=True, name="contact_setup_submit_button")
+            completed_setup_page = self._submit_form_webtest(
+                finish_setup_form, follow=True, name="contact_setup_submit_button"
+            )
             self.assertEqual(completed_setup_page.status_code, 200)
 
-            # Assert that we are still on the 
+            # Assert that we are still on the
             # Assert that we're on the domain request page
             self.assertNotContains(completed_setup_page, "Finish setting up your profile")
             self.assertNotContains(completed_setup_page, "What contact information should we use to reach you?")
