@@ -18,7 +18,7 @@
           completing your domain request might take around 15 minutes.</p>
         {% if has_profile_feature_flag %}
         <h2>How we’ll reach you</h2>
-        <p>While reviewing your domain request, we may need to reach out with questions. We’ll also email you when we complete our review If the contact information below is not correct, visit <a href="{% url 'user-profile' %}?return_to_request=True" class="usa-link">your profile</a> to make updates.</p>
+        <p>While reviewing your domain request, we may need to reach out with questions. We’ll also email you when we complete our review If the contact information below is not correct, visit <a href="{% url 'user-profile' %}?redirect=domain-request:" class="usa-link">your profile</a> to make updates.</p>
         {% include "includes/profile_information.html" with user=user%}
         {% endif %}
         

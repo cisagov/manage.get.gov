@@ -33,6 +33,8 @@
             Your contact information
         </legend>
 
+        <input type="hidden" name="redirect" value="{{ form.initial.redirect }}">
+        
         {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable usa-form-editable--no-border padding-top-2" %}
             {% input_with_errors form.full_name %}
         {% endwith %}

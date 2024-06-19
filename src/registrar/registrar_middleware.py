@@ -41,21 +41,6 @@ class CheckUserProfileMiddleware:
         self.setup_page = reverse("finish-user-profile-setup")
         self.profile_page = reverse("user-profile")
         self.logout_page = reverse("logout")
-        self.regular_excluded_pages = [
-            self.setup_page,
-            self.logout_page,
-            "/admin",
-        ]
-        self.other_excluded_pages = [
-            self.profile_page,
-            self.logout_page,
-            "/admin",
-        ]
-
-    def __init__(self):
-        self.setup_page = reverse("finish-user-profile-setup")
-        self.profile_page = reverse("user-profile")
-        self.logout_page = reverse("logout")
         
         self.regular_excluded_pages = [
             self.setup_page,
