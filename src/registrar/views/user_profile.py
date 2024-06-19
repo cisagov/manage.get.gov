@@ -62,7 +62,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
         # Set the profile_back_button_text based on the redirect parameter
         if kwargs.get("redirect") == "domain-request:":
-            context["profile_back_button_text"] = "Go back to your request"
+            context["profile_back_button_text"] = "Go back to your domain request"
         else:
             context["profile_back_button_text"] = "Go to manage your domains"
 
@@ -159,7 +159,7 @@ class FinishProfileSetupView(UserProfileView):
 
         # Get the current form and validate it
         if form.is_valid():
-            self.redirect_page = True
+            self.redirect_page = False
             if "contact_setup_save_button" in request.POST:
                 # Logic for when the 'Save' button is clicked, which indicates
                 # user should stay on this page
