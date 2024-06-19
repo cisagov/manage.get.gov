@@ -41,7 +41,7 @@ class CheckUserProfileMiddleware:
         self.setup_page = reverse("finish-user-profile-setup")
         self.profile_page = reverse("user-profile")
         self.logout_page = reverse("logout")
-        
+
         self.regular_excluded_pages = [
             self.setup_page,
             self.logout_page,
@@ -52,12 +52,12 @@ class CheckUserProfileMiddleware:
             self.logout_page,
             "/admin",
         ]
-        
+
         self.excluded_pages = {
             self.setup_page: self.regular_excluded_pages,
-            self.profile_page: self.other_excluded_pages
+            self.profile_page: self.other_excluded_pages,
         }
-        
+
     def _get_excluded_pages(self, page):
         return self.excluded_pages.get(page, [])
 
@@ -102,7 +102,7 @@ class CheckUserProfileMiddleware:
         custom_redirect = "domain-request:" if request.path == "/request/" else None
 
         # Don't redirect on excluded pages (such as the setup page itself)
-        #if not any(request.path.startswith(page) for page in excluded_pages):
+        # if not any(request.path.startswith(page) for page in excluded_pages):
         if not any(request.path.startswith(page) for page in self._get_excluded_pages(profile_page)):
 
             # Preserve the original query parameters, and coerce them into a dict
