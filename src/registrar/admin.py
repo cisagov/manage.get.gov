@@ -2478,16 +2478,35 @@ class PublicContactResource(resources.ModelResource):
 
     class Meta:
         model = models.PublicContact
+        # may want to consider these bulk options in future, so left in as comments
+        # use_bulk = True
+        # batch_size = 1000
+        # force_init_instance = True
 
-    def import_row(self, row, instance_loader, using_transactions=True, dry_run=False, raise_errors=None, **kwargs):
-        """Override kwargs skip_epp_save and set to True"""
-        kwargs["skip_epp_save"] = True
-        return super().import_row(
-            row,
-            instance_loader,
-            using_transactions=using_transactions,
-            dry_run=dry_run,
-            raise_errors=raise_errors,
+    def __init__(self):
+        """Sets global variables for code tidyness"""
+        super().__init__()
+        self.skip_epp_save = False
+
+    def import_data(
+        self,
+        dataset,
+        dry_run=False,
+        raise_errors=False,
+        use_transactions=None,
+        collect_failed_rows=False,
+        rollback_on_validation_errors=False,
+        **kwargs,
+    ):
+        """Override import_data to set self.skip_epp_save if in kwargs"""
+        self.skip_epp_save = kwargs.get("skip_epp_save", False)
+        return super().import_data(
+            dataset,
+            dry_run,
+            raise_errors,
+            use_transactions,
+            collect_failed_rows,
+            rollback_on_validation_errors,
             **kwargs,
         )
 
@@ -2503,7 +2522,7 @@ class PublicContactResource(resources.ModelResource):
             # we don't have transactions and we want to do a dry_run
             pass
         else:
-            instance.save(skip_epp_save=True)
+            instance.save(skip_epp_save=self.skip_epp_save)
         self.after_save_instance(instance, using_transactions, dry_run)
 
 
@@ -2580,11 +2599,20 @@ class PortfolioAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
-class FederalAgencyAdmin(ListHeaderAdmin):
+class FederalAgencyResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.FederalAgency
+
+
+class FederalAgencyAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]
     search_help_text = "Search by agency name."
     ordering = ["agency"]
+    resource_classes = [FederalAgencyResource]
 
 
 class UserGroupAdmin(AuditedAdmin):
