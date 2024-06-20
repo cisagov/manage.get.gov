@@ -142,8 +142,8 @@ class CheckOrganizationMiddleware:
         logger.debug(f"Current path: {current_path}")
 
         # Avoid infinite loop by skipping the redirect check on the home-organization URL and other JSON URLs
-        if current_path in [self.json1, self.json2] or current_path.startswith('/admin'):
-            logger.debug("Skipping middleware check for home-organization and JSON URLs")
+        if current_path in [self.json1, self.json2] or current_path.startswith('/admin') or current_path.startswith('/organization'):
+            logger.debug("Skipping middleware check for admin, organization and JSON URLs")
             return None
 
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
@@ -154,7 +154,7 @@ class CheckOrganizationMiddleware:
                 user_portfolios = Portfolio.objects.filter(creator=request.user)
                 if user_portfolios.exists():
                     first_portfolio = user_portfolios.first()
-                    home_organization_with_portfolio = reverse("home-organization", kwargs={'portfolio_id': first_portfolio.id})
+                    home_organization_with_portfolio = reverse("organization-domains", kwargs={'portfolio_id': first_portfolio.id})
                     
                     if current_path != home_organization_with_portfolio:
                         logger.debug(f"User has portfolios, redirecting to {home_organization_with_portfolio}")

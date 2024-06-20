@@ -7,7 +7,7 @@
   <div class="tablet:grid-col-12">
     <div class="grid-row grid-gap">
         <div class="tablet:grid-col-3">
-            {% include "organization_sidebar.html" %}
+            {% include "organization_sidebar.html" with portfolio=portfolio current_path=content %}
         </div>
         <div class="tablet:grid-col-9">
             {% block messages %}
@@ -26,9 +26,11 @@
                 Start a new domain request
             </a>
             </p>
-
-            {% include "includes/domains_table.html" %}
-            {% include "includes/domain_requests_table.html" %}
+            {% if content == 'domains' %}
+                {% include "includes/domains_table.html" with portfolio=portfolio %}
+            {% elif content == 'domain-requests' %}
+                {% include "includes/domain_requests_table.html" with portfolio=portfolio %}
+            {% endif %}
 
             {# Note: Reimplement this after MVP #}
             <!--
