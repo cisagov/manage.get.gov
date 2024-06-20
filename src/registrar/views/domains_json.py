@@ -1,3 +1,4 @@
+from datetime import timezone
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from registrar.models import UserDomainRole, Domain
@@ -30,7 +31,27 @@ def get_domains_json(request):
     status_param = request.GET.get("status")
     if status_param:
         status_list = status_param.split(',')
-        objects = objects.filter(state__in=status_list)
+
+        # Split the status list into normal states and custom states
+        normal_states = [state for state in status_list if state in Domain.State.values]
+        custom_states = [state for state in status_list if state == 'expired']
+
+        # Construct Q objects for normal states that can be queried through ORM
+        state_query = Q()
+        if normal_states:
+            state_query |= Q(state__in=normal_states)
+
+        # Handle custom states in Python, as expired can not be queried through ORM
+        if 'expired' in custom_states:
+            expired_domains = [domain.id for domain in objects if domain.state_display() == 'Expired']
+            state_query |= Q(id__in=expired_domains)
+
+        # Apply the combined query
+        objects = objects.filter(state_query)
+
+        # NOTE: when a domain has a state of 'ready' and is_expired(), a search for
+        # status=ready will include the domain, even though the domain's state_display
+        # is Expired.
 
     if sort_by == "state_display":
         # Fetch the objects and sort them in Python
