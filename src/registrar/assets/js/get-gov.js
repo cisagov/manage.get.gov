@@ -1357,7 +1357,6 @@ document.addEventListener('DOMContentLoaded', function() {
           // which will cause bad delete requests to be sent.
           const preExistingModalPlaceholders = document.querySelectorAll('[data-placeholder-for^="toggle-delete-domain-alert"]');
           preExistingModalPlaceholders.forEach(element => {
-              console.log('found one');
               element.remove();
           });
 
