@@ -7,6 +7,7 @@ class Suborganization(TimeStampedModel):
     """
     Suborganization under an organization (portfolio)
     """
+
     name = models.CharField(
         null=True,
         blank=True,

@@ -19,15 +19,9 @@ class DomainGroup(TimeStampedModel):
         help_text="Domain group",
     )
 
-    portfolio = models.ForeignKey(
-        "registrar.Portfolio",
-        on_delete=models.PROTECT
-    )
+    portfolio = models.ForeignKey("registrar.Portfolio", on_delete=models.PROTECT)
 
-    domains = models.ManyToManyField(
-        "registrar.DomainInformation",
-        blank=True
-    )
+    domains = models.ManyToManyField("registrar.DomainInformation", blank=True)
 
     def __str__(self) -> str:
         return f"{self.name}"

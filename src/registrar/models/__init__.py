@@ -41,7 +41,7 @@ __all__ = [
     "WaffleFlag",
     "Portfolio",
     "DomainGroup",
-    "Suborganization"
+    "Suborganization",
 ]
 
 auditlog.register(Contact)
