@@ -7,12 +7,15 @@
         {{ portfolio.organization_name }}
       </li>
       <li class="usa-sidenav__item">
-        <a href="{% url 'organization-domains' portfolio.id %}" class="{% if current_path == 'domains' %}usa-current{% endif %}"> 
+        {% url 'organization-domains' portfolio.id as url %} 
+        <a href="{{ url }}" {% if request.path == url %}class="usa-current"{% endif %}> 
            Domains
         </a>
+
       </li>
       <li class="usa-sidenav__item">
-        <a href="{% url 'organization-domain-requests' portfolio.id %}" class="{% if current_path == 'domain-requests' %}usa-current{% endif %}"> 
+        {% url 'organization-domain-requests' portfolio.id as url %} 
+        <a href="{{ url }}" {% if request.path == url %}class="usa-current"{% endif %}> 
            Domain requests
         </a>
       </li>
