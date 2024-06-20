@@ -10,7 +10,7 @@ class DomainGroup(TimeStampedModel):
         unique_together = [("name", "portfolio")]
 
     """
-    TODO: Write DomainGroup description
+    Organized group of domains.
     """
     name = models.CharField(
         null=True,

@@ -5,7 +5,7 @@ from registrar.models.portfolio import Portfolio
 
 class Suborganization(TimeStampedModel):
     """
-    TODO: Write DomainGroup description
+    Suborganization under an organization (portfolio)
     """
     name = models.CharField(
         null=True,
