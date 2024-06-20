@@ -1,0 +1,21 @@
+{% extends 'organization.html' %}
+
+{% load static %}
+
+{% block organization_content %}
+    <h1>Domain requests</h1>
+
+    {% comment %}
+    IMPORTANT:
+    If this button is added on any other page, make sure to update the
+    relevant view to reset request.session["new_request"] = True
+    {% endcomment %}
+    <p class="margin-top-4">
+        <a href="{% url 'domain-request:' %}" class="usa-button"
+        >
+            Start a new domain request
+        </a>
+    </p>
+       
+    {% include "includes/domain_requests_table.html" with portfolio=portfolio %}
+{% endblock %}

@@ -2,9 +2,11 @@
 
 <section class="section--outlined domains">
     <div class="grid-row">
-      <div class="mobile:grid-col-12 desktop:grid-col-6">
-        <h2 id="domains-header" class="flex-6">Domains</h2>
-      </div>
+      {% if portfolio is None %}
+        <div class="mobile:grid-col-12 desktop:grid-col-6">
+          <h2 id="domains-header" class="flex-6">Domains</h2>
+        </div>
+      {% endif %}
       <div class="mobile:grid-col-12 desktop:grid-col-6">
         <section aria-label="Domains search component" class="flex-6 margin-y-2">
           <form class="usa-search usa-search--small" method="POST" role="search">

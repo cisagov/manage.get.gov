@@ -14,14 +14,9 @@ def organization_domains(request, portfolio_id):
         # Retrieve the portfolio object based on the provided portfolio_id
         portfolio = get_object_or_404(Portfolio, id=portfolio_id)
         context["portfolio"] = portfolio
-        context["content"] = "domains"
 
-        # This controls the creation of a new domain request in the wizard
-        request.session["new_request"] = True
+    return render(request, "organization_domains.html", context)
 
-        print('organization domains view')
-
-    return render(request, "organizations.html", context)
 
 def organization_domain_requests(request, portfolio_id):
     context = {}
@@ -34,11 +29,8 @@ def organization_domain_requests(request, portfolio_id):
         # Retrieve the portfolio object based on the provided portfolio_id
         portfolio = get_object_or_404(Portfolio, id=portfolio_id)
         context["portfolio"] = portfolio
-        context["content"] = "domain-requests"
 
         # This controls the creation of a new domain request in the wizard
         request.session["new_request"] = True
 
-        print('organization domain requests view')
-
-    return render(request, "organizations.html", context)
+    return render(request, "organization_requests.html", context)

@@ -14,6 +14,7 @@ from registrar.models.utility.generic_helper import replace_url_queryparams
 
 logger = logging.getLogger(__name__)
 
+
 class NoCacheMiddleware:
     """
     Middleware to add Cache-control: no-cache to every response.
@@ -122,9 +123,12 @@ class CheckUserProfileMiddleware:
         else:
             # Process the view as normal
             return None
-        
+
+
 class CheckOrganizationMiddleware:
     """
+    Checks if the current user has a portfolio
+    If they do, redirect them to the org homepage when they navigate to home.
     """
 
     def __init__(self, get_response):
@@ -137,10 +141,8 @@ class CheckOrganizationMiddleware:
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         current_path = request.path
-        logger.debug(f"Current path: {current_path}")
 
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
-        logger.debug(f"Flag is active: {has_organization_feature_flag}")
 
         if current_path == self.home:
             if has_organization_feature_flag:
@@ -148,9 +150,10 @@ class CheckOrganizationMiddleware:
                     user_portfolios = Portfolio.objects.filter(creator=request.user)
                     if user_portfolios.exists():
                         first_portfolio = user_portfolios.first()
-                        home_organization_with_portfolio = reverse("organization-domains", kwargs={'portfolio_id': first_portfolio.id})
-                        
+                        home_organization_with_portfolio = reverse(
+                            "organization-domains", kwargs={"portfolio_id": first_portfolio.id}
+                        )
+
                         if current_path != home_organization_with_portfolio:
-                            logger.debug(f"User has portfolios, redirecting to {home_organization_with_portfolio}")
                             return HttpResponseRedirect(home_organization_with_portfolio)
         return None
