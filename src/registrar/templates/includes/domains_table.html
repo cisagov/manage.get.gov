@@ -33,6 +33,109 @@
         </section>
       </div>
     </div>
+    {% if portfolio %}
+    <div class="usa-accordion usa-accordion--select">
+      <div class="usa-accordion__heading">
+        <button
+          type="button"
+          class="usa-accordion__button"
+          aria-expanded="false"
+          aria-controls="a1"
+        >
+          Status
+          <span class="position-relative top-1px">
+            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+            </svg>
+          </span>
+        </button>
+      </div>
+      <div id="a1" class="usa-accordion__content usa-prose shadow-1">
+        <h2>Status</h2>
+        <fieldset class="usa-fieldset margin-top-0">
+          <legend class="usa-legend width-145">Select to apply <span class="sr-only">status</span> filter</legend>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="check-historical-truth"
+              type="checkbox"
+              name="historical-figures"
+              value="sojourner-truth"
+              checked="checked"
+            />
+            <label class="usa-checkbox__label" for="check-historical-truth"
+              >DNS Needed</label
+            >
+          </div>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="check-historical-douglass"
+              type="checkbox"
+              name="historical-figures"
+              value="frederick-douglass"
+            />
+            <label class="usa-checkbox__label" for="check-historical-douglass"
+              >Ready</label
+            >
+          </div>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="check-historical-washington"
+              type="checkbox"
+              name="historical-figures"
+              value="booker-t-washington"
+            />
+            <label class="usa-checkbox__label" for="check-historical-washington"
+              >On hold</label
+            >
+          </div>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="check-historical-carver"
+              type="checkbox"
+              name="historical-figures"
+              value="george-washington-carver"
+            />
+            <label class="usa-checkbox__label" for="check-historical-carver"
+              >Expired</label
+            >
+          </div>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="check-historical-carver"
+              type="checkbox"
+              name="historical-figures"
+              value="george-washington-carver"
+            />
+            <label class="usa-checkbox__label" for="check-historical-carver"
+              >Deleted</label
+            >
+          </div>
+        </fieldset>
+        <!-- The button width will determine the dropdown width -->
+        <button
+          type="button"
+          class="usa-button"
+        >
+          Apply filter
+        </button>
+
+        <button
+          type="button"
+          class="usa-button usa-button--unstyled padding-2"
+        >
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#close"></use>
+          </svg>
+          Clear <span class="sr-only">selection. This will not reset the filters on the page.</span>
+        </button>
+      </div>
+    </div>
+    {% endif %}
     <div class="domains__table-wrapper display-none">
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked domains__table">
         <caption class="sr-only">Your registered domains</caption>

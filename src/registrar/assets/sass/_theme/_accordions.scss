@@ -1,0 +1,36 @@
+@use "uswds-core" as *;
+
+.usa-accordion--select {
+    display: inline-block;
+    width: auto;
+    position: relative;
+    .usa-accordion__button {
+        background: color('white');
+        border: solid 1px color('base-lighter');
+        border-radius: 4px;
+        padding: units(1) units(2);
+        color: color('primary-darker');
+        font-weight: font-weight('normal');
+        font-size: size('ui', 'xs');
+    }
+    .usa-accordion__button[aria-expanded=false],
+    .usa-accordion__button[aria-expanded=false]:hover {
+        background-image: none;
+    }
+    .usa-accordion__content {
+        // Note, width is determined by a custom width class on one of the children
+        position: absolute;
+        z-index: 1;
+        top: 36.48px;
+        left: 0;
+    }
+    h2 {
+        font-size: size('body', 'sm');
+    }
+    .usa-button {
+        width: 100%;
+    }
+    .margin-top-0 {
+        margin-top: 0 !important;
+    }
+}
