@@ -153,7 +153,5 @@ class CheckOrganizationMiddleware:
                         home_organization_with_portfolio = reverse(
                             "organization-domains", kwargs={"portfolio_id": first_portfolio.id}
                         )
-
-                        if current_path != home_organization_with_portfolio:
-                            return HttpResponseRedirect(home_organization_with_portfolio)
+                        return HttpResponseRedirect(home_organization_with_portfolio)
         return None
