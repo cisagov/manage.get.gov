@@ -112,9 +112,8 @@ def get_action_needed_email(request, pk, reason):
     """
     # Q: Do we need both checks? I'd think we can just check on the group, right?
     staff_or_superuser = request.user.is_staff or request.user.is_superuser
-    has_access = (
-        request.user.has_perm("registrar.full_access_permission") or 
-        request.user.has_perm("registrar.analyst_access_permission")
+    has_access = request.user.has_perm("registrar.full_access_permission") or request.user.has_perm(
+        "registrar.analyst_access_permission"
     )
     if staff_or_superuser and not has_access:
         raise PermissionDenied("You do not have permission to access this resource.")
