@@ -28,6 +28,7 @@ class Command(BaseCommand):
              * DomainInformation
              * DomainRequest
              * DraftDomain
+             * FederalAgency
              * Host
              * HostIp
              * PublicContact
@@ -40,14 +41,15 @@ class Command(BaseCommand):
         table_names = [
             "DomainInformation",
             "DomainRequest",
+            "FederalAgency",
             "PublicContact",
+            "HostIp",
+            "Host",
             "Domain",
             "User",
             "Contact",
             "Website",
             "DraftDomain",
-            "HostIp",
-            "Host",
         ]
 
         for table_name in table_names:
