@@ -25,7 +25,7 @@ from registrar.views.domain_request import Step
 from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.domains_json import get_domains_json
 from registrar.views.utility import always_404
-from registrar.views.organizations import organization_domains, organization_domain_requests
+from registrar.views.portfolios import portfolio_domains, portfolio_domain_requests
 from api.views import available, get_current_federal, get_current_full
 
 
@@ -60,14 +60,14 @@ for step, view in [
 urlpatterns = [
     path("", views.index, name="home"),
     path(
-        "organization/<int:portfolio_id>/domains/",
-        organization_domains,
-        name="organization-domains",
+        "portfolio/<int:portfolio_id>/domains/",
+        portfolio_domains,
+        name="portfolio-domains",
     ),
     path(
-        "organization/<int:portfolio_id>/domain_requests/",
-        organization_domain_requests,
-        name="organization-domain-requests",
+        "portfolio/<int:portfolio_id>/domain_requests/",
+        portfolio_domain_requests,
+        name="portfolio-domain-requests",
     ),
     path(
         "admin/logout/",

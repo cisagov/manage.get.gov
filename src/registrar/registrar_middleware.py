@@ -125,10 +125,10 @@ class CheckUserProfileMiddleware:
             return None
 
 
-class CheckOrganizationMiddleware:
+class CheckPortfolioMiddleware:
     """
     Checks if the current user has a portfolio
-    If they do, redirect them to the org homepage when they navigate to home.
+    If they do, redirect them to the portfolio homepage when they navigate to home.
     """
 
     def __init__(self, get_response):
@@ -150,8 +150,8 @@ class CheckOrganizationMiddleware:
                     user_portfolios = Portfolio.objects.filter(creator=request.user)
                     if user_portfolios.exists():
                         first_portfolio = user_portfolios.first()
-                        home_organization_with_portfolio = reverse(
-                            "organization-domains", kwargs={"portfolio_id": first_portfolio.id}
+                        home_with_portfolio = reverse(
+                            "portfolio-domains", kwargs={"portfolio_id": first_portfolio.id}
                         )
-                        return HttpResponseRedirect(home_organization_with_portfolio)
+                        return HttpResponseRedirect(home_with_portfolio)
         return None
