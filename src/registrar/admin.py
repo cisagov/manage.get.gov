@@ -1233,7 +1233,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio","creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "creator", "submitter", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1319,6 +1319,33 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     change_form_template = "django/admin/domain_information_change_form.html"
 
+
+    superuser_only_fields = [
+        "portfolio",
+    ]
+
+    # DEVELOPER's NOTE:
+    # Normally, to exclude a field from an Admin form, we could simply utilize 
+    # Django's "exclude" feature.  However, it causes a "missing key" error if we
+    # go that route for this particular form.  The error gets thrown by our
+    # custom fieldset.html code and is due to the fact that "exclude" removes
+    # fields from base_fields but not fieldsets.  Rather than reworking our 
+    # custom frontend, it seems more straightforward (and easier to read) to simply
+    # modify the fieldsets list so that it excludes any fields we want to remove
+    # based on permissions (eg. superuser_only_fields) or other conditions.
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        
+        # Create a modified version of fieldsets without the 'isbn' field
+        if not request.user.has_perm("registrar.full_access_permission"):
+            modified_fieldsets = []
+            for name, data in fieldsets:
+                fields = data.get('fields', [])
+                fields = tuple(field for field in fields if field not in self.superuser_only_fields)
+                modified_fieldsets.append((name, {'fields': fields}))
+            return modified_fieldsets
+        return fieldsets
+    
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 1 conditions that determine which fields are read-only:
@@ -1593,6 +1620,53 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
+    superuser_only_fields = [
+        "portfolio",
+    ]
+
+    # DEVELOPER's NOTE:
+    # Normally, to exclude a field from an Admin form, we could simply utilize 
+    # Django's "exclude" feature.  However, it causes a "missing key" error if we
+    # go that route for this particular form.  The error gets thrown by our
+    # custom fieldset.html code and is due to the fact that "exclude" removes
+    # fields from base_fields but not fieldsets.  Rather than reworking our 
+    # custom frontend, it seems more straightforward (and easier to read) to simply
+    # modify the fieldsets list so that it excludes any fields we want to remove
+    # based on permissions (eg. superuser_only_fields) or other conditions.
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        
+        # Create a modified version of fieldsets without the 'isbn' field
+        if not request.user.has_perm("registrar.full_access_permission"):
+            modified_fieldsets = []
+            for name, data in fieldsets:
+                fields = data.get('fields', [])
+                fields = tuple(field for field in fields if field not in self.superuser_only_fields)
+                modified_fieldsets.append((name, {'fields': fields}))
+            return modified_fieldsets
+        return fieldsets
+
+    # Fields only superusers can view
+    # exclude = ['address_line1', ]
+    # widgets = {'portfolio': forms.HiddenInput()}
+    
+
+    # def get_form(self, request, obj, **kwargs):
+    #     if request.user.has_perm("registrar.full_access_permission"):
+    #         self.exclude = self.superuser_only_fields
+    #         # self.fieldsets[1][1]['fields'][0].append('portfolio') 
+    #         # self.fieldsets[1][1]['fields'].pop('status') 
+    #     form = super(DomainRequestAdmin, self).get_form(request, obj, **kwargs)
+    #     return form 
+
+
+        # if not request.user.has_perm("registrar.full_access_permission"):
+
+        # for fieldset in self.fieldsets:
+        #     for field in fieldset[0]["fields"]:
+        #         if field==
+
+
     # Table ordering
     # NOTE: This impacts the select2 dropdowns (combobox)
     # Currentl, there's only one for requests on DomainInfo
@@ -1851,6 +1925,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
     def process_log_entry(self, log_entry):
+
         """Process a log entry and return filtered entry dictionary if applicable."""
         changes = log_entry.changes
         status_changed = "status" in changes
@@ -1906,7 +1981,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             return entry
 
         return None
-
+    
+    
 
 class TransitionDomainAdmin(ListHeaderAdmin):
     """Custom transition domain admin class."""
@@ -2561,6 +2637,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     # readonly_fields = [
     #     "requestor",
     # ]
+
 
     def save_model(self, request, obj, form, change):
 
