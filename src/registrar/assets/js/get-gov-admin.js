@@ -548,16 +548,29 @@ function initializeWidgetOnList(list, parentId) {
     let actionNeededReasonDropdown = document.getElementById("id_action_needed_reason");
     // If you need to account for the non-readonly version as well, you will need to check
     // for both of these things seperately.
-    let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more")
+    let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
 
+    
     if(actionNeededReasonDropdown && actionNeededEmail) {
-        if (statusDropdown.value == "action needed")
-            handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
+        let emailContainer = actionNeededEmail.closest(".dja-textarea-container");
+        if (statusDropdown.value == "action needed") {
+            showElement(emailContainer)
+        }
+
+        statusDropdown.addEventListener("change", function() {
+            if (statusDropdown.value == "action needed") {
+                showElement(emailContainer)
+            }else {
+                hideElement(emailContainer)
+            }
+        });
+
+        handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
     }
 
     // TODO fix edge case where nothing is selected
     function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
-        actionNeededReasonDropdown.addEventListener('change', function() {
+        actionNeededReasonDropdown.addEventListener("change", function() {
             // TODO on change if not actionneeded on status, hide show email button
             const pk = document.querySelector("#domain_request_id").value
             const reason = actionNeededReasonDropdown.value

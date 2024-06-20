@@ -107,8 +107,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 </table>
 
                 {% if original_object.action_needed_reason_email %}
-                <div class="dja-textarea-container padding-1 margin-top-2">
-                    <label class="max-full" for="action_needed_reason_email_view_more">Action needed reason email</label>
+                <div class="dja-textarea-container padding-1 margin-top-2 display-none">
+                    <label class="max-full" for="action_needed_reason_email_view_more">
+                        <strong>Action needed reason email</strong>
+                    </label>
                     <textarea id="action_needed_reason_email_view_more" cols="40" rows="20" class="vLargeTextField {% if original_object.status != "action needed" %} display-none {% endif %}" readonly>
                         {{ original_object.action_needed_reason_email }}
                     </textarea>
