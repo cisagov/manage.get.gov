@@ -568,7 +568,6 @@ function initializeWidgetOnList(list, parentId) {
             // If we add a value, show it.
             // This edge case applies to fixtures data. Prod data will have a changelog to pull from.
             let changeLog = document.querySelector(".dja-status-changelog");
-            console.log(`value is ===>${actionNeededReasonDropdown.value}<===`)
             if(changeLog && changeLog.classList.contains("display-none") && actionNeededReasonDropdown.value){
                 showElement(changeLog);
             }
@@ -577,7 +576,6 @@ function initializeWidgetOnList(list, parentId) {
         handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
     }
 
-    // TODO fix edge case where nothing is selected
     function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
         actionNeededReasonDropdown.addEventListener("change", function() {
             let noEmailMessage = document.getElementById("no-email-message");
