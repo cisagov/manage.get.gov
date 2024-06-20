@@ -11,7 +11,7 @@ class Suborganization(TimeStampedModel):
         null=True,
         blank=True,
         unique=True,
-        help_text="Domain group",
+        help_text="Suborganization",
     )
 
     portfolio = models.ForeignKey(
