@@ -1,7 +1,5 @@
 from django.db import models
 from .utility.time_stamped_model import TimeStampedModel
-from registrar.models.portfolio import Portfolio
-from registrar.models.domain_information import DomainInformation
 
 
 class DomainGroup(TimeStampedModel):

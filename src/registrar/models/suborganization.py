@@ -1,6 +1,5 @@
 from django.db import models
 from .utility.time_stamped_model import TimeStampedModel
-from registrar.models.portfolio import Portfolio
 
 
 class Suborganization(TimeStampedModel):
