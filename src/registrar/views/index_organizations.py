@@ -2,7 +2,7 @@ from django.shortcuts import render
 from waffle.decorators import flag_is_active
 
 
-def index_organizations(request):
+def index_organizations(request, portfolio_id):
     """This page is available to anyone without logging in."""
     context = {}
 

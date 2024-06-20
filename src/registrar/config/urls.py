@@ -60,7 +60,7 @@ for step, view in [
 urlpatterns = [
     path("", views.index, name="home"),
     path(
-        "organization",
+        "organization/<int:portfolio_id>/",
         index_organizations,
         name="home-organization",
     ),

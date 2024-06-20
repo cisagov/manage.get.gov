@@ -6,6 +6,7 @@ import logging
 from urllib.parse import parse_qs
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from registrar.models.portfolio import Portfolio
 from registrar.models.user import User
 from waffle.decorators import flag_is_active
 
@@ -128,7 +129,6 @@ class CheckOrganizationMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
-        self.home_organization = reverse("home-organization")
         self.home = reverse("home")
         self.json1 = reverse("get_domains_json")
         self.json2 = reverse("get_domain_requests_json")
@@ -141,16 +141,22 @@ class CheckOrganizationMiddleware:
         current_path = request.path
         logger.debug(f"Current path: {current_path}")
 
-        # Avoid infinite loop by skipping the redirect check on the home-organization URL
-        if current_path == self.home_organization or current_path == self.json1 or current_path == self.json2:
-            logger.debug("Skipping middleware check for home-organization URL")
+        # Avoid infinite loop by skipping the redirect check on the home-organization URL and other JSON URLs
+        if current_path in [self.json1, self.json2] or current_path.startswith('/admin'):
+            logger.debug("Skipping middleware check for home-organization and JSON URLs")
             return None
 
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
         logger.debug(f"Flag is active: {has_organization_feature_flag}")
 
         if has_organization_feature_flag:
-            logger.debug(f"Redirecting to {self.home_organization}")
-            return HttpResponseRedirect(self.home_organization)
-
+            if request.user.is_authenticated:
+                user_portfolios = Portfolio.objects.filter(creator=request.user)
+                if user_portfolios.exists():
+                    first_portfolio = user_portfolios.first()
+                    home_organization_with_portfolio = reverse("home-organization", kwargs={'portfolio_id': first_portfolio.id})
+                    
+                    if current_path != home_organization_with_portfolio:
+                        logger.debug(f"User has portfolios, redirecting to {home_organization_with_portfolio}")
+                        return HttpResponseRedirect(home_organization_with_portfolio)
         return None
