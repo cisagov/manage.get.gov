@@ -20,10 +20,17 @@ def get_domains_json(request):
     # Handle sorting
     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
     order = request.GET.get("order", "asc")  # Default to 'asc'
-    search_term = request.GET.get("search_term")
 
+    # Handle search term
+    search_term = request.GET.get("search_term")
     if search_term:
         objects = objects.filter(Q(name__icontains=search_term))
+
+    # Handle state
+    status_param = request.GET.get("status")
+    if status_param:
+        status_list = status_param.split(',')
+        objects = objects.filter(state__in=status_list)
 
     if sort_by == "state_display":
         # Fetch the objects and sort them in Python
