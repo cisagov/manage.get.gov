@@ -150,8 +150,6 @@ class CheckPortfolioMiddleware:
                     user_portfolios = Portfolio.objects.filter(creator=request.user)
                     if user_portfolios.exists():
                         first_portfolio = user_portfolios.first()
-                        home_with_portfolio = reverse(
-                            "portfolio-domains", kwargs={"portfolio_id": first_portfolio.id}
-                        )
+                        home_with_portfolio = reverse("portfolio-domains", kwargs={"portfolio_id": first_portfolio.id})
                         return HttpResponseRedirect(home_with_portfolio)
         return None
