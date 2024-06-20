@@ -8,6 +8,25 @@
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Helper functions.
+
+/**
+ * Hide element
+ *
+*/
+const hideElement = (element) => {
+    if (!element.classList.contains("display-none"))
+        element.classList.add('display-none');
+};
+
+/**
+ * Show element
+ *
+ */
+const showElement = (element) => {
+    if (element.classList.contains("display-none"))
+        element.classList.remove('display-none');
+};
+
 /** Either sets attribute target="_blank" to a given element, or removes it */
 function openInNewTab(el, removeAttribute = false){
     if(removeAttribute){
@@ -521,30 +540,35 @@ function initializeWidgetOnList(list, parentId) {
 })();
 
 
-
 /** An IIFE that hooks up to the "show email" button
  * which shows the auto generated email on action needed reason
 */
 (function () {
     let statusDropdown = document.getElementById("id_status");
-
-    statusDropdown.addEventListener('change', function() {
-        // TODO we should also handle when action needed
-        if (statusDropdown.value != "action needed"){
-            formRow.classList.add("display-none")
-        }
-    });
-
-    let actionNeededDropdownReason = document.getElementById("id_action_needed_reason");
-    // Store the domain request id on this record for simplicity
-    let showEmailButton = document.getElementById("show_action_needed_email");
+    let actionNeededReasonDropdown = document.getElementById("id_action_needed_reason");
     let actionNeededEmail = document.getElementById("id_action_needed_reason_email")
-    let formRow = actionNeededEmail.closest('.form-row');
-    if(actionNeededDropdownReason && showEmailButton && actionNeededEmail && formRow) {
-        actionNeededDropdownReason.addEventListener('change', function() {
+    let reasonFormRow = actionNeededEmail.closest(".form-row");
+
+    if(actionNeededReasonDropdown && actionNeededEmail && reasonFormRow) {
+        statusDropdown.addEventListener('change', function() {
+            if (statusDropdown.value != "action needed") {
+                // Hide the email field by default
+                hideElement(reasonFormRow)
+            }else {
+                showElement(reasonFormRow)
+            }
+        });
+
+        if (statusDropdown.value == "action needed")
+            handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail, reasonFormRow);
+    }
+
+    // TODO fix edge case where nothing is selected
+    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail, reasonFormRow) {
+        actionNeededReasonDropdown.addEventListener('change', function() {
             // TODO on change if not actionneeded on status, hide show email button
-            const pk = showEmailButton.getAttribute("domain-request-id")
-            const reason = actionNeededDropdownReason.value
+            const pk = document.querySelector("#domain_request_id").value
+            const reason = actionNeededReasonDropdown.value
             fetch(`/get-domain-requests-json/${pk}/action-needed-email/${reason}`)
             .then(response => response.json())
             .then(data => {
@@ -558,13 +582,11 @@ function initializeWidgetOnList(list, parentId) {
                     actionNeededEmail.value = data.email_body_text
 
                     // Show the text field
-                    if(actionNeededEmail.classList.contains("display-none")) {
-                        actionNeededEmail.classList.remove("display-none")
-                    }
+                    showElement(actionNeededEmail);
 
-                    // Hide the message
-                    if(noEmailMessage && !noEmailMessage.classList.contains("display-none")) {
-                        noEmailMessage.classList.add("display-none")
+                    // Hide the "no email" message
+                    if(noEmailMessage) {
+                        hideElement(noEmailMessage);
                     }
 
                 }else if (data && !data.email_body_text) {
@@ -576,22 +598,16 @@ function initializeWidgetOnList(list, parentId) {
                     }
 
                     // Hide the text field
-                    if(!actionNeededEmail.classList.contains("display-none")) {
-                        actionNeededEmail.classList.add("display-none")
-                    }
+                    hideElement(actionNeededEmail);
 
                     // Show the message
-                    if(noEmailMessage.classList.contains("display-none")) {
-                        noEmailMessage.classList.remove("display-none")
-                    }
+                    showElement(noEmailMessage);
                 }
-                console.log(data)
+
+                showElement(reasonFormRow)
             });
         });
 
-        showEmailButton.addEventListener('click', function() {
-            formRow.classList.remove("display-none")
-        });
     }
 
 })();
