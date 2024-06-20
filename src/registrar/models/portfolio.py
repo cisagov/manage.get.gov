@@ -105,3 +105,6 @@ class Portfolio(TimeStampedModel):
         verbose_name="security contact e-mail",
         max_length=320,
     )
+
+    def __str__(self) -> str:
+        return f"{self.organization_name}"
