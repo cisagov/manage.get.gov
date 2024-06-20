@@ -1335,7 +1335,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
-        # Create a modified version of fieldsets without the 'isbn' field
+        # Create a modified version of fieldsets to exclude certain fields
         if not request.user.has_perm("registrar.full_access_permission"):
             modified_fieldsets = []
             for name, data in fieldsets:
@@ -1635,7 +1635,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
-        # Create a modified version of fieldsets without the 'isbn' field
+        # Create a modified version of fieldsets to exclude certain fields
         if not request.user.has_perm("registrar.full_access_permission"):
             modified_fieldsets = []
             for name, data in fieldsets:
