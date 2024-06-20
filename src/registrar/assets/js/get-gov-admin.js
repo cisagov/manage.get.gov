@@ -586,27 +586,14 @@ function initializeWidgetOnList(list, parentId) {
                 if(data && data.email_body_text) {
                     actionNeededEmail.value = data.email_body_text
 
-                    // Show the text field
-                    showElement(actionNeededEmail);
 
-                    // Hide the "no email" message
-                    if(noEmailMessage) {
-                        hideElement(noEmailMessage);
-                    }
 
                 }else if (data && !data.email_body_text) {
-                    if (!noEmailMessage) {
-                        noEmailMessage = document.createElement("p");
-                        noEmailMessage.id = "no-email-message";
-                        noEmailMessage.textContent = "No email will be sent";
-                        actionNeededEmail.parentNode.appendChild(noEmailMessage);
-                    }
+                    actionNeededEmail.value = "No email will be sent";
+                }
 
-                    // Hide the text field
-                    hideElement(actionNeededEmail);
-
-                    // Show the message
-                    showElement(noEmailMessage);
+                if (data) {
+                    actionNeededEmail.value = data.email_body_text ? data.email_body_text : "No email will be sent";
                 }
             });
         });

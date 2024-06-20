@@ -922,7 +922,7 @@ def completed_domain_request(  # noqa
 
     if organization_type:
         domain_request_kwargs["organization_type"] = organization_type
-    
+
     if action_needed_reason:
         domain_request_kwargs["action_needed_reason"] = action_needed_reason
 

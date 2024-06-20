@@ -557,30 +557,6 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    def get_action_needed_reason_default_email_text(self, action_needed_reason: str):
-        """Returns the default email associated with the given action needed reason"""
-        if action_needed_reason is None or action_needed_reason == self.ActionNeededReasons.OTHER:
-            return {
-                "subject_text": None,
-                "email_body_text": None,
-            }
-
-        # Get the email body
-        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
-        template = get_template(template_path)
-
-        # Get the email subject
-        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
-        subject_template = get_template(template_subject_path)
-
-        # Return the content of the rendered views
-        context = {"domain_request": self}
-
-        return {
-            "subject_text": subject_template.render(context=context),
-            "email_body_text": template.render(context=context),
-        }
-
     def sync_organization_type(self):
         """
         Updates the organization_type (without saving) to match
@@ -623,12 +599,9 @@ class DomainRequest(TimeStampedModel):
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
 
-        if self.action_needed_reason and not self.action_needed_reason_email:
-            text = self.get_action_needed_reason_default_email_text(self.action_needed_reason)
-            self.action_needed_reason_email = text.get("email_body_text")
-
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
+        self.sync_action_needed_reason_email()
 
         super().save(*args, **kwargs)
 
@@ -638,6 +611,12 @@ class DomainRequest(TimeStampedModel):
 
         # Update the cached values after saving
         self._cache_status_and_action_needed_reason()
+
+    def sync_action_needed_reason_email(self):
+        """If no action_needed_reason_email is defined, add a default one"""
+        if self.action_needed_reason and not self.action_needed_reason_email:
+            text = self.get_action_needed_reason_default_email_text(self.action_needed_reason)
+            self.action_needed_reason_email = text.get("email_body_text")
 
     def sync_action_needed_reason(self):
         """Checks if we need to send another action needed email"""
@@ -1241,3 +1220,27 @@ class DomainRequest(TimeStampedModel):
             return False
 
         return True
+
+    def get_action_needed_reason_default_email_text(self, action_needed_reason: str):
+        """Returns the default email associated with the given action needed reason"""
+        if action_needed_reason is None or action_needed_reason == self.ActionNeededReasons.OTHER:
+            return {
+                "subject_text": None,
+                "email_body_text": None,
+            }
+
+        # Get the email body
+        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
+        template = get_template(template_path)
+
+        # Get the email subject
+        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
+        subject_template = get_template(template_subject_path)
+
+        # Return the content of the rendered views
+        context = {"domain_request": self}
+
+        return {
+            "subject_text": subject_template.render(context=context),
+            "email_body_text": template.render(context=context),
+        }

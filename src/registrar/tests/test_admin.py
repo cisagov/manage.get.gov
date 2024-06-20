@@ -1595,14 +1595,14 @@ class TestDomainRequestAdmin(MockEppLib):
             # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
             self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
-    
+
     @less_console_noise_decorator
     def test_model_displays_action_needed_email(self):
         """Tests if the action needed email is visible for Domain Requests"""
 
         _domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-            action_needed_reason=DomainRequest.ActionNeededReasons.BAD_NAME
+            action_needed_reason=DomainRequest.ActionNeededReasons.BAD_NAME,
         )
 
         p = "userpass"
@@ -1613,11 +1613,6 @@ class TestDomainRequestAdmin(MockEppLib):
         )
 
         self.assertContains(response, "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS")
-
-        _domain_request.action_needed_reason = DomainRequest.ActionNeededReasons.OTHER
-        _domain_request.save()
-
-        self.assertContains(response, "No email will be sent")
 
     @override_settings(IS_PRODUCTION=True)
     def test_save_model_sends_submitted_email_with_bcc_on_prod(self):

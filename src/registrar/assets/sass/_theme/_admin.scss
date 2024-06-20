@@ -791,7 +791,8 @@ div.dja__model-description{
     textarea {
         width: 100%;
         resize: none;
-        cursor: pointer;
+        cursor: auto;
+        border-width: medium;
 
         &::-webkit-scrollbar {
             background-color: transparent;
@@ -821,5 +822,5 @@ div.dja__model-description{
 }
 
 .no-border {
-    border: none
+    border: none;
 }
