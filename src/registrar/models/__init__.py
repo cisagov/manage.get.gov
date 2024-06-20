@@ -17,6 +17,7 @@ from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .waffle_flag import WaffleFlag
 from .portfolio import Portfolio
+from .senior_official import SeniorOfficial
 
 
 __all__ = [
@@ -38,6 +39,7 @@ __all__ = [
     "VerifiedByStaff",
     "WaffleFlag",
     "Portfolio",
+    "SeniorOfficial",
 ]
 
 auditlog.register(Contact)

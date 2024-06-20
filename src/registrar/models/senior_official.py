@@ -22,18 +22,18 @@ class SeniorOfficial(TimeStampedModel):
 
 
     first_name = models.CharField(
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
         verbose_name="first name",
     )
     last_name = models.CharField(
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
         verbose_name="last name",
     )
     title = models.CharField(
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
         verbose_name="title / role",
     )
     phone = PhoneNumberField(

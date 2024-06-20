@@ -1016,6 +1016,29 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
+class SeniorOfficialAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+    """Custom Senior Official Admin class."""
+
+    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+    search_fields = ["first_name", "last_name"]
+    search_help_text = "Search by first name or last name."
+    list_display = [
+        "last_name",
+    ]
+
+    # this ordering effects the ordering of results
+    # in autocomplete_fields for user
+    ordering = ["first_name", "last_name"]
+
+    fieldsets = [
+        (
+            None,
+            {"fields": ["first_name", "last_name", "title", "phone"]},
+        )
+    ]
+
+
+
 
 class WebsiteResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -1023,6 +1046,7 @@ class WebsiteResource(resources.ModelResource):
 
     class Meta:
         model = models.Website
+
 
 
 class WebsiteAdmin(ListHeaderAdmin, ImportExportModelAdmin):
@@ -2679,6 +2703,7 @@ admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
+admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
