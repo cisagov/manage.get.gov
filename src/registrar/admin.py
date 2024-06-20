@@ -1016,6 +1016,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
+
 class SeniorOfficialAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom Senior Official Admin class."""
 
@@ -1038,15 +1039,12 @@ class SeniorOfficialAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
 
-
-
 class WebsiteResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
     import/export file"""
 
     class Meta:
         model = models.Website
-
 
 
 class WebsiteAdmin(ListHeaderAdmin, ImportExportModelAdmin):
