@@ -786,3 +786,12 @@ div.dja__model-description{
 .usa-button--dja-link-color {
     color: var(--link-fg);
 }
+
+// If the dja textarea is set as readonly, display this on hover
+textarea.vLargeTextField[readonly]:hover {
+    cursor: not-allowed;
+}
+
+.max-full {
+    width: 100% !important;
+}

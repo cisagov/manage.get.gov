@@ -1485,7 +1485,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
-                    "action_needed_reason_email",
                     "investigator",
                     "creator",
                     "submitter",

@@ -546,25 +546,17 @@ function initializeWidgetOnList(list, parentId) {
 (function () {
     let statusDropdown = document.getElementById("id_status");
     let actionNeededReasonDropdown = document.getElementById("id_action_needed_reason");
-    let actionNeededEmail = document.getElementById("id_action_needed_reason_email")
-    let reasonFormRow = actionNeededEmail.closest(".form-row");
+    // If you need to account for the non-readonly version as well, you will need to check
+    // for both of these things seperately.
+    let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more")
 
-    if(actionNeededReasonDropdown && actionNeededEmail && reasonFormRow) {
-        statusDropdown.addEventListener('change', function() {
-            if (statusDropdown.value != "action needed") {
-                // Hide the email field by default
-                hideElement(reasonFormRow)
-            }else {
-                showElement(reasonFormRow)
-            }
-        });
-
+    if(actionNeededReasonDropdown && actionNeededEmail) {
         if (statusDropdown.value == "action needed")
-            handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail, reasonFormRow);
+            handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
     }
 
     // TODO fix edge case where nothing is selected
-    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail, reasonFormRow) {
+    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
         actionNeededReasonDropdown.addEventListener('change', function() {
             // TODO on change if not actionneeded on status, hide show email button
             const pk = document.querySelector("#domain_request_id").value
@@ -603,8 +595,6 @@ function initializeWidgetOnList(list, parentId) {
                     // Show the message
                     showElement(noEmailMessage);
                 }
-
-                showElement(reasonFormRow)
             });
         });
 
