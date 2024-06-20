@@ -577,7 +577,6 @@ function initializeWidgetOnList(list, parentId) {
         handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
     }
 
-    // TODO fix edge case where nothing is selected
     function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
         actionNeededReasonDropdown.addEventListener("change", function() {
             let noEmailMessage = document.getElementById("no-email-message");
