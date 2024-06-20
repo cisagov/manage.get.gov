@@ -549,7 +549,7 @@ function initializeWidgetOnList(list, parentId) {
     // If you need to account for the non-readonly version as well, you will need to check
     // for both of these things seperately.
     let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
-
+    let changeLog = document.querySelector(".dja-status-changelog");
     
     if(actionNeededReasonDropdown && actionNeededEmail) {
         let emailContainer = actionNeededEmail.closest(".dja-readonly-textarea-container");
@@ -567,7 +567,6 @@ function initializeWidgetOnList(list, parentId) {
             // We hide the table if there isn't any data to start with.
             // If we add a value, show it.
             // This edge case applies to fixtures data. Prod data will have a changelog to pull from.
-            let changeLog = document.querySelector(".dja-status-changelog");
             if(changeLog && changeLog.classList.contains("display-none") && actionNeededReasonDropdown.value){
                 showElement(changeLog);
             }
@@ -592,6 +591,8 @@ function initializeWidgetOnList(list, parentId) {
                 // Show the "no email" message
                 showElement(noEmailMessage);
                 return;
+            }else if(changeLog && changeLog.classList.contains("display-none") && actionNeededReasonDropdown.value){
+                showElement(changeLog);
             }
 
             fetch(`/get-domain-requests-json/${pk}/action-needed-email/${reason}`)
