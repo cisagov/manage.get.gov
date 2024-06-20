@@ -550,7 +550,6 @@ class DomainRequest(TimeStampedModel):
 
     def get_action_needed_reason_default_email_text(self, action_needed_reason: str):
         """Returns the default email associated with the given action needed reason"""
-        logger.info(f"reason? {action_needed_reason}")
         if action_needed_reason is None or action_needed_reason == self.ActionNeededReasons.OTHER:
             return {
                 "subject_text": None,
@@ -567,9 +566,13 @@ class DomainRequest(TimeStampedModel):
 
         # Return the content of the rendered views
         context = {"domain_request": self}
+
+        # autoescape off adds a newline to the beginning of the email.
+        # This is fine when the email is rendered, but we don't need this for display.
+        email_body_text = template.render(context=context).lstrip().lstrip("\n")
         return {
             "subject_text": subject_template.render(context=context),
-            "email_body_text": template.render(context=context)
+            "email_body_text": email_body_text
         }
 
 

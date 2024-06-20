@@ -787,36 +787,50 @@ div.dja__model-description{
     color: var(--link-fg);
 }
 
-// If the dja textarea is set as readonly, display this on hover
-textarea.vLargeTextField[readonly]:hover {
-    cursor: not-allowed;
-}
+.dja-textarea-container {
+    textarea {
+        width: 100%;
+        resize: none;
 
-.textarea-container textarea {
-    width: 100%; /* Full width to fit the container */
-    height: 150px; /* Fixed height or as needed */
-    padding-right: 10px; /* Enough padding to nest the scrollbar inside */
-    box-sizing: border-box; /* Include padding in width and height calculations */
-    overflow-y: auto; /* Only show vertical scrollbar when necessary */
-    scrollbar-width: thin; /* Makes the scrollbar thinner */
-    scrollbar-color: #888 #000; /* Optional: styling the scrollbar with a thumb and track color */
-}
+        &::-webkit-scrollbar {
+            background-color: transparent;
+            border: none;
+            width: 12px;
+        }
 
-/* For WebKit browsers like Chrome, Safari */
-.textarea-container textarea::-webkit-scrollbar {
-    width: 8px; /* Width of the scrollbar */
-}
+        &::-webkit-scrollbar-thumb {
+            background-color: var(--hairline-color);
+            border-radius: 99px;
+            background-clip: content-box;
+            border: 3px solid transparent;
+        }
 
-.textarea-container textarea::-webkit-scrollbar-track {
-    background: #000; /* Track color */
-}
+        &::-webkit-scrollbar-thumb:hover {
+            cursor: pointer;
+        }
+        
+        
+        &::-webkit-scrollbar-button {
+            display: none;
+        }
 
-.textarea-container textarea::-webkit-scrollbar-thumb {
-    background-color: #888; /* Color of the scrollbar thumb */
-    border-radius: 10px; /* Rounded corners for the scrollbar thumb */
-    border: 2px solid #000; /* Optional: Adds a border around the thumb */
+        ::-webkit-scrollbar-corner {
+            display: none;
+        }
+    }
+
+    
 }
 
 .max-full {
     width: 100% !important;
+}
+
+.thin-border {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.no-border {
+    border: none
 }
