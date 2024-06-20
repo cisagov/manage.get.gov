@@ -3,6 +3,7 @@ from registrar.models.portfolio import Portfolio
 from waffle.decorators import flag_is_active
 from django.contrib.auth.decorators import login_required
 
+
 @login_required
 def organization_domains(request, portfolio_id):
     context = {}
@@ -17,6 +18,7 @@ def organization_domains(request, portfolio_id):
         context["portfolio"] = portfolio
 
     return render(request, "organization_domains.html", context)
+
 
 @login_required
 def organization_domain_requests(request, portfolio_id):
