@@ -2478,16 +2478,35 @@ class PublicContactResource(resources.ModelResource):
 
     class Meta:
         model = models.PublicContact
+        # may want to consider these bulk options in future, so left in as comments
+        # use_bulk = True
+        # batch_size = 1000
+        # force_init_instance = True
 
-    def import_row(self, row, instance_loader, using_transactions=True, dry_run=False, raise_errors=None, **kwargs):
-        """Override kwargs skip_epp_save and set to True"""
-        kwargs["skip_epp_save"] = True
-        return super().import_row(
-            row,
-            instance_loader,
-            using_transactions=using_transactions,
-            dry_run=dry_run,
-            raise_errors=raise_errors,
+    def __init__(self):
+        """Sets global variables for code tidyness"""
+        super().__init__()
+        self.skip_epp_save = False
+
+    def import_data(
+        self,
+        dataset,
+        dry_run=False,
+        raise_errors=False,
+        use_transactions=None,
+        collect_failed_rows=False,
+        rollback_on_validation_errors=False,
+        **kwargs,
+    ):
+        """Override import_data to set self.skip_epp_save if in kwargs"""
+        self.skip_epp_save = kwargs.get("skip_epp_save", False)
+        return super().import_data(
+            dataset,
+            dry_run,
+            raise_errors,
+            use_transactions,
+            collect_failed_rows,
+            rollback_on_validation_errors,
             **kwargs,
         )
 
@@ -2503,7 +2522,7 @@ class PublicContactResource(resources.ModelResource):
             # we don't have transactions and we want to do a dry_run
             pass
         else:
-            instance.save(skip_epp_save=True)
+            instance.save(skip_epp_save=self.skip_epp_save)
         self.after_save_instance(instance, using_transactions, dry_run)
 
 
@@ -2552,11 +2571,48 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
-class FederalAgencyAdmin(ListHeaderAdmin):
+class PortfolioAdmin(ListHeaderAdmin):
+    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+    list_display = ("organization_name", "federal_agency", "creator")
+    search_fields = ["organization_name"]
+    search_help_text = "Search by organization name."
+    # readonly_fields = [
+    #     "requestor",
+    # ]
+
+    def save_model(self, request, obj, form, change):
+
+        if obj.creator is not None:
+            # ---- update creator ----
+            # Set the creator field to the current admin user
+            obj.creator = request.user if request.user.is_authenticated else None
+
+        # ---- update organization name ----
+        # org name will be the same as federal agency, if it is federal,
+        # otherwise it will be the actual org name. If nothing is entered for
+        # org name and it is a federal organization, have this field fill with
+        # the federal agency text name.
+        is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+        if is_federal and obj.organization_name is None:
+            obj.organization_name = obj.federal_agency.agency
+
+        super().save_model(request, obj, form, change)
+
+
+class FederalAgencyResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.FederalAgency
+
+
+class FederalAgencyAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]
     search_help_text = "Search by agency name."
     ordering = ["agency"]
+    resource_classes = [FederalAgencyResource]
 
 
 class UserGroupAdmin(AuditedAdmin):
@@ -2622,6 +2678,7 @@ admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
+admin.site.register(models.Portfolio, PortfolioAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
