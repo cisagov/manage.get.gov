@@ -614,7 +614,8 @@ class DomainRequest(TimeStampedModel):
 
     def sync_action_needed_reason_email(self):
         """If no action_needed_reason_email is defined, add a default one"""
-        if self.action_needed_reason and not self.action_needed_reason_email:
+        # Change this in #1901. Add a check on "not self.action_needed_reason_email"
+        if self.action_needed_reason:
             text = self.get_action_needed_reason_default_email_text(self.action_needed_reason)
             self.action_needed_reason_email = text.get("email_body_text")
 
@@ -852,8 +853,6 @@ class DomainRequest(TimeStampedModel):
                 can_send_email = False
 
         # TODO - replace this logic with self.action_needed_reason_email in #1901.
-        # The email content should be dependent on that field.
-
         # Assumes that the template name matches the action needed reason if nothing is specified.
         # This is so you can override if you need, or have this taken care of for you.
         if not email_template_name and not email_template_subject_name:

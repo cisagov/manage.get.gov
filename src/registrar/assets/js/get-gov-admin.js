@@ -554,14 +554,23 @@ function initializeWidgetOnList(list, parentId) {
     if(actionNeededReasonDropdown && actionNeededEmail) {
         let emailContainer = actionNeededEmail.closest(".dja-readonly-textarea-container");
         if (statusDropdown.value == "action needed") {
-            showElement(emailContainer)
+            showElement(emailContainer);
         }
 
         statusDropdown.addEventListener("change", function() {
             if (statusDropdown.value == "action needed") {
-                showElement(emailContainer)
+                showElement(emailContainer);
             }else {
-                hideElement(emailContainer)
+                hideElement(emailContainer);
+            }
+            
+            // We hide the table if there isn't any data to start with.
+            // If we add a value, show it.
+            // This edge case applies to fixtures data. Prod data will have a changelog to pull from.
+            let changeLog = document.querySelector(".dja-status-changelog");
+            console.log(`value is ===>${actionNeededReasonDropdown.value}<===`)
+            if(changeLog && changeLog.classList.contains("display-none") && actionNeededReasonDropdown.value){
+                showElement(changeLog);
             }
         });
 
@@ -572,8 +581,16 @@ function initializeWidgetOnList(list, parentId) {
     function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
         actionNeededReasonDropdown.addEventListener("change", function() {
             // TODO on change if not actionneeded on status, hide show email button
-            const pk = document.querySelector("#domain_request_id").value
-            const reason = actionNeededReasonDropdown.value
+            const pk = document.querySelector("#domain_request_id").value;
+            const reason = actionNeededReasonDropdown.value;
+
+            // If a reason isn't specified, no email will be sent.
+            // You also cannot save the model in this state.
+            if(!reason) {
+                actionNeededEmail.value = "No email will be sent";
+                return;
+            }
+
             fetch(`/get-domain-requests-json/${pk}/action-needed-email/${reason}`)
             .then(response => response.json())
             .then(data => {
@@ -581,13 +598,9 @@ function initializeWidgetOnList(list, parentId) {
                     console.log('Error in AJAX call: ' + data.error);
                     return;
                 }
-                
-                let noEmailMessage = document.getElementById("no-email-message");
+
                 if(data && data.email_body_text) {
                     actionNeededEmail.value = data.email_body_text
-
-
-
                 }else if (data && !data.email_body_text) {
                     actionNeededEmail.value = "No email will be sent";
                 }
@@ -597,7 +610,6 @@ function initializeWidgetOnList(list, parentId) {
                 }
             });
         });
-
     }
 
 })();
