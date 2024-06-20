@@ -8,46 +8,39 @@ Approved
 
 ## Context
 
-We release finished code twice a week allowing features to reach users fast. However, several upcoming features required a series of changes that would need to be done over a couple sprints and should not display to users until we are all done. Thus, if we followed our normal process, users would see half-finished features.
+We release finished code twice weekly, allowing features to reach users quickly. However, several upcoming features require a series of changes that will need to be done over a few sprints and should only be displayed to users once we are all done. Thus, users would see half-finished features if we followed our standard process.
 
-At the same time, some of these features should only be turned on for users upon request (and likely during user research). We would want a way for our CISA users to be able to turn this feature on and off for people without requiring a lengthy process or code changes.
+At the same time, some of these features should only be turned on for users upon request (and likely during user research). We would want a way for our CISA users to turn this feature on and off for people without requiring a lengthy process or code changes.
 
 This brought us to finding solutions that could fix one or both of these problems.
-
 
 ## Considered Options
 
 **Option 1:** Environment variables
-Environment variables would allow implementation over multiple sprints, by allowing us to set a true or false value to the given variable. When the varaible is on (true) the feature shows, otherwise it remains hidden. ANother benefit is that it is free and we already use environment variables for other things in our code.
+The environment allows developers to set a true or false value to the given variable, allowing implementation over multiple sprints when new features are encapsulated with this variable. The feature shows when the variable is on (true); otherwise, it remains hidden. Environment variables are also innate to Django, making them free to use; on top of that, we already use them for other things in our code.
 
-The down side, is that to see what the current setting is on a sandbox you would need to go to cloud.gov or use the cf cli to see the current settings. This is very technical, meaning only developers would really be able to see what features were set and we would be the only ones to adjust them. It would also be really easy to accidentally have the feature on or off without noticing. This also would not solve the problem of being able to turn features on and off easily for a given user group.
+The downside is that you would need to go to cloud.gov or use the cf CLI to see the current settings on a sandbox. This is very technical, meaning only developers would really be able to see what features were set, and we would be the only ones able to adjust them. It would also be easy to accidentally have the feature on or off without noticing. This also would not solve the problem of turning features on and off quickly for a given user group.
 **Option 2:** Feature branches
-Like environrment variables, using feature branches would be free and allow us to iterate on development of big features over multiple sprints. We would make a feature branch that developers working on that feature would push and pull from to iterate on. This quickly brings us to the downsides of this approach.
+Like environment variables, using feature branches would be free and allow us to iterate on developing big features over multiple sprints. We would make a feature branch that developers working on that feature would push and pull from to iterate on. This quickly brings us to the downsides of this approach.
 
-WIth feature branches we do not solve the problem of being able to turn features on and off easily for a user group. More importantly, by working in a seperated branch for more than a sprint we easily run the risk of having out of sync migrations and merge conflicts that would slow down development time and cause frustration. Out of sync migrations can also cause technical issues on sandboxes as well, which further adds to development frustration.
+Using feature branches, we do not solve the problem of being able to turn features on and off quickly for a user group. More importantly, by working in a separate branch for more than a sprint, we easily risk having out-of-sync migrations and merge conflicts that would slow development time and cause frustration. Out-of-sync migrations can also cause technical issues on sandboxes, further contributing to development frustration.
 
 **Option 3:** Feature flags
-Feature flags are free, allow us to implement thigns over multiple sprints, and some libar
+Feature flags are free, allowing us to implement features over multiple sprints, and some libraries can apply features based on UserGroups while even more come with an interface for non-developers to control turning feature flags on and off. Going with this decision would also entail picking the correct library or product.
 
-Waffle feature flag libary
+**Option 3a:** Feature flags with Waffle
+The Waffle feature flag library is a highly recommended Django library for handling large features. It has clear documentation on turning on feature flags for user groups, which is one of the main problems it attempts to solve. It also provides "Samples" that can turn on flags for a certain percentage of users and "Switches" that can be used to turn features on and off holistically. The reviews from those who used it were highly favorable, some even mentioning how it beat out competitors like Gargoyl. It's also compatible with Django admin, providing a quick way to add the view of the flags in Django admin so any user with admin access can modify flags for their sandbox.
 
+The repo has had new releases every year since its the creation and looks to be well maintained, with many issues on the repo referring to new feature requests. 
 
-**Option 3a:** Feature flags with waffle
-The Waffle feature flag library is a highly reccomended django libary for handling large features. It has clear documentation on how to turn on feature flags for user groups as this is one of the main problems it attempts to solve. It also provides Samples which can turn on flags for a certain percent of users and Switches which can be used to hollistically turn features on and off. The reviews from those who used it were highly favorable, some even mentioning how it beat out competitors like gargoyl. It's also comaptible with django admin, providing a quick way to add the view of the flags in django admin so any user with admin access can modify flags for their sandbox.
+**Option 3b:** Feature flags with Gargoyl
+Gargoyl is another feature-flag library with Django, but it is no longer maintained, and reviews say it wasn't as easy to work with as Waffle. Using it would require forking the library, and many outstanding issues indicate bugs that need fixing. The mixed reviews from those who have done this and the less robust documentation were immediately huge cons to using this as an option.
 
-
-**Option 3b:** Feature flags with gargoyl
-Another feature flag libary with django, but with more forks of the libary, less consitent maintanence and reviews saying it wasn't as easy to work with as waffle. The reviews and less robust documentation were immediatly huge cons to this as an option
-
-**Option 3c:** Paid feature flag system with github integration- LaunchDarkly
-LaunchDarkly is a Fedramp'd solution with excellent reviews for controlling feature flags straight from github to promote any team member to be in easy control of setting feature flags. However, the big con to this was that it would be a paid solution and would take time to procure thus slowing down our ability to start on these large features. 
-
-
+**Option 3c:** Paid feature flag system with GitHub integration- LaunchDarkly
+LaunchDarkly is a Fedramped solution with excellent reviews for controlling feature flags straight from GitHub to promote any team member easily controlling feature flags. However, the big con to this was that it would be a paid solution and would take time to procure, thus slowing down our ability to start on these significant features. We shouldn't consider LaunchDarkly because taking time to procure it would negatively affect our timeline, even if the budget was eventually approved.
 
 ## Decision
-
-
+Option 3a, feature flags with the Django Waffle library
 
 ## Consequences
-
-
+We are now reliant on the Waffle library for feature flags. As with any library, we would need to fork it if it ever became non-maintained with critical bugs. This doesn't seem likely in the near future, but if it occurred, we could complete the forking and fix any bug within a sprint without drastically impacting our timeline.
