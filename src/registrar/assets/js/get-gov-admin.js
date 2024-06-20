@@ -552,7 +552,7 @@ function initializeWidgetOnList(list, parentId) {
 
     
     if(actionNeededReasonDropdown && actionNeededEmail) {
-        let emailContainer = actionNeededEmail.closest(".dja-textarea-container");
+        let emailContainer = actionNeededEmail.closest(".dja-readonly-textarea-container");
         if (statusDropdown.value == "action needed") {
             showElement(emailContainer)
         }
