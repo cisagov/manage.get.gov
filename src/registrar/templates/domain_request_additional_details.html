@@ -16,7 +16,7 @@
       </legend>
 
       <!-- Toggle -->
-      <em>Select one (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
+      <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
       {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
         {% input_with_errors forms.0.has_cisa_representative %}
       {% endwith %}
@@ -36,7 +36,7 @@
         </legend>
   
         <!-- Toggle -->
-        <em>Select one (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
+        <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
           {% input_with_errors forms.2.has_anything_else_text %}
         {% endwith %}
@@ -44,7 +44,7 @@
     </fieldset>
   
     <div class="margin-top-3" id="anything-else">
-        <p>Provide details below (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</p>
+        <p>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
         {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.3.anything_else %}
         {% endwith %}
