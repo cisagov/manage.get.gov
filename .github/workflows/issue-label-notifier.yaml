@@ -3,6 +3,8 @@ name: Notify users based on issue labels
 on:
   issues:
     types: [labeled]
+  pull_request:
+    types: [labeled]
 
 jobs:
   notify:
