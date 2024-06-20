@@ -2655,6 +2655,27 @@ class WaffleFlagAdmin(FlagAdmin):
         model = models.WaffleFlag
         fields = "__all__"
 
+class DomainGroupResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.DomainGroup
+
+class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+    resource_classes = [DomainGroupResource]
+    list_display = ["name", "portfolio"]
+
+class SuborganizationResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.Suborganization
+
+class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+    resource_classes = [SuborganizationResource]
+    list_display = ["name", "portfolio"]
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
@@ -2679,6 +2700,8 @@ admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
+admin.site.register(models.DomainGroup, DomainGroupAdmin)
+admin.site.register(models.Suborganization, SuborganizationAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
