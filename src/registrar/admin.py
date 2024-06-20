@@ -2036,7 +2036,7 @@ class DomainInformationInline(admin.StackedInline):
 
     def get_readonly_fields(self, request, obj=None):
         return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
-    
+
     # Re-route the get_fieldsets method to utilize DomainInformationAdmin.get_fieldsets
     # since that has all the logic for excluding certain fields according to user permissions.
     # Then modify the remaining fields to further trim out any we don't want for this inline
@@ -2045,7 +2045,7 @@ class DomainInformationInline(admin.StackedInline):
         # Grab fieldsets from DomainInformationAdmin so that it handles all logic
         # for permission-based field visibility.
         modified_fieldsets = DomainInformationAdmin.get_fieldsets(self, request, obj=None)
-        
+
         # remove .gov domain from fieldset
         for index, (title, f) in enumerate(modified_fieldsets):
             if title == ".gov domain":
