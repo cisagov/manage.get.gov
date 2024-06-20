@@ -145,3 +145,12 @@ def format_phone(value):
             phone_number = PhoneNumber.from_string(value)
         return phone_number.as_national
     return value
+
+@register.filter
+def strip_beginning_newline_and_spaces(value):
+    """Removes any newline characters (and spaces) 
+    on the first line of a given string"""
+    if value and isinstance(value, str):
+        return value.lstrip("\n").lstrip(" ")
+    else:
+        return value

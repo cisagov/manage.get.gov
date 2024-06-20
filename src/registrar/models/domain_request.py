@@ -577,12 +577,9 @@ class DomainRequest(TimeStampedModel):
         # Return the content of the rendered views
         context = {"domain_request": self}
 
-        # autoescape off adds a newline to the beginning of the email.
-        # This is fine when the email is rendered, but we don't need this for display.
-        email_body_text = template.render(context=context).lstrip().lstrip("\n")
         return {
             "subject_text": subject_template.render(context=context),
-            "email_body_text": email_body_text
+            "email_body_text": template.render(context=context)
         }
 
 
