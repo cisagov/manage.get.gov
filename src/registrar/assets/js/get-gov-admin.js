@@ -580,14 +580,19 @@ function initializeWidgetOnList(list, parentId) {
     // TODO fix edge case where nothing is selected
     function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
         actionNeededReasonDropdown.addEventListener("change", function() {
-            // TODO on change if not actionneeded on status, hide show email button
+            let noEmailMessage = document.getElementById("no-email-message");
             const pk = document.querySelector("#domain_request_id").value;
             const reason = actionNeededReasonDropdown.value;
 
             // If a reason isn't specified, no email will be sent.
             // You also cannot save the model in this state.
+            // This flow occurs if you switch back to the empty picker state
             if(!reason) {
-                actionNeededEmail.value = "No email will be sent";
+                // Hide the text field
+                hideElement(actionNeededEmail);
+
+                // Show the "no email" message
+                showElement(noEmailMessage);
                 return;
             }
 
@@ -601,12 +606,18 @@ function initializeWidgetOnList(list, parentId) {
 
                 if(data && data.email_body_text) {
                     actionNeededEmail.value = data.email_body_text
-                }else if (data && !data.email_body_text) {
-                    actionNeededEmail.value = "No email will be sent";
-                }
 
-                if (data) {
-                    actionNeededEmail.value = data.email_body_text ? data.email_body_text : "No email will be sent";
+                    // Show the text field
+                    showElement(actionNeededEmail);
+
+                    // Hide the "no email" message
+                    hideElement(noEmailMessage);
+                }else if (data && !data.email_body_text) {
+                    // Hide the text field
+                    hideElement(actionNeededEmail);
+
+                    // Show the "no email" message
+                    showElement(noEmailMessage);
                 }
             });
         });
