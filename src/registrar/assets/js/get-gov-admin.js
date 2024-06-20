@@ -578,8 +578,8 @@ function initializeWidgetOnList(list, parentId) {
     function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
         actionNeededReasonDropdown.addEventListener("change", function() {
             let noEmailMessage = document.getElementById("no-email-message");
+            let reason = actionNeededReasonDropdown.value;
             const pk = document.querySelector("#domain_request_id").value;
-            const reason = actionNeededReasonDropdown.value;
 
             // If a reason isn't specified, no email will be sent.
             // You also cannot save the model in this state.
@@ -591,7 +591,7 @@ function initializeWidgetOnList(list, parentId) {
                 // Show the "no email" message
                 showElement(noEmailMessage);
                 return;
-            }else if(changeLog && changeLog.classList.contains("display-none") && actionNeededReasonDropdown.value){
+            }else if(reason && changeLog && changeLog.classList.contains("display-none")){
                 showElement(changeLog);
             }
 
