@@ -1,7 +1,8 @@
 from datetime import date
 import logging
 import copy
-
+import json
+from django.template.loader import get_template
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
@@ -1845,10 +1846,44 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
-        extra_context["action_needed_reason_emails"] = obj.get_all_action_needed_reason_emails_as_json()
+        extra_context["action_needed_reason_emails"] = self.get_all_action_needed_reason_emails_as_json(obj)
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def get_all_action_needed_reason_emails_as_json(self, domain_request):
+        """Returns a json dictionary of every action needed reason and its associated email
+        for this particular domain request."""
+        emails = {}
+        for action_needed_reason in domain_request.ActionNeededReasons:
+            enum_value = action_needed_reason.value
+            # Change this in #1901. Just add a check for the current value.
+            emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value)
+        return json.dumps(emails)
+
+    def _get_action_needed_reason_default_email_text(self, domain_request, action_needed_reason: str):
+        """Returns the default email associated with the given action needed reason"""
+        if action_needed_reason is None or action_needed_reason == domain_request.ActionNeededReasons.OTHER:
+            return {
+                "subject_text": None,
+                "email_body_text": None,
+            }
+
+        # Get the email body
+        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
+        template = get_template(template_path)
+
+        # Get the email subject
+        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
+        subject_template = get_template(template_subject_path)
+
+        # Return the content of the rendered views
+        context = {"domain_request": domain_request}
+
+        return {
+            "subject_text": subject_template.render(context=context),
+            "email_body_text": template.render(context=context),
+        }
 
     def process_log_entry(self, log_entry):
         """Process a log entry and return filtered entry dictionary if applicable."""

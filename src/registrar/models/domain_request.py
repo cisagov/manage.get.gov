@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Union
 import logging
-import json
 
 from django.apps import apps
 from django.conf import settings
@@ -13,7 +12,6 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
-from django.template.loader import get_template
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -1220,36 +1218,3 @@ class DomainRequest(TimeStampedModel):
             return False
 
         return True
-
-    def get_all_action_needed_reason_emails_as_json(self):
-        """Returns a json dictionary of every action needed reason and its associated email
-        for this particular domain request."""
-        emails = {}
-        for action_needed_reason in self.ActionNeededReasons:
-            enum_value = action_needed_reason.value
-            emails[enum_value] = self.get_action_needed_reason_default_email_text(enum_value)
-        return json.dumps(emails)
-
-    def get_action_needed_reason_default_email_text(self, action_needed_reason: str):
-        """Returns the default email associated with the given action needed reason"""
-        if action_needed_reason is None or action_needed_reason == self.ActionNeededReasons.OTHER:
-            return {
-                "subject_text": None,
-                "email_body_text": None,
-            }
-
-        # Get the email body
-        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
-        template = get_template(template_path)
-
-        # Get the email subject
-        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
-        subject_template = get_template(template_subject_path)
-
-        # Return the content of the rendered views
-        context = {"domain_request": self}
-
-        return {
-            "subject_text": subject_template.render(context=context),
-            "email_body_text": template.render(context=context),
-        }

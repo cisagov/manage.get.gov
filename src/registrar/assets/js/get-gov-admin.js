@@ -548,8 +548,8 @@ function initializeWidgetOnList(list, parentId) {
 })();
 
 
-/** An IIFE that hooks up to the "show email" button
- * which shows the auto generated email on action needed reason
+/** An IIFE that hooks up to the "show email" button.
+ * which shows the auto generated email on action needed reason.
 */
 (function () {
     let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
@@ -562,7 +562,6 @@ function initializeWidgetOnList(list, parentId) {
     function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
         actionNeededReasonDropdown.addEventListener("change", function() {
             let reason = actionNeededReasonDropdown.value;
-            const pk = document.querySelector("#domain_request_id").value;
 
             // If a reason isn't specified, no email will be sent.
             // You also cannot save the model in this state.
