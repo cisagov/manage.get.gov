@@ -4,17 +4,10 @@
     display: inline-block;
     width: auto;
     position: relative;
-    .usa-accordion__button {
-        background: color('white');
-        border: solid 1px color('base-lighter');
-        border-radius: 4px;
-        padding: units(1) units(2);
-        color: color('primary-darker');
-        font-weight: font-weight('normal');
-        font-size: size('ui', 'xs');
-    }
     .usa-accordion__button[aria-expanded=false],
-    .usa-accordion__button[aria-expanded=false]:hover {
+    .usa-accordion__button[aria-expanded=false]:hover,
+    .usa-accordion__button[aria-expanded=true],
+    .usa-accordion__button[aria-expanded=true]:hover {
         background-image: none;
     }
     .usa-accordion__content {

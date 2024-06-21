@@ -161,3 +161,16 @@ a.usa-button--unstyled:visited {
     margin-left: units(2);
   }
 }
+
+.usa-button--filter {
+  border: solid 1px color('base-light') !important;
+  padding: units(1);
+  color: color('primary-darker') !important;
+  font-weight: font-weight('normal');
+  font-size: size('ui', 'xs');
+  box-shadow: none;
+  &:hover {
+    box-shadow: none;
+  }
+}
+ 

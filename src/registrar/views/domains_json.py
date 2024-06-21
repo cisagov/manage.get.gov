@@ -31,19 +31,23 @@ def get_domains_json(request):
     if status_param:
         status_list = status_param.split(",")
 
+        print(status_list)
+
         # Split the status list into normal states and custom states
         normal_states = [state for state in status_list if state in Domain.State.values]
         custom_states = [state for state in status_list if state == "expired"]
 
         # Construct Q objects for normal states that can be queried through ORM
         state_query = Q()
-        if normal_states:
-            state_query |= Q(state__in=normal_states)
+        for state in normal_states:
+            state_query |= Q(state=state)
 
         # Handle custom states in Python, as expired can not be queried through ORM
         if "expired" in custom_states:
-            expired_domains = [domain.id for domain in objects if domain.state_display() == "Expired"]
-            state_query |= Q(id__in=expired_domains)
+            expired_domain_ids = [domain.id for domain in objects if domain.state_display() == "Expired"]
+            state_query |= Q(id__in=expired_domain_ids)
+
+        print(state_query)
 
         # Apply the combined query
         objects = objects.filter(state_query)
@@ -51,8 +55,10 @@ def get_domains_json(request):
         # If there are filtered states, and expired is not one of them, domains with
         # state_display of 'Expired' must be removed
         if "expired" not in custom_states:
-            expired_domains = [domain.id for domain in objects if domain.state_display() == "Expired"]
-            objects = objects.exclude(id__in=expired_domains)
+            expired_domain_ids = [domain.id for domain in objects if domain.state_display() == "Expired"]
+            objects = objects.exclude(id__in=expired_domain_ids)
+    else:
+        objects = Domain.objects.none()  # Return no objects if no status_param is provided
 
     if sort_by == "state_display":
         # Fetch the objects and sort them in Python

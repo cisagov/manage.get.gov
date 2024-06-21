@@ -51,6 +51,20 @@ function makeVisible(el) {
   el.style.visibility = "visible";
 }
 
+/* Toggles expand_more / expand_more svgs in buttons or anchors */
+function toggleCaret(element) {
+  // Get a reference to the use element inside the button
+  const useElement = element.querySelector('use');
+  // Check if the span element text is 'Hide'
+  if (useElement.getAttribute('xlink:href') === '/public/img/sprite.svg#expand_more') {
+      // Update the xlink:href attribute to expand_more
+      useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_less');
+  } else {
+      // Update the xlink:href attribute to expand_less
+      useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_more');
+  }
+}
+
 /** Creates and returns a live region element. */
 function createLiveRegion(id) {
   const liveRegion = document.createElement("div");
@@ -1039,11 +1053,11 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
  * A helper that toggles content/ no content/ no search results
  *
 */
-const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm) => {
+const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
   const { unfiltered_total, total } = data;
 
-  if (searchTermHolder)
-    searchTermHolder.innerHTML = '';
+  // if (searchTermHolder)
+  //   searchTermHolder.innerHTML = '';
 
   if (unfiltered_total) {
     if (total) {
@@ -1051,8 +1065,8 @@ const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper,
       hideElement(noSearchResultsWrapper);
       hideElement(noDataWrapper);
     } else {
-      if (searchTermHolder)
-        searchTermHolder.innerHTML = currentSearchTerm;
+      // if (searchTermHolder)
+      //   searchTermHolder.innerHTML = currentSearchTerm;
       hideElement(dataWrapper);
       showElement(noSearchResultsWrapper);
       hideElement(noDataWrapper);
@@ -1091,13 +1105,38 @@ document.addEventListener('DOMContentLoaded', function() {
     const noDomainsWrapper = document.querySelector('.domains__no-data');
     const noSearchResultsWrapper = document.querySelector('.domains__no-search-results');
     let hasLoaded = false;
-    let currentSearchTerm = ''
+    let currentStatus = [];
+    let currentSearchTerm = '';
     const domainsSearchInput = document.getElementById('domains__search-field');
     const domainsSearchSubmit = document.getElementById('domains__search-field-submit');
     const tableHeaders = document.querySelectorAll('.domains__table th[data-sortable]');
     const tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region');
-    const searchTermHolder = document.querySelector('.domains__search-term');
-    const resetButton = document.querySelector('.domains__reset-button');
+    // const searchTermHolder = document.querySelector('.domains__search-term');
+    const resetSearchButton = document.querySelector('.domains__reset-search');
+    const resetFiltersButton = document.querySelector('.domains__reset-filters');
+    const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
+    const statusIndicator = document.querySelector('.domain__filter-indicator');
+    const statusToggle = document.querySelector('.usa-button--filter');
+
+    // Initialize the filters, but only if we're on the org domains page
+    const portfolioSidenav = document.querySelector('.usa-sidenav--portfolio');
+    if (portfolioSidenav) {
+      statusCheckboxes.forEach(checkbox => {
+        const checkboxValue = checkbox.value;
+        // Update currentStatus array based on checkbox state
+        if (checkbox.checked) {
+          currentStatus.push(checkboxValue);
+        } else {
+          const index = currentStatus.indexOf(checkboxValue);
+          if (index > -1) {
+            currentStatus.splice(index, 1);
+          }
+        }
+      });
+    } else {
+      // For non-portfolio users, disable filtering
+      currentStatus = ['unknown', 'ready', 'on hold', 'expired', 'deleted'];
+    }
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1108,9 +1147,9 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} loaded - control for the scrollToElement functionality
      * @param {*} searchTerm - the search term
      */
-    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, searchTerm = currentSearchTerm) {
+    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, status = currentStatus, searchTerm = currentSearchTerm) {
       //fetch json of page of domains, given page # and sort
-      fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
+      fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}&status=${status}&search_term=${searchTerm}`)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
@@ -1119,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           // handle the display of proper messaging in the event that no domains exist in the list or search returns no results
-          updateDisplay(data, domainsWrapper, noDomainsWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm);
+          updateDisplay(data, domainsWrapper, noDomainsWrapper, noSearchResultsWrapper, currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
           const domainList = document.querySelector('.domains__table tbody');
@@ -1209,18 +1248,59 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
 
+    domainsSearchInput.addEventListener('focus', function(e) {
+      console.log('focus');
+      closeFilters();
+    });
+
     domainsSearchSubmit.addEventListener('click', function(e) {
       e.preventDefault();
       currentSearchTerm = domainsSearchInput.value;
       // If the search is blank, we match the resetSearch functionality
       if (currentSearchTerm) {
-        showElement(resetButton);
+        showElement(resetSearchButton);
       } else {
-        hideElement(resetButton);
+        hideElement(resetSearchButton);
       }
       loadDomains(1, 'id', 'asc');
       resetHeaders();
-    })
+    });
+
+    statusToggle.addEventListener('click', function() {
+      console.log('clicked')
+      toggleCaret(statusToggle);
+    });
+
+    // Add event listeners to status filter checkboxes
+    statusCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        const checkboxValue = this.value;
+        
+        // Update currentStatus array based on checkbox state
+        if (this.checked) {
+          currentStatus.push(checkboxValue);
+        } else {
+          const index = currentStatus.indexOf(checkboxValue);
+          if (index > -1) {
+            currentStatus.splice(index, 1);
+          }
+        }
+
+        console.log(currentStatus)
+
+        if (currentStatus.length == statusCheckboxes.length) {
+          console.log('fully selected');
+          hideElement(resetFiltersButton);
+        } else {
+          showElement(resetFiltersButton);
+        }
+
+        // Call loadDomains with updated status
+        loadDomains(1, 'id', 'asc');
+        resetHeaders();
+        updateStatusIndicator();
+      });
+    });
 
     // Reset UI and accessibility
     function resetHeaders() {
@@ -1235,15 +1315,46 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetSearch() {
       domainsSearchInput.value = '';
       currentSearchTerm = '';
-      hideElement(resetButton);
-      loadDomains(1, 'id', 'asc', hasLoaded, '');
+      hideElement(resetSearchButton);
+      loadDomains(1, 'id', 'asc');
       resetHeaders();
     }
 
-    if (resetButton) {
-      resetButton.addEventListener('click', function() {
+    if (resetSearchButton) {
+      resetSearchButton.addEventListener('click', function() {
         resetSearch();
       });
+    }
+
+    function resetFilters() {
+      currentStatus = [];
+      statusCheckboxes.forEach(checkbox => {
+        checkbox.checked = true; 
+        const checkboxValue = checkbox.value;
+        currentStatus.push(checkboxValue);
+      });
+      hideElement(resetFiltersButton);
+      loadDomains(1, 'id', 'asc');
+      resetHeaders();
+      updateStatusIndicator();
+      closeFilters();
+    }
+
+    if (resetFiltersButton) {
+      resetFiltersButton.addEventListener('click', function() {
+        resetFilters();
+      });
+    }
+
+    function updateStatusIndicator() {
+      statusIndicator.innerHTML = '';
+      statusIndicator.innerHTML = '(' + currentStatus.length + ')';
+    }
+
+    function closeFilters() {
+      if (statusToggle.getAttribute("aria-expanded") === "true") {
+        statusToggle.click();
+      }
     }
 
     // Load the first page initially
@@ -1280,13 +1391,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const noDomainRequestsWrapper = document.querySelector('.domain-requests__no-data');
     const noSearchResultsWrapper = document.querySelector('.domain-requests__no-search-results');
     let hasLoaded = false;
-    let currentSearchTerm = ''
+    let currentSearchTerm = '';
     const domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
     const domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
     const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
     const tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
-    const searchTermHolder = document.querySelector('.domain-requests__search-term');
-    const resetButton = document.querySelector('.domain-requests__reset-button');
+    // const searchTermHolder = document.querySelector('.domain-requests__search-term');
+    const resetSearchButton = document.querySelector('.domain-requests__reset-search');
 
     /**
      * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
@@ -1342,7 +1453,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           // handle the display of proper messaging in the event that no requests exist in the list or search returns no results
-          updateDisplay(data, domainRequestsWrapper, noDomainRequestsWrapper, noSearchResultsWrapper, searchTermHolder, currentSearchTerm);
+          updateDisplay(data, domainRequestsWrapper, noDomainRequestsWrapper, noSearchResultsWrapper, currentSearchTerm);
 
           // identify the DOM element where the domain request list will be inserted into the DOM
           const tbody = document.querySelector('.domain-requests__table tbody');
@@ -1565,13 +1676,13 @@ document.addEventListener('DOMContentLoaded', function() {
       currentSearchTerm = domainRequestsSearchInput.value;
       // If the search is blank, we match the resetSearch functionality
       if (currentSearchTerm) {
-        showElement(resetButton);
+        showElement(resetSearchButton);
       } else {
-        hideElement(resetButton);
+        hideElement(resetSearchButton);
       }
       loadDomainRequests(1, 'id', 'asc');
       resetHeaders();
-    })
+    });
 
     // Reset UI and accessibility
     function resetHeaders() {
@@ -1586,13 +1697,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetSearch() {
       domainRequestsSearchInput.value = '';
       currentSearchTerm = '';
-      hideElement(resetButton);
-      loadDomainRequests(1, 'id', 'asc', hasLoaded, '');
+      hideElement(resetSearchButton);
+      loadDomainRequests(1, 'id', 'asc');
       resetHeaders();
     }
 
-    if (resetButton) {
-      resetButton.addEventListener('click', function() {
+    if (resetSearchButton) {
+      resetSearchButton.addEventListener('click', function() {
         resetSearch();
       });
     }
