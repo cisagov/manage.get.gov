@@ -11,16 +11,6 @@ class SeniorOfficial(TimeStampedModel):
     managing Portfolios.
     """
 
-    class Meta:
-        """Contains meta information about this class"""
-
-        # Placeholder for later tickets...
-        # indexes = [
-        #     models.Index(fields=["user"]),
-        #     models.Index(fields=["email"]),
-        # ]
-
-
     first_name = models.CharField(
         null=False,
         blank=False,

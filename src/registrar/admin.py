@@ -1017,7 +1017,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
 
-class SeniorOfficialAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class SeniorOfficialAdmin(ListHeaderAdmin):
     """Custom Senior Official Admin class."""
 
     # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
@@ -1030,13 +1030,6 @@ class SeniorOfficialAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name"]
-
-    fieldsets = [
-        (
-            None,
-            {"fields": ["first_name", "last_name", "title", "phone"]},
-        )
-    ]
 
 
 class WebsiteResource(resources.ModelResource):

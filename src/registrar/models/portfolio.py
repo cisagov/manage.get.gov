@@ -43,7 +43,8 @@ class Portfolio(TimeStampedModel):
         on_delete=models.PROTECT,
         help_text="Associated senior official",
         unique=False,
-        default=FederalAgency.get_non_federal_agency,
+        null=True,
+        blank=True
     )
 
     organization_type = models.CharField(
