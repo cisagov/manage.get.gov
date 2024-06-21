@@ -1845,6 +1845,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
+        extra_context["action_needed_reason_emails"] = obj.get_all_action_needed_reason_emails_as_json()
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)

@@ -22,7 +22,7 @@ from registrar.views.admin_views import (
 )
 
 from registrar.views.domain_request import Step
-from registrar.views.domain_requests_json import get_domain_requests_json, get_action_needed_email
+from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.domains_json import get_domains_json
 from registrar.views.utility import always_404
 from api.views import available, get_current_federal, get_current_full
@@ -213,11 +213,6 @@ urlpatterns = [
     ),
     path("get-domains-json/", get_domains_json, name="get_domains_json"),
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
-    path(
-        "get-domain-requests-json/<int:pk>/action-needed-email/<str:reason>",
-        get_action_needed_email,
-        name="get_action_needed_email",
-    ),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

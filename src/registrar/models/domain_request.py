@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Union
 import logging
+import json
 
 from django.apps import apps
 from django.conf import settings
@@ -1219,6 +1220,15 @@ class DomainRequest(TimeStampedModel):
             return False
 
         return True
+
+    def get_all_action_needed_reason_emails_as_json(self):
+        """Returns a json dictionary of every action needed reason and its associated email
+        for this particular domain request."""
+        emails = {}
+        for action_needed_reason in self.ActionNeededReasons:
+            enum_value = action_needed_reason.value
+            emails[enum_value] = self.get_action_needed_reason_default_email_text(enum_value)
+        return json.dumps(emails)
 
     def get_action_needed_reason_default_email_text(self, action_needed_reason: str):
         """Returns the default email associated with the given action needed reason"""

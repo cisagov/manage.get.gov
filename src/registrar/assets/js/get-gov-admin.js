@@ -571,22 +571,21 @@ function initializeWidgetOnList(list, parentId) {
                 showNoEmailMessage(actionNeededEmail);
                 return;
             }
-
-            fetch(`/get-domain-requests-json/${pk}/action-needed-email/${reason}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.log('Error in AJAX call: ' + data.error);
-                    return;
-                }
-
-                if(data && data.email_body_text) {
-                    actionNeededEmail.value = data.email_body_text
+            
+            let actionNeededEmails = JSON.parse(document.getElementById('action-needed-emails-data').textContent)
+            let emailData = actionNeededEmails[reason];
+            if (emailData) {
+                let emailBody = emailData.email_body_text
+                if (emailBody) {
+                    actionNeededEmail.value = emailBody
                     showActionNeededEmail(actionNeededEmail);
                 }else {
                     showNoEmailMessage(actionNeededEmail);
                 }
-            });
+            }else {
+                showNoEmailMessage(actionNeededEmail);
+            }
+
         });
     }
 
