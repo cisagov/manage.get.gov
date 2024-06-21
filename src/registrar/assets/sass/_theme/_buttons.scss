@@ -163,6 +163,9 @@ a.usa-button--unstyled:visited {
 }
 
 .usa-button--filter {
+  width: auto;
+  // For mobile stacking
+  margin-bottom: units(1);
   border: solid 1px color('base-light') !important;
   padding: units(1);
   color: color('primary-darker') !important;
