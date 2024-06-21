@@ -790,9 +790,9 @@ div.dja__model-description{
 .dja-readonly-textarea-container {
     textarea {
         width: 100%;
+        min-width: 610px;
         resize: none;
         cursor: auto;
-        border-width: medium;
 
         &::-webkit-scrollbar {
             background-color: transparent;
@@ -800,16 +800,14 @@ div.dja__model-description{
             width: 12px;
         }
 
+        // Style the scroll bar handle
         &::-webkit-scrollbar-thumb {
             background-color: var(--body-fg);
             border-radius: 99px;
             background-clip: content-box;
             border: 3px solid transparent;
         }
-
     }
-
-    
 }
 
 .max-full {
@@ -819,10 +817,6 @@ div.dja__model-description{
 .thin-border {
     border: 1px solid var(--border-color);
     border-radius: 4px;
-}
-
-.no-border {
-    border: none;
 }
 
 .display-none {
