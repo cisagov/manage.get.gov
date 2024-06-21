@@ -1637,6 +1637,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             return super().save_model(request, obj, form, change)
 
         # == Handle non-status changes == #
+        # Change this in #1901. Add a check on "not self.action_needed_reason_email"
+        if obj.action_needed_reason:
+            self._handle_action_needed_reason_email(obj)
+            should_save = True
 
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
@@ -1645,13 +1649,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             return super().save_model(request, obj, form, change)
 
         # == Handle status changes == #
-
         # Run some checks on the current object for invalid status changes
         obj, should_save = self._handle_status_change(request, obj, original_obj)
 
-        # We should only save if we don't display any errors in the step above.
+        # We should only save if we don't display any errors in the steps above.
         if should_save:
             return super().save_model(request, obj, form, change)
+
+    def _handle_action_needed_reason_email(self, obj):
+        text = self._get_action_needed_reason_default_email_text(obj, obj.action_needed_reason)
+        obj.action_needed_reason_email = text.get("email_body_text")
 
     def _handle_status_change(self, request, obj, original_obj):
         """

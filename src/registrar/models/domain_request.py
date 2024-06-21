@@ -597,10 +597,8 @@ class DomainRequest(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
-
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
-        self.sync_action_needed_reason_email()
 
         super().save(*args, **kwargs)
 
@@ -610,13 +608,6 @@ class DomainRequest(TimeStampedModel):
 
         # Update the cached values after saving
         self._cache_status_and_action_needed_reason()
-
-    def sync_action_needed_reason_email(self):
-        """If no action_needed_reason_email is defined, add a default one"""
-        # Change this in #1901. Add a check on "not self.action_needed_reason_email"
-        if self.action_needed_reason:
-            text = self.get_action_needed_reason_default_email_text(self.action_needed_reason)
-            self.action_needed_reason_email = text.get("email_body_text")
 
     def sync_action_needed_reason(self):
         """Checks if we need to send another action needed email"""
@@ -851,7 +842,6 @@ class DomainRequest(TimeStampedModel):
                 # Unknown and other are default cases - do nothing
                 can_send_email = False
 
-        # TODO - replace this logic with self.action_needed_reason_email in #1901.
         # Assumes that the template name matches the action needed reason if nothing is specified.
         # This is so you can override if you need, or have this taken care of for you.
         if not email_template_name and not email_template_subject_name:
