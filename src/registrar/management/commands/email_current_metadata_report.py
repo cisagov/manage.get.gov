@@ -1,7 +1,6 @@
 """Generates current-metadata.csv then uploads to S3 + sends email"""
 
 import logging
-import os
 import pyzipper
 
 from datetime import datetime
