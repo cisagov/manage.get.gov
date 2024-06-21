@@ -1248,10 +1248,10 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
 
-    domainsSearchInput.addEventListener('focus', function(e) {
-      console.log('focus');
-      closeFilters();
-    });
+    // domainsSearchInput.addEventListener('focus', function(e) {
+    //   console.log('focus');
+    //   closeFilters();
+    // });
 
     domainsSearchSubmit.addEventListener('click', function(e) {
       e.preventDefault();
@@ -1337,7 +1337,7 @@ document.addEventListener('DOMContentLoaded', function() {
       loadDomains(1, 'id', 'asc');
       resetHeaders();
       updateStatusIndicator();
-      closeFilters();
+      //closeFilters();
     }
 
     if (resetFiltersButton) {
@@ -1356,6 +1356,17 @@ document.addEventListener('DOMContentLoaded', function() {
         statusToggle.click();
       }
     }
+
+    document.addEventListener('focusin', function(event) {
+      const accordion = document.querySelector('.usa-accordion--select');
+      const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      
+      if (accordionIsOpen && !accordion.contains(event.target)) {
+        console.log('trigger')
+        closeFilters();
+        toggleCaret(statusToggle);
+      }
+    });
 
     // Load the first page initially
     loadDomains(1);
