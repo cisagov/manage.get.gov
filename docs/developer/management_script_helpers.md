@@ -1,10 +1,12 @@
 # Terminal Helper Functions
-`terminal_helper.py` contains utility functions to assist with common terminal and script operations.
+`terminal_helper.py` contains utility functions to assist with common terminal and script operations. 
+This file documents what they do and provides guidance on their usage.
 
 ## TerminalColors
-`TerminalColors` provides ANSI color codes as variables to style terminal output. Example usage:
+`TerminalColors` provides ANSI color codes as variables to style terminal output.
 
-print(f"{TerminalColors.OKGREEN}Success!{TerminalColors.ENDC}")
+Usage:
+```print(f"{TerminalColors.OKGREEN}Success!{TerminalColors.ENDC}")```
 
 ## ScriptDataHelper
 ### bulk_update_fields
@@ -12,7 +14,72 @@ print(f"{TerminalColors.OKGREEN}Success!{TerminalColors.ENDC}")
 `bulk_update_fields` performs a memory-efficient bulk update on a Django model in batches using a Paginator.
 
 Usage:
-bulk_update_fields(Domain, page.object_list, ["first_ready"])
+```bulk_update_fields(Domain, object_list, ["first_ready"])```
+
+## TerminalHelper
+### log_script_run_summary
+
+`log_script_run_summary` logs a summary of a script run, including counts of updated, skipped, and failed records.
+
+Usage:
+```TerminalHelper.log_script_run_summary(self.to_update, self.failed_to_update, self.skipped, debug)```
+
+### print_conditional 
+
+`print_conditional` conditionally logs a statement at a specified severity if a condition is met.
+
+Usage:
+```python
+TerminalHelper.print_conditional(
+    debug_on,
+    f"""{TerminalColors.YELLOW}Missing Domain Information
+    {TerminalColors.ENDC}""",
+)
+```
+
+### prompt_for_execution
+
+`prompt_for_execution` prompts the user to inspect a string and confirm if they wish to proceed. Returns True if proceeding, False if skipping, or exits the script.
+
+```python
+TerminalHelper.prompt_for_execution(
+    system_exit_on_terminate=True,
+    info_to_inspect=f"""
+    ==Master data file==
+    domain_additional_filename: {org_args.domain_additional_filename}
+
+    ==Organization data==
+    organization_adhoc_filename: {org_args.organization_adhoc_filename}
+
+    ==Containing directory==
+    directory: {org_args.directory}
+    """,
+    prompt_title="Do you wish to load organization data for TransitionDomains?",
+)
+```
+
+### query_yes_no
+
+`query_yes_no` prompts the user with a yes/no question and returns True for "yes" or False for "no".
+
+Usage:
+```python
+if query_yes_no("Do you want to proceed?"):
+    print("Proceeding...")
+else:
+    print("Aborting.")
+```
+
+### query_yes_no_exit
+
+`query_yes_no_exit` is similar to `query_yes_no` but includes an "exit" option to terminate the script.
+
+Usage: 
+if query_yes_no_exit("Continue, abort, or exit?"):
+    print("Continuing...")
+else:
+    print("Aborting.")
+    # Script will exit if user selected "e" for exit
 
 ## PopulateScriptTemplate
 
@@ -43,66 +110,3 @@ To create a script using `PopulateScriptTemplate`:
 2. Implement the `update_record` method to define how each record should be updated
 3. Optionally, override the configuration variables and helper methods as needed
 4. Call `mass_update_records` within `handle` and run the script
-
-## TerminalHelper
-### log_script_run_summary
-
-`log_script_run_summary` logs a summary of a script run, including counts of updated, skipped, and failed records.
-
-### print_conditional 
-
-`print_conditional` conditionally logs a statement at a specified severity if a condition is met.
-
-### prompt_for_execution
-
-`prompt_for_execution` prompts the user to inspect a string and confirm if they wish to proceed. Returns True if proceeding, False if skipping, or exits the script.
-
-### get_file_line_count
-
-`get_file_line_count` returns the number of lines in a file.
-
-### print_to_file_conditional
-
-`print_to_file_conditional` conditionally writes content to a file if a condition is met.
-
-Refer to the source code for full function signatures and additional details.
-
-### query_yes_no
-
-`query_yes_no` prompts the user with a yes/no question and returns True for "yes" or False for "no".
-
-Usage:
-```python
-if query_yes_no("Do you want to proceed?"):
-    print("Proceeding...")
-else:
-    print("Aborting.")
-```
-
-### query_yes_no_exit
-
-`query_yes_no_exit` is similar to `query_yes_no` but includes an "exit" option to terminate the script.
-
-Usage: 
-if query_yes_no_exit("Continue, abort, or exit?"):
-    print("Continuing...")
-else:
-    print("Aborting.")
-    # Script will exit if user selected "e" for exit
-
-### array_as_string
-
-`array_as_string` converts a list of strings into a single string with each element on a new line.
-
-Usage:
-```python
-my_list = ["apple", "banana", "cherry"]
-print(array_as_string(my_list))
-```
-
-Output:
-```
-apple
-banana 
-cherry
-```
