@@ -35,7 +35,7 @@ class SeniorOfficial(TimeStampedModel):
         """Returns the contact's name in Western order."""
         names = [n for n in [self.first_name, self.last_name] if n]
         return " ".join(names) if names else "Unknown"
-    
+
     def __str__(self):
         if self.first_name or self.last_name:
             return self.get_formatted_name()

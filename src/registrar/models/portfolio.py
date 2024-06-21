@@ -44,7 +44,7 @@ class Portfolio(TimeStampedModel):
         help_text="Associated senior official",
         unique=False,
         null=True,
-        blank=True
+        blank=True,
     )
 
     organization_type = models.CharField(
