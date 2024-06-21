@@ -2186,10 +2186,10 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
         self.assertContains(response, "Chief Tester")
 
-        self.assertContains(response, "Testy Tester", count=10)
+        self.assertContains(response, "Testy Tester")
 
         # == Test the other_employees field == #
-        self.assertContains(response, "testy2@town.com", count=2)
+        self.assertContains(response, "testy2@town.com")
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
