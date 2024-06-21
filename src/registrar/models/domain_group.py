@@ -11,8 +11,6 @@ class DomainGroup(TimeStampedModel):
     Organized group of domains.
     """
     name = models.CharField(
-        null=True,
-        blank=True,
         unique=True,
         help_text="Domain group",
     )
