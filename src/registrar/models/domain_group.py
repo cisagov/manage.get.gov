@@ -3,13 +3,13 @@ from .utility.time_stamped_model import TimeStampedModel
 
 
 class DomainGroup(TimeStampedModel):
+    """
+    Organized group of domains.
+    """
 
     class Meta:
         unique_together = [("name", "portfolio")]
 
-    """
-    Organized group of domains.
-    """
     name = models.CharField(
         unique=True,
         help_text="Domain group",
