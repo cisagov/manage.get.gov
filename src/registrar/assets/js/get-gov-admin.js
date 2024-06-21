@@ -428,29 +428,19 @@ function initializeWidgetOnList(list, parentId) {
         function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
             let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
             let statusChangelog = document.getElementById('dja-status-changelog');
-            let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
-            let emailContainer = actionNeededEmail.closest(".dja-readonly-textarea-container");
-            let hasAuditLogs = document.getElementById("has_audit_logs").value == "true"
+
+            // On action needed, show the email that will be sent out
+            let showReasonEmailContainer = document.querySelector("#action_needed_reason_email_readonly")
         
             // Prepopulate values on page load.
             if (statusSelect.value === "action needed") {
                 flexContainer.parentNode.insertBefore(statusChangelog, flexContainer.nextSibling);
-
-                // Show the changelog if hidden and show the email container
-                showElement(statusChangelog);
-                showElement(emailContainer);
+                showElement(showReasonEmailContainer);
             } else {
                 // Move the changelog back to its original location
                 let statusFlexContainer = statusSelect.closest('.flex-container');
                 statusFlexContainer.parentNode.insertBefore(statusChangelog, statusFlexContainer.nextSibling);
-
-                // Hide the email container, and show the element if we have audit logs
-                hideElement(emailContainer)
-                if (hasAuditLogs){
-                    showElement(statusChangelog);
-                }else {
-                    hideElement(statusChangelog)
-                }
+                hideElement(showReasonEmailContainer);
             }
 
         }
@@ -562,35 +552,24 @@ function initializeWidgetOnList(list, parentId) {
  * which shows the auto generated email on action needed reason
 */
 (function () {
-    let statusDropdown = document.getElementById("id_status");
-    let actionNeededReasonDropdown = document.getElementById("id_action_needed_reason");
-    // If you need to account for the non-readonly version as well, you will need to check
-    // for both of these things seperately.
+    let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
-    let changeLog = document.querySelector(".dja-status-changelog");
-    if(actionNeededReasonDropdown && actionNeededEmail) {
+    if(actionNeededReasonDropdown && actionNeededEmail && container) {
         // Add a change listener to the action needed reason dropdown 
         handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
     }
 
     function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
         actionNeededReasonDropdown.addEventListener("change", function() {
-            let noEmailMessage = document.getElementById("no-email-message");
             let reason = actionNeededReasonDropdown.value;
             const pk = document.querySelector("#domain_request_id").value;
 
             // If a reason isn't specified, no email will be sent.
             // You also cannot save the model in this state.
-            // This flow occurs if you switch back to the empty picker state
+            // This flow occurs if you switch back to the empty picker state.
             if(!reason) {
-                // Hide the text field
-                hideElement(actionNeededEmail);
-
-                // Show the "no email" message
-                showElement(noEmailMessage);
+                showNoEmailMessage(actionNeededEmail);
                 return;
-            }else if(reason && changeLog && changeLog.classList.contains("display-none")){
-                showElement(changeLog);
             }
 
             fetch(`/get-domain-requests-json/${pk}/action-needed-email/${reason}`)
@@ -603,20 +582,26 @@ function initializeWidgetOnList(list, parentId) {
 
                 if(data && data.email_body_text) {
                     actionNeededEmail.value = data.email_body_text
-
-                    // Show the text field
-                    showElement(actionNeededEmail);
-
-                    // Hide the "no email" message
-                    hideElement(noEmailMessage);
-                }else if (data && !data.email_body_text) {
-                    // Hide the text field
-                    hideElement(actionNeededEmail);
-
-                    // Show the "no email" message
-                    showElement(noEmailMessage);
+                    showActionNeededEmail(actionNeededEmail);
+                }else {
+                    showNoEmailMessage(actionNeededEmail);
                 }
             });
         });
     }
+
+    // Show the text field. Hide the "no email" message.
+    function showActionNeededEmail(actionNeededEmail){
+        let noEmailMessage = document.getElementById("no-email-message");
+        showElement(actionNeededEmail);
+        hideElement(noEmailMessage);
+    }
+
+    // Hide the text field. Show the "no email" message.
+    function showNoEmailMessage(actionNeededEmail) {
+        let noEmailMessage = document.getElementById("no-email-message");
+        hideElement(actionNeededEmail);
+        showElement(noEmailMessage);
+    }
+
 })();

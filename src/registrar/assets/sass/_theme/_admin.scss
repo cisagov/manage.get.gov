@@ -815,8 +815,12 @@ div.dja__model-description{
 }
 
 .thin-border {
+    background-color: (--selected-bg);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 8px;
+    label {
+        padding-top: 0 !important;
+    }
 }
 
 .display-none {

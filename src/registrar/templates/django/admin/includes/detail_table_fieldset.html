@@ -69,7 +69,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block after_help_text %}
     {% if field.field.name == "status" %}
-    <div class="flex-container {% if not filtered_audit_log_entries %}display-none{% endif %}" id="dja-status-changelog">
+    <div class="flex-container" id="dja-status-changelog">
         <label aria-label="Status changelog"></label>
         <div>
             <div class="usa-table-container--scrollable collapse--dgsimple collapsed" tabindex="0">
@@ -106,16 +106,17 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         {% endfor %}
                     </tbody>
                 </table>
+                {% else %}
+                <p>No changelog to display.</p>
                 {% endif %}
-
-                <div class="dja-readonly-textarea-container padding-1 margin-top-2 thin-border display-none">
+                <div id="action_needed_reason_email_readonly" class="dja-readonly-textarea-container padding-1 margin-top-2 thin-border display-none">
                     <label class="max-full" for="action_needed_reason_email_view_more">
                         <strong>Auto-generated email (sent to submitter)</strong>
                     </label>
                     <textarea id="action_needed_reason_email_view_more" cols="40" rows="20" class="{% if not original_object.action_needed_reason %}display-none{% endif %}" readonly>
                         {{ original_object.action_needed_reason_email }}
                     </textarea>
-                    <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent</p>
+                    <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
                 </div>
             </div>
             
