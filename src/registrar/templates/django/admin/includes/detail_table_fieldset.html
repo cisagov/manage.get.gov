@@ -69,7 +69,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block after_help_text %}
     {% if field.field.name == "status" %}
-    <div class="flex-container {% if not filtered_audit_log_entries or not original_object.action_needed_reason %}display-none{% endif %}" id="dja-status-changelog">
+    <div class="flex-container {% if not filtered_audit_log_entries and original_object.status != "action needed" or not original_object.action_needed_reason and original_object.status == "action needed" and not filtered_audit_log_entries %}display-none{% endif %}" id="dja-status-changelog">
         <label aria-label="Status changelog"></label>
         <div>
             <div class="usa-table-container--scrollable collapse--dgsimple collapsed" tabindex="0">

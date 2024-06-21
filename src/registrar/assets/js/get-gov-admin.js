@@ -14,7 +14,7 @@
  *
 */
 const hideElement = (element) => {
-    if (!element.classList.contains("display-none"))
+    if (element && !element.classList.contains("display-none"))
         element.classList.add('display-none');
 };
 
@@ -23,7 +23,7 @@ const hideElement = (element) => {
  *
  */
 const showElement = (element) => {
-    if (element.classList.contains("display-none"))
+    if (element && element.classList.contains("display-none"))
         element.classList.remove('display-none');
 };
 
@@ -428,13 +428,31 @@ function initializeWidgetOnList(list, parentId) {
         function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
             let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
             let statusChangelog = document.getElementById('dja-status-changelog');
+            let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
+            let emailContainer = actionNeededEmail.closest(".dja-readonly-textarea-container");
+            let hasAuditLogs = document.getElementById("has_audit_logs").value == "true"
+        
+            // Prepopulate values on page load.
             if (statusSelect.value === "action needed") {
                 flexContainer.parentNode.insertBefore(statusChangelog, flexContainer.nextSibling);
+
+                // Show the changelog if hidden and show the email container
+                showElement(statusChangelog);
+                showElement(emailContainer);
             } else {
                 // Move the changelog back to its original location
                 let statusFlexContainer = statusSelect.closest('.flex-container');
                 statusFlexContainer.parentNode.insertBefore(statusChangelog, statusFlexContainer.nextSibling);
+
+                // Hide the email container, and show the element if we have audit logs
+                hideElement(emailContainer)
+                if (hasAuditLogs){
+                    showElement(statusChangelog);
+                }else {
+                    hideElement(statusChangelog)
+                }
             }
+
         }
         
         // Call the function on page load
@@ -550,28 +568,8 @@ function initializeWidgetOnList(list, parentId) {
     // for both of these things seperately.
     let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
     let changeLog = document.querySelector(".dja-status-changelog");
-    
     if(actionNeededReasonDropdown && actionNeededEmail) {
-        let emailContainer = actionNeededEmail.closest(".dja-readonly-textarea-container");
-        if (statusDropdown.value == "action needed") {
-            showElement(emailContainer);
-        }
-
-        statusDropdown.addEventListener("change", function() {
-            if (statusDropdown.value == "action needed") {
-                showElement(emailContainer);
-            }else {
-                hideElement(emailContainer);
-            }
-            
-            // We hide the table if there isn't any data to start with.
-            // If we add a value, show it.
-            // This edge case applies to fixtures data. Prod data will have a changelog to pull from.
-            if(changeLog && changeLog.classList.contains("display-none") && actionNeededReasonDropdown.value){
-                showElement(changeLog);
-            }
-        });
-
+        // Add a change listener to the action needed reason dropdown 
         handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
     }
 
@@ -621,5 +619,4 @@ function initializeWidgetOnList(list, parentId) {
             });
         });
     }
-
 })();
