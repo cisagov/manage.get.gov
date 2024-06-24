@@ -59,7 +59,6 @@ class ScriptDataHelper:
             model_class.objects.bulk_update(page.object_list, fields_to_update)
 
 
-
 # This template handles logging and bulk updating for you, for repetitive scripts that update a few fields.
 # It is the ultimate lazy mans shorthand. Don't use this for anything terribly complicated.
 # See the transfer_federal_agency.py file for example usage - its really quite simple!
@@ -143,17 +142,18 @@ class PopulateScriptTemplate(ABC):
     def get_failure_message(self, record) -> str:
         """Returns the message that we will display if a record fails to update"""
         return f"{TerminalColors.FAIL}" f"Failed to update {record}" f"{TerminalColors.ENDC}"
-    
+
     def should_skip_record(self, record) -> bool:  # noqa
         """Defines the condition in which we should skip updating a record."""
         # By default - don't skip
         return False
 
 
-
 class TerminalHelper:
     @staticmethod
-    def log_script_run_summary(to_update, failed_to_update, skipped, debug: bool, log_header=None, display_as_str=False):
+    def log_script_run_summary(
+        to_update, failed_to_update, skipped, debug: bool, log_header=None, display_as_str=False
+    ):
         """Prints success, failed, and skipped counts, as well as
         all affected objects."""
         update_success_count = len(to_update)
