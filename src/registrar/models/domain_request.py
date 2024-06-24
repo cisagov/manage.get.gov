@@ -7,6 +7,7 @@ from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
+from waffle import flag_is_active
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
@@ -668,34 +669,41 @@ class DomainRequest(TimeStampedModel):
     def _send_status_update_email(
         self, new_status, email_template, email_template_subject, send_email=True, bcc_address="", wrap_email=False
     ):
-        """Send a status update email to the submitter.
+        """Send a status update email to the creator.
 
-        The email goes to the email address that the submitter gave as their
-        contact information. If there is not submitter information, then do
+        The email goes to the email address that the creator gave as their
+        contact information. If there is not creator information, then do
         nothing.
 
         send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
         """
 
-        if self.submitter is None or self.submitter.email is None:
-            logger.warning(f"Cannot send {new_status} email, no submitter email address.")
+        # Send the status update to the request creator
+        to_address = self.creator.email if self.creator else None
+        if to_address is None:
+            logger.warning(f"Cannot send {new_status} email, no creator email address.")
             return None
 
         if not send_email:
-            logger.info(f"Email was not sent. Would send {new_status} email: {self.submitter.email}")
+            logger.info(f"Email was not sent. Would send {new_status} email: {to_address}")
             return None
-
+        
+        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
         try:
             send_templated_email(
                 email_template,
                 email_template_subject,
-                self.submitter.email,
-                context={"domain_request": self},
+                to_address,
+                context={
+                    "domain_request": self,
+                    # This is the user that we refer to in the email
+                    "recipient": recipient,
+                },
                 bcc_address=bcc_address,
                 wrap_email=wrap_email,
             )
-            logger.info(f"The {new_status} email sent to: {self.submitter.email}")
+            logger.info(f"The {new_status} email sent to: {to_address}")
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 

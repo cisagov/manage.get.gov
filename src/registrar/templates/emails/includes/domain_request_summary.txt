@@ -43,7 +43,7 @@ Purpose of your domain:
 {{ domain_request.purpose }}
 
 Your contact information:
-{% spaceless %}{% include "emails/includes/contact.txt" with contact=domain_request.submitter %}{% endspaceless %}
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
 
 Other employees from your organization:{% for other in domain_request.other_contacts.all %}
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=other %}{% endspaceless %}
