@@ -31,9 +31,11 @@ def get_domains_json(request):
     if status_param:
         status_list = status_param.split(",")
 
-        # if unknown is in status_list, append 'dns needed'
-        if 'unknown' in status_list:
-            status_list.append('dns needed')
+        # if unknown is in status_list, append 'dns needed' since both
+        # unknown and dns needed display as DNS Needed, and both are
+        # searchable via state parameter of 'unknown'
+        if "unknown" in status_list:
+            status_list.append("dns needed")
 
         # Split the status list into normal states and custom states
         normal_states = [state for state in status_list if state in Domain.State.values]
