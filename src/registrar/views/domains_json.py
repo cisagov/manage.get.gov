@@ -4,6 +4,8 @@ from registrar.models import UserDomainRole, Domain
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
+import logging
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -31,7 +33,11 @@ def get_domains_json(request):
     if status_param:
         status_list = status_param.split(",")
 
-        print(status_list)
+        # if unknown is in status_list, append 'dns needed'
+        if 'unknown' in status_list:
+            status_list.append('dns needed')
+
+        logger.debug(f"Submitted status_list: {status_list}")
 
         # Split the status list into normal states and custom states
         normal_states = [state for state in status_list if state in Domain.State.values]
@@ -39,15 +45,15 @@ def get_domains_json(request):
 
         # Construct Q objects for normal states that can be queried through ORM
         state_query = Q()
-        for state in normal_states:
-            state_query |= Q(state=state)
+        if normal_states:
+            state_query |= Q(state__in=normal_states)
 
         # Handle custom states in Python, as expired can not be queried through ORM
         if "expired" in custom_states:
             expired_domain_ids = [domain.id for domain in objects if domain.state_display() == "Expired"]
             state_query |= Q(id__in=expired_domain_ids)
 
-        print(state_query)
+        logger.debug(f"State query: {state_query}")
 
         # Apply the combined query
         objects = objects.filter(state_query)
@@ -57,8 +63,6 @@ def get_domains_json(request):
         if "expired" not in custom_states:
             expired_domain_ids = [domain.id for domain in objects if domain.state_display() == "Expired"]
             objects = objects.exclude(id__in=expired_domain_ids)
-    else:
-        objects = Domain.objects.none()  # Return no objects if no status_param is provided
 
     if sort_by == "state_display":
         # Fetch the objects and sort them in Python
