@@ -93,8 +93,8 @@ class Command(BaseCommand):
             f_out.setpassword(str.encode(password))
             for report_name, report in reports.items():
                 logger.info(f"Generating {report_name}")
-                report = self.write_and_return_report(report["report_function"])
-                f_out.writestr(report["report_filename"], report)
+                report_content = self.write_and_return_report(report["report_function"])
+                f_out.writestr(report["report_filename"], report_content)
 
         # Get the final report for emailing purposes
         with open(zip_filename, "rb") as file_data:
