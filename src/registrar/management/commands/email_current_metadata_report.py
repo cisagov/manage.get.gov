@@ -72,6 +72,10 @@ class Command(BaseCommand):
         # override = settings.SECRET_ENCRYPT_METADATA is None and not settings.IS_PRODUCTION
         # password = "devpwd" if override else settings.SECRET_ENCRYPT_METADATA
         password = settings.SECRET_ENCRYPT_METADATA
+        if not password:
+            raise ValueError(
+                "No password was specified for this zip file."
+            )
 
         encrypted_zip_in_bytes = self.get_encrypted_zip(zip_filename, reports, password)
 
