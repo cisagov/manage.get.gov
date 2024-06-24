@@ -121,7 +121,7 @@ class CheckUserProfileMiddleware:
             return HttpResponseRedirect(new_setup_page)
         else:
             # Process the view as normal
-            return None 
+            return None
 
 
 class CheckPortfolioMiddleware:
