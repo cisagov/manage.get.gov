@@ -518,70 +518,10 @@ class TestDomainAdmin(MockEppLib, WebTest):
                 # Follow the response
                 response = response.follow()
 
-        # This value is based off of the current year - the expiration date.
-        # We "freeze" time to 2024, so 2024 - 2023 will always result in an
-        # "extension" of 2, as that will be one year of extension from that date.
-        extension_length = 2
-
-        # Assert that it is calling the function with the right extension length.
+        # Assert that it is calling the function with the default extension length.
         # We only need to test the value that EPP sends, as we can assume the other
         # test cases cover the "renew" function.
-        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
-
-        # We should not make duplicate calls
-        self.assertEqual(renew_mock.call_count, 1)
-
-        # Assert that everything on the page looks correct
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Extend expiration date")
-
-        # Ensure the message we recieve is in line with what we expect
-        expected_message = "Successfully extended the expiration date."
-        expected_call = call(
-            # The WGSI request doesn't need to be tested
-            ANY,
-            messages.INFO,
-            expected_message,
-            extra_tags="",
-            fail_silently=False,
-        )
-        mock_add_message.assert_has_calls([expected_call], 1)
-
-    @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2023, 1, 1))
-    def test_extend_expiration_date_button_date_matches_epp(self, mock_date_today):
-        """
-        Tests if extend_expiration_date button sends the right epp command
-        when the current year matches the expiration date
-        """
-
-        # Create a ready domain with a preset expiration date
-        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-
-        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
-
-        # Make sure that the page is loading as expected
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Extend expiration date")
-
-        # Grab the form to submit
-        form = response.forms["domain_form"]
-
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            with patch("registrar.models.Domain.renew_domain") as renew_mock:
-                # Submit the form
-                response = form.submit("_extend_expiration_date")
-
-                # Follow the response
-                response = response.follow()
-
-        extension_length = 1
-
-        # Assert that it is calling the function with the right extension length.
-        # We only need to test the value that EPP sends, as we can assume the other
-        # test cases cover the "renew" function.
-        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
+        renew_mock.assert_has_calls([call()], any_order=False)
 
         # We should not make duplicate calls
         self.assertEqual(renew_mock.call_count, 1)
