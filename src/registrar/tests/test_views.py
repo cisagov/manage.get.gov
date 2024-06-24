@@ -908,7 +908,7 @@ class UserProfileTests(TestWithUser, WebTest):
             self.assertContains(profile_page, "Your profile has been updated")
 
 
-class OrganizationsTests(TestWithUser, WebTest):
+class PortfoliosTests(TestWithUser, WebTest):
     """A series of tests that target the organizations"""
 
     # csrf checks do not work well with WebTest.
@@ -939,33 +939,33 @@ class OrganizationsTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
     @less_console_noise_decorator
-    def test_middleware_redirects_to_organization_homepage(self):
-        """Tests that a user is redirected to the org homepage when organization_feature is on and
+    def test_middleware_redirects_to_portfolio_homepage(self):
+        """Tests that a user is redirected to the portfolio homepage when organization_feature is on and
         a portfolio belongs to the user, test for the special h1s which only exist in that version
         of the homepage"""
         self.app.set_user(self.user.username)
         with override_flag("organization_feature", active=True):
-            # This will redirect the user to the org page.
+            # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
-            org_page = self.app.get(reverse("home")).follow()
+            portfolio_page = self.app.get(reverse("home")).follow()
             self._set_session_cookie()
 
             # Assert that we're on the right page
-            self.assertContains(org_page, self.portfolio.organization_name)
+            self.assertContains(portfolio_page, self.portfolio.organization_name)
 
-            self.assertContains(org_page, "<h1>Domains</h1>")
+            self.assertContains(portfolio_page, "<h1>Domains</h1>")
 
     @less_console_noise_decorator
     def test_no_redirect_when_org_flag_false(self):
         """No redirect so no follow,
         implicitely test for the presense of the h2 by looking up its id"""
         self.app.set_user(self.user.username)
-        org_page = self.app.get(reverse("home"))
+        home_page = self.app.get(reverse("home"))
         self._set_session_cookie()
 
-        self.assertNotContains(org_page, self.portfolio.organization_name)
+        self.assertNotContains(home_page, self.portfolio.organization_name)
 
-        self.assertContains(org_page, 'id="domain-requests-header"')
+        self.assertContains(home_page, 'id="domain-requests-header"')
 
     @less_console_noise_decorator
     def test_no_redirect_when_user_has_no_portfolios(self):
@@ -974,9 +974,9 @@ class OrganizationsTests(TestWithUser, WebTest):
         self.portfolio.delete()
         self.app.set_user(self.user.username)
         with override_flag("organization_feature", active=True):
-            org_page = self.app.get(reverse("home"))
+            home_page = self.app.get(reverse("home"))
             self._set_session_cookie()
 
-            self.assertNotContains(org_page, self.portfolio.organization_name)
+            self.assertNotContains(home_page, self.portfolio.organization_name)
 
-            self.assertContains(org_page, 'id="domain-requests-header"')
+            self.assertContains(home_page, 'id="domain-requests-header"')
