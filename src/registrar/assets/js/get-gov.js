@@ -1266,10 +1266,12 @@ document.addEventListener('DOMContentLoaded', function() {
       resetHeaders();
     });
 
-    statusToggle.addEventListener('click', function() {
-      console.log('clicked')
-      toggleCaret(statusToggle);
-    });
+    if (statusToggle) {
+      statusToggle.addEventListener('click', function() {
+        console.log('clicked')
+        toggleCaret(statusToggle);
+      });
+    }
 
     // Add event listeners to status filter checkboxes
     statusCheckboxes.forEach(checkbox => {
