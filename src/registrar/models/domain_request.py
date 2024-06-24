@@ -10,7 +10,7 @@ from django.utils import timezone
 from waffle import flag_is_active
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
+from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper, flag_is_active_for_user
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 
@@ -681,8 +681,9 @@ class DomainRequest(TimeStampedModel):
         wrap_email: bool -> Wraps emails using `wrap_text_and_preserve_paragraphs` if any given
         paragraph exceeds our desired max length (for prettier display).
         """
-
-        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
+        # This is a chicken or egg kind of problem. We don't have the request -- how do we know
+        # to use either the creator or the submitter in this scenario?
+        recipient = self.creator if flag_is_active_for_user(self.creator, "profile_feature") else self.submitter
         if recipient is None or recipient.email is None:
             logger.warning(f"Cannot send {new_status} email, no creator email address.")
             return None
