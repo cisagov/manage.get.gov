@@ -4,8 +4,6 @@ from registrar.models import UserDomainRole, Domain
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
-import logging
-logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -33,11 +31,11 @@ def get_domains_json(request):
     if status_param:
         status_list = status_param.split(",")
 
-        # if unknown is in status_list, append 'dns needed'
-        if 'unknown' in status_list:
-            status_list.append('dns needed')
-
-        logger.debug(f"Submitted status_list: {status_list}")
+        # if unknown is in status_list, append 'dns needed' since both
+        # unknown and dns needed display as DNS Needed, and both are
+        # searchable via state parameter of 'unknown'
+        if "unknown" in status_list:
+            status_list.append("dns needed")
 
         # Split the status list into normal states and custom states
         normal_states = [state for state in status_list if state in Domain.State.values]
@@ -52,8 +50,6 @@ def get_domains_json(request):
         if "expired" in custom_states:
             expired_domain_ids = [domain.id for domain in objects if domain.state_display() == "Expired"]
             state_query |= Q(id__in=expired_domain_ids)
-
-        logger.debug(f"State query: {state_query}")
 
         # Apply the combined query
         objects = objects.filter(state_query)
