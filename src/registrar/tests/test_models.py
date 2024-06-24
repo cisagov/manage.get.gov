@@ -2012,8 +2012,8 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.is_policy_acknowledged = None
         self.assertFalse(self.domain_request._is_policy_acknowledgement_complete())
 
-    def test_form_complete(self):
-        self.assertTrue(self.domain_request._form_complete())
+    def test_form_complete(self, request):
+        self.assertTrue(self.domain_request._form_complete(request))
         self.domain_request.generic_org_type = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._form_complete())
+        self.assertFalse(self.domain_request._form_complete(request))
