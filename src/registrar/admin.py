@@ -2656,29 +2656,11 @@ class WaffleFlagAdmin(FlagAdmin):
         fields = "__all__"
 
 
-class DomainGroupResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the
-    import/export file"""
-
-    class Meta:
-        model = models.DomainGroup
-
-
 class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
-    resource_classes = [DomainGroupResource]
     list_display = ["name", "portfolio"]
 
 
-class SuborganizationResource(resources.ModelResource):
-    """defines how each field in the referenced model should be mapped to the corresponding fields in the
-    import/export file"""
-
-    class Meta:
-        model = models.Suborganization
-
-
 class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
-    resource_classes = [SuborganizationResource]
     list_display = ["name", "portfolio"]
 
 
