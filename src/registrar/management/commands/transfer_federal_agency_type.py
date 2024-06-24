@@ -18,7 +18,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
     def handle(self, **kwargs):
         """Loops through each valid User object and updates its verification_type value"""
 
-        # Get all existing domain requests
+        # Get all existing domain requests. Select_related allows us to skip doing db queries.
         self.all_domain_requests = DomainRequest.objects.select_related("federal_agency").distinct()
         self.mass_update_records(
             FederalAgency, filter_conditions={"agency__isnull": False}, fields_to_update=["federal_type"]
@@ -28,9 +28,11 @@ class Command(BaseCommand, PopulateScriptTemplate):
         """Defines how we update the federal_type field on each record."""
         request = self.all_domain_requests.filter(federal_agency__agency=record.agency).first()
         record.federal_type = request.federal_type
-    
+
     def should_skip_record(self, record) -> bool:  # noqa
         """Defines the conditions in which we should skip updating a record."""
-        request = self.all_domain_requests.filter(federal_agency__agency=record.agency).first()
-        return not request or not request.federal_agency
+        requests = self.all_domain_requests.filter(federal_agency__agency=record.agency, federal_type__isnull=False)
+        # Check if all federal_type values are the same. Skip the record otherwise.
+        distinct_federal_types = requests.values('federal_type').distinct()
+        return distinct_federal_types.count() != 1
 
