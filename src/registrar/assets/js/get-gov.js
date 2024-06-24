@@ -51,7 +51,10 @@ function makeVisible(el) {
   el.style.visibility = "visible";
 }
 
-/* Toggles expand_more / expand_more svgs in buttons or anchors */
+/**
+ * Toggles expand_more / expand_more svgs in buttons or anchors
+ * @param {Element} element - DOM element
+ */
 function toggleCaret(element) {
   // Get a reference to the use element inside the button
   const useElement = element.querySelector('use');
@@ -62,6 +65,33 @@ function toggleCaret(element) {
   } else {
       // Update the xlink:href attribute to expand_less
       useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_more');
+  }
+}
+
+/**
+ * Helper function that scrolls to an element
+ * @param {string} attributeName - The string "class" or "id"
+ * @param {string} attributeValue - The class or id name
+ */
+function ScrollToElement(attributeName, attributeValue) {
+  let targetEl = null;
+
+  if (attributeName === 'class') {
+    targetEl = document.getElementsByClassName(attributeValue)[0];
+  } else if (attributeName === 'id') {
+    targetEl = document.getElementById(attributeValue);
+  } else {
+    console.log('Error: unknown attribute name provided.');
+    return; // Exit the function if an invalid attributeName is provided
+  }
+
+  if (targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    window.scrollTo({
+      top: rect.top + scrollTop,
+      behavior: 'smooth' // Optional: for smooth scrolling
+    });
   }
 }
 
@@ -910,38 +940,11 @@ function unloadModals() {
 }
 
 /**
- * Helper function that scrolls to an element
- * @param {string} attributeName - The string "class" or "id"
- * @param {string} attributeValue - The class or id name
- */
-function ScrollToElement(attributeName, attributeValue) {
-  let targetEl = null;
-
-  if (attributeName === 'class') {
-    targetEl = document.getElementsByClassName(attributeValue)[0];
-  } else if (attributeName === 'id') {
-    targetEl = document.getElementById(attributeValue);
-  } else {
-    console.log('Error: unknown attribute name provided.');
-    return; // Exit the function if an invalid attributeName is provided
-  }
-
-  if (targetEl) {
-    const rect = targetEl.getBoundingClientRect();
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    window.scrollTo({
-      top: rect.top + scrollTop,
-      behavior: 'smooth' // Optional: for smooth scrolling
-    });
-  }
-}
-
-/**
  * Generalized function to update pagination for a list.
  * @param {string} itemName - The name displayed in the counter
  * @param {string} paginationSelector - CSS selector for the pagination container.
  * @param {string} counterSelector - CSS selector for the pagination counter.
- * @param {string} headerAnchor - CSS selector for the header element to anchor the links to.
+ * @param {string} linkAnchor - CSS selector for the header element to anchor the links to.
  * @param {Function} loadPageFunction - Function to call when a page link is clicked.
  * @param {number} currentPage - The current page number (starting with 1).
  * @param {number} numPages - The total number of pages.
@@ -950,7 +953,7 @@ function ScrollToElement(attributeName, attributeValue) {
  * @param {number} totalItems - The total number of items.
  * @param {string} searchTerm - The search term
  */
-function updatePagination(itemName, paginationSelector, counterSelector, headerAnchor, loadPageFunction, currentPage, numPages, hasPrevious, hasNext, totalItems, searchTerm) {
+function updatePagination(itemName, paginationSelector, counterSelector, linkAnchor, loadPageFunction, currentPage, numPages, hasPrevious, hasNext, totalItems, searchTerm) {
   const paginationContainer = document.querySelector(paginationSelector);
   const paginationCounter = document.querySelector(counterSelector);
   const paginationButtons = document.querySelector(`${paginationSelector} .usa-pagination__list`);
@@ -969,7 +972,7 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
     const prevPageItem = document.createElement('li');
     prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
     prevPageItem.innerHTML = `
-      <a href="${headerAnchor}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
+      <a href="${linkAnchor}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
         <svg class="usa-icon" aria-hidden="true" role="img">
           <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
         </svg>
@@ -988,7 +991,7 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
     const pageItem = document.createElement('li');
     pageItem.className = 'usa-pagination__item usa-pagination__page-no';
     pageItem.innerHTML = `
-      <a href="${headerAnchor}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
+      <a href="${linkAnchor}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
     `;
     if (page === currentPage) {
       pageItem.querySelector('a').classList.add('usa-current');
@@ -1034,7 +1037,7 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
     const nextPageItem = document.createElement('li');
     nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
     nextPageItem.innerHTML = `
-      <a href="${headerAnchor}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
+      <a href="${linkAnchor}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
         <span class="usa-pagination__link-text">Next</span>
         <svg class="usa-icon" aria-hidden="true" role="img">
           <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
@@ -1055,18 +1058,12 @@ function updatePagination(itemName, paginationSelector, counterSelector, headerA
 */
 const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
   const { unfiltered_total, total } = data;
-
-  // if (searchTermHolder)
-  //   searchTermHolder.innerHTML = '';
-
   if (unfiltered_total) {
     if (total) {
       showElement(dataWrapper);
       hideElement(noSearchResultsWrapper);
       hideElement(noDataWrapper);
     } else {
-      // if (searchTermHolder)
-      //   searchTermHolder.innerHTML = currentSearchTerm;
       hideElement(dataWrapper);
       showElement(noSearchResultsWrapper);
       hideElement(noDataWrapper);
@@ -1111,7 +1108,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const domainsSearchSubmit = document.getElementById('domains__search-field-submit');
     const tableHeaders = document.querySelectorAll('.domains__table th[data-sortable]');
     const tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region');
-    // const searchTermHolder = document.querySelector('.domains__search-term');
     const resetSearchButton = document.querySelector('.domains__reset-search');
     const resetFiltersButton = document.querySelector('.domains__reset-filters');
     const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
@@ -1148,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} searchTerm - the search term
      */
     function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, status = currentStatus, searchTerm = currentSearchTerm) {
-      //fetch json of page of domains, given page # and sort
+      // fetch json of page of domains, given params
       fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}&status=${status}&search_term=${searchTerm}`)
         .then(response => response.json())
         .then(data => {
@@ -1171,7 +1167,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
 
-            
             const row = document.createElement('tr');
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="Domain name">
@@ -1209,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
           // Do not scroll on first page load
           if (loaded)
-            ScrollToElement('id', 'domains-header');
+            ScrollToElement('class', 'domains');
           hasLoaded = true;
 
           // update pagination
@@ -1217,7 +1212,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'domain',
             '#domains-pagination',
             '#domains-pagination .usa-pagination__counter',
-            '#domains-header',
+            '#domains',
             loadDomains,
             data.page,
             data.num_pages,
@@ -1248,11 +1243,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
 
-    // domainsSearchInput.addEventListener('focus', function(e) {
-    //   console.log('focus');
-    //   closeFilters();
-    // });
-
     domainsSearchSubmit.addEventListener('click', function(e) {
       e.preventDefault();
       currentSearchTerm = domainsSearchInput.value;
@@ -1268,7 +1258,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (statusToggle) {
       statusToggle.addEventListener('click', function() {
-        console.log('clicked')
         toggleCaret(statusToggle);
       });
     }
@@ -1288,10 +1277,8 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
 
-        console.log(currentStatus)
-
+        // Manage visibility of reset filters button
         if (currentStatus.length == statusCheckboxes.length) {
-          console.log('fully selected');
           hideElement(resetFiltersButton);
         } else {
           showElement(resetFiltersButton);
@@ -1339,7 +1326,7 @@ document.addEventListener('DOMContentLoaded', function() {
       loadDomains(1, 'id', 'asc');
       resetHeaders();
       updateStatusIndicator();
-      //closeFilters();
+      // No need to toggle close the filters. The focus shift will trigger that for us.
     }
 
     if (resetFiltersButton) {
@@ -1359,18 +1346,20 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
+    // Instead of managing the toggle/close on the filter buttons in all edge cases (user clicks on search, user clicks on ANOTHER filter,
+    // user clicks on main nav...) we add a listener and close the filters whenever the focus shifts out of the dropdown menu/filter button.
+    // NOTE: We may need to evovle this as we add more filters.
     document.addEventListener('focusin', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
       const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
       
       if (accordionIsOpen && !accordion.contains(event.target)) {
-        console.log('trigger')
         closeFilters();
         toggleCaret(statusToggle);
       }
     });
 
-    // Load the first page initially
+    // Initial load
     loadDomains(1);
   }
 });
@@ -1456,7 +1445,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} searchTerm - the search term
      */
     function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, searchTerm = currentSearchTerm) {
-      //fetch json of page of domain requests, given page # and sort
+      // fetch json of page of domain requests, given params
       fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
         .then(response => response.json())
         .then(data => {
@@ -1646,7 +1635,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
           // Do not scroll on first page load
           if (loaded)
-            ScrollToElement('id', 'domain-requests-header');
+            ScrollToElement('class', 'domain-requests');
           hasLoaded = true;
 
           // update the pagination after the domain requests list is updated
@@ -1654,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'domain request',
             '#domain-requests-pagination',
             '#domain-requests-pagination .usa-pagination__counter',
-            '#domain-requests-header',
+            '#domain-requests',
             loadDomainRequests,
             data.page,
             data.num_pages,
@@ -1721,11 +1710,10 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // Load the first page initially
+    // Initial load
     loadDomainRequests(1);
   }
 });
-
 
 
 /**
