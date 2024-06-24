@@ -858,6 +858,7 @@ def completed_domain_request(  # noqa
     is_election_board=False,
     organization_type=None,
     federal_agency=None,
+    federal_type=None,
 ):
     """A completed domain request."""
     if not user:
@@ -921,6 +922,9 @@ def completed_domain_request(  # noqa
 
     if organization_type:
         domain_request_kwargs["organization_type"] = organization_type
+
+    if federal_type:
+        domain_request_kwargs["federal_type"] = federal_type
 
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 

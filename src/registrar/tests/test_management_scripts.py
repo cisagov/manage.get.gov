@@ -2,6 +2,7 @@ import copy
 from datetime import date, datetime, time
 from django.core.management import call_command
 from django.test import TestCase, override_settings
+from registrar.utility.constants import BranchChoices
 from django.utils import timezone
 from django.utils.module_loading import import_string
 import logging
@@ -1108,3 +1109,115 @@ class TestImportTables(TestCase):
 
             # Check that logger.error was called with the correct message
             mock_logger.error.assert_called_once_with("Zip file tmp/exported_tables.zip does not exist.")
+
+
+class TestTransferFederalAgencyType(TestCase):
+    """Tests for the transfer_federal_agency_type script"""
+
+    def setUp(self):
+        """Creates a fake domain object"""
+        super().setUp()
+
+        self.amtrak, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+        self.legislative_branch, _ = FederalAgency.objects.get_or_create(agency="Legislative Branch")
+        self.library_of_congress, _ = FederalAgency.objects.get_or_create(agency="Library of Congress")
+        self.gov_admin, _ = FederalAgency.objects.get_or_create(agency="gov Administration")
+
+        self.domain_request_1 = completed_domain_request(
+            name="testgov.gov",
+            federal_agency=self.amtrak,
+            federal_type=BranchChoices.EXECUTIVE,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+        self.domain_request_2 = completed_domain_request(
+            name="cheesefactory.gov",
+            federal_agency=self.legislative_branch,
+            federal_type=BranchChoices.LEGISLATIVE,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+        self.domain_request_3 = completed_domain_request(
+            name="meowardslaw.gov",
+            federal_agency=self.library_of_congress,
+            federal_type=BranchChoices.JUDICIAL,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+
+        # Duplicate fields with invalid data - we expect to skip updating these
+        self.domain_request_4 = completed_domain_request(
+            name="baddata.gov",
+            federal_agency=self.gov_admin,
+            federal_type=BranchChoices.EXECUTIVE,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+        self.domain_request_5 = completed_domain_request(
+            name="worsedata.gov",
+            federal_agency=self.gov_admin,
+            federal_type=BranchChoices.JUDICIAL,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+
+        self.domain_request_1.approve()
+        self.domain_request_2.approve()
+        self.domain_request_3.approve()
+        self.domain_request_4.approve()
+        self.domain_request_5.approve()
+
+    def tearDown(self):
+        """Deletes all DB objects related to migrations"""
+        super().tearDown()
+
+        # Delete domains and related information
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        User.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
+        FederalAgency.objects.all().delete()
+
+    def run_transfer_federal_agency_type(self):
+        """
+        This method executes the transfer_federal_agency_type command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the populate_first_ready command with the specified arguments.
+        """
+        with less_console_noise():
+            with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                return_value=True,
+            ):
+                call_command("transfer_federal_agency_type")
+
+    @less_console_noise_decorator
+    def test_transfer_federal_agency_type_script(self):
+        """
+        Tests that the transfer_federal_agency_type script updates what we expect, and skips what we expect
+        """
+
+        # Before proceeding, make sure we don't have any data contamination
+        tested_agencies = [
+            self.amtrak,
+            self.legislative_branch,
+            self.library_of_congress,
+            self.gov_admin,
+        ]
+        for agency in tested_agencies:
+            self.assertEqual(agency.federal_type, None)
+
+        # Run the script
+        self.run_transfer_federal_agency_type()
+
+        # Refresh the local db instance to reflect changes
+        self.amtrak.refresh_from_db()
+        self.legislative_branch.refresh_from_db()
+        self.library_of_congress.refresh_from_db()
+        self.gov_admin.refresh_from_db()
+
+        # Test the values that we expect to be updated
+        self.assertEqual(self.amtrak.federal_type, BranchChoices.EXECUTIVE)
+        self.assertEqual(self.legislative_branch.federal_type, BranchChoices.LEGISLATIVE)
+        self.assertEqual(self.library_of_congress.federal_type, BranchChoices.JUDICIAL)
+
+        # We don't expect this field to be updated (as it has duplicate data)
+        self.assertEqual(self.gov_admin.federal_type, None)
