@@ -542,7 +542,7 @@ class AboutYourOrganization(DomainRequestWizard):
 
 class SeniorOfficial(DomainRequestWizard):
     template_name = "domain_request_senior_official.html"
-    forms = [forms.seniorOfficialForm]
+    forms = [forms.SeniorOfficialForm]
 
     def get_context_data(self):
         context = super().get_context_data()
