@@ -7,10 +7,12 @@ from registrar.models import FederalAgency, DomainRequest
 logger = logging.getLogger(__name__)
 
 
-# This command uses the PopulateScriptTemplate.
-# This template handles logging and bulk updating for you, for repetitive scripts that update a few fields.
-# It is the ultimate lazy mans shorthand. Don't use this for anything terribly complicated.
 class Command(BaseCommand, PopulateScriptTemplate):
+    """
+    This command uses the PopulateScriptTemplate.
+    This template handles logging and bulk updating for you, for repetitive scripts that update a few fields.
+    It is the ultimate lazy mans shorthand. Don't use this for anything terribly complicated.
+    """
     help = "Loops through each valid User object and updates its verification_type value"
     prompt_title = "Do you wish to update all Federal Agencies?"
     display_run_summary_items_as_str = True

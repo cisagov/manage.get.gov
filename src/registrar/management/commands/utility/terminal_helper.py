@@ -82,15 +82,15 @@ class PopulateScriptTemplate(ABC):
         """Defines how we update each field. Must be defined before using mass_update_records."""
         raise NotImplementedError
 
-    def mass_update_records(self, sender, filter_conditions, fields_to_update, debug=True):
-        """Loops through each valid "sender" object - specified by filter_conditions - and
+    def mass_update_records(self, object_class, filter_conditions, fields_to_update, debug=True):
+        """Loops through each valid "object_class" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using update_record.
 
         You must define update_record before you can use this function.
         """
 
-        records = sender.objects.filter(**filter_conditions)
-        readable_class_name = self.get_class_name(sender)
+        records = object_class.objects.filter(**filter_conditions)
+        readable_class_name = self.get_class_name(object_class)
 
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
@@ -104,9 +104,9 @@ class PopulateScriptTemplate(ABC):
         )
         logger.info("Updating...")
 
-        to_update: List[sender] = []
-        to_skip: List[sender] = []
-        failed_to_update: List[sender] = []
+        to_update: List[object_class] = []
+        to_skip: List[object_class] = []
+        failed_to_update: List[object_class] = []
         for record in records:
             try:
                 if not self.should_skip_record(record):
@@ -121,7 +121,7 @@ class PopulateScriptTemplate(ABC):
                 logger.error(fail_message)
 
         # Do a bulk update on the desired field
-        ScriptDataHelper.bulk_update_fields(sender, to_update, fields_to_update)
+        ScriptDataHelper.bulk_update_fields(object_class, to_update, fields_to_update)
 
         # Log what happened
         TerminalHelper.log_script_run_summary(
@@ -144,7 +144,7 @@ class PopulateScriptTemplate(ABC):
         return f"{TerminalColors.FAIL}" f"Failed to update {record}" f"{TerminalColors.ENDC}"
 
     def should_skip_record(self, record) -> bool:  # noqa
-        """Defines the condition in which we should skip updating a record."""
+        """Defines the condition in which we should skip updating a record. Override as needed."""
         # By default - don't skip
         return False
 
