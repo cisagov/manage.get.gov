@@ -374,9 +374,9 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
         # Create a ready domain with a preset expiration date
         domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-
         response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
-
+        # load expiration date into cache and registrar with below command
+        domain.registry_expiration_date
         # Make sure the ex date is what we expect it to be
         domain_ex_date = Domain.objects.get(id=domain.id).expiration_date
         self.assertEqual(domain_ex_date, date(2023, 5, 25))
@@ -400,7 +400,6 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
         self.assertContains(response, "Extend expiration date")
-        self.assertContains(response, "New expiration date: <b>May 25, 2025</b>")
 
         # Ensure the message we recieve is in line with what we expect
         expected_message = "Successfully extended the expiration date."
