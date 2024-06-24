@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import pyzipper
@@ -14,12 +15,18 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Imports tables from a zip file, exported_tables.zip, containing CSV files in the tmp directory."
 
+    def add_arguments(self, parser):
+        """Add command line arguments."""
+        parser.add_argument("--skipEppSave", default=True, action=argparse.BooleanOptionalAction)
+
     def handle(self, **options):
         """Extracts CSV files from a zip archive and imports them into the respective tables"""
 
         if settings.IS_PRODUCTION:
             logger.error("import_tables cannot be run in production")
             return
+
+        self.skip_epp_save = options.get("skipEppSave")
 
         table_names = [
             "User",
@@ -29,6 +36,7 @@ class Command(BaseCommand):
             "HostIp",
             "DraftDomain",
             "Website",
+            "FederalAgency",
             "DomainRequest",
             "DomainInformation",
             "UserDomainRole",
@@ -56,38 +64,46 @@ class Command(BaseCommand):
         """Import data from a CSV file into the given table"""
 
         resourcename = f"{table_name}Resource"
-        csv_filename = f"tmp/{table_name}.csv"
-        try:
-            if not os.path.exists(csv_filename):
-                logger.error(f"CSV file {csv_filename} not found.")
-                return
 
-            # if table_name is Contact, clean the table first
-            # User table is loaded before Contact, and signals create
-            # rows in Contact table which break the import, so need
-            # to be cleaned again before running import on Contact table
-            if table_name == "Contact":
-                self.clean_table(table_name)
+        # if table_name is Contact, clean the table first
+        # User table is loaded before Contact, and signals create
+        # rows in Contact table which break the import, so need
+        # to be cleaned again before running import on Contact table
+        if table_name == "Contact":
+            self.clean_table(table_name)
 
-            resourceclass = getattr(registrar.admin, resourcename)
-            resource_instance = resourceclass()
-            with open(csv_filename, "r") as csvfile:
-                dataset = tablib.Dataset().load(csvfile.read(), format="csv")
-            result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=True)
+        # Define the directory and the pattern for csv filenames
+        tmp_dir = "tmp"
+        pattern = f"{table_name}_"
 
-            if result.has_errors():
-                logger.error(f"Errors occurred while importing {csv_filename}: {result.row_errors()}")
-            else:
-                logger.info(f"Successfully imported {csv_filename} into {table_name}")
+        resourceclass = getattr(registrar.admin, resourcename)
+        resource_instance = resourceclass()
 
-        except AttributeError:
-            logger.error(f"Resource class {resourcename} not found in registrar.admin")
-        except Exception as e:
-            logger.error(f"Failed to import {csv_filename}: {e}")
-        finally:
-            if os.path.exists(csv_filename):
-                os.remove(csv_filename)
-                logger.info(f"Removed temporary file {csv_filename}")
+        # Find all files that match the pattern
+        matching_files = [file for file in os.listdir(tmp_dir) if file.startswith(pattern)]
+        for csv_filename in matching_files:
+            try:
+                with open(f"tmp/{csv_filename}", "r") as csvfile:
+                    dataset = tablib.Dataset().load(csvfile.read(), format="csv")
+                result = resource_instance.import_data(dataset, dry_run=False, skip_epp_save=self.skip_epp_save)
+                if result.has_errors():
+                    logger.error(f"Errors occurred while importing {csv_filename}:")
+                    for row_error in result.row_errors():
+                        row_index = row_error[0]
+                        errors = row_error[1]
+                        for error in errors:
+                            logger.error(f"Row {row_index} - {error.error} - {error.row}")
+                else:
+                    logger.info(f"Successfully imported {csv_filename} into {table_name}")
+
+            except AttributeError:
+                logger.error(f"Resource class {resourcename} not found in registrar.admin")
+            except Exception as e:
+                logger.error(f"Failed to import {csv_filename}: {e}")
+            finally:
+                if os.path.exists(csv_filename):
+                    os.remove(csv_filename)
+                    logger.info(f"Removed temporary file {csv_filename}")
 
     def clean_table(self, table_name):
         """Delete all rows in the given table"""

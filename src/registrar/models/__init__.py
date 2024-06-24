@@ -16,6 +16,9 @@ from .website import Website
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .waffle_flag import WaffleFlag
+from .portfolio import Portfolio
+from .domain_group import DomainGroup
+from .suborganization import Suborganization
 
 
 __all__ = [
@@ -36,6 +39,9 @@ __all__ = [
     "TransitionDomain",
     "VerifiedByStaff",
     "WaffleFlag",
+    "Portfolio",
+    "DomainGroup",
+    "Suborganization",
 ]
 
 auditlog.register(Contact)
@@ -55,3 +61,6 @@ auditlog.register(Website)
 auditlog.register(TransitionDomain)
 auditlog.register(VerifiedByStaff)
 auditlog.register(WaffleFlag)
+auditlog.register(Portfolio)
+auditlog.register(DomainGroup)
+auditlog.register(Suborganization)
