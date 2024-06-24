@@ -265,7 +265,7 @@ class DomainRequest(TimeStampedModel):
         """Defines common action needed reasons for domain requests"""
 
         ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
-        QUESTIONABLE_AUTHORIZING_OFFICIAL = ("questionable_authorizing_official", "Questionable authorizing official")
+        QUESTIONABLE_SENIOR_OFFICIAL = ("questionable_senior_official", "Questionable senior official")
         ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
         BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
         OTHER = ("other", "Other (no auto-email sent)")
@@ -417,11 +417,11 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    authorizing_official = models.ForeignKey(
+    senior_official = models.ForeignKey(
         "registrar.Contact",
         null=True,
         blank=True,
-        related_name="authorizing_official",
+        related_name="senior_official",
         on_delete=models.PROTECT,
     )
 
@@ -1106,8 +1106,8 @@ class DomainRequest(TimeStampedModel):
             and self.zipcode is None
         )
 
-    def _is_authorizing_official_complete(self):
-        return self.authorizing_official is not None
+    def _is_senior_official_complete(self):
+        return self.senior_official is not None
 
     def _is_requested_domain_complete(self):
         return self.requested_domain is not None
@@ -1168,7 +1168,7 @@ class DomainRequest(TimeStampedModel):
     def _is_general_form_complete(self):
         return (
             self._is_organization_name_and_address_complete()
-            and self._is_authorizing_official_complete()
+            and self._is_senior_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
             and self._is_submitter_complete()

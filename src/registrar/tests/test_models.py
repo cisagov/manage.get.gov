@@ -133,7 +133,7 @@ class TestDomainRequest(TestCase):
                 address_line2="APT 1A",
                 state_territory="CA",
                 zipcode="12345-6789",
-                authorizing_official=contact,
+                senior_official=contact,
                 requested_domain=domain,
                 submitter=contact,
                 purpose="Igorville rules!",
@@ -161,7 +161,7 @@ class TestDomainRequest(TestCase):
                 address_line2="APT 1A",
                 state_territory="CA",
                 zipcode="12345-6789",
-                authorizing_official=contact,
+                senior_official=contact,
                 submitter=contact,
                 purpose="Igorville rules!",
                 anything_else="All of Igorville loves the dotgov program.",
@@ -1191,8 +1191,8 @@ class TestContact(TestCase):
         )
         self.contact, _ = Contact.objects.get_or_create(user=self.user)
 
-        self.contact_as_ao, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
-        self.domain_request = DomainRequest.objects.create(creator=self.user, authorizing_official=self.contact_as_ao)
+        self.contact_as_so, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
+        self.domain_request = DomainRequest.objects.create(creator=self.user, senior_official=self.contact_as_so)
 
     def tearDown(self):
         super().tearDown()
@@ -1285,10 +1285,10 @@ class TestContact(TestCase):
         """Test the Contact model method, has_more_than_one_join"""
         # test for a contact which has one user defined
         self.assertFalse(self.contact.has_more_than_one_join("user"))
-        self.assertTrue(self.contact.has_more_than_one_join("authorizing_official"))
-        # test for a contact which is assigned as an authorizing official on a domain request
-        self.assertFalse(self.contact_as_ao.has_more_than_one_join("authorizing_official"))
-        self.assertTrue(self.contact_as_ao.has_more_than_one_join("submitted_domain_requests"))
+        self.assertTrue(self.contact.has_more_than_one_join("senior_official"))
+        # test for a contact which is assigned as an senior official on a domain request
+        self.assertFalse(self.contact_as_so.has_more_than_one_join("senior_official"))
+        self.assertTrue(self.contact_as_so.has_more_than_one_join("submitted_domain_requests"))
 
     def test_has_contact_info(self):
         """Test that has_contact_info properly returns"""
@@ -1617,7 +1617,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.user = get_user_model().objects.create(
             username=username, first_name=first_name, last_name=last_name, email=email
         )
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Meowy",
             last_name="Meoward",
             title="Chief Cat",
@@ -1652,7 +1652,7 @@ class TestDomainRequestIncomplete(TestCase):
             address_line1="address 1",
             state_territory="CA",
             zipcode="94044",
-            authorizing_official=ao,
+            senior_official=so,
             requested_domain=draft_domain,
             purpose="Some purpose",
             submitter=you,
@@ -1750,11 +1750,11 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.save()
         self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
 
-    def test_is_authorizing_official_complete(self):
-        self.assertTrue(self.domain_request._is_authorizing_official_complete())
-        self.domain_request.authorizing_official = None
+    def test_is_senior_official_complete(self):
+        self.assertTrue(self.domain_request._is_senior_official_complete())
+        self.domain_request.senior_official = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_authorizing_official_complete())
+        self.assertFalse(self.domain_request._is_senior_official_complete())
 
     def test_is_requested_domain_complete(self):
         self.assertTrue(self.domain_request._is_requested_domain_complete())

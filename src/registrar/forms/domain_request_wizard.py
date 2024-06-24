@@ -183,14 +183,14 @@ class AboutYourOrganizationForm(RegistrarForm):
     )
 
 
-class AuthorizingOfficialForm(RegistrarForm):
-    JOIN = "authorizing_official"
+class SeniorOfficialForm(RegistrarForm):
+    JOIN = "senior_official"
 
     def to_database(self, obj):
         if not self.is_valid():
             return
-        contact = getattr(obj, "authorizing_official", None)
-        if contact is not None and not contact.has_more_than_one_join("authorizing_official"):
+        contact = getattr(obj, "senior_official", None)
+        if contact is not None and not contact.has_more_than_one_join("senior_official"):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
         else:
@@ -198,27 +198,27 @@ class AuthorizingOfficialForm(RegistrarForm):
             # in either case, create a new contact and update it
             contact = Contact()
             super().to_database(contact)
-            obj.authorizing_official = contact
+            obj.senior_official = contact
             obj.save()
 
     @classmethod
     def from_database(cls, obj):
-        contact = getattr(obj, "authorizing_official", None)
+        contact = getattr(obj, "senior_official", None)
         return super().from_database(contact)
 
     first_name = forms.CharField(
         label="First name / given name",
-        error_messages={"required": ("Enter the first name / given name of your authorizing official.")},
+        error_messages={"required": ("Enter the first name / given name of your senior official.")},
     )
     last_name = forms.CharField(
         label="Last name / family name",
-        error_messages={"required": ("Enter the last name / family name of your authorizing official.")},
+        error_messages={"required": ("Enter the last name / family name of your senior official.")},
     )
     title = forms.CharField(
         label="Title or role in your organization",
         error_messages={
             "required": (
-                "Enter the title or role your authorizing official has in your"
+                "Enter the title or role your senior official has in your"
                 " organization (e.g., Chief Information Officer)."
             )
         },

@@ -40,20 +40,20 @@ def get_domain_infos(filter_condition, sort_fields):
     returns: A queryset of DomainInformation objects
     """
     domain_infos = (
-        DomainInformation.objects.select_related("domain", "authorizing_official")
+        DomainInformation.objects.select_related("domain", "senior_official")
         .filter(**filter_condition)
         .order_by(*sort_fields)
         .distinct()
     )
 
-    # Do a mass concat of the first and last name fields for authorizing_official.
+    # Do a mass concat of the first and last name fields for senior_official.
     # The old operation was computationally heavy for some reason, so if we precompute
     # this here, it is vastly more efficient.
     domain_infos_cleaned = domain_infos.annotate(
-        ao=Concat(
-            Coalesce(F("authorizing_official__first_name"), Value("")),
+        so=Concat(
+            Coalesce(F("senior_official__first_name"), Value("")),
             Value(" "),
-            Coalesce(F("authorizing_official__last_name"), Value("")),
+            Coalesce(F("senior_official__last_name"), Value("")),
             output_field=CharField(),
         )
     )
@@ -110,8 +110,8 @@ def parse_row_for_domain(
         "Organization name": domain_info.organization_name,
         "City": domain_info.city,
         "State": domain_info.state_territory,
-        "AO": domain_info.ao,  # type: ignore
-        "AO email": domain_info.authorizing_official.email if domain_info.authorizing_official else " ",
+        "SO": domain_info.so,  # type: ignore
+        "SO email": domain_info.senior_official.email if domain_info.senior_official else " ",
         "Security contact email": security_email,
         "Created at": domain.created_at,
         "Deleted": domain.deleted,
@@ -325,8 +325,8 @@ def export_data_type_to_csv(csv_file):
         "Organization name",
         "City",
         "State",
-        "AO",
-        "AO email",
+        "SO",
+        "SO email",
         "Security contact email",
         # For domain manager we are pass it in as a parameter below in write_body
     ]
@@ -728,10 +728,10 @@ class DomainRequestExport:
         "Creator approved domains count",
         "Creator active requests count",
         "Alternative domains",
-        "AO first name",
-        "AO last name",
-        "AO email",
-        "AO title/role",
+        "SO first name",
+        "SO last name",
+        "SO email",
+        "SO title/role",
         "Request purpose",
         "Request additional details",
         "Other contacts",
@@ -798,7 +798,7 @@ class DomainRequestExport:
 
         requests = (
             DomainRequest.objects.select_related(
-                "creator", "authorizing_official", "federal_agency", "investigator", "requested_domain"
+                "creator", "senior_official", "federal_agency", "investigator", "requested_domain"
             )
             .prefetch_related("current_websites", "other_contacts", "alternative_domains")
             .exclude(status__in=[DomainRequest.DomainRequestStatus.STARTED])
@@ -817,10 +817,10 @@ class DomainRequestExport:
         additional_values = [
             "requested_domain__name",
             "federal_agency__agency",
-            "authorizing_official__first_name",
-            "authorizing_official__last_name",
-            "authorizing_official__email",
-            "authorizing_official__title",
+            "senior_official__first_name",
+            "senior_official__last_name",
+            "senior_official__email",
+            "senior_official__title",
             "creator__first_name",
             "creator__last_name",
             "creator__email",
@@ -940,10 +940,10 @@ class DomainRequestExport:
             "Current websites": request.get("all_current_websites"),
             # Untouched FK fields - passed into the request dict.
             "Federal agency": request.get("federal_agency__agency"),
-            "AO first name": request.get("authorizing_official__first_name"),
-            "AO last name": request.get("authorizing_official__last_name"),
-            "AO email": request.get("authorizing_official__email"),
-            "AO title/role": request.get("authorizing_official__title"),
+            "SO first name": request.get("senior_official__first_name"),
+            "SO last name": request.get("senior_official__last_name"),
+            "SO email": request.get("senior_official__email"),
+            "SO title/role": request.get("senior_official__title"),
             "Creator first name": request.get("creator__first_name"),
             "Creator last name": request.get("creator__last_name"),
             "Creator email": request.get("creator__email"),

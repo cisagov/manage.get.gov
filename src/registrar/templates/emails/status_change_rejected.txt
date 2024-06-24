@@ -45,7 +45,7 @@ government organizations.
 
 DEMONSTRATE ELIGIBILITY
 If you can provide documentation that demonstrates your eligibility, reply to this email. 
-This can include links to (or copies of) your authorizing legislation, your founding 
+This can include links to (or copies of) your senior legislation, your founding 
 charter or bylaws, or other similar documentation. Without this, we can’t approve a 
 .gov domain for your organization. Learn more about eligibility for .gov domains 
 <https://get.gov/domains/eligibility/>.{% elif domain_request.rejection_reason == 'naming_not_met' %}

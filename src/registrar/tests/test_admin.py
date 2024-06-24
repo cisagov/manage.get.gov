@@ -288,7 +288,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.assertContains(response, "(555) 555 5556")
         self.assertContains(response, "Testy2 Tester2")
 
-        # == Check for the authorizing_official == #
+        # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com")
         self.assertContains(response, "Chief Tester")
         self.assertContains(response, "(555) 555 5555")
@@ -1525,11 +1525,11 @@ class TestDomainRequestAdmin(MockEppLib):
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-        # Test the email sent out for questionable_ao
-        questionable_ao = DomainRequest.ActionNeededReasons.QUESTIONABLE_AUTHORIZING_OFFICIAL
-        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_ao)
+        # Test the email sent out for questionable_so
+        questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
         self.assert_email_is_accurate(
-            "AUTHORIZING OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address=BCC_EMAIL
+            "SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address=BCC_EMAIL
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
 
@@ -2157,14 +2157,14 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
 
-        # == Check for the authorizing_official == #
+        # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
-        expected_ao_fields = [
+        expected_so_fields = [
             # Field, expected value
             ("title", "Chief Tester"),
             ("phone", "(555) 555 5555"),
         ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
+        self.test_helper.assert_response_contains_distinct_values(response, expected_so_fields)
 
         self.assertContains(response, "Testy Tester", count=10)
 
@@ -2309,7 +2309,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "zipcode",
                 "urbanization",
                 "about_your_organization",
-                "authorizing_official",
+                "senior_official",
                 "approved_domain",
                 "requested_domain",
                 "submitter",
@@ -3199,14 +3199,14 @@ class TestDomainInformationAdmin(TestCase):
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
 
-        # == Check for the authorizing_official == #
+        # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
-        expected_ao_fields = [
+        expected_so_fields = [
             # Field, expected value
             ("title", "Chief Tester"),
             ("phone", "(555) 555 5555"),
         ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
+        self.test_helper.assert_response_contains_distinct_values(response, expected_so_fields)
 
         self.assertContains(response, "Testy Tester", count=10)
 
@@ -3754,7 +3754,7 @@ class AuditedAdminTest(TestCase):
     def test_alphabetically_sorted_fk_fields_domain_request(self):
         with less_console_noise():
             tested_fields = [
-                DomainRequest.authorizing_official.field,
+                DomainRequest.senior_official.field,
                 DomainRequest.submitter.field,
                 # DomainRequest.investigator.field,
                 DomainRequest.creator.field,
@@ -3812,7 +3812,7 @@ class AuditedAdminTest(TestCase):
     def test_alphabetically_sorted_fk_fields_domain_information(self):
         with less_console_noise():
             tested_fields = [
-                DomainInformation.authorizing_official.field,
+                DomainInformation.senior_official.field,
                 DomainInformation.submitter.field,
                 # DomainInformation.creator.field,
                 (DomainInformation.domain.field, ["name"]),

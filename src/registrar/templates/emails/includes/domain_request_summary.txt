@@ -27,8 +27,8 @@ Organization name and mailing address:
 About your organization:
 {% spaceless %}{{ domain_request.about_your_organization }}{% endspaceless %}
 {% endif %}
-Authorizing official:
-{% spaceless %}{% include "emails/includes/contact.txt" with contact=domain_request.authorizing_official %}{% endspaceless %}
+Senior official:
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=domain_request.senior_official %}{% endspaceless %}
 {% if domain_request.current_websites.exists %}{# if block makes a newline #}
 Current websites: {% for site in domain_request.current_websites.all %}
 {% spaceless %}{{ site.website }}{% endspaceless %}
