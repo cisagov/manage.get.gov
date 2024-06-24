@@ -1,0 +1,24 @@
+{% extends 'home.html' %}
+
+{% load static %}
+
+{% block homepage_content %}
+
+  <div class="tablet:grid-col-12">
+    <div class="grid-row grid-gap">
+        <div class="tablet:grid-col-3">
+            {% include "portfolio_sidebar.html" with portfolio=portfolio %}
+        </div>
+        <div class="tablet:grid-col-9">
+            {% block messages %}
+                {% include "includes/form_messages.html" %}
+            {% endblock %}
+            {# Note: Reimplement commented out functionality #}
+            
+            {% block portfolio_content %}
+            {% endblock %}
+
+        </div>
+    </div>
+
+{% endblock %}
