@@ -68,8 +68,10 @@ class Command(BaseCommand):
 
         # Set the password equal to our content in SECRET_ENCRYPT_METADATA.
         # For local development, this will be "devpwd" unless otherwise set.
-        override = settings.SECRET_ENCRYPT_METADATA is None and not settings.IS_PRODUCTION
-        password = "devpwd" if override else settings.SECRET_ENCRYPT_METADATA
+        # Uncomment these lines if you want to use this:
+        # override = settings.SECRET_ENCRYPT_METADATA is None and not settings.IS_PRODUCTION
+        # password = "devpwd" if override else settings.SECRET_ENCRYPT_METADATA
+        password = settings.SECRET_ENCRYPT_METADATA
 
         encrypted_zip_in_bytes = self.get_encrypted_zip(zip_filename, reports, password)
 
