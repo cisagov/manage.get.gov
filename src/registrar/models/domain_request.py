@@ -677,24 +677,25 @@ class DomainRequest(TimeStampedModel):
 
         send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
+
+        wrap_email: bool -> Wraps emails using `wrap_text_and_preserve_paragraphs` if any given
+        paragraph exceeds our desired max length (for prettier display).
         """
 
-        # Send the status update to the request creator
-        to_address = self.creator.email if self.creator else None
-        if to_address is None:
+        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
+        if recipient is None or recipient.email is None:
             logger.warning(f"Cannot send {new_status} email, no creator email address.")
             return None
 
         if not send_email:
-            logger.info(f"Email was not sent. Would send {new_status} email: {to_address}")
+            logger.info(f"Email was not sent. Would send {new_status} email to: {recipient.email}")
             return None
-        
-        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
+
         try:
             send_templated_email(
                 email_template,
                 email_template_subject,
-                to_address,
+                recipient.email,
                 context={
                     "domain_request": self,
                     # This is the user that we refer to in the email
@@ -703,7 +704,7 @@ class DomainRequest(TimeStampedModel):
                 bcc_address=bcc_address,
                 wrap_email=wrap_email,
             )
-            logger.info(f"The {new_status} email sent to: {to_address}")
+            logger.info(f"The {new_status} email sent to: {recipient.email}")
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
