@@ -3,7 +3,6 @@
 import time
 import logging
 from urllib.parse import urlparse, urlunparse, urlencode
-from registrar.models import User
 from waffle import get_waffle_flag_model
 
 
@@ -325,7 +324,7 @@ def convert_queryset_to_dict(queryset, is_model=True, key="id"):
     return request_dict
 
 
-def flag_is_active_for_user(user: User, flag_name: str) -> bool | None:
+def flag_is_active_for_user(user, flag_name: str) -> bool | None:
     """Given a user, returns if said user has the given flag permission or not"""
     flag = get_waffle_flag_model().get(flag_name)
     return flag.is_active_for_user(user)
