@@ -1021,14 +1021,12 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
     """Custom Senior Official Admin class."""
 
     # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
-    search_fields = ["first_name", "last_name"]
-    search_help_text = "Search by first name or last name."
-    list_display = [
-        "last_name",
-    ]
+    search_fields = ["first_name", "last_name", "email"]
+    search_help_text = "Search by first name, last name or email."
+    list_display = ["first_name", "last_name", "email"]
 
     # this ordering effects the ordering of results
-    # in autocomplete_fields for user
+    # in autocomplete_fields for Senior Official
     ordering = ["first_name", "last_name"]
 
 

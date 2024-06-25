@@ -30,6 +30,11 @@ class SeniorOfficial(TimeStampedModel):
         null=True,
         blank=True,
     )
+    email = models.EmailField(
+        null=True,
+        blank=True,
+        max_length=320,
+    )
 
     def get_formatted_name(self):
         """Returns the contact's name in Western order."""
