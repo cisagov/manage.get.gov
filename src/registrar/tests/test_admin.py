@@ -4093,6 +4093,7 @@ class TestContactAdmin(TestCase):
 
             expected_fields = [
                 "user",
+                "e_mail"
             ]
 
             self.assertEqual(readonly_fields, expected_fields)

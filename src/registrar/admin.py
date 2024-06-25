@@ -711,7 +711,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "groups",
         "Important dates",
         "last_login",
-        "date_joined"
+        "date_joined",
     ]
 
     list_filter = (
