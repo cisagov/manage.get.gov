@@ -815,7 +815,7 @@ div.dja__model-description{
 }
 
 .thin-border {
-    background-color: (--selected-bg);
+    background-color: var(--selected-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     label {
