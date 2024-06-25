@@ -405,16 +405,12 @@ function initializeWidgetOnList(list, parentId) {
     document.addEventListener('DOMContentLoaded', function() {
         let statusSelect = document.getElementById('id_status');
         
-        function moveStatusChangelog(actionNeededReasonFormGroup, rejectionReasonFormGroup, statusSelect) {
-            let flexContainerActionNeeded = actionNeededReasonFormGroup.querySelector('.flex-container');
-            let flexContainerRejected = rejectionReasonFormGroup.querySelector('.flex-container');
+        function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
+            let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
             let statusChangelog = document.getElementById('dja-status-changelog');
             if (statusSelect.value === "action needed") {
-                flexContainerActionNeeded.parentNode.insertBefore(statusChangelog, flexContainerActionNeeded.nextSibling);
-            } else if (statusSelect.value === "rejected"){
-                flexContainerRejected.parentNode.insertBefore(statusChangelog, flexContainerRejected.nextSibling);
-            }
-            else {
+                flexContainer.parentNode.insertBefore(statusChangelog, flexContainer.nextSibling);
+            } else {
                 // Move the changelog back to its original location
                 let statusFlexContainer = statusSelect.closest('.flex-container');
                 statusFlexContainer.parentNode.insertBefore(statusChangelog, statusFlexContainer.nextSibling);
@@ -422,11 +418,11 @@ function initializeWidgetOnList(list, parentId) {
         }
         
         // Call the function on page load
-        moveStatusChangelog(actionNeededReasonFormGroup, rejectionReasonFormGroup, statusSelect);
+        moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
 
         // Add event listener to handle changes to the selector itself
         statusSelect.addEventListener('change', function() {
-            moveStatusChangelog(actionNeededReasonFormGroup, rejectionReasonFormGroup, statusSelect);
+            moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
         })
     });
 })();
