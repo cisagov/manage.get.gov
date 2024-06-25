@@ -31,11 +31,17 @@ class Command(BaseCommand, PopulateScriptTemplate):
         """Defines how we update the federal_type field on each record."""
         request = self.all_domain_infos.filter(federal_agency__agency=record.agency).first()
         record.federal_type = request.federal_type
-        logger.info(f"{TerminalColors.OKCYAN}Updating {str(record)} => {record.federal_type}{TerminalColors.OKCYAN}")
+        logger.info(f"{TerminalColors.OKCYAN}Updating {str(record)} => {record.federal_type}{TerminalColors.ENDC}")
 
     def should_skip_record(self, record) -> bool:  # noqa
         """Defines the conditions in which we should skip updating a record."""
         requests = self.all_domain_infos.filter(federal_agency__agency=record.agency, federal_type__isnull=False)
         # Check if all federal_type values are the same. Skip the record otherwise.
         distinct_federal_types = requests.values("federal_type").distinct()
-        return distinct_federal_types.count() != 1
+        should_skip = distinct_federal_types.count() != 1
+        if should_skip:
+            logger.info(
+                f"{TerminalColors.YELLOW}Skipping update for {str(record)} => count is "
+                f"{distinct_federal_types.count()} and records are {distinct_federal_types}{TerminalColors.ENDC}"
+            )
+        return should_skip
