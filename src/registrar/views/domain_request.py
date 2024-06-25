@@ -383,7 +383,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         has_profile_flag = flag_is_active(self.request, "profile_feature")
 
         context_stuff = {}
-        if DomainRequest._form_complete(self.domain_request):
+        if DomainRequest._form_complete(self.domain_request, self.request):
             modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
             context_stuff = {
                 "not_form": False,
@@ -695,7 +695,7 @@ class Review(DomainRequestWizard):
     forms = []  # type: ignore
 
     def get_context_data(self):
-        if DomainRequest._form_complete(self.domain_request) is False:
+        if DomainRequest._form_complete(self.domain_request, self.request) is False:
             logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()
         context["Step"] = Step.__members__

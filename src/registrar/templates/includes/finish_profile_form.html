@@ -33,6 +33,8 @@
             Your contact information
         </legend>
 
+        <input type="hidden" name="redirect" value="{{ form.initial.redirect }}">
+
         {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable usa-form-editable--no-border padding-top-2" %}
             {% input_with_errors form.full_name %}
         {% endwith %}
@@ -78,7 +80,7 @@
         <button type="submit" name="contact_setup_save_button" class="usa-button ">
             Save
         </button>
-        {% if confirm_changes and going_to_specific_page %}
+        {% if user_finished_setup and going_to_specific_page %}
             <button type="submit" name="contact_setup_submit_button" class="usa-button usa-button--outline">
                 {{redirect_button_text }}
             </button>

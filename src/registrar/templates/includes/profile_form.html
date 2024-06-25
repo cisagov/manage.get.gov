@@ -19,6 +19,9 @@
 <form class="usa-form usa-form--large" method="post" novalidate>
     {% csrf_token %}
 
+    {# Include the hidden 'redirect' field #}
+    <input type="hidden" name="redirect" value="{{ form.initial.redirect }}">
+    
     {% input_with_errors form.first_name %}
 
     {% input_with_errors form.middle_name %}
