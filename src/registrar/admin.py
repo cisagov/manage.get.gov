@@ -645,7 +645,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("Personal info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User Profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -711,7 +711,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "groups",
         "Important dates",
         "last_login",
-        "date_joined",
+        "date_joined"
     ]
 
     list_filter = (
@@ -937,6 +937,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "user",
+        "e_mail",
     ]
 
     def get_readonly_fields(self, request, obj=None):
