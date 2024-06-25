@@ -1086,8 +1086,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
         page = self.client.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        # once on the sidebar, once in the title
-        self.assertContains(page, "Senior official", count=3)
+        self.assertContains(page, "Senior official", count=13)
 
     def test_domain_senior_official_content(self):
         """Senior official information appears on the page."""

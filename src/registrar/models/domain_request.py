@@ -1175,7 +1175,7 @@ class DomainRequest(TimeStampedModel):
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
             # NOTE: This flag leaves submitter as empty (request wont submit) hence preset to True
-            and (self._is_submitter_complete() if not has_profile_feature_flag else True)
+            and (self._is_submitter_complete() or not has_profile_feature_flag)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()
             and self._is_policy_acknowledgement_complete()
