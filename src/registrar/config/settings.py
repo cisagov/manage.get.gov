@@ -189,6 +189,7 @@ MIDDLEWARE = [
     # Used for waffle feature flags
     "waffle.middleware.WaffleMiddleware",
     "registrar.registrar_middleware.CheckUserProfileMiddleware",
+    "registrar.registrar_middleware.CheckPortfolioMiddleware",
 ]
 
 # application object used by Django’s built-in servers (e.g. `runserver`)

@@ -24,6 +24,7 @@ SAMPLE_KWARGS = {
     "object_id": "3",
     "domain": "whitehouse.gov",
     "user_pk": "1",
+    "portfolio_id": "1",
 }
 
 # Our test suite will ignore some namespaces.
