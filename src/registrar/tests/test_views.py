@@ -8,6 +8,7 @@ from api.tests.common import less_console_noise_decorator
 from registrar.models.contact import Contact
 from registrar.models.domain import Domain
 from registrar.models.draft_domain import DraftDomain
+from registrar.models.portfolio import Portfolio
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
@@ -530,8 +531,11 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-    def _submit_form_webtest(self, form, follow=False):
-        page = form.submit()
+    def _submit_form_webtest(self, form, follow=False, name=None):
+        if name:
+            page = form.submit(name=name)
+        else:
+            page = form.submit()
         self._set_session_cookie()
         return page.follow() if follow else page
 
@@ -605,6 +609,15 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             self.assertEqual(completed_setup_page.status_code, 200)
 
+            finish_setup_form = completed_setup_page.form
+
+            # Submit the form using the specific submit button to execute the redirect
+            completed_setup_page = self._submit_form_webtest(
+                finish_setup_form, follow=True, name="contact_setup_submit_button"
+            )
+            self.assertEqual(completed_setup_page.status_code, 200)
+
+            # Assert that we are still on the
             # Assert that we're on the domain request page
             self.assertNotContains(completed_setup_page, "Finish setting up your profile")
             self.assertNotContains(completed_setup_page, "What contact information should we use to reach you?")
@@ -652,7 +665,6 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
         super().tearDown()
         PublicContact.objects.filter(domain=self.domain).delete()
         self.role.delete()
-        self.domain.delete()
         Domain.objects.all().delete()
         Website.objects.all().delete()
         Contact.objects.all().delete()
@@ -822,7 +834,7 @@ class UserProfileTests(TestWithUser, WebTest):
         """tests user profile when profile_feature is on,
         and when they are redirected from the domain request page"""
         with override_flag("profile_feature", active=True):
-            response = self.client.get("/user-profile?return_to_request=True")
+            response = self.client.get("/user-profile?redirect=domain-request:")
         self.assertContains(response, "Your profile")
         self.assertContains(response, "Go back to your domain request")
         self.assertNotContains(response, "Back to manage your domains")
@@ -906,3 +918,77 @@ class UserProfileTests(TestWithUser, WebTest):
             profile_page = profile_page.follow()
             self.assertEqual(profile_page.status_code, 200)
             self.assertContains(profile_page, "Your profile has been updated")
+
+
+class PortfoliosTests(TestWithUser, WebTest):
+    """A series of tests that target the organizations"""
+
+    # csrf checks do not work well with WebTest.
+    # We disable them here.
+    csrf_checks = False
+
+    def setUp(self):
+        super().setUp()
+        self.user.save()
+        self.client.force_login(self.user)
+        self.domain, _ = Domain.objects.get_or_create(name="sampledomain.gov", state=Domain.State.READY)
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="xyz inc")
+
+    def tearDown(self):
+        Portfolio.objects.all().delete()
+        super().tearDown()
+        PublicContact.objects.filter(domain=self.domain).delete()
+        UserDomainRole.objects.all().delete()
+        Domain.objects.all().delete()
+        Website.objects.all().delete()
+        Contact.objects.all().delete()
+
+    def _set_session_cookie(self):
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+    @less_console_noise_decorator
+    def test_middleware_redirects_to_portfolio_homepage(self):
+        """Tests that a user is redirected to the portfolio homepage when organization_feature is on and
+        a portfolio belongs to the user, test for the special h1s which only exist in that version
+        of the homepage"""
+        self.app.set_user(self.user.username)
+        with override_flag("organization_feature", active=True):
+            # This will redirect the user to the portfolio page.
+            # Follow implicity checks if our redirect is working.
+            portfolio_page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
+
+            # Assert that we're on the right page
+            self.assertContains(portfolio_page, self.portfolio.organization_name)
+
+            self.assertContains(portfolio_page, "<h1>Domains</h1>")
+
+    @less_console_noise_decorator
+    def test_no_redirect_when_org_flag_false(self):
+        """No redirect so no follow,
+        implicitely test for the presense of the h2 by looking up its id"""
+        self.app.set_user(self.user.username)
+        home_page = self.app.get(reverse("home"))
+        self._set_session_cookie()
+
+        self.assertNotContains(home_page, self.portfolio.organization_name)
+
+        self.assertContains(home_page, 'id="domain-requests-header"')
+
+    @less_console_noise_decorator
+    def test_no_redirect_when_user_has_no_portfolios(self):
+        """No redirect so no follow,
+        implicitely test for the presense of the h2 by looking up its id"""
+        self.portfolio.delete()
+        self.app.set_user(self.user.username)
+        with override_flag("organization_feature", active=True):
+            home_page = self.app.get(reverse("home"))
+            self._set_session_cookie()
+
+            self.assertNotContains(home_page, self.portfolio.organization_name)
+
+            self.assertContains(home_page, 'id="domain-requests-header"')
