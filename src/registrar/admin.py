@@ -1321,6 +1321,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:
@@ -1621,6 +1622,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:

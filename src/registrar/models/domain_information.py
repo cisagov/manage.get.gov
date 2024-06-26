@@ -63,8 +63,17 @@ class DomainInformation(TimeStampedModel):
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        related_name="DomainRequest_portfolio",
+        related_name="information_portfolio",
         help_text="Portfolio associated with this domain",
+    )
+
+    sub_organization = models.ForeignKey(
+        "registrar.Suborganization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="information_sub_organization",
+        help_text="The suborganization that this domain is included under",
     )
 
     domain_request = models.OneToOneField(

@@ -311,8 +311,17 @@ class DomainRequest(TimeStampedModel):
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        related_name="DomainInformation_portfolio",
+        related_name="DomainRequest_portfolio",
         help_text="Portfolio associated with this domain request",
+    )
+
+    sub_organization = models.ForeignKey(
+        "registrar.Suborganization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="request_sub_organization",
+        help_text="The suborganization that this domain request is included under",
     )
 
     # This is the domain request user who created this domain request. The contact
