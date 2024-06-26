@@ -62,17 +62,18 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             {% endwith %}
         </div>
     {% else %}
-    <div class="readonly">{{ field.contents }}</div>
+        <div class="readonly">{{ field.contents }}</div>
     {% endif %}
     {% endwith %}
 {% endblock field_readonly %}
 
 {% block after_help_text %}
-    {% if field.field.name == "status" and filtered_audit_log_entries %}
+    {% if field.field.name == "status" %}
     <div class="flex-container" id="dja-status-changelog">
         <label aria-label="Status changelog"></label>
         <div>
             <div class="usa-table-container--scrollable collapse--dgsimple collapsed" tabindex="0">
+                {% if filtered_audit_log_entries %}
                 <table class="usa-table usa-table--borderless">
                     <thead>
                         <tr>
@@ -105,7 +106,34 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         {% endfor %}
                     </tbody>
                 </table>
+                {% else %}
+                <p>No changelog to display.</p>
+                {% endif %}
+                
+                {% comment %}
+                Store the action needed reason emails in a json-based dictionary.
+                This allows us to change the action_needed_reason_email field dynamically, depending on value.
+                The alternative to this is an API endpoint.
+
+                Given that we have a limited number of emails, doing it this way makes sense.
+                {% endcomment %}
+                {% if action_needed_reason_emails %}
+                <script id="action-needed-emails-data" type="application/json">
+                    {{ action_needed_reason_emails|safe }}
+                </script>
+                {% endif %}
+                <div id="action_needed_reason_email_readonly" class="dja-readonly-textarea-container padding-1 margin-top-2 thin-border display-none">
+                    <label class="max-full" for="action_needed_reason_email_view_more">
+                        <strong>Auto-generated email (sent to submitter)</strong>
+                    </label>
+                    <textarea id="action_needed_reason_email_view_more" cols="40" rows="20" class="{% if not original_object.action_needed_reason %}display-none{% endif %}" readonly>
+                        {{ original_object.action_needed_reason_email }}
+                    </textarea>
+                    <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
+                </div>
             </div>
+            
+
             <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-2 margin-bottom-1 margin-left-1">
                 <span>Show details</span>
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">

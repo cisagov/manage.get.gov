@@ -5,7 +5,9 @@
 {% block field_sets %}
     {# Create an invisible <a> tag so that we can use a click event to toggle the modal. #}
     <a id="invisible-ineligible-modal-toggler" class="display-none" href="#toggle-set-ineligible" aria-controls="toggle-set-ineligible" data-open-modal></a>
-
+    {# Store the current object id so we can access it easier #}
+    <input id="domain_request_id" class="display-none" value="{{original.id}}" />
+    <input id="has_audit_logs" class="display-none" value="{%if filtered_audit_log_entries %}true{% else %}false{% endif %}"/>
     {% for fieldset in adminform %}
         {% comment %}
         TODO: this will eventually need to be changed to something like this

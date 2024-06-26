@@ -786,3 +786,44 @@ div.dja__model-description{
 .usa-button--dja-link-color {
     color: var(--link-fg);
 }
+
+.dja-readonly-textarea-container {
+    textarea {
+        width: 100%;
+        min-width: 610px;
+        resize: none;
+        cursor: auto;
+
+        &::-webkit-scrollbar {
+            background-color: transparent;
+            border: none;
+            width: 12px;
+        }
+
+        // Style the scroll bar handle
+        &::-webkit-scrollbar-thumb {
+            background-color: var(--body-fg);
+            border-radius: 99px;
+            background-clip: content-box;
+            border: 3px solid transparent;
+        }
+    }
+}
+
+.max-full {
+    width: 100% !important;
+}
+
+.thin-border {
+    background-color: var(--selected-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    label {
+        padding-top: 0 !important;
+    }
+}
+
+.display-none {
+    // Many elements in django admin try to override this, so we need !important.
+    display: none !important;
+}

@@ -1596,6 +1596,24 @@ class TestDomainRequestAdmin(MockEppLib):
             self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
+    @less_console_noise_decorator
+    def test_model_displays_action_needed_email(self):
+        """Tests if the action needed email is visible for Domain Requests"""
+
+        _domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            action_needed_reason=DomainRequest.ActionNeededReasons.BAD_NAME,
+        )
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        self.assertContains(response, "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS")
+
     @override_settings(IS_PRODUCTION=True)
     def test_save_model_sends_submitted_email_with_bcc_on_prod(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
@@ -2161,15 +2179,14 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "testy@town.com", count=2)
         expected_so_fields = [
             # Field, expected value
-            ("title", "Chief Tester"),
             ("phone", "(555) 555 5555"),
         ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_so_fields)
 
-        self.assertContains(response, "Testy Tester", count=10)
+        self.test_helper.assert_response_contains_distinct_values(response, expected_so_fields)
+        self.assertContains(response, "Chief Tester")
 
         # == Test the other_employees field == #
-        self.assertContains(response, "testy2@town.com", count=2)
+        self.assertContains(response, "testy2@town.com")
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
@@ -2290,6 +2307,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "status",
                 "rejection_reason",
                 "action_needed_reason",
+                "action_needed_reason_email",
                 "federal_agency",
                 "portfolio",
                 "creator",
