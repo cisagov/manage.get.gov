@@ -152,6 +152,11 @@ class Domain(TimeStampedModel, DomainHelper):
         DELETED = "deleted", "Deleted"
 
         @classmethod
+        def get_state_label(cls, state: str):
+            """Returns the associated label for a given state value"""
+            return cls(state).label if state else None
+
+        @classmethod
         def get_help_text(cls, state) -> str:
             """Returns a help message for a desired state. If none is found, an empty string is returned"""
             help_texts = {
