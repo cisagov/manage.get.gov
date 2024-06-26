@@ -91,12 +91,21 @@ def login_callback(request):
             _initialize_client()
         query = parse_qs(request.GET.urlencode())
         userinfo = CLIENT.callback(query, request.session)
+
         # test for need for identity verification and if it is satisfied
-        # if not satisfied, redirect user to login with stepped up acr_value
-        if _requires_step_up_auth(userinfo):
-            # add acr_value to request.session
-            request.session["acr_value"] = CLIENT.get_step_up_acr_value()
-            return CLIENT.create_authn_request(request.session)
+        # if not satisfied, redirect user to login requiring biometric auth
+
+        # Tests for the presence of the vtm/vtr values in the userinfo object.
+        # If they are there, then we can set a flag in our session for tracking purposes.
+        needs_step_up_auth = _requires_step_up_auth(userinfo)
+        request.session["needs_step_up_auth"] = needs_step_up_auth
+
+        # Return a redirect request to a new auth url that does biometric validation
+        if needs_step_up_auth:
+            request.session["vtm"] = CLIENT.get_vtm_value()
+            request.session["vtr"] = CLIENT.get_vtr_value()
+            return CLIENT.create_authn_request(request.session, do_step_up_auth=True)
+
         user = authenticate(request=request, **userinfo)
         if user:
 
@@ -138,14 +147,27 @@ def login_callback(request):
         return error_page(request, err)
 
 
-def _requires_step_up_auth(userinfo):
-    """if User.needs_identity_verification and step_up_acr_value not in
-    ial returned from callback, return True"""
-    step_up_acr_value = CLIENT.get_step_up_acr_value()
-    acr_value = userinfo.get("ial", "")
+def _requires_step_up_auth(userinfo) -> bool:
+    """
+    Checks for the presence of the key 'vtm' and 'vtr' in the provided `userinfo` object.
+
+    If they are not found, then we call `User.needs_identity_verification()`.
+
+    Args:
+        userinfo (dict): A dictionary of data from the returned user object.
+
+    Return Conditions:
+        If the provided user does not exist in any tables which would preclude them from doing
+        biometric authentication, then we return True. Otherwise, we return False.
+
+        Alternatively, if 'vtm' and 'vtr' already exist on `userinfo`, then we return False.
+
+    """
     uuid = userinfo.get("sub", "")
     email = userinfo.get("email", "")
-    if acr_value != step_up_acr_value:
+    # This value is returned after successful auth
+    user_verified = userinfo.get("vot", "")
+    if not userinfo.get("vtm") or not userinfo.get("vtr") or not user_verified:
         # The acr of this attempt is not at the highest level
         # so check if the user needs the higher level
         return User.needs_identity_verification(email, uuid)

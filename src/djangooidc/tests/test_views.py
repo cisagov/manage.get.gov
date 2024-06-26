@@ -397,25 +397,31 @@ class ViewsTest(TestCase):
         """Invoke login_callback passing it a request when _requires_step_up_auth returns True
         and assert that session is updated and create_authn_request (mock) is called."""
         with less_console_noise():
-            # MOCK
-            # Configure the mock to return an expected value for get_step_up_acr_value
-            mock_client.return_value.get_step_up_acr_value.return_value = "step_up_acr_value"
             # Create a mock request
             request = self.factory.get("/some-url")
             request.session = {"acr_value": ""}
+
             # Ensure that the CLIENT instance used in login_callback is the mock
             # patch _requires_step_up_auth to return True
             with patch("djangooidc.views._requires_step_up_auth", return_value=True), patch(
-                "djangooidc.views.CLIENT.create_authn_request", return_value=MagicMock()
+                "djangooidc.views.CLIENT.create_authn_request"
             ) as mock_create_authn_request:
-                # TEST
-                # test the login callback
-                login_callback(request)
+                with patch("djangooidc.views.CLIENT.get_vtm_value") as mock_get_vtm_value, patch(
+                    "djangooidc.views.CLIENT.get_vtr_value"
+                ) as mock_get_vtr_value:
+                    mock_get_vtm_value.return_value = "test_vtm"
+                    mock_get_vtr_value.return_value = "test_vtr"
+                    # TEST
+                    # test the login callback
+                    login_callback(request)
+
             # ASSERTIONS
-            # create_authn_request only gets called when _requires_step_up_auth is True
-            # and it changes this acr_value in request.session
-            # Assert that acr_value is no longer empty string
-            self.assertNotEqual(request.session["acr_value"], "")
+            # create_authn_request only gets called when _requires_step_up_auth is True.
+            # The acr_value should be blank here
+            self.assertEqual(request.session["acr_value"], "")
+            self.assertEqual(request.session["vtm"], "test_vtm")
+            self.assertEqual(request.session["vtr"], "test_vtr")
+
             # And create_authn_request was called again
             mock_create_authn_request.assert_called_once()
 
