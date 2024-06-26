@@ -1233,7 +1233,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "sub_organization", "creator", "submitter", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1510,6 +1510,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {
                 "fields": [
                     "portfolio",
+                    "sub_organization",
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
@@ -2645,6 +2646,11 @@ class PortfolioAdmin(ListHeaderAdmin):
     # readonly_fields = [
     #     "requestor",
     # ]
+    # Creates select2 fields (with search bars)
+    autocomplete_fields = [
+        "creator",
+        "federal_agency",
+    ]
 
     def save_model(self, request, obj, form, change):
 
@@ -2728,6 +2734,9 @@ class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["name", "portfolio"]
+    autocomplete_fields = [
+        "portfolio",
+    ]
 
 
 admin.site.unregister(LogEntry)  # Unregister the default registration

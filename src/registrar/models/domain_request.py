@@ -449,7 +449,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Domain associated with this request; will be blank until request is approved",
-        related_name="domain_request",
+        related_name="domain_request_approved_domain",
         on_delete=models.SET_NULL,
     )
 
@@ -457,7 +457,7 @@ class DomainRequest(TimeStampedModel):
         "DraftDomain",
         null=True,
         blank=True,
-        related_name="domain_request",
+        related_name="domain_request_requested_domain",
         on_delete=models.PROTECT,
     )
 
