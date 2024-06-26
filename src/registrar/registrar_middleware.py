@@ -2,12 +2,17 @@
 Contains middleware used in settings.py
 """
 
+import logging
 from urllib.parse import parse_qs
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from registrar.models.portfolio import Portfolio
+from registrar.models.user import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
+
+logger = logging.getLogger(__name__)
 
 
 class NoCacheMiddleware:
@@ -38,11 +43,27 @@ class CheckUserProfileMiddleware:
         self.get_response = get_response
 
         self.setup_page = reverse("finish-user-profile-setup")
+        self.profile_page = reverse("user-profile")
         self.logout_page = reverse("logout")
-        self.excluded_pages = [
+
+        self.regular_excluded_pages = [
             self.setup_page,
             self.logout_page,
+            "/admin",
         ]
+        self.other_excluded_pages = [
+            self.profile_page,
+            self.logout_page,
+            "/admin",
+        ]
+
+        self.excluded_pages = {
+            self.setup_page: self.regular_excluded_pages,
+            self.profile_page: self.other_excluded_pages,
+        }
+
+    def _get_excluded_pages(self, page):
+        return self.excluded_pages.get(page, [])
 
     def __call__(self, request):
         response = self.get_response(request)
@@ -60,13 +81,16 @@ class CheckUserProfileMiddleware:
             return None
 
         if request.user.is_authenticated:
+            profile_page = self.profile_page
+            if request.user.verification_type == User.VerificationTypeChoices.REGULAR:
+                profile_page = self.setup_page
             if hasattr(request.user, "finished_setup") and not request.user.finished_setup:
-                return self._handle_setup_not_finished(request)
+                return self._handle_user_setup_not_finished(request, profile_page)
 
         # Continue processing the view
         return None
 
-    def _handle_setup_not_finished(self, request):
+    def _handle_user_setup_not_finished(self, request, profile_page):
         """Redirects the given user to the finish setup page.
 
         We set the "redirect" query param equal to where the user wants to go.
@@ -82,7 +106,7 @@ class CheckUserProfileMiddleware:
         custom_redirect = "domain-request:" if request.path == "/request/" else None
 
         # Don't redirect on excluded pages (such as the setup page itself)
-        if not any(request.path.startswith(page) for page in self.excluded_pages):
+        if not any(request.path.startswith(page) for page in self._get_excluded_pages(profile_page)):
 
             # Preserve the original query parameters, and coerce them into a dict
             query_params = parse_qs(request.META["QUERY_STRING"])
@@ -92,9 +116,39 @@ class CheckUserProfileMiddleware:
                 query_params["redirect"] = custom_redirect
 
             # Add our new query param, while preserving old ones
-            new_setup_page = replace_url_queryparams(self.setup_page, query_params) if query_params else self.setup_page
+            new_setup_page = replace_url_queryparams(profile_page, query_params) if query_params else profile_page
 
             return HttpResponseRedirect(new_setup_page)
         else:
             # Process the view as normal
             return None
+
+
+class CheckPortfolioMiddleware:
+    """
+    Checks if the current user has a portfolio
+    If they do, redirect them to the portfolio homepage when they navigate to home.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.home = reverse("home")
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        return response
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        current_path = request.path
+
+        has_organization_feature_flag = flag_is_active(request, "organization_feature")
+
+        if current_path == self.home:
+            if has_organization_feature_flag:
+                if request.user.is_authenticated:
+                    user_portfolios = Portfolio.objects.filter(creator=request.user)
+                    if user_portfolios.exists():
+                        first_portfolio = user_portfolios.first()
+                        home_with_portfolio = reverse("portfolio-domains", kwargs={"portfolio_id": first_portfolio.id})
+                        return HttpResponseRedirect(home_with_portfolio)
+        return None

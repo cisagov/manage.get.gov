@@ -137,6 +137,47 @@ function openInNewTab(el, removeAttribute = false){
     prepareDjangoAdmin();
 })();
 
+
+/** An IIFE for the "Assign to me" button under the investigator field in DomainRequests.
+** This field uses the "select2" selector, rather than the default. 
+** To perform data operations on this - we need to use jQuery rather than vanilla js. 
+*/
+(function (){
+    let selector = django.jQuery("#id_investigator")
+    let assignSelfButton = document.querySelector("#investigator__assign_self");
+    if (!selector || !assignSelfButton) {
+        return;
+    }
+
+    let currentUserId = assignSelfButton.getAttribute("data-user-id");
+    let currentUserName = assignSelfButton.getAttribute("data-user-name");
+    if (!currentUserId || !currentUserName){
+        console.error("Could not assign current user: no values found.")
+        return;
+    }
+
+    // Hook a click listener to the "Assign to me" button.
+    // Logic borrowed from here: https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
+    assignSelfButton.addEventListener("click", function() {
+        if (selector.find(`option[value='${currentUserId}']`).length) {
+            // Select the value that is associated with the current user.
+            selector.val(currentUserId).trigger("change");
+        } else { 
+            // Create a DOM Option that matches the desired user. Then append it and select it.
+            let userOption = new Option(currentUserName, currentUserId, true, true);
+            selector.append(userOption).trigger("change");
+        }
+    });
+
+    // Listen to any change events, and hide the parent container if investigator has a value.
+    selector.on('change', function() {
+        // The parent container has display type flex.
+        assignSelfButton.parentElement.style.display = this.value === currentUserId ? "none" : "flex";
+    });
+    
+    
+
+})();
 /** An IIFE for pages in DjangoAdmin that use a clipboard button
 */
 (function (){
@@ -360,6 +401,30 @@ function initializeWidgetOnList(list, parentId) {
             sessionStorage.removeItem(name); 
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        let statusSelect = document.getElementById('id_status');
+        
+        function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
+            let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
+            let statusChangelog = document.getElementById('dja-status-changelog');
+            if (statusSelect.value === "action needed") {
+                flexContainer.parentNode.insertBefore(statusChangelog, flexContainer.nextSibling);
+            } else {
+                // Move the changelog back to its original location
+                let statusFlexContainer = statusSelect.closest('.flex-container');
+                statusFlexContainer.parentNode.insertBefore(statusChangelog, statusFlexContainer.nextSibling);
+            }
+        }
+        
+        // Call the function on page load
+        moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
+
+        // Add event listener to handle changes to the selector itself
+        statusSelect.addEventListener('change', function() {
+            moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
+        })
+    });
 })();
 
 /** An IIFE for toggling the submit bar on domain request forms

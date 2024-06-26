@@ -724,3 +724,31 @@ Example: `cf ssh getgov-za`
 
 #### Step 1: Running the script
 ```docker-compose exec app ./manage.py transfer_federal_agency_type```
+
+## Email current metadata report
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py email_current_metadata_report --emailTo {desired email address}```
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py email_current_metadata_report --emailTo {desired email address}```
+
+##### Parameters
+|   | Parameter                  | Description                                                                        |
+|:-:|:-------------------------- |:-----------------------------------------------------------------------------------|
+| 1 | **emailTo**                | Specifies where the email will be emailed. Defaults to help@get.gov on production. |

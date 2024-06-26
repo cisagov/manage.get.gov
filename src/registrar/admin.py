@@ -33,6 +33,7 @@ from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
+from django.core.exceptions import ObjectDoesNotExist
 
 from django.utils.translation import gettext_lazy as _
 
@@ -1232,7 +1233,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "creator", "submitter", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1317,6 +1318,32 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ordering = ["domain__name"]
 
     change_form_template = "django/admin/domain_information_change_form.html"
+
+    superuser_only_fields = [
+        "portfolio",
+    ]
+
+    # DEVELOPER's NOTE:
+    # Normally, to exclude a field from an Admin form, we could simply utilize
+    # Django's "exclude" feature.  However, it causes a "missing key" error if we
+    # go that route for this particular form.  The error gets thrown by our
+    # custom fieldset.html code and is due to the fact that "exclude" removes
+    # fields from base_fields but not fieldsets.  Rather than reworking our
+    # custom frontend, it seems more straightforward (and easier to read) to simply
+    # modify the fieldsets list so that it excludes any fields we want to remove
+    # based on permissions (eg. superuser_only_fields) or other conditions.
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = self.fieldsets
+
+        # Create a modified version of fieldsets to exclude certain fields
+        if not request.user.has_perm("registrar.full_access_permission"):
+            modified_fieldsets = []
+            for name, data in fieldsets:
+                fields = data.get("fields", [])
+                fields = tuple(field for field in fields if field not in DomainInformationAdmin.superuser_only_fields)
+                modified_fieldsets.append((name, {"fields": fields}))
+            return modified_fieldsets
+        return fieldsets
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -1481,6 +1508,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             None,
             {
                 "fields": [
+                    "portfolio",
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
@@ -1590,6 +1618,32 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "investigator",
     ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
+
+    superuser_only_fields = [
+        "portfolio",
+    ]
+
+    # DEVELOPER's NOTE:
+    # Normally, to exclude a field from an Admin form, we could simply utilize
+    # Django's "exclude" feature.  However, it causes a "missing key" error if we
+    # go that route for this particular form.  The error gets thrown by our
+    # custom fieldset.html code and is due to the fact that "exclude" removes
+    # fields from base_fields but not fieldsets.  Rather than reworking our
+    # custom frontend, it seems more straightforward (and easier to read) to simply
+    # modify the fieldsets list so that it excludes any fields we want to remove
+    # based on permissions (eg. superuser_only_fields) or other conditions.
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+
+        # Create a modified version of fieldsets to exclude certain fields
+        if not request.user.has_perm("registrar.full_access_permission"):
+            modified_fieldsets = []
+            for name, data in fieldsets:
+                fields = data.get("fields", [])
+                fields = tuple(field for field in fields if field not in self.superuser_only_fields)
+                modified_fieldsets.append((name, {"fields": fields}))
+            return modified_fieldsets
+        return fieldsets
 
     # Table ordering
     # NOTE: This impacts the select2 dropdowns (combobox)
@@ -1818,9 +1872,92 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return response
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Display restricted warning,
+        Setup the auditlog trail and pass it in extra context."""
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
+
+        # Initialize variables for tracking status changes and filtered entries
+        filtered_audit_log_entries = []
+
+        try:
+            # Retrieve and order audit log entries by timestamp in descending order
+            audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("-timestamp")
+
+            # Process each log entry to filter based on the change criteria
+            for log_entry in audit_log_entries:
+                entry = self.process_log_entry(log_entry)
+                if entry:
+                    filtered_audit_log_entries.append(entry)
+
+        except ObjectDoesNotExist as e:
+            logger.error(f"Object with object_id {object_id} does not exist: {e}")
+        except Exception as e:
+            logger.error(f"An error occurred during change_view: {e}")
+
+        # Initialize extra_context and add filtered entries
+        extra_context = extra_context or {}
+        extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
+
+        # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def process_log_entry(self, log_entry):
+        """Process a log entry and return filtered entry dictionary if applicable."""
+        changes = log_entry.changes
+        status_changed = "status" in changes
+        rejection_reason_changed = "rejection_reason" in changes
+        action_needed_reason_changed = "action_needed_reason" in changes
+
+        # Check if the log entry meets the filtering criteria
+        if status_changed or (not status_changed and (rejection_reason_changed or action_needed_reason_changed)):
+            entry = {}
+
+            # Handle status change
+            if status_changed:
+                _, status_value = changes.get("status")
+                if status_value:
+                    entry["status"] = DomainRequest.DomainRequestStatus.get_status_label(status_value)
+
+            # Handle rejection reason change
+            if rejection_reason_changed:
+                _, rejection_reason_value = changes.get("rejection_reason")
+                if rejection_reason_value:
+                    entry["rejection_reason"] = (
+                        ""
+                        if rejection_reason_value == "None"
+                        else DomainRequest.RejectionReasons.get_rejection_reason_label(rejection_reason_value)
+                    )
+                    # Handle case where rejection reason changed but not status
+                    if not status_changed:
+                        entry["status"] = DomainRequest.DomainRequestStatus.get_status_label(
+                            DomainRequest.DomainRequestStatus.REJECTED
+                        )
+
+            # Handle action needed reason change
+            if action_needed_reason_changed:
+                _, action_needed_reason_value = changes.get("action_needed_reason")
+                if action_needed_reason_value:
+                    entry["action_needed_reason"] = (
+                        ""
+                        if action_needed_reason_value == "None"
+                        else DomainRequest.ActionNeededReasons.get_action_needed_reason_label(
+                            action_needed_reason_value
+                        )
+                    )
+                    # Handle case where action needed reason changed but not status
+                    if not status_changed:
+                        entry["status"] = DomainRequest.DomainRequestStatus.get_status_label(
+                            DomainRequest.DomainRequestStatus.ACTION_NEEDED
+                        )
+
+            # Add actor and timestamp information
+            entry["actor"] = log_entry.actor
+            entry["timestamp"] = log_entry.timestamp
+
+            return entry
+
+        return None
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
@@ -1853,13 +1990,7 @@ class DomainInformationInline(admin.StackedInline):
     template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
 
-    fieldsets = copy.deepcopy(DomainInformationAdmin.fieldsets)
-    # remove .gov domain from fieldset
-    for index, (title, f) in enumerate(fieldsets):
-        if title == ".gov domain":
-            del fieldsets[index]
-            break
-
+    fieldsets = DomainInformationAdmin.fieldsets
     readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
 
@@ -1905,6 +2036,23 @@ class DomainInformationInline(admin.StackedInline):
 
     def get_readonly_fields(self, request, obj=None):
         return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
+
+    # Re-route the get_fieldsets method to utilize DomainInformationAdmin.get_fieldsets
+    # since that has all the logic for excluding certain fields according to user permissions.
+    # Then modify the remaining fields to further trim out any we don't want for this inline
+    # form
+    def get_fieldsets(self, request, obj=None):
+        # Grab fieldsets from DomainInformationAdmin so that it handles all logic
+        # for permission-based field visibility.
+        modified_fieldsets = DomainInformationAdmin.get_fieldsets(self, request, obj=None)
+
+        # remove .gov domain from fieldset
+        for index, (title, f) in enumerate(modified_fieldsets):
+            if title == ".gov domain":
+                del modified_fieldsets[index]
+                break
+
+        return modified_fieldsets
 
 
 class DomainResource(FsmModelResource):
@@ -2394,16 +2542,35 @@ class PublicContactResource(resources.ModelResource):
 
     class Meta:
         model = models.PublicContact
+        # may want to consider these bulk options in future, so left in as comments
+        # use_bulk = True
+        # batch_size = 1000
+        # force_init_instance = True
 
-    def import_row(self, row, instance_loader, using_transactions=True, dry_run=False, raise_errors=None, **kwargs):
-        """Override kwargs skip_epp_save and set to True"""
-        kwargs["skip_epp_save"] = True
-        return super().import_row(
-            row,
-            instance_loader,
-            using_transactions=using_transactions,
-            dry_run=dry_run,
-            raise_errors=raise_errors,
+    def __init__(self):
+        """Sets global variables for code tidyness"""
+        super().__init__()
+        self.skip_epp_save = False
+
+    def import_data(
+        self,
+        dataset,
+        dry_run=False,
+        raise_errors=False,
+        use_transactions=None,
+        collect_failed_rows=False,
+        rollback_on_validation_errors=False,
+        **kwargs,
+    ):
+        """Override import_data to set self.skip_epp_save if in kwargs"""
+        self.skip_epp_save = kwargs.get("skip_epp_save", False)
+        return super().import_data(
+            dataset,
+            dry_run,
+            raise_errors,
+            use_transactions,
+            collect_failed_rows,
+            rollback_on_validation_errors,
             **kwargs,
         )
 
@@ -2419,7 +2586,7 @@ class PublicContactResource(resources.ModelResource):
             # we don't have transactions and we want to do a dry_run
             pass
         else:
-            instance.save(skip_epp_save=True)
+            instance.save(skip_epp_save=self.skip_epp_save)
         self.after_save_instance(instance, using_transactions, dry_run)
 
 
@@ -2468,11 +2635,48 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
-class FederalAgencyAdmin(ListHeaderAdmin):
+class PortfolioAdmin(ListHeaderAdmin):
+    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+    list_display = ("organization_name", "federal_agency", "creator")
+    search_fields = ["organization_name"]
+    search_help_text = "Search by organization name."
+    # readonly_fields = [
+    #     "requestor",
+    # ]
+
+    def save_model(self, request, obj, form, change):
+
+        if obj.creator is not None:
+            # ---- update creator ----
+            # Set the creator field to the current admin user
+            obj.creator = request.user if request.user.is_authenticated else None
+
+        # ---- update organization name ----
+        # org name will be the same as federal agency, if it is federal,
+        # otherwise it will be the actual org name. If nothing is entered for
+        # org name and it is a federal organization, have this field fill with
+        # the federal agency text name.
+        is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+        if is_federal and obj.organization_name is None:
+            obj.organization_name = obj.federal_agency.agency
+
+        super().save_model(request, obj, form, change)
+
+
+class FederalAgencyResource(resources.ModelResource):
+    """defines how each field in the referenced model should be mapped to the corresponding fields in the
+    import/export file"""
+
+    class Meta:
+        model = models.FederalAgency
+
+
+class FederalAgencyAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]
     search_help_text = "Search by agency name."
     ordering = ["agency"]
+    resource_classes = [FederalAgencyResource]
 
 
 class UserGroupAdmin(AuditedAdmin):
@@ -2516,6 +2720,14 @@ class WaffleFlagAdmin(FlagAdmin):
         fields = "__all__"
 
 
+class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+    list_display = ["name", "portfolio"]
+
+
+class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+    list_display = ["name", "portfolio"]
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
 admin.site.register(LogEntry, CustomLogEntryAdmin)
@@ -2538,6 +2750,9 @@ admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
+admin.site.register(models.Portfolio, PortfolioAdmin)
+admin.site.register(models.DomainGroup, DomainGroupAdmin)
+admin.site.register(models.Suborganization, SuborganizationAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)

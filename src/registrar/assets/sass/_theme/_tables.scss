@@ -98,7 +98,7 @@
   }
 }
 @media (min-width: 1040px){
-  .dotgov-table__domain-requests {
+  .domain-requests__table {
     th:nth-of-type(1) {
       width: 200px;
     }
@@ -122,7 +122,7 @@
 }
 
 @media (min-width: 1040px){
-  .dotgov-table__registered-domains {
+  .domains__table {
     th:nth-of-type(1) {
       width: 200px;
     }

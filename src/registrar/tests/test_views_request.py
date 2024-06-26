@@ -102,6 +102,58 @@ class DomainRequestTests(TestWithUser, WebTest):
 
             self.assertContains(type_page, "You cannot submit this request yet")
 
+    def test_domain_request_into_acknowledgement_creates_new_request(self):
+        """
+        We had to solve a bug where the wizard was creating 2 requests on first intro acknowledgement ('continue')
+        The wizard was also creating multiiple requests on 'continue' -> back button -> 'continue' etc.
+
+        This tests that the domain requests get created only when they should.
+        """
+        # Get the intro page
+        self.app.get(reverse("home"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_page = self.app.get(reverse("domain-request:"))
+
+        # Select the form
+        intro_form = intro_page.forms[0]
+
+        # Submit the form, this creates 1 Request
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response = intro_form.submit(name="submit_button", value="intro_acknowledge")
+
+        # Landing on the next page used to create another 1 request
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response.follow()
+
+        # Check if a new DomainRequest object has been created
+        domain_request_count = DomainRequest.objects.count()
+        self.assertEqual(domain_request_count, 1)
+
+        # Let's go back to intro and submit again, this should not create a new request
+        # This is the equivalent of a back button nav from step 1 to intro -> continue
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_form = intro_form.submit(name="submit_button", value="intro_acknowledge")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_form.follow()
+        domain_request_count = DomainRequest.objects.count()
+        self.assertEqual(domain_request_count, 1)
+
+        # Go home, which will reset the session flag for new request
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        self.app.get(reverse("home"))
+
+        # This time, clicking continue will create a new request
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit(name="submit_button", value="intro_acknowledge")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result.follow()
+        domain_request_count = DomainRequest.objects.count()
+        self.assertEqual(domain_request_count, 2)
+
     @boto3_mocking.patching
     def test_domain_request_form_submission(self):
         """

@@ -17,7 +17,7 @@ from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
 
-from auditlog.models import AuditlogHistoryField  # type: ignore
+from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,7 @@ class DomainRequest(TimeStampedModel):
         ]
 
     # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history
-    # If we note any performace degradation due to this addition,
-    # we can query the auditlogs table in admin.py and add the results to
-    # extra_context in the change_view method for DomainRequestAdmin.
-    # This is the more straightforward way so trying it first.
-    history = AuditlogHistoryField()
+    # history = AuditlogHistoryField()
 
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
@@ -262,6 +258,11 @@ class DomainRequest(TimeStampedModel):
         NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
 
+        @classmethod
+        def get_rejection_reason_label(cls, rejection_reason: str):
+            """Returns the associated label for a given rejection reason"""
+            return cls(rejection_reason).label if rejection_reason else None
+
     class ActionNeededReasons(models.TextChoices):
         """Defines common action needed reasons for domain requests"""
 
@@ -270,6 +271,11 @@ class DomainRequest(TimeStampedModel):
         ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
         BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
         OTHER = ("other", "Other (no auto-email sent)")
+
+        @classmethod
+        def get_action_needed_reason_label(cls, action_needed_reason: str):
+            """Returns the associated label for a given action needed reason"""
+            return cls(action_needed_reason).label if action_needed_reason else None
 
     # #### Internal fields about the domain request #####
     status = FSMField(
@@ -297,6 +303,16 @@ class DomainRequest(TimeStampedModel):
         unique=False,
         blank=True,
         null=True,
+    )
+
+    # portfolio
+    portfolio = models.ForeignKey(
+        "registrar.Portfolio",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="DomainInformation_portfolio",
+        help_text="Portfolio associated with this domain request",
     )
 
     # This is the domain request user who created this domain request. The contact
@@ -1151,19 +1167,21 @@ class DomainRequest(TimeStampedModel):
     def _is_policy_acknowledgement_complete(self):
         return self.is_policy_acknowledged is not None
 
-    def _is_general_form_complete(self):
+    def _is_general_form_complete(self, request):
+        has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
             self._is_organization_name_and_address_complete()
             and self._is_authorizing_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
-            and self._is_submitter_complete()
+            # NOTE: This flag leaves submitter as empty (request wont submit) hence preset to True
+            and (self._is_submitter_complete() if not has_profile_feature_flag else True)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()
             and self._is_policy_acknowledgement_complete()
         )
 
-    def _form_complete(self):
+    def _form_complete(self, request):
         match self.generic_org_type:
             case DomainRequest.OrganizationChoices.FEDERAL:
                 is_complete = self._is_federal_complete()
@@ -1184,8 +1202,6 @@ class DomainRequest(TimeStampedModel):
             case _:
                 # NOTE: Shouldn't happen, this is only if somehow they didn't choose an org type
                 is_complete = False
-
-        if not is_complete or not self._is_general_form_complete():
+        if not is_complete or not self._is_general_form_complete(request):
             return False
-
         return True

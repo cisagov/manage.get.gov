@@ -10,6 +10,8 @@ from registrar.models.utility.domain_helper import DomainHelper
 class UserProfileForm(forms.ModelForm):
     """Form for updating user profile."""
 
+    redirect = forms.CharField(widget=forms.HiddenInput(), required=False)
+
     class Meta:
         model = Contact
         fields = ["first_name", "middle_name", "last_name", "title", "email", "phone"]
@@ -47,7 +49,7 @@ class UserProfileForm(forms.ModelForm):
         self.fields["middle_name"].label = "Middle name (optional)"
         self.fields["last_name"].label = "Last name / family name"
         self.fields["title"].label = "Title or role in your organization"
-        self.fields["email"].label = "Organizational email"
+        self.fields["email"].label = "Organization email"
 
         # Set custom error messages
         self.fields["first_name"].error_messages = {"required": "Enter your first name / given name."}

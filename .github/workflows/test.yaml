@@ -70,6 +70,6 @@ jobs:
       - name: run pa11y
         working-directory: ./src
         run: |
-          sleep 10;
+          sleep 20;
           npm i -g pa11y-ci
           pa11y-ci 
