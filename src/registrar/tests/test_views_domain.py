@@ -1097,7 +1097,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.assertContains(page, "Testy")
 
     def test_domain_edit_senior_official_in_place(self):
-        """When editing an senior official for domain information and SO is not
+        """When editing a senior official for domain information and SO is not
         joined to any other objects"""
         self.domain_information.senior_official = Contact(
             first_name="Testy", last_name="Tester", title="CIO", email="nobody@igorville.gov"
@@ -1259,7 +1259,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.assertEqual("nobody@igorville.gov", self.domain_information.senior_official.email)
 
     def test_domain_edit_senior_official_creates_new(self):
-        """When editing an senior official for domain information and SO IS
+        """When editing a senior official for domain information and SO IS
         joined to another object"""
         # set SO and Other Contact to the same Contact object
         self.domain_information.senior_official = Contact(

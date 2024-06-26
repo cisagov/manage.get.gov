@@ -1288,7 +1288,7 @@ class TestContact(TestCase):
         # test for a contact which has one user defined
         self.assertFalse(self.contact.has_more_than_one_join("user"))
         self.assertTrue(self.contact.has_more_than_one_join("senior_official"))
-        # test for a contact which is assigned as an senior official on a domain request
+        # test for a contact which is assigned as a senior official on a domain request
         self.assertFalse(self.contact_as_so.has_more_than_one_join("senior_official"))
         self.assertTrue(self.contact_as_so.has_more_than_one_join("submitted_domain_requests"))
 

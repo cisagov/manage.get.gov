@@ -2091,12 +2091,12 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def test_edit_senior_official_in_place(self):
         """When you:
-            1. edit an senior official which is not joined to another model,
+            1. edit a senior official which is not joined to another model,
             2. then submit,
         the domain request is linked to the existing so, and the so updated."""
 
         # Populate the database with a domain request that
-        # has an senior_official (so)
+        # has a senior_official (so)
         # We'll do it from scratch
         so, _ = Contact.objects.get_or_create(
             first_name="Testy",

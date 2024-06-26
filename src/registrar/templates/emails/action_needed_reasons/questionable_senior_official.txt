@@ -14,7 +14,7 @@ We've reviewed your domain request, but we need more information about the senio
 - {{ domain_request.senior_official.get_formatted_name }}
 - {{ domain_request.senior_official.title }}
 
-We expect an senior official to be someone in a role of significant, executive responsibility within the organization. Our guidelines are open-ended to accommodate the wide variety of government organizations that are eligible for .gov domains, but the person you listed does not meet our expectations for your type of organization. Read more about our guidelines for senior officials. <https://get.gov/domains/eligibility/>
+We expect a senior official to be someone in a role of significant, executive responsibility within the organization. Our guidelines are open-ended to accommodate the wide variety of government organizations that are eligible for .gov domains, but the person you listed does not meet our expectations for your type of organization. Read more about our guidelines for senior officials. <https://get.gov/domains/eligibility/>
 
 
 ACTION NEEDED
