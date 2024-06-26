@@ -59,20 +59,17 @@ class ScriptDataHelper:
             model_class.objects.bulk_update(page.object_list, fields_to_update)
 
 
-# This template handles logging and bulk updating for you, for repetitive scripts that update a few fields.
-# It is the ultimate lazy mans shorthand. Don't use this for anything terribly complicated.
-# See the transfer_federal_agency.py file for example usage - its really quite simple!
 class PopulateScriptTemplate(ABC):
     """
-    Contains an ABC for generic populate scripts
+    Contains an ABC for generic populate scripts.
+
+    This template provides reusable logging and bulk updating functions for
+    mass-updating fields.
     """
 
     # Optional script-global config variables. For the most part, you can leave these untouched.
     # Defines what prompt_for_execution displays as its header when you first start the script
     prompt_title: str = "Do you wish to proceed?"
-
-    # Runs str(item) over each item when printing. Use this for prettier run summaries.
-    display_run_summary_items_as_str: bool = False
 
     # The header when printing the script run summary (after the script finishes)
     run_summary_header = None
@@ -130,7 +127,7 @@ class PopulateScriptTemplate(ABC):
             to_skip,
             debug=debug,
             log_header=self.run_summary_header,
-            display_as_str=self.display_run_summary_items_as_str,
+            display_as_str=True,
         )
 
     def get_class_name(self, sender) -> str:
