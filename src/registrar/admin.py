@@ -2763,6 +2763,14 @@ class WaffleFlagAdmin(FlagAdmin):
         fields = "__all__"
 
 
+class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+    list_display = ["name", "portfolio"]
+
+
+class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+    list_display = ["name", "portfolio"]
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
 admin.site.register(LogEntry, CustomLogEntryAdmin)
@@ -2786,6 +2794,8 @@ admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
+admin.site.register(models.DomainGroup, DomainGroupAdmin)
+admin.site.register(models.Suborganization, SuborganizationAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)

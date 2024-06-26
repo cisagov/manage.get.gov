@@ -17,6 +17,8 @@ from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
 
+from waffle.decorators import flag_is_active
+
 logger = logging.getLogger(__name__)
 
 
@@ -1170,19 +1172,21 @@ class DomainRequest(TimeStampedModel):
     def _is_policy_acknowledgement_complete(self):
         return self.is_policy_acknowledged is not None
 
-    def _is_general_form_complete(self):
+    def _is_general_form_complete(self, request):
+        has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
             self._is_organization_name_and_address_complete()
             and self._is_authorizing_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
-            and self._is_submitter_complete()
+            # NOTE: This flag leaves submitter as empty (request wont submit) hence preset to True
+            and (self._is_submitter_complete() if not has_profile_feature_flag else True)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()
             and self._is_policy_acknowledgement_complete()
         )
 
-    def _form_complete(self):
+    def _form_complete(self, request):
         match self.generic_org_type:
             case DomainRequest.OrganizationChoices.FEDERAL:
                 is_complete = self._is_federal_complete()
@@ -1203,8 +1207,6 @@ class DomainRequest(TimeStampedModel):
             case _:
                 # NOTE: Shouldn't happen, this is only if somehow they didn't choose an org type
                 is_complete = False
-
-        if not is_complete or not self._is_general_form_complete():
+        if not is_complete or not self._is_general_form_complete(request):
             return False
-
         return True
