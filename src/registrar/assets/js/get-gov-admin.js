@@ -8,6 +8,25 @@
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Helper functions.
+
+/**
+ * Hide element
+ *
+*/
+const hideElement = (element) => {
+    if (element && !element.classList.contains("display-none"))
+        element.classList.add('display-none');
+};
+
+/**
+ * Show element
+ *
+ */
+const showElement = (element) => {
+    if (element && element.classList.contains("display-none"))
+        element.classList.remove('display-none');
+};
+
 /** Either sets attribute target="_blank" to a given element, or removes it */
 function openInNewTab(el, removeAttribute = false){
     if(removeAttribute){
@@ -56,6 +75,7 @@ function openInNewTab(el, removeAttribute = false){
 
     createPhantomModalFormButtons();
 })();
+
 
 /** An IIFE for DomainRequest to hook a modal to a dropdown option.
  * This intentionally does not interact with createPhantomModalFormButtons()
@@ -408,13 +428,21 @@ function initializeWidgetOnList(list, parentId) {
         function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
             let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
             let statusChangelog = document.getElementById('dja-status-changelog');
+
+            // On action needed, show the email that will be sent out
+            let showReasonEmailContainer = document.querySelector("#action_needed_reason_email_readonly")
+        
+            // Prepopulate values on page load.
             if (statusSelect.value === "action needed") {
                 flexContainer.parentNode.insertBefore(statusChangelog, flexContainer.nextSibling);
+                showElement(showReasonEmailContainer);
             } else {
                 // Move the changelog back to its original location
                 let statusFlexContainer = statusSelect.closest('.flex-container');
                 statusFlexContainer.parentNode.insertBefore(statusChangelog, statusFlexContainer.nextSibling);
+                hideElement(showReasonEmailContainer);
             }
+
         }
         
         // Call the function on page load
@@ -517,4 +545,61 @@ function initializeWidgetOnList(list, parentId) {
     if (toggleButton && descriptionDiv) {
         handleShowMoreButton(toggleButton, descriptionDiv)
     }
+})();
+
+
+/** An IIFE that hooks up to the "show email" button.
+ * which shows the auto generated email on action needed reason.
+*/
+(function () {
+    let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
+    let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
+    if(actionNeededReasonDropdown && actionNeededEmail && container) {
+        // Add a change listener to the action needed reason dropdown 
+        handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
+    }
+
+    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
+        actionNeededReasonDropdown.addEventListener("change", function() {
+            let reason = actionNeededReasonDropdown.value;
+
+            // If a reason isn't specified, no email will be sent.
+            // You also cannot save the model in this state.
+            // This flow occurs if you switch back to the empty picker state.
+            if(!reason) {
+                showNoEmailMessage(actionNeededEmail);
+                return;
+            }
+            
+            let actionNeededEmails = JSON.parse(document.getElementById('action-needed-emails-data').textContent)
+            let emailData = actionNeededEmails[reason];
+            if (emailData) {
+                let emailBody = emailData.email_body_text
+                if (emailBody) {
+                    actionNeededEmail.value = emailBody
+                    showActionNeededEmail(actionNeededEmail);
+                }else {
+                    showNoEmailMessage(actionNeededEmail);
+                }
+            }else {
+                showNoEmailMessage(actionNeededEmail);
+            }
+
+        });
+    }
+
+    // Show the text field. Hide the "no email" message.
+    function showActionNeededEmail(actionNeededEmail){
+        let noEmailMessage = document.getElementById("no-email-message");
+        showElement(actionNeededEmail);
+        hideElement(noEmailMessage);
+    }
+
+    // Hide the text field. Show the "no email" message.
+    function showNoEmailMessage(actionNeededEmail) {
+        let noEmailMessage = document.getElementById("no-email-message");
+        hideElement(actionNeededEmail);
+        showElement(noEmailMessage);
+    }
+
 })();

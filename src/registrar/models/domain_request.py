@@ -296,6 +296,11 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
+    action_needed_reason_email = models.TextField(
+        null=True,
+        blank=True,
+    )
+
     federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
