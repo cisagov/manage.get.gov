@@ -186,6 +186,7 @@ class DomainExport:
             "domain__expiration_date",
             "domain__created_at",
             "domain__deleted",
+            "domain__security_contact_registry_id",
             "authorizing_official__email",
             "federal_agency__agency",
         ]
@@ -225,6 +226,9 @@ class DomainExport:
             ],
         }
 
+        # Fetch all relevant PublicContact entries
+        public_contacts = cls.get_all_security_emails()
+
         domain_infos = (
             DomainInformation.objects.select_related("domain")
             .filter(**filter_condition)
@@ -235,11 +239,12 @@ class DomainExport:
         annotations = {}
         additional_values = [
             "domain__name",
+            "domain__security_contact_registry_id",
             "federal_agency__agency",
         ]
         
         # Convert the domain request queryset to a dictionary (including annotated fields)
-        annotated_domains = cls.annotate_and_retrieve_fields(domain_infos, annotations, {}, {}, {}, additional_values)
+        annotated_domains = cls.annotate_and_retrieve_fields(domain_infos, annotations, public_contacts, {}, {}, additional_values)
         requests_dict = convert_queryset_to_dict(annotated_domains, is_model=False)
 
         # Write the csv file
@@ -274,6 +279,9 @@ class DomainExport:
             ],
         }
 
+        # Fetch all relevant PublicContact entries
+        public_contacts = cls.get_all_security_emails()
+
         domain_infos = (
             DomainInformation.objects.select_related("domain")
             .filter(**filter_condition)
@@ -284,11 +292,12 @@ class DomainExport:
         annotations = {}
         additional_values = [
             "domain__name",
+            "domain__security_contact_registry_id",
             "federal_agency__agency",
         ]
         
         # Convert the domain request queryset to a dictionary (including annotated fields)
-        annotated_domains = cls.annotate_and_retrieve_fields(domain_infos, annotations, {}, {}, {}, additional_values)
+        annotated_domains = cls.annotate_and_retrieve_fields(domain_infos, annotations, public_contacts, {}, {}, additional_values)
         requests_dict = convert_queryset_to_dict(annotated_domains, is_model=False)
 
         # Write the csv file
@@ -629,7 +638,7 @@ class DomainExport:
 
         # Annotate with security_contact from public_contacts
         for domain in queryset:
-            domain['security_contact_email'] = public_contacts.get(domain.get('domain__registry_id'))
+            domain['security_contact_email'] = public_contacts.get(domain.get('domain__security_contact_registry_id'))
             domain['invited_users'] = ', '.join(invited_users_dict.get(domain.get('domain__name'), []))
             domain['managers'] = ', '.join(managers_dict.get(domain.get('domain__name'), []))
             annotated_domains.append(domain)
