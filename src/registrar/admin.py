@@ -1312,6 +1312,8 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "authorizing_official",
         "domain",
         "submitter",
+        "portfolio",
+        "sub_organization"
     ]
 
     # Table ordering
@@ -1618,6 +1620,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "creator",
         "authorizing_official",
         "investigator",
+        "portfolio",
+        "sub_organization",
     ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
@@ -2737,6 +2741,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     autocomplete_fields = [
         "portfolio",
     ]
+    search_fields = ["name"]
 
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
