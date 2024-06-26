@@ -2000,14 +2000,7 @@ class DomainInformationInline(admin.StackedInline):
     fieldsets = DomainInformationAdmin.fieldsets
     readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-
-    autocomplete_fields = [
-        "creator",
-        "domain_request",
-        "authorizing_official",
-        "domain",
-        "submitter",
-    ]
+    autocomplete_fields = DomainInformationAdmin.autocomplete_fields
 
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
