@@ -2194,6 +2194,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
             extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
             extra_context["domain_state"] = domain.get_state_display()
+            extra_context["curr_exp_date"] = (
+                domain.expiration_date if domain.expiration_date is not None else self._get_current_date()
+            )
 
         return super().changeform_view(request, object_id, form_url, extra_context)
 
