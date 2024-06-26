@@ -19,7 +19,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
     display_run_summary_items_as_str = True
 
     def handle(self, **kwargs):
-        """Loops through each valid User object and updates its verification_type value"""
+        """Loops through each valid User object and updates the value of its verification_type field"""
 
         # Get all existing domain requests. Select_related allows us to skip doing db queries.
         self.all_domain_infos = DomainInformation.objects.select_related("federal_agency")
