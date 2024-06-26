@@ -187,6 +187,7 @@ class DomainExport:
             "domain__created_at",
             "domain__deleted",
             "authorizing_official__email",
+            "federal_agency__agency",
         ]
 
         # Convert the domain request queryset to a dictionary (including annotated fields)
@@ -234,6 +235,7 @@ class DomainExport:
         annotations = {}
         additional_values = [
             "domain__name",
+            "federal_agency__agency",
         ]
         
         # Convert the domain request queryset to a dictionary (including annotated fields)
@@ -282,6 +284,7 @@ class DomainExport:
         annotations = {}
         additional_values = [
             "domain__name",
+            "federal_agency__agency",
         ]
         
         # Convert the domain request queryset to a dictionary (including annotated fields)
@@ -359,6 +362,7 @@ class DomainExport:
             "domain__expiration_date",
             "domain__created_at",
             "domain__deleted",
+            "federal_agency__agency",
         ]
 
         # Convert the domain request queryset to a dictionary (including annotated fields)
@@ -658,12 +662,16 @@ class DomainExport:
         human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
         domain_type = human_readable_domain_org_type
         if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
-            domain_type = f"{human_readable_domain_federal_type} - {human_readable_domain_org_type}"
+            domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
 
         if domain.get("domain__name") == "18f.gov":
             print(f'domain_type {domain_type}')
             print(f'federal_agency {domain.get("federal_agency")}')
             print(f'city {domain.get("city")}')
+
+            print(f'agency {domain.get("agency")}')
+
+            print(f'federal_agency__agency {domain.get("federal_agency__agency")}')
 
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
@@ -674,7 +682,7 @@ class DomainExport:
             "First ready on": first_ready_on,
             "Expiration date": expiration_date,
             "Domain type": domain_type,
-            "Agency": domain.get("federal_agency"),
+            "Agency": domain.get("federal_agency__agency"),
             "Organization name": domain.get("organization_name"),
             "City": domain.get("city"),
             "State": domain.get("state_territory"),
