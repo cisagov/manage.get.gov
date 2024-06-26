@@ -371,7 +371,7 @@ class DomainInformation(TimeStampedModel):
         existing_domain_info = cls.objects.filter(domain_request__id=domain_request.id).first()
         if existing_domain_info:
             logger.info(
-                f"create_from_da() -> Shortcircuting create on {existing_domain_info}. " 
+                f"create_from_da() -> Shortcircuting create on {existing_domain_info}. "
                 "This record already exists. No values updated!"
             )
             return existing_domain_info
