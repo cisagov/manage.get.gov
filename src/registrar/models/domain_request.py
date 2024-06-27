@@ -18,8 +18,6 @@ from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
 
-from waffle.decorators import flag_is_active
-
 logger = logging.getLogger(__name__)
 
 
@@ -696,7 +694,9 @@ class DomainRequest(TimeStampedModel):
         if recipient is None or recipient.email is None:
             logger.warning(
                 f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
-                f" Name: {self.requested_domain.name}" if self.requested_domain else ""
+                f" Name: {self.requested_domain.name}"
+                if self.requested_domain
+                else ""
             )
             return None
 
