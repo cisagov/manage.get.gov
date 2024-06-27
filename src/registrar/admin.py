@@ -2131,7 +2131,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom domain admin class to add extra buttons."""
 
     resource_classes = [DomainResource]
-    #form = MyUserAdminForm
     class ElectionOfficeFilter(admin.SimpleListFilter):
         """Define a custom filter for is_election_board"""
 

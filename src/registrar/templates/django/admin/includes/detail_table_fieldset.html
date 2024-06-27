@@ -12,7 +12,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         {% if filtered_audit_log_entries %}
         <div class="readonly">
             <div class="usa-table-container--scrollable collapse--dgsimple collapsed margin-top-0" tabindex="0">
-                {% if filtered_audit_log_entries %}
                 <table class="usa-table usa-table--borderless">
                     <thead>
                         <tr>
@@ -45,9 +44,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         {% endfor %}
                     </tbody>
                 </table>
-                {% else %}
-                <p>No changelog to display.</p>
-                {% endif %}
             </div>
             <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-0">
                 <span>Show details</span>
