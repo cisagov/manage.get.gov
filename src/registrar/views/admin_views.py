@@ -49,8 +49,8 @@ class AnalyticsView(View):
             "domain__permissions__isnull": False,
             "domain__first_ready__lte": end_date_formatted,
         }
-        managed_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_managed_domains_start_date)
-        managed_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_managed_domains_end_date)
+        managed_domains_sliced_at_start_date = csv_export.NewDomainExport.get_sliced_domains(filter_managed_domains_start_date)
+        managed_domains_sliced_at_end_date = csv_export.NewDomainExport.get_sliced_domains(filter_managed_domains_end_date)
 
         filter_unmanaged_domains_start_date = {
             "domain__permissions__isnull": True,
@@ -60,8 +60,8 @@ class AnalyticsView(View):
             "domain__permissions__isnull": True,
             "domain__first_ready__lte": end_date_formatted,
         }
-        unmanaged_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_unmanaged_domains_start_date)
-        unmanaged_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_unmanaged_domains_end_date)
+        unmanaged_domains_sliced_at_start_date = csv_export.NewDomainExport.get_sliced_domains(filter_unmanaged_domains_start_date)
+        unmanaged_domains_sliced_at_end_date = csv_export.NewDomainExport.get_sliced_domains(filter_unmanaged_domains_end_date)
 
         filter_ready_domains_start_date = {
             "domain__state__in": [models.Domain.State.READY],
@@ -71,8 +71,8 @@ class AnalyticsView(View):
             "domain__state__in": [models.Domain.State.READY],
             "domain__first_ready__lte": end_date_formatted,
         }
-        ready_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_ready_domains_start_date)
-        ready_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_ready_domains_end_date)
+        ready_domains_sliced_at_start_date = csv_export.NewDomainExport.get_sliced_domains(filter_ready_domains_start_date)
+        ready_domains_sliced_at_end_date = csv_export.NewDomainExport.get_sliced_domains(filter_ready_domains_end_date)
 
         filter_deleted_domains_start_date = {
             "domain__state__in": [models.Domain.State.DELETED],
@@ -82,8 +82,8 @@ class AnalyticsView(View):
             "domain__state__in": [models.Domain.State.DELETED],
             "domain__deleted__lte": end_date_formatted,
         }
-        deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)
-        deleted_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_deleted_domains_end_date)
+        deleted_domains_sliced_at_start_date = csv_export.NewDomainExport.get_sliced_domains(filter_deleted_domains_start_date)
+        deleted_domains_sliced_at_end_date = csv_export.NewDomainExport.get_sliced_domains(filter_deleted_domains_end_date)
 
         filter_requests_start_date = {
             "created_at__lte": start_date_formatted,
@@ -142,7 +142,8 @@ class ExportDataType(View):
         # match the CSV example with all the fields
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="domains-by-type.csv"'
-        csv_export.DomainExport.export_data_type_to_csv(response)
+        #csv_export.DomainExport.export_data_type_to_csv(response)
+        csv_export.DomainDataType.export_data_to_csv(response)
         return response
 
 
@@ -151,7 +152,8 @@ class ExportDataFull(View):
         # Smaller export based on 1
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="current-full.csv"'
-        csv_export.DomainExport.export_data_full_to_csv(response)
+        #csv_export.DomainExport.export_data_full_to_csv(response)
+        csv_export.DomainDataFull.export_data_to_csv(response)
         return response
 
 
@@ -160,7 +162,8 @@ class ExportDataFederal(View):
         # Federal only
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="current-federal.csv"'
-        csv_export.DomainExport.export_data_federal_to_csv(response)
+        #csv_export.DomainExport.export_data_federal_to_csv(response)
+        csv_export.DomainDataFederal.export_data_to_csv(response)
         return response
 
 
@@ -182,7 +185,8 @@ class ExportDataDomainsGrowth(View):
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="domain-growth-report-{start_date}-to-{end_date}.csv"'
-        csv_export.DomainExport.export_data_domain_growth_to_csv(response, start_date, end_date)
+        #csv_export.DomainExport.export_data_domain_growth_to_csv(response, start_date, end_date)
+        csv_export.DomainGrowth.export_data_to_csv(response, start_date, end_date)
 
         return response
 
@@ -205,7 +209,8 @@ class ExportDataManagedDomains(View):
         end_date = request.GET.get("end_date", "")
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="managed-domains-{start_date}-to-{end_date}.csv"'
-        csv_export.DomainExport.export_data_managed_domains_to_csv(response, start_date, end_date)
+        #csv_export.DomainExport.export_data_managed_domains_to_csv(response, start_date, end_date)
+        csv_export.DomainManaged.export_data_to_csv(response, start_date, end_date)
 
         return response
 
@@ -215,7 +220,8 @@ class ExportDataUnmanagedDomains(View):
         start_date = request.GET.get("start_date", "")
         end_date = request.GET.get("end_date", "")
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = f'attachment; filename="unamanaged-domains-{start_date}-to-{end_date}.csv"'
-        csv_export.DomainExport.export_data_unmanaged_domains_to_csv(response, start_date, end_date)
+        response["Content-Disposition"] = f'attachment; filename="unmanaged-domains-{start_date}-to-{end_date}.csv"'
+        #csv_export.DomainExport.export_data_unmanaged_domains_to_csv(response, start_date, end_date)
+        csv_export.DomainUnmanaged.export_data_to_csv(response, start_date, end_date)
 
         return response
