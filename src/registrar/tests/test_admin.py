@@ -944,7 +944,7 @@ class TestDomainRequestAdminForm(TestCase):
             self.assertIn("rejection_reason", form.errors)
 
             rejection_reason = form.errors.get("rejection_reason")
-            self.assertEqual(rejection_reason, ["A rejection reason is required."])
+            self.assertEqual(rejection_reason, ["A reason is required for this status."])
 
     def test_form_choices_when_no_instance(self):
         with less_console_noise():
@@ -1596,6 +1596,24 @@ class TestDomainRequestAdmin(MockEppLib):
             self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
+    @less_console_noise_decorator
+    def test_model_displays_action_needed_email(self):
+        """Tests if the action needed email is visible for Domain Requests"""
+
+        _domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            action_needed_reason=DomainRequest.ActionNeededReasons.BAD_NAME,
+        )
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        self.assertContains(response, "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS")
+
     @override_settings(IS_PRODUCTION=True)
     def test_save_model_sends_submitted_email_with_bcc_on_prod(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
@@ -1911,7 +1929,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
                 messages.error.assert_called_once_with(
                     request,
-                    "A rejection reason is required.",
+                    "A reason is required for this status.",
                 )
 
             domain_request.refresh_from_db()
@@ -2161,15 +2179,15 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "testy@town.com", count=2)
         expected_ao_fields = [
             # Field, expected value
-            ("title", "Chief Tester"),
             ("phone", "(555) 555 5555"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
+        self.assertContains(response, "Chief Tester")
 
-        self.assertContains(response, "Testy Tester", count=10)
+        self.assertContains(response, "Testy Tester")
 
         # == Test the other_employees field == #
-        self.assertContains(response, "testy2@town.com", count=2)
+        self.assertContains(response, "testy2@town.com")
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
@@ -2290,6 +2308,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "status",
                 "rejection_reason",
                 "action_needed_reason",
+                "action_needed_reason_email",
                 "federal_agency",
                 "portfolio",
                 "creator",

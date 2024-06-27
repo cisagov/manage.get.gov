@@ -3,6 +3,8 @@ from django.db.utils import IntegrityError
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
 
+from django.test import RequestFactory
+
 from registrar.models import (
     Contact,
     DomainRequest,
@@ -1650,6 +1652,7 @@ class TestDomainInformationCustomSave(TestCase):
 class TestDomainRequestIncomplete(TestCase):
     def setUp(self):
         super().setUp()
+        self.factory = RequestFactory()
         username = "test_user"
         first_name = "First"
         last_name = "Last"
@@ -2053,7 +2056,10 @@ class TestDomainRequestIncomplete(TestCase):
         self.assertFalse(self.domain_request._is_policy_acknowledgement_complete())
 
     def test_form_complete(self):
-        self.assertTrue(self.domain_request._form_complete())
+        request = self.factory.get("/")
+        request.user = self.user
+
+        self.assertTrue(self.domain_request._form_complete(request))
         self.domain_request.generic_org_type = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._form_complete())
+        self.assertFalse(self.domain_request._form_complete(request))
