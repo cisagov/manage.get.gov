@@ -1314,7 +1314,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain",
         "submitter",
         "portfolio",
-        "sub_organization"
+        "sub_organization",
     ]
 
     # Table ordering
