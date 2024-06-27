@@ -1492,6 +1492,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # This is not a field that exists on the model.
     def status_history(self, obj):
         return "No changelog to display."
+
     status_history.short_description = "Status History"
 
     # Filters
@@ -2110,14 +2111,15 @@ class DomainInformationInline(admin.StackedInline):
 
         return modified_fieldsets
 
+
 class DomainForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's forms"""
 
     class Meta:
         model = models.Domain
         fields = "__all__"
-        widgets = {
-        }
+        widgets = {}
+
 
 class DomainResource(FsmModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -2131,6 +2133,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom domain admin class to add extra buttons."""
 
     resource_classes = [DomainResource]
+
     class ElectionOfficeFilter(admin.SimpleListFilter):
         """Define a custom filter for is_election_board"""
 
