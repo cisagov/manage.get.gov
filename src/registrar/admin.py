@@ -1485,6 +1485,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
+    # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
+    # This is not a field that exists on the model.
+    def status_history(self, obj):
+        return "No changelog to display."
+    status_history.short_description = "Status History"
+
     # Filters
     list_filter = (
         StatusListFilter,
@@ -1510,6 +1516,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {
                 "fields": [
                     "portfolio",
+                    "status_history",
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
@@ -1592,6 +1599,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "alternative_domains",
         "is_election_board",
         "federal_agency",
+        "status_history"
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -2097,6 +2105,14 @@ class DomainInformationInline(admin.StackedInline):
 
         return modified_fieldsets
 
+class DomainForm(forms.ModelForm):
+    """This form utilizes the custom widget for its class's forms"""
+
+    class Meta:
+        model = models.Domain
+        fields = "__all__"
+        widgets = {
+        }
 
 class DomainResource(FsmModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -2110,7 +2126,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom domain admin class to add extra buttons."""
 
     resource_classes = [DomainResource]
-
+    #form = MyUserAdminForm
     class ElectionOfficeFilter(admin.SimpleListFilter):
         """Define a custom filter for is_election_board"""
 

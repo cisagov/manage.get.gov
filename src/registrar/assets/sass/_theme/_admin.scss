@@ -788,6 +788,7 @@ div.dja__model-description{
 }
 
 .dja-readonly-textarea-container {
+    overflow-x: scroll;
     textarea {
         width: 100%;
         min-width: 610px;
@@ -807,6 +808,12 @@ div.dja__model-description{
             background-clip: content-box;
             border: 3px solid transparent;
         }
+    }
+}
+
+@media (max-width: 1230px) {
+    .dja-readonly-textarea-container {
+        overflow-x: scroll;
     }
 }
 

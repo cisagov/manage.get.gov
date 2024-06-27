@@ -421,38 +421,6 @@ function initializeWidgetOnList(list, parentId) {
             sessionStorage.removeItem(name); 
         }
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        let statusSelect = document.getElementById('id_status');
-        
-        function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
-            let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
-            let statusChangelog = document.getElementById('dja-status-changelog');
-
-            // On action needed, show the email that will be sent out
-            let showReasonEmailContainer = document.querySelector("#action_needed_reason_email_readonly")
-        
-            // Prepopulate values on page load.
-            if (statusSelect.value === "action needed") {
-                flexContainer.parentNode.insertBefore(statusChangelog, flexContainer.nextSibling);
-                showElement(showReasonEmailContainer);
-            } else {
-                // Move the changelog back to its original location
-                let statusFlexContainer = statusSelect.closest('.flex-container');
-                statusFlexContainer.parentNode.insertBefore(statusChangelog, statusFlexContainer.nextSibling);
-                hideElement(showReasonEmailContainer);
-            }
-
-        }
-        
-        // Call the function on page load
-        moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
-
-        // Add event listener to handle changes to the selector itself
-        statusSelect.addEventListener('change', function() {
-            moveStatusChangelog(actionNeededReasonFormGroup, statusSelect);
-        })
-    });
 })();
 
 /** An IIFE for toggling the submit bar on domain request forms
@@ -548,13 +516,13 @@ function initializeWidgetOnList(list, parentId) {
 })();
 
 
-/** An IIFE that hooks up to the "show email" button.
- * which shows the auto generated email on action needed reason.
+/** An IIFE that hooks to the show/hide button underneath action needed reason.
+ * This shows the auto generated email on action needed reason.
 */
 (function () {
     let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
-    if(actionNeededReasonDropdown && actionNeededEmail && container) {
+    if(actionNeededReasonDropdown && actionNeededEmail) {
         // Add a change listener to the action needed reason dropdown 
         handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
     }
