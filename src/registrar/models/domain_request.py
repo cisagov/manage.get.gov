@@ -675,6 +675,9 @@ class DomainRequest(TimeStampedModel):
         contact information. If there is not creator information, then do
         nothing.
 
+        If the waffle flag "profile_feature" is active, then this email will be sent to the
+        domain request creator rather than the submitter
+
         send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
 
