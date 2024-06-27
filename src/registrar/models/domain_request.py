@@ -686,6 +686,7 @@ class DomainRequest(TimeStampedModel):
         if recipient is None or recipient.email is None:
             logger.warning(
                 f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
+                f" Name: {self.requested_domain.name}" if self.requested_domain else ""
             )
             return None
 
