@@ -1493,7 +1493,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def status_history(self, obj):
         return "No changelog to display."
 
-    status_history.short_description = "Status History"
+    status_history.short_description = "Status History"  # type: ignore
 
     # Filters
     list_filter = (
@@ -2110,15 +2110,6 @@ class DomainInformationInline(admin.StackedInline):
                 break
 
         return modified_fieldsets
-
-
-class DomainForm(forms.ModelForm):
-    """This form utilizes the custom widget for its class's forms"""
-
-    class Meta:
-        model = models.Domain
-        fields = "__all__"
-        widgets = {}
 
 
 class DomainResource(FsmModelResource):
