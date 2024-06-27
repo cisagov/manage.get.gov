@@ -46,7 +46,7 @@ function ScrollToElement(attributeName, attributeValue) {
   } else if (attributeName === 'id') {
     targetEl = document.getElementById(attributeValue);
   } else {
-    console.log('Error: unknown attribute name provided.');
+    console.error('Error: unknown attribute name provided.');
     return; // Exit the function if an invalid attributeName is provided
   }
 
@@ -108,7 +108,7 @@ function ScrollToElement(attributeName, attributeValue) {
   } else if (attributeName === 'id') {
     targetEl = document.getElementById(attributeValue);
   } else {
-    console.log('Error: unknown attribute name provided.');
+    console.error('Error: unknown attribute name provided.');
     return; // Exit the function if an invalid attributeName is provided
   }
 
@@ -1141,26 +1141,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusIndicator = document.querySelector('.domain__filter-indicator');
     const statusToggle = document.querySelector('.usa-button--filter');
 
-    // Initialize the filters, but only if we're on the org domains page
-    const portfolioSidenav = document.querySelector('.usa-sidenav--portfolio');
-    if (portfolioSidenav) {
-      statusCheckboxes.forEach(checkbox => {
-        const checkboxValue = checkbox.value;
-        // Update currentStatus array based on checkbox state
-        if (checkbox.checked) {
-          currentStatus.push(checkboxValue);
-        } else {
-          const index = currentStatus.indexOf(checkboxValue);
-          if (index > -1) {
-            currentStatus.splice(index, 1);
-          }
-        }
-      });
-    } else {
-      // For non-portfolio users, disable filtering
-      currentStatus = ['unknown', 'ready', 'on hold', 'expired', 'deleted'];
-    }
-
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
      * based on the supplied attributes.
@@ -1176,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
           if (data.error) {
-            console.log('Error in AJAX call: ' + data.error);
+            console.error('Error in AJAX call: ' + data.error);
             return;
           }
 
@@ -1305,7 +1285,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Manage visibility of reset filters button
-        if (currentStatus.length == statusCheckboxes.length) {
+        if (currentStatus.length == 0) {
           hideElement(resetFiltersButton);
         } else {
           showElement(resetFiltersButton);
@@ -1345,9 +1325,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetFilters() {
       currentStatus = [];
       statusCheckboxes.forEach(checkbox => {
-        checkbox.checked = true; 
-        const checkboxValue = checkbox.value;
-        currentStatus.push(checkboxValue);
+        checkbox.checked = false; 
       });
       hideElement(resetFiltersButton);
       loadDomains(1, 'id', 'asc');
@@ -1364,7 +1342,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateStatusIndicator() {
       statusIndicator.innerHTML = '';
-      statusIndicator.innerHTML = '(' + currentStatus.length + ')';
+      if (currentStatus.length)
+        statusIndicator.innerHTML = '(' + currentStatus.length + ')';
     }
 
     function closeFilters() {
@@ -1375,7 +1354,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Instead of managing the toggle/close on the filter buttons in all edge cases (user clicks on search, user clicks on ANOTHER filter,
     // user clicks on main nav...) we add a listener and close the filters whenever the focus shifts out of the dropdown menu/filter button.
-    // NOTE: We may need to evovle this as we add more filters.
+    // NOTE: We may need to evolve this as we add more filters.
     document.addEventListener('focusin', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
       const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
@@ -1481,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
           if (data.error) {
-            console.log('Error in AJAX call: ' + data.error);
+            console.error('Error in AJAX call: ' + data.error);
             return;
           }
 

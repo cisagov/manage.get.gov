@@ -34,104 +34,101 @@
       </div>
     </div>
     {% if portfolio %}
-    <span class="margin-right-2 text-base">Filter by</span>
-    <div class="usa-accordion usa-accordion--select margin-right-2">
-      <div class="usa-accordion__heading">
-        <button
-          type="button"
-          class="usa-button usa-button--small usa-button--outline usa-button--filter usa-accordion__button"
-          aria-expanded="false"
-          aria-controls="filter-status"
-        >
-          <span class="domain__filter-indicator text-bold">(5)</span> Status
-          <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-            <use xlink:href="/public/img/sprite.svg#expand_more"></use>
-          </svg>
-        </button>
+    <div class="display-flex flex-align-center margin-top-1"> 
+      <span class="margin-right-2 margin-top-neg-1 text-base">Filter by</span>
+      <div class="usa-accordion usa-accordion--select margin-right-2">
+        <div class="usa-accordion__heading">
+          <button
+            type="button"
+            class="usa-button usa-button--small usa-button--outline usa-button--filter usa-accordion__button"
+            aria-expanded="false"
+            aria-controls="filter-status"
+          >
+            <span class="domain__filter-indicator text-bold"></span> Status
+            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+            </svg>
+          </button>
+        </div>
+        <div id="filter-status" class="usa-accordion__content usa-prose shadow-1">
+          <h2>Status</h2>
+          <fieldset class="usa-fieldset margin-top-0">
+            <legend class="usa-legend width-145px">Select to apply <span class="sr-only">status</span> filter</legend>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-dns-needed"
+                type="checkbox"
+                name="filter-status"
+                value="unknown"
+              />
+              <label class="usa-checkbox__label" for="filter-status-dns-needed"
+                >DNS Needed</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-ready"
+                type="checkbox"
+                name="filter-status"
+                value="ready"
+              />
+              <label class="usa-checkbox__label" for="filter-status-ready"
+                >Ready</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-on-hold"
+                type="checkbox"
+                name="filter-status"
+                value="on hold"
+              />
+              <label class="usa-checkbox__label" for="filter-status-on-hold"
+                >On hold</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-expired"
+                type="checkbox"
+                name="filter-status"
+                value="expired"
+              />
+              <label class="usa-checkbox__label" for="filter-status-expired"
+                >Expired</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-deleted"
+                type="checkbox"
+                name="filter-status"
+                value="deleted"
+              />
+              <label class="usa-checkbox__label" for="filter-status-deleted"
+                >Deleted</label
+              >
+            </div>
+          </fieldset>
+        </div>
       </div>
-      <div id="filter-status" class="usa-accordion__content usa-prose shadow-1">
-        <h2>Status</h2>
-        <fieldset class="usa-fieldset margin-top-0">
-          <legend class="usa-legend width-145">Select to apply <span class="sr-only">status</span> filter</legend>
-          <div class="usa-checkbox">
-            <input
-              class="usa-checkbox__input"
-              id="filter-status-dns-needed"
-              type="checkbox"
-              name="filter-status"
-              value="unknown"
-              checked="checked"
-            />
-            <label class="usa-checkbox__label" for="filter-status-dns-needed"
-              >DNS Needed</label
-            >
-          </div>
-          <div class="usa-checkbox">
-            <input
-              class="usa-checkbox__input"
-              id="filter-status-ready"
-              type="checkbox"
-              name="filter-status"
-              value="ready"
-              checked="checked"
-            />
-            <label class="usa-checkbox__label" for="filter-status-ready"
-              >Ready</label
-            >
-          </div>
-          <div class="usa-checkbox">
-            <input
-              class="usa-checkbox__input"
-              id="filter-status-on-hold"
-              type="checkbox"
-              name="filter-status"
-              value="on hold"
-              checked="checked"
-            />
-            <label class="usa-checkbox__label" for="filter-status-on-hold"
-              >On hold</label
-            >
-          </div>
-          <div class="usa-checkbox">
-            <input
-              class="usa-checkbox__input"
-              id="filter-status-expired"
-              type="checkbox"
-              name="filter-status"
-              value="expired"
-              checked="checked"
-            />
-            <label class="usa-checkbox__label" for="filter-status-expired"
-              >Expired</label
-            >
-          </div>
-          <div class="usa-checkbox">
-            <input
-              class="usa-checkbox__input"
-              id="filter-status-deleted"
-              type="checkbox"
-              name="filter-status"
-              value="deleted"
-              checked="checked"
-            />
-            <label class="usa-checkbox__label" for="filter-status-deleted"
-              >Deleted</label
-            >
-          </div>
-        </fieldset>
-      </div>
+      <button
+        type="button"
+        class="usa-button usa-button--small usa-button--outline usa-button--filter domains__reset-filters display-none"
+      >
+        Clear filters
+        <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
+          <use xlink:href="/public/img/sprite.svg#close"></use>
+        </svg>
+      </button>
     </div>
-    <button
-      type="button"
-      class="usa-button usa-button--small usa-button--outline usa-button--filter domains__reset-filters display-none"
-    >
-      Clear filters
-      <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
-        <use xlink:href="/public/img/sprite.svg#close"></use>
-      </svg>
-    </button>
     {% endif %}
-    <div class="domains__table-wrapper display-none usa-table-container--scrollable" tabindex="0">
+    <div class="domains__table-wrapper display-none usa-table-container--scrollable margin-top-0" tabindex="0">
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked domains__table">
         <caption class="sr-only">Your registered domains</caption>
         <thead>
