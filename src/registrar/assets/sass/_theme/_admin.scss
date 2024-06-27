@@ -787,11 +787,16 @@ div.dja__model-description{
     color: var(--link-fg);
 }
 
+.textarea-wrapper {
+    width: 100%;
+    max-width: 610px;
+}
+
 .dja-readonly-textarea-container {
-    overflow-x: scroll;
+    width: 100%;
     textarea {
         width: 100%;
-        min-width: 610px;
+        max-width: 610px;
         resize: none;
         cursor: auto;
 
@@ -811,12 +816,6 @@ div.dja__model-description{
     }
 }
 
-@media (max-width: 1230px) {
-    .dja-readonly-textarea-container {
-        overflow-x: scroll;
-    }
-}
-
 .max-full {
     width: 100% !important;
 }
@@ -833,4 +832,8 @@ div.dja__model-description{
 .display-none {
     // Many elements in django admin try to override this, so we need !important.
     display: none !important;
+}
+
+.margin-top-0 {
+    margin-top: 0 !important;
 }

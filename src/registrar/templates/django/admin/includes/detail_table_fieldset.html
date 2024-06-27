@@ -49,7 +49,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 <p>No changelog to display.</p>
                 {% endif %}
             </div>
-            <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled">
+            <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-0">
                 <span>Show details</span>
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                     <use xlink:href="/public/img/sprite.svg#expand_more"></use>
@@ -124,7 +124,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% if field.field.name == "action_needed_reason" %}
     <div class="flex-container">
         <label aria-label="Action needed reason email"></label>
-        <div>
+        <div class="textarea-wrapper">
             {% comment %}
             Store the action needed reason emails in a json-based dictionary.
             This allows us to change the action_needed_reason_email field dynamically, depending on value.
