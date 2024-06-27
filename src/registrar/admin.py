@@ -2155,8 +2155,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ),
     )
 
-    # this ordering effects the ordering of results
-    # in autocomplete_fields for domain
+    # this ordering effects the ordering of results in autocomplete_fields for domain
     ordering = ["name"]
 
     def generic_org_type(self, obj):
