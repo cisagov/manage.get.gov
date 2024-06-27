@@ -167,6 +167,9 @@ class DomainRequestAdminForm(forms.ModelForm):
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
         }
+        labels = {
+            "action_needed_reason_email": "Auto-generated email",
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1520,6 +1523,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
+                    "action_needed_reason_email",
                     "investigator",
                     "creator",
                     "submitter",
@@ -1599,7 +1603,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "alternative_domains",
         "is_election_board",
         "federal_agency",
-        "status_history"
+        "status_history",
+        "action_needed_reason_email",
     )
 
     # Read only that we'll leverage for CISA Analysts

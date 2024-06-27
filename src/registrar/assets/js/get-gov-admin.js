@@ -362,8 +362,9 @@ function initializeWidgetOnList(list, parentId) {
 (function (){
     let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
     let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
+    let actionNeededReasonEmailFormGroup = document.querySelector('.field-action_needed_reason_email')
 
-    if (rejectionReasonFormGroup && actionNeededReasonFormGroup) {
+    if (rejectionReasonFormGroup && actionNeededReasonFormGroup && actionNeededReasonEmailFormGroup) {
         let statusSelect = document.getElementById('id_status')
         let isRejected = statusSelect.value == "rejected"
         let isActionNeeded = statusSelect.value == "action needed"
@@ -371,6 +372,7 @@ function initializeWidgetOnList(list, parentId) {
         // Initial handling of rejectionReasonFormGroup display
         showOrHideObject(rejectionReasonFormGroup, show=isRejected)
         showOrHideObject(actionNeededReasonFormGroup, show=isActionNeeded)
+        showOrHideObject(actionNeededReasonEmailFormGroup, show=isActionNeeded)
 
         // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
         statusSelect.addEventListener('change', function() {
@@ -382,6 +384,7 @@ function initializeWidgetOnList(list, parentId) {
 
             isActionNeeded = statusSelect.value == "action needed"
             showOrHideObject(actionNeededReasonFormGroup, show=isActionNeeded)
+            showOrHideObject(actionNeededReasonEmailFormGroup, show=isActionNeeded)
             addOrRemoveSessionBoolean("showActionNeededReason", add=isActionNeeded)
         });
         
@@ -398,6 +401,7 @@ function initializeWidgetOnList(list, parentId) {
 
                 let showActionNeededReason = sessionStorage.getItem("showActionNeededReason") !== null
                 showOrHideObject(actionNeededReasonFormGroup, show=showActionNeededReason)
+                showOrHideObject(actionNeededReasonEmailFormGroup, show=isActionNeeded)
             }
             });
         });
