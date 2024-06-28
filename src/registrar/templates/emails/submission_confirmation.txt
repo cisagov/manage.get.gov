@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi, {{ domain_request.submitter.first_name }}.
+Hi, {{ recipient.first_name }}.
 
 We received your .gov domain request.
 
