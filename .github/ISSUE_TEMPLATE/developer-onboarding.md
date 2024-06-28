@@ -29,6 +29,7 @@ There are several tools we use locally that you will need to have.
 ```bash
 cf login -a api.fr.cloud.gov  --sso
 ```
+test
 - [ ] Have an admin add you to cloud.gov org and set up your [sandbox developer space](#setting-up-developer-sandbox). Ensure you can deploy to your sandbox space.
 - [ ] Have an admin add you to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/).
 
