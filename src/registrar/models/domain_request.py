@@ -672,7 +672,7 @@ class DomainRequest(TimeStampedModel):
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
     def _send_status_update_email(
-        self, new_status, email_template, email_template_subject, send_email=True, bcc_address="", wrap_email=False
+        self, new_status, email_template, email_template_subject, bcc_address="", context=None, **kwargs
     ):
         """Send a status update email to the creator.
 
@@ -683,12 +683,20 @@ class DomainRequest(TimeStampedModel):
         If the waffle flag "profile_feature" is active, then this email will be sent to the
         domain request creator rather than the submitter
 
+        kwargs:
         send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
 
         wrap_email: bool -> Wraps emails using `wrap_text_and_preserve_paragraphs` if any given
         paragraph exceeds our desired max length (for prettier display).
+
+        custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
+
+        # Email config options
+        wrap_email = kwargs.get("wrap_email", False)
+        send_email = kwargs.get("send_email", True)
+        custom_email_content = kwargs.get("custom_email_content", None)
 
         recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
         if recipient is None or recipient.email is None:
@@ -705,15 +713,21 @@ class DomainRequest(TimeStampedModel):
             return None
 
         try:
+            if not context:
+                context = {
+                    "domain_request": self,
+                    # This is the user that we refer to in the email
+                    "recipient": recipient,
+                }
+
+            if custom_email_content:
+                context["custom_email_content"] = custom_email_content
+
             send_templated_email(
                 email_template,
                 email_template_subject,
                 recipient.email,
-                context={
-                    "domain_request": self,
-                    # This is the user that we refer to in the email
-                    "recipient": recipient,
-                },
+                context=context,
                 bcc_address=bcc_address,
                 wrap_email=wrap_email,
             )
@@ -844,12 +858,12 @@ class DomainRequest(TimeStampedModel):
         if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
             self._send_action_needed_reason_email(send_email)
 
-    def _send_action_needed_reason_email(self, send_email=True):
+    def _send_action_needed_reason_email(self, send_email=True, custom_email_content=None):
         """Sends out an automatic email for each valid action needed reason provided"""
 
         # Store the filenames of the template and template subject
         email_template_name: str = ""
-        email_template_subject_name: str = ""
+        email_template_subject_name: str = "" if not custom_email_content else "custom_email"
 
         # Check for the "type" of action needed reason.
         can_send_email = True
@@ -877,6 +891,7 @@ class DomainRequest(TimeStampedModel):
                 email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
                 send_email=send_email,
                 bcc_address=bcc_address,
+                custom_email_content=custom_email_content,
                 wrap_email=True,
             )
 

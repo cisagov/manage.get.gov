@@ -1690,8 +1690,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             return super().save_model(request, obj, form, change)
 
         # == Handle non-status changes == #
-        # Change this in #1901. Add a check on "not self.action_needed_reason_email"
-        if obj.action_needed_reason:
+        if obj.action_needed_reason and not self.action_needed_reason_email:
             self._handle_action_needed_reason_email(obj)
             should_save = True
 
@@ -1911,14 +1910,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
 
+    # TODO - scrap this approach and just centralize everything
     def get_all_action_needed_reason_emails_as_json(self, domain_request):
         """Returns a json dictionary of every action needed reason and its associated email
         for this particular domain request."""
         emails = {}
         for action_needed_reason in domain_request.ActionNeededReasons:
             enum_value = action_needed_reason.value
-            # Change this in #1901. Just add a check for the current value.
-            emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value)
+            if domain_request.action_needed_reason == enum_value and domain_request.action_needed_reason_email:
+                emails[enum_value] = domain_request.action_needed_reason_email
+            else:
+                emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value)
         return json.dumps(emails)
 
     def _get_action_needed_reason_default_email_text(self, domain_request, action_needed_reason: str):
