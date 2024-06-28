@@ -101,7 +101,7 @@ class FSMDomainRequestError(Exception):
         FSMErrorCodes.NO_INVESTIGATOR: ("Investigator is required for this status."),
         FSMErrorCodes.INVESTIGATOR_NOT_STAFF: ("Investigator is not a staff user."),
         FSMErrorCodes.INVESTIGATOR_NOT_SUBMITTER: ("Only the assigned investigator can make this change."),
-        FSMErrorCodes.NO_REJECTION_REASON: ("A rejection reason is required."),
+        FSMErrorCodes.NO_REJECTION_REASON: ("A reason is required for this status."),
         FSMErrorCodes.NO_ACTION_NEEDED_REASON: ("A reason is required for this status."),
     }
 

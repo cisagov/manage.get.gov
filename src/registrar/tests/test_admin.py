@@ -944,7 +944,7 @@ class TestDomainRequestAdminForm(TestCase):
             self.assertIn("rejection_reason", form.errors)
 
             rejection_reason = form.errors.get("rejection_reason")
-            self.assertEqual(rejection_reason, ["A rejection reason is required."])
+            self.assertEqual(rejection_reason, ["A reason is required for this status."])
 
     def test_form_choices_when_no_instance(self):
         with less_console_noise():
@@ -1929,7 +1929,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
                 messages.error.assert_called_once_with(
                     request,
-                    "A rejection reason is required.",
+                    "A reason is required for this status.",
                 )
 
             domain_request.refresh_from_db()
