@@ -1,4 +1,4 @@
-# 24. Production Release Cadence
+# 26. Django Waffle library for Feature Flags
 
 Date: 2024-07-06
 
@@ -20,6 +20,7 @@ This brought us to finding solutions that could fix one or both of these problem
 The environment allows developers to set a true or false value to the given variable, allowing implementation over multiple sprints when new features are encapsulated with this variable. The feature shows when the variable is on (true); otherwise, it remains hidden. Environment variables are also innate to Django, making them free to use; on top of that, we already use them for other things in our code.
 
 The downside is that you would need to go to cloud.gov or use the cf CLI to see the current settings on a sandbox. This is very technical, meaning only developers would really be able to see what features were set, and we would be the only ones able to adjust them. It would also be easy to accidentally have the feature on or off without noticing. This also would not solve the problem of turning features on and off quickly for a given user group.
+
 **Option 2:** Feature branches
 Like environment variables, using feature branches would be free and allow us to iterate on developing big features over multiple sprints. We would make a feature branch that developers working on that feature would push and pull from to iterate on. This quickly brings us to the downsides of this approach.
 
