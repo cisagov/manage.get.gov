@@ -1128,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentOrder = 'asc';
     const noDomainsWrapper = document.querySelector('.domains__no-data');
     const noSearchResultsWrapper = document.querySelector('.domains__no-search-results');
-    let hasLoaded = false;
+    let scrollToTable = false;
     let currentStatus = [];
     let currentSearchTerm = '';
     const domainsSearchInput = document.getElementById('domains__search-field');
@@ -1147,10 +1147,10 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} page - the page number of the results (starts with 1)
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
-     * @param {*} loaded - control for the scrollToElement functionality
+     * @param {*} scroll - control for the scrollToElement functionality
      * @param {*} searchTerm - the search term
      */
-    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, status = currentStatus, searchTerm = currentSearchTerm) {
+    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, status = currentStatus, searchTerm = currentSearchTerm) {
       // fetch json of page of domains, given params
       fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}&status=${status}&search_term=${searchTerm}`)
         .then(response => response.json())
@@ -1210,9 +1210,9 @@ document.addEventListener('DOMContentLoaded', function() {
           initializeTooltips();
 
           // Do not scroll on first page load
-          if (loaded)
+          if (scroll)
             ScrollToElement('class', 'domains');
-          hasLoaded = true;
+          scrollToTable = true;
 
           // update pagination
           updatePagination(
@@ -1290,6 +1290,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
           showElement(resetFiltersButton);
         }
+
+        // Disable the auto scroll
+        scrollToTable = false;
 
         // Call loadDomains with updated status
         loadDomains(1, 'id', 'asc');
@@ -1398,13 +1401,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentOrder = 'asc';
     const noDomainRequestsWrapper = document.querySelector('.domain-requests__no-data');
     const noSearchResultsWrapper = document.querySelector('.domain-requests__no-search-results');
-    let hasLoaded = false;
+    let scrollToTable = false;
     let currentSearchTerm = '';
     const domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
     const domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
     const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
     const tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
-    // const searchTermHolder = document.querySelector('.domain-requests__search-term');
     const resetSearchButton = document.querySelector('.domain-requests__reset-search');
 
     /**
@@ -1435,7 +1437,7 @@ document.addEventListener('DOMContentLoaded', function() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         // Update data and UI
-        loadDomainRequests(pageToDisplay, currentSortBy, currentOrder, hasLoaded, currentSearchTerm);
+        loadDomainRequests(pageToDisplay, currentSortBy, currentOrder, scrollToTable, currentSearchTerm);
       })
       .catch(error => console.error('Error fetching domain requests:', error));
     }
@@ -1451,10 +1453,10 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} page - the page number of the results (starts with 1)
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
-     * @param {*} loaded - control for the scrollToElement functionality
+     * @param {*} scroll - control for the scrollToElement functionality
      * @param {*} searchTerm - the search term
      */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, loaded = hasLoaded, searchTerm = currentSearchTerm) {
+    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, searchTerm = currentSearchTerm) {
       // fetch json of page of domain requests, given params
       fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
         .then(response => response.json())
@@ -1652,9 +1654,9 @@ document.addEventListener('DOMContentLoaded', function() {
           });
 
           // Do not scroll on first page load
-          if (loaded)
+          if (scroll)
             ScrollToElement('class', 'domain-requests');
-          hasLoaded = true;
+          scrollToTable = true;
 
           // update the pagination after the domain requests list is updated
           updatePagination(
