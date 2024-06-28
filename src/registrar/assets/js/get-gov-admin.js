@@ -525,7 +525,7 @@ function initializeWidgetOnList(list, parentId) {
 */
 (function () {
     let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
-    let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
+    let actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
     if(actionNeededReasonDropdown && actionNeededEmail) {
         // Add a change listener to the action needed reason dropdown 
         handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
@@ -546,6 +546,7 @@ function initializeWidgetOnList(list, parentId) {
             let actionNeededEmails = JSON.parse(document.getElementById('action-needed-emails-data').textContent)
             let emailData = actionNeededEmails[reason];
             if (emailData) {
+                // TODO: do we need a revert to default button?
                 let emailBody = emailData.email_body_text
                 if (emailBody) {
                     actionNeededEmail.value = emailBody

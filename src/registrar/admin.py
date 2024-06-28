@@ -1606,7 +1606,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "is_election_board",
         "federal_agency",
         "status_history",
-        "action_needed_reason_email",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -1705,7 +1704,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             return super().save_model(request, obj, form, change)
 
         # == Handle non-status changes == #
-        if obj.action_needed_reason and not self.action_needed_reason_email:
+        if obj.action_needed_reason and not obj.action_needed_reason_email:
             self._handle_action_needed_reason_email(obj)
             should_save = True
 
@@ -1933,13 +1932,14 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         emails = {}
         for action_needed_reason in domain_request.ActionNeededReasons:
             enum_value = action_needed_reason.value
+            custom_text = None
             if domain_request.action_needed_reason == enum_value and domain_request.action_needed_reason_email:
-                emails[enum_value] = domain_request.action_needed_reason_email
-            else:
-                emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value)
+                custom_text = domain_request.action_needed_reason_email
+
+            emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value, custom_text)
         return json.dumps(emails)
 
-    def _get_action_needed_reason_default_email_text(self, domain_request, action_needed_reason: str):
+    def _get_action_needed_reason_default_email_text(self, domain_request, action_needed_reason: str, custom_text=None):
         """Returns the default email associated with the given action needed reason"""
         if action_needed_reason is None or action_needed_reason == domain_request.ActionNeededReasons.OTHER:
             return {
@@ -1961,7 +1961,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         return {
             "subject_text": subject_template.render(context=context),
-            "email_body_text": template.render(context=context),
+            "email_body_text": template.render(context=context) if not custom_text else custom_text,
         }
 
     def process_log_entry(self, log_entry):

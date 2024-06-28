@@ -785,8 +785,8 @@ class DomainRequest(TimeStampedModel):
                 "submission confirmation",
                 "emails/submission_confirmation.txt",
                 "emails/submission_confirmation_subject.txt",
-                True,
-                bcc_address,
+                send_email=True,
+                bcc_address=bcc_address,
             )
 
     @transition(
@@ -856,7 +856,8 @@ class DomainRequest(TimeStampedModel):
 
         # Send out an email if an action needed reason exists
         if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
-            self._send_action_needed_reason_email(send_email)
+            custom_email_content = self.action_needed_reason_email
+            self._send_action_needed_reason_email(send_email, custom_email_content)
 
     def _send_action_needed_reason_email(self, send_email=True, custom_email_content=None):
         """Sends out an automatic email for each valid action needed reason provided"""
@@ -951,7 +952,7 @@ class DomainRequest(TimeStampedModel):
             "domain request approved",
             "emails/status_change_approved.txt",
             "emails/status_change_approved_subject.txt",
-            send_email,
+            send_email=send_email,
         )
 
     @transition(
