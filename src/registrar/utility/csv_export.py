@@ -12,6 +12,7 @@ from registrar.models import (
     UserDomainRole,
 )
 from django.db.models import QuerySet, Value, CharField, Count, Q, F
+from django.db.models import Case, When, DateField
 from django.db.models import ManyToManyField
 from django.utils import timezone
 from django.core.paginator import Paginator
@@ -120,6 +121,13 @@ class BaseExport(ABC):
         return {}
     
     @classmethod
+    def get_annotations_for_sort(cls):
+        """
+        Get a dict of annotations to make available for order_by clause.
+        """
+        return {}
+    
+    @classmethod
     def get_related_table_fields(cls):
         """
         Get a list of fields from related tables.
@@ -193,6 +201,7 @@ class BaseExport(ABC):
         select_related = cls.get_select_related()
         prefetch_related = cls.get_prefetch_related()
         exclusions = cls.get_exclusions()
+        annotations_for_sort = cls.get_annotations_for_sort()
         filter_conditions = cls.get_filter_conditions(start_date, end_date)
         computed_fields = cls.get_computed_fields()
         related_table_fields = cls.get_related_table_fields()
@@ -202,6 +211,7 @@ class BaseExport(ABC):
             .prefetch_related(*prefetch_related)
             .filter(filter_conditions)
             .exclude(exclusions)
+            .annotate(**annotations_for_sort)
             .order_by(*sort_fields)
             .distinct()
         )
@@ -742,7 +752,20 @@ class DomainGrowth(DomainExport):
             "Deleted",
         ]
     
-    # TODO: The below sort is not working properly
+    @classmethod
+    def get_annotations_for_sort(cls, delimiter=", "):
+        """
+        Get a dict of annotations to make available for sorting.
+        """
+        today = timezone.now().date()
+        return {
+            "custom_sort": Case(
+                When(domain__state=Domain.State.READY, then='domain__first_ready'),
+                When(domain__state=Domain.State.DELETED, then='domain__deleted'),
+                default=Value(today),  # Default value if no conditions match
+                output_field=DateField()
+            )
+        }
 
     @classmethod
     def get_sort_fields(cls):
@@ -751,8 +774,7 @@ class DomainGrowth(DomainExport):
         """
         return [
             '-domain__state',
-            'domain__first_ready',
-            'domain__deleted',
+            'custom_sort',
             'domain__name',
         ]
     
