@@ -1364,7 +1364,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (accordionIsOpen && !accordion.contains(event.target)) {
         closeFilters();
-        toggleCaret(statusToggle);
       }
     });
 
