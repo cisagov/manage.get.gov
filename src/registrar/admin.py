@@ -9,6 +9,7 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
+from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
@@ -1951,8 +1952,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
         subject_template = get_template(template_subject_path)
 
+        recipient = domain_request.creator if flag_is_active(None, "profile_feature") else domain_request.submitter
         # Return the content of the rendered views
-        context = {"domain_request": domain_request}
+        context = {
+            "domain_request": domain_request,
+            "recipient": recipient
+        }
 
         return {
             "subject_text": subject_template.render(context=context),
