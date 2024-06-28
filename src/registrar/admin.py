@@ -1955,10 +1955,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         recipient = domain_request.creator if flag_is_active(None, "profile_feature") else domain_request.submitter
         # Return the content of the rendered views
-        context = {
-            "domain_request": domain_request,
-            "recipient": recipient
-        }
+        context = {"domain_request": domain_request, "recipient": recipient}
 
         return {
             "subject_text": subject_template.render(context=context),
