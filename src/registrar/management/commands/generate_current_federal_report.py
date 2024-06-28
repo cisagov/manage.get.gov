@@ -50,7 +50,7 @@ class Command(BaseCommand):
 
         # Generate a file locally for upload
         with open(file_path, "w") as file:
-            csv_export.export_data_federal_to_csv(file)
+            csv_export.DomainDataFederal.export_data_to_csv(file)
 
         if check_path and not os.path.exists(file_path):
             raise FileNotFoundError(f"Could not find newly created file at '{file_path}'")

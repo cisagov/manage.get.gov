@@ -49,7 +49,9 @@ class AnalyticsView(View):
             "domain__permissions__isnull": False,
             "domain__first_ready__lte": end_date_formatted,
         }
-        managed_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(filter_managed_domains_start_date)
+        managed_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(
+            filter_managed_domains_start_date
+        )
         managed_domains_sliced_at_end_date = csv_export.DomainExport.get_sliced_domains(filter_managed_domains_end_date)
 
         filter_unmanaged_domains_start_date = {
@@ -60,8 +62,12 @@ class AnalyticsView(View):
             "domain__permissions__isnull": True,
             "domain__first_ready__lte": end_date_formatted,
         }
-        unmanaged_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(filter_unmanaged_domains_start_date)
-        unmanaged_domains_sliced_at_end_date = csv_export.DomainExport.get_sliced_domains(filter_unmanaged_domains_end_date)
+        unmanaged_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(
+            filter_unmanaged_domains_start_date
+        )
+        unmanaged_domains_sliced_at_end_date = csv_export.DomainExport.get_sliced_domains(
+            filter_unmanaged_domains_end_date
+        )
 
         filter_ready_domains_start_date = {
             "domain__state__in": [models.Domain.State.READY],
@@ -82,7 +88,9 @@ class AnalyticsView(View):
             "domain__state__in": [models.Domain.State.DELETED],
             "domain__deleted__lte": end_date_formatted,
         }
-        deleted_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(filter_deleted_domains_start_date)
+        deleted_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(
+            filter_deleted_domains_start_date
+        )
         deleted_domains_sliced_at_end_date = csv_export.DomainExport.get_sliced_domains(filter_deleted_domains_end_date)
 
         filter_requests_start_date = {
@@ -102,8 +110,12 @@ class AnalyticsView(View):
             "status": models.DomainRequest.DomainRequestStatus.SUBMITTED,
             "submission_date__lte": end_date_formatted,
         }
-        submitted_requests_sliced_at_start_date = csv_export.DomainRequestExport.get_sliced_requests(filter_submitted_requests_start_date)
-        submitted_requests_sliced_at_end_date = csv_export.DomainRequestExport.get_sliced_requests(filter_submitted_requests_end_date)
+        submitted_requests_sliced_at_start_date = csv_export.DomainRequestExport.get_sliced_requests(
+            filter_submitted_requests_start_date
+        )
+        submitted_requests_sliced_at_end_date = csv_export.DomainRequestExport.get_sliced_requests(
+            filter_submitted_requests_end_date
+        )
 
         context = dict(
             # Generate a dictionary of context variables that are common across all admin templates
