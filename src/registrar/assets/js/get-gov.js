@@ -1404,7 +1404,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
     const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
     const tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
-    // const searchTermHolder = document.querySelector('.domain-requests__search-term');
     const resetSearchButton = document.querySelector('.domain-requests__reset-search');
 
     /**
