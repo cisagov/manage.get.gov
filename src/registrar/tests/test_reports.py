@@ -735,7 +735,6 @@ class ExportDataTest(MockDb, MockEppLib):
         csv_file.seek(0)
         # Read the content into a variable
         csv_content = csv_file.read()
-        print(csv_content)
         self.maxDiff = None
         expected_content = (
             # Header

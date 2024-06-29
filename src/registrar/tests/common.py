@@ -1551,8 +1551,6 @@ class MockEppLib(TestCase):
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None).lower()
 
-        print(request_name)
-
         # Define a dictionary to map request names to data and extension values
         request_mappings = {
             "security.gov": (self.infoDomainNoContact, None),
