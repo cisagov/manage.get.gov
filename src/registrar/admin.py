@@ -1953,10 +1953,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
         subject_template = get_template(template_subject_path)
 
-        recipient = domain_request.creator if flag_is_active(None, "profile_feature") else domain_request.submitter
+        if flag_is_active(None, "profile_feature"):  # type: ignore
+            recipient = domain_request.creator
+        else:
+            recipient = domain_request.submitter
+
         # Return the content of the rendered views
         context = {"domain_request": domain_request, "recipient": recipient}
-
         return {
             "subject_text": subject_template.render(context=context),
             "email_body_text": template.render(context=context),
