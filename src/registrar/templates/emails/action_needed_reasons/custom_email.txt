@@ -1,2 +1,3 @@
-{% comment %} {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #} {% endcomment %}
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 {{ custom_email_content }}
+{% endautoescape %}

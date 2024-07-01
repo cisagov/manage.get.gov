@@ -618,7 +618,8 @@ class DomainRequest(TimeStampedModel):
         if was_already_action_needed and (reason_exists and reason_changed):
             # We don't send emails out in state "other"
             if self.action_needed_reason != self.ActionNeededReasons.OTHER:
-                self._send_action_needed_reason_email()
+                _email_content = self.action_needed_reason_email
+                self._send_action_needed_reason_email(custom_email_content=_email_content)
 
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
@@ -863,8 +864,8 @@ class DomainRequest(TimeStampedModel):
         """Sends out an automatic email for each valid action needed reason provided"""
 
         # Store the filenames of the template and template subject
-        email_template_name: str = ""
-        email_template_subject_name: str = "" if not custom_email_content else "custom_email"
+        email_template_name: str = "" if not custom_email_content else "custom_email.txt"
+        email_template_subject_name: str = ""
 
         # Check for the "type" of action needed reason.
         can_send_email = True
@@ -876,8 +877,10 @@ class DomainRequest(TimeStampedModel):
 
         # Assumes that the template name matches the action needed reason if nothing is specified.
         # This is so you can override if you need, or have this taken care of for you.
-        if not email_template_name and not email_template_subject_name:
+        if not email_template_name:
             email_template_name = f"{self.action_needed_reason}.txt"
+        
+        if not email_template_subject_name:
             email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
 
         bcc_address = ""

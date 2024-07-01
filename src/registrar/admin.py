@@ -1948,7 +1948,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             }
 
         # Get the email body
-        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
+        if not custom_text:
+            template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
+        else:
+            template_path = f"emails/action_needed_reasons/custom_email.txt"
+
         template = get_template(template_path)
 
         # Get the email subject
