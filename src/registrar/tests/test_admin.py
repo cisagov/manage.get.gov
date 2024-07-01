@@ -4091,7 +4091,7 @@ class TestContactAdmin(TestCase):
 
             readonly_fields = self.admin.get_readonly_fields(request)
 
-            expected_fields = ["user", "e_mail"]
+            expected_fields = ["user", "email"]
 
             self.assertEqual(readonly_fields, expected_fields)
 
