@@ -937,7 +937,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "user",
-        "e_mail",
+        "email",
     ]
 
     def get_readonly_fields(self, request, obj=None):
