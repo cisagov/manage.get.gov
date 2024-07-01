@@ -20,7 +20,7 @@ docker compose exec app ./manage.py generate_puml --include registrar
 ## How To regenerate the database svg image
 
 1. Copy your puml file contents into the bottom of this file and replace the current code marked by `plantuml`
-2. Run the following command
+2. Navigate to the `diagram` folder and then run the following command
 
 ```bash
 docker run -v $(pwd):$(pwd) -w $(pwd) -it plantuml/plantuml -tsvg models_diagram.md
@@ -103,6 +103,21 @@ class "registrar.PublicContact <Registrar>" as registrar.PublicContact #d6f4e9 {
 registrar.PublicContact -- registrar.Domain
 
 
+class "registrar.UserDomainRole <Registrar>" as registrar.UserDomainRole #d6f4e9 {
+    user domain role
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    ~ user (ForeignKey)
+    ~ domain (ForeignKey)
+    + role (TextField)
+    --
+}
+registrar.UserDomainRole -- registrar.User
+registrar.UserDomainRole -- registrar.Domain
+
+
 class "registrar.Domain <Registrar>" as registrar.Domain #d6f4e9 {
     domain
     --
@@ -115,6 +130,7 @@ class "registrar.Domain <Registrar>" as registrar.Domain #d6f4e9 {
     + security_contact_registry_id (TextField)
     + deleted (DateField)
     + first_ready (DateField)
+    + dsdata_last_change (TextField)
     --
 }
 
@@ -126,6 +142,7 @@ class "registrar.FederalAgency <Registrar>" as registrar.FederalAgency #d6f4e9 {
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
     + agency (CharField)
+    + federal_type (CharField)
     --
 }
 
@@ -138,7 +155,10 @@ class "registrar.DomainRequest <Registrar>" as registrar.DomainRequest #d6f4e9 {
     + updated_at (DateTimeField)
     + status (FSMField)
     + rejection_reason (TextField)
+    + action_needed_reason (TextField)
+    + action_needed_reason_email (TextField)
     ~ federal_agency (ForeignKey)
+    ~ portfolio (ForeignKey)
     ~ creator (ForeignKey)
     ~ investigator (ForeignKey)
     + generic_org_type (CharField)
@@ -165,6 +185,8 @@ class "registrar.DomainRequest <Registrar>" as registrar.DomainRequest #d6f4e9 {
     + anything_else (TextField)
     + has_anything_else_text (BooleanField)
     + cisa_representative_email (EmailField)
+    + cisa_representative_first_name (CharField)
+    + cisa_representative_last_name (CharField)
     + has_cisa_representative (BooleanField)
     + is_policy_acknowledged (BooleanField)
     + submission_date (DateField)
@@ -175,6 +197,7 @@ class "registrar.DomainRequest <Registrar>" as registrar.DomainRequest #d6f4e9 {
     --
 }
 registrar.DomainRequest -- registrar.FederalAgency
+registrar.DomainRequest -- registrar.Portfolio
 registrar.DomainRequest -- registrar.User
 registrar.DomainRequest -- registrar.User
 registrar.DomainRequest -- registrar.Contact
@@ -194,6 +217,7 @@ class "registrar.DomainInformation <Registrar>" as registrar.DomainInformation #
     + updated_at (DateTimeField)
     ~ federal_agency (ForeignKey)
     ~ creator (ForeignKey)
+    ~ portfolio (ForeignKey)
     ~ domain_request (OneToOneField)
     + generic_org_type (CharField)
     + organization_type (CharField)
@@ -216,7 +240,11 @@ class "registrar.DomainInformation <Registrar>" as registrar.DomainInformation #
     + purpose (TextField)
     + no_other_contacts_rationale (TextField)
     + anything_else (TextField)
+    + has_anything_else_text (BooleanField)
     + cisa_representative_email (EmailField)
+    + cisa_representative_first_name (CharField)
+    + cisa_representative_last_name (CharField)
+    + has_cisa_representative (BooleanField)
     + is_policy_acknowledged (BooleanField)
     + notes (TextField)
     # other_contacts (ManyToManyField)
@@ -224,6 +252,7 @@ class "registrar.DomainInformation <Registrar>" as registrar.DomainInformation #
 }
 registrar.DomainInformation -- registrar.FederalAgency
 registrar.DomainInformation -- registrar.User
+registrar.DomainInformation -- registrar.Portfolio
 registrar.DomainInformation -- registrar.DomainRequest
 registrar.DomainInformation -- registrar.Contact
 registrar.DomainInformation -- registrar.Domain
@@ -240,21 +269,6 @@ class "registrar.DraftDomain <Registrar>" as registrar.DraftDomain #d6f4e9 {
     + name (CharField)
     --
 }
-
-
-class "registrar.UserDomainRole <Registrar>" as registrar.UserDomainRole #d6f4e9 {
-    user domain role
-    --
-    + id (BigAutoField)
-    + created_at (DateTimeField)
-    + updated_at (DateTimeField)
-    ~ user (ForeignKey)
-    ~ domain (ForeignKey)
-    + role (TextField)
-    --
-}
-registrar.UserDomainRole -- registrar.User
-registrar.UserDomainRole -- registrar.Domain
 
 
 class "registrar.DomainInvitation <Registrar>" as registrar.DomainInvitation #d6f4e9 {
@@ -386,6 +400,58 @@ class "registrar.WaffleFlag <Registrar>" as registrar.WaffleFlag #d6f4e9 {
     --
 }
 registrar.WaffleFlag *--* registrar.User
+
+
+class "registrar.Portfolio <Registrar>" as registrar.Portfolio #d6f4e9 {
+    portfolio
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    ~ creator (ForeignKey)
+    + notes (TextField)
+    ~ federal_agency (ForeignKey)
+    + organization_type (CharField)
+    + organization_name (CharField)
+    + address_line1 (CharField)
+    + address_line2 (CharField)
+    + city (CharField)
+    + state_territory (CharField)
+    + zipcode (CharField)
+    + urbanization (CharField)
+    + security_contact_email (EmailField)
+    --
+}
+registrar.Portfolio -- registrar.User
+registrar.Portfolio -- registrar.FederalAgency
+
+
+class "registrar.DomainGroup <Registrar>" as registrar.DomainGroup #d6f4e9 {
+    domain group
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    + name (CharField)
+    ~ portfolio (ForeignKey)
+    # domains (ManyToManyField)
+    --
+}
+registrar.DomainGroup -- registrar.Portfolio
+registrar.DomainGroup *--* registrar.DomainInformation
+
+
+class "registrar.Suborganization <Registrar>" as registrar.Suborganization #d6f4e9 {
+    suborganization
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    + name (CharField)
+    ~ portfolio (ForeignKey)
+    --
+}
+registrar.Suborganization -- registrar.Portfolio
 
 
 @enduml
