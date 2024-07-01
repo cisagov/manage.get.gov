@@ -1189,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   data-position="top"
                   title="${domain.get_state_help_text}"
                   focusable="true"
-                  aria-label="Status Information"
+                  aria-label="${domain.get_state_help_text}"
                   role="tooltip"
                 >
                   <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
@@ -1334,7 +1334,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Disable the auto scroll
       scrollToTable = false;
-      
+
       loadDomains(1, 'id', 'asc');
       resetHeaders();
       updateStatusIndicator();
