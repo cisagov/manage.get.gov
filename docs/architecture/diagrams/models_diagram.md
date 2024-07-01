@@ -20,7 +20,7 @@ docker compose exec app ./manage.py generate_puml --include registrar
 ## How To regenerate the database svg image
 
 1. Copy your puml file contents into the bottom of this file and replace the current code marked by `plantuml`
-2. Navigate to the `diagram` folder and then run the following command
+2. Navigate to the `diagram` folder and then run the following command below:
 
 ```bash
 docker run -v $(pwd):$(pwd) -w $(pwd) -it plantuml/plantuml -tsvg models_diagram.md
