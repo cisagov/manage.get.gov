@@ -1,6 +1,6 @@
 {% load static %}
 
-<section class="section--outlined domains" id="domains">
+<section class="section--outlined domains{% if portfolio is not None %} margin-top-0{% endif %}" id="domains">
     <div class="grid-row">
       {% if portfolio is None %}
         <div class="mobile:grid-col-12 desktop:grid-col-6">
@@ -35,7 +35,7 @@
     </div>
     {% if portfolio %}
     <div class="display-flex flex-align-center margin-top-1"> 
-      <span class="margin-right-2 margin-top-neg-1 text-base">Filter by</span>
+      <span class="margin-right-2 margin-top-neg-1 text-base-darker">Filter by</span>
       <div class="usa-accordion usa-accordion--select margin-right-2">
         <div class="usa-accordion__heading">
           <button

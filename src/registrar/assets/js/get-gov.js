@@ -1331,6 +1331,10 @@ document.addEventListener('DOMContentLoaded', function() {
         checkbox.checked = false; 
       });
       hideElement(resetFiltersButton);
+
+      // Disable the auto scroll
+      scrollToTable = false;
+      
       loadDomains(1, 'id', 'asc');
       resetHeaders();
       updateStatusIndicator();

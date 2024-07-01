@@ -83,6 +83,10 @@ body {
   padding: 0 units(2) units(3);
   margin-top: units(3);
 
+  &.margin-top-0 {
+    margin-top: 0;
+  }
+
   h2 {
     color: color('primary-dark');
     margin-top: units(2);
@@ -95,6 +99,10 @@ body {
 
   @include at-media(mobile-lg) {
     margin-top: units(5);
+
+    &.margin-top-0 {
+      margin-top: 0;
+    }
 
     h2 {
       margin-bottom: 0;
