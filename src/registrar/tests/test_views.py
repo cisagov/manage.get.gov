@@ -531,8 +531,11 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-    def _submit_form_webtest(self, form, follow=False):
-        page = form.submit()
+    def _submit_form_webtest(self, form, follow=False, name=None):
+        if name:
+            page = form.submit(name=name)
+        else:
+            page = form.submit()
         self._set_session_cookie()
         return page.follow() if follow else page
 
@@ -606,6 +609,15 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             self.assertEqual(completed_setup_page.status_code, 200)
 
+            finish_setup_form = completed_setup_page.form
+
+            # Submit the form using the specific submit button to execute the redirect
+            completed_setup_page = self._submit_form_webtest(
+                finish_setup_form, follow=True, name="contact_setup_submit_button"
+            )
+            self.assertEqual(completed_setup_page.status_code, 200)
+
+            # Assert that we are still on the
             # Assert that we're on the domain request page
             self.assertNotContains(completed_setup_page, "Finish setting up your profile")
             self.assertNotContains(completed_setup_page, "What contact information should we use to reach you?")
@@ -822,7 +834,7 @@ class UserProfileTests(TestWithUser, WebTest):
         """tests user profile when profile_feature is on,
         and when they are redirected from the domain request page"""
         with override_flag("profile_feature", active=True):
-            response = self.client.get("/user-profile?return_to_request=True")
+            response = self.client.get("/user-profile?redirect=domain-request:")
         self.assertContains(response, "Your profile")
         self.assertContains(response, "Go back to your domain request")
         self.assertNotContains(response, "Back to manage your domains")

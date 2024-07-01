@@ -45,6 +45,7 @@ class CheckUserProfileMiddleware:
         self.setup_page = reverse("finish-user-profile-setup")
         self.profile_page = reverse("user-profile")
         self.logout_page = reverse("logout")
+
         self.regular_excluded_pages = [
             self.setup_page,
             self.logout_page,
@@ -55,6 +56,14 @@ class CheckUserProfileMiddleware:
             self.logout_page,
             "/admin",
         ]
+
+        self.excluded_pages = {
+            self.setup_page: self.regular_excluded_pages,
+            self.profile_page: self.other_excluded_pages,
+        }
+
+    def _get_excluded_pages(self, page):
+        return self.excluded_pages.get(page, [])
 
     def __call__(self, request):
         response = self.get_response(request)
@@ -72,16 +81,16 @@ class CheckUserProfileMiddleware:
             return None
 
         if request.user.is_authenticated:
+            profile_page = self.profile_page
+            if request.user.verification_type == User.VerificationTypeChoices.REGULAR:
+                profile_page = self.setup_page
             if hasattr(request.user, "finished_setup") and not request.user.finished_setup:
-                if request.user.verification_type == User.VerificationTypeChoices.REGULAR:
-                    return self._handle_regular_user_setup_not_finished(request)
-                else:
-                    return self._handle_other_user_setup_not_finished(request)
+                return self._handle_user_setup_not_finished(request, profile_page)
 
         # Continue processing the view
         return None
 
-    def _handle_regular_user_setup_not_finished(self, request):
+    def _handle_user_setup_not_finished(self, request, profile_page):
         """Redirects the given user to the finish setup page.
 
         We set the "redirect" query param equal to where the user wants to go.
@@ -97,7 +106,7 @@ class CheckUserProfileMiddleware:
         custom_redirect = "domain-request:" if request.path == "/request/" else None
 
         # Don't redirect on excluded pages (such as the setup page itself)
-        if not any(request.path.startswith(page) for page in self.regular_excluded_pages):
+        if not any(request.path.startswith(page) for page in self._get_excluded_pages(profile_page)):
 
             # Preserve the original query parameters, and coerce them into a dict
             query_params = parse_qs(request.META["QUERY_STRING"])
@@ -107,19 +116,9 @@ class CheckUserProfileMiddleware:
                 query_params["redirect"] = custom_redirect
 
             # Add our new query param, while preserving old ones
-            new_setup_page = replace_url_queryparams(self.setup_page, query_params) if query_params else self.setup_page
+            new_setup_page = replace_url_queryparams(profile_page, query_params) if query_params else profile_page
 
             return HttpResponseRedirect(new_setup_page)
-        else:
-            # Process the view as normal
-            return None
-
-    def _handle_other_user_setup_not_finished(self, request):
-        """Redirects the given user to the profile page to finish setup."""
-
-        # Don't redirect on excluded pages (such as the setup page itself)
-        if not any(request.path.startswith(page) for page in self.other_excluded_pages):
-            return HttpResponseRedirect(self.profile_page)
         else:
             # Process the view as normal
             return None

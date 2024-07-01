@@ -7,6 +7,7 @@ from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
+from waffle import flag_is_active
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
@@ -290,6 +291,11 @@ class DomainRequest(TimeStampedModel):
 
     action_needed_reason = models.TextField(
         choices=ActionNeededReasons.choices,
+        null=True,
+        blank=True,
+    )
+
+    action_needed_reason_email = models.TextField(
         null=True,
         blank=True,
     )
@@ -668,34 +674,50 @@ class DomainRequest(TimeStampedModel):
     def _send_status_update_email(
         self, new_status, email_template, email_template_subject, send_email=True, bcc_address="", wrap_email=False
     ):
-        """Send a status update email to the submitter.
+        """Send a status update email to the creator.
 
-        The email goes to the email address that the submitter gave as their
-        contact information. If there is not submitter information, then do
+        The email goes to the email address that the creator gave as their
+        contact information. If there is not creator information, then do
         nothing.
+
+        If the waffle flag "profile_feature" is active, then this email will be sent to the
+        domain request creator rather than the submitter
 
         send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
+
+        wrap_email: bool -> Wraps emails using `wrap_text_and_preserve_paragraphs` if any given
+        paragraph exceeds our desired max length (for prettier display).
         """
 
-        if self.submitter is None or self.submitter.email is None:
-            logger.warning(f"Cannot send {new_status} email, no submitter email address.")
+        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
+        if recipient is None or recipient.email is None:
+            logger.warning(
+                f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
+                f" Name: {self.requested_domain.name}"
+                if self.requested_domain
+                else ""
+            )
             return None
 
         if not send_email:
-            logger.info(f"Email was not sent. Would send {new_status} email: {self.submitter.email}")
+            logger.info(f"Email was not sent. Would send {new_status} email to: {recipient.email}")
             return None
 
         try:
             send_templated_email(
                 email_template,
                 email_template_subject,
-                self.submitter.email,
-                context={"domain_request": self},
+                recipient.email,
+                context={
+                    "domain_request": self,
+                    # This is the user that we refer to in the email
+                    "recipient": recipient,
+                },
                 bcc_address=bcc_address,
                 wrap_email=wrap_email,
             )
-            logger.info(f"The {new_status} email sent to: {self.submitter.email}")
+            logger.info(f"The {new_status} email sent to: {recipient.email}")
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
@@ -1165,19 +1187,21 @@ class DomainRequest(TimeStampedModel):
     def _is_policy_acknowledgement_complete(self):
         return self.is_policy_acknowledged is not None
 
-    def _is_general_form_complete(self):
+    def _is_general_form_complete(self, request):
+        has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
             self._is_organization_name_and_address_complete()
             and self._is_authorizing_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
-            and self._is_submitter_complete()
+            # NOTE: This flag leaves submitter as empty (request wont submit) hence preset to True
+            and (self._is_submitter_complete() if not has_profile_feature_flag else True)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()
             and self._is_policy_acknowledgement_complete()
         )
 
-    def _form_complete(self):
+    def _form_complete(self, request):
         match self.generic_org_type:
             case DomainRequest.OrganizationChoices.FEDERAL:
                 is_complete = self._is_federal_complete()
@@ -1198,8 +1222,6 @@ class DomainRequest(TimeStampedModel):
             case _:
                 # NOTE: Shouldn't happen, this is only if somehow they didn't choose an org type
                 is_complete = False
-
-        if not is_complete or not self._is_general_form_complete():
+        if not is_complete or not self._is_general_form_complete(request):
             return False
-
         return True

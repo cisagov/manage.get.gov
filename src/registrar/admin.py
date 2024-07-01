@@ -1,7 +1,8 @@
 from datetime import date
 import logging
 import copy
-
+import json
+from django.template.loader import get_template
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
@@ -13,7 +14,6 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
-from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
@@ -1689,6 +1689,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             return super().save_model(request, obj, form, change)
 
         # == Handle non-status changes == #
+        # Change this in #1901. Add a check on "not self.action_needed_reason_email"
+        if obj.action_needed_reason:
+            self._handle_action_needed_reason_email(obj)
+            should_save = True
 
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
@@ -1697,13 +1701,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             return super().save_model(request, obj, form, change)
 
         # == Handle status changes == #
-
         # Run some checks on the current object for invalid status changes
         obj, should_save = self._handle_status_change(request, obj, original_obj)
 
-        # We should only save if we don't display any errors in the step above.
+        # We should only save if we don't display any errors in the steps above.
         if should_save:
             return super().save_model(request, obj, form, change)
+
+    def _handle_action_needed_reason_email(self, obj):
+        text = self._get_action_needed_reason_default_email_text(obj, obj.action_needed_reason)
+        obj.action_needed_reason_email = text.get("email_body_text")
 
     def _handle_status_change(self, request, obj, original_obj):
         """
@@ -1898,9 +1905,44 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
+        extra_context["action_needed_reason_emails"] = self.get_all_action_needed_reason_emails_as_json(obj)
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def get_all_action_needed_reason_emails_as_json(self, domain_request):
+        """Returns a json dictionary of every action needed reason and its associated email
+        for this particular domain request."""
+        emails = {}
+        for action_needed_reason in domain_request.ActionNeededReasons:
+            enum_value = action_needed_reason.value
+            # Change this in #1901. Just add a check for the current value.
+            emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value)
+        return json.dumps(emails)
+
+    def _get_action_needed_reason_default_email_text(self, domain_request, action_needed_reason: str):
+        """Returns the default email associated with the given action needed reason"""
+        if action_needed_reason is None or action_needed_reason == domain_request.ActionNeededReasons.OTHER:
+            return {
+                "subject_text": None,
+                "email_body_text": None,
+            }
+
+        # Get the email body
+        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
+        template = get_template(template_path)
+
+        # Get the email subject
+        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
+        subject_template = get_template(template_subject_path)
+
+        # Return the content of the rendered views
+        context = {"domain_request": domain_request}
+
+        return {
+            "subject_text": subject_template.render(context=context),
+            "email_body_text": template.render(context=context),
+        }
 
     def process_log_entry(self, log_entry):
         """Process a log entry and return filtered entry dictionary if applicable."""
@@ -2195,24 +2237,11 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
             extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
             extra_context["domain_state"] = domain.get_state_display()
-
-            # Pass in what the an extended expiration date would be for the expiration date modal
-            self._set_expiration_date_context(domain, extra_context)
+            extra_context["curr_exp_date"] = (
+                domain.expiration_date if domain.expiration_date is not None else self._get_current_date()
+            )
 
         return super().changeform_view(request, object_id, form_url, extra_context)
-
-    def _set_expiration_date_context(self, domain, extra_context):
-        """Given a domain, calculate the an extended expiration date
-        from the current registry expiration date."""
-        years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
-        try:
-            curr_exp_date = domain.registry_expiration_date
-        except KeyError:
-            # No expiration date was found. Return none.
-            extra_context["extended_expiration_date"] = None
-        else:
-            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
-            extra_context["extended_expiration_date"] = new_date
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
@@ -2241,11 +2270,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             self.message_user(request, "Object is not of type Domain.", messages.ERROR)
             return None
 
-        years = self._get_calculated_years_for_exp_date(obj)
-
         # Renew the domain.
         try:
-            obj.renew_domain(length=years)
+            obj.renew_domain()
             self.message_user(
                 request,
                 "Successfully extended the expiration date.",
@@ -2269,37 +2296,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
 
         return HttpResponseRedirect(".")
-
-    def _get_calculated_years_for_exp_date(self, obj, extension_period: int = 1):
-        """Given the current date, an extension period, and a registry_expiration_date
-        on the domain object, calculate the number of years needed to extend the
-        current expiration date by the extension period.
-        """
-        # Get the date we want to update to
-        desired_date = self._get_current_date() + relativedelta(years=extension_period)
-
-        # Grab the current expiration date
-        try:
-            exp_date = obj.registry_expiration_date
-        except KeyError:
-            # if no expiration date from registry, set it to today
-            logger.warning("current expiration date not set; setting to today")
-            exp_date = self._get_current_date()
-
-        # If the expiration date is super old (2020, for example), we need to
-        # "catch up" to the current year, so we add the difference.
-        # If both years match, then lets just proceed as normal.
-        calculated_exp_date = exp_date + relativedelta(years=extension_period)
-
-        year_difference = desired_date.year - exp_date.year
-
-        years = extension_period
-        if desired_date > calculated_exp_date:
-            # Max probably isn't needed here (no code flow), but it guards against negative and 0.
-            # In both of those cases, we just want to extend by the extension_period.
-            years = max(extension_period, year_difference)
-
-        return years
 
     # Workaround for unit tests, as we cannot mock date directly.
     # it is immutable. Rather than dealing with a convoluted workaround,
