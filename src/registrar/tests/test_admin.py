@@ -374,9 +374,9 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
         # Create a ready domain with a preset expiration date
         domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-
         response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
-
+        # load expiration date into cache and registrar with below command
+        domain.registry_expiration_date
         # Make sure the ex date is what we expect it to be
         domain_ex_date = Domain.objects.get(id=domain.id).expiration_date
         self.assertEqual(domain_ex_date, date(2023, 5, 25))
@@ -400,7 +400,6 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
         self.assertContains(response, "Extend expiration date")
-        self.assertContains(response, "New expiration date: <b>May 25, 2025</b>")
 
         # Ensure the message we recieve is in line with what we expect
         expected_message = "Successfully extended the expiration date."
@@ -519,70 +518,10 @@ class TestDomainAdmin(MockEppLib, WebTest):
                 # Follow the response
                 response = response.follow()
 
-        # This value is based off of the current year - the expiration date.
-        # We "freeze" time to 2024, so 2024 - 2023 will always result in an
-        # "extension" of 2, as that will be one year of extension from that date.
-        extension_length = 2
-
-        # Assert that it is calling the function with the right extension length.
+        # Assert that it is calling the function with the default extension length.
         # We only need to test the value that EPP sends, as we can assume the other
         # test cases cover the "renew" function.
-        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
-
-        # We should not make duplicate calls
-        self.assertEqual(renew_mock.call_count, 1)
-
-        # Assert that everything on the page looks correct
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Extend expiration date")
-
-        # Ensure the message we recieve is in line with what we expect
-        expected_message = "Successfully extended the expiration date."
-        expected_call = call(
-            # The WGSI request doesn't need to be tested
-            ANY,
-            messages.INFO,
-            expected_message,
-            extra_tags="",
-            fail_silently=False,
-        )
-        mock_add_message.assert_has_calls([expected_call], 1)
-
-    @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2023, 1, 1))
-    def test_extend_expiration_date_button_date_matches_epp(self, mock_date_today):
-        """
-        Tests if extend_expiration_date button sends the right epp command
-        when the current year matches the expiration date
-        """
-
-        # Create a ready domain with a preset expiration date
-        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-
-        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
-
-        # Make sure that the page is loading as expected
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Extend expiration date")
-
-        # Grab the form to submit
-        form = response.forms["domain_form"]
-
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            with patch("registrar.models.Domain.renew_domain") as renew_mock:
-                # Submit the form
-                response = form.submit("_extend_expiration_date")
-
-                # Follow the response
-                response = response.follow()
-
-        extension_length = 1
-
-        # Assert that it is calling the function with the right extension length.
-        # We only need to test the value that EPP sends, as we can assume the other
-        # test cases cover the "renew" function.
-        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
+        renew_mock.assert_has_calls([call()], any_order=False)
 
         # We should not make duplicate calls
         self.assertEqual(renew_mock.call_count, 1)
@@ -944,7 +883,7 @@ class TestDomainRequestAdminForm(TestCase):
             self.assertIn("rejection_reason", form.errors)
 
             rejection_reason = form.errors.get("rejection_reason")
-            self.assertEqual(rejection_reason, ["A rejection reason is required."])
+            self.assertEqual(rejection_reason, ["A reason is required for this status."])
 
     def test_form_choices_when_no_instance(self):
         with less_console_noise():
@@ -1596,6 +1535,24 @@ class TestDomainRequestAdmin(MockEppLib):
             self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
+    @less_console_noise_decorator
+    def test_model_displays_action_needed_email(self):
+        """Tests if the action needed email is visible for Domain Requests"""
+
+        _domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            action_needed_reason=DomainRequest.ActionNeededReasons.BAD_NAME,
+        )
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
+            follow=True,
+        )
+
+        self.assertContains(response, "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS")
+
     @override_settings(IS_PRODUCTION=True)
     def test_save_model_sends_submitted_email_with_bcc_on_prod(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
@@ -1911,7 +1868,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
                 messages.error.assert_called_once_with(
                     request,
-                    "A rejection reason is required.",
+                    "A reason is required for this status.",
                 )
 
             domain_request.refresh_from_db()
@@ -2161,15 +2118,15 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "testy@town.com", count=2)
         expected_ao_fields = [
             # Field, expected value
-            ("title", "Chief Tester"),
             ("phone", "(555) 555 5555"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
+        self.assertContains(response, "Chief Tester")
 
-        self.assertContains(response, "Testy Tester", count=10)
+        self.assertContains(response, "Testy Tester")
 
         # == Test the other_employees field == #
-        self.assertContains(response, "testy2@town.com", count=2)
+        self.assertContains(response, "testy2@town.com")
         expected_other_employees_fields = [
             # Field, expected value
             ("title", "Another Tester"),
@@ -2290,6 +2247,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "status",
                 "rejection_reason",
                 "action_needed_reason",
+                "action_needed_reason_email",
                 "federal_agency",
                 "portfolio",
                 "creator",

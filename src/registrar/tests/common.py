@@ -858,6 +858,8 @@ def completed_domain_request(  # noqa
     is_election_board=False,
     organization_type=None,
     federal_agency=None,
+    federal_type=None,
+    action_needed_reason=None,
 ):
     """A completed domain request."""
     if not user:
@@ -921,6 +923,12 @@ def completed_domain_request(  # noqa
 
     if organization_type:
         domain_request_kwargs["organization_type"] = organization_type
+
+    if federal_type:
+        domain_request_kwargs["federal_type"] = federal_type
+
+    if action_needed_reason:
+        domain_request_kwargs["action_needed_reason"] = action_needed_reason
 
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
@@ -1542,8 +1550,6 @@ class MockEppLib(TestCase):
 
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None).lower()
-
-        print(request_name)
 
         # Define a dictionary to map request names to data and extension values
         request_mappings = {
