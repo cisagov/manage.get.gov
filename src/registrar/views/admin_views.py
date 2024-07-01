@@ -49,8 +49,10 @@ class AnalyticsView(View):
             "domain__permissions__isnull": False,
             "domain__first_ready__lte": end_date_formatted,
         }
-        managed_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_managed_domains_start_date)
-        managed_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_managed_domains_end_date)
+        managed_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(
+            filter_managed_domains_start_date
+        )
+        managed_domains_sliced_at_end_date = csv_export.DomainExport.get_sliced_domains(filter_managed_domains_end_date)
 
         filter_unmanaged_domains_start_date = {
             "domain__permissions__isnull": True,
@@ -60,8 +62,12 @@ class AnalyticsView(View):
             "domain__permissions__isnull": True,
             "domain__first_ready__lte": end_date_formatted,
         }
-        unmanaged_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_unmanaged_domains_start_date)
-        unmanaged_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_unmanaged_domains_end_date)
+        unmanaged_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(
+            filter_unmanaged_domains_start_date
+        )
+        unmanaged_domains_sliced_at_end_date = csv_export.DomainExport.get_sliced_domains(
+            filter_unmanaged_domains_end_date
+        )
 
         filter_ready_domains_start_date = {
             "domain__state__in": [models.Domain.State.READY],
@@ -71,8 +77,8 @@ class AnalyticsView(View):
             "domain__state__in": [models.Domain.State.READY],
             "domain__first_ready__lte": end_date_formatted,
         }
-        ready_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_ready_domains_start_date)
-        ready_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_ready_domains_end_date)
+        ready_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(filter_ready_domains_start_date)
+        ready_domains_sliced_at_end_date = csv_export.DomainExport.get_sliced_domains(filter_ready_domains_end_date)
 
         filter_deleted_domains_start_date = {
             "domain__state__in": [models.Domain.State.DELETED],
@@ -82,8 +88,10 @@ class AnalyticsView(View):
             "domain__state__in": [models.Domain.State.DELETED],
             "domain__deleted__lte": end_date_formatted,
         }
-        deleted_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_deleted_domains_start_date)
-        deleted_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_deleted_domains_end_date)
+        deleted_domains_sliced_at_start_date = csv_export.DomainExport.get_sliced_domains(
+            filter_deleted_domains_start_date
+        )
+        deleted_domains_sliced_at_end_date = csv_export.DomainExport.get_sliced_domains(filter_deleted_domains_end_date)
 
         filter_requests_start_date = {
             "created_at__lte": start_date_formatted,
@@ -91,8 +99,8 @@ class AnalyticsView(View):
         filter_requests_end_date = {
             "created_at__lte": end_date_formatted,
         }
-        requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_requests_start_date)
-        requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_requests_end_date)
+        requests_sliced_at_start_date = csv_export.DomainRequestExport.get_sliced_requests(filter_requests_start_date)
+        requests_sliced_at_end_date = csv_export.DomainRequestExport.get_sliced_requests(filter_requests_end_date)
 
         filter_submitted_requests_start_date = {
             "status": models.DomainRequest.DomainRequestStatus.SUBMITTED,
@@ -102,8 +110,12 @@ class AnalyticsView(View):
             "status": models.DomainRequest.DomainRequestStatus.SUBMITTED,
             "submission_date__lte": end_date_formatted,
         }
-        submitted_requests_sliced_at_start_date = csv_export.get_sliced_requests(filter_submitted_requests_start_date)
-        submitted_requests_sliced_at_end_date = csv_export.get_sliced_requests(filter_submitted_requests_end_date)
+        submitted_requests_sliced_at_start_date = csv_export.DomainRequestExport.get_sliced_requests(
+            filter_submitted_requests_start_date
+        )
+        submitted_requests_sliced_at_end_date = csv_export.DomainRequestExport.get_sliced_requests(
+            filter_submitted_requests_end_date
+        )
 
         context = dict(
             # Generate a dictionary of context variables that are common across all admin templates
@@ -142,7 +154,7 @@ class ExportDataType(View):
         # match the CSV example with all the fields
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="domains-by-type.csv"'
-        csv_export.export_data_type_to_csv(response)
+        csv_export.DomainDataType.export_data_to_csv(response)
         return response
 
 
@@ -151,7 +163,7 @@ class ExportDataFull(View):
         # Smaller export based on 1
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="current-full.csv"'
-        csv_export.export_data_full_to_csv(response)
+        csv_export.DomainDataFull.export_data_to_csv(response)
         return response
 
 
@@ -160,7 +172,7 @@ class ExportDataFederal(View):
         # Federal only
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="current-federal.csv"'
-        csv_export.export_data_federal_to_csv(response)
+        csv_export.DomainDataFederal.export_data_to_csv(response)
         return response
 
 
@@ -171,63 +183,51 @@ class ExportDomainRequestDataFull(View):
         """Returns a content disposition response for current-full-domain-request.csv"""
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="current-full-domain-request.csv"'
-        csv_export.DomainRequestExport.export_full_domain_request_report(response)
+        csv_export.DomainRequestDataFull.export_data_to_csv(response)
         return response
 
 
 class ExportDataDomainsGrowth(View):
     def get(self, request, *args, **kwargs):
-        # Get start_date and end_date from the request's GET parameters
-        # #999: not needed if we switch to django forms
         start_date = request.GET.get("start_date", "")
         end_date = request.GET.get("end_date", "")
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="domain-growth-report-{start_date}-to-{end_date}.csv"'
-        # For #999: set export_data_domain_growth_to_csv to return the resulting queryset, which we can then use
-        # in context to display this data in the template.
-        csv_export.export_data_domain_growth_to_csv(response, start_date, end_date)
+        csv_export.DomainGrowth.export_data_to_csv(response, start_date, end_date)
 
         return response
 
 
 class ExportDataRequestsGrowth(View):
     def get(self, request, *args, **kwargs):
-        # Get start_date and end_date from the request's GET parameters
-        # #999: not needed if we switch to django forms
         start_date = request.GET.get("start_date", "")
         end_date = request.GET.get("end_date", "")
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="requests-{start_date}-to-{end_date}.csv"'
-        # For #999: set export_data_domain_growth_to_csv to return the resulting queryset, which we can then use
-        # in context to display this data in the template.
-        csv_export.DomainRequestExport.export_data_requests_growth_to_csv(response, start_date, end_date)
+        csv_export.DomainRequestGrowth.export_data_to_csv(response, start_date, end_date)
 
         return response
 
 
 class ExportDataManagedDomains(View):
     def get(self, request, *args, **kwargs):
-        # Get start_date and end_date from the request's GET parameters
-        # #999: not needed if we switch to django forms
         start_date = request.GET.get("start_date", "")
         end_date = request.GET.get("end_date", "")
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="managed-domains-{start_date}-to-{end_date}.csv"'
-        csv_export.export_data_managed_domains_to_csv(response, start_date, end_date)
+        csv_export.DomainManaged.export_data_to_csv(response, start_date, end_date)
 
         return response
 
 
 class ExportDataUnmanagedDomains(View):
     def get(self, request, *args, **kwargs):
-        # Get start_date and end_date from the request's GET parameters
-        # #999: not needed if we switch to django forms
         start_date = request.GET.get("start_date", "")
         end_date = request.GET.get("end_date", "")
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = f'attachment; filename="unamanaged-domains-{start_date}-to-{end_date}.csv"'
-        csv_export.export_data_unmanaged_domains_to_csv(response, start_date, end_date)
+        response["Content-Disposition"] = f'attachment; filename="unmanaged-domains-{start_date}-to-{end_date}.csv"'
+        csv_export.DomainUnmanaged.export_data_to_csv(response, start_date, end_date)
 
         return response
