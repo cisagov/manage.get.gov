@@ -1345,8 +1345,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateStatusIndicator() {
       statusIndicator.innerHTML = '';
+      // Even if the element is empty, it'll mess up the flex layout unless we set display none
+      statusIndicator.hideElement();
       if (currentStatus.length)
         statusIndicator.innerHTML = '(' + currentStatus.length + ')';
+        statusIndicator.showElement();
     }
 
     function closeFilters() {
@@ -1362,6 +1365,17 @@ document.addEventListener('DOMContentLoaded', function() {
       const accordion = document.querySelector('.usa-accordion--select');
       const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
       
+      if (accordionIsOpen && !accordion.contains(event.target)) {
+        closeFilters();
+      }
+    });
+
+    // Close when user clicks outside
+    // NOTE: We may need to evolve this as we add more filters.
+    document.addEventListener('click', function(event) {
+      const accordion = document.querySelector('.usa-accordion--select');
+      const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+    
       if (accordionIsOpen && !accordion.contains(event.target)) {
         closeFilters();
       }
