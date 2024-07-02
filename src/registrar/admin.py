@@ -697,7 +697,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User Profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -721,7 +721,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "Personal Info",
+        "User Profile",
         "first_name",
         "middle_name",
         "last_name",
