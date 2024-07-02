@@ -619,7 +619,7 @@ class DomainRequest(TimeStampedModel):
             # We don't send emails out in state "other"
             if self.action_needed_reason != self.ActionNeededReasons.OTHER:
                 _email_content = self.action_needed_reason_email
-                self._send_action_needed_reason_email(custom_email_content=_email_content)
+                self._send_action_needed_reason_email(email_content=_email_content)
 
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
@@ -857,10 +857,10 @@ class DomainRequest(TimeStampedModel):
 
         # Send out an email if an action needed reason exists
         if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
-            custom_email_content = self.action_needed_reason_email
-            self._send_action_needed_reason_email(send_email, custom_email_content)
+            email_content = self.action_needed_reason_email
+            self._send_action_needed_reason_email(send_email, email_content)
 
-    def _send_action_needed_reason_email(self, send_email=True, custom_email_content=None):
+    def _send_action_needed_reason_email(self, send_email=True, email_content=None):
         """Sends out an automatic email for each valid action needed reason provided"""
 
         # Store the filenames of the template and template subject
@@ -871,7 +871,8 @@ class DomainRequest(TimeStampedModel):
         # If these hashes differ, then that means that we're sending custom content.
         default_email_hash = self._get_action_needed_reason_email_hash()
         current_email_hash = convert_string_to_sha256_hash(self.action_needed_reason_email)
-        if default_email_hash != current_email_hash:
+        if self.action_needed_reason_email and default_email_hash != current_email_hash:
+            print(f"sending custom email for: {current_email_hash}")
             email_template_name = "custom_email.txt"
 
         # Check for the "type" of action needed reason.
@@ -902,7 +903,7 @@ class DomainRequest(TimeStampedModel):
                 email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
                 send_email=send_email,
                 bcc_address=bcc_address,
-                custom_email_content=custom_email_content,
+                custom_email_content=email_content,
                 wrap_email=True,
             )
 
@@ -919,7 +920,8 @@ class DomainRequest(TimeStampedModel):
         recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
         # Return the content of the rendered views
         context = {"domain_request": self, "recipient": recipient}
-        body_text = template.render(context=context)
+        body_text = template.render(context=context).strip().lstrip("\n")
+        print(f"body: {body_text}")
         return convert_string_to_sha256_hash(body_text)
 
     @transition(

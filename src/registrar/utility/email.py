@@ -45,6 +45,8 @@ def send_templated_email(
 
     template = get_template(template_name)
     email_body = template.render(context=context)
+    if email_body:
+        email_body.strip().lstrip("\n")
 
     subject_template = get_template(subject_template_name)
     subject = subject_template.render(context=context)
