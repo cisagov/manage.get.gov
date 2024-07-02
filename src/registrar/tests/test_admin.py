@@ -3600,7 +3600,7 @@ class TestMyUserAdmin(MockDb):
                         )
                     },
                 ),
-                ("User Profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+                ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
                 ("Permissions", {"fields": ("is_active", "groups")}),
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
             )

@@ -666,7 +666,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("User Profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -697,7 +697,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("User Profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -721,7 +721,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "User Profile",
+        "User profile",
         "first_name",
         "middle_name",
         "last_name",
