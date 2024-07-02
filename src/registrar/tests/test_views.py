@@ -970,7 +970,7 @@ class PortfoliosTests(TestWithUser, WebTest):
             # Assert that we're on the right page
             self.assertContains(portfolio_page, self.portfolio.organization_name)
 
-            self.assertContains(portfolio_page, "<h1>Domains</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
 
     @less_console_noise_decorator
     def test_no_redirect_when_org_flag_false(self):
