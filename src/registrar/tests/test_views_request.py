@@ -253,38 +253,38 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(org_contact_result["Location"], "/request/authorizing_official/")
+        self.assertEqual(org_contact_result["Location"], "/request/senior_official/")
         num_pages_tested += 1
 
-        # ---- AUTHORIZING OFFICIAL PAGE  ----
+        # ---- SENIOR OFFICIAL PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_page = org_contact_result.follow()
-        ao_form = ao_page.forms[0]
-        ao_form["authorizing_official-first_name"] = "Testy ATO"
-        ao_form["authorizing_official-last_name"] = "Tester ATO"
-        ao_form["authorizing_official-title"] = "Chief Tester"
-        ao_form["authorizing_official-email"] = "testy@town.com"
+        so_page = org_contact_result.follow()
+        so_form = so_page.forms[0]
+        so_form["senior_official-first_name"] = "Testy ATO"
+        so_form["senior_official-last_name"] = "Tester ATO"
+        so_form["senior_official-title"] = "Chief Tester"
+        so_form["senior_official-email"] = "testy@town.com"
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_result = ao_form.submit()
+        so_result = so_form.submit()
         # validate that data from this step are being saved
         domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.authorizing_official.first_name, "Testy ATO")
-        self.assertEqual(domain_request.authorizing_official.last_name, "Tester ATO")
-        self.assertEqual(domain_request.authorizing_official.title, "Chief Tester")
-        self.assertEqual(domain_request.authorizing_official.email, "testy@town.com")
+        self.assertEqual(domain_request.senior_official.first_name, "Testy ATO")
+        self.assertEqual(domain_request.senior_official.last_name, "Tester ATO")
+        self.assertEqual(domain_request.senior_official.title, "Chief Tester")
+        self.assertEqual(domain_request.senior_official.email, "testy@town.com")
         # the post request should return a redirect to the next form in
         # the domain request page
-        self.assertEqual(ao_result.status_code, 302)
-        self.assertEqual(ao_result["Location"], "/request/current_sites/")
+        self.assertEqual(so_result.status_code, 302)
+        self.assertEqual(so_result["Location"], "/request/current_sites/")
         num_pages_tested += 1
 
         # ---- CURRENT SITES PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_page = ao_result.follow()
+        current_sites_page = so_result.follow()
         current_sites_form = current_sites_page.forms[0]
         current_sites_form["current_sites-0-website"] = "www.city.com"
 
@@ -610,38 +610,38 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(org_contact_result["Location"], "/request/authorizing_official/")
+        self.assertEqual(org_contact_result["Location"], "/request/senior_official/")
         num_pages_tested += 1
 
-        # ---- AUTHORIZING OFFICIAL PAGE  ----
+        # ---- SENIOR OFFICIAL PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_page = org_contact_result.follow()
-        ao_form = ao_page.forms[0]
-        ao_form["authorizing_official-first_name"] = "Testy ATO"
-        ao_form["authorizing_official-last_name"] = "Tester ATO"
-        ao_form["authorizing_official-title"] = "Chief Tester"
-        ao_form["authorizing_official-email"] = "testy@town.com"
+        so_page = org_contact_result.follow()
+        so_form = so_page.forms[0]
+        so_form["senior_official-first_name"] = "Testy ATO"
+        so_form["senior_official-last_name"] = "Tester ATO"
+        so_form["senior_official-title"] = "Chief Tester"
+        so_form["senior_official-email"] = "testy@town.com"
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_result = ao_form.submit()
+        so_result = so_form.submit()
         # validate that data from this step are being saved
         domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.authorizing_official.first_name, "Testy ATO")
-        self.assertEqual(domain_request.authorizing_official.last_name, "Tester ATO")
-        self.assertEqual(domain_request.authorizing_official.title, "Chief Tester")
-        self.assertEqual(domain_request.authorizing_official.email, "testy@town.com")
+        self.assertEqual(domain_request.senior_official.first_name, "Testy ATO")
+        self.assertEqual(domain_request.senior_official.last_name, "Tester ATO")
+        self.assertEqual(domain_request.senior_official.title, "Chief Tester")
+        self.assertEqual(domain_request.senior_official.email, "testy@town.com")
         # the post request should return a redirect to the next form in
         # the domain request page
-        self.assertEqual(ao_result.status_code, 302)
-        self.assertEqual(ao_result["Location"], "/request/current_sites/")
+        self.assertEqual(so_result.status_code, 302)
+        self.assertEqual(so_result["Location"], "/request/current_sites/")
         num_pages_tested += 1
 
         # ---- CURRENT SITES PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_page = ao_result.follow()
+        current_sites_page = so_result.follow()
         current_sites_form = current_sites_page.forms[0]
         current_sites_form["current_sites-0-website"] = "www.city.com"
 
@@ -1576,7 +1576,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
@@ -1607,7 +1607,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            authorizing_official=ao,
+            senior_official=so,
             submitter=you,
             creator=self.user,
             status="started",
@@ -1703,7 +1703,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Populate the database with a domain request that
         # has 2 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
@@ -1741,7 +1741,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            authorizing_official=ao,
+            senior_official=so,
             submitter=you,
             creator=self.user,
             status="started",
@@ -1784,7 +1784,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
@@ -1815,7 +1815,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            authorizing_official=ao,
+            senior_official=so,
             submitter=you,
             creator=self.user,
             status="started",
@@ -1861,7 +1861,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
@@ -1892,7 +1892,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            authorizing_official=ao,
+            senior_official=so,
             submitter=you,
             creator=self.user,
             status="started",
@@ -1937,7 +1937,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
@@ -1968,7 +1968,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            authorizing_official=ao,
+            senior_official=so,
             submitter=you,
             creator=self.user,
             status="started",
@@ -2017,9 +2017,9 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Populate the database with a domain request that
         # has 1 "other contact" assigned to it, the other contact is also
-        # the authorizing official initially
+        # the senior official initially
         # We'll do it from scratch
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
@@ -2043,17 +2043,17 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            authorizing_official=ao,
+            senior_official=so,
             submitter=you,
             creator=self.user,
             status="started",
         )
-        domain_request.other_contacts.add(ao)
+        domain_request.other_contacts.add(so)
 
         # other_contact_pk is the initial pk of the other contact. set it before update
-        # to be able to verify after update that the ao contact is still in place
+        # to be able to verify after update that the so contact is still in place
         # and not updated, and that the new contact has a new id
-        other_contact_pk = ao.id
+        other_contact_pk = so.id
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
@@ -2085,20 +2085,20 @@ class DomainRequestTests(TestWithUser, WebTest):
         other_contact = domain_request.other_contacts.all()[0]
         self.assertNotEquals(other_contact_pk, other_contact.id)
         self.assertEquals("Testy2", other_contact.first_name)
-        # assert that the authorizing official is not updated
-        authorizing_official = domain_request.authorizing_official
-        self.assertEquals("Testy", authorizing_official.first_name)
+        # assert that the senior official is not updated
+        senior_official = domain_request.senior_official
+        self.assertEquals("Testy", senior_official.first_name)
 
-    def test_edit_authorizing_official_in_place(self):
+    def test_edit_senior_official_in_place(self):
         """When you:
-            1. edit an authorizing official which is not joined to another model,
+            1. edit a senior official which is not joined to another model,
             2. then submit,
-        the domain request is linked to the existing ao, and the ao updated."""
+        the domain request is linked to the existing so, and the so updated."""
 
         # Populate the database with a domain request that
-        # has an authorizing_official (ao)
+        # has a senior_official (so)
         # We'll do it from scratch
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
@@ -2115,14 +2115,14 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            authorizing_official=ao,
+            senior_official=so,
             creator=self.user,
             status="started",
         )
 
-        # ao_pk is the initial pk of the Authorizing Official. set it before update
+        # so_pk is the initial pk of the Senior Official. set it before update
         # to be able to verify after update that the same Contact object is in place
-        ao_pk = ao.id
+        so_pk = so.id
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
@@ -2133,38 +2133,38 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        ao_page = self.app.get(reverse("domain-request:authorizing_official"))
+        so_page = self.app.get(reverse("domain-request:senior_official"))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        ao_form = ao_page.forms[0]
+        so_form = so_page.forms[0]
 
         # Minimal check to ensure the form is loaded
-        self.assertEqual(ao_form["authorizing_official-first_name"].value, "Testy")
+        self.assertEqual(so_form["senior_official-first_name"].value, "Testy")
 
         # update the first name of the contact
-        ao_form["authorizing_official-first_name"] = "Testy2"
+        so_form["senior_official-first_name"] = "Testy2"
 
         # Submit the updated form
-        ao_form.submit()
+        so_form.submit()
 
         domain_request.refresh_from_db()
 
-        # assert AO is updated "in place"
-        updated_ao = domain_request.authorizing_official
-        self.assertEquals(ao_pk, updated_ao.id)
-        self.assertEquals("Testy2", updated_ao.first_name)
+        # assert SO is updated "in place"
+        updated_so = domain_request.senior_official
+        self.assertEquals(so_pk, updated_so.id)
+        self.assertEquals("Testy2", updated_so.first_name)
 
-    def test_edit_authorizing_official_creates_new(self):
+    def test_edit_senior_official_creates_new(self):
         """When you:
-            1. edit an existing authorizing official which IS joined to another model,
+            1. edit an existing senior official which IS joined to another model,
             2. then submit,
         the domain request is linked to a new Contact, and the new Contact is updated."""
 
         # Populate the database with a domain request that
-        # has authorizing official assigned to it, the authorizing offical is also
+        # has senior official assigned to it, the senior offical is also
         # an other contact initially
         # We'll do it from scratch
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
@@ -2181,16 +2181,16 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            authorizing_official=ao,
+            senior_official=so,
             creator=self.user,
             status="started",
         )
-        domain_request.other_contacts.add(ao)
+        domain_request.other_contacts.add(so)
 
-        # ao_pk is the initial pk of the authorizing official. set it before update
+        # so_pk is the initial pk of the senior official. set it before update
         # to be able to verify after update that the other contact is still in place
-        # and not updated, and that the new ao has a new id
-        ao_pk = ao.id
+        # and not updated, and that the new so has a new id
+        so_pk = so.id
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
@@ -2201,30 +2201,30 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        ao_page = self.app.get(reverse("domain-request:authorizing_official"))
+        so_page = self.app.get(reverse("domain-request:senior_official"))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        ao_form = ao_page.forms[0]
+        so_form = so_page.forms[0]
 
         # Minimal check to ensure the form is loaded
-        self.assertEqual(ao_form["authorizing_official-first_name"].value, "Testy")
+        self.assertEqual(so_form["senior_official-first_name"].value, "Testy")
 
         # update the first name of the contact
-        ao_form["authorizing_official-first_name"] = "Testy2"
+        so_form["senior_official-first_name"] = "Testy2"
 
         # Submit the updated form
-        ao_form.submit()
+        so_form.submit()
 
         domain_request.refresh_from_db()
 
         # assert that the other contact is not updated
         other_contacts = domain_request.other_contacts.all()
         other_contact = other_contacts[0]
-        self.assertEquals(ao_pk, other_contact.id)
+        self.assertEquals(so_pk, other_contact.id)
         self.assertEquals("Testy", other_contact.first_name)
-        # assert that the authorizing official is updated
-        authorizing_official = domain_request.authorizing_official
-        self.assertEquals("Testy2", authorizing_official.first_name)
+        # assert that the senior official is updated
+        senior_official = domain_request.senior_official
+        self.assertEquals("Testy2", senior_official.first_name)
 
     def test_edit_submitter_in_place(self):
         """When you:
@@ -2421,7 +2421,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # and the step is on the sidebar list.
         self.assertContains(tribal_government_page, self.TITLES[Step.TRIBAL_GOVERNMENT])
 
-    def test_domain_request_ao_dynamic_text(self):
+    def test_domain_request_so_dynamic_text(self):
         intro_page = self.app.get(reverse("domain-request:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
@@ -2474,24 +2474,24 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_result = org_contact_form.submit()
 
-        # ---- AO CONTACT PAGE  ----
+        # ---- SO CONTACT PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_page = org_contact_result.follow()
-        self.assertContains(ao_page, "Executive branch federal agencies")
+        so_page = org_contact_result.follow()
+        self.assertContains(so_page, "Executive branch federal agencies")
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        so_page.click(str(self.TITLES["generic_org_type"]), index=0)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_form["generic_org_type-generic_org_type"] = "city"
         type_result = type_form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         election_page = type_result.follow()
 
-        # Go back to AO page and test the dynamic text changed
+        # Go back to SO page and test the dynamic text changed
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_page = election_page.click(str(self.TITLES["authorizing_official"]), index=0)
-        self.assertContains(ao_page, "Domain requests from cities")
+        so_page = election_page.click(str(self.TITLES["senior_official"]), index=0)
+        self.assertContains(so_page, "Domain requests from cities")
 
     def test_domain_request_dotgov_domain_dynamic_text(self):
         intro_page = self.app.get(reverse("domain-request:"))
@@ -2546,27 +2546,27 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_result = org_contact_form.submit()
 
-        # ---- AO CONTACT PAGE  ----
+        # ---- SO CONTACT PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_page = org_contact_result.follow()
+        so_page = org_contact_result.follow()
 
-        # ---- AUTHORIZING OFFICIAL PAGE  ----
+        # ---- senior OFFICIAL PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_page = org_contact_result.follow()
-        ao_form = ao_page.forms[0]
-        ao_form["authorizing_official-first_name"] = "Testy ATO"
-        ao_form["authorizing_official-last_name"] = "Tester ATO"
-        ao_form["authorizing_official-title"] = "Chief Tester"
-        ao_form["authorizing_official-email"] = "testy@town.com"
+        so_page = org_contact_result.follow()
+        so_form = so_page.forms[0]
+        so_form["senior_official-first_name"] = "Testy ATO"
+        so_form["senior_official-last_name"] = "Tester ATO"
+        so_form["senior_official-title"] = "Chief Tester"
+        so_form["senior_official-email"] = "testy@town.com"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_result = ao_form.submit()
+        so_result = so_form.submit()
 
         # ---- CURRENT SITES PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_page = ao_result.follow()
+        current_sites_page = so_result.follow()
         current_sites_form = current_sites_page.forms[0]
         current_sites_form["current_sites-0-website"] = "www.city.com"
 
@@ -2627,7 +2627,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """
         Test that a previously saved domain request is available at the /edit endpoint.
         """
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
@@ -2661,7 +2661,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            authorizing_official=ao,
+            senior_official=so,
             requested_domain=domain,
             submitter=you,
             creator=self.user,
@@ -2699,7 +2699,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("domain-request:authorizing_official")
+        # url = reverse("domain-request:senior_official")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
@@ -2981,7 +2981,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
-            authorizing_official=contact,
+            senior_official=contact,
             submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
@@ -3008,7 +3008,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             # Now 'detail_page' contains the response after following the redirect
             self.assertEqual(detail_page.status_code, 200)
 
-            # 5 unlocked steps (ao, domain, submitter, other contacts, and current sites
+            # 5 unlocked steps (so, domain, submitter, other contacts, and current sites
             # which unlocks if domain exists), one active step, the review step is locked
             self.assertContains(detail_page, "#check_circle", count=5)
             # Type of organization

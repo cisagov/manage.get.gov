@@ -398,7 +398,7 @@ class TestOrganizationMigration(TestCase):
             federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
 
             expected_creator = User.objects.filter(username="System").get()
-            expected_ao = Contact.objects.filter(
+            expected_so = Contact.objects.filter(
                 first_name="Seline", middle_name="testmiddle2", last_name="Tower"
             ).get()
             expected_domain_information = DomainInformation(
@@ -411,7 +411,7 @@ class TestOrganizationMigration(TestCase):
                 city="Columbus",
                 state_territory="Oh",
                 zipcode="43268",
-                authorizing_official=expected_ao,
+                senior_official=expected_so,
                 domain=_domain,
             )
             # Given that these are different objects, this needs to be set
@@ -454,7 +454,7 @@ class TestOrganizationMigration(TestCase):
             federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
 
             expected_creator = User.objects.filter(username="System").get()
-            expected_ao = Contact.objects.filter(
+            expected_so = Contact.objects.filter(
                 first_name="Seline", middle_name="testmiddle2", last_name="Tower"
             ).get()
             expected_domain_information = DomainInformation(
@@ -467,7 +467,7 @@ class TestOrganizationMigration(TestCase):
                 city="Olympus",
                 state_territory="MA",
                 zipcode="12345",
-                authorizing_official=expected_ao,
+                senior_official=expected_so,
                 domain=_domain,
             )
             # Given that these are different objects, this needs to be set

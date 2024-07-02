@@ -153,10 +153,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         <label aria-label="Submitter contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.submitter no_title_top_padding=field.is_readonly %}
         </div>
-    {% elif field.field.name == "authorizing_official" %}
+    {% elif field.field.name == "senior_official" %}
         <div class="flex-container">
-        <label aria-label="Authorizing official contact details"></label>
-        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.authorizing_official no_title_top_padding=field.is_readonly %}
+        <label aria-label="Senior official contact details"></label>
+        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.senior_official no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "other_contacts" and original_object.other_contacts.all %}
         {% with all_contacts=original_object.other_contacts.all %}

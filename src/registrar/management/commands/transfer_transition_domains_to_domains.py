@@ -390,7 +390,7 @@ class Command(BaseCommand):
         fed_type = transition_domain.federal_type
         fed_agency = transition_domain.federal_agency
 
-        # = AO Information = #
+        # = SO Information = #
         first_name = transition_domain.first_name
         middle_name = transition_domain.middle_name
         last_name = transition_domain.last_name
@@ -429,7 +429,7 @@ class Command(BaseCommand):
             "domain": domain,
             "organization_name": transition_domain.organization_name,
             "creator": default_creator,
-            "authorizing_official": contact,
+            "senior_official": contact,
         }
 
         if valid_org_type:
