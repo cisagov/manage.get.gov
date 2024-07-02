@@ -1540,6 +1540,17 @@ class TestDomainRequestAdmin(MockEppLib):
         # Should be unchanged from before
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
 
+        # Tests if an analyst can override existing email content
+        questionable_ao = DomainRequest.ActionNeededReasons.QUESTIONABLE_AUTHORIZING_OFFICIAL
+        domain_request.action_needed_reason_email = "custom email content"
+        domain_request.save()
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_ao)
+
+        self.assert_email_is_accurate(
+            "custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
+
     def test_save_model_sends_submitted_email(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
         an email is sent out.

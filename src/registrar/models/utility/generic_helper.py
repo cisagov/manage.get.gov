@@ -2,6 +2,7 @@
 
 import time
 import logging
+import hashlib
 from urllib.parse import urlparse, urlunparse, urlencode
 
 
@@ -321,3 +322,7 @@ def convert_queryset_to_dict(queryset, is_model=True, key="id"):
         request_dict = {value[key]: value for value in queryset}
 
     return request_dict
+
+
+def convert_string_to_sha256_hash(string_to_convert):
+    return hashlib.sha256(string_to_convert.encode('utf-8')).hexdigest()
