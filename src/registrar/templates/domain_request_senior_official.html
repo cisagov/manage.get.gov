@@ -1,0 +1,37 @@
+{% extends 'domain_request_form.html' %}
+{% load field_helpers url_helpers %}
+
+{% block form_instructions %}
+  <h2 class="margin-bottom-05">
+    Who is the senior official for your organization?
+  </h2>
+
+  {% if not is_federal %}
+  <p>Your senior official is a person within your organization who can authorize your domain request. This person must be in a role of significant, executive responsibility within the organization.</p>
+  {% endif %}
+
+  <div class="so_example">
+    {% include "includes/so_example.html" %}
+  </div>
+
+<p>We typically don’t reach out to the senior official, but if contact is necessary, our practice is to coordinate with you, the requestor, first.</p>
+
+{% endblock %}
+
+
+{% block form_fields %}
+  <fieldset class="usa-fieldset">
+    <legend class="usa-sr-only">
+      Who is the senior official for your organization?
+    </legend>
+
+    {% input_with_errors forms.0.first_name %}
+
+    {% input_with_errors forms.0.last_name %}
+
+    {% input_with_errors forms.0.title %}
+
+    {% input_with_errors forms.0.email %}
+
+  </fieldset>
+{% endblock %}

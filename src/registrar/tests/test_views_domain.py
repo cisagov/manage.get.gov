@@ -150,7 +150,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users-add",
             "domain-dns-nameservers",
             "domain-org-name-address",
-            "domain-authorizing-official",
+            "domain-senior-official",
             "domain-your-contact-information",
             "domain-security-email",
         ]:
@@ -169,7 +169,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users-add",
             "domain-dns-nameservers",
             "domain-org-name-address",
-            "domain-authorizing-official",
+            "domain-senior-official",
             "domain-your-contact-information",
             "domain-security-email",
         ]:
@@ -190,7 +190,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-dns-dnssec",
             "domain-dns-dnssec-dsdata",
             "domain-org-name-address",
-            "domain-authorizing-official",
+            "domain-senior-official",
             "domain-your-contact-information",
             "domain-security-email",
         ]:
@@ -1082,44 +1082,43 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         )
 
 
-class TestDomainAuthorizingOfficial(TestDomainOverview):
-    def test_domain_authorizing_official(self):
-        """Can load domain's authorizing official page."""
-        page = self.client.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
-        # once on the sidebar, once in the title
-        self.assertContains(page, "Authorizing official", count=3)
+class TestDomainSeniorOfficial(TestDomainOverview):
+    def test_domain_senior_official(self):
+        """Can load domain's senior official page."""
+        page = self.client.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        self.assertContains(page, "Senior official", count=13)
 
-    def test_domain_authorizing_official_content(self):
-        """Authorizing official information appears on the page."""
-        self.domain_information.authorizing_official = Contact(first_name="Testy")
-        self.domain_information.authorizing_official.save()
+    def test_domain_senior_official_content(self):
+        """Senior official information appears on the page."""
+        self.domain_information.senior_official = Contact(first_name="Testy")
+        self.domain_information.senior_official.save()
         self.domain_information.save()
-        page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Testy")
 
-    def test_domain_edit_authorizing_official_in_place(self):
-        """When editing an authorizing official for domain information and AO is not
+    def test_domain_edit_senior_official_in_place(self):
+        """When editing a senior official for domain information and SO is not
         joined to any other objects"""
-        self.domain_information.authorizing_official = Contact(
+        self.domain_information.senior_official = Contact(
             first_name="Testy", last_name="Tester", title="CIO", email="nobody@igorville.gov"
         )
-        self.domain_information.authorizing_official.save()
+        self.domain_information.senior_official.save()
         self.domain_information.save()
-        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_form = ao_page.forms[0]
-        self.assertEqual(ao_form["first_name"].value, "Testy")
-        ao_form["first_name"] = "Testy2"
-        # ao_pk is the initial pk of the authorizing official. set it before update
+        so_form = so_page.forms[0]
+        self.assertEqual(so_form["first_name"].value, "Testy")
+        so_form["first_name"] = "Testy2"
+        # so_pk is the initial pk of the senior official. set it before update
         # to be able to verify after update that the same contact object is in place
-        ao_pk = self.domain_information.authorizing_official.id
-        ao_form.submit()
+        so_pk = self.domain_information.senior_official.id
+        so_form.submit()
 
         # refresh domain information
         self.domain_information.refresh_from_db()
-        self.assertEqual("Testy2", self.domain_information.authorizing_official.first_name)
-        self.assertEqual(ao_pk, self.domain_information.authorizing_official.id)
+        self.assertEqual("Testy2", self.domain_information.senior_official.first_name)
+        self.assertEqual(so_pk, self.domain_information.senior_official.id)
 
     def assert_all_form_fields_have_expected_values(self, form, test_cases, test_for_disabled=False):
         """
@@ -1147,26 +1146,26 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
                     # Test for disabled on each field
                     self.assertTrue("disabled" in form[field_name].attrs)
 
-    def test_domain_edit_authorizing_official_federal(self):
+    def test_domain_edit_senior_official_federal(self):
         """Tests that no edit can occur when the underlying domain is federal"""
 
         # Set the org type to federal
         self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.FEDERAL
         self.domain_information.save()
 
-        # Add an AO. We can do this at the model level, just not the form level.
-        self.domain_information.authorizing_official = Contact(
+        # Add an SO. We can do this at the model level, just not the form level.
+        self.domain_information.senior_official = Contact(
             first_name="Apple", last_name="Tester", title="CIO", email="nobody@igorville.gov"
         )
-        self.domain_information.authorizing_official.save()
+        self.domain_information.senior_official.save()
         self.domain_information.save()
 
-        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Test if the form is populating data correctly
-        ao_form = ao_page.forms[0]
+        so_form = so_page.forms[0]
 
         test_cases = [
             ("first_name", "Apple"),
@@ -1174,16 +1173,16 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
             ("title", "CIO"),
             ("email", "nobody@igorville.gov"),
         ]
-        self.assert_all_form_fields_have_expected_values(ao_form, test_cases, test_for_disabled=True)
+        self.assert_all_form_fields_have_expected_values(so_form, test_cases, test_for_disabled=True)
 
         # Attempt to change data on each field. Because this domain is federal,
         # this should not succeed.
-        ao_form["first_name"] = "Orange"
-        ao_form["last_name"] = "Smoothie"
-        ao_form["title"] = "Cat"
-        ao_form["email"] = "somebody@igorville.gov"
+        so_form["first_name"] = "Orange"
+        so_form["last_name"] = "Smoothie"
+        so_form["title"] = "Cat"
+        so_form["email"] = "somebody@igorville.gov"
 
-        submission = ao_form.submit()
+        submission = so_form.submit()
 
         # A 302 indicates this page underwent a redirect.
         self.assertEqual(submission.status_code, 302)
@@ -1198,31 +1197,31 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         self.domain_information.refresh_from_db()
 
         # All values should be unchanged. These are defined manually for code clarity.
-        self.assertEqual("Apple", self.domain_information.authorizing_official.first_name)
-        self.assertEqual("Tester", self.domain_information.authorizing_official.last_name)
-        self.assertEqual("CIO", self.domain_information.authorizing_official.title)
-        self.assertEqual("nobody@igorville.gov", self.domain_information.authorizing_official.email)
+        self.assertEqual("Apple", self.domain_information.senior_official.first_name)
+        self.assertEqual("Tester", self.domain_information.senior_official.last_name)
+        self.assertEqual("CIO", self.domain_information.senior_official.title)
+        self.assertEqual("nobody@igorville.gov", self.domain_information.senior_official.email)
 
-    def test_domain_edit_authorizing_official_tribal(self):
+    def test_domain_edit_senior_official_tribal(self):
         """Tests that no edit can occur when the underlying domain is tribal"""
 
         # Set the org type to federal
         self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.TRIBAL
         self.domain_information.save()
 
-        # Add an AO. We can do this at the model level, just not the form level.
-        self.domain_information.authorizing_official = Contact(
+        # Add an SO. We can do this at the model level, just not the form level.
+        self.domain_information.senior_official = Contact(
             first_name="Apple", last_name="Tester", title="CIO", email="nobody@igorville.gov"
         )
-        self.domain_information.authorizing_official.save()
+        self.domain_information.senior_official.save()
         self.domain_information.save()
 
-        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Test if the form is populating data correctly
-        ao_form = ao_page.forms[0]
+        so_form = so_page.forms[0]
 
         test_cases = [
             ("first_name", "Apple"),
@@ -1230,16 +1229,16 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
             ("title", "CIO"),
             ("email", "nobody@igorville.gov"),
         ]
-        self.assert_all_form_fields_have_expected_values(ao_form, test_cases, test_for_disabled=True)
+        self.assert_all_form_fields_have_expected_values(so_form, test_cases, test_for_disabled=True)
 
         # Attempt to change data on each field. Because this domain is federal,
         # this should not succeed.
-        ao_form["first_name"] = "Orange"
-        ao_form["last_name"] = "Smoothie"
-        ao_form["title"] = "Cat"
-        ao_form["email"] = "somebody@igorville.gov"
+        so_form["first_name"] = "Orange"
+        so_form["last_name"] = "Smoothie"
+        so_form["title"] = "Cat"
+        so_form["email"] = "somebody@igorville.gov"
 
-        submission = ao_form.submit()
+        submission = so_form.submit()
 
         # A 302 indicates this page underwent a redirect.
         self.assertEqual(submission.status_code, 302)
@@ -1254,45 +1253,45 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         self.domain_information.refresh_from_db()
 
         # All values should be unchanged. These are defined manually for code clarity.
-        self.assertEqual("Apple", self.domain_information.authorizing_official.first_name)
-        self.assertEqual("Tester", self.domain_information.authorizing_official.last_name)
-        self.assertEqual("CIO", self.domain_information.authorizing_official.title)
-        self.assertEqual("nobody@igorville.gov", self.domain_information.authorizing_official.email)
+        self.assertEqual("Apple", self.domain_information.senior_official.first_name)
+        self.assertEqual("Tester", self.domain_information.senior_official.last_name)
+        self.assertEqual("CIO", self.domain_information.senior_official.title)
+        self.assertEqual("nobody@igorville.gov", self.domain_information.senior_official.email)
 
-    def test_domain_edit_authorizing_official_creates_new(self):
-        """When editing an authorizing official for domain information and AO IS
+    def test_domain_edit_senior_official_creates_new(self):
+        """When editing a senior official for domain information and SO IS
         joined to another object"""
-        # set AO and Other Contact to the same Contact object
-        self.domain_information.authorizing_official = Contact(
+        # set SO and Other Contact to the same Contact object
+        self.domain_information.senior_official = Contact(
             first_name="Testy", last_name="Tester", title="CIO", email="nobody@igorville.gov"
         )
-        self.domain_information.authorizing_official.save()
+        self.domain_information.senior_official.save()
         self.domain_information.save()
-        self.domain_information.other_contacts.add(self.domain_information.authorizing_official)
+        self.domain_information.other_contacts.add(self.domain_information.senior_official)
         self.domain_information.save()
-        # load the Authorizing Official in the web form
-        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        # load the Senior Official in the web form
+        so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_form = ao_page.forms[0]
+        so_form = so_page.forms[0]
         # verify the first name is "Testy" and then change it to "Testy2"
-        self.assertEqual(ao_form["first_name"].value, "Testy")
-        ao_form["first_name"] = "Testy2"
-        # ao_pk is the initial pk of the authorizing official. set it before update
+        self.assertEqual(so_form["first_name"].value, "Testy")
+        so_form["first_name"] = "Testy2"
+        # so_pk is the initial pk of the senior official. set it before update
         # to be able to verify after update that the same contact object is in place
-        ao_pk = self.domain_information.authorizing_official.id
-        ao_form.submit()
+        so_pk = self.domain_information.senior_official.id
+        so_form.submit()
 
         # refresh domain information
         self.domain_information.refresh_from_db()
-        # assert that AO information is updated, and that the AO is a new Contact
-        self.assertEqual("Testy2", self.domain_information.authorizing_official.first_name)
-        self.assertNotEqual(ao_pk, self.domain_information.authorizing_official.id)
+        # assert that SO information is updated, and that the SO is a new Contact
+        self.assertEqual("Testy2", self.domain_information.senior_official.first_name)
+        self.assertNotEqual(so_pk, self.domain_information.senior_official.id)
         # assert that the Other Contact information is not updated and that the Other Contact
         # is the original Contact object
         other_contact = self.domain_information.other_contacts.all()[0]
         self.assertEqual("Testy", other_contact.first_name)
-        self.assertEqual(ao_pk, other_contact.id)
+        self.assertEqual(so_pk, other_contact.id)
 
 
 class TestDomainOrganization(TestDomainOverview):

@@ -11,7 +11,7 @@
         "http://localhost:8080/request/org_federal/",
         "http://localhost:8080/request/org_election/",
         "http://localhost:8080/request/org_contact/",
-        "http://localhost:8080/request/authorizing_official/",
+        "http://localhost:8080/request/senior_official/",
         "http://localhost:8080/request/current_sites/",
         "http://localhost:8080/request/dotgov_domain/",
         "http://localhost:8080/request/purpose/",

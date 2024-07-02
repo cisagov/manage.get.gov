@@ -379,7 +379,7 @@ class HomeTests(TestWithUser):
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
-            authorizing_official=contact,
+            senior_official=contact,
             submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
@@ -390,7 +390,7 @@ class HomeTests(TestWithUser):
             creator=self.user,
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
-            authorizing_official=contact_2,
+            senior_official=contact_2,
             submitter=contact_shared,
         )
         domain_request_2.other_contacts.set([contact_shared])
@@ -451,7 +451,7 @@ class HomeTests(TestWithUser):
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
-            authorizing_official=contact,
+            senior_official=contact,
             submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
@@ -462,7 +462,7 @@ class HomeTests(TestWithUser):
             creator=self.user,
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
-            authorizing_official=contact_2,
+            senior_official=contact_2,
             submitter=contact_shared,
         )
         domain_request_2.other_contacts.set([contact_shared])
@@ -869,7 +869,7 @@ class UserProfileTests(TestWithUser, WebTest):
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
-            authorizing_official=contact_user,
+            senior_official=contact_user,
             submitter=contact_user,
         )
         with override_flag("profile_feature", active=True):
@@ -888,7 +888,7 @@ class UserProfileTests(TestWithUser, WebTest):
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
-            authorizing_official=contact_user,
+            senior_official=contact_user,
             submitter=contact_user,
         )
         with override_flag("profile_feature", active=False):

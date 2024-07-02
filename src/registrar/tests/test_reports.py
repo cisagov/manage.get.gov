@@ -232,8 +232,8 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Organization name",
                 "City",
                 "State",
-                "AO",
-                "AO email",
+                "SO",
+                "SO email",
                 "Security contact email",
                 "Status",
                 "Expiration date",
@@ -265,8 +265,8 @@ class ExportDataTest(MockDb, MockEppLib):
             # We expect READY domains,
             # sorted alphabetially by domain name
             expected_content = (
-                "Domain name,Domain type,Agency,Organization name,City,State,AO,"
-                "AO email,Security contact email,Status,Expiration date, First ready on\n"
+                "Domain name,Domain type,Agency,Organization name,City,State,SO,"
+                "SO email,Security contact email,Status,Expiration date, First ready on\n"
                 "adomain10.gov,Federal,Armed Forces Retirement Home,Ready,(blank),2024-04-03\n"
                 "adomain2.gov,Interstate,(blank),Dns needed,(blank),(blank)\n"
                 "cdomain11.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank),2024-04-02\n"
@@ -299,8 +299,8 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Organization name",
                 "City",
                 "State",
-                "AO",
-                "AO email",
+                "SO",
+                "SO email",
                 "Submitter",
                 "Submitter title",
                 "Submitter email",
@@ -332,8 +332,8 @@ class ExportDataTest(MockDb, MockEppLib):
             # We expect READY domains,
             # sorted alphabetially by domain name
             expected_content = (
-                "Domain name,Domain type,Agency,Organization name,City,State,AO,"
-                "AO email,Submitter,Submitter title,Submitter email,Submitter phone,"
+                "Domain name,Domain type,Agency,Organization name,City,State,SO,"
+                "SO email,Submitter,Submitter title,Submitter email,Submitter phone,"
                 "Security contact email,Status\n"
                 "adomain10.gov,Federal,Armed Forces Retirement Home,Ready\n"
                 "adomain2.gov,Interstate,Dns needed\n"
@@ -522,8 +522,8 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Organization name",
                 "City",
                 "State",
-                "AO",
-                "AO email",
+                "SO",
+                "SO email",
                 "Security contact email",
             ]
             sort_fields = ["domain__name"]
@@ -553,7 +553,7 @@ class ExportDataTest(MockDb, MockEppLib):
             # sorted alphabetially by domain name
             expected_content = (
                 "Domain name,Status,Expiration date,Domain type,Agency,"
-                "Organization name,City,State,AO,AO email,"
+                "Organization name,City,State,SO,SO email,"
                 "Security contact email,Domain manager 1,DM1 status,Domain manager 2,DM2 status,"
                 "Domain manager 3,DM3 status,Domain manager 4,DM4 status\n"
                 "adomain10.gov,Ready,(blank),Federal,Armed Forces Retirement Home,,,, , ,squeaker@rocks.com, I\n"
@@ -717,10 +717,10 @@ class ExportDataTest(MockDb, MockEppLib):
         additional_values = [
             "requested_domain__name",
             "federal_agency__agency",
-            "authorizing_official__first_name",
-            "authorizing_official__last_name",
-            "authorizing_official__email",
-            "authorizing_official__title",
+            "senior_official__first_name",
+            "senior_official__last_name",
+            "senior_official__email",
+            "senior_official__title",
             "creator__first_name",
             "creator__last_name",
             "creator__email",
@@ -741,8 +741,8 @@ class ExportDataTest(MockDb, MockEppLib):
             "Domain request,Submitted at,Status,Domain type,Federal type,"
             "Federal agency,Organization name,Election office,City,State/territory,"
             "Region,Creator first name,Creator last name,Creator email,Creator approved domains count,"
-            "Creator active requests count,Alternative domains,AO first name,AO last name,AO email,"
-            "AO title/role,Request purpose,Request additional details,Other contacts,"
+            "Creator active requests count,Alternative domains,SO first name,SO last name,SO email,"
+            "SO title/role,Request purpose,Request additional details,Other contacts,"
             "CISA regional representative,Current websites,Investigator\n"
             # Content
             "city2.gov,,In review,Federal,Executive,,Testorg,N/A,,NY,2,,,,0,1,city1.gov,Testy,Tester,testy@town.com,"
