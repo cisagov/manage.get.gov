@@ -917,7 +917,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     name.admin_order_field = "first_name"  # type: ignore
 
     # Read only that we'll leverage for CISA Analysts
-    analyst_readonly_fields = []
+    analyst_readonly_fields: list[str] = []
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.

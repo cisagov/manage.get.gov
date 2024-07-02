@@ -4105,7 +4105,7 @@ class TestContactAdmin(TestCase):
             domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
             domain_request4 = completed_domain_request(submitter=contact, name="city4.gov")
             domain_request5 = completed_domain_request(submitter=contact, name="city5.gov")
-            domain_request6 = completed_domain_request(submitter=contact, name="city6.gov")
+            completed_domain_request(submitter=contact, name="city6.gov")
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Use the test client to simulate the request
                 response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
