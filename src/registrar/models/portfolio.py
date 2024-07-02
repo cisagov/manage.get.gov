@@ -38,6 +38,15 @@ class Portfolio(TimeStampedModel):
         default=FederalAgency.get_non_federal_agency,
     )
 
+    senior_official = models.ForeignKey(
+        "registrar.SeniorOfficial",
+        on_delete=models.PROTECT,
+        help_text="Associated senior official",
+        unique=False,
+        null=True,
+        blank=True,
+    )
+
     organization_type = models.CharField(
         max_length=255,
         choices=OrganizationChoices.choices,

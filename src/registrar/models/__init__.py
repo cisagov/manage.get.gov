@@ -19,6 +19,7 @@ from .waffle_flag import WaffleFlag
 from .portfolio import Portfolio
 from .domain_group import DomainGroup
 from .suborganization import Suborganization
+from .senior_official import SeniorOfficial
 
 
 __all__ = [
@@ -42,6 +43,7 @@ __all__ = [
     "Portfolio",
     "DomainGroup",
     "Suborganization",
+    "SeniorOfficial",
 ]
 
 auditlog.register(Contact)
@@ -64,3 +66,4 @@ auditlog.register(WaffleFlag)
 auditlog.register(Portfolio)
 auditlog.register(DomainGroup)
 auditlog.register(Suborganization)
+auditlog.register(SeniorOfficial)
