@@ -171,11 +171,11 @@ class DomainInformation(TimeStampedModel):
         blank=True,
     )
 
-    authorizing_official = models.ForeignKey(
+    senior_official = models.ForeignKey(
         "registrar.Contact",
         null=True,
         blank=True,
-        related_name="information_authorizing_official",
+        related_name="information_senior_official",
         on_delete=models.PROTECT,
     )
 
