@@ -361,7 +361,9 @@ function initializeWidgetOnList(list, parentId) {
 */
 (function (){
     let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+    // This is the "action needed reason" field
     let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
+    // This is the "auto-generated email" field
     let actionNeededReasonEmailFormGroup = document.querySelector('.field-action_needed_reason_email')
 
     if (rejectionReasonFormGroup && actionNeededReasonFormGroup && actionNeededReasonEmailFormGroup) {
