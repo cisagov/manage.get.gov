@@ -70,6 +70,7 @@ when setting up your key in Github.
 
 Now test commit signing is working by checking out a branch (`yourname/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your GPG credential) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
 
+### MacOS
 **Note:** if you are on a mac and not able to successfully create a signed commit, getting the following error:
 ```zsh
 error: gpg failed to sign the data
@@ -89,6 +90,11 @@ or
 ```bash
 source ~/.zshrc
 ```
+
+### Windows
+If you are using windows, it may be helpful to use [gpg4win](https://www.gpg4win.org/get-gpg4win.html). From there, you should be able to access gpg through the terminal. 
+
+When installing, consider a gpg key manager like Kleopatra if you run into issues with environment variables or with the gpg service not running on startup. 
 
 ## Setting up developer sandbox
 
