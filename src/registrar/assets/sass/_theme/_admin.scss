@@ -841,3 +841,12 @@ div.dja__model-description{
 .padding-top-0 {
     padding-top: 0 !important;
 }
+
+
+.flex-container {
+    @media screen and (min-width: 700px) and (max-width: 1150px) {
+        &.flex-container--mobile-inline {
+            display: inline !important;
+        }
+    }
+}
