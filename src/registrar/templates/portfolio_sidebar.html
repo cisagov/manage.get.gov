@@ -3,7 +3,7 @@
 <div class="margin-bottom-4 tablet:margin-bottom-0">
   <nav aria-label="">
     <h2 class="margin-top-0 text-semibold">{{ portfolio.organization_name }}</h2>
-    <ul class="usa-sidenav">
+    <ul class="usa-sidenav usa-sidenav--portfolio">
       <li class="usa-sidenav__item">
         {% url 'portfolio-domains' portfolio.id as url %} 
         <a href="{{ url }}" {% if request.path == url %}class="usa-current"{% endif %}> 

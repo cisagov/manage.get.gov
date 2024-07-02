@@ -63,8 +63,17 @@ class DomainInformation(TimeStampedModel):
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        related_name="DomainRequest_portfolio",
+        related_name="information_portfolio",
         help_text="Portfolio associated with this domain",
+    )
+
+    sub_organization = models.ForeignKey(
+        "registrar.Suborganization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="information_sub_organization",
+        help_text="The suborganization that this domain is included under",
     )
 
     domain_request = models.OneToOneField(
@@ -361,6 +370,10 @@ class DomainInformation(TimeStampedModel):
         # domain_request, if so short circuit the create
         existing_domain_info = cls.objects.filter(domain_request__id=domain_request.id).first()
         if existing_domain_info:
+            logger.info(
+                f"create_from_da() -> Shortcircuting create on {existing_domain_info}. "
+                "This record already exists. No values updated!"
+            )
             return existing_domain_info
 
         # Get the fields that exist on both DomainRequest and DomainInformation
