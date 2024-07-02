@@ -598,6 +598,27 @@ class UserContactInline(admin.StackedInline):
 
     model = models.Contact
 
+    # Read only that we'll leverage for CISA Analysts
+    analyst_readonly_fields = [
+        "user",
+        "email",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 1 conditions that determine which fields are read-only:
+        admin user permissions.
+        """
+
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields  # Read-only fields for analysts
+
 
 class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     """Custom user admin class to use our inlines."""
@@ -645,7 +666,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("Personal info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -676,7 +697,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -700,7 +721,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "Personal Info",
+        "User profile",
         "first_name",
         "middle_name",
         "last_name",
@@ -937,6 +958,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "user",
+        "email",
     ]
 
     def get_readonly_fields(self, request, obj=None):

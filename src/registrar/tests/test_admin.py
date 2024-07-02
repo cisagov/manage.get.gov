@@ -3558,7 +3558,7 @@ class TestMyUserAdmin(MockDb):
                         )
                     },
                 ),
-                ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+                ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
                 ("Permissions", {"fields": ("is_active", "groups")}),
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
             )
@@ -4049,9 +4049,7 @@ class TestContactAdmin(TestCase):
 
             readonly_fields = self.admin.get_readonly_fields(request)
 
-            expected_fields = [
-                "user",
-            ]
+            expected_fields = ["user", "email"]
 
             self.assertEqual(readonly_fields, expected_fields)
 
