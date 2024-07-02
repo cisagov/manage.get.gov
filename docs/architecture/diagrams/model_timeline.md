@@ -41,7 +41,7 @@ class DomainRequest {
   --
   creator (User)
   investigator (User)
-  authorizing_official (Contact)
+  senior_official (Contact)
   submitter (Contact)
   other_contacts (Contacts)
   approved_domain (Domain)
@@ -80,7 +80,7 @@ class Contact {
   --
 }
 
-DomainRequest *-r-* Contact : authorizing_official, submitter, other_contacts
+DomainRequest *-r-* Contact : senior_official, submitter, other_contacts
 
 class DraftDomain {
   Requested domain

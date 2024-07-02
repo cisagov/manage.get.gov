@@ -426,6 +426,10 @@ function initializeWidgetOnList(list, parentId) {
         let statusSelect = document.getElementById('id_status');
         
         function moveStatusChangelog(actionNeededReasonFormGroup, statusSelect) {
+            if (!actionNeededReasonFormGroup || !statusSelect) {
+                return;
+            }
+
             let flexContainer = actionNeededReasonFormGroup.querySelector('.flex-container');
             let statusChangelog = document.getElementById('dja-status-changelog');
 

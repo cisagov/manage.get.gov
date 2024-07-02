@@ -79,10 +79,10 @@
           {% endwith %}
         {% endif %}
 
-        {% if step == Step.AUTHORIZING_OFFICIAL %}
+        {% if step == Step.SENIOR_OFFICIAL %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% if domain_request.authorizing_official is not None %}
-            {% with title=form_titles|get_item:step value=domain_request.authorizing_official %}
+          {% if domain_request.senior_official is not None %}
+            {% with title=form_titles|get_item:step value=domain_request.senior_official %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' %}
             {% endwith %}
           {% else %}

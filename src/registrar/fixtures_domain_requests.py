@@ -36,7 +36,7 @@ class DomainRequestFixture:
     #     "purpose": None,
     #     "anything_else": None,
     #     "is_policy_acknowledged": None,
-    #     "authorizing_official": None,
+    #     "senior_official": None,
     #     "submitter": None,
     #     "other_contacts": [],
     #     "current_websites": [],
@@ -117,11 +117,11 @@ class DomainRequestFixture:
         if not da.investigator:
             da.investigator = User.objects.get(username=user.username) if "investigator" in app else None
 
-        if not da.authorizing_official:
-            if "authorizing_official" in app and app["authorizing_official"] is not None:
-                da.authorizing_official, _ = Contact.objects.get_or_create(**app["authorizing_official"])
+        if not da.senior_official:
+            if "senior_official" in app and app["senior_official"] is not None:
+                da.senior_official, _ = Contact.objects.get_or_create(**app["senior_official"])
             else:
-                da.authorizing_official = Contact.objects.create(**cls.fake_contact())
+                da.senior_official = Contact.objects.create(**cls.fake_contact())
 
         if not da.submitter:
             if "submitter" in app and app["submitter"] is not None:

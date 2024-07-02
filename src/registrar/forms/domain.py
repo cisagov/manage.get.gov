@@ -260,10 +260,10 @@ class ContactForm(forms.ModelForm):
         self.domainInfo = domainInfo
 
 
-class AuthorizingOfficialContactForm(ContactForm):
-    """Form for updating authorizing official contacts."""
+class SeniorOfficialContactForm(ContactForm):
+    """Form for updating senior official contacts."""
 
-    JOIN = "authorizing_official"
+    JOIN = "senior_official"
 
     def __init__(self, disable_fields=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -273,13 +273,13 @@ class AuthorizingOfficialContactForm(ContactForm):
 
         # Set custom error messages
         self.fields["first_name"].error_messages = {
-            "required": "Enter the first name / given name of your authorizing official."
+            "required": "Enter the first name / given name of your senior official."
         }
         self.fields["last_name"].error_messages = {
-            "required": "Enter the last name / family name of your authorizing official."
+            "required": "Enter the last name / family name of your senior official."
         }
         self.fields["title"].error_messages = {
-            "required": "Enter the title or role your authorizing official has in your \
+            "required": "Enter the title or role your senior official has in your \
             organization (e.g., Chief Information Officer)."
         }
         self.fields["email"].error_messages = {
@@ -306,21 +306,21 @@ class AuthorizingOfficialContactForm(ContactForm):
         is_federal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
         is_tribal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
 
-        # Get the Contact object from the db for the Authorizing Official
-        db_ao = Contact.objects.get(id=self.instance.id)
+        # Get the Contact object from the db for the Senior Official
+        db_so = Contact.objects.get(id=self.instance.id)
 
         if (is_federal or is_tribal) and self.has_changed():
             # This action should be blocked by the UI, as the text fields are readonly.
             # If they get past this point, we forbid it this way.
             # This could be malicious, so lets reserve information for the backend only.
-            raise ValueError("Authorizing Official cannot be modified for federal or tribal domains.")
-        elif db_ao.has_more_than_one_join("information_authorizing_official"):
-            # Handle the case where the domain information object is available and the AO Contact
+            raise ValueError("Senior Official cannot be modified for federal or tribal domains.")
+        elif db_so.has_more_than_one_join("information_senior_official"):
+            # Handle the case where the domain information object is available and the SO Contact
             # has more than one joined object.
             # In this case, create a new Contact, and update the new Contact with form data.
-            # Then associate with domain information object as the authorizing_official
+            # Then associate with domain information object as the senior_official
             data = dict(self.cleaned_data.items())
-            self.domainInfo.authorizing_official = Contact.objects.create(**data)
+            self.domainInfo.senior_official = Contact.objects.create(**data)
             self.domainInfo.save()
         else:
             # If all checks pass, just save normally

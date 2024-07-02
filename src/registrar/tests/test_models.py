@@ -25,6 +25,7 @@ from registrar.utility.constants import BranchChoices
 
 from .common import MockSESClient, less_console_noise, completed_domain_request, set_domain_request_investigators
 from django_fsm import TransitionNotAllowed
+from waffle.testutils import override_flag
 
 
 # Test comment for push -- will remove
@@ -33,29 +34,44 @@ from django_fsm import TransitionNotAllowed
 @boto3_mocking.patching
 class TestDomainRequest(TestCase):
     def setUp(self):
+
+        self.dummy_user, _ = Contact.objects.get_or_create(
+            email="mayor@igorville.com", first_name="Hello", last_name="World"
+        )
+        self.dummy_user_2, _ = User.objects.get_or_create(
+            username="intern@igorville.com", email="intern@igorville.com", first_name="Lava", last_name="World"
+        )
         self.started_domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED, name="started.gov"
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            name="started.gov",
         )
         self.submitted_domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.SUBMITTED, name="submitted.gov"
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            name="submitted.gov",
         )
         self.in_review_domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, name="in-review.gov"
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            name="in-review.gov",
         )
         self.action_needed_domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED, name="action-needed.gov"
+            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            name="action-needed.gov",
         )
         self.approved_domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.APPROVED, name="approved.gov"
+            status=DomainRequest.DomainRequestStatus.APPROVED,
+            name="approved.gov",
         )
         self.withdrawn_domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.WITHDRAWN, name="withdrawn.gov"
+            status=DomainRequest.DomainRequestStatus.WITHDRAWN,
+            name="withdrawn.gov",
         )
         self.rejected_domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.REJECTED, name="rejected.gov"
+            status=DomainRequest.DomainRequestStatus.REJECTED,
+            name="rejected.gov",
         )
         self.ineligible_domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.INELIGIBLE, name="ineligible.gov"
+            status=DomainRequest.DomainRequestStatus.INELIGIBLE,
+            name="ineligible.gov",
         )
 
         # Store all domain request statuses in a variable for ease of use
@@ -135,7 +151,7 @@ class TestDomainRequest(TestCase):
                 address_line2="APT 1A",
                 state_territory="CA",
                 zipcode="12345-6789",
-                authorizing_official=contact,
+                senior_official=contact,
                 requested_domain=domain,
                 submitter=contact,
                 purpose="Igorville rules!",
@@ -163,7 +179,7 @@ class TestDomainRequest(TestCase):
                 address_line2="APT 1A",
                 state_territory="CA",
                 zipcode="12345-6789",
-                authorizing_official=contact,
+                senior_official=contact,
                 submitter=contact,
                 purpose="Igorville rules!",
                 anything_else="All of Igorville loves the dotgov program.",
@@ -199,7 +215,9 @@ class TestDomainRequest(TestCase):
                     domain_request.submit()
             self.assertEqual(domain_request.status, domain_request.DomainRequestStatus.SUBMITTED)
 
-    def check_email_sent(self, domain_request, msg, action, expected_count):
+    def check_email_sent(
+        self, domain_request, msg, action, expected_count, expected_content=None, expected_email="mayor@igorville.com"
+    ):
         """Check if an email was sent after performing an action."""
 
         with self.subTest(msg=msg, action=action):
@@ -213,19 +231,35 @@ class TestDomainRequest(TestCase):
             sent_emails = [
                 email
                 for email in MockSESClient.EMAILS_SENT
-                if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                if expected_email in email["kwargs"]["Destination"]["ToAddresses"]
             ]
             self.assertEqual(len(sent_emails), expected_count)
 
+            if expected_content:
+                email_content = sent_emails[0]["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
+                self.assertIn(expected_content, email_content)
+
+    @override_flag("profile_feature", active=False)
     def test_submit_from_started_sends_email(self):
         msg = "Create a domain request and submit it and see if email was sent."
-        domain_request = completed_domain_request()
-        self.check_email_sent(domain_request, msg, "submit", 1)
+        domain_request = completed_domain_request(submitter=self.dummy_user, user=self.dummy_user_2)
+        self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hello")
+
+    @override_flag("profile_feature", active=True)
+    def test_submit_from_started_sends_email_to_creator(self):
+        """Tests if, when the profile feature flag is on, we send an email to the creator"""
+        msg = "Create a domain request and submit it and see if email was sent when the feature flag is on."
+        domain_request = completed_domain_request(submitter=self.dummy_user, user=self.dummy_user_2)
+        self.check_email_sent(
+            domain_request, msg, "submit", 1, expected_content="Lava", expected_email="intern@igorville.com"
+        )
 
     def test_submit_from_withdrawn_sends_email(self):
         msg = "Create a withdrawn domain request and submit it and see if email was sent."
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
-        self.check_email_sent(domain_request, msg, "submit", 1)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.WITHDRAWN, submitter=self.dummy_user
+        )
+        self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hello")
 
     def test_submit_from_action_needed_does_not_send_email(self):
         msg = "Create a domain request with ACTION_NEEDED status and submit it, check if email was not sent."
@@ -239,18 +273,24 @@ class TestDomainRequest(TestCase):
 
     def test_approve_sends_email(self):
         msg = "Create a domain request and approve it and see if email was sent."
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-        self.check_email_sent(domain_request, msg, "approve", 1)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, submitter=self.dummy_user
+        )
+        self.check_email_sent(domain_request, msg, "approve", 1, expected_content="Hello")
 
     def test_withdraw_sends_email(self):
         msg = "Create a domain request and withdraw it and see if email was sent."
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-        self.check_email_sent(domain_request, msg, "withdraw", 1)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, submitter=self.dummy_user
+        )
+        self.check_email_sent(domain_request, msg, "withdraw", 1, expected_content="Hello")
 
     def test_reject_sends_email(self):
         msg = "Create a domain request and reject it and see if email was sent."
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
-        self.check_email_sent(domain_request, msg, "reject", 1)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.APPROVED, submitter=self.dummy_user
+        )
+        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hello")
 
     def test_reject_with_prejudice_does_not_send_email(self):
         msg = "Create a domain request and reject it with prejudice and see if email was sent."
@@ -1193,8 +1233,8 @@ class TestContact(TestCase):
         )
         self.contact, _ = Contact.objects.get_or_create(user=self.user)
 
-        self.contact_as_ao, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
-        self.domain_request = DomainRequest.objects.create(creator=self.user, authorizing_official=self.contact_as_ao)
+        self.contact_as_so, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
+        self.domain_request = DomainRequest.objects.create(creator=self.user, senior_official=self.contact_as_so)
 
     def tearDown(self):
         super().tearDown()
@@ -1287,10 +1327,10 @@ class TestContact(TestCase):
         """Test the Contact model method, has_more_than_one_join"""
         # test for a contact which has one user defined
         self.assertFalse(self.contact.has_more_than_one_join("user"))
-        self.assertTrue(self.contact.has_more_than_one_join("authorizing_official"))
-        # test for a contact which is assigned as an authorizing official on a domain request
-        self.assertFalse(self.contact_as_ao.has_more_than_one_join("authorizing_official"))
-        self.assertTrue(self.contact_as_ao.has_more_than_one_join("submitted_domain_requests"))
+        self.assertTrue(self.contact.has_more_than_one_join("senior_official"))
+        # test for a contact which is assigned as a senior official on a domain request
+        self.assertFalse(self.contact_as_so.has_more_than_one_join("senior_official"))
+        self.assertTrue(self.contact_as_so.has_more_than_one_join("submitted_domain_requests"))
 
     def test_has_contact_info(self):
         """Test that has_contact_info properly returns"""
@@ -1620,7 +1660,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.user = get_user_model().objects.create(
             username=username, first_name=first_name, last_name=last_name, email=email
         )
-        ao, _ = Contact.objects.get_or_create(
+        so, _ = Contact.objects.get_or_create(
             first_name="Meowy",
             last_name="Meoward",
             title="Chief Cat",
@@ -1655,7 +1695,7 @@ class TestDomainRequestIncomplete(TestCase):
             address_line1="address 1",
             state_territory="CA",
             zipcode="94044",
-            authorizing_official=ao,
+            senior_official=so,
             requested_domain=draft_domain,
             purpose="Some purpose",
             submitter=you,
@@ -1753,11 +1793,11 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.save()
         self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
 
-    def test_is_authorizing_official_complete(self):
-        self.assertTrue(self.domain_request._is_authorizing_official_complete())
-        self.domain_request.authorizing_official = None
+    def test_is_senior_official_complete(self):
+        self.assertTrue(self.domain_request._is_senior_official_complete())
+        self.domain_request.senior_official = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_authorizing_official_complete())
+        self.assertFalse(self.domain_request._is_senior_official_complete())
 
     def test_is_requested_domain_complete(self):
         self.assertTrue(self.domain_request._is_requested_domain_complete())
