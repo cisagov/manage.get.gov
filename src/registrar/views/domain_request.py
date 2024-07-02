@@ -41,7 +41,7 @@ class Step(StrEnum):
     ORGANIZATION_ELECTION = "organization_election"
     ORGANIZATION_CONTACT = "organization_contact"
     ABOUT_YOUR_ORGANIZATION = "about_your_organization"
-    AUTHORIZING_OFFICIAL = "authorizing_official"
+    SENIOR_OFFICIAL = "senior_official"
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
     PURPOSE = "purpose"
@@ -87,7 +87,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.ORGANIZATION_ELECTION: _("Election office"),
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
         Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
-        Step.AUTHORIZING_OFFICIAL: _("Authorizing official"),
+        Step.SENIOR_OFFICIAL: _("Senior official"),
         Step.CURRENT_SITES: _("Current websites"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
         Step.PURPOSE: _("Purpose of your domain"),
@@ -358,7 +358,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 or self.domain_request.urbanization is not None
             ),
             "about_your_organization": self.domain_request.about_your_organization is not None,
-            "authorizing_official": self.domain_request.authorizing_official is not None,
+            "senior_official": self.domain_request.senior_official is not None,
             "current_sites": (
                 self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
             ),
@@ -540,9 +540,9 @@ class AboutYourOrganization(DomainRequestWizard):
     forms = [forms.AboutYourOrganizationForm]
 
 
-class AuthorizingOfficial(DomainRequestWizard):
-    template_name = "domain_request_authorizing_official.html"
-    forms = [forms.AuthorizingOfficialForm]
+class SeniorOfficial(DomainRequestWizard):
+    template_name = "domain_request_senior_official.html"
+    forms = [forms.SeniorOfficialForm]
 
     def get_context_data(self):
         context = super().get_context_data()
@@ -817,7 +817,7 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         # After a delete occurs, do a second sweep on any returned duplicates.
         # This determines if any of these three fields share a contact, which is used for
-        # the edge case where the same user may be an AO, and a submitter, for example.
+        # the edge case where the same user may be an SO, and a submitter, for example.
         if len(duplicates) > 0:
             duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
             Contact.objects.filter(id__in=duplicates_to_delete, user=None).delete()
@@ -830,7 +830,7 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         Collects all orphaned contacts associated with a given DomainRequest object.
 
         An orphaned contact is defined as a contact that is associated with the domain request,
-        but not with any other domain_request. This includes the authorizing official, the submitter,
+        but not with any other domain_request. This includes the senior official, the submitter,
         and any other contacts linked to the domain_request.
 
         Parameters:
@@ -845,19 +845,19 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         contacts_to_delete = []
 
         # Get each contact object on the DomainRequest object
-        ao = domain_request.authorizing_official
+        so = domain_request.senior_official
         submitter = domain_request.submitter
         other_contacts = list(domain_request.other_contacts.all())
         other_contact_ids = domain_request.other_contacts.all().values_list("id", flat=True)
 
         # Check if the desired item still exists in the DB
         if check_db:
-            ao = self._get_contacts_by_id([ao.id]).first() if ao is not None else None
+            so = self._get_contacts_by_id([so.id]).first() if so is not None else None
             submitter = self._get_contacts_by_id([submitter.id]).first() if submitter is not None else None
             other_contacts = self._get_contacts_by_id(other_contact_ids)
 
         # Pair each contact with its db related name for use in checking if it has joins
-        checked_contacts = [(ao, "authorizing_official"), (submitter, "submitted_domain_requests")]
+        checked_contacts = [(so, "senior_official"), (submitter, "submitted_domain_requests")]
         checked_contacts.extend((contact, "contact_domain_requests") for contact in other_contacts)
 
         for contact, related_name in checked_contacts:

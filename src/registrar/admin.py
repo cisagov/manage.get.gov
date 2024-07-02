@@ -444,7 +444,7 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "authorizing_official": (Contact, _name_sort),
+        "senior_official": (Contact, _name_sort),
         "submitter": (Contact, _name_sort),
         # == User == #
         "creator": (User, _name_sort),
@@ -1235,7 +1235,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     fieldsets = [
         (None, {"fields": ["portfolio", "creator", "submitter", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
-        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
         (
             "Type of organization",
@@ -1309,7 +1309,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     autocomplete_fields = [
         "creator",
         "domain_request",
-        "authorizing_official",
+        "senior_official",
         "domain",
         "submitter",
     ]
@@ -1525,7 +1525,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             "Contacts",
             {
                 "fields": [
-                    "authorizing_official",
+                    "senior_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
                     "cisa_representative_first_name",
@@ -1614,7 +1614,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "requested_domain",
         "submitter",
         "creator",
-        "authorizing_official",
+        "senior_official",
         "investigator",
     ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
@@ -2039,7 +2039,7 @@ class DomainInformationInline(admin.StackedInline):
     autocomplete_fields = [
         "creator",
         "domain_request",
-        "authorizing_official",
+        "senior_official",
         "domain",
         "submitter",
     ]
