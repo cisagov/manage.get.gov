@@ -2249,6 +2249,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "action_needed_reason_email",
                 "federal_agency",
                 "portfolio",
+                "sub_organization",
                 "creator",
                 "investigator",
                 "generic_org_type",

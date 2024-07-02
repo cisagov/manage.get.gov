@@ -1233,7 +1233,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "sub_organization", "creator", "submitter", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1312,6 +1312,8 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "senior_official",
         "domain",
         "submitter",
+        "portfolio",
+        "sub_organization",
     ]
 
     # Table ordering
@@ -1321,6 +1323,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:
@@ -1509,6 +1512,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {
                 "fields": [
                     "portfolio",
+                    "sub_organization",
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
@@ -1616,11 +1620,14 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "creator",
         "senior_official",
         "investigator",
+        "portfolio",
+        "sub_organization",
     ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:
@@ -2035,14 +2042,7 @@ class DomainInformationInline(admin.StackedInline):
     fieldsets = DomainInformationAdmin.fieldsets
     readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-
-    autocomplete_fields = [
-        "creator",
-        "domain_request",
-        "senior_official",
-        "domain",
-        "submitter",
-    ]
+    autocomplete_fields = DomainInformationAdmin.autocomplete_fields
 
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
@@ -2154,8 +2154,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ),
     )
 
-    # this ordering effects the ordering of results
-    # in autocomplete_fields for domain
+    # this ordering effects the ordering of results in autocomplete_fields for domain
     ordering = ["name"]
 
     def generic_org_type(self, obj):
@@ -2639,6 +2638,11 @@ class PortfolioAdmin(ListHeaderAdmin):
     # readonly_fields = [
     #     "requestor",
     # ]
+    # Creates select2 fields (with search bars)
+    autocomplete_fields = [
+        "creator",
+        "federal_agency",
+    ]
 
     def save_model(self, request, obj, form, change):
 
@@ -2722,6 +2726,10 @@ class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["name", "portfolio"]
+    autocomplete_fields = [
+        "portfolio",
+    ]
+    search_fields = ["name"]
 
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
