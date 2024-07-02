@@ -1,0 +1,113 @@
+# This workflow can be run from the CLI
+#     gh workflow run rebuild-db.yaml -f environment=ENVIRONMENT
+# OR
+#     cf run-task getgov-ENVIRONMENT --command 'python manage.py flush' --name flush
+#     cf run-task getgov-ENVIRONMENT --command 'python manage.py load' --name loaddata
+
+name: Rebuild database
+run-name: Rebuild database for ${{ github.event.inputs.environment }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Which environment should we flush and re-load data for?
+        options:
+          - staging
+          - development
+          - ag
+          - litterbox
+          - hotgov
+          - cb
+          - bob
+          - meoward
+          - backup
+          - ky
+          - es
+          - nl
+          - rh
+          - za
+          - gd
+          - rb
+          - ko
+          - ab
+          - rjm
+          - dk
+
+jobs:
+  connect-to-service:
+    runs-on: ubuntu-latest
+    env:
+      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Cloud Foundry CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget -q -O cf-cli.tgz "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github"
+          tar -xzf cf-cli.tgz
+          sudo mv cf /usr/local/bin
+
+      - name: Authenticate to Cloud Foundry
+        run: |
+          cf api <YOUR_CF_API_ENDPOINT> # Replace with your CF API endpoint
+          cf auth ${{ secrets.CF_USERNAME }} ${{ secrets.CF_PASSWORD }}
+
+      - name: Target organization and space
+        run: |
+          cf target -o cisa-dotgov -s nl
+
+      - name: Connect to service
+        id: connect
+        run: |
+          cf connect-to-service -no-client getgov-nl getgov-nl-database > connection_info.txt
+          cat connection_info.txt
+
+      - name: Extract connection details
+        id: extract
+        run: |
+          port=$(grep -oP 'port:\s*\K\d+' connection_info.txt)
+          username=$(grep -oP 'user:\s*\K\w+' connection_info.txt)
+          broker_name=$(grep -oP 'dbname:\s*\K\w+' connection_info.txt)
+          echo "::set-output name=port::$port"
+          echo "::set-output name=username::$username"
+          echo "::set-output name=broker_name::$broker_name"
+
+      - name: Connect to PostgreSQL
+        run: |
+          psql -h localhost -p ${{ steps.extract.outputs.port }} -U ${{ steps.extract.outputs.username }} -d ${{ steps.extract.outputs.broker_name }}
+        env:
+          PGPASSWORD: ${{ secrets.PG_PASSWORD }}
+
+      - name: Get table names
+        id: get_tables
+        run: |
+          tables=$(psql -h localhost -p ${{ steps.extract.outputs.port }} -U ${{ steps.extract.outputs.username }} -d ${{ steps.extract.outputs.broker_name }} -c "\dt" -t | awk '{print $3}')
+          echo "::set-output name=tables::$tables"
+
+      - name: Drop all tables
+        run: |
+          for table in ${{ steps.get_tables.outputs.tables }}
+          do
+            psql -h localhost -p ${{ steps.extract.outputs.port }} -U ${{ steps.extract.outputs.username }} -d ${{ steps.extract.outputs.broker_name }} -c "DROP TABLE IF EXISTS $table CASCADE;"
+          done
+        env:
+          PGPASSWORD: ${{ secrets.PG_PASSWORD }}
+
+      - name: Migrate
+        run: |
+          cf ssh getgov-nl -c "/tmp/lifecycle/shell ./manage.py migrate"
+
+      - name: Run fixtures
+        run: |
+          cf ssh getgov-nl -c "/tmp/lifecycle/shell ./manage.py load"
+
+      - name: Create cache table
+        run: |
+          cf ssh getgov-nl -c "/tmp/lifecycle/shell ./manage.py createcachetable"
