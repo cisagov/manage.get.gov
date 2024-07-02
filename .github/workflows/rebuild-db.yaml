@@ -1,8 +1,5 @@
 # This workflow can be run from the CLI
 #     gh workflow run rebuild-db.yaml -f environment=ENVIRONMENT
-# OR
-#     cf run-task getgov-ENVIRONMENT --command 'python manage.py flush' --name flush
-#     cf run-task getgov-ENVIRONMENT --command 'python manage.py load' --name loaddata
 
 name: Rebuild database
 run-name: Rebuild database for ${{ github.event.inputs.environment }}
@@ -14,7 +11,6 @@ on:
         type: choice
         description: Which environment should we flush and re-load data for?
         options:
-          - staging
           - development
           - ag
           - litterbox
@@ -43,30 +39,23 @@ jobs:
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      # - name: Delete existing data for ${{ github.event.inputs.environment }}
+      #   uses: cloud-gov/cg-cli-tools@main
+      #   with:
+      #     cf_username: ${{ secrets[env.CF_USERNAME] }}
+      #     cf_password: ${{ secrets[env.CF_PASSWORD] }}
+      #     cf_org: cisa-dotgov
+      #     cf_space: ${{ github.event.inputs.environment }}
+      #     cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py flush --no-input' --name flush"
 
-      - name: Set up Cloud Foundry CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget
-          wget -q -O cf-cli.tgz "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github"
-          tar -xzf cf-cli.tgz
-          sudo mv cf /usr/local/bin
-
-      - name: Authenticate to Cloud Foundry
-        run: |
-          cf api <YOUR_CF_API_ENDPOINT> # Replace with your CF API endpoint
-          cf auth ${{ secrets.CF_USERNAME }} ${{ secrets.CF_PASSWORD }}
-
-      - name: Target organization and space
-        run: |
-          cf target -o cisa-dotgov -s nl
+      # - name: Target organization and space
+      #   run: |
+      #     cf target -o cisa-dotgov -s nl
 
       - name: Connect to service
         id: connect
         run: |
-          cf connect-to-service -no-client getgov-nl getgov-nl-database > connection_info.txt
+          cf connect-to-service -no-client getgov-${{ github.event.inputs.environment }} getgov-${{ github.event.inputs.environment }}-database > connection_info.txt
           cat connection_info.txt
 
       - name: Extract connection details
@@ -100,14 +89,14 @@ jobs:
         env:
           PGPASSWORD: ${{ secrets.PG_PASSWORD }}
 
-      - name: Migrate
-        run: |
-          cf ssh getgov-nl -c "/tmp/lifecycle/shell ./manage.py migrate"
+      # - name: Migrate
+      #   run: |
+      #     cf ssh getgov-${{ github.event.inputs.environment }} -c "/tmp/lifecycle/shell ./manage.py migrate"
 
-      - name: Run fixtures
-        run: |
-          cf ssh getgov-nl -c "/tmp/lifecycle/shell ./manage.py load"
+      # - name: Run fixtures
+      #   run: |
+      #     cf ssh getgov-${{ github.event.inputs.environment }} -c "/tmp/lifecycle/shell ./manage.py load"
 
-      - name: Create cache table
-        run: |
-          cf ssh getgov-nl -c "/tmp/lifecycle/shell ./manage.py createcachetable"
+      # - name: Create cache table
+      #   run: |
+      #     cf ssh getgov-${{ github.event.inputs.environment }} -c "/tmp/lifecycle/shell ./manage.py createcachetable"
