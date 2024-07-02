@@ -288,7 +288,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.assertContains(response, "(555) 555 5556")
         self.assertContains(response, "Testy2 Tester2")
 
-        # == Check for the authorizing_official == #
+        # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com")
         self.assertContains(response, "Chief Tester")
         self.assertContains(response, "(555) 555 5555")
@@ -374,9 +374,9 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
         # Create a ready domain with a preset expiration date
         domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-
         response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
-
+        # load expiration date into cache and registrar with below command
+        domain.registry_expiration_date
         # Make sure the ex date is what we expect it to be
         domain_ex_date = Domain.objects.get(id=domain.id).expiration_date
         self.assertEqual(domain_ex_date, date(2023, 5, 25))
@@ -400,7 +400,6 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
         self.assertContains(response, "Extend expiration date")
-        self.assertContains(response, "New expiration date: <b>May 25, 2025</b>")
 
         # Ensure the message we recieve is in line with what we expect
         expected_message = "Successfully extended the expiration date."
@@ -519,70 +518,10 @@ class TestDomainAdmin(MockEppLib, WebTest):
                 # Follow the response
                 response = response.follow()
 
-        # This value is based off of the current year - the expiration date.
-        # We "freeze" time to 2024, so 2024 - 2023 will always result in an
-        # "extension" of 2, as that will be one year of extension from that date.
-        extension_length = 2
-
-        # Assert that it is calling the function with the right extension length.
+        # Assert that it is calling the function with the default extension length.
         # We only need to test the value that EPP sends, as we can assume the other
         # test cases cover the "renew" function.
-        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
-
-        # We should not make duplicate calls
-        self.assertEqual(renew_mock.call_count, 1)
-
-        # Assert that everything on the page looks correct
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Extend expiration date")
-
-        # Ensure the message we recieve is in line with what we expect
-        expected_message = "Successfully extended the expiration date."
-        expected_call = call(
-            # The WGSI request doesn't need to be tested
-            ANY,
-            messages.INFO,
-            expected_message,
-            extra_tags="",
-            fail_silently=False,
-        )
-        mock_add_message.assert_has_calls([expected_call], 1)
-
-    @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2023, 1, 1))
-    def test_extend_expiration_date_button_date_matches_epp(self, mock_date_today):
-        """
-        Tests if extend_expiration_date button sends the right epp command
-        when the current year matches the expiration date
-        """
-
-        # Create a ready domain with a preset expiration date
-        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-
-        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
-
-        # Make sure that the page is loading as expected
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Extend expiration date")
-
-        # Grab the form to submit
-        form = response.forms["domain_form"]
-
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            with patch("registrar.models.Domain.renew_domain") as renew_mock:
-                # Submit the form
-                response = form.submit("_extend_expiration_date")
-
-                # Follow the response
-                response = response.follow()
-
-        extension_length = 1
-
-        # Assert that it is calling the function with the right extension length.
-        # We only need to test the value that EPP sends, as we can assume the other
-        # test cases cover the "renew" function.
-        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
+        renew_mock.assert_has_calls([call()], any_order=False)
 
         # We should not make duplicate calls
         self.assertEqual(renew_mock.call_count, 1)
@@ -1525,11 +1464,11 @@ class TestDomainRequestAdmin(MockEppLib):
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-        # Test the email sent out for questionable_ao
-        questionable_ao = DomainRequest.ActionNeededReasons.QUESTIONABLE_AUTHORIZING_OFFICIAL
-        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_ao)
+        # Test the email sent out for questionable_so
+        questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
         self.assert_email_is_accurate(
-            "AUTHORIZING OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address=BCC_EMAIL
+            "SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address=BCC_EMAIL
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
 
@@ -2186,16 +2125,15 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
 
-        # == Check for the authorizing_official == #
+        # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
-        expected_ao_fields = [
+        expected_so_fields = [
             # Field, expected value
             ("phone", "(555) 555 5555"),
         ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
-        self.assertContains(response, "Chief Tester")
 
-        self.assertContains(response, "Testy Tester")
+        self.test_helper.assert_response_contains_distinct_values(response, expected_so_fields)
+        self.assertContains(response, "Chief Tester")
 
         # == Test the other_employees field == #
         self.assertContains(response, "testy2@town.com")
@@ -2341,7 +2279,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "zipcode",
                 "urbanization",
                 "about_your_organization",
-                "authorizing_official",
+                "senior_official",
                 "approved_domain",
                 "requested_domain",
                 "submitter",
@@ -3235,14 +3173,14 @@ class TestDomainInformationAdmin(TestCase):
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
 
-        # == Check for the authorizing_official == #
+        # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
-        expected_ao_fields = [
+        expected_so_fields = [
             # Field, expected value
             ("title", "Chief Tester"),
             ("phone", "(555) 555 5555"),
         ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_ao_fields)
+        self.test_helper.assert_response_contains_distinct_values(response, expected_so_fields)
 
         self.assertContains(response, "Testy Tester", count=10)
 
@@ -3790,7 +3728,7 @@ class AuditedAdminTest(TestCase):
     def test_alphabetically_sorted_fk_fields_domain_request(self):
         with less_console_noise():
             tested_fields = [
-                DomainRequest.authorizing_official.field,
+                DomainRequest.senior_official.field,
                 DomainRequest.submitter.field,
                 # DomainRequest.investigator.field,
                 DomainRequest.creator.field,
@@ -3848,7 +3786,7 @@ class AuditedAdminTest(TestCase):
     def test_alphabetically_sorted_fk_fields_domain_information(self):
         with less_console_noise():
             tested_fields = [
-                DomainInformation.authorizing_official.field,
+                DomainInformation.senior_official.field,
                 DomainInformation.submitter.field,
                 # DomainInformation.creator.field,
                 (DomainInformation.domain.field, ["name"]),

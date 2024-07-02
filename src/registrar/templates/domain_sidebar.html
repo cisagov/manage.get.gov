@@ -65,11 +65,11 @@
       </li>      
 
       <li class="usa-sidenav__item">
-        {% url 'domain-authorizing-official' pk=domain.id as url %}
+        {% url 'domain-senior-official' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
-            Authorizing official
+            Senior official
         </a>
       </li>
 
