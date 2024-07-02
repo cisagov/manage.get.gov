@@ -57,12 +57,10 @@ class TestWithUser(MockEppLib):
         last_name = "Last"
         email = "info@example.com"
         phone = "8003111234"
-        self.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email, phone=phone
-        )
         title = "test title"
-        self.user.contact.title = title
-        self.user.contact.save()
+        self.user = get_user_model().objects.create(
+            username=username, first_name=first_name, last_name=last_name, title=title, email=email, phone=phone
+        )
 
         username_regular_incomplete = "test_regular_user_incomplete"
         username_other_incomplete = "test_other_user_incomplete"
@@ -560,7 +558,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(finish_setup_page, "Enter your phone number.")
 
             # Check for the name of the save button
-            self.assertContains(finish_setup_page, "contact_setup_save_button")
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
@@ -598,7 +596,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(finish_setup_page, "Enter your phone number.")
 
             # Check for the name of the save button
-            self.assertContains(finish_setup_page, "contact_setup_save_button")
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
@@ -613,7 +611,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             # Submit the form using the specific submit button to execute the redirect
             completed_setup_page = self._submit_form_webtest(
-                finish_setup_form, follow=True, name="contact_setup_submit_button"
+                finish_setup_form, follow=True, name="user_setup_submit_button"
             )
             self.assertEqual(completed_setup_page.status_code, 200)
 

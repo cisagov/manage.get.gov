@@ -9,9 +9,6 @@ from django.http import QueryDict
 from django.views.generic.edit import FormMixin
 from registrar.forms.user_profile import UserProfileForm, FinishSetupProfileForm
 from django.urls import NoReverseMatch, reverse
-from registrar.models import (
-    Contact,
-)
 from registrar.models.user import User
 from registrar.models.utility.generic_helper import replace_url_queryparams
 from registrar.views.utility.permission_views import UserProfilePermissionView
@@ -25,7 +22,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
     Base View for the User Profile. Handles getting and setting the User Profile
     """
 
-    model = Contact
+    model = User
     template_name = "profile.html"
     form_class = UserProfileForm
     base_view_name = "user-profile"
@@ -57,6 +54,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
     def get_context_data(self, **kwargs):
         """Extend get_context_data to include has_profile_feature_flag"""
         context = super().get_context_data(**kwargs)
+        logger.info("UserProfileView::get_context_data")
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
 
@@ -123,9 +121,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
     def get_object(self, queryset=None):
         """Override get_object to return the logged-in user's contact"""
         self.user = self.request.user  # get the logged in user
-        if hasattr(self.user, "contact"):  # Check if the user has a contact instance
-            return self.user.contact
-        return None
+        return self.user
 
 
 class FinishProfileSetupView(UserProfileView):
@@ -134,7 +130,7 @@ class FinishProfileSetupView(UserProfileView):
 
     template_name = "finish_profile_setup.html"
     form_class = FinishSetupProfileForm
-    model = Contact
+    model = User
 
     base_view_name = "finish-user-profile-setup"
 
@@ -160,11 +156,11 @@ class FinishProfileSetupView(UserProfileView):
         # Get the current form and validate it
         if form.is_valid():
             self.redirect_page = False
-            if "contact_setup_save_button" in request.POST:
+            if "user_setup_save_button" in request.POST:
                 # Logic for when the 'Save' button is clicked, which indicates
                 # user should stay on this page
                 self.redirect_page = False
-            elif "contact_setup_submit_button" in request.POST:
+            elif "user_setup_submit_button" in request.POST:
                 # Logic for when the other button is clicked, which indicates
                 # the user should be taken to the redirect page
                 self.redirect_page = True

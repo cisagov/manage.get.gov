@@ -810,6 +810,8 @@ def create_superuser():
     user = User.objects.create_user(
         username="superuser",
         email="admin@example.com",
+        first_name="first",
+        last_name="last",
         is_staff=True,
         password=p,
     )
@@ -826,6 +828,8 @@ def create_user():
     user = User.objects.create_user(
         username="staffuser",
         email="staff@example.com",
+        first_name="first",
+        last_name="last",
         is_staff=True,
         password=p,
     )
