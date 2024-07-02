@@ -372,7 +372,10 @@ class HomeTests(TestWithUser):
         )
 
         # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakey",
+        )
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
@@ -405,17 +408,12 @@ class HomeTests(TestWithUser):
         igorville = DomainRequest.objects.filter(requested_domain__name="igorville.gov")
         self.assertFalse(igorville.exists())
 
-        # Check if the orphaned contact was deleted
+        # Check if the orphaned contacts were deleted
         orphan = Contact.objects.filter(id=contact.id)
         self.assertFalse(orphan.exists())
+        orphan = Contact.objects.filter(id=contact_user.id)
+        self.assertFalse(orphan.exists())
 
-        # All non-orphan contacts should still exist and are unaltered
-        try:
-            current_user = Contact.objects.filter(id=contact_user.id).get()
-        except Contact.DoesNotExist:
-            self.fail("contact_user (a non-orphaned contact) was deleted")
-
-        self.assertEqual(current_user, contact_user)
         try:
             edge_case = Contact.objects.filter(id=contact_2.id).get()
         except Contact.DoesNotExist:
@@ -444,7 +442,10 @@ class HomeTests(TestWithUser):
         )
 
         # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakey",
+        )
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
@@ -863,7 +864,10 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_request_when_profile_feature_on(self):
         """test that Your profile is in request page when profile feature is on"""
 
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakerson",
+        )
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
             creator=self.user,
@@ -882,7 +886,10 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_request_when_profile_feature_off(self):
         """test that Your profile is not in request page when profile feature is off"""
 
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakerson",
+        )
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
             creator=self.user,

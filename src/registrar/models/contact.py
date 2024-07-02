@@ -14,16 +14,8 @@ class Contact(TimeStampedModel):
         """Contains meta information about this class"""
 
         indexes = [
-            models.Index(fields=["user"]),
             models.Index(fields=["email"]),
         ]
-
-    user = models.OneToOneField(
-        "registrar.User",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-    )
 
     first_name = models.CharField(
         null=True,
@@ -102,38 +94,6 @@ class Contact(TimeStampedModel):
 
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
-
-    def save(self, *args, **kwargs):
-        # Call the parent class's save method to perform the actual save
-        super().save(*args, **kwargs)
-
-        if self.user:
-            updated = False
-
-            # Update first name and last name if necessary
-            if not self.user.first_name or not self.user.last_name:
-                self.user.first_name = self.first_name
-                self.user.last_name = self.last_name
-                updated = True
-
-            # Update middle_name if necessary
-            if not self.user.middle_name:
-                self.user.middle_name = self.middle_name
-                updated = True
-
-            # Update phone if necessary
-            if not self.user.phone:
-                self.user.phone = self.phone
-                updated = True
-
-            # Update title if necessary
-            if not self.user.title:
-                self.user.title = self.title
-                updated = True
-
-            # Save user if any updates were made
-            if updated:
-                self.user.save()
 
     def __str__(self):
         if self.first_name or self.last_name:

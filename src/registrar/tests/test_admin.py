@@ -4036,9 +4036,7 @@ class TestContactAdmin(TestCase):
 
             readonly_fields = self.admin.get_readonly_fields(request)
 
-            expected_fields = [
-                "user",
-            ]
+            expected_fields = []
 
             self.assertEqual(readonly_fields, expected_fields)
 
@@ -4054,15 +4052,18 @@ class TestContactAdmin(TestCase):
             self.assertEqual(readonly_fields, expected_fields)
 
     def test_change_view_for_joined_contact_five_or_less(self):
-        """Create a contact, join it to 4 domain requests.  5th join is user.
+        """Create a contact, join it to 4 domain requests.
         Assert that the warning on the contact form lists 4 joins."""
         with less_console_noise():
             self.client.force_login(self.superuser)
 
             # Create an instance of the model
-            contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+            contact, _ = Contact.objects.get_or_create(
+                first_name="Henry",
+                last_name="McFakerson",
+            )
 
-            # join it to 4 domain requests. The 5th join will be a user.
+            # join it to 4 domain requests.
             domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
             domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
             domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
@@ -4085,24 +4086,26 @@ class TestContactAdmin(TestCase):
                     f"domainrequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
                     f"domainrequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
-                    "<li>Joined to User: <a href='/admin/registrar/"
-                    f"user/{self.staffuser.pk}/change/'>first last staff@example.com</a></li>"
                     "</ul>",
                 )
 
     def test_change_view_for_joined_contact_five_or_more(self):
-        """Create a contact, join it to 5 domain requests. 6th join is user.
+        """Create a contact, join it to 6 domain requests.
         Assert that the warning on the contact form lists 5 joins and a '1 more' ellispsis."""
         with less_console_noise():
             self.client.force_login(self.superuser)
             # Create an instance of the model
             # join it to 6 domain requests.
-            contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+            contact, _ = Contact.objects.get_or_create(
+                first_name="Henry",
+                last_name="McFakerson",
+            )
             domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
             domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
             domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
             domain_request4 = completed_domain_request(submitter=contact, name="city4.gov")
             domain_request5 = completed_domain_request(submitter=contact, name="city5.gov")
+            domain_request6 = completed_domain_request(submitter=contact, name="city6.gov")
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Use the test client to simulate the request
                 response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))

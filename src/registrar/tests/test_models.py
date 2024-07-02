@@ -1221,7 +1221,10 @@ class TestContact(TestCase):
         self.user, _ = User.objects.get_or_create(
             email=self.email, first_name="Jeff", last_name="Lebowski", phone="123456789"
         )
-        self.contact, _ = Contact.objects.get_or_create(user=self.user)
+        self.contact, _ = Contact.objects.get_or_create(
+            first_name="Jeff",
+            last_name="Lebowski",
+        )
 
         self.contact_as_so, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
         self.domain_request = DomainRequest.objects.create(creator=self.user, senior_official=self.contact_as_so)
@@ -1234,9 +1237,6 @@ class TestContact(TestCase):
 
     def test_has_more_than_one_join(self):
         """Test the Contact model method, has_more_than_one_join"""
-        # test for a contact which has one user defined
-        self.assertFalse(self.contact.has_more_than_one_join("user"))
-        self.assertTrue(self.contact.has_more_than_one_join("senior_official"))
         # test for a contact which is assigned as a senior official on a domain request
         self.assertFalse(self.contact_as_so.has_more_than_one_join("senior_official"))
         self.assertTrue(self.contact_as_so.has_more_than_one_join("submitted_domain_requests"))
