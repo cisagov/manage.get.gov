@@ -1480,10 +1480,10 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
 
         # Tests if an analyst can override existing email content
-        questionable_ao = DomainRequest.ActionNeededReasons.QUESTIONABLE_AUTHORIZING_OFFICIAL
+        questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
         domain_request.action_needed_reason_email = "custom email content"
         domain_request.save()
-        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_ao)
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
 
         self.assert_email_is_accurate(
             "custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL
