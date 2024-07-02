@@ -67,8 +67,8 @@ services:
     # command: "python"
     command: >
       bash -c " python manage.py migrate &&
-      python manage.py load &&
       python manage.py createcachetable &&
+      python manage.py load &&
       python manage.py runserver 0.0.0.0:8080"
 
   db:
