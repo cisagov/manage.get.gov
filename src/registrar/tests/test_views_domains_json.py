@@ -3,6 +3,7 @@ from django.urls import reverse
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_date
+from api.tests.common import less_console_noise_decorator
 
 
 class GetDomainsJsonTest(TestWithUser, WebTest):
@@ -11,9 +12,9 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         self.app.set_user(self.user.username)
 
         # Create test domains
-        self.domain1 = Domain.objects.create(name="example1.com", expiration_date="2024-01-01", state="active")
-        self.domain2 = Domain.objects.create(name="example2.com", expiration_date="2024-02-01", state="inactive")
-        self.domain3 = Domain.objects.create(name="example3.com", expiration_date="2024-03-01", state="active")
+        self.domain1 = Domain.objects.create(name="example1.com", expiration_date="2024-01-01", state="unknown")
+        self.domain2 = Domain.objects.create(name="example2.com", expiration_date="2024-02-01", state="dns needed")
+        self.domain3 = Domain.objects.create(name="example3.com", expiration_date="2024-03-01", state="ready")
 
         # Create UserDomainRoles
         UserDomainRole.objects.create(user=self.user, domain=self.domain1)
@@ -25,6 +26,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         UserDomainRole.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_get_domains_json_unauthenticated(self):
         """for an unauthenticated user, test that the user is redirected for auth"""
         self.app.reset()
@@ -32,6 +34,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         response = self.client.get(reverse("get_domains_json"))
         self.assertEqual(response.status_code, 302)
 
+    @less_console_noise_decorator
     def test_get_domains_json_authenticated(self):
         """Test that an authenticated user gets the list of 3 domains."""
         response = self.app.get(reverse("get_domains_json"))
@@ -102,6 +105,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             )
             self.assertEqual(svg_icon_expected, svg_icons[i])
 
+    @less_console_noise_decorator
     def test_get_domains_json_search(self):
         """Test search."""
         # Define your URL variables as a dictionary
@@ -131,6 +135,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             domains[0],
         )
 
+    @less_console_noise_decorator
     def test_pagination(self):
         """Test that pagination is correct in the response"""
         response = self.app.get(reverse("get_domains_json"), {"page": 1})
@@ -143,6 +148,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertEqual(data["num_pages"], 1)
 
+    @less_console_noise_decorator
     def test_sorting(self):
         """test that sorting works properly in the response"""
         response = self.app.get(reverse("get_domains_json"), {"sort_by": "expiration_date", "order": "desc"})
@@ -161,6 +167,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         expiration_dates = [domain["expiration_date"] for domain in data["domains"]]
         self.assertEqual(expiration_dates, sorted(expiration_dates))
 
+    @less_console_noise_decorator
     def test_sorting_by_state_display(self):
         """test that the state_display sorting works properly"""
         response = self.app.get(reverse("get_domains_json"), {"sort_by": "state_display", "order": "asc"})
@@ -178,3 +185,21 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         # Check if sorted by state_display in descending order
         states = [domain["state_display"] for domain in data["domains"]]
         self.assertEqual(states, sorted(states, reverse=True))
+
+    @less_console_noise_decorator
+    def test_state_filtering(self):
+        """Test that different states in request get expected responses."""
+
+        expected_values = [
+            ("unknown", 1),
+            ("ready", 0),
+            ("expired", 2),
+            ("ready,expired", 2),
+            ("unknown,expired", 3),
+        ]
+        for state, num_domains in expected_values:
+            with self.subTest(state=state, num_domains=num_domains):
+                response = self.app.get(reverse("get_domains_json"), {"status": state})
+                self.assertEqual(response.status_code, 200)
+                data = response.json
+                self.assertEqual(len(data["domains"]), num_domains)
