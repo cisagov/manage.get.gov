@@ -6,6 +6,15 @@
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endcomment %}
 
+{% block flex_container_start %}
+    {% if field.field.name == "status_history" %}
+    <div class="flex-container flex-container--mobile-inline {% if not line.fields|length == 1 %} fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}{% if field.field.is_hidden %} hidden{% endif %}{% elif field.is_checkbox %} checkbox-row{% endif %}">
+    {% else %}
+    {% comment %} Default flex container element {% endcomment %}
+    <div class="flex-container{% if not line.fields|length == 1 %} fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}{% if field.field.is_hidden %} hidden{% endif %}{% elif field.is_checkbox %} checkbox-row{% endif %}">
+    {% endif %}
+{% endblock flex_container_start %}
+
 {% block field_readonly %}
     {% with all_contacts=original_object.other_contacts.all %}
     {% if field.field.name == "status_history" %}

@@ -602,6 +602,27 @@ class UserContactInline(admin.StackedInline):
 
     model = models.Contact
 
+    # Read only that we'll leverage for CISA Analysts
+    analyst_readonly_fields = [
+        "user",
+        "email",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 1 conditions that determine which fields are read-only:
+        admin user permissions.
+        """
+
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields  # Read-only fields for analysts
+
 
 class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     """Custom user admin class to use our inlines."""
@@ -649,7 +670,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("Personal info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -680,7 +701,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -704,7 +725,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "Personal Info",
+        "User profile",
         "first_name",
         "middle_name",
         "last_name",
@@ -941,6 +962,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "user",
+        "email",
     ]
 
     def get_readonly_fields(self, request, obj=None):
@@ -1237,7 +1259,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "sub_organization", "creator", "submitter", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1316,6 +1338,8 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "senior_official",
         "domain",
         "submitter",
+        "portfolio",
+        "sub_organization",
     ]
 
     # Table ordering
@@ -1325,6 +1349,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:
@@ -1520,6 +1545,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {
                 "fields": [
                     "portfolio",
+                    "sub_organization",
                     "status_history",
                     "status",
                     "rejection_reason",
@@ -1630,11 +1656,14 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "creator",
         "senior_official",
         "investigator",
+        "portfolio",
+        "sub_organization",
     ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:
@@ -1963,10 +1992,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
         subject_template = get_template(template_subject_path)
 
-        recipient = domain_request.creator if flag_is_active(None, "profile_feature") else domain_request.submitter
+        if flag_is_active(None, "profile_feature"):  # type: ignore
+            recipient = domain_request.creator
+        else:
+            recipient = domain_request.submitter
+
         # Return the content of the rendered views
         context = {"domain_request": domain_request, "recipient": recipient}
-
         return {
             "subject_text": subject_template.render(context=context),
             "email_body_text": template.render(context=context) if not custom_text else custom_text,
@@ -2063,14 +2095,7 @@ class DomainInformationInline(admin.StackedInline):
     fieldsets = DomainInformationAdmin.fieldsets
     readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-
-    autocomplete_fields = [
-        "creator",
-        "domain_request",
-        "senior_official",
-        "domain",
-        "submitter",
-    ]
+    autocomplete_fields = DomainInformationAdmin.autocomplete_fields
 
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
@@ -2182,8 +2207,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ),
     )
 
-    # this ordering effects the ordering of results
-    # in autocomplete_fields for domain
+    # this ordering effects the ordering of results in autocomplete_fields for domain
     ordering = ["name"]
 
     def generic_org_type(self, obj):
@@ -2667,6 +2691,11 @@ class PortfolioAdmin(ListHeaderAdmin):
     # readonly_fields = [
     #     "requestor",
     # ]
+    # Creates select2 fields (with search bars)
+    autocomplete_fields = [
+        "creator",
+        "federal_agency",
+    ]
 
     def save_model(self, request, obj, form, change):
 
@@ -2750,6 +2779,10 @@ class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["name", "portfolio"]
+    autocomplete_fields = [
+        "portfolio",
+    ]
+    search_fields = ["name"]
 
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
