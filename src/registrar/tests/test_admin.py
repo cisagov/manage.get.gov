@@ -2240,6 +2240,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "federal_agency",
+                "status_history",
+                "action_needed_reason_email",
                 "id",
                 "created_at",
                 "updated_at",
@@ -2300,6 +2302,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "federal_agency",
+                "status_history",
+                "action_needed_reason_email",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -2330,6 +2334,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "federal_agency",
+                "status_history",
+                "action_needed_reason_email",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
