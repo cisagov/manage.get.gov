@@ -1958,7 +1958,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
 
-    # TODO - scrap this approach and just centralize everything
     def get_all_action_needed_reason_emails_as_json(self, domain_request):
         """Returns a json dictionary of every action needed reason and its associated email
         for this particular domain request."""
