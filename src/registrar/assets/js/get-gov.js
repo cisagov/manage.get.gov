@@ -1839,12 +1839,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (editableFormGroup){
           let readonlyField = editableFormGroup.querySelector(".input-with-edit-button__readonly-field")
           let inputField = document.getElementById(`id_${fieldName}`);
-          if (!inputField) {
+          if (!inputField || !readonlyField) {
             return;
           }
 
           let inputFieldValue = inputField.value
-          if (readonlyField && (inputFieldValue || fieldName == "full_name")){
+          if (inputFieldValue || fieldName == "full_name"){
             if (fieldName == "full_name"){
               let firstName = document.querySelector(`#id_first_name`).value;
               let middleName = document.querySelector(`#id_middle_name`).value;
@@ -1857,6 +1857,8 @@ document.addEventListener('DOMContentLoaded', function() {
               }
 
               inputField.classList.add("text-base")
+            }else {
+              readonlyField.innerHTML = inputFieldValue
             }
           }
         }
