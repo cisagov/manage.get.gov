@@ -602,6 +602,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "firstname"
             finish_setup_form["phone"] = "(201) 555-0123"
             finish_setup_form["title"] = "CEO"
             finish_setup_form["last_name"] = "example"
@@ -730,7 +731,7 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
             self.assertContains(save_page, "Your profile has been updated.")
 
             # We need to assert that logo is not clickable and links to manage your domain are not present
-            self.assertContains(save_page, "anage your domains", count=2)
+            self.assertContains(save_page, "manage your domains", count=1)
             self.assertNotContains(
                 save_page, "Before you can manage your domains, we need you to add contact information"
             )
