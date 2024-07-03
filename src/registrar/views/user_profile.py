@@ -1,5 +1,4 @@
 """Views for a User Profile.
-
 """
 
 import logging
@@ -68,7 +67,8 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
         # Show back button conditional on user having finished setup
         context["show_back_button"] = False
-        if hasattr(self.user, "finished_setup") and self.user.finished_setup:
+        form = self.get_form()
+        if hasattr(self.user, "finished_setup") and self.user.finished_setup and form.is_valid():
             context["user_finished_setup"] = True
             context["show_back_button"] = True
 
@@ -144,7 +144,8 @@ class FinishProfileSetupView(UserProfileView):
 
         # Show back button conditional on user having finished setup
         context["show_back_button"] = False
-        if hasattr(self.user, "finished_setup") and self.user.finished_setup:
+        form = self.get_form()
+        if hasattr(self.user, "finished_setup") and self.user.finished_setup and form.is_valid():
             if kwargs.get("redirect") == "home":
                 context["show_back_button"] = True
             else:
