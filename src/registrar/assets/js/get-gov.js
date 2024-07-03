@@ -1844,7 +1844,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           let inputFieldValue = inputField.value
-          if (readonlyField && inputFieldValue){
+          if (readonlyField && inputFieldValue || fieldName == "full_name"){
             if (fieldName == "full_name"){
               let firstName = document.querySelector(`#id_first_name`).value;
               let middleName = document.querySelector(`#id_middle_name`).value;
@@ -1855,8 +1855,6 @@ document.addEventListener('DOMContentLoaded', function() {
               }else {
                 readonlyField.innerHTML = "Unknown";
               }
-            }else {
-              readonlyField.innerHTML = inputValue;
             }
           }
         }

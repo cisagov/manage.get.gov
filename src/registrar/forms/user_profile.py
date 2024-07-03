@@ -71,7 +71,7 @@ class UserProfileForm(forms.ModelForm):
 class FinishSetupProfileForm(UserProfileForm):
     """Form for updating user profile."""
 
-    full_name = forms.CharField(required=True, label="Full name")
+    full_name = forms.CharField(required=False, label="Full name")
 
     def clean(self):
         cleaned_data = super().clean()
@@ -93,7 +93,10 @@ class FinishSetupProfileForm(UserProfileForm):
         self.fields["title"].label = "Title or role in your organization"
 
         # Define the "full_name" value
-        full_name = None
+        full_name = ""
         if self.instance.first_name and self.instance.last_name:
             full_name = self.instance.get_formatted_name(return_unknown_when_none=False)
         self.fields["full_name"].initial = full_name
+
+        # Set full_name as required for styling purposes
+        self.fields["full_name"].widget.attrs['required'] = 'required'
