@@ -1844,7 +1844,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           let inputFieldValue = inputField.value
-          if (readonlyField && inputFieldValue || fieldName == "full_name"){
+          if (readonlyField && (inputFieldValue || fieldName == "full_name")){
             if (fieldName == "full_name"){
               let firstName = document.querySelector(`#id_first_name`).value;
               let middleName = document.querySelector(`#id_middle_name`).value;
@@ -1855,6 +1855,8 @@ document.addEventListener('DOMContentLoaded', function() {
               }else {
                 readonlyField.innerHTML = "Unknown";
               }
+
+              inputField.classList.add("text-base")
             }
           }
         }
