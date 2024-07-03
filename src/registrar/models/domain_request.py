@@ -266,7 +266,7 @@ class DomainRequest(TimeStampedModel):
         """Defines common action needed reasons for domain requests"""
 
         ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
-        QUESTIONABLE_AUTHORIZING_OFFICIAL = ("questionable_authorizing_official", "Questionable authorizing official")
+        QUESTIONABLE_SENIOR_OFFICIAL = ("questionable_senior_official", "Questionable senior official")
         ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
         BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
         OTHER = ("other", "Other (no auto-email sent)")
@@ -315,8 +315,17 @@ class DomainRequest(TimeStampedModel):
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        related_name="DomainInformation_portfolio",
+        related_name="DomainRequest_portfolio",
         help_text="Portfolio associated with this domain request",
+    )
+
+    sub_organization = models.ForeignKey(
+        "registrar.Suborganization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="request_sub_organization",
+        help_text="The suborganization that this domain request is included under",
     )
 
     # This is the domain request user who created this domain request. The contact
@@ -423,11 +432,11 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    authorizing_official = models.ForeignKey(
+    senior_official = models.ForeignKey(
         "registrar.Contact",
         null=True,
         blank=True,
-        related_name="authorizing_official",
+        related_name="senior_official",
         on_delete=models.PROTECT,
     )
 
@@ -444,7 +453,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Domain associated with this request; will be blank until request is approved",
-        related_name="domain_request",
+        related_name="domain_request_approved_domain",
         on_delete=models.SET_NULL,
     )
 
@@ -452,7 +461,7 @@ class DomainRequest(TimeStampedModel):
         "DraftDomain",
         null=True,
         blank=True,
-        related_name="domain_request",
+        related_name="domain_request_requested_domain",
         on_delete=models.PROTECT,
     )
 
@@ -1128,8 +1137,8 @@ class DomainRequest(TimeStampedModel):
             and self.zipcode is None
         )
 
-    def _is_authorizing_official_complete(self):
-        return self.authorizing_official is not None
+    def _is_senior_official_complete(self):
+        return self.senior_official is not None
 
     def _is_requested_domain_complete(self):
         return self.requested_domain is not None
@@ -1191,10 +1200,10 @@ class DomainRequest(TimeStampedModel):
         has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
             self._is_organization_name_and_address_complete()
-            and self._is_authorizing_official_complete()
+            and self._is_senior_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
-            # NOTE: This flag leaves submitter as empty (request wont submit) hence preset to True
+            # NOTE: This flag leaves submitter as empty (request wont submit) hence set to True
             and (self._is_submitter_complete() if not has_profile_feature_flag else True)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()

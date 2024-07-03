@@ -1,7 +1,7 @@
 from .domain_request import *
 from .domain import (
     DomainView,
-    DomainAuthorizingOfficialView,
+    DomainSeniorOfficialView,
     DomainOrgNameAddressView,
     DomainDNSView,
     DomainNameserversView,

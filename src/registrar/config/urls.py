@@ -44,7 +44,7 @@ for step, view in [
     (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
     (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
     (Step.ABOUT_YOUR_ORGANIZATION, views.AboutYourOrganization),
-    (Step.AUTHORIZING_OFFICIAL, views.AuthorizingOfficial),
+    (Step.SENIOR_OFFICIAL, views.SeniorOfficial),
     (Step.CURRENT_SITES, views.CurrentSites),
     (Step.DOTGOV_DOMAIN, views.DotgovDomain),
     (Step.PURPOSE, views.Purpose),
@@ -183,9 +183,9 @@ urlpatterns = [
         name="domain-org-name-address",
     ),
     path(
-        "domain/<int:pk>/authorizing-official",
-        views.DomainAuthorizingOfficialView.as_view(),
-        name="domain-authorizing-official",
+        "domain/<int:pk>/senior-official",
+        views.DomainSeniorOfficialView.as_view(),
+        name="domain-senior-official",
     ),
     path(
         "domain/<int:pk>/security-email",

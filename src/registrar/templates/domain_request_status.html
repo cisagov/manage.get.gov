@@ -86,8 +86,8 @@
       {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization heading_level=heading_level %}
     {% endif %}
 
-    {% if DomainRequest.authorizing_official %}
-      {% include "includes/summary_item.html" with title='Authorizing official' value=DomainRequest.authorizing_official contact='true' heading_level=heading_level %}
+    {% if DomainRequest.senior_official %}
+      {% include "includes/summary_item.html" with title='Senior official' value=DomainRequest.senior_official contact='true' heading_level=heading_level %}
     {% endif %}
 
     {% if DomainRequest.current_websites.all %}

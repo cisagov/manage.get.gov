@@ -15,7 +15,6 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
-from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
@@ -449,7 +448,7 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "authorizing_official": (Contact, _name_sort),
+        "senior_official": (Contact, _name_sort),
         "submitter": (Contact, _name_sort),
         # == User == #
         "creator": (User, _name_sort),
@@ -603,6 +602,27 @@ class UserContactInline(admin.StackedInline):
 
     model = models.Contact
 
+    # Read only that we'll leverage for CISA Analysts
+    analyst_readonly_fields = [
+        "user",
+        "email",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 1 conditions that determine which fields are read-only:
+        admin user permissions.
+        """
+
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields  # Read-only fields for analysts
+
 
 class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     """Custom user admin class to use our inlines."""
@@ -650,7 +670,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("Personal info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -681,7 +701,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -705,7 +725,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "Personal Info",
+        "User profile",
         "first_name",
         "middle_name",
         "last_name",
@@ -942,6 +962,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "user",
+        "email",
     ]
 
     def get_readonly_fields(self, request, obj=None):
@@ -1238,9 +1259,9 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "sub_organization", "creator", "submitter", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
-        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
         (
             "Type of organization",
@@ -1314,9 +1335,11 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     autocomplete_fields = [
         "creator",
         "domain_request",
-        "authorizing_official",
+        "senior_official",
         "domain",
         "submitter",
+        "portfolio",
+        "sub_organization",
     ]
 
     # Table ordering
@@ -1326,6 +1349,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:
@@ -1521,6 +1545,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {
                 "fields": [
                     "portfolio",
+                    "sub_organization",
                     "status_history",
                     "status",
                     "rejection_reason",
@@ -1539,7 +1564,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             "Contacts",
             {
                 "fields": [
-                    "authorizing_official",
+                    "senior_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
                     "cisa_representative_first_name",
@@ -1630,13 +1655,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "requested_domain",
         "submitter",
         "creator",
-        "authorizing_official",
+        "senior_official",
         "investigator",
+        "portfolio",
+        "sub_organization",
     ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:
@@ -2056,14 +2084,7 @@ class DomainInformationInline(admin.StackedInline):
     fieldsets = DomainInformationAdmin.fieldsets
     readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-
-    autocomplete_fields = [
-        "creator",
-        "domain_request",
-        "authorizing_official",
-        "domain",
-        "submitter",
-    ]
+    autocomplete_fields = DomainInformationAdmin.autocomplete_fields
 
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
@@ -2175,8 +2196,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ),
     )
 
-    # this ordering effects the ordering of results
-    # in autocomplete_fields for domain
+    # this ordering effects the ordering of results in autocomplete_fields for domain
     ordering = ["name"]
 
     def generic_org_type(self, obj):
@@ -2258,24 +2278,11 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
             extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
             extra_context["domain_state"] = domain.get_state_display()
-
-            # Pass in what the an extended expiration date would be for the expiration date modal
-            self._set_expiration_date_context(domain, extra_context)
+            extra_context["curr_exp_date"] = (
+                domain.expiration_date if domain.expiration_date is not None else self._get_current_date()
+            )
 
         return super().changeform_view(request, object_id, form_url, extra_context)
-
-    def _set_expiration_date_context(self, domain, extra_context):
-        """Given a domain, calculate the an extended expiration date
-        from the current registry expiration date."""
-        years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
-        try:
-            curr_exp_date = domain.registry_expiration_date
-        except KeyError:
-            # No expiration date was found. Return none.
-            extra_context["extended_expiration_date"] = None
-        else:
-            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
-            extra_context["extended_expiration_date"] = new_date
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
@@ -2304,11 +2311,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             self.message_user(request, "Object is not of type Domain.", messages.ERROR)
             return None
 
-        years = self._get_calculated_years_for_exp_date(obj)
-
         # Renew the domain.
         try:
-            obj.renew_domain(length=years)
+            obj.renew_domain()
             self.message_user(
                 request,
                 "Successfully extended the expiration date.",
@@ -2332,37 +2337,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
 
         return HttpResponseRedirect(".")
-
-    def _get_calculated_years_for_exp_date(self, obj, extension_period: int = 1):
-        """Given the current date, an extension period, and a registry_expiration_date
-        on the domain object, calculate the number of years needed to extend the
-        current expiration date by the extension period.
-        """
-        # Get the date we want to update to
-        desired_date = self._get_current_date() + relativedelta(years=extension_period)
-
-        # Grab the current expiration date
-        try:
-            exp_date = obj.registry_expiration_date
-        except KeyError:
-            # if no expiration date from registry, set it to today
-            logger.warning("current expiration date not set; setting to today")
-            exp_date = self._get_current_date()
-
-        # If the expiration date is super old (2020, for example), we need to
-        # "catch up" to the current year, so we add the difference.
-        # If both years match, then lets just proceed as normal.
-        calculated_exp_date = exp_date + relativedelta(years=extension_period)
-
-        year_difference = desired_date.year - exp_date.year
-
-        years = extension_period
-        if desired_date > calculated_exp_date:
-            # Max probably isn't needed here (no code flow), but it guards against negative and 0.
-            # In both of those cases, we just want to extend by the extension_period.
-            years = max(extension_period, year_difference)
-
-        return years
 
     # Workaround for unit tests, as we cannot mock date directly.
     # it is immutable. Rather than dealing with a convoluted workaround,
@@ -2706,6 +2680,11 @@ class PortfolioAdmin(ListHeaderAdmin):
     # readonly_fields = [
     #     "requestor",
     # ]
+    # Creates select2 fields (with search bars)
+    autocomplete_fields = [
+        "creator",
+        "federal_agency",
+    ]
 
     def save_model(self, request, obj, form, change):
 
@@ -2789,6 +2768,10 @@ class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["name", "portfolio"]
+    autocomplete_fields = [
+        "portfolio",
+    ]
+    search_fields = ["name"]
 
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
