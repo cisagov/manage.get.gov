@@ -94,9 +94,13 @@ source ~/.zshrc
 ```
 
 ### Windows
-If you are using windows, it may be helpful to use [gpg4win](https://www.gpg4win.org/get-gpg4win.html). From there, you should be able to access gpg through the terminal. 
+If GPG doesn't work out of the box with git for you:
+- You can [download the GPG binary directly](https://gnupg.org/download/). 
+- It may be helpful to use [gpg4win](https://www.gpg4win.org/get-gpg4win.html). 
 
-When installing, consider a gpg key manager like Kleopatra if you run into issues with environment variables or with the gpg service not running on startup. 
+From there, you should be able to access gpg through the terminal. 
+
+Additionally, consider a gpg key manager like Kleopatra if you run into issues with environment variables or with the gpg service not running on startup. 
 
 ## Setting up developer sandbox
 
