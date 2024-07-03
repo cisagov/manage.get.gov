@@ -1846,17 +1846,23 @@ document.addEventListener('DOMContentLoaded', function() {
           let inputFieldValue = inputField.value
           if (inputFieldValue || fieldName == "full_name"){
             if (fieldName == "full_name"){
-              let firstName = document.querySelector(`#id_first_name`).value;
-              let middleName = document.querySelector(`#id_middle_name`).value;
-              let lastName = document.querySelector(`#id_last_name`).value;
-              if (firstName && middleName && lastName) {
+              let firstName = document.querySelector(`#id_first_name`);
+              let middleName = document.querySelector(`#id_middle_name`);
+              let lastName = document.querySelector(`#id_last_name`);
+              if (firstName && lastName) {
                 let values = [firstName.value, middleName.value, lastName.value]
+                console.log(values)
                 readonlyField.innerHTML = values.join(" ");
               }else {
                 readonlyField.innerHTML = "Unknown";
               }
-
-              inputField.classList.add("text-base")
+              
+              // Technically, the full_name field is optional, but we want to display it as required. 
+              // This style is applied to readonly fields (gray text). This just removes it, as
+              // this is difficult to achieve otherwise by modifying the .readonly property.
+              if (readonlyField.classList.contains("text-base")) {
+                readonlyField.classList.remove("text-base")
+              }
             }else {
               readonlyField.innerHTML = inputFieldValue
             }
