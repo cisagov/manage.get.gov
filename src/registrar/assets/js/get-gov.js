@@ -1838,7 +1838,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let editableFormGroup = button.parentElement.parentElement.parentElement;
         if (editableFormGroup){
           let readonlyField = editableFormGroup.querySelector(".input-with-edit-button__readonly-field")
-          let inputField = document.getElementById(`id_${fieldName}`).value;
+          let inputField = document.getElementById(`id_${fieldName}`);
           if (!inputField) {
             return;
           }
