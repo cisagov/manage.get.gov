@@ -99,4 +99,4 @@ class FinishSetupProfileForm(UserProfileForm):
         self.fields["full_name"].initial = full_name
 
         # Set full_name as required for styling purposes
-        self.fields["full_name"].widget.attrs['required'] = 'required'
+        self.fields["full_name"].widget.attrs["required"] = "required"
