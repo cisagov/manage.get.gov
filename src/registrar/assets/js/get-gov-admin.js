@@ -548,7 +548,6 @@ function initializeWidgetOnList(list, parentId) {
             let actionNeededEmails = JSON.parse(document.getElementById('action-needed-emails-data').textContent)
             let emailData = actionNeededEmails[reason];
             if (emailData) {
-                // TODO: do we need a revert to default button?
                 let emailBody = emailData.email_body_text
                 if (emailBody) {
                     actionNeededEmail.value = emailBody

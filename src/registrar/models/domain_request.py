@@ -10,7 +10,7 @@ from django.utils import timezone
 from waffle import flag_is_active
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper, convert_string_to_sha256_hash
+from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 
@@ -627,8 +627,7 @@ class DomainRequest(TimeStampedModel):
         if was_already_action_needed and (reason_exists and reason_changed):
             # We don't send emails out in state "other"
             if self.action_needed_reason != self.ActionNeededReasons.OTHER:
-                _email_content = self.action_needed_reason_email
-                self._send_action_needed_reason_email(email_content=_email_content)
+                self._send_action_needed_reason_email(email_content=self.action_needed_reason_email)
 
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.

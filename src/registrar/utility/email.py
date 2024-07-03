@@ -45,6 +45,8 @@ def send_templated_email(
 
     template = get_template(template_name)
     email_body = template.render(context=context)
+
+    # Do cleanup on the email body. Mostly for emails with custom content.
     if email_body:
         email_body.strip().lstrip("\n")
 
