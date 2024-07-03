@@ -1834,6 +1834,32 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // When the edit button is clicked, show the input field under it
         handleEditButtonClick(fieldName, button);
+
+        let editableFormGroup = button.parentElement.parentElement.parentElement;
+        if (editableFormGroup){
+          let readonlyField = editableFormGroup.querySelector(".input-with-edit-button__readonly-field")
+          let inputField = document.getElementById(`id_${fieldName}`).value;
+          if (!inputField) {
+            return;
+          }
+
+          let inputFieldValue = inputField.value
+          if (readonlyField && inputFieldValue){
+            if (fieldName == "full_name"){
+              let firstName = document.querySelector(`#id_first_name`).value;
+              let middleName = document.querySelector(`#id_middle_name`).value;
+              let lastName = document.querySelector(`#id_last_name`).value;
+              if (firstName && middleName && lastName) {
+                let values = [firstName.value, middleName.value, lastName.value]
+                readonlyField.innerHTML = values.join(" ");
+              }else {
+                readonlyField.innerHTML = "Unknown";
+              }
+            }else {
+              readonlyField.innerHTML = inputValue;
+            }
+          }
+        }
       }
     });
   }

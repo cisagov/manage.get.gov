@@ -93,4 +93,7 @@ class FinishSetupProfileForm(UserProfileForm):
         self.fields["title"].label = "Title or role in your organization"
 
         # Define the "full_name" value
-        self.fields["full_name"].initial = self.instance.get_formatted_name()
+        full_name = None
+        if self.instance.first_name and self.instance.last_name:
+            full_name = self.instance.get_formatted_name(return_unknown_when_none=False)
+        self.fields["full_name"].initial = full_name
