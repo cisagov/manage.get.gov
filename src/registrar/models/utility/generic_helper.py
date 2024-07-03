@@ -322,9 +322,3 @@ def convert_queryset_to_dict(queryset, is_model=True, key="id"):
         request_dict = {value[key]: value for value in queryset}
 
     return request_dict
-
-
-def convert_string_to_sha256_hash(string_to_convert: str):
-    if not string_to_convert:
-        return None
-    return hashlib.sha256(string_to_convert.encode('utf-8')).hexdigest()

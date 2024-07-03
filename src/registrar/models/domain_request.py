@@ -868,11 +868,9 @@ class DomainRequest(TimeStampedModel):
         email_template_subject_name: str = ""
 
         # Check if the current email that we sent out is the same as our defaults.
-        # If these hashes differ, then that means that we're sending custom content.
-        default_email_hash = self._get_action_needed_reason_email_hash()
-        current_email_hash = convert_string_to_sha256_hash(self.action_needed_reason_email)
-        if self.action_needed_reason_email and default_email_hash != current_email_hash:
-            print(f"sending custom email for: {current_email_hash}")
+        # If these differ, then that means that we're sending custom content.
+        default_email = self.get_default_action_needed_reason_email(self.action_needed_reason)
+        if self.action_needed_reason_email and self.action_needed_reason_email != default_email:
             email_template_name = "custom_email.txt"
 
         # Check for the "type" of action needed reason.
@@ -907,22 +905,20 @@ class DomainRequest(TimeStampedModel):
                 wrap_email=True,
             )
 
-    # TODO - rework this
-    def _get_action_needed_reason_email_hash(self):
+    def get_default_action_needed_reason_email(self, action_needed_reason):
         """Returns the default email associated with the given action needed reason"""
-        if self.action_needed_reason is None or self.action_needed_reason == self.ActionNeededReasons.OTHER:
+        if action_needed_reason is None or action_needed_reason == self.ActionNeededReasons.OTHER:
             return None
 
         # Get the email body
-        template_path = f"emails/action_needed_reasons/{self.action_needed_reason}.txt"
+        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
         template = get_template(template_path)
 
         recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
         # Return the content of the rendered views
         context = {"domain_request": self, "recipient": recipient}
         body_text = template.render(context=context).strip().lstrip("\n")
-        print(f"body: {body_text}")
-        return convert_string_to_sha256_hash(body_text)
+        return body_text
 
     @transition(
         field="status",
