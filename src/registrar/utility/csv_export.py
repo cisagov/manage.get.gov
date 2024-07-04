@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections import defaultdict
 import csv
 import logging
 from datetime import datetime
@@ -293,13 +294,13 @@ class DomainExport(BaseExport):
         annotated_domain_infos = []
 
         # Create mapping of domain to a list of invited users and managers
-        # invited_users_dict = defaultdict(list)
-        # for domain, email in domain_invitations:
-        #     invited_users_dict[domain].append(email)
+        invited_users_dict = defaultdict(list)
+        for domain, email in domain_invitations:
+            invited_users_dict[domain].append(email)
 
-        # managers_dict = defaultdict(list)
-        # for domain, email in user_domain_roles:
-        #     managers_dict[domain].append(email)
+        managers_dict = defaultdict(list)
+        for domain, email in user_domain_roles:
+            managers_dict[domain].append(email)
 
         # Annotate with security_contact from public_contacts, invited users
         # from domain_invitations, and managers from user_domain_roles
@@ -307,8 +308,8 @@ class DomainExport(BaseExport):
             domain_info["security_contact_email"] = public_contacts.get(
                 domain_info.get("domain__security_contact_registry_id")
             )
-            domain_info["invited_users"] = domain_invitations.get(domain_info.get("domain__name"))
-            domain_info["managers"] = user_domain_roles.get(domain_info.get("domain__name"))
+            domain_info["invited_users"] = ", ".join(invited_users_dict.get(domain_info.get("domain__name"), []))
+            domain_info["managers"] = ", ".join(managers_dict.get(domain_info.get("domain__name"), []))
             annotated_domain_infos.append(domain_info)
 
         if annotated_domain_infos:
@@ -335,7 +336,7 @@ class DomainExport(BaseExport):
         Fetch all DomainInvitation entries and return a mapping of domain to email.
         """
         domain_invitations = DomainInvitation.objects.filter(status="invited").values_list("domain__name", "email")
-        return {domain__name: email for domain__name, email in domain_invitations}
+        return list(domain_invitations)
 
     @classmethod
     def get_all_user_domain_roles(cls):
@@ -343,7 +344,7 @@ class DomainExport(BaseExport):
         Fetch all UserDomainRole entries and return a mapping of domain to user__email.
         """
         user_domain_roles = UserDomainRole.objects.select_related("user").values_list("domain__name", "user__email")
-        return {domain__name: user__email for domain__name, user__email in user_domain_roles}
+        return list(user_domain_roles)
 
     @classmethod
     def parse_row(cls, columns, model):
