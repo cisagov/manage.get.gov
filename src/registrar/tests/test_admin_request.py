@@ -39,41 +39,24 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @boto3_mocking.patching
-class TestDomainRequestAdmin(MockEppLib):
+class TestDomainRequestAdminAsStaff(MockEppLib):
     def setUp(self):
         super().setUp()
-        self.site = AdminSite()
-        self.factory = RequestFactory()
-        self.admin = DomainRequestAdmin(model=DomainRequest, admin_site=self.site)
-        self.superuser = create_superuser()
         self.staffuser = create_user()
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.test_helper = GenericTestHelper(
-            factory=self.factory,
-            user=self.superuser,
-            admin=self.admin,
-            url="/admin/registrar/domainrequest/",
-            model=DomainRequest,
-        )
         self.mock_client = MockSESClient()
-# @boto3_mocking.patching
-# class TestDomainRequestAdminAsStaff(MockEppLib):
-#     def setUp(self):
-#         super().setUp()
-#         self.staffuser = create_user()
-#         self.client = Client(HTTP_HOST="localhost:8080")
-#         self.mock_client = MockSESClient()
 
-#     def tearDown(self):
-#         super().tearDown()
-#         Domain.objects.all().delete()
-#         DomainInformation.objects.all().delete()
-#         DomainRequest.objects.all().delete()
-#         User.objects.all().delete()
-#         Contact.objects.all().delete()
-#         Website.objects.all().delete()
-#         self.mock_client.EMAILS_SENT.clear()
+    def tearDown(self):
+        super().tearDown()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        User.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
+        self.mock_client.EMAILS_SENT.clear()
 
     @less_console_noise_decorator
     def test_analyst_can_see_and_edit_alternative_domain(self):
@@ -685,24 +668,24 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertIn(expected_html, response_content)
 
 
-# @boto3_mocking.patching
-# class TestDomainRequestAdmin(MockEppLib):
-#     def setUp(self):
-#         super().setUp()
-#         self.site = AdminSite()
-#         self.factory = RequestFactory()
-#         self.admin = DomainRequestAdmin(model=DomainRequest, admin_site=self.site)
-#         self.superuser = create_superuser()
-#         self.staffuser = create_user()
-#         self.client = Client(HTTP_HOST="localhost:8080")
-#         self.test_helper = GenericTestHelper(
-#             factory=self.factory,
-#             user=self.superuser,
-#             admin=self.admin,
-#             url="/admin/registrar/domainrequest/",
-#             model=DomainRequest,
-#         )
-#         self.mock_client = MockSESClient()
+@boto3_mocking.patching
+class TestDomainRequestAdmin(MockEppLib):
+    def setUp(self):
+        super().setUp()
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.admin = DomainRequestAdmin(model=DomainRequest, admin_site=self.site)
+        self.superuser = create_superuser()
+        self.staffuser = create_user()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url="/admin/registrar/domainrequest/",
+            model=DomainRequest,
+        )
+        self.mock_client = MockSESClient()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -1532,7 +1515,6 @@ class TestDomainRequestAdmin(MockEppLib):
         domain_request.refresh_from_db()
         self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.REJECTED)
 
-    @less_console_noise_decorator
     def test_save_model_sends_withdrawn_email(self):
         """When transitioning to withdrawn on a domain request,
         an email is sent out every time."""
