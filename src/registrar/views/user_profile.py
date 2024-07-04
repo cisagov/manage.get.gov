@@ -67,8 +67,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
         # Show back button conditional on user having finished setup
         context["show_back_button"] = False
-        form = self.get_form()
-        if hasattr(self.user, "finished_setup") and self.user.finished_setup and form.is_valid():
+        if hasattr(self.user, "finished_setup") and self.user.finished_setup:
             context["user_finished_setup"] = True
             context["show_back_button"] = True
 
@@ -120,7 +119,17 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         # superclass has the redirect
         return super().form_valid(form)
 
+    def form_invalid(self, form):
+        """If the form is invalid, conditionally display an additional error."""
+        if hasattr(self.user, "finished_setup") and not self.user.finished_setup:
+            messages.error(self.request, "Before you can manage your domain, we need you to add contact information.")
+        logger.info("got here, now rendering response")
+        form.initial['redirect'] = form.data.get('redirect')
+        logger.info(form.initial)
+        return super().form_invalid(form)
+
     def get_object(self, queryset=None):
+
         """Override get_object to return the logged-in user's contact"""
         self.user = self.request.user  # get the logged in user
         if hasattr(self.user, "contact"):  # Check if the user has a contact instance
@@ -144,8 +153,7 @@ class FinishProfileSetupView(UserProfileView):
 
         # Show back button conditional on user having finished setup
         context["show_back_button"] = False
-        form = self.get_form()
-        if hasattr(self.user, "finished_setup") and self.user.finished_setup and form.is_valid():
+        if hasattr(self.user, "finished_setup") and self.user.finished_setup:
             if kwargs.get("redirect") == "home":
                 context["show_back_button"] = True
             else:

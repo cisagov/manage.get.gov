@@ -731,7 +731,9 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
             self.assertContains(save_page, "Your profile has been updated.")
 
             # We need to assert that logo is not clickable and links to manage your domain are not present
-            self.assertContains(save_page, "manage your domains", count=1)
+            # NOTE: "anage" is not a typo.  It is to accomodate the fact that the "m" is uppercase in one
+            # instance and lowercase in the other.
+            self.assertContains(save_page, "anage your domains", count=2)
             self.assertNotContains(
                 save_page, "Before you can manage your domains, we need you to add contact information"
             )
