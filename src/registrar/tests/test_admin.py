@@ -898,8 +898,9 @@ class TestListHeaderAdmin(TestCase):
 
 
 class TestMyUserAdmin(MockDb):
-    def setUp(self):
-        super().setUp()
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
         admin_site = AdminSite()
         self.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -907,8 +908,9 @@ class TestMyUserAdmin(MockDb):
         self.staffuser = create_user()
         self.test_helper = GenericTestHelper(admin=self.admin)
 
-    def tearDown(self):
-        super().tearDown()
+    @classmethod
+    def tearDownClass(self):
+        super().tearDownClass()
         DomainRequest.objects.all().delete()
         User.objects.all().delete()
 
@@ -1094,6 +1096,15 @@ class TestMyUserAdmin(MockDb):
         expected_href = reverse("admin:registrar_domain_change", args=[domain_deleted.pk])
         self.assertNotContains(response, expected_href)
 
+        # Must clean up within test since MockDB is shared across tests for performance reasons
+        domain_request_started.delete()
+        domain_request_submitted.delete()
+        domain_request_in_review.delete()
+        domain_request_withdrawn.delete()
+        domain_request_approved.delete()
+        domain_request_rejected.delete()
+        domain_request_ineligible.delete()
+        domain_deleted.delete()
 
 class AuditedAdminTest(TestCase):
     def setUp(self):

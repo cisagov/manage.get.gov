@@ -29,10 +29,15 @@ from .common import MockDb, MockEppLib, less_console_noise, get_time_aware_date
 
 
 class CsvReportsTest(MockDb):
-    """Tests to determine if we are uploading our reports correctly"""
+    """Tests to determine if we are uploading our reports correctly.
+    These tests use MockDb, which runs setUpClass and tearDownClass to handle
+    creation of fake domain data.
+    setUp and tearDown in this class set up client and factory.
+    This is for efficiency purposes when running tests, but
+    also means that care must be taken to clean up within each test.
+    """
 
     def setUp(self):
-        """Create fake domain data"""
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
         self.factory = RequestFactory()
@@ -196,11 +201,12 @@ class CsvReportsTest(MockDb):
 
 
 class ExportDataTest(MockDb, MockEppLib):
-    def setUp(self):
-        super().setUp()
-
-    def tearDown(self):
-        super().tearDown()
+    """Test the ExportData class from csv_export.
+    These tests use MockDb, which runs setUpClass and tearDownClass.
+    setUp and tearDown in this test run from MockEppLib to set up EPP mocks.
+    This is for efficiency purposes when running tests, but
+    also means that care must be taken to clean up within each test.
+    """
 
     def test_export_domains_to_writer_security_emails_and_first_ready(self):
         """Test that export_domains_to_writer returns the

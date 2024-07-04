@@ -525,10 +525,16 @@ class AuditedAdminMockData:
 
 
 class MockDb(TestCase):
-    """Hardcoded mocks make test case assertions straightforward."""
+    """Hardcoded mocks make test case assertions straightforward.
+    setUpClass and tearDownClass are used so that multiple tests
+    can be executed using the same mock db data without having to
+    setUp and tearDown the data in between.
+    This strategy requires that any changes to data within a test
+    must be cleaned up within the test rather than relying on tearDown."""
 
-    def setUp(self):
-        super().setUp()
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
         username = "test_user"
         first_name = "First"
         last_name = "Last"
@@ -782,8 +788,9 @@ class MockDb(TestCase):
             self.domain_request_6.submission_date = get_time_aware_date(datetime(2024, 4, 2))
             self.domain_request_6.save()
 
-    def tearDown(self):
-        super().tearDown()
+    @classmethod
+    def tearDownClass(self):
+        super().tearDownClass()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
