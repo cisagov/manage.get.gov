@@ -207,7 +207,7 @@ class ExportDataTest(MockDb, MockEppLib):
 
     @less_console_noise_decorator
     def test_domain_data_type(self):
-        """Shows security contacts, domain managers, ao"""
+        """Shows security contacts, domain managers, so"""
         # Add security email information
         self.domain_1.name = "defaultsecurity.gov"
         self.domain_1.save()
@@ -231,8 +231,8 @@ class ExportDataTest(MockDb, MockEppLib):
         # We expect READY domains,
         # sorted alphabetially by domain name
         expected_content = (
-            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,State,AO,"
-            "AO email,Security contact email,Domain managers,Invited domain managers\n"
+            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,State,SO,"
+            "SO email,Security contact email,Domain managers,Invited domain managers\n"
             "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,,"
             "meoward@rocks.com,\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,"
@@ -534,10 +534,10 @@ class ExportDataTest(MockDb, MockEppLib):
             "Creator approved domains count",
             "Creator active requests count",
             "Alternative domains",
-            "AO first name",
-            "AO last name",
-            "AO email",
-            "AO title/role",
+            "SO first name",
+            "SO last name",
+            "SO email",
+            "SO title/role",
             "Request purpose",
             "Request additional details",
             "Other contacts",
@@ -560,8 +560,8 @@ class ExportDataTest(MockDb, MockEppLib):
                 "Domain request,Status,Domain type,Federal type,"
                 "Federal agency,Organization name,Election office,City,State/territory,"
                 "Region,Creator first name,Creator last name,Creator email,Creator approved domains count,"
-                "Creator active requests count,Alternative domains,AO first name,AO last name,AO email,"
-                "AO title/role,Request purpose,Request additional details,Other contacts,"
+                "Creator active requests count,Alternative domains,SO first name,SO last name,SO email,"
+                "SO title/role,Request purpose,Request additional details,Other contacts,"
                 "CISA regional representative,Current websites,Investigator\n"
                 # Content
                 "city5.gov,,Approved,Federal,Executive,,Testorg,N/A,,NY,2,,,,1,0,city1.gov,Testy,Tester,testy@town.com,"

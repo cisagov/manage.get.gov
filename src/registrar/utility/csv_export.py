@@ -382,8 +382,8 @@ class DomainExport(BaseExport):
             "Organization name": model.get("organization_name"),
             "City": model.get("city"),
             "State": model.get("state_territory"),
-            "AO": model.get("ao_name"),
-            "AO email": model.get("authorizing_official__email"),
+            "SO": model.get("so_name"),
+            "SO email": model.get("senior_official__email"),
             "Security contact email": model.get("security_contact_email"),
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
@@ -435,7 +435,7 @@ class DomainExport(BaseExport):
 
 class DomainDataType(DomainExport):
     """
-    Shows security contacts, domain managers, ao
+    Shows security contacts, domain managers, so
     Inherits from BaseExport -> DomainExport
     """
 
@@ -454,8 +454,8 @@ class DomainDataType(DomainExport):
             "Organization name",
             "City",
             "State",
-            "AO",
-            "AO email",
+            "SO",
+            "SO email",
             "Security contact email",
             "Domain managers",
             "Invited domain managers",
@@ -502,7 +502,7 @@ class DomainDataType(DomainExport):
         """
         Get a list of tables to pass to select_related when building queryset.
         """
-        return ["domain", "authorizing_official"]
+        return ["domain", "senior_official"]
 
     @classmethod
     def get_prefetch_related(cls):
@@ -517,10 +517,10 @@ class DomainDataType(DomainExport):
         Get a dict of computed fields.
         """
         return {
-            "ao_name": Concat(
-                Coalesce(F("authorizing_official__first_name"), Value("")),
+            "so_name": Concat(
+                Coalesce(F("senior_official__first_name"), Value("")),
                 Value(" "),
-                Coalesce(F("authorizing_official__last_name"), Value("")),
+                Coalesce(F("senior_official__last_name"), Value("")),
                 output_field=CharField(),
             ),
         }
@@ -538,7 +538,7 @@ class DomainDataType(DomainExport):
             "domain__created_at",
             "domain__deleted",
             "domain__security_contact_registry_id",
-            "authorizing_official__email",
+            "senior_official__email",
             "federal_agency__agency",
         ]
 
@@ -618,10 +618,10 @@ class DomainDataFull(DomainExport):
         Get a dict of computed fields.
         """
         return {
-            "ao_name": Concat(
-                Coalesce(F("authorizing_official__first_name"), Value("")),
+            "so_name": Concat(
+                Coalesce(F("senior_official__first_name"), Value("")),
                 Value(" "),
-                Coalesce(F("authorizing_official__last_name"), Value("")),
+                Coalesce(F("senior_official__last_name"), Value("")),
                 output_field=CharField(),
             ),
         }
@@ -714,10 +714,10 @@ class DomainDataFederal(DomainExport):
         Get a dict of computed fields.
         """
         return {
-            "ao_name": Concat(
-                Coalesce(F("authorizing_official__first_name"), Value("")),
+            "so_name": Concat(
+                Coalesce(F("senior_official__first_name"), Value("")),
                 Value(" "),
-                Coalesce(F("authorizing_official__last_name"), Value("")),
+                Coalesce(F("senior_official__last_name"), Value("")),
                 output_field=CharField(),
             ),
         }
@@ -1181,10 +1181,10 @@ class DomainRequestExport(BaseExport):
             "Current websites": model.get("all_current_websites"),
             # Untouched FK fields - passed into the request dict.
             "Federal agency": model.get("federal_agency__agency"),
-            "AO first name": model.get("authorizing_official__first_name"),
-            "AO last name": model.get("authorizing_official__last_name"),
-            "AO email": model.get("authorizing_official__email"),
-            "AO title/role": model.get("authorizing_official__title"),
+            "SO first name": model.get("senior_official__first_name"),
+            "SO last name": model.get("senior_official__last_name"),
+            "SO email": model.get("senior_official__email"),
+            "SO title/role": model.get("senior_official__title"),
             "Creator first name": model.get("creator__first_name"),
             "Creator last name": model.get("creator__last_name"),
             "Creator email": model.get("creator__email"),
@@ -1280,10 +1280,10 @@ class DomainRequestDataFull(DomainRequestExport):
             "Creator approved domains count",
             "Creator active requests count",
             "Alternative domains",
-            "AO first name",
-            "AO last name",
-            "AO email",
-            "AO title/role",
+            "SO first name",
+            "SO last name",
+            "SO email",
+            "SO title/role",
             "Request purpose",
             "Request additional details",
             "Other contacts",
@@ -1297,7 +1297,7 @@ class DomainRequestDataFull(DomainRequestExport):
         """
         Get a list of tables to pass to select_related when building queryset.
         """
-        return ["creator", "authorizing_official", "federal_agency", "investigator", "requested_domain"]
+        return ["creator", "senior_official", "federal_agency", "investigator", "requested_domain"]
 
     @classmethod
     def get_prefetch_related(cls):
@@ -1355,10 +1355,10 @@ class DomainRequestDataFull(DomainRequestExport):
         return [
             "requested_domain__name",
             "federal_agency__agency",
-            "authorizing_official__first_name",
-            "authorizing_official__last_name",
-            "authorizing_official__email",
-            "authorizing_official__title",
+            "senior_official__first_name",
+            "senior_official__last_name",
+            "senior_official__email",
+            "senior_official__title",
             "creator__first_name",
             "creator__last_name",
             "creator__email",
