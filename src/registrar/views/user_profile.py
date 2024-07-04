@@ -109,7 +109,6 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         if hasattr(self.user, "finished_setup") and not self.user.finished_setup:
             messages.error(self.request, "Before you can manage your domain, we need you to add contact information.")
         form.initial["redirect"] = form.data.get("redirect")
-        logger.info(form.initial)
         return super().form_invalid(form)
 
     def form_valid(self, form):
