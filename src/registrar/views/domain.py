@@ -102,13 +102,6 @@ class DomainBaseView(DomainPermissionView):
         domain_pk = "domain:" + str(self.kwargs.get("pk"))
         self.session[domain_pk] = self.object
 
-    def get_context_data(self, **kwargs):
-        """Extend get_context_data to add has_profile_feature_flag to context"""
-        context = super().get_context_data(**kwargs)
-        # This is a django waffle flag which toggles features based off of the "flag" table
-        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
-        return context
-
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
     """

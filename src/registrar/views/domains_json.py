@@ -11,7 +11,7 @@ def get_domains_json(request):
     """Given the current request,
     get all domains that are associated with the UserDomainRole object"""
 
-    user_domain_roles = UserDomainRole.objects.filter(user=request.user)
+    user_domain_roles = UserDomainRole.objects.filter(user=request.user).select_related('domain_info__sub_organization')
     domain_ids = user_domain_roles.values_list("domain_id", flat=True)
 
     objects = Domain.objects.filter(id__in=domain_ids)
@@ -85,6 +85,7 @@ def get_domains_json(request):
             "action_url": reverse("domain", kwargs={"pk": domain.id}),
             "action_label": ("View" if domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD] else "Manage"),
             "svg_icon": ("visibility" if domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD] else "settings"),
+            "suborganization": domain.domain_info.sub_organization.name if domain.domain_info and domain.domain_info.sub_organization else None,
         }
         for domain in page_obj.object_list
     ]

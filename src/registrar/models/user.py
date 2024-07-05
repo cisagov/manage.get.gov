@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
+from registrar.models.portfolio import Portfolio
 from registrar.models.user_domain_role import UserDomainRole
 
 from .domain_invitation import DomainInvitation
@@ -11,6 +12,7 @@ from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 from .domain_request import DomainRequest
+from waffle.decorators import flag_is_active
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -290,3 +292,11 @@ class User(AbstractUser):
         """
 
         self.check_domain_invitations_on_login()
+
+    def is_org_user(self, request):
+        has_organization_feature_flag = flag_is_active(request, "organization_feature")
+        user_portfolios = Portfolio.objects.filter(creator=self)
+
+        user_portfolios_exist = user_portfolios.exists()
+
+        return has_organization_feature_flag and user_portfolios_exist

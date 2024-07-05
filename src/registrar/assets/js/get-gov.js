@@ -1173,6 +1173,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
+            const suborganization = domain.suborganization ? domain.suborganization : '';
 
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -1194,6 +1195,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 >
                   <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
                 </svg>
+              </td>
+              <td>
+                  <span class="${suborganization ? 'ellipsis ellipsis--30 vertical-align-middle' : ''}">${suborganization}</span>
               </td>
               <td>
                 <a href="${actionUrl}">

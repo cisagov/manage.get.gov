@@ -141,14 +141,16 @@ class CheckPortfolioMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         current_path = request.path
 
-        has_organization_feature_flag = flag_is_active(request, "organization_feature")
+        if request.user.is_authenticated and request.user.is_org_user(request):
+            user_portfolios = Portfolio.objects.filter(creator=request.user)
+            first_portfolio = user_portfolios.first()
+            
+            if first_portfolio:
+                # Add the portfolio to the request object
+                request.portfolio = first_portfolio
 
-        if current_path == self.home:
-            if has_organization_feature_flag:
-                if request.user.is_authenticated:
-                    user_portfolios = Portfolio.objects.filter(creator=request.user)
-                    if user_portfolios.exists():
-                        first_portfolio = user_portfolios.first()
-                        home_with_portfolio = reverse("portfolio-domains", kwargs={"portfolio_id": first_portfolio.id})
-                        return HttpResponseRedirect(home_with_portfolio)
+                if current_path == self.home:
+                    home_with_portfolio = reverse("portfolio-domains", kwargs={"portfolio_id": first_portfolio.id})
+                    return HttpResponseRedirect(home_with_portfolio)
+
         return None

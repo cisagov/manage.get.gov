@@ -1,4 +1,5 @@
 from django.conf import settings
+from waffle.decorators import flag_is_active
 
 
 def language_code(request):
@@ -12,7 +13,6 @@ def language_code(request):
     """
     return {"LANGUAGE_CODE": settings.LANGUAGE_CODE}
 
-
 def canonical_path(request):
     """Add a canonical URL to the template context.
 
@@ -21,7 +21,6 @@ def canonical_path(request):
     template itself, so we do it here and pass the information on.
     """
     return {"CANONICAL_PATH": request.build_absolute_uri(request.path)}
-
 
 def is_demo_site(request):
     """Add a boolean if this is a demo site.
@@ -32,7 +31,31 @@ def is_demo_site(request):
     """
     return {"IS_DEMO_SITE": settings.IS_DEMO_SITE}
 
-
 def is_production(request):
     """Add a boolean if this is our production site."""
     return {"IS_PRODUCTION": settings.IS_PRODUCTION}
+
+def org_user_status(request):
+    if request.user.is_authenticated:
+        is_org_user = request.user.is_org_user(request)
+    else:
+        is_org_user = False
+
+    return {
+        'is_org_user': is_org_user,
+    }
+
+def add_portfolio_to_context(request):
+    return {
+        'portfolio': getattr(request, 'portfolio', None)
+    }
+
+def add_path_to_context(request):
+    return {
+        'path': getattr(request, 'path', None)
+    }
+
+def add_has_profile_feature_flag_to_context(request):
+    return {
+        'has_profile_feature_flag': flag_is_active(request, "profile_feature")
+    }

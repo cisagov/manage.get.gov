@@ -12,6 +12,9 @@
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
             <button class="usa-button usa-button--unstyled margin-right-2 domain-requests__reset-search display-none" type="button">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+              </svg>
               Reset
             </button>
             <label class="usa-sr-only" for="domain-requests__search-field">Search by domain name</label>

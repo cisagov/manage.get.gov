@@ -12,6 +12,9 @@
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
             <button class="usa-button usa-button--unstyled margin-right-2 domains__reset-search display-none" type="button">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+              </svg>
               Reset
             </button>
             <label class="usa-sr-only" for="domains__search-field">Search by domain name</label>
@@ -35,7 +38,7 @@
     </div>
     {% if portfolio %}
     <div class="display-flex flex-align-center margin-top-1"> 
-      <span class="margin-right-2 margin-top-neg-1 text-base-darker">Filter by</span>
+      <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
       <div class="usa-accordion usa-accordion--select margin-right-2">
         <div class="usa-accordion__heading">
           <button
@@ -136,6 +139,7 @@
             <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
             <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
             <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
+            <th data-sortable="suborganization" scope="col" role="columnheader">Suborganization</th>
             <th 
               scope="col" 
               role="columnheader" 
