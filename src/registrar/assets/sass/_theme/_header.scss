@@ -67,35 +67,35 @@
 }
 
 .usa-header--extended {
-    .usa-nav__primary {
-        .usa-nav-link,
-        .usa-nav-link:hover,
-        .usa-nav-link:active  {
-            color: color('primary');
-            font-weight: font-weight('normal');
-            font-size: 16px;
-        }
-        .usa-current,
-        .usa-current:hover,
-        .usa-current:active  {
-            font-weight: font-weight('bold');
-        }
-    }
     @include at-media(desktop) {
         background-color: color('primary-darker');
         border-top: solid 1px color('base');
-        border-bottom: solid 1px color('base-lighter');
+        border-bottom: solid 1px color('base-light');
 
         .usa-logo__text a {
             color: color('white');
         }
         .usa-nav {
-            background-color: color('primary-lightest');
+            background-color: color('primary-lighter');
         }
         .usa-nav__primary-item:last-child {
             margin-left: auto;
             .usa-nav-link {
                 padding-right: 0;
+            }
+        }
+        .usa-nav__primary {
+            .usa-nav-link,
+            .usa-nav-link:hover,
+            .usa-nav-link:active  {
+                color: color('primary');
+                font-weight: font-weight('normal');
+                font-size: 16px;
+            }
+            .usa-current,
+            .usa-current:hover,
+            .usa-current:active  {
+                font-weight: font-weight('bold');
             }
         }
         .usa-nav__secondary {

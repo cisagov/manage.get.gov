@@ -1,6 +1,4 @@
-from django.shortcuts import get_object_or_404, render
-from registrar.models.portfolio import Portfolio
-from waffle.decorators import flag_is_active
+from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
 

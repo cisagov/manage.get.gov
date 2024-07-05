@@ -144,7 +144,7 @@ class CheckPortfolioMiddleware:
         if request.user.is_authenticated and request.user.is_org_user(request):
             user_portfolios = Portfolio.objects.filter(creator=request.user)
             first_portfolio = user_portfolios.first()
-            
+
             if first_portfolio:
                 # Add the portfolio to the request object
                 request.portfolio = first_portfolio

@@ -59,7 +59,7 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
-from waffle.decorators import flag_is_active, waffle_flag
+from waffle.decorators import waffle_flag
 
 logger = logging.getLogger(__name__)
 

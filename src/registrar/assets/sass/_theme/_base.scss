@@ -92,10 +92,6 @@ footer {
   color: color('primary');
 }
 
-.usa-identifier__logo {
-  height: units(7);
-}
-
 abbr[title] {
   // workaround for underlining abbr element
   border-bottom: none;
@@ -134,36 +130,6 @@ abbr[title] {
 .cursor-pointer {
   cursor: pointer;
 }
-
-.input-with-edit-button {
-  svg.usa-icon {
-    width: 1.5em !important;
-    height: 1.5em !important;
-    color: #{$dhs-green};
-    position: absolute;
-  }
-  &.input-with-edit-button__error {
-    svg.usa-icon {
-      color: #{$dhs-red};
-    }
-    div.readonly-field {
-      color: #{$dhs-red};
-    }
-  }
-}
-
-// We need to deviate from some default USWDS styles here
-// in this particular case, so we have to override this.
-.usa-form .usa-button.readonly-edit-button {
-  margin-top: 0px !important;
-  padding-top: 0px !important;
-  svg {
-    width: 1.25em !important;
-    height: 1.25em !important;
-  }
-}
-
-
 
 .padding--8-8-9 {
   padding: 8px 8px 9px !important;

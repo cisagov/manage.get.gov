@@ -378,7 +378,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
-        has_profile_flag = flag_is_active(self.request, "profile_feature")
 
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request, self.request):
