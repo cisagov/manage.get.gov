@@ -27,12 +27,14 @@ from .common import MockSESClient, less_console_noise, completed_domain_request,
 from django_fsm import TransitionNotAllowed
 from waffle.testutils import override_flag
 
+from api.tests.common import less_console_noise_decorator
 
 # Test comment for push -- will remove
 # The DomainRequest submit method has a side effect of sending an email
 # with AWS SES, so mock that out in all of these test cases
 @boto3_mocking.patching
 class TestDomainRequest(TestCase):
+    @less_console_noise_decorator
     def setUp(self):
 
         self.dummy_user, _ = Contact.objects.get_or_create(
@@ -97,6 +99,7 @@ class TestDomainRequest(TestCase):
         with less_console_noise():
             return self.assertRaises(Exception, None, exception_type)
 
+    @less_console_noise_decorator
     def test_federal_agency_set_to_non_federal_on_approve(self):
         """Ensures that when the federal_agency field is 'none' when .approve() is called,
         the field is set to the 'Non-Federal Agency' record"""
@@ -240,12 +243,14 @@ class TestDomainRequest(TestCase):
                 self.assertIn(expected_content, email_content)
 
     @override_flag("profile_feature", active=False)
+    @less_console_noise_decorator
     def test_submit_from_started_sends_email(self):
         msg = "Create a domain request and submit it and see if email was sent."
         domain_request = completed_domain_request(submitter=self.dummy_user, user=self.dummy_user_2)
         self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hello")
 
     @override_flag("profile_feature", active=True)
+    @less_console_noise_decorator
     def test_submit_from_started_sends_email_to_creator(self):
         """Tests if, when the profile feature flag is on, we send an email to the creator"""
         msg = "Create a domain request and submit it and see if email was sent when the feature flag is on."
@@ -254,6 +259,7 @@ class TestDomainRequest(TestCase):
             domain_request, msg, "submit", 1, expected_content="Lava", expected_email="intern@igorville.com"
         )
 
+    @less_console_noise_decorator
     def test_submit_from_withdrawn_sends_email(self):
         msg = "Create a withdrawn domain request and submit it and see if email was sent."
         domain_request = completed_domain_request(
@@ -261,16 +267,19 @@ class TestDomainRequest(TestCase):
         )
         self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hello")
 
+    @less_console_noise_decorator
     def test_submit_from_action_needed_does_not_send_email(self):
         msg = "Create a domain request with ACTION_NEEDED status and submit it, check if email was not sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.ACTION_NEEDED)
         self.check_email_sent(domain_request, msg, "submit", 0)
 
+    @less_console_noise_decorator
     def test_submit_from_in_review_does_not_send_email(self):
         msg = "Create a withdrawn domain request and submit it and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
         self.check_email_sent(domain_request, msg, "submit", 0)
 
+    @less_console_noise_decorator
     def test_approve_sends_email(self):
         msg = "Create a domain request and approve it and see if email was sent."
         domain_request = completed_domain_request(
@@ -278,6 +287,7 @@ class TestDomainRequest(TestCase):
         )
         self.check_email_sent(domain_request, msg, "approve", 1, expected_content="Hello")
 
+    @less_console_noise_decorator
     def test_withdraw_sends_email(self):
         msg = "Create a domain request and withdraw it and see if email was sent."
         domain_request = completed_domain_request(
@@ -285,6 +295,7 @@ class TestDomainRequest(TestCase):
         )
         self.check_email_sent(domain_request, msg, "withdraw", 1, expected_content="Hello")
 
+    @less_console_noise_decorator
     def test_reject_sends_email(self):
         msg = "Create a domain request and reject it and see if email was sent."
         domain_request = completed_domain_request(
@@ -292,11 +303,13 @@ class TestDomainRequest(TestCase):
         )
         self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hello")
 
+    @less_console_noise_decorator
     def test_reject_with_prejudice_does_not_send_email(self):
         msg = "Create a domain request and reject it with prejudice and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
         self.check_email_sent(domain_request, msg, "reject_with_prejudice", 0)
 
+    @less_console_noise_decorator
     def assert_fsm_transition_raises_error(self, test_cases, method_to_run):
         """Given a list of test cases, check if each transition throws the intended error"""
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
@@ -308,6 +321,7 @@ class TestDomainRequest(TestCase):
                         # Call the method
                         method()
 
+    @less_console_noise_decorator
     def assert_fsm_transition_does_not_raise_error(self, test_cases, method_to_run):
         """Given a list of test cases, ensure that none of them throw transition errors"""
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
@@ -321,6 +335,7 @@ class TestDomainRequest(TestCase):
                     except exception_type:
                         self.fail(f"{exception_type} was raised, but it was not expected.")
 
+    @less_console_noise_decorator
     def test_submit_transition_allowed_with_no_investigator(self):
         """
         Tests for attempting to transition without an investigator.
@@ -339,6 +354,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "submit")
 
+    @less_console_noise_decorator
     def test_submit_transition_allowed_with_investigator_not_staff(self):
         """
         Tests for attempting to transition with an investigator user that is not staff.
@@ -356,6 +372,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "submit")
 
+    @less_console_noise_decorator
     def test_submit_transition_allowed(self):
         """
         Test that calling submit from allowable statuses does raises TransitionNotAllowed.
@@ -369,26 +386,27 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "submit")
 
+    @less_console_noise_decorator
     def test_submit_transition_allowed_twice(self):
         """
         Test that rotating between submit and in_review doesn't throw an error
         """
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                try:
-                    # Make a submission
-                    self.in_review_domain_request.submit()
+            try:
+                # Make a submission
+                self.in_review_domain_request.submit()
 
-                    # Rerun the old method to get back to the original state
-                    self.in_review_domain_request.in_review()
+                # Rerun the old method to get back to the original state
+                self.in_review_domain_request.in_review()
 
-                    # Make another submission
-                    self.in_review_domain_request.submit()
-                except TransitionNotAllowed:
-                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+                # Make another submission
+                self.in_review_domain_request.submit()
+            except TransitionNotAllowed:
+                self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
         self.assertEqual(self.in_review_domain_request.status, DomainRequest.DomainRequestStatus.SUBMITTED)
 
+    @less_console_noise_decorator
     def test_submit_transition_not_allowed(self):
         """
         Test that calling submit against transition rules raises TransitionNotAllowed.
@@ -402,6 +420,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "submit")
 
+    @less_console_noise_decorator
     def test_in_review_transition_allowed(self):
         """
         Test that calling in_review from allowable statuses does raises TransitionNotAllowed.
@@ -416,6 +435,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "in_review")
 
+    @less_console_noise_decorator
     def test_in_review_transition_not_allowed_with_no_investigator(self):
         """
         Tests for attempting to transition without an investigator
@@ -433,6 +453,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "in_review")
 
+    @less_console_noise_decorator
     def test_in_review_transition_not_allowed_with_investigator_not_staff(self):
         """
         Tests for attempting to transition with an investigator that is not staff.
@@ -452,6 +473,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "in_review")
 
+    @less_console_noise_decorator
     def test_in_review_transition_not_allowed(self):
         """
         Test that calling in_review against transition rules raises TransitionNotAllowed.
@@ -464,6 +486,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "in_review")
 
+    @less_console_noise_decorator
     def test_action_needed_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
@@ -477,6 +500,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "action_needed")
 
+    @less_console_noise_decorator
     def test_action_needed_transition_not_allowed_with_no_investigator(self):
         """
         Tests for attempting to transition without an investigator
@@ -494,6 +518,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "action_needed")
 
+    @less_console_noise_decorator
     def test_action_needed_transition_not_allowed_with_investigator_not_staff(self):
         """
         Tests for attempting to transition with an investigator that is not staff
@@ -512,6 +537,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "action_needed")
 
+    @less_console_noise_decorator
     def test_action_needed_transition_not_allowed(self):
         """
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
@@ -525,6 +551,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "action_needed")
 
+    @less_console_noise_decorator
     def test_approved_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
@@ -538,6 +565,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "approve")
 
+    @less_console_noise_decorator
     def test_approved_transition_not_allowed_with_no_investigator(self):
         """
         Tests for attempting to transition without an investigator
@@ -554,6 +582,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "approve")
 
+    @less_console_noise_decorator
     def test_approved_transition_not_allowed_with_investigator_not_staff(self):
         """
         Tests for attempting to transition with an investigator that is not staff
@@ -571,6 +600,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "approve")
 
+    @less_console_noise_decorator
     def test_approved_skips_sending_email(self):
         """
         Test that calling .approve with send_email=False doesn't actually send
@@ -578,12 +608,12 @@ class TestDomainRequest(TestCase):
         """
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                self.submitted_domain_request.approve(send_email=False)
+            self.submitted_domain_request.approve(send_email=False)
 
         # Assert that no emails were sent
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 0)
 
+    @less_console_noise_decorator
     def test_approved_transition_not_allowed(self):
         """
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
@@ -596,6 +626,7 @@ class TestDomainRequest(TestCase):
         ]
         self.assert_fsm_transition_raises_error(test_cases, "approve")
 
+    @less_console_noise_decorator
     def test_withdraw_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
@@ -608,6 +639,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
 
+    @less_console_noise_decorator
     def test_withdraw_transition_allowed_with_no_investigator(self):
         """
         Tests for attempting to transition without an investigator.
@@ -625,6 +657,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
 
+    @less_console_noise_decorator
     def test_withdraw_transition_allowed_with_investigator_not_staff(self):
         """
         Tests for attempting to transition when investigator is not staff.
@@ -643,6 +676,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
 
+    @less_console_noise_decorator
     def test_withdraw_transition_not_allowed(self):
         """
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
@@ -657,6 +691,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "withdraw")
 
+    @less_console_noise_decorator
     def test_reject_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
@@ -669,6 +704,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "reject")
 
+    @less_console_noise_decorator
     def test_reject_transition_not_allowed_with_no_investigator(self):
         """
         Tests for attempting to transition without an investigator
@@ -685,6 +721,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "reject")
 
+    @less_console_noise_decorator
     def test_reject_transition_not_allowed_with_investigator_not_staff(self):
         """
         Tests for attempting to transition when investigator is not staff
@@ -702,6 +739,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "reject")
 
+    @less_console_noise_decorator
     def test_reject_transition_not_allowed(self):
         """
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
@@ -716,6 +754,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "reject")
 
+    @less_console_noise_decorator
     def test_reject_with_prejudice_transition_allowed(self):
         """
         Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
@@ -729,6 +768,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_does_not_raise_error(test_cases, "reject_with_prejudice")
 
+    @less_console_noise_decorator
     def test_reject_with_prejudice_transition_not_allowed_with_no_investigator(self):
         """
         Tests for attempting to transition without an investigator
@@ -746,6 +786,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "reject_with_prejudice")
 
+    @less_console_noise_decorator
     def test_reject_with_prejudice_not_allowed_with_investigator_not_staff(self):
         """
         Tests for attempting to transition when investigator is not staff
@@ -764,6 +805,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "reject_with_prejudice")
 
+    @less_console_noise_decorator
     def test_reject_with_prejudice_transition_not_allowed(self):
         """
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
@@ -777,6 +819,7 @@ class TestDomainRequest(TestCase):
 
         self.assert_fsm_transition_raises_error(test_cases, "reject_with_prejudice")
 
+    @less_console_noise_decorator
     def test_transition_not_allowed_approved_in_review_when_domain_is_active(self):
         """Create a domain request with status approved, create a matching domain that
         is active, and call in_review against transition rules"""
@@ -790,13 +833,13 @@ class TestDomainRequest(TestCase):
             return True  # Override to return True
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Use patch to temporarily replace is_active with the custom implementation
-                with patch.object(Domain, "is_active", custom_is_active):
-                    # Now, when you call is_active on Domain, it will return True
-                    with self.assertRaises(TransitionNotAllowed):
-                        self.approved_domain_request.in_review()
+            # Use patch to temporarily replace is_active with the custom implementation
+            with patch.object(Domain, "is_active", custom_is_active):
+                # Now, when you call is_active on Domain, it will return True
+                with self.assertRaises(TransitionNotAllowed):
+                    self.approved_domain_request.in_review()
 
+    @less_console_noise_decorator
     def test_transition_not_allowed_approved_action_needed_when_domain_is_active(self):
         """Create a domain request with status approved, create a matching domain that
         is active, and call action_needed against transition rules"""
@@ -810,13 +853,13 @@ class TestDomainRequest(TestCase):
             return True  # Override to return True
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Use patch to temporarily replace is_active with the custom implementation
-                with patch.object(Domain, "is_active", custom_is_active):
-                    # Now, when you call is_active on Domain, it will return True
-                    with self.assertRaises(TransitionNotAllowed):
-                        self.approved_domain_request.action_needed()
+            # Use patch to temporarily replace is_active with the custom implementation
+            with patch.object(Domain, "is_active", custom_is_active):
+                # Now, when you call is_active on Domain, it will return True
+                with self.assertRaises(TransitionNotAllowed):
+                    self.approved_domain_request.action_needed()
 
+    @less_console_noise_decorator
     def test_transition_not_allowed_approved_rejected_when_domain_is_active(self):
         """Create a domain request with status approved, create a matching domain that
         is active, and call reject against transition rules"""
@@ -830,13 +873,13 @@ class TestDomainRequest(TestCase):
             return True  # Override to return True
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Use patch to temporarily replace is_active with the custom implementation
-                with patch.object(Domain, "is_active", custom_is_active):
-                    # Now, when you call is_active on Domain, it will return True
-                    with self.assertRaises(TransitionNotAllowed):
-                        self.approved_domain_request.reject()
+            # Use patch to temporarily replace is_active with the custom implementation
+            with patch.object(Domain, "is_active", custom_is_active):
+                # Now, when you call is_active on Domain, it will return True
+                with self.assertRaises(TransitionNotAllowed):
+                    self.approved_domain_request.reject()
 
+    @less_console_noise_decorator
     def test_transition_not_allowed_approved_ineligible_when_domain_is_active(self):
         """Create a domain request with status approved, create a matching domain that
         is active, and call reject_with_prejudice against transition rules"""
@@ -850,12 +893,11 @@ class TestDomainRequest(TestCase):
             return True  # Override to return True
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Use patch to temporarily replace is_active with the custom implementation
-                with patch.object(Domain, "is_active", custom_is_active):
-                    # Now, when you call is_active on Domain, it will return True
-                    with self.assertRaises(TransitionNotAllowed):
-                        self.approved_domain_request.reject_with_prejudice()
+            # Use patch to temporarily replace is_active with the custom implementation
+            with patch.object(Domain, "is_active", custom_is_active):
+                # Now, when you call is_active on Domain, it will return True
+                with self.assertRaises(TransitionNotAllowed):
+                    self.approved_domain_request.reject_with_prejudice()
 
     def test_approve_from_rejected_clears_rejection_reason(self):
         """When transitioning from rejected to approved on a domain request,
@@ -946,6 +988,7 @@ class TestPermissions(TestCase):
         self.mock_client.EMAILS_SENT.clear()
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_approval_creates_role(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
@@ -955,10 +998,9 @@ class TestPermissions(TestCase):
         )
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # skip using the submit method
-                domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
-                domain_request.approve()
+            # skip using the submit method
+            domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
+            domain_request.approve()
 
         # should be a role for this user
         domain = Domain.objects.get(name="igorville.gov")
@@ -982,6 +1024,7 @@ class TestDomainInformation(TestCase):
         DraftDomain.objects.all().delete()
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_approval_creates_info(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
@@ -991,10 +1034,9 @@ class TestDomainInformation(TestCase):
         )
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # skip using the submit method
-                domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
-                domain_request.approve()
+            # skip using the submit method
+            domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
+            domain_request.approve()
 
         # should be an information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
@@ -1023,6 +1065,7 @@ class TestDomainInformation(TestCase):
 class TestInvitations(TestCase):
     """Test the retrieval of invitations."""
 
+    @less_console_noise_decorator
     def setUp(self):
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.email = "mayor@igorville.gov"
@@ -1032,24 +1075,27 @@ class TestInvitations(TestCase):
         # clean out the roles each time
         UserDomainRole.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_retrieval_creates_role(self):
         self.invitation.retrieve()
         self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
 
+    @less_console_noise_decorator
     def test_retrieve_missing_user_error(self):
         # get rid of matching users
         User.objects.filter(email=self.email).delete()
         with self.assertRaises(RuntimeError):
             self.invitation.retrieve()
 
+    @less_console_noise_decorator
     def test_retrieve_existing_role_no_error(self):
         # make the overlapping role
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
         # this is not an error but does produce a console warning
-        with less_console_noise():
-            self.invitation.retrieve()
+        self.invitation.retrieve()
         self.assertEqual(self.invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
 
+    @less_console_noise_decorator
     def test_retrieve_on_each_login(self):
         """A user's authenticate on_each_login callback retrieves their invitations."""
         self.user.on_each_login()
@@ -1060,6 +1106,7 @@ class TestUser(TestCase):
     """Test actions that occur on user login,
     test class method that controls how users get validated."""
 
+    @less_console_noise_decorator
     def setUp(self):
         self.email = "mayor@igorville.gov"
         self.domain_name = "igorvilleInTransition.gov"
@@ -1077,6 +1124,7 @@ class TestUser(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
         """A user's on_each_login callback does not check transition domains.
         This test makes sure that in the event a domain does not exist
@@ -1085,35 +1133,41 @@ class TestUser(TestCase):
         self.user.on_each_login()
         self.assertFalse(Domain.objects.filter(name=self.domain_name).exists())
 
+    @less_console_noise_decorator
     def test_identity_verification_with_domain_manager(self):
         """A domain manager should return False when tested with class
         method needs_identity_verification"""
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
         self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
 
+    @less_console_noise_decorator
     def test_identity_verification_with_transition_user(self):
         """A user from the Verisign transition should return False
         when tested with class method needs_identity_verification"""
         TransitionDomain.objects.get_or_create(username=self.user.email, domain_name=self.domain_name)
         self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
 
+    @less_console_noise_decorator
     def test_identity_verification_with_very_important_person(self):
         """A Very Important Person should return False
         when tested with class method needs_identity_verification"""
         VerifiedByStaff.objects.get_or_create(email=self.user.email)
         self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
 
+    @less_console_noise_decorator
     def test_identity_verification_with_invited_user(self):
         """An invited user should return False when tested with class
         method needs_identity_verification"""
         DomainInvitation.objects.get_or_create(email=self.user.email, domain=self.domain)
         self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
 
+    @less_console_noise_decorator
     def test_identity_verification_with_new_user(self):
         """A new user who's neither transitioned nor invited should
         return True when tested with class method needs_identity_verification"""
         self.assertTrue(User.needs_identity_verification(self.user.email, self.user.username))
 
+    @less_console_noise_decorator
     def test_check_domain_invitations_on_login_caps_email(self):
         """A DomainInvitation with an email address with capital letters should match
         a User record whose email address is not in caps"""
@@ -1122,13 +1176,13 @@ class TestUser(TestCase):
         caps_email = "MAYOR@igorville.gov"
         # mock the domain invitation save routine
         with patch("registrar.models.DomainInvitation.save") as save_mock:
-            with less_console_noise():
-                DomainInvitation.objects.get_or_create(email=caps_email, domain=self.domain)
-                self.user.check_domain_invitations_on_login()
-                # if check_domain_invitations_on_login properly matches exactly one
-                # Domain Invitation, then save routine should be called exactly once
-                save_mock.assert_called_once()
+            DomainInvitation.objects.get_or_create(email=caps_email, domain=self.domain)
+            self.user.check_domain_invitations_on_login()
+            # if check_domain_invitations_on_login properly matches exactly one
+            # Domain Invitation, then save routine should be called exactly once
+            save_mock.assert_called_once()
 
+    @less_console_noise_decorator
     def test_approved_domains_count(self):
         """Test that the correct approved domain count is returned for a user"""
         # with no associated approved domains, expect this to return 0
@@ -1153,6 +1207,7 @@ class TestUser(TestCase):
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain5, role=UserDomainRole.Roles.MANAGER)
         self.assertEquals(self.user.get_approved_domains_count(), 4)
 
+    @less_console_noise_decorator
     def test_active_requests_count(self):
         """Test that the correct active domain requests count is returned for a user"""
         # with no associated active requests, expect this to return 0
@@ -1182,6 +1237,7 @@ class TestUser(TestCase):
         )
         self.assertEquals(self.user.get_active_requests_count(), 3)
 
+    @less_console_noise_decorator
     def test_rejected_requests_count(self):
         """Test that the correct rejected domain requests count is returned for a user"""
         # with no associated rejected requests, expect this to return 0
@@ -1193,6 +1249,7 @@ class TestUser(TestCase):
         )
         self.assertEquals(self.user.get_rejected_requests_count(), 1)
 
+    @less_console_noise_decorator
     def test_ineligible_requests_count(self):
         """Test that the correct ineligible domain requests count is returned for a user"""
         # with no associated ineligible requests, expect this to return 0
@@ -1204,6 +1261,7 @@ class TestUser(TestCase):
         )
         self.assertEquals(self.user.get_ineligible_requests_count(), 1)
 
+    @less_console_noise_decorator
     def test_has_contact_info(self):
         """Test that has_contact_info properly returns"""
         # test with a user with contact info defined
@@ -1216,6 +1274,7 @@ class TestUser(TestCase):
 
 
 class TestContact(TestCase):
+    @less_console_noise_decorator
     def setUp(self):
         self.email_for_invalid = "intern@igorville.gov"
         self.invalid_user, _ = User.objects.get_or_create(
@@ -1242,6 +1301,7 @@ class TestContact(TestCase):
         Contact.objects.all().delete()
         User.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_saving_contact_updates_user_first_last_names_and_phone(self):
         """When a contact is updated, we propagate the changes to the linked user if it exists."""
 
@@ -1271,6 +1331,7 @@ class TestContact(TestCase):
         self.assertEqual(self.invalid_user.last_name, "Baloney")
         self.assertEqual(self.invalid_user.phone, "123456789")
 
+    @less_console_noise_decorator
     def test_saving_contact_does_not_update_user_first_last_names_and_phone(self):
         """When a contact is updated, we avoid propagating the changes to the linked user if it already has a value"""
 
@@ -1298,6 +1359,7 @@ class TestContact(TestCase):
         self.assertEqual(self.user.last_name, "Lebowski")
         self.assertEqual(self.user.phone, "123456789")
 
+    @less_console_noise_decorator
     def test_saving_contact_does_not_update_user_email(self):
         """When a contact's email is updated, the change is not propagated to the user."""
         self.contact.email = "joey.baloney@diaperville.com"
@@ -1310,6 +1372,7 @@ class TestContact(TestCase):
         self.assertEqual(self.contact.email, "joey.baloney@diaperville.com")
         self.assertEqual(self.user.email, "mayor@igorville.gov")
 
+    @less_console_noise_decorator
     def test_saving_contact_does_not_update_user_email_when_none(self):
         """When a contact's email is updated, and the first/last name is none,
         the change is not propagated to the user."""
@@ -1323,6 +1386,7 @@ class TestContact(TestCase):
         self.assertEqual(self.invalid_contact.email, "joey.baloney@diaperville.com")
         self.assertEqual(self.invalid_user.email, "intern@igorville.gov")
 
+    @less_console_noise_decorator
     def test_has_more_than_one_join(self):
         """Test the Contact model method, has_more_than_one_join"""
         # test for a contact which has one user defined
@@ -1332,6 +1396,7 @@ class TestContact(TestCase):
         self.assertFalse(self.contact_as_so.has_more_than_one_join("senior_official"))
         self.assertTrue(self.contact_as_so.has_more_than_one_join("submitted_domain_requests"))
 
+    @less_console_noise_decorator
     def test_has_contact_info(self):
         """Test that has_contact_info properly returns"""
         # test with a contact with contact info defined
@@ -1350,6 +1415,7 @@ class TestDomainRequestCustomSave(TestCase):
         DomainRequest.objects.all().delete()
         super().tearDown()
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_new_instance(self):
         """Test create_or_update_organization_type when creating a new instance"""
         domain_request = completed_domain_request(
@@ -1361,6 +1427,7 @@ class TestDomainRequestCustomSave(TestCase):
 
         self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_new_instance_federal_does_nothing(self):
         """Test if create_or_update_organization_type does nothing when creating a new instance for federal"""
         domain_request = completed_domain_request(
@@ -1372,6 +1439,7 @@ class TestDomainRequestCustomSave(TestCase):
         self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.FEDERAL)
         self.assertEqual(domain_request.is_election_board, None)
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_existing_instance_updates_election_board(self):
         """Test create_or_update_organization_type for an existing instance."""
         domain_request = completed_domain_request(
@@ -1400,6 +1468,7 @@ class TestDomainRequestCustomSave(TestCase):
         self.assertEqual(domain_request.is_election_board, False)
         self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_existing_instance_updates_generic_org_type(self):
         """Test create_or_update_organization_type when modifying generic_org_type on an existing instance."""
         domain_request = completed_domain_request(
@@ -1436,6 +1505,7 @@ class TestDomainRequestCustomSave(TestCase):
             domain_request_tribal.organization_type, DomainRequest.OrgChoicesElectionOffice.STATE_OR_TERRITORY_ELECTION
         )
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_no_update(self):
         """Test create_or_update_organization_type when there are no values to update."""
 
@@ -1499,6 +1569,7 @@ class TestDomainInformationCustomSave(TestCase):
         Domain.objects.all().delete()
         super().tearDown()
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_new_instance(self):
         """Test create_or_update_organization_type when creating a new instance"""
         domain_request = completed_domain_request(
@@ -1511,6 +1582,7 @@ class TestDomainInformationCustomSave(TestCase):
         domain_information = DomainInformation.create_from_da(domain_request)
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_new_instance_federal_does_nothing(self):
         """Test if create_or_update_organization_type does nothing when creating a new instance for federal"""
         domain_request = completed_domain_request(
@@ -1524,6 +1596,7 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.FEDERAL)
         self.assertEqual(domain_information.is_election_board, None)
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_existing_instance_updates_election_board(self):
         """Test create_or_update_organization_type for an existing instance."""
         domain_request = completed_domain_request(
@@ -1554,6 +1627,7 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertEqual(domain_information.is_election_board, False)
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_existing_instance_updates_generic_org_type(self):
         """Test create_or_update_organization_type when modifying generic_org_type on an existing instance."""
         domain_request = completed_domain_request(
@@ -1593,6 +1667,7 @@ class TestDomainInformationCustomSave(TestCase):
             DomainRequest.OrgChoicesElectionOffice.STATE_OR_TERRITORY_ELECTION,
         )
 
+    @less_console_noise_decorator
     def test_create_or_update_organization_type_no_update(self):
         """Test create_or_update_organization_type when there are no values to update."""
 
@@ -1650,6 +1725,7 @@ class TestDomainInformationCustomSave(TestCase):
 
 
 class TestDomainRequestIncomplete(TestCase):
+    @less_console_noise_decorator
     def setUp(self):
         super().setUp()
         self.factory = RequestFactory()
@@ -1717,12 +1793,14 @@ class TestDomainRequestIncomplete(TestCase):
         DomainRequest.objects.all().delete()
         Contact.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_is_federal_complete(self):
         self.assertTrue(self.domain_request._is_federal_complete())
         self.domain_request.federal_type = None
         self.domain_request.save()
         self.assertFalse(self.domain_request._is_federal_complete())
 
+    @less_console_noise_decorator
     def test_is_interstate_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
         self.domain_request.about_your_organization = "Something something about your organization"
@@ -1732,6 +1810,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.save()
         self.assertFalse(self.domain_request._is_interstate_complete())
 
+    @less_console_noise_decorator
     def test_is_state_or_territory_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         self.domain_request.is_election_board = True
@@ -1742,6 +1821,7 @@ class TestDomainRequestIncomplete(TestCase):
         # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
         self.assertTrue(self.domain_request._is_state_or_territory_complete())
 
+    @less_console_noise_decorator
     def test_is_tribal_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.TRIBAL
         self.domain_request.tribe_name = "Tribe Name"
@@ -1754,6 +1834,7 @@ class TestDomainRequestIncomplete(TestCase):
         # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
         self.assertFalse(self.domain_request._is_tribal_complete())
 
+    @less_console_noise_decorator
     def test_is_county_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.COUNTY
         self.domain_request.is_election_board = False
@@ -1764,6 +1845,7 @@ class TestDomainRequestIncomplete(TestCase):
         # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
         self.assertTrue(self.domain_request._is_county_complete())
 
+    @less_console_noise_decorator
     def test_is_city_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.CITY
         self.domain_request.is_election_board = False
@@ -1774,6 +1856,7 @@ class TestDomainRequestIncomplete(TestCase):
         # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
         self.assertTrue(self.domain_request._is_city_complete())
 
+    @less_console_noise_decorator
     def test_is_special_district_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
         self.domain_request.about_your_organization = "Something something about your organization"
@@ -1786,6 +1869,7 @@ class TestDomainRequestIncomplete(TestCase):
         # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
         self.assertFalse(self.domain_request._is_special_district_complete())
 
+    @less_console_noise_decorator
     def test_is_organization_name_and_address_complete(self):
         self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
         self.domain_request.organization_name = None
@@ -1793,30 +1877,35 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.save()
         self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
 
+    @less_console_noise_decorator
     def test_is_senior_official_complete(self):
         self.assertTrue(self.domain_request._is_senior_official_complete())
         self.domain_request.senior_official = None
         self.domain_request.save()
         self.assertFalse(self.domain_request._is_senior_official_complete())
 
+    @less_console_noise_decorator
     def test_is_requested_domain_complete(self):
         self.assertTrue(self.domain_request._is_requested_domain_complete())
         self.domain_request.requested_domain = None
         self.domain_request.save()
         self.assertFalse(self.domain_request._is_requested_domain_complete())
 
+    @less_console_noise_decorator
     def test_is_purpose_complete(self):
         self.assertTrue(self.domain_request._is_purpose_complete())
         self.domain_request.purpose = None
         self.domain_request.save()
         self.assertFalse(self.domain_request._is_purpose_complete())
 
+    @less_console_noise_decorator
     def test_is_submitter_complete(self):
         self.assertTrue(self.domain_request._is_submitter_complete())
         self.domain_request.submitter = None
         self.domain_request.save()
         self.assertFalse(self.domain_request._is_submitter_complete())
 
+    @less_console_noise_decorator
     def test_is_other_contacts_complete_missing_one_field(self):
         self.assertTrue(self.domain_request._is_other_contacts_complete())
         contact = self.domain_request.other_contacts.first()
@@ -1824,10 +1913,12 @@ class TestDomainRequestIncomplete(TestCase):
         contact.save()
         self.assertFalse(self.domain_request._is_other_contacts_complete())
 
+    @less_console_noise_decorator
     def test_is_other_contacts_complete_all_none(self):
         self.domain_request.other_contacts.clear()
         self.assertFalse(self.domain_request._is_other_contacts_complete())
 
+    @less_console_noise_decorator
     def test_is_other_contacts_False_and_has_rationale(self):
         # Click radio button "No" for no other contacts and give rationale
         self.domain_request.other_contacts.clear()
@@ -1835,6 +1926,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.no_other_contacts_rationale = "Some rationale"
         self.assertTrue(self.domain_request._is_other_contacts_complete())
 
+    @less_console_noise_decorator
     def test_is_other_contacts_False_and_NO_rationale(self):
         # Click radio button "No" for no other contacts and DONT give rationale
         self.domain_request.other_contacts.clear()
@@ -1842,6 +1934,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.no_other_contacts_rationale = None
         self.assertFalse(self.domain_request._is_other_contacts_complete())
 
+    @less_console_noise_decorator
     def test_is_additional_details_complete(self):
         test_cases = [
             # CISA Rep - Yes
@@ -2048,6 +2141,7 @@ class TestDomainRequestIncomplete(TestCase):
                     msg=f"Failed for case: {case}",
                 )
 
+    @less_console_noise_decorator
     def test_is_policy_acknowledgement_complete(self):
         self.assertTrue(self.domain_request._is_policy_acknowledgement_complete())
         self.domain_request.is_policy_acknowledged = False
@@ -2055,6 +2149,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.is_policy_acknowledged = None
         self.assertFalse(self.domain_request._is_policy_acknowledgement_complete())
 
+    @less_console_noise_decorator
     def test_form_complete(self):
         request = self.factory.get("/")
         request.user = self.user
