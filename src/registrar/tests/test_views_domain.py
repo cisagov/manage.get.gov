@@ -5,6 +5,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
+from api.tests.common import less_console_noise_decorator
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -45,6 +46,7 @@ logger = logging.getLogger(__name__)
 
 
 class TestWithDomainPermissions(TestWithUser):
+    @less_console_noise_decorator
     def setUp(self):
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
@@ -142,6 +144,7 @@ class TestWithDomainPermissions(TestWithUser):
 
 
 class TestDomainPermissions(TestWithDomainPermissions):
+    @less_console_noise_decorator
     def test_not_logged_in(self):
         """Not logged in gets a redirect to Login."""
         for view_name in [
@@ -158,6 +161,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
                 response = self.client.get(reverse(view_name, kwargs={"pk": self.domain.id}))
                 self.assertEqual(response.status_code, 302)
 
+    @less_console_noise_decorator
     def test_no_domain_role(self):
         """Logged in but no role gets 403 Forbidden."""
         self.client.force_login(self.user)
@@ -174,10 +178,10 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
-                with less_console_noise():
-                    response = self.client.get(reverse(view_name, kwargs={"pk": self.domain.id}))
+                response = self.client.get(reverse(view_name, kwargs={"pk": self.domain.id}))
                 self.assertEqual(response.status_code, 403)
 
+    @less_console_noise_decorator
     def test_domain_pages_blocked_for_on_hold_and_deleted(self):
         """Test that the domain pages are blocked for on hold and deleted domains"""
 
@@ -199,9 +203,8 @@ class TestDomainPermissions(TestWithDomainPermissions):
                 self.domain_deleted,
             ]:
                 with self.subTest(view_name=view_name, domain=domain):
-                    with less_console_noise():
-                        response = self.client.get(reverse(view_name, kwargs={"pk": domain.id}))
-                        self.assertEqual(response.status_code, 403)
+                    response = self.client.get(reverse(view_name, kwargs={"pk": domain.id}))
+                    self.assertEqual(response.status_code, 403)
 
 
 class TestDomainOverview(TestWithDomainPermissions, WebTest):
@@ -312,21 +315,25 @@ class TestDomainManagers(TestDomainOverview):
         """Ensure that the user has its original permissions"""
         super().tearDown()
 
+    @less_console_noise_decorator
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
 
+    @less_console_noise_decorator
     def test_domain_managers_add_link(self):
         """Button to get to user add page works."""
         management_page = self.app.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         add_page = management_page.click("Add a domain manager")
         self.assertContains(add_page, "Add a domain manager")
 
+    @less_console_noise_decorator
     def test_domain_user_add(self):
         response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Add a domain manager")
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_user_add_form(self):
         """Adding an existing user works."""
         other_user, _ = get_user_model().objects.get_or_create(email="mayor@igorville.gov")
@@ -353,6 +360,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertContains(success_page, "mayor@igorville.gov")
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_invitation_created(self):
         """Add user on a nonexistent email creates an invitation.
 
@@ -383,6 +391,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_invitation_created_for_caps_email(self):
         """Add user on a nonexistent email with CAPS creates an invitation to lowercase email.
 
@@ -403,8 +412,7 @@ class TestDomainManagers(TestDomainOverview):
 
         mock_client = MockSESClient()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                success_result = add_page.form.submit()
+            success_result = add_page.form.submit()
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
@@ -414,6 +422,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_invitation_email_sent(self):
         """Inviting a non-existent user sends them an email."""
         # make sure there is no user with this email
@@ -425,12 +434,11 @@ class TestDomainManagers(TestDomainOverview):
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit()
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = email_address
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -440,6 +448,7 @@ class TestDomainManagers(TestDomainOverview):
         )
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_invitation_email_has_email_as_requestor_non_existent(self):
         """Inviting a non existent user sends them an email, with email as the name."""
         # make sure there is no user with this email
@@ -452,12 +461,11 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit()
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = email_address
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -479,6 +487,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotIn("First Last", email_content)
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_invitation_email_has_email_as_requestor(self):
         """Inviting a user sends them an email, with email as the name."""
         # Create a fake user object
@@ -491,12 +500,11 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit()
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = email_address
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -518,6 +526,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotIn("First Last", email_content)
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_invitation_email_has_email_as_requestor_staff(self):
         """Inviting a user sends them an email, with email as the name."""
         # Create a fake user object
@@ -534,12 +543,11 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit()
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = email_address
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -561,6 +569,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotIn("First Last", email_content)
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_invitation_email_displays_error_non_existent(self):
         """Inviting a non existent user sends them an email, with email as the name."""
         # make sure there is no user with this email
@@ -577,12 +586,11 @@ class TestDomainManagers(TestDomainOverview):
         mock_error_message = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with patch("django.contrib.messages.error") as mock_error_message:
-                with less_console_noise():
-                    add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                    add_page.form["email"] = email_address
-                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                    add_page.form.submit().follow()
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit().follow()
 
         expected_message_content = "Can't send invitation email. No email is associated with your account."
 
@@ -593,6 +601,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertEqual(expected_message_content, returned_error_message)
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_invitation_email_displays_error(self):
         """When the requesting user has no email, an error is displayed"""
         # make sure there is no user with this email
@@ -611,12 +620,11 @@ class TestDomainManagers(TestDomainOverview):
         mock_error_message = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with patch("django.contrib.messages.error") as mock_error_message:
-                with less_console_noise():
-                    add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                    add_page.form["email"] = email_address
-                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                    add_page.form.submit().follow()
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit().follow()
 
         expected_message_content = "Can't send invitation email. No email is associated with your account."
 
@@ -626,34 +634,35 @@ class TestDomainManagers(TestDomainOverview):
         # Check that the message content is what we expect
         self.assertEqual(expected_message_content, returned_error_message)
 
+    @less_console_noise_decorator
     def test_domain_invitation_cancel(self):
         """Posting to the delete view deletes an invitation."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
         mock_client = MockSESClient()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+            self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
         mock_client.EMAILS_SENT.clear()
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
 
+    @less_console_noise_decorator
     def test_domain_invitation_cancel_retrieved_invitation(self):
         """Posting to the delete view when invitation retrieved returns an error message"""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(
             domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
         )
-        with less_console_noise():
-            response = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}), follow=True)
-            # Assert that an error message is displayed to the user
-            self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
-            # Assert that the Cancel link is not displayed
-            self.assertNotContains(response, "Cancel")
+        response = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}), follow=True)
+        # Assert that an error message is displayed to the user
+        self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
+        # Assert that the Cancel link is not displayed
+        self.assertNotContains(response, "Cancel")
         # Assert that the DomainInvitation is not deleted
         self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
         DomainInvitation.objects.filter(email=email_address).delete()
 
+    @less_console_noise_decorator
     def test_domain_invitation_cancel_no_permissions(self):
         """Posting to the delete view as a different user should fail."""
         email_address = "mayor@igorville.gov"
@@ -664,12 +673,12 @@ class TestDomainManagers(TestDomainOverview):
         self.client.force_login(other_user)
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():  # permission denied makes console errors
-                result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+            result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
 
         self.assertEqual(result.status_code, 403)
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_invitation_flow(self):
         """Send an invitation to a new user, log in and load the dashboard."""
         email_address = "mayor@igorville.gov"
@@ -685,8 +694,7 @@ class TestDomainManagers(TestDomainOverview):
 
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                add_page.form.submit()
+            add_page.form.submit()
 
         # user was invited, create them
         new_user = User.objects.create(username=email_address, email=email_address)
@@ -701,11 +709,13 @@ class TestDomainManagers(TestDomainOverview):
 
 
 class TestDomainNameservers(TestDomainOverview, MockEppLib):
+    @less_console_noise_decorator
     def test_domain_nameservers(self):
         """Can load domain's nameservers page."""
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_submit_one_nameserver(self):
         """Nameserver form submitted with one nameserver throws error.
 
@@ -717,8 +727,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form with only one nameserver, should error
         # regarding required fields
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the required field.  form requires a minimum of 2 name servers
@@ -729,6 +738,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             status_code=200,
         )
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_submit_subdomain_missing_ip(self):
         """Nameserver form catches missing ip error on subdomain.
 
@@ -742,8 +752,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # only one has ips
         nameservers_page.form["form-1-server"] = "ns2.igorville.gov"
 
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the required field.  subdomain missing an ip
@@ -754,6 +763,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             status_code=200,
         )
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_submit_missing_host(self):
         """Nameserver form catches error when host is missing.
 
@@ -766,8 +776,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # attempt to submit the form without two hosts, both subdomains,
         # only one has ips
         nameservers_page.form["form-1-ip"] = "127.0.0.1"
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the required field.  nameserver has ip but missing host
@@ -778,6 +787,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             status_code=200,
         )
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_submit_duplicate_host(self):
         """Nameserver form catches error when host is duplicated.
 
@@ -790,8 +800,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # attempt to submit the form with duplicate host names of fake.host.com
         nameservers_page.form["form-0-ip"] = ""
         nameservers_page.form["form-1-server"] = "fake.host.com"
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the required field.  remove duplicate entry
@@ -802,6 +811,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             status_code=200,
         )
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_submit_whitespace(self):
         """Nameserver form removes whitespace from ip.
 
@@ -820,8 +830,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page.form["form-0-ip"] = valid_ip
         nameservers_page.form["form-1-ip"] = valid_ip_2
         nameservers_page.form["form-1-server"] = nameserver2
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a post with an ip address which has been stripped of whitespace,
         # response should be a 302 to success page
         self.assertEqual(result.status_code, 302)
@@ -835,6 +844,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # with an error message displayed, so need to follow 302 and test for success message
         self.assertContains(page, "The name servers for this domain have been updated")
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_submit_glue_record_not_allowed(self):
         """Nameserver form catches error when IP is present
         but host not subdomain.
@@ -853,8 +863,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page.form["form-0-server"] = nameserver1
         nameservers_page.form["form-1-server"] = nameserver2
         nameservers_page.form["form-1-ip"] = valid_ip
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the required field.  nameserver has ip but missing host
@@ -865,6 +874,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             status_code=200,
         )
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_submit_invalid_ip(self):
         """Nameserver form catches invalid IP on submission.
 
@@ -880,8 +890,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # only one has ips
         nameservers_page.form["form-1-server"] = nameserver
         nameservers_page.form["form-1-ip"] = invalid_ip
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the required field.  nameserver has ip but missing host
@@ -892,6 +901,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             status_code=200,
         )
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_submit_invalid_host(self):
         """Nameserver form catches invalid host on submission.
 
@@ -907,8 +917,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # only one has ips
         nameservers_page.form["form-1-server"] = nameserver
         nameservers_page.form["form-1-ip"] = valid_ip
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the required field.  nameserver has invalid host
@@ -919,6 +928,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             status_code=200,
         )
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_submits_successfully(self):
         """Nameserver form submits successfully with valid input.
 
@@ -935,8 +945,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page.form["form-0-ip"] = valid_ip
         nameservers_page.form["form-1-server"] = nameserver2
         nameservers_page.form["form-1-ip"] = valid_ip_2
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
@@ -947,6 +956,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         page = result.follow()
         self.assertContains(page, "The name servers for this domain have been updated")
 
+    @less_console_noise_decorator
     def test_domain_nameservers_can_blank_out_first_or_second_one_if_enough_entries(self):
         """Nameserver form submits successfully with 2 valid inputs, even if the first or
         second entries are blanked out.
@@ -969,8 +979,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page.form["form-1-ip"] = valid_ip_2
         nameservers_page.form["form-2-server"] = nameserver3
         nameservers_page.form["form-2-ip"] = valid_ip_3
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
@@ -996,8 +1005,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page.form["form-1-ip"] = valid_ip_2
         nameservers_page.form["form-2-server"] = nameserver3
         nameservers_page.form["form-2-ip"] = valid_ip_3
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
@@ -1009,6 +1017,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page = result.follow()
         self.assertContains(nameservers_page, "The name servers for this domain have been updated")
 
+    @less_console_noise_decorator
     def test_domain_nameservers_can_blank_out_first_and_second_one_if_enough_entries(self):
         """Nameserver form submits successfully with 2 valid inputs, even if the first and
         second entries are blanked out.
@@ -1045,8 +1054,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page.form["form-2-ip"] = valid_ip_3
         nameservers_page.form["form-3-server"] = nameserver4
         nameservers_page.form["form-3-ip"] = valid_ip_4
-        with less_console_noise():  # swallow log warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
@@ -1058,6 +1066,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page = result.follow()
         self.assertContains(nameservers_page, "The name servers for this domain have been updated")
 
+    @less_console_noise_decorator
     def test_domain_nameservers_form_invalid(self):
         """Nameserver form does not submit with invalid data.
 
@@ -1069,8 +1078,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # first two nameservers are required, so if we empty one out we should
         # get a form error
         nameservers_page.form["form-0-server"] = ""
-        with less_console_noise():  # swallow logged warning message
-            result = nameservers_page.form.submit()
+        result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears four times, twice at the top of the page,
         # once around each required field.
@@ -1083,11 +1091,13 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 
 
 class TestDomainSeniorOfficial(TestDomainOverview):
+    @less_console_noise_decorator
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
         page = self.client.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Senior official", count=13)
 
+    @less_console_noise_decorator
     def test_domain_senior_official_content(self):
         """Senior official information appears on the page."""
         self.domain_information.senior_official = Contact(first_name="Testy")
@@ -1096,6 +1106,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Testy")
 
+    @less_console_noise_decorator
     def test_domain_edit_senior_official_in_place(self):
         """When editing a senior official for domain information and SO is not
         joined to any other objects"""
@@ -1120,6 +1131,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.assertEqual("Testy2", self.domain_information.senior_official.first_name)
         self.assertEqual(so_pk, self.domain_information.senior_official.id)
 
+    @less_console_noise_decorator
     def assert_all_form_fields_have_expected_values(self, form, test_cases, test_for_disabled=False):
         """
         Asserts that each specified form field has the expected value and, optionally, checks if the field is disabled.
@@ -1146,6 +1158,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
                     # Test for disabled on each field
                     self.assertTrue("disabled" in form[field_name].attrs)
 
+    @less_console_noise_decorator
     def test_domain_edit_senior_official_federal(self):
         """Tests that no edit can occur when the underlying domain is federal"""
 
@@ -1202,6 +1215,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.assertEqual("CIO", self.domain_information.senior_official.title)
         self.assertEqual("nobody@igorville.gov", self.domain_information.senior_official.email)
 
+    @less_console_noise_decorator
     def test_domain_edit_senior_official_tribal(self):
         """Tests that no edit can occur when the underlying domain is tribal"""
 
@@ -1258,6 +1272,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.assertEqual("CIO", self.domain_information.senior_official.title)
         self.assertEqual("nobody@igorville.gov", self.domain_information.senior_official.email)
 
+    @less_console_noise_decorator
     def test_domain_edit_senior_official_creates_new(self):
         """When editing a senior official for domain information and SO IS
         joined to another object"""
@@ -1295,12 +1310,14 @@ class TestDomainSeniorOfficial(TestDomainOverview):
 
 
 class TestDomainOrganization(TestDomainOverview):
+    @less_console_noise_decorator
     def test_domain_org_name_address(self):
         """Can load domain's org name and mailing address page."""
         page = self.client.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         # once on the sidebar, once in the page title, once as H1
         self.assertContains(page, "Organization name and mailing address", count=3)
 
+    @less_console_noise_decorator
     def test_domain_org_name_address_content(self):
         """Org name and address information appears on the page."""
         self.domain_information.organization_name = "Town of Igorville"
@@ -1308,6 +1325,7 @@ class TestDomainOrganization(TestDomainOverview):
         page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Town of Igorville")
 
+    @less_console_noise_decorator
     def test_domain_org_name_address_form(self):
         """Submitting changes works on the org name address page."""
         self.domain_information.organization_name = "Town of Igorville"
@@ -1325,6 +1343,7 @@ class TestDomainOrganization(TestDomainOverview):
         self.assertContains(success_result_page, "Not igorville")
         self.assertContains(success_result_page, "Faketown")
 
+    @less_console_noise_decorator
     def test_domain_org_name_address_form_tribal(self):
         """
         Submitting a change to organization_name is blocked for tribal domains
@@ -1382,6 +1401,7 @@ class TestDomainOrganization(TestDomainOverview):
         # Check for the value we want to update
         self.assertContains(success_result_page, "Faketown")
 
+    @less_console_noise_decorator
     def test_domain_org_name_address_form_federal(self):
         """
         Submitting a change to federal_agency is blocked for federal domains
@@ -1437,6 +1457,7 @@ class TestDomainOrganization(TestDomainOverview):
         # Check for the value we want to update
         self.assertContains(success_result_page, "Faketown")
 
+    @less_console_noise_decorator
     def test_federal_agency_submit_blocked(self):
         """
         Submitting a change to federal_agency is blocked for federal domains
@@ -1470,11 +1491,13 @@ class TestDomainOrganization(TestDomainOverview):
 
 
 class TestDomainContactInformation(TestDomainOverview):
+    @less_console_noise_decorator
     def test_domain_your_contact_information(self):
         """Can load domain's your contact information page."""
         page = self.client.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Your contact information")
 
+    @less_console_noise_decorator
     def test_domain_your_contact_information_content(self):
         """Logged-in user's contact information appears on the page."""
         self.user.contact.first_name = "Testy"
@@ -1602,20 +1625,21 @@ class TestDomainSecurityEmail(TestDomainOverview):
                 self.assertEqual(message.tags, message_tag)
                 self.assertEqual(message.message.strip(), expected_message.strip())
 
+    @less_console_noise_decorator
     def test_domain_overview_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
         views, but a single url test should be solid enough since all domain
         management pages share the same permissions class"""
         self.user.status = User.RESTRICTED
         self.user.save()
-        with less_console_noise():
-            response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
-            self.assertEqual(response.status_code, 403)
+        response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+        self.assertEqual(response.status_code, 403)
 
 
 class TestDomainDNSSEC(TestDomainOverview):
     """MockEPPLib is already inherited."""
 
+    @less_console_noise_decorator
     def test_dnssec_page_refreshes_enable_button(self):
         """DNSSEC overview page loads when domain has no DNSSEC data
         and shows a 'Enable DNSSEC' button."""
@@ -1623,6 +1647,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         page = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Enable DNSSEC")
 
+    @less_console_noise_decorator
     def test_dnssec_page_loads_with_data_in_domain(self):
         """DNSSEC overview page loads when domain has DNSSEC data
         and the template contains a button to disable DNSSEC."""
@@ -1644,6 +1669,7 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         self.assertContains(updated_page, "Enable DNSSEC")
 
+    @less_console_noise_decorator
     def test_ds_form_loads_with_no_domain_data(self):
         """DNSSEC Add DS data page loads when there is no
         domain DNSSEC data and shows a button to Add new record"""
@@ -1652,6 +1678,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(page, "You have no DS data added")
         self.assertContains(page, "Add new record")
 
+    @less_console_noise_decorator
     def test_ds_form_loads_with_ds_data(self):
         """DNSSEC Add DS data page loads when there is
         domain DNSSEC DS data and shows the data"""
@@ -1659,6 +1686,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
         self.assertContains(page, "DS data record 1")
 
+    @less_console_noise_decorator
     def test_ds_data_form_modal(self):
         """When user clicks on save, a modal pops up."""
         add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
@@ -1677,6 +1705,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         # Now check to see whether the JS trigger for the modal is present on the page
         self.assertContains(response, "Trigger Disable DNSSEC Modal")
 
+    @less_console_noise_decorator
     def test_ds_data_form_submits(self):
         """DS data form submits successfully
 
@@ -1685,8 +1714,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        with less_console_noise():  # swallow log warning message
-            result = add_data_page.forms[0].submit()
+        result = add_data_page.forms[0].submit()
         # form submission was a post, response should be a redirect
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
@@ -1697,6 +1725,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         page = result.follow()
         self.assertContains(page, "The DS data records for this domain have been updated.")
 
+    @less_console_noise_decorator
     def test_ds_data_form_invalid(self):
         """DS data form errors with invalid data (missing required fields)
 
@@ -1710,8 +1739,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page.forms[0]["form-0-algorithm"] = ""
         add_data_page.forms[0]["form-0-digest_type"] = ""
         add_data_page.forms[0]["form-0-digest"] = ""
-        with less_console_noise():  # swallow logged warning message
-            result = add_data_page.forms[0].submit()
+        result = add_data_page.forms[0].submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
@@ -1720,6 +1748,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(result, "Digest type is required", count=2, status_code=200)
         self.assertContains(result, "Digest is required", count=2, status_code=200)
 
+    @less_console_noise_decorator
     def test_ds_data_form_invalid_keytag(self):
         """DS data form errors with invalid data (key tag too large)
 
@@ -1734,8 +1763,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page.forms[0]["form-0-algorithm"] = ""
         add_data_page.forms[0]["form-0-digest_type"] = ""
         add_data_page.forms[0]["form-0-digest"] = ""
-        with less_console_noise():  # swallow logged warning message
-            result = add_data_page.forms[0].submit()
+        result = add_data_page.forms[0].submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
@@ -1743,6 +1771,7 @@ class TestDomainDNSSEC(TestDomainOverview):
             result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE)), count=2, status_code=200
         )
 
+    @less_console_noise_decorator
     def test_ds_data_form_invalid_digest_chars(self):
         """DS data form errors with invalid data (digest contains non hexadecimal chars)
 
@@ -1757,8 +1786,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page.forms[0]["form-0-algorithm"] = "3"
         add_data_page.forms[0]["form-0-digest_type"] = "1"
         add_data_page.forms[0]["form-0-digest"] = "GG1234"
-        with less_console_noise():  # swallow logged warning message
-            result = add_data_page.forms[0].submit()
+        result = add_data_page.forms[0].submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
@@ -1766,6 +1794,7 @@ class TestDomainDNSSEC(TestDomainOverview):
             result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)), count=2, status_code=200
         )
 
+    @less_console_noise_decorator
     def test_ds_data_form_invalid_digest_sha1(self):
         """DS data form errors with invalid data (digest is invalid sha-1)
 
@@ -1780,8 +1809,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page.forms[0]["form-0-algorithm"] = "3"
         add_data_page.forms[0]["form-0-digest_type"] = "1"  # SHA-1
         add_data_page.forms[0]["form-0-digest"] = "A123"
-        with less_console_noise():  # swallow logged warning message
-            result = add_data_page.forms[0].submit()
+        result = add_data_page.forms[0].submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
@@ -1789,6 +1817,7 @@ class TestDomainDNSSEC(TestDomainOverview):
             result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA1)), count=2, status_code=200
         )
 
+    @less_console_noise_decorator
     def test_ds_data_form_invalid_digest_sha256(self):
         """DS data form errors with invalid data (digest is invalid sha-256)
 
@@ -1803,8 +1832,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page.forms[0]["form-0-algorithm"] = "3"
         add_data_page.forms[0]["form-0-digest_type"] = "2"  # SHA-256
         add_data_page.forms[0]["form-0-digest"] = "GG1234"
-        with less_console_noise():  # swallow logged warning message
-            result = add_data_page.forms[0].submit()
+        result = add_data_page.forms[0].submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
