@@ -66,6 +66,7 @@ class TestFsmModelResource(TestCase):
     def setUp(self):
         self.resource = FsmModelResource()
 
+    @less_console_noise_decorator
     def test_init_instance(self):
         """Test initializing an instance of a class with a FSM field"""
 
@@ -80,6 +81,7 @@ class TestFsmModelResource(TestCase):
         self.assertIsInstance(instance, Domain)
         self.assertEqual(instance.state, "ready")
 
+    @less_console_noise_decorator
     def test_import_field(self):
         """Test that importing a field does not import FSM field"""
 
@@ -106,6 +108,7 @@ class TestFsmModelResource(TestCase):
 
 
 class TestDomainRequestAdminForm(TestCase):
+    @less_console_noise_decorator
     def setUp(self):
         # Create a test domain request with an initial state of started
         self.domain_request = completed_domain_request()
@@ -171,6 +174,7 @@ class TestDomainRequestAdminForm(TestCase):
 class TestDomainInvitationAdmin(TestCase):
     """Tests for the DomainInvitation page"""
 
+    @less_console_noise_decorator
     def setUp(self):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -296,6 +300,7 @@ class TestHostAdmin(TestCase):
 
 
 class TestDomainInformationAdmin(TestCase):
+    @less_console_noise_decorator
     def setUp(self):
         """Setup environment for a mock admin user"""
         self.site = AdminSite()
@@ -958,21 +963,20 @@ class TestMyUserAdmin(MockDb):
 
     @less_console_noise_decorator
     def test_list_display_without_username(self):
-        with less_console_noise():
-            request = self.client.request().wsgi_request
-            request.user = self.staffuser
+        request = self.client.request().wsgi_request
+        request.user = self.staffuser
 
-            list_display = self.admin.get_list_display(request)
-            expected_list_display = [
-                "email",
-                "first_name",
-                "last_name",
-                "group",
-                "status",
-            ]
+        list_display = self.admin.get_list_display(request)
+        expected_list_display = [
+            "email",
+            "first_name",
+            "last_name",
+            "group",
+            "status",
+        ]
 
-            self.assertEqual(list_display, expected_list_display)
-            self.assertNotIn("username", list_display)
+        self.assertEqual(list_display, expected_list_display)
+        self.assertNotIn("username", list_display)
 
     def test_get_fieldsets_superuser(self):
         with less_console_noise():
@@ -1004,6 +1008,7 @@ class TestMyUserAdmin(MockDb):
             )
             self.assertEqual(fieldsets, expected_fieldsets)
 
+    @less_console_noise_decorator
     def test_analyst_can_see_related_domains_and_requests_in_user_form(self):
         """Tests if an analyst can see the related domains and domain requests for a user in that user's form"""
 
@@ -1123,6 +1128,7 @@ class AuditedAdminTest(TestCase):
 
             return ordered_list
 
+    @less_console_noise_decorator
     def test_alphabetically_sorted_domain_request_investigator(self):
         """Tests if the investigator field is alphabetically sorted by mimicking
         the call event flow"""

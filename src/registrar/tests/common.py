@@ -41,6 +41,7 @@ from registrar.models.user_domain_role import UserDomainRole
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
+from api.tests.common import less_console_noise_decorator
 logger = logging.getLogger(__name__)
 
 
@@ -525,6 +526,7 @@ class AuditedAdminMockData:
 
 
 class MockDb(TestCase):
+    @less_console_noise_decorator
     def setUp(self):
         super().setUp()
         username = "test_user"
