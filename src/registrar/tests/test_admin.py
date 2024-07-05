@@ -898,16 +898,9 @@ class TestListHeaderAdmin(TestCase):
 
 
 class TestMyUserAdmin(MockDb):
-    """Test the MyUserAdmin class in Django Admin.
-    These tests use MockDb, which runs setUpClass and tearDownClass, rather than
-    setUp and tearDown. This is for efficiency purposes when running tests, but
-    also means that care must be taken to clean up within each test, because
-    setUp and tearDown are not used.
-    """
 
-    @classmethod
-    def setUpClass(self):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         admin_site = AdminSite()
         self.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -915,9 +908,8 @@ class TestMyUserAdmin(MockDb):
         self.staffuser = create_user()
         self.test_helper = GenericTestHelper(admin=self.admin)
 
-    @classmethod
-    def tearDownClass(self):
-        super().tearDownClass()
+    def tearDown(self):
+        super().tearDown()
         DomainRequest.objects.all().delete()
         User.objects.all().delete()
 

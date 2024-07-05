@@ -351,86 +351,86 @@ class TestDomainRequestAdmin(MockEppLib):
         _domain_request.delete()
         _creator.delete()
 
+    @less_console_noise_decorator
     def test_domain_sortable(self):
         """Tests if the DomainRequest sorts by domain correctly"""
-        with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
 
-            multiple_unalphabetical_domain_objects("domain_request")
+        multiple_unalphabetical_domain_objects("domain_request")
 
-            # Assert that our sort works correctly
-            self.test_helper.assert_table_sorted("1", ("requested_domain__name",))
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted("1", ("requested_domain__name",))
 
-            # Assert that sorting in reverse works correctly
-            self.test_helper.assert_table_sorted("-1", ("-requested_domain__name",))
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted("-1", ("-requested_domain__name",))
 
+    @less_console_noise_decorator
     def test_submitter_sortable(self):
         """Tests if the DomainRequest sorts by submitter correctly"""
-        with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
 
-            multiple_unalphabetical_domain_objects("domain_request")
+        multiple_unalphabetical_domain_objects("domain_request")
 
-            additional_domain_request = generic_domain_object("domain_request", "Xylophone")
-            new_user = User.objects.filter(username=additional_domain_request.investigator.username).get()
-            new_user.first_name = "Xylophonic"
-            new_user.save()
+        additional_domain_request = generic_domain_object("domain_request", "Xylophone")
+        new_user = User.objects.filter(username=additional_domain_request.investigator.username).get()
+        new_user.first_name = "Xylophonic"
+        new_user.save()
 
-            # Assert that our sort works correctly
-            self.test_helper.assert_table_sorted(
-                "11",
-                (
-                    "submitter__first_name",
-                    "submitter__last_name",
-                ),
-            )
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted(
+            "11",
+            (
+                "submitter__first_name",
+                "submitter__last_name",
+            ),
+        )
 
-            # Assert that sorting in reverse works correctly
-            self.test_helper.assert_table_sorted(
-                "-11",
-                (
-                    "-submitter__first_name",
-                    "-submitter__last_name",
-                ),
-            )
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted(
+            "-11",
+            (
+                "-submitter__first_name",
+                "-submitter__last_name",
+            ),
+        )
 
-            # clean up objects in this test
-            new_user.delete()
+        # clean up objects in this test
+        new_user.delete()
 
+    @less_console_noise_decorator
     def test_investigator_sortable(self):
         """Tests if the DomainRequest sorts by investigator correctly"""
-        with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
 
-            multiple_unalphabetical_domain_objects("domain_request")
-            additional_domain_request = generic_domain_object("domain_request", "Xylophone")
-            new_user = User.objects.filter(username=additional_domain_request.investigator.username).get()
-            new_user.first_name = "Xylophonic"
-            new_user.save()
+        multiple_unalphabetical_domain_objects("domain_request")
+        additional_domain_request = generic_domain_object("domain_request", "Xylophone")
+        new_user = User.objects.filter(username=additional_domain_request.investigator.username).get()
+        new_user.first_name = "Xylophonic"
+        new_user.save()
 
-            # Assert that our sort works correctly
-            self.test_helper.assert_table_sorted(
-                "12",
-                (
-                    "investigator__first_name",
-                    "investigator__last_name",
-                ),
-            )
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted(
+            "12",
+            (
+                "investigator__first_name",
+                "investigator__last_name",
+            ),
+        )
 
-            # Assert that sorting in reverse works correctly
-            self.test_helper.assert_table_sorted(
-                "-12",
-                (
-                    "-investigator__first_name",
-                    "-investigator__last_name",
-                ),
-            )
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted(
+            "-12",
+            (
+                "-investigator__first_name",
+                "-investigator__last_name",
+            ),
+        )
 
-            # clean up objects in this test
-            new_user.delete()
+        # clean up objects in this test
+        new_user.delete()
 
     @less_console_noise_decorator
     def test_default_sorting_in_domain_requests_list(self):
@@ -496,32 +496,32 @@ class TestDomainRequestAdmin(MockEppLib):
 
         self.assertEqual(unique_domain_names, expected_order)
 
+    @less_console_noise_decorator
     def test_short_org_name_in_domain_requests_list(self):
         """
         Make sure the short name is displaying in admin on the list page
         """
-        with less_console_noise():
-            self.client.force_login(self.superuser)
-            completed_domain_request()
-            response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
-            # There are 2 template references to Federal (4) and two in the results data
-            # of the request
-            self.assertContains(response, "Federal", count=52)
-            # This may be a bit more robust
-            self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
-            # Now let's make sure the long description does not exist
-            self.assertNotContains(response, "Federal: an agency of the U.S. government")
+        self.client.force_login(self.superuser)
+        completed_domain_request()
+        response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
+        # There are 2 template references to Federal (4) and two in the results data
+        # of the request
+        self.assertContains(response, "Federal", count=52)
+        # This may be a bit more robust
+        self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
+        # Now let's make sure the long description does not exist
+        self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
+    @less_console_noise_decorator
     def test_default_status_in_domain_requests_list(self):
         """
         Make sure the default status in admin is selected on the domain requests list page
         """
-        with less_console_noise():
-            self.client.force_login(self.superuser)
-            completed_domain_request()
-            response = self.client.get("/admin/registrar/domainrequest/")
-            # The results are filtered by "status in [submitted,in review,action needed]"
-            self.assertContains(response, "status in [submitted,in review,action needed]", count=1)
+        self.client.force_login(self.superuser)
+        completed_domain_request()
+        response = self.client.get("/admin/registrar/domainrequest/")
+        # The results are filtered by "status in [submitted,in review,action needed]"
+        self.assertContains(response, "status in [submitted,in review,action needed]", count=1)
 
     @less_console_noise_decorator
     def transition_state_and_send_email(self, domain_request, status, rejection_reason=None, action_needed_reason=None):
@@ -577,6 +577,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertEqual(bcc_email, bcc_email_address)
 
     @override_settings(IS_PRODUCTION=True)
+    @less_console_noise_decorator
     def test_action_needed_sends_reason_email_prod_bcc(self):
         """When an action needed reason is set, an email is sent out and help@get.gov
         is BCC'd in production"""
@@ -627,6 +628,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Should be unchanged from before
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
 
+    @less_console_noise_decorator
     def test_save_model_sends_submitted_email(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
         an email is sent out.
@@ -637,51 +639,50 @@ class TestDomainRequestAdmin(MockEppLib):
         Also test that the default email set in settings is NOT BCCd on non-prod whenever
         an email does go out."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request()
+        # Create a sample domain request
+        domain_request = completed_domain_request()
 
-            # Test Submitted Status from started
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-            self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, True)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Test Submitted Status from started
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, True)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Test Withdrawn Status
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
-            self.assert_email_is_accurate(
-                "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL, True
-            )
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
+        self.assert_email_is_accurate(
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL, True
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
-            # Test Submitted Status Again (from withdrawn)
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Test Submitted Status Again (from withdrawn)
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Move it to IN_REVIEW
-            other = DomainRequest.ActionNeededReasons.OTHER
-            in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
-            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Move it to IN_REVIEW
+        other = DomainRequest.ActionNeededReasons.OTHER
+        in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
+        self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Move it to IN_REVIEW
+        self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Move it to ACTION_NEEDED
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Move it to ACTION_NEEDED
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     @less_console_noise_decorator
     def test_model_displays_action_needed_email(self):
@@ -702,6 +703,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS")
 
     @override_settings(IS_PRODUCTION=True)
+    @less_console_noise_decorator
     def test_save_model_sends_submitted_email_with_bcc_on_prod(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
         an email is sent out.
@@ -712,288 +714,288 @@ class TestDomainRequestAdmin(MockEppLib):
         Also test that the default email set in settings IS BCCd on prod whenever
         an email does go out."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
+        BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
 
-            # Create a sample domain request
-            domain_request = completed_domain_request()
+        # Create a sample domain request
+        domain_request = completed_domain_request()
 
-            # Test Submitted Status from started
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-            self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Test Submitted Status from started
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Test Withdrawn Status
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
-            self.assert_email_is_accurate(
-                "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL
-            )
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
+        self.assert_email_is_accurate(
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
-            # Test Submitted Status Again (from withdrawn)
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-            self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Test Submitted Status Again (from withdrawn)
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Move it to IN_REVIEW
-            other = domain_request.ActionNeededReasons.OTHER
-            in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
-            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Move it to IN_REVIEW
+        other = domain_request.ActionNeededReasons.OTHER
+        in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
+        self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Move it to IN_REVIEW
-            self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Move it to IN_REVIEW
+        self.transition_state_and_send_email(domain_request, in_review, action_needed_reason=other)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Move it to ACTION_NEEDED
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Move it to ACTION_NEEDED
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-            # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
+    @less_console_noise_decorator
     def test_save_model_sends_approved_email(self):
         """When transitioning to approved on a domain request,
         an email is sent out every time."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Test Submitted Status
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 0, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Test Submitted Status
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 0, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Test Withdrawn Status
-            self.transition_state_and_send_email(
-                domain_request,
-                DomainRequest.DomainRequestStatus.REJECTED,
-                DomainRequest.RejectionReasons.DOMAIN_PURPOSE,
-            )
-            self.assert_email_is_accurate("Your .gov domain request has been rejected.", 1, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(
+            domain_request,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.RejectionReasons.DOMAIN_PURPOSE,
+        )
+        self.assert_email_is_accurate("Your .gov domain request has been rejected.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
-            # Test Submitted Status Again (No new email should be sent)
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Test Submitted Status Again (No new email should be sent)
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
+    @less_console_noise_decorator
     def test_save_model_sends_rejected_email_purpose_not_met(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is domain purpose."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Reject for reason DOMAIN_PURPOSE and test email
-            self.transition_state_and_send_email(
-                domain_request,
-                DomainRequest.DomainRequestStatus.REJECTED,
-                DomainRequest.RejectionReasons.DOMAIN_PURPOSE,
-            )
-            self.assert_email_is_accurate(
-                "Your domain request was rejected because the purpose you provided did not meet our \nrequirements.",
-                0,
-                EMAIL,
-            )
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Reject for reason DOMAIN_PURPOSE and test email
+        self.transition_state_and_send_email(
+            domain_request,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.RejectionReasons.DOMAIN_PURPOSE,
+        )
+        self.assert_email_is_accurate(
+            "Your domain request was rejected because the purpose you provided did not meet our \nrequirements.",
+            0,
+            EMAIL,
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Approve
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Approve
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
+    @less_console_noise_decorator
     def test_save_model_sends_rejected_email_requestor(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is requestor."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Reject for reason REQUESTOR and test email including dynamic organization name
-            self.transition_state_and_send_email(
-                domain_request, DomainRequest.DomainRequestStatus.REJECTED, DomainRequest.RejectionReasons.REQUESTOR
-            )
-            self.assert_email_is_accurate(
-                "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "
-                "domain on behalf of Testorg",
-                0,
-                EMAIL,
-            )
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Reject for reason REQUESTOR and test email including dynamic organization name
+        self.transition_state_and_send_email(
+            domain_request, DomainRequest.DomainRequestStatus.REJECTED, DomainRequest.RejectionReasons.REQUESTOR
+        )
+        self.assert_email_is_accurate(
+            "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "
+            "domain on behalf of Testorg",
+            0,
+            EMAIL,
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Approve
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Approve
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
+    @less_console_noise_decorator
     def test_save_model_sends_rejected_email_org_has_domain(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is second domain."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Reject for reason SECOND_DOMAIN_REASONING and test email including dynamic organization name
-            self.transition_state_and_send_email(
-                domain_request,
-                DomainRequest.DomainRequestStatus.REJECTED,
-                DomainRequest.RejectionReasons.SECOND_DOMAIN_REASONING,
-            )
-            self.assert_email_is_accurate(
-                "Your domain request was rejected because Testorg has a .gov domain.", 0, EMAIL
-            )
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Reject for reason SECOND_DOMAIN_REASONING and test email including dynamic organization name
+        self.transition_state_and_send_email(
+            domain_request,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.RejectionReasons.SECOND_DOMAIN_REASONING,
+        )
+        self.assert_email_is_accurate(
+            "Your domain request was rejected because Testorg has a .gov domain.", 0, EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Approve
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Approve
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
+    @less_console_noise_decorator
     def test_save_model_sends_rejected_email_contacts_or_org_legitimacy(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is contacts or org legitimacy."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Reject for reason CONTACTS_OR_ORGANIZATION_LEGITIMACY and test email including dynamic organization name
-            self.transition_state_and_send_email(
-                domain_request,
-                DomainRequest.DomainRequestStatus.REJECTED,
-                DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY,
-            )
-            self.assert_email_is_accurate(
-                "Your domain request was rejected because we could not verify the organizational \n"
-                "contacts you provided. If you have questions or comments, reply to this email.",
-                0,
-                EMAIL,
-            )
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Reject for reason CONTACTS_OR_ORGANIZATION_LEGITIMACY and test email including dynamic organization name
+        self.transition_state_and_send_email(
+            domain_request,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY,
+        )
+        self.assert_email_is_accurate(
+            "Your domain request was rejected because we could not verify the organizational \n"
+            "contacts you provided. If you have questions or comments, reply to this email.",
+            0,
+            EMAIL,
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Approve
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Approve
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
+    @less_console_noise_decorator
     def test_save_model_sends_rejected_email_org_eligibility(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is org eligibility."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Reject for reason ORGANIZATION_ELIGIBILITY and test email including dynamic organization name
-            self.transition_state_and_send_email(
-                domain_request,
-                DomainRequest.DomainRequestStatus.REJECTED,
-                DomainRequest.RejectionReasons.ORGANIZATION_ELIGIBILITY,
-            )
-            self.assert_email_is_accurate(
-                "Your domain request was rejected because we determined that Testorg is not \neligible for "
-                "a .gov domain.",
-                0,
-                EMAIL,
-            )
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Reject for reason ORGANIZATION_ELIGIBILITY and test email including dynamic organization name
+        self.transition_state_and_send_email(
+            domain_request,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.RejectionReasons.ORGANIZATION_ELIGIBILITY,
+        )
+        self.assert_email_is_accurate(
+            "Your domain request was rejected because we determined that Testorg is not \neligible for "
+            "a .gov domain.",
+            0,
+            EMAIL,
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Approve
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Approve
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
+    @less_console_noise_decorator
     def test_save_model_sends_rejected_email_naming(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is naming."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
-            self.transition_state_and_send_email(
-                domain_request,
-                DomainRequest.DomainRequestStatus.REJECTED,
-                DomainRequest.RejectionReasons.NAMING_REQUIREMENTS,
-            )
-            self.assert_email_is_accurate(
-                "Your domain request was rejected because it does not meet our naming requirements.", 0, EMAIL
-            )
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
+        self.transition_state_and_send_email(
+            domain_request,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.RejectionReasons.NAMING_REQUIREMENTS,
+        )
+        self.assert_email_is_accurate(
+            "Your domain request was rejected because it does not meet our naming requirements.", 0, EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Approve
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Approve
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
+    @less_console_noise_decorator
     def test_save_model_sends_rejected_email_other(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is other."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
-            self.transition_state_and_send_email(
-                domain_request,
-                DomainRequest.DomainRequestStatus.REJECTED,
-                DomainRequest.RejectionReasons.OTHER,
-            )
-            self.assert_email_is_accurate("Choosing a .gov domain name", 0, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
+        self.transition_state_and_send_email(
+            domain_request,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.RejectionReasons.OTHER,
+        )
+        self.assert_email_is_accurate("Choosing a .gov domain name", 0, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Approve
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Approve
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
+    @less_console_noise_decorator
     def test_transition_to_rejected_without_rejection_reason_does_trigger_error(self):
         """
         When transitioning to rejected without a rejection reason, admin throws a user friendly message.
@@ -1001,27 +1003,27 @@ class TestDomainRequestAdmin(MockEppLib):
         The transition fails.
         """
 
-        with less_console_noise():
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
 
-            # Create a request object with a superuser
-            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
-            request.user = self.superuser
+        # Create a request object with a superuser
+        request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+        request.user = self.superuser
 
-            with ExitStack() as stack:
-                stack.enter_context(patch.object(messages, "error"))
-                domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(messages, "error"))
+            domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
 
-                self.admin.save_model(request, domain_request, None, True)
+            self.admin.save_model(request, domain_request, None, True)
 
-                messages.error.assert_called_once_with(
-                    request,
-                    "A reason is required for this status.",
-                )
+            messages.error.assert_called_once_with(
+                request,
+                "A reason is required for this status.",
+            )
 
-            domain_request.refresh_from_db()
-            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.APPROVED)
+        domain_request.refresh_from_db()
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.APPROVED)
 
+    @less_console_noise_decorator
     def test_transition_to_rejected_with_rejection_reason_does_not_trigger_error(self):
         """
         When transitioning to rejected with a rejection reason, admin does not throw an error alert.
@@ -1029,74 +1031,73 @@ class TestDomainRequestAdmin(MockEppLib):
         The transition is successful.
         """
 
-        with less_console_noise():
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
 
-            # Create a request object with a superuser
-            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
-            request.user = self.superuser
+        # Create a request object with a superuser
+        request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+        request.user = self.superuser
 
-            with ExitStack() as stack:
-                stack.enter_context(patch.object(messages, "error"))
-                domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
-                domain_request.rejection_reason = DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(messages, "error"))
+            domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
+            domain_request.rejection_reason = DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY
 
-                self.admin.save_model(request, domain_request, None, True)
+            self.admin.save_model(request, domain_request, None, True)
 
-                messages.error.assert_not_called()
+            messages.error.assert_not_called()
 
-            domain_request.refresh_from_db()
-            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.REJECTED)
+        domain_request.refresh_from_db()
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.REJECTED)
 
+    @less_console_noise_decorator
     def test_save_model_sends_withdrawn_email(self):
         """When transitioning to withdrawn on a domain request,
         an email is sent out every time."""
 
-        with less_console_noise():
-            # Ensure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Test Submitted Status
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
-            self.assert_email_is_accurate(
-                "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 0, EMAIL
-            )
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        # Test Submitted Status
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
+        self.assert_email_is_accurate(
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 0, EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Test Withdrawn Status
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-            self.assert_email_is_accurate("We received your .gov domain request.", 1, EMAIL)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
-            # Test Submitted Status Again (No new email should be sent)
-            self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        # Test Submitted Status Again (No new email should be sent)
+        self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
+    @less_console_noise_decorator
     def test_save_model_sets_approved_domain(self):
-        with less_console_noise():
-            # make sure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Create a mock request
-            request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+        # Create a mock request
+        request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                # Modify the domain request's property
-                domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            # Modify the domain request's property
+            domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
 
-                # Use the model admin's save_model method
-                self.admin.save_model(request, domain_request, form=None, change=True)
+            # Use the model admin's save_model method
+            self.admin.save_model(request, domain_request, form=None, change=True)
 
-            # Test that approved domain exists and equals requested domain
-            self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)
+        # Test that approved domain exists and equals requested domain
+        self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)
 
     @less_console_noise_decorator
     def test_sticky_submit_row(self):
@@ -1154,6 +1155,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(request, expected_content2)
         self.assertContains(request, expected_content3)
 
+    @less_console_noise_decorator
     def test_other_contacts_has_readonly_link(self):
         """Tests if the readonly other_contacts field has links"""
 
@@ -1292,152 +1294,152 @@ class TestDomainRequestAdmin(MockEppLib):
         domain_request.delete()
         _creator.delete()
 
+    @less_console_noise_decorator
     def test_save_model_sets_restricted_status_on_user(self):
-        with less_console_noise():
-            # make sure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            # Create a mock request
-            request = self.factory.post(
-                "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk), follow=True
-            )
+        # Create a mock request
+        request = self.factory.post(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk), follow=True
+        )
 
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                # Modify the domain request's property
-                domain_request.status = DomainRequest.DomainRequestStatus.INELIGIBLE
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            # Modify the domain request's property
+            domain_request.status = DomainRequest.DomainRequestStatus.INELIGIBLE
 
-                # Use the model admin's save_model method
-                self.admin.save_model(request, domain_request, form=None, change=True)
+            # Use the model admin's save_model method
+            self.admin.save_model(request, domain_request, form=None, change=True)
 
-            # Test that approved domain exists and equals requested domain
-            self.assertEqual(domain_request.creator.status, "restricted")
+        # Test that approved domain exists and equals requested domain
+        self.assertEqual(domain_request.creator.status, "restricted")
 
+    @less_console_noise_decorator
     def test_user_sets_restricted_status_modal(self):
         """Tests the modal for when a user sets the status to restricted"""
-        with less_console_noise():
-            # make sure there is no user with this email
-            EMAIL = "mayor@igorville.gov"
-            User.objects.filter(email=EMAIL).delete()
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
 
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-            p = "userpass"
-            self.client.login(username="staffuser", password=p)
-            response = self.client.get(
-                "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
-                follow=True,
-            )
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
 
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, domain_request.requested_domain.name)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
 
-            # Check that the modal has the right content
-            # Check for the header
-            self.assertContains(response, "Are you sure you want to select ineligible status?")
+        # Check that the modal has the right content
+        # Check for the header
+        self.assertContains(response, "Are you sure you want to select ineligible status?")
 
-            # Check for some of its body
-            self.assertContains(response, "When a domain request is in ineligible status")
+        # Check for some of its body
+        self.assertContains(response, "When a domain request is in ineligible status")
 
-            # Check for some of the button content
-            self.assertContains(response, "Yes, select ineligible status")
+        # Check for some of the button content
+        self.assertContains(response, "Yes, select ineligible status")
 
-            # Create a mock request
-            request = self.factory.post(
-                "/admin/registrar/domainrequest{}/change/".format(domain_request.pk), follow=True
-            )
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                # Modify the domain request's property
-                domain_request.status = DomainRequest.DomainRequestStatus.INELIGIBLE
+        # Create a mock request
+        request = self.factory.post(
+            "/admin/registrar/domainrequest{}/change/".format(domain_request.pk), follow=True
+        )
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            # Modify the domain request's property
+            domain_request.status = DomainRequest.DomainRequestStatus.INELIGIBLE
 
-                # Use the model admin's save_model method
-                self.admin.save_model(request, domain_request, form=None, change=True)
+            # Use the model admin's save_model method
+            self.admin.save_model(request, domain_request, form=None, change=True)
 
-            # Test that approved domain exists and equals requested domain
-            self.assertEqual(domain_request.creator.status, "restricted")
+        # Test that approved domain exists and equals requested domain
+        self.assertEqual(domain_request.creator.status, "restricted")
 
-            # 'Get' to the domain request again
-            response = self.client.get(
-                "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
-                follow=True,
-            )
+        # 'Get' to the domain request again
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
 
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, domain_request.requested_domain.name)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
 
-            # The modal should be unchanged
-            self.assertContains(response, "Are you sure you want to select ineligible status?")
-            self.assertContains(response, "When a domain request is in ineligible status")
-            self.assertContains(response, "Yes, select ineligible status")
+        # The modal should be unchanged
+        self.assertContains(response, "Are you sure you want to select ineligible status?")
+        self.assertContains(response, "When a domain request is in ineligible status")
+        self.assertContains(response, "Yes, select ineligible status")
 
+    @less_console_noise_decorator
     def test_readonly_when_restricted_creator(self):
-        with less_console_noise():
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                domain_request.creator.status = User.RESTRICTED
-                domain_request.creator.save()
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            domain_request.creator.status = User.RESTRICTED
+            domain_request.creator.save()
 
-            request = self.factory.get("/")
-            request.user = self.superuser
+        request = self.factory.get("/")
+        request.user = self.superuser
 
-            readonly_fields = self.admin.get_readonly_fields(request, domain_request)
+        readonly_fields = self.admin.get_readonly_fields(request, domain_request)
 
-            expected_fields = [
-                "other_contacts",
-                "current_websites",
-                "alternative_domains",
-                "is_election_board",
-                "federal_agency",
-                "id",
-                "created_at",
-                "updated_at",
-                "status",
-                "rejection_reason",
-                "action_needed_reason",
-                "action_needed_reason_email",
-                "federal_agency",
-                "portfolio",
-                "sub_organization",
-                "creator",
-                "investigator",
-                "generic_org_type",
-                "is_election_board",
-                "organization_type",
-                "federally_recognized_tribe",
-                "state_recognized_tribe",
-                "tribe_name",
-                "federal_type",
-                "organization_name",
-                "address_line1",
-                "address_line2",
-                "city",
-                "state_territory",
-                "zipcode",
-                "urbanization",
-                "about_your_organization",
-                "senior_official",
-                "approved_domain",
-                "requested_domain",
-                "submitter",
-                "purpose",
-                "no_other_contacts_rationale",
-                "anything_else",
-                "has_anything_else_text",
-                "cisa_representative_email",
-                "cisa_representative_first_name",
-                "cisa_representative_last_name",
-                "has_cisa_representative",
-                "is_policy_acknowledged",
-                "submission_date",
-                "notes",
-                "alternative_domains",
-            ]
+        expected_fields = [
+            "other_contacts",
+            "current_websites",
+            "alternative_domains",
+            "is_election_board",
+            "federal_agency",
+            "id",
+            "created_at",
+            "updated_at",
+            "status",
+            "rejection_reason",
+            "action_needed_reason",
+            "action_needed_reason_email",
+            "federal_agency",
+            "portfolio",
+            "sub_organization",
+            "creator",
+            "investigator",
+            "generic_org_type",
+            "is_election_board",
+            "organization_type",
+            "federally_recognized_tribe",
+            "state_recognized_tribe",
+            "tribe_name",
+            "federal_type",
+            "organization_name",
+            "address_line1",
+            "address_line2",
+            "city",
+            "state_territory",
+            "zipcode",
+            "urbanization",
+            "about_your_organization",
+            "senior_official",
+            "approved_domain",
+            "requested_domain",
+            "submitter",
+            "purpose",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "has_anything_else_text",
+            "cisa_representative_email",
+            "cisa_representative_first_name",
+            "cisa_representative_last_name",
+            "has_cisa_representative",
+            "is_policy_acknowledged",
+            "submission_date",
+            "notes",
+            "alternative_domains",
+        ]
 
-            self.assertEqual(readonly_fields, expected_fields)
+        self.assertEqual(readonly_fields, expected_fields)
 
     def test_readonly_fields_for_analyst(self):
         with less_console_noise():
