@@ -31,8 +31,8 @@ body:
     attributes:
       label: Links to other issues
       description: |
-        "Add issue #numbers this relates to and how (e.g., 🚧 [construction] Blocks, ⛔️ [no_entry] Is blocked by, 🔄 [arrows_counterclockwise] Relates to)."
-      placeholder: 🔄 Relates to... 
+        "With a `-` to start the line, add issue #numbers this relates to and how (e.g., 🚧 [construction] Blocks, ⛔️ [no_entry] Is blocked by, 🔄 [arrows_counterclockwise] Relates to)."
+      placeholder: "- 🔄 Relates to...
   - type: markdown
     id: note
     attributes:
