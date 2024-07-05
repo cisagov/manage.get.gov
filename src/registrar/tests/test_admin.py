@@ -898,6 +898,13 @@ class TestListHeaderAdmin(TestCase):
 
 
 class TestMyUserAdmin(MockDb):
+    """Test the MyUserAdmin class in Django Admin.
+    These tests use MockDb, which runs setUpClass and tearDownClass, rather than
+    setUp and tearDown. This is for efficiency purposes when running tests, but
+    also means that care must be taken to clean up within each test, because
+    setUp and tearDown are not used.
+    """
+
     @classmethod
     def setUpClass(self):
         super().setUpClass()

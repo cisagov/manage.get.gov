@@ -36,10 +36,17 @@ logger = logging.getLogger(__name__)
 
 class TestDomainAdminAsStaff(MockEppLib):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
         self.client = Client(HTTP_HOST="localhost:8080")
         self.staffuser = create_user()
+
+    def setUp(self):         
         self.client.force_login(self.staffuser)
+        self.site = AdminSite()
+        self.admin = DomainAdmin(model=Domain, admin_site=self.site)
+        self.factory = RequestFactory()
         super().setUp()
 
     def tearDown(self):
@@ -48,7 +55,11 @@ class TestDomainAdminAsStaff(MockEppLib):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
+   
+    @classmethod
+    def tearDownClass(self):
         User.objects.all().delete()
+        super().tearDownClass()     
 
     @less_console_noise_decorator
     def test_staff_can_see_cisa_region_federal(self):
@@ -149,6 +160,12 @@ class TestDomainAdminAsStaff(MockEppLib):
         expected_organization_name = "MonkeySeeMonkeyDo"
         self.assertContains(response, expected_organization_name)
 
+        # clean up this test's data
+        domain.delete()
+        domain_information.delete()
+        _domain_request.delete()
+        _creator.delete()
+
     @skip("Why did this test stop working, and is is a good test")
     def test_place_and_remove_hold(self):
         domain = create_ready_domain()
@@ -184,6 +201,9 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertContains(response, "Place hold")
         self.assertNotContains(response, "Remove hold")
 
+        # clean up this test's data
+        domain.delete()
+
     @less_console_noise_decorator
     def test_deletion_is_successful(self):
         """
@@ -192,9 +212,6 @@ class TestDomainAdminAsStaff(MockEppLib):
             Then a user-friendly success message is returned for displaying on the web
             And `state` is set to `DELETED`
         """
-        self.site = AdminSite()
-        self.admin = DomainAdmin(model=Domain, admin_site=self.site)
-        self.factory = RequestFactory()
         domain = create_ready_domain()
         # Put in client hold
         domain.place_client_hold()
@@ -241,6 +258,8 @@ class TestDomainAdminAsStaff(MockEppLib):
 
         self.assertEqual(domain.state, Domain.State.DELETED)
 
+        # clean up data within this test
+        domain.delete()
 
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):
@@ -250,12 +269,8 @@ class TestDomainAdminAsStaff(MockEppLib):
             Then a user-friendly error message is returned for displaying on the web
             And `state` is not set to `DELETED`
         """
-        self.site = AdminSite()
-        self.admin = DomainAdmin(model=Domain, admin_site=self.site)
-        self.factory = RequestFactory()
+
         domain = create_ready_domain()
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
         # Ensure everything is displaying correctly
         response = self.client.get(
             "/admin/registrar/domain/{}/change/".format(domain.pk),
@@ -285,6 +300,9 @@ class TestDomainAdminAsStaff(MockEppLib):
 
         self.assertEqual(domain.state, Domain.State.READY)
 
+        # delete data created in this test
+        domain.delete()
+
     @less_console_noise_decorator
     def test_analyst_deletes_domain_idempotent(self):
         """
@@ -294,14 +312,9 @@ class TestDomainAdminAsStaff(MockEppLib):
             Then `commands.DeleteDomain` is sent to the registry
             And Domain returns normally without an error dialog
         """
-        self.site = AdminSite()
-        self.admin = DomainAdmin(model=Domain, admin_site=self.site)
-        self.factory = RequestFactory()
         domain = create_ready_domain()
         # Put in client hold
         domain.place_client_hold()
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
         # Ensure everything is displaying correctly
         response = self.client.get(
             "/admin/registrar/domain/{}/change/".format(domain.pk),
@@ -348,13 +361,23 @@ class TestDomainAdminAsStaff(MockEppLib):
             )
         self.assertEqual(domain.state, Domain.State.DELETED)
 
+        # delete data created in this test
+        domain.delete()
+
 
 class TestDomainAdminWClient(TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
+
+    def setUp(self):         
         self.client.force_login(self.superuser)
+        self.site = AdminSite()
+        self.admin = DomainAdmin(model=Domain, admin_site=self.site)
+        self.factory = RequestFactory()
         super().setUp()
 
     def tearDown(self):
@@ -363,7 +386,11 @@ class TestDomainAdminWClient(TestCase):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
+   
+    @classmethod
+    def tearDownClass(self):
         User.objects.all().delete()
+        super().tearDownClass()   
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -450,21 +477,21 @@ class TestDomainAdminWClient(TestCase):
         # Test for the copy link
         self.assertContains(response, "usa-button__clipboard")
 
+        # cleanup from this test
+        domain.delete()
+        _domain_info.delete()
+        domain_request.delete()
+        _creator.delete()
+
     @less_console_noise_decorator
     def test_helper_text(self):
         """
         Tests for the correct helper text on this page
         """
 
-        self.site = AdminSite()
-        self.admin = DomainAdmin(model=Domain, admin_site=self.site)
-        self.factory = RequestFactory()
-
         # Create a ready domain with a preset expiration date
         domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
         response = self.client.get(
             "/admin/registrar/domain/{}/change/".format(domain.pk),
             follow=True,
@@ -566,6 +593,12 @@ class TestDomainAdminWClient(TestCase):
         expected_organization_name = "MonkeySeeMonkeyDo"
         self.assertContains(response, expected_organization_name)
 
+        # cleanup from this test
+        domain.delete()
+        domain_information.delete()
+        _domain_request.delete()
+        _creator.delete()
+
     @less_console_noise_decorator
     def test_custom_delete_confirmation_page_table(self):
         """Tests if we override the delete confirmation page for custom content on the table"""
@@ -574,10 +607,6 @@ class TestDomainAdminWClient(TestCase):
 
         # Get the index. The post expects the index to be encoded as a string
         index = f"{domain.id}"
-
-        self.site = AdminSite()
-        self.admin = DomainAdmin(model=Domain, admin_site=self.site)
-        self.factory = RequestFactory()
 
         # Contains some test tools
         self.test_helper = GenericTestHelper(
@@ -629,13 +658,17 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
     # We disable them here. TODO for another ticket.
     csrf_checks = False
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
         self.site = AdminSite()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
         self.superuser = create_superuser()
         self.factory = RequestFactory()
-        self.app.set_user(self.superuser.username)
+
+    def setUp(self):
         super().setUp()
+        self.app.set_user(self.superuser.username)
 
     def tearDown(self):
         super().tearDown()
@@ -643,7 +676,11 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
+   
+    @classmethod
+    def tearDownClass(self):
         User.objects.all().delete()
+        super().tearDownClass()   
 
     @less_console_noise_decorator
     @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
