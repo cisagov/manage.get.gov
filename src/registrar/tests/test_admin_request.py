@@ -60,9 +60,6 @@ class TestDomainRequestAdmin(MockEppLib):
             model=DomainRequest,
         )
         self.mock_client = MockSESClient()
-    # def setUp(self):
-    #     super().setUp()
-        
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -198,6 +195,7 @@ class TestDomainRequestAdmin(MockEppLib):
         assert_status_count(normalized_content, "Action needed - Unclear organization eligibility", 1)
         assert_status_count(normalized_content, "Rejected - Purpose requirements not met", 1)
 
+    @less_console_noise_decorator
     def test_collaspe_toggle_button_markup(self):
         """
         Tests for the correct collapse toggle button markup
