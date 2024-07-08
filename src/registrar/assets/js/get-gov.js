@@ -1851,7 +1851,6 @@ document.addEventListener('DOMContentLoaded', function() {
               let lastName = document.querySelector(`#id_last_name`);
               if (firstName && lastName) {
                 let values = [firstName.value, middleName.value, lastName.value]
-                console.log(values)
                 readonlyField.innerHTML = values.join(" ");
               }else {
                 readonlyField.innerHTML = "Unknown";
