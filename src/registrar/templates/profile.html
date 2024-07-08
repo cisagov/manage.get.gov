@@ -6,8 +6,8 @@ Edit your User Profile |
 {% load static url_helpers %}
 
 {# Disable the redirect  #}
-{% block logo %}
-    {% include "includes/gov_extended_logo.html" with logo_clickable=user_finished_setup %}
+{% block header %}
+    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup %}
 {% endblock %}
 
 {% block content %}

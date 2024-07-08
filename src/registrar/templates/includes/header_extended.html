@@ -2,9 +2,7 @@
 
 <header class="usa-header usa-header--extended">
     <div class="usa-navbar">
-        {% block logo %}
-        {% include "includes/gov_extended_logo.html" with logo_clickable=True %}
-        {% endblock %}
+        {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
     <button type="button" class="usa-menu-btn">Menu</button>
     </div>
     {% block usa_nav %}
@@ -71,5 +69,5 @@
     </div>
     </nav>
     {% endblock %}
-  </header>
+</header>
   

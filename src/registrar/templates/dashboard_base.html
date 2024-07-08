@@ -9,7 +9,6 @@
       {% block content %}
         {% block messages %}
           {% if messages %}
-          <p>test</p>
           <ul class="messages">
             {% for message in messages %}
               <li {% if message.tags %} class="{{ message.tags }}" {% endif %}>

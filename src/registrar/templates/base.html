@@ -135,11 +135,7 @@
 
   <div class="usa-overlay"></div>
   {% block header %}
-    {% if not is_org_user %}
-      {% include "includes/header_basic.html" %}
-    {% else %}
-      {% include "includes/header_extended.html" %}
-    {% endif %}
+    {% include "includes/header_selector.html" with logo_clickable=True %}
   {% endblock header %}
 
   {% block wrapper %}
