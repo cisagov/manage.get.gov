@@ -39,14 +39,14 @@ class TestDomainAdminAsStaff(MockEppLib):
     @classmethod
     def setUpClass(self):
         super().setUpClass()
-        self.client = Client(HTTP_HOST="localhost:8080")
         self.staffuser = create_user()
-
-    def setUp(self):         
-        self.client.force_login(self.staffuser)
         self.site = AdminSite()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
         self.factory = RequestFactory()
+
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")      
+        self.client.force_login(self.staffuser)
         super().setUp()
 
     def tearDown(self):
@@ -370,14 +370,14 @@ class TestDomainAdminWClient(TestCase):
     @classmethod
     def setUpClass(self):
         super().setUpClass()
-        self.client = Client(HTTP_HOST="localhost:8080")
-        self.superuser = create_superuser()
-
-    def setUp(self):         
-        self.client.force_login(self.superuser)
         self.site = AdminSite()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
         self.factory = RequestFactory()
+        self.superuser = create_superuser()
+
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")      
+        self.client.force_login(self.superuser)
         super().setUp()
 
     def tearDown(self):

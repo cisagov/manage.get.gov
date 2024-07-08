@@ -108,27 +108,32 @@ class TestFsmModelResource(TestCase):
 
 
 class TestDomainRequestAdminForm(TestCase):
-    @less_console_noise_decorator
-    def setUp(self):
-        # Create a test domain request with an initial state of started
-        self.domain_request = completed_domain_request()
-
+    
     def test_form_choices(self):
         with less_console_noise():
+            # Create a test domain request with an initial state of started
+            domain_request = completed_domain_request()
+
             # Create a form instance with the test domain request
-            form = DomainRequestAdminForm(instance=self.domain_request)
+            form = DomainRequestAdminForm(instance=domain_request)
 
             # Verify that the form choices match the available transitions for started
             expected_choices = [("started", "Started"), ("submitted", "Submitted")]
             self.assertEqual(form.fields["status"].widget.choices, expected_choices)
 
+            # cleanup
+            domain_request.delete()
+
     def test_form_no_rejection_reason(self):
         with less_console_noise():
+            # Create a test domain request with an initial state of started
+            domain_request = completed_domain_request()
+
             # Create a form instance with the test domain request
-            form = DomainRequestAdminForm(instance=self.domain_request)
+            form = DomainRequestAdminForm(instance=domain_request)
 
             form = DomainRequestAdminForm(
-                instance=self.domain_request,
+                instance=domain_request,
                 data={
                     "status": DomainRequest.DomainRequestStatus.REJECTED,
                     "rejection_reason": None,
@@ -139,6 +144,9 @@ class TestDomainRequestAdminForm(TestCase):
 
             rejection_reason = form.errors.get("rejection_reason")
             self.assertEqual(rejection_reason, ["A reason is required for this status."])
+
+            # cleanup
+            domain_request.delete()
 
     def test_form_choices_when_no_instance(self):
         with less_console_noise():
@@ -174,25 +182,29 @@ class TestDomainRequestAdminForm(TestCase):
 class TestDomainInvitationAdmin(TestCase):
     """Tests for the DomainInvitation page"""
 
-    @less_console_noise_decorator
+    @classmethod
+    def setUpClass(cls):
+        cls.factory = RequestFactory()
+        cls.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
+        cls.superuser = create_superuser()
+
     def setUp(self):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.factory = RequestFactory()
-        self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
-        self.superuser = create_superuser()
-
+        
     def tearDown(self):
         """Delete all DomainInvitation objects"""
         DomainInvitation.objects.all().delete()
-        User.objects.all().delete()
         Contact.objects.all().delete()
+
+    @classmethod
+    def tearDownClass(self):
+        User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domaininvitation/",
             follow=True,
@@ -210,9 +222,7 @@ class TestDomainInvitationAdmin(TestCase):
     def test_get_filters(self):
         """Ensures that our filters are displaying correctly"""
         with less_console_noise():
-            # Have to get creative to get past linter
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             response = self.client.get(
                 "/admin/registrar/domaininvitation/",
@@ -235,32 +245,32 @@ class TestDomainInvitationAdmin(TestCase):
 
 
 class TestHostAdmin(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.site = AdminSite()
+        cls.factory = RequestFactory()
+        cls.admin = MyHostAdmin(model=Host, admin_site=cls.site)
+        cls.superuser = create_superuser()
+
     def setUp(self):
         """Setup environment for a mock admin user"""
         super().setUp()
-        self.site = AdminSite()
-        self.factory = RequestFactory()
-        self.admin = MyHostAdmin(model=Host, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.superuser = create_superuser()
-        self.test_helper = GenericTestHelper(
-            factory=self.factory,
-            user=self.superuser,
-            admin=self.admin,
-            url="/admin/registrar/Host/",
-            model=Host,
-        )
 
     def tearDown(self):
         super().tearDown()
         Host.objects.all().delete()
         Domain.objects.all().delete()
 
+    @classmethod
+    def tearDownClass(cls):
+        User.objects.all().delete()
+
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/host/",
             follow=True,
@@ -282,8 +292,7 @@ class TestHostAdmin(TestCase):
         # Create a fake host
         host, _ = Host.objects.get_or_create(name="ns1.test.gov", domain=domain)
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/host/{}/change/".format(host.pk),
             follow=True,
@@ -292,6 +301,13 @@ class TestHostAdmin(TestCase):
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
 
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url="/admin/registrar/Host/",
+            model=Host,
+        )
         # These should exist in the response
         expected_values = [
             ("domain", "Domain associated with this host"),
@@ -300,49 +316,26 @@ class TestHostAdmin(TestCase):
 
 
 class TestDomainInformationAdmin(TestCase):
-    @less_console_noise_decorator
-    def setUp(self):
-        """Setup environment for a mock admin user"""
-        self.site = AdminSite()
-        self.factory = RequestFactory()
-        self.admin = DomainInformationAdmin(model=DomainInformation, admin_site=self.site)
-        self.client = Client(HTTP_HOST="localhost:8080")
-        self.superuser = create_superuser()
-        self.staffuser = create_user()
-        self.mock_data_generator = AuditedAdminMockData()
 
-        self.test_helper = GenericTestHelper(
-            factory=self.factory,
-            user=self.superuser,
-            admin=self.admin,
+    @classmethod
+    def setUpClass(cls):
+        """Setup environment for a mock admin user"""
+        cls.site = AdminSite()
+        cls.factory = RequestFactory()
+        cls.admin = DomainInformationAdmin(model=DomainInformation, admin_site=cls.site)
+        cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+        cls.mock_data_generator = AuditedAdminMockData()
+        cls.test_helper = GenericTestHelper(
+            factory=cls.factory,
+            user=cls.superuser,
+            admin=cls.admin,
             url="/admin/registrar/DomainInformation/",
             model=DomainInformation,
         )
 
-        # Create fake DomainInformation objects
-        DomainInformation.objects.create(
-            creator=self.mock_data_generator.dummy_user("fake", "creator"),
-            domain=self.mock_data_generator.dummy_domain("Apple"),
-            submitter=self.mock_data_generator.dummy_contact("Zebra", "submitter"),
-        )
-
-        DomainInformation.objects.create(
-            creator=self.mock_data_generator.dummy_user("fake", "creator"),
-            domain=self.mock_data_generator.dummy_domain("Zebra"),
-            submitter=self.mock_data_generator.dummy_contact("Apple", "submitter"),
-        )
-
-        DomainInformation.objects.create(
-            creator=self.mock_data_generator.dummy_user("fake", "creator"),
-            domain=self.mock_data_generator.dummy_domain("Circus"),
-            submitter=self.mock_data_generator.dummy_contact("Xylophone", "submitter"),
-        )
-
-        DomainInformation.objects.create(
-            creator=self.mock_data_generator.dummy_user("fake", "creator"),
-            domain=self.mock_data_generator.dummy_domain("Xylophone"),
-            submitter=self.mock_data_generator.dummy_contact("Circus", "submitter"),
-        )
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")
 
     def tearDown(self):
         """Delete all Users, Domains, and UserDomainRoles"""
@@ -350,6 +343,9 @@ class TestDomainInformationAdmin(TestCase):
         DomainRequest.objects.all().delete()
         Domain.objects.all().delete()
         Contact.objects.all().delete()
+    
+    @classmethod
+    def tearDownClass(cls):
         User.objects.all().delete()
 
     @less_console_noise_decorator
@@ -362,8 +358,7 @@ class TestDomainInformationAdmin(TestCase):
 
         domain_information = DomainInformation.objects.filter(domain_request=_domain_request).get()
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_information.pk),
             follow=True,
@@ -395,8 +390,7 @@ class TestDomainInformationAdmin(TestCase):
         _domain_request.approve()
 
         domain_information = DomainInformation.objects.filter(domain_request=_domain_request).get()
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_information.pk),
             follow=True,
@@ -420,8 +414,7 @@ class TestDomainInformationAdmin(TestCase):
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domaininformation/",
             follow=True,
@@ -445,8 +438,7 @@ class TestDomainInformationAdmin(TestCase):
         domain_request.approve()
         domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
             follow=True,
@@ -478,8 +470,7 @@ class TestDomainInformationAdmin(TestCase):
         # Get the other contact
         other_contact = domain_info.other_contacts.all().first()
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
 
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
@@ -515,8 +506,7 @@ class TestDomainInformationAdmin(TestCase):
         domain_request.approve()
         domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
             follow=True,
@@ -527,8 +517,7 @@ class TestDomainInformationAdmin(TestCase):
 
         # To make sure that its not a fluke, swap to an admin user
         # and try to access the same page. This should succeed.
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
             follow=True,
@@ -561,8 +550,7 @@ class TestDomainInformationAdmin(TestCase):
         domain_request.approve()
         domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domaininformation/{}/change/".format(domain_info.pk),
             follow=True,
@@ -624,6 +612,11 @@ class TestDomainInformationAdmin(TestCase):
         # Test for the copy link
         self.assertContains(response, "usa-button__clipboard", count=4)
 
+        # cleanup this test
+        domain_info.delete()
+        domain_request.delete()
+        _creator.delete()
+
     def test_readonly_fields_for_analyst(self):
         """Ensures that analysts have their permissions setup correctly"""
         with less_console_noise():
@@ -652,8 +645,7 @@ class TestDomainInformationAdmin(TestCase):
     def test_domain_sortable(self):
         """Tests if DomainInformation sorts by domain correctly"""
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             # Assert that our sort works correctly
             self.test_helper.assert_table_sorted("1", ("domain__name",))
@@ -664,8 +656,7 @@ class TestDomainInformationAdmin(TestCase):
     def test_submitter_sortable(self):
         """Tests if DomainInformation sorts by submitter correctly"""
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             # Assert that our sort works correctly
             self.test_helper.assert_table_sorted(
@@ -678,32 +669,42 @@ class TestDomainInformationAdmin(TestCase):
 
 
 class TestUserDomainRoleAdmin(TestCase):
-    def setUp(self):
-        """Setup environment for a mock admin user"""
-        self.site = AdminSite()
-        self.factory = RequestFactory()
-        self.admin = UserDomainRoleAdmin(model=UserDomainRole, admin_site=self.site)
-        self.client = Client(HTTP_HOST="localhost:8080")
-        self.superuser = create_superuser()
-        self.test_helper = GenericTestHelper(
-            factory=self.factory,
-            user=self.superuser,
-            admin=self.admin,
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.factory = RequestFactory()
+        cls.admin = UserDomainRoleAdmin(model=UserDomainRole, admin_site=cls.site)
+        cls.superuser = create_superuser()
+        cls.test_helper = GenericTestHelper(
+            factory=cls.factory,
+            user=cls.superuser,
+            admin=cls.admin,
             url="/admin/registrar/UserDomainRole/",
             model=UserDomainRole,
         )
+         
+    def setUp(self):
+        """Setup environment for a mock admin user"""
+        super().setUp()
+        self.client = Client(HTTP_HOST="localhost:8080")
 
     def tearDown(self):
         """Delete all Users, Domains, and UserDomainRoles"""
-        User.objects.all().delete()
+        super().tearDown()
         Domain.objects.all().delete()
         UserDomainRole.objects.all().delete()
+    
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/userdomainrole/",
             follow=True,
@@ -721,8 +722,7 @@ class TestUserDomainRoleAdmin(TestCase):
     def test_domain_sortable(self):
         """Tests if the UserDomainrole sorts by domain correctly"""
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             fake_user = User.objects.create(
                 username="dummyuser", first_name="Stewart", last_name="Jones", email="AntarcticPolarBears@example.com"
@@ -740,11 +740,15 @@ class TestUserDomainRoleAdmin(TestCase):
             # Assert that sorting in reverse works correctly
             self.test_helper.assert_table_sorted("-2", ("-domain__name",))
 
+            # delete data from test
+            UserDomainRole.objects.all().delete()
+            Domain.objects.all().delete()
+            fake_user.delete()
+
     def test_user_sortable(self):
         """Tests if the UserDomainrole sorts by user correctly"""
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             mock_data_generator = AuditedAdminMockData()
 
@@ -762,13 +766,17 @@ class TestUserDomainRoleAdmin(TestCase):
             # Assert that sorting in reverse works correctly
             self.test_helper.assert_table_sorted("-1", ("-user__first_name", "-user__last_name"))
 
+            # delete data from this test
+            UserDomainRole.objects.all().delete()
+            fake_domain.delete()
+            User.objects.exclude(username="superuser").delete()
+
     def test_email_not_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
         Should return no results for an invalid email."""
         with less_console_noise():
             # Have to get creative to get past linter
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             fake_user = User.objects.create(
                 username="dummyuser", first_name="Stewart", last_name="Jones", email="AntarcticPolarBears@example.com"
@@ -795,13 +803,17 @@ class TestUserDomainRoleAdmin(TestCase):
             # We only need to check for the end of the HTML string
             self.assertNotContains(response, "Stewart Jones AntarcticPolarBears@example.com</a></th>")
 
+            # cleanup this test
+            UserDomainRole.objects.all().delete()
+            Domain.objects.all().delete()
+            fake_user.delete()
+
     def test_email_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
         Should return results for an valid email."""
         with less_console_noise():
             # Have to get creative to get past linter
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             fake_user = User.objects.create(
                 username="dummyuser", first_name="Joe", last_name="Jones", email="AntarcticPolarBears@example.com"
@@ -828,20 +840,38 @@ class TestUserDomainRoleAdmin(TestCase):
             # We only need to check for the end of the HTML string
             self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
 
+            # cleanup this test
+            UserDomainRole.objects.all().delete()
+            fake_domain.delete()
+            fake_user.delete()
 
 class TestListHeaderAdmin(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.factory = RequestFactory()
+        cls.admin = ListHeaderAdmin(model=DomainRequest, admin_site=None)
+        cls.superuser = create_superuser()
+    
     def setUp(self):
-        self.site = AdminSite()
-        self.factory = RequestFactory()
-        self.admin = ListHeaderAdmin(model=DomainRequest, admin_site=None)
+        super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.superuser = create_superuser()
+
+    def tearDown(self):
+        # delete any domain requests too
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+    
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        User.objects.all().delete()
 
     def test_changelist_view(self):
         with less_console_noise():
-            # Have to get creative to get past linter
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
             # Mock a user
             user = mock_user()
             # Make the request using the Client class
@@ -895,34 +925,35 @@ class TestListHeaderAdmin(TestCase):
                 ],
             )
 
-    def tearDown(self):
-        # delete any domain requests too
-        DomainInformation.objects.all().delete()
-        DomainRequest.objects.all().delete()
-        User.objects.all().delete()
-
 
 class TestMyUserAdmin(MockDb):
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        admin_site = AdminSite()
+        cls.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
+        cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+        cls.test_helper = GenericTestHelper(admin=cls.admin)
+
     def setUp(self):
         super().setUp()
-        admin_site = AdminSite()
-        self.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.superuser = create_superuser()
-        self.staffuser = create_user()
-        self.test_helper = GenericTestHelper(admin=self.admin)
 
     def tearDown(self):
         super().tearDown()
         DomainRequest.objects.all().delete()
+    
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
         User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/user/",
             follow=True,
@@ -942,8 +973,7 @@ class TestMyUserAdmin(MockDb):
         """
         user = self.staffuser
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/user/{}/change/".format(user.pk),
             follow=True,
@@ -1049,8 +1079,7 @@ class TestMyUserAdmin(MockDb):
             user=self.meoward_user, domain=domain_deleted, role=UserDomainRole.Roles.MANAGER
         )
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/user/{}/change/".format(self.meoward_user.id),
             follow=True,
@@ -1111,11 +1140,23 @@ class TestMyUserAdmin(MockDb):
         domain_deleted.delete()
 
 class AuditedAdminTest(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.factory = RequestFactory()
+    
     def setUp(self):
-        self.site = AdminSite()
-        self.factory = RequestFactory()
+        super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
 
+    def tearDown(self):
+        super().tearDown()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+    
     def order_by_desired_field_helper(self, obj_to_sort: AuditedAdmin, request, field_name, *obj_names):
         with less_console_noise():
             formatted_sort_fields = []
@@ -1340,26 +1381,31 @@ class AuditedAdminTest(TestCase):
         else:
             return None
 
-    def tearDown(self):
-        DomainInformation.objects.all().delete()
-        DomainRequest.objects.all().delete()
-        DomainInvitation.objects.all().delete()
-
 
 class DomainSessionVariableTest(TestCase):
     """Test cases for session variables in Django Admin"""
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.factory = RequestFactory()
+        cls.admin = DomainAdmin(Domain, None)
+        cls.superuser = create_superuser()
+    
     def setUp(self):
-        self.factory = RequestFactory()
-        self.admin = DomainAdmin(Domain, None)
+        super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        User.objects.all().delete()
+    
     def test_session_vars_set_correctly(self):
         """Checks if session variables are being set correctly"""
 
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             dummy_domain_information = generic_domain_object("information", "session")
             request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
@@ -1374,8 +1420,7 @@ class DomainSessionVariableTest(TestCase):
         """Checks if session variables are being set correctly"""
 
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             dummy_domain_information: Domain = generic_domain_object("information", "session")
             dummy_domain_information.domain.pk = 1
@@ -1389,8 +1434,7 @@ class DomainSessionVariableTest(TestCase):
         """Checks if incorrect session variables get overridden"""
 
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             dummy_domain_information = generic_domain_object("information", "session")
             request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
@@ -1407,8 +1451,7 @@ class DomainSessionVariableTest(TestCase):
         """Checks to see if session variables retain old information"""
 
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             dummy_domain_information_list = multiple_unalphabetical_domain_objects("information")
             for item in dummy_domain_information_list:
@@ -1422,8 +1465,7 @@ class DomainSessionVariableTest(TestCase):
         """Simulates two requests at once"""
 
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
+            self.client.force_login(self.superuser)
 
             info_first = generic_domain_object("information", "session")
             info_second = generic_domain_object("information", "session2")
@@ -1472,19 +1514,34 @@ class DomainSessionVariableTest(TestCase):
 
 
 class TestContactAdmin(TestCase):
-    def setUp(self):
-        self.site = AdminSite()
-        self.factory = RequestFactory()
-        self.client = Client(HTTP_HOST="localhost:8080")
-        self.admin = ContactAdmin(model=get_user_model(), admin_site=None)
-        self.superuser = create_superuser()
-        self.staffuser = create_user()
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.factory = RequestFactory() 
+        cls.admin = ContactAdmin(model=get_user_model(), admin_site=None)
+        cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+    
+    def setUp(self):
+        super().setUp()
+        self.client = Client(HTTP_HOST="localhost:8080")
+
+    def tearDown(self):
+        super().tearDown()
+        DomainRequest.objects.all().delete()
+        Contact.objects.all().delete()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        User.objects.all().delete()
+    
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/contact/",
             follow=True,
@@ -1555,6 +1612,10 @@ class TestContactAdmin(TestCase):
                     f"user/{self.staffuser.pk}/change/'>staff@example.com</a></li>"
                     "</ul>",
                 )
+            
+            # cleanup this test
+            DomainRequest.objects.all().delete()
+            contact.delete()
 
     def test_change_view_for_joined_contact_five_or_more(self):
         """Create a contact, join it to 5 domain requests. The 6th join will be a user.
@@ -1591,33 +1652,39 @@ class TestContactAdmin(TestCase):
                     "</ul>"
                     "<p class='font-sans-3xs'>And 1 more...</p>",
                 )
-
-    def tearDown(self):
-        DomainRequest.objects.all().delete()
-        Contact.objects.all().delete()
-        User.objects.all().delete()
+            # cleanup this test
+            DomainRequest.objects.all().delete()
+            contact.delete()
 
 
 class TestVerifiedByStaffAdmin(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.superuser = create_superuser()
+        cls.admin = VerifiedByStaffAdmin(model=VerifiedByStaff, admin_site=cls.site)
+        cls.factory = RequestFactory()
+        cls.test_helper = GenericTestHelper(admin=cls.admin)
+
     def setUp(self):
         super().setUp()
-        self.site = AdminSite()
-        self.superuser = create_superuser()
-        self.admin = VerifiedByStaffAdmin(model=VerifiedByStaff, admin_site=self.site)
-        self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.test_helper = GenericTestHelper(admin=self.admin)
 
     def tearDown(self):
         super().tearDown()
         VerifiedByStaff.objects.all().delete()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
         User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/verifiedbystaff/",
             follow=True,
@@ -1639,8 +1706,7 @@ class TestVerifiedByStaffAdmin(TestCase):
         """
         vip_instance, _ = VerifiedByStaff.objects.get_or_create(email="test@example.com", notes="Test Notes")
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/verifiedbystaff/{}/change/".format(vip_instance.pk),
             follow=True,
@@ -1694,8 +1760,7 @@ class TestWebsiteAdmin(TestCase):
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/website/",
             follow=True,
@@ -1710,25 +1775,33 @@ class TestWebsiteAdmin(TestCase):
 
 
 class TestDraftDomain(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.superuser = create_superuser()
+        cls.admin = DraftDomainAdmin(model=DraftDomain, admin_site=cls.site)
+        cls.factory = RequestFactory()
+        cls.test_helper = GenericTestHelper(admin=cls.admin)
+
     def setUp(self):
         super().setUp()
-        self.site = AdminSite()
-        self.superuser = create_superuser()
-        self.admin = DraftDomainAdmin(model=DraftDomain, admin_site=self.site)
-        self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.test_helper = GenericTestHelper(admin=self.admin)
 
     def tearDown(self):
         super().tearDown()
         DraftDomain.objects.all().delete()
+    
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
         User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/draftdomain/",
             follow=True,
@@ -1745,25 +1818,32 @@ class TestDraftDomain(TestCase):
 
 
 class TestFederalAgency(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.superuser = create_superuser()
+        cls.admin = FederalAgencyAdmin(model=FederalAgency, admin_site=cls.site)
+        cls.factory = RequestFactory()
+        cls.test_helper = GenericTestHelper(admin=cls.admin)
+    
     def setUp(self):
-        super().setUp()
-        self.site = AdminSite()
-        self.superuser = create_superuser()
-        self.admin = FederalAgencyAdmin(model=FederalAgency, admin_site=self.site)
-        self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.test_helper = GenericTestHelper(admin=self.admin)
 
     def tearDown(self):
         super().tearDown()
         FederalAgency.objects.all().delete()
+    
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
         User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/federalagency/",
             follow=True,
@@ -1828,8 +1908,7 @@ class TestTransitionDomain(TestCase):
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/transitiondomain/",
             follow=True,
@@ -1860,8 +1939,7 @@ class TestUserGroup(TestCase):
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/usergroup/",
             follow=True,

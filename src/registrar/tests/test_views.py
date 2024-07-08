@@ -30,8 +30,11 @@ logger = logging.getLogger(__name__)
 
 
 class TestViews(TestCase):
-    def setUp(self):
-        self.client = Client()
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.client = Client()
 
     def test_health_check_endpoint(self):
         response = self.client.get("/health")
@@ -50,26 +53,32 @@ class TestViews(TestCase):
 
 
 class TestWithUser(MockEppLib):
-    def setUp(self):
-        super().setUp()
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.client = Client()
+
+    # def setUp(self):
+    #     super().setUp()
         username = "test_user"
         first_name = "First"
         last_name = "Last"
         email = "info@example.com"
         phone = "8003111234"
-        self.user = get_user_model().objects.create(
+        cls.user = get_user_model().objects.create(
             username=username, first_name=first_name, last_name=last_name, email=email, phone=phone
         )
         title = "test title"
-        self.user.contact.title = title
-        self.user.contact.save()
+        cls.user.contact.title = title
+        cls.user.contact.save()
 
         username_regular_incomplete = "test_regular_user_incomplete"
         username_other_incomplete = "test_other_user_incomplete"
         first_name_2 = "Incomplete"
         email_2 = "unicorn@igorville.com"
         # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
-        self.incomplete_regular_user = get_user_model().objects.create(
+        cls.incomplete_regular_user = get_user_model().objects.create(
             username=username_regular_incomplete,
             first_name=first_name_2,
             email=email_2,
@@ -77,7 +86,7 @@ class TestWithUser(MockEppLib):
         )
         # in the case below, other user is representative of GRANDFATHERED,
         # VERIFIED_BY_STAFF, INVITED, FIXTURE_USER, ie. IAL1
-        self.incomplete_other_user = get_user_model().objects.create(
+        cls.incomplete_other_user = get_user_model().objects.create(
             username=username_other_incomplete,
             first_name=first_name_2,
             email=email_2,
@@ -89,7 +98,11 @@ class TestWithUser(MockEppLib):
         super().tearDown()
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
-        User.objects.all().delete()
+
+    # @classmethod
+    # def tearDownClass(cls):
+    #     super()
+    #     User.objects.all().delete()
 
 
 class TestEnvironmentVariablesEffects(TestCase):

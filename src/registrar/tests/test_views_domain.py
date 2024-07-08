@@ -208,6 +208,11 @@ class TestDomainPermissions(TestWithDomainPermissions):
 
 
 class TestDomainOverview(TestWithDomainPermissions, WebTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.client.force_login(cls.user)
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
