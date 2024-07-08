@@ -1376,7 +1376,9 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "status in [submitted,in review,action needed]", count=1)
 
     @less_console_noise_decorator
-    def transition_state_and_send_email(self, domain_request, status, rejection_reason=None, action_needed_reason=None):
+    def transition_state_and_send_email(
+        self, domain_request, status, rejection_reason=None, action_needed_reason=None, action_needed_reason_email=None
+    ):
         """Helper method for the email test cases."""
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -1391,6 +1393,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
             if action_needed_reason:
                 domain_request.action_needed_reason = action_needed_reason
+
+            if action_needed_reason_email:
+                domain_request.action_needed_reason_email = action_needed_reason_email
 
             # Use the model admin's save_model method
             self.admin.save_model(request, domain_request, form=None, change=True)
@@ -1464,7 +1469,7 @@ class TestDomainRequestAdmin(MockEppLib):
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-        # Test the email sent out for questionable_so
+        # Test that a custom email is sent out for questionable_so
         questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
         self.assert_email_is_accurate(
@@ -1478,6 +1483,29 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Should be unchanged from before
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
+
+        # Tests if an analyst can override existing email content
+        questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=questionable_so,
+            action_needed_reason_email="custom email content",
+        )
+
+        self.assert_email_is_accurate("custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
+
+        # Tests if a new email gets sent when just the email is changed
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=questionable_so,
+            action_needed_reason_email="dummy email content",
+        )
+
+        self.assert_email_is_accurate("dummy email content", 5, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 6)
 
     def test_save_model_sends_submitted_email(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
@@ -2223,6 +2251,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "Yes, select ineligible status")
 
     def test_readonly_when_restricted_creator(self):
+        self.maxDiff = None
         with less_console_noise():
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -2241,7 +2270,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "federal_agency",
                 "status_history",
-                "action_needed_reason_email",
                 "id",
                 "created_at",
                 "updated_at",
@@ -2303,7 +2331,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "federal_agency",
                 "status_history",
-                "action_needed_reason_email",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -2335,7 +2362,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "federal_agency",
                 "status_history",
-                "action_needed_reason_email",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)

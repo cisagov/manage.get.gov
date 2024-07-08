@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Union
 import logging
-
+from django.template.loader import get_template
 from django.apps import apps
 from django.conf import settings
 from django.db import models
@@ -598,6 +598,7 @@ class DomainRequest(TimeStampedModel):
     def _cache_status_and_action_needed_reason(self):
         """Maintains a cache of properties so we can avoid a DB call"""
         self._cached_action_needed_reason = self.action_needed_reason
+        self._cached_action_needed_reason_email = self.action_needed_reason_email
         self._cached_status = self.status
 
     def __init__(self, *args, **kwargs):
@@ -614,7 +615,8 @@ class DomainRequest(TimeStampedModel):
 
         # Handle the action needed email. We send one when moving to action_needed,
         # but we don't send one when we are _already_ in the state and change the reason.
-        self.sync_action_needed_reason()
+        if self.status == self.DomainRequestStatus.ACTION_NEEDED and self.action_needed_reason:
+            self.sync_action_needed_reason()
 
         # Update the cached values after saving
         self._cache_status_and_action_needed_reason()
@@ -624,10 +626,11 @@ class DomainRequest(TimeStampedModel):
         was_already_action_needed = self._cached_status == self.DomainRequestStatus.ACTION_NEEDED
         reason_exists = self._cached_action_needed_reason is not None and self.action_needed_reason is not None
         reason_changed = self._cached_action_needed_reason != self.action_needed_reason
-        if was_already_action_needed and (reason_exists and reason_changed):
+        reason_email_changed = self._cached_action_needed_reason_email != self.action_needed_reason_email
+        if was_already_action_needed and (reason_exists and reason_changed or reason_email_changed):
             # We don't send emails out in state "other"
             if self.action_needed_reason != self.ActionNeededReasons.OTHER:
-                self._send_action_needed_reason_email()
+                self._send_action_needed_reason_email(email_content=self.action_needed_reason_email)
 
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
@@ -681,7 +684,7 @@ class DomainRequest(TimeStampedModel):
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
     def _send_status_update_email(
-        self, new_status, email_template, email_template_subject, send_email=True, bcc_address="", wrap_email=False
+        self, new_status, email_template, email_template_subject, bcc_address="", context=None, **kwargs
     ):
         """Send a status update email to the creator.
 
@@ -692,12 +695,20 @@ class DomainRequest(TimeStampedModel):
         If the waffle flag "profile_feature" is active, then this email will be sent to the
         domain request creator rather than the submitter
 
+        kwargs:
         send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
 
         wrap_email: bool -> Wraps emails using `wrap_text_and_preserve_paragraphs` if any given
         paragraph exceeds our desired max length (for prettier display).
+
+        custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
+
+        # Email config options
+        wrap_email = kwargs.get("wrap_email", False)
+        send_email = kwargs.get("send_email", True)
+        custom_email_content = kwargs.get("custom_email_content", None)
 
         recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
         if recipient is None or recipient.email is None:
@@ -714,15 +725,21 @@ class DomainRequest(TimeStampedModel):
             return None
 
         try:
+            if not context:
+                context = {
+                    "domain_request": self,
+                    # This is the user that we refer to in the email
+                    "recipient": recipient,
+                }
+
+            if custom_email_content:
+                context["custom_email_content"] = custom_email_content
+
             send_templated_email(
                 email_template,
                 email_template_subject,
                 recipient.email,
-                context={
-                    "domain_request": self,
-                    # This is the user that we refer to in the email
-                    "recipient": recipient,
-                },
+                context=context,
                 bcc_address=bcc_address,
                 wrap_email=wrap_email,
             )
@@ -780,8 +797,8 @@ class DomainRequest(TimeStampedModel):
                 "submission confirmation",
                 "emails/submission_confirmation.txt",
                 "emails/submission_confirmation_subject.txt",
-                True,
-                bcc_address,
+                send_email=True,
+                bcc_address=bcc_address,
             )
 
     @transition(
@@ -851,14 +868,21 @@ class DomainRequest(TimeStampedModel):
 
         # Send out an email if an action needed reason exists
         if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
-            self._send_action_needed_reason_email(send_email)
+            email_content = self.action_needed_reason_email
+            self._send_action_needed_reason_email(send_email, email_content)
 
-    def _send_action_needed_reason_email(self, send_email=True):
+    def _send_action_needed_reason_email(self, send_email=True, email_content=None):
         """Sends out an automatic email for each valid action needed reason provided"""
 
         # Store the filenames of the template and template subject
         email_template_name: str = ""
         email_template_subject_name: str = ""
+
+        # Check if the current email that we sent out is the same as our defaults.
+        # If these differ, then that means that we're sending custom content.
+        default_email = self.get_default_action_needed_reason_email(self.action_needed_reason)
+        if self.action_needed_reason_email and self.action_needed_reason_email != default_email:
+            email_template_name = "custom_email.txt"
 
         # Check for the "type" of action needed reason.
         can_send_email = True
@@ -870,8 +894,10 @@ class DomainRequest(TimeStampedModel):
 
         # Assumes that the template name matches the action needed reason if nothing is specified.
         # This is so you can override if you need, or have this taken care of for you.
-        if not email_template_name and not email_template_subject_name:
+        if not email_template_name:
             email_template_name = f"{self.action_needed_reason}.txt"
+
+        if not email_template_subject_name:
             email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
 
         bcc_address = ""
@@ -886,8 +912,24 @@ class DomainRequest(TimeStampedModel):
                 email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
                 send_email=send_email,
                 bcc_address=bcc_address,
+                custom_email_content=email_content,
                 wrap_email=True,
             )
+
+    def get_default_action_needed_reason_email(self, action_needed_reason):
+        """Returns the default email associated with the given action needed reason"""
+        if action_needed_reason is None or action_needed_reason == self.ActionNeededReasons.OTHER:
+            return None
+
+        # Get the email body
+        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
+        template = get_template(template_path)
+
+        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
+        # Return the content of the rendered views
+        context = {"domain_request": self, "recipient": recipient}
+        body_text = template.render(context=context).strip().lstrip("\n")
+        return body_text
 
     @transition(
         field="status",
@@ -945,7 +987,7 @@ class DomainRequest(TimeStampedModel):
             "domain request approved",
             "emails/status_change_approved.txt",
             "emails/status_change_approved_subject.txt",
-            send_email,
+            send_email=send_email,
         )
 
     @transition(
