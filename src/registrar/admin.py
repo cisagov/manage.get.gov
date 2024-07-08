@@ -1984,7 +1984,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if not custom_text:
             template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
         else:
-            template_path = f"emails/action_needed_reasons/custom_email.txt"
+            template_path = "emails/action_needed_reasons/custom_email.txt"
 
         template = get_template(template_path)
 
