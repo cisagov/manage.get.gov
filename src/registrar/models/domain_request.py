@@ -893,7 +893,7 @@ class DomainRequest(TimeStampedModel):
         # This is so you can override if you need, or have this taken care of for you.
         if not email_template_name:
             email_template_name = f"{self.action_needed_reason}.txt"
-        
+
         if not email_template_subject_name:
             email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
 

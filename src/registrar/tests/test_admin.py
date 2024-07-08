@@ -1485,9 +1485,7 @@ class TestDomainRequestAdmin(MockEppLib):
         domain_request.save()
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
 
-        self.assert_email_is_accurate(
-            "custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL
-        )
+        self.assert_email_is_accurate("custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
 
     def test_save_model_sends_submitted_email(self):
@@ -2234,6 +2232,7 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "Yes, select ineligible status")
 
     def test_readonly_when_restricted_creator(self):
+        self.maxDiff = None
         with less_console_noise():
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -2252,7 +2251,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "federal_agency",
                 "status_history",
-                "action_needed_reason_email",
                 "id",
                 "created_at",
                 "updated_at",
@@ -2314,7 +2312,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "federal_agency",
                 "status_history",
-                "action_needed_reason_email",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -2346,7 +2343,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "federal_agency",
                 "status_history",
-                "action_needed_reason_email",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)

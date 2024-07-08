@@ -1746,7 +1746,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     obj.action_needed_reason_email = body_text
             should_save = True
 
-
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
             return super().save_model(request, obj, form, change)
@@ -1968,7 +1967,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if domain_request.action_needed_reason == enum_value and domain_request.action_needed_reason_email:
                 custom_text = domain_request.action_needed_reason_email
 
-            emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value, custom_text)
+            emails[enum_value] = self._get_action_needed_reason_default_email_text(
+                domain_request, enum_value, custom_text
+            )
         return json.dumps(emails)
 
     def _get_action_needed_reason_default_email_text(self, domain_request, action_needed_reason: str, custom_text=None):

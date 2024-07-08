@@ -2,7 +2,6 @@
 
 import time
 import logging
-import hashlib
 from urllib.parse import urlparse, urlunparse, urlencode
 
 
