@@ -1376,7 +1376,9 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "status in [submitted,in review,action needed]", count=1)
 
     @less_console_noise_decorator
-    def transition_state_and_send_email(self, domain_request, status, rejection_reason=None, action_needed_reason=None):
+    def transition_state_and_send_email(
+        self, domain_request, status, rejection_reason=None, action_needed_reason=None, action_needed_reason_email=None
+    ):
         """Helper method for the email test cases."""
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -1391,6 +1393,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
             if action_needed_reason:
                 domain_request.action_needed_reason = action_needed_reason
+
+            if action_needed_reason_email:
+                domain_request.action_needed_reason_email = action_needed_reason_email
 
             # Use the model admin's save_model method
             self.admin.save_model(request, domain_request, form=None, change=True)
@@ -1481,12 +1486,26 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Tests if an analyst can override existing email content
         questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
-        domain_request.action_needed_reason_email = "custom email content"
-        domain_request.save()
-        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=questionable_so,
+            action_needed_reason_email="custom email content",
+        )
 
         self.assert_email_is_accurate("custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
+
+        # Tests if a new email gets sent when just the email is changed
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=questionable_so,
+            action_needed_reason_email="dummy email content",
+        )
+
+        self.assert_email_is_accurate("dummy email content", 5, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 6)
 
     def test_save_model_sends_submitted_email(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
