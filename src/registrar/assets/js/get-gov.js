@@ -1846,9 +1846,9 @@ document.addEventListener('DOMContentLoaded', function() {
           let inputFieldValue = inputField.value
           if (inputFieldValue || fieldName == "full_name"){
             if (fieldName == "full_name"){
-              let firstName = document.querySelector(`#id_first_name`);
-              let middleName = document.querySelector(`#id_middle_name`);
-              let lastName = document.querySelector(`#id_last_name`);
+              let firstName = document.querySelector("#id_first_name");
+              let middleName = document.querySelector("#id_middle_name");
+              let lastName = document.querySelector("#id_last_name");
               if (firstName && lastName) {
                 let values = [firstName.value, middleName.value, lastName.value]
                 readonlyField.innerHTML = values.join(" ");
