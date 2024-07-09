@@ -75,6 +75,10 @@
     {% include "includes/non-production-alert.html" %}
   {% endif %}
 
+  {% if IS_PRODUCTION and ENABLE_PRODUCTION_ALERT %}
+    {% include "includes/production-alert.html" %}
+  {% endif %}
+
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
       <header class="usa-banner__header">

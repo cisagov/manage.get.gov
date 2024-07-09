@@ -36,3 +36,6 @@ def is_demo_site(request):
 def is_production(request):
     """Add a boolean if this is our production site."""
     return {"IS_PRODUCTION": settings.IS_PRODUCTION}
+
+def enable_production_alert(request):
+    return {"ENABLE_PRODUCTION_ALERT": settings.ENABLE_PRODUCTION_ALERT}

@@ -56,6 +56,8 @@ path = Path(__file__)
 env_db_url = env.dj_db_url("DATABASE_URL")
 env_debug = env.bool("DJANGO_DEBUG", default=False)
 env_is_production = env.bool("IS_PRODUCTION", default=False)
+#env_enable_production_alert = env.bool("ENABLE_PRODUCTION_ALERT", default=False)
+env_enable_production_alert = True
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
 env_base_url = env.str("DJANGO_BASE_URL")
 env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
@@ -96,6 +98,7 @@ DEBUG = env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
+ENABLE_PRODUCTION_ALERT = env_enable_production_alert
 SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 
 # Applications are modular pieces of code.
@@ -240,6 +243,7 @@ TEMPLATES = [
                 "registrar.context_processors.canonical_path",
                 "registrar.context_processors.is_demo_site",
                 "registrar.context_processors.is_production",
+                "registrar.context_processors.enable_production_alert",
             ],
         },
     },
