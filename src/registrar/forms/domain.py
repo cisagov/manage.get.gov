@@ -204,7 +204,7 @@ NameserverFormset = formset_factory(
 
 
 class UserForm(forms.ModelForm):
-    """Form for updating contacts."""
+    """Form for updating users."""
 
     email = forms.EmailField(max_length=None)
 

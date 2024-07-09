@@ -54,7 +54,6 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
     def get_context_data(self, **kwargs):
         """Extend get_context_data to include has_profile_feature_flag"""
         context = super().get_context_data(**kwargs)
-        logger.info("UserProfileView::get_context_data")
         # This is a django waffle flag which toggles features based off of the "flag" table
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
 

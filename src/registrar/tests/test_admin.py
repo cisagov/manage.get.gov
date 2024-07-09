@@ -2105,6 +2105,7 @@ class TestDomainRequestAdmin(MockEppLib):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
+        self.assertContains(response, "meoward.jones@igorville.gov")
 
         # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
@@ -3130,6 +3131,7 @@ class TestDomainInformationAdmin(TestCase):
             ("phone", "(555) 123 12345"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
+        self.assertContains(response, "meoward.jones@igorville.gov")
 
         # Check for the field itself
         self.assertContains(response, "Meoward Jones")
@@ -4036,7 +4038,7 @@ class TestContactAdmin(TestCase):
 
             readonly_fields = self.admin.get_readonly_fields(request)
 
-            expected_fields = []
+            expected_fields = ["email"]
 
             self.assertEqual(readonly_fields, expected_fields)
 
