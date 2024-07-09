@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Union
 import logging
-from django.template.loader import get_template
 from django.apps import apps
 from django.conf import settings
 from django.db import models
@@ -874,14 +873,10 @@ class DomainRequest(TimeStampedModel):
     def _send_action_needed_reason_email(self, send_email=True, email_content=None):
         """Sends out an automatic email for each valid action needed reason provided"""
 
-        # Store the filenames of the template and template subject
         email_template_name: str = ""
         email_template_subject_name: str = ""
 
-        # Check if the current email that we sent out is the same as our defaults.
-        # If these differ, then that means that we're sending custom content.
-        default_email = self.get_default_action_needed_reason_email(self.action_needed_reason)
-        if self.action_needed_reason_email and self.action_needed_reason_email != default_email:
+        if email_content is not None:
             email_template_name = "custom_email.txt"
 
         # Check for the "type" of action needed reason.
@@ -915,21 +910,6 @@ class DomainRequest(TimeStampedModel):
                 custom_email_content=email_content,
                 wrap_email=True,
             )
-
-    def get_default_action_needed_reason_email(self, action_needed_reason):
-        """Returns the default email associated with the given action needed reason"""
-        if action_needed_reason is None or action_needed_reason == self.ActionNeededReasons.OTHER:
-            return None
-
-        # Get the email body
-        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
-        template = get_template(template_path)
-
-        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
-        # Return the content of the rendered views
-        context = {"domain_request": self, "recipient": recipient}
-        body_text = template.render(context=context).strip().lstrip("\n")
-        return body_text
 
     @transition(
         field="status",

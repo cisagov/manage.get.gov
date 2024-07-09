@@ -143,6 +143,15 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% endwith %}
 {% endblock field_readonly %}
 
+{% block field_other %}
+    {% if field.field.name == "action_needed_reason_email" %}
+    {{ field.field }}
+    <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
+    {% else %}
+    {{ field.field }}
+    {% endif %}
+{% endblock field_other %}
+
 {% block after_help_text %}
     {% if field.field.name == "action_needed_reason_email" %}
         {% comment %}

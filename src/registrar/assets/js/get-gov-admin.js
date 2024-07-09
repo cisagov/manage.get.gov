@@ -531,6 +531,12 @@ function initializeWidgetOnList(list, parentId) {
     if(actionNeededReasonDropdown && actionNeededEmail) {
         // Add a change listener to the action needed reason dropdown 
         handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!actionNeededReasonDropdown.value || actionNeededReasonDropdown.value == "other") {
+                showNoEmailMessage(actionNeededEmail);
+            }
+        });
     }
 
     function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
