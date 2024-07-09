@@ -1,5 +1,4 @@
 """Views for a User Profile.
-
 """
 
 import logging
@@ -109,6 +108,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         """If the form is invalid, conditionally display an additional error."""
         if hasattr(self.user, "finished_setup") and not self.user.finished_setup:
             messages.error(self.request, "Before you can manage your domain, we need you to add contact information.")
+        form.initial["redirect"] = form.data.get("redirect")
         return super().form_invalid(form)
 
     def form_valid(self, form):
