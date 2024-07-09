@@ -449,7 +449,7 @@ class AdminSortFields:
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
         "submitter": (Contact, _name_sort),
-        # == Senior Official == # 
+        # == Senior Official == #
         "senior_official": (SeniorOfficial, _name_sort),
         # == User == #
         "creator": (User, _name_sort),
