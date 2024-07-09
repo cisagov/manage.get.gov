@@ -16,6 +16,7 @@ on:
         options:
           - staging
           - development
+          - ms
           - ag
           - litterbox
           - hotgov
