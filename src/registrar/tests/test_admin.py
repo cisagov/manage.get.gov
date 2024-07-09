@@ -44,6 +44,7 @@ from registrar.models import (
     UserGroup,
     TransitionDomain,
 )
+from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
@@ -930,6 +931,32 @@ class TestDomainRequestAdmin(MockEppLib):
             model=DomainRequest,
         )
         self.mock_client = MockSESClient()
+
+    def test_domain_request_senior_official_is_alphabetically_sorted(self):
+        """Tests if the senior offical dropdown is alphanetically sorted in the django admin display"""
+
+        SeniorOfficial.objects.get_or_create(first_name="mary", last_name="joe", title="some other guy")
+        SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
+        SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
+
+        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+        domain_request = completed_domain_request(submitter=contact, name="city1.gov")
+        request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+        model_admin = AuditedAdmin(DomainRequest, self.site)
+
+        # Get the queryset that would be returned for the list
+        senior_offical_queryset = model_admin.formfield_for_foreignkey(
+            DomainInformation.senior_official.field, request
+        ).queryset
+
+        # Make the list we're comparing on a bit prettier display-wise. Optional step.
+        current_sort_order = []
+        for official in senior_offical_queryset:
+            current_sort_order.append(f"{official.first_name} {official.last_name}")
+
+        expected_sort_order = ["alex smoe", "mary joe", "Zoup Soup"]
+
+        self.assertEqual(current_sort_order, expected_sort_order)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -2233,6 +2260,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "federal_agency",
+                "status_history",
+                "action_needed_reason_email",
                 "id",
                 "created_at",
                 "updated_at",
@@ -2293,6 +2322,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "federal_agency",
+                "status_history",
+                "action_needed_reason_email",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -2323,6 +2354,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "federal_agency",
+                "status_history",
+                "action_needed_reason_email",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
@@ -2719,6 +2752,7 @@ class TestDomainRequestAdmin(MockEppLib):
         User.objects.all().delete()
         Contact.objects.all().delete()
         Website.objects.all().delete()
+        SeniorOfficial.objects.all().delete()
         self.mock_client.EMAILS_SENT.clear()
 
 
@@ -2900,6 +2934,38 @@ class TestDomainInformationAdmin(TestCase):
         Domain.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
+        SeniorOfficial.objects.all().delete()
+
+    def test_domain_information_senior_official_is_alphabetically_sorted(self):
+        """Tests if the senior offical dropdown is alphanetically sorted in the django admin display"""
+
+        SeniorOfficial.objects.get_or_create(first_name="mary", last_name="joe", title="some other guy")
+        SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
+        SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
+
+        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+        domain_request = completed_domain_request(
+            submitter=contact, name="city1244.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW
+        )
+        domain_request.approve()
+
+        domain_info = DomainInformation.objects.get(domain_request=domain_request)
+        request = self.factory.post("/admin/registrar/domaininformation/{}/change/".format(domain_info.pk))
+        model_admin = AuditedAdmin(DomainInformation, self.site)
+
+        # Get the queryset that would be returned for the list
+        senior_offical_queryset = model_admin.formfield_for_foreignkey(
+            DomainInformation.senior_official.field, request
+        ).queryset
+
+        # Make the list we're comparing on a bit prettier display-wise. Optional step.
+        current_sort_order = []
+        for official in senior_offical_queryset:
+            current_sort_order.append(f"{official.first_name} {official.last_name}")
+
+        expected_sort_order = ["alex smoe", "mary joe", "Zoup Soup"]
+
+        self.assertEqual(current_sort_order, expected_sort_order)
 
     @less_console_noise_decorator
     def test_admin_can_see_cisa_region_federal(self):
@@ -3650,6 +3716,7 @@ class AuditedAdminTest(TestCase):
         self.site = AdminSite()
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.staffuser = create_user()
 
     def order_by_desired_field_helper(self, obj_to_sort: AuditedAdmin, request, field_name, *obj_names):
         with less_console_noise():
@@ -3701,7 +3768,9 @@ class AuditedAdminTest(TestCase):
     def test_alphabetically_sorted_fk_fields_domain_request(self):
         with less_console_noise():
             tested_fields = [
-                DomainRequest.senior_official.field,
+                # Senior offical is commented out for now - this is alphabetized
+                # and this test does not accurately reflect that.
+                # DomainRequest.senior_official.field,
                 DomainRequest.submitter.field,
                 # DomainRequest.investigator.field,
                 DomainRequest.creator.field,
@@ -3759,7 +3828,9 @@ class AuditedAdminTest(TestCase):
     def test_alphabetically_sorted_fk_fields_domain_information(self):
         with less_console_noise():
             tested_fields = [
-                DomainInformation.senior_official.field,
+                # Senior offical is commented out for now - this is alphabetized
+                # and this test does not accurately reflect that.
+                # DomainInformation.senior_official.field,
                 DomainInformation.submitter.field,
                 # DomainInformation.creator.field,
                 (DomainInformation.domain.field, ["name"]),
@@ -3792,7 +3863,6 @@ class AuditedAdminTest(TestCase):
 
                 # Conforms to the same object structure as desired_order
                 current_sort_order_coerced_type = []
-
                 # This is necessary as .queryset and get_queryset
                 # return lists of different types/structures.
                 # We need to parse this data and coerce them into the same type.
@@ -3869,7 +3939,8 @@ class AuditedAdminTest(TestCase):
         if last_name is None:
             return (first_name,)
 
-        if first_name.split(queryset_shorthand)[1] == field_name:
+        split_name = first_name.split(queryset_shorthand)
+        if len(split_name) == 2 and split_name[1] == field_name:
             return returned_tuple
         else:
             return None

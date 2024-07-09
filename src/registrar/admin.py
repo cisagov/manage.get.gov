@@ -9,6 +9,7 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
+from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
@@ -18,7 +19,7 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
-from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -165,6 +166,9 @@ class DomainRequestAdminForm(forms.ModelForm):
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+        }
+        labels = {
+            "action_needed_reason_email": "Auto-generated email",
         }
 
     def __init__(self, *args, **kwargs):
@@ -444,8 +448,9 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "senior_official": (Contact, _name_sort),
         "submitter": (Contact, _name_sort),
+        # == Senior Official == #
+        "senior_official": (SeniorOfficial, _name_sort),
         # == User == #
         "creator": (User, _name_sort),
         "user": (User, _name_sort),
@@ -997,6 +1002,19 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
 
+class SeniorOfficialAdmin(ListHeaderAdmin):
+    """Custom Senior Official Admin class."""
+
+    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+    search_fields = ["first_name", "last_name", "email"]
+    search_help_text = "Search by first name, last name or email."
+    list_display = ["first_name", "last_name", "email"]
+
+    # this ordering effects the ordering of results
+    # in autocomplete_fields for Senior Official
+    ordering = ["first_name", "last_name"]
+
+
 class WebsiteResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
     import/export file"""
@@ -1467,6 +1485,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
+    # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
+    # This is not a field that exists on the model.
+    def status_history(self, obj):
+        return "No changelog to display."
+
+    status_history.short_description = "Status History"  # type: ignore
+
     # Filters
     list_filter = (
         StatusListFilter,
@@ -1493,9 +1518,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
+                    "status_history",
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
+                    "action_needed_reason_email",
                     "investigator",
                     "creator",
                     "submitter",
@@ -1575,6 +1602,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "alternative_domains",
         "is_election_board",
         "federal_agency",
+        "status_history",
+        "action_needed_reason_email",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -1893,6 +1922,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
         extra_context["action_needed_reason_emails"] = self.get_all_action_needed_reason_emails_as_json(obj)
+        extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
@@ -1923,9 +1953,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
         subject_template = get_template(template_subject_path)
 
-        # Return the content of the rendered views
-        context = {"domain_request": domain_request}
+        if flag_is_active(None, "profile_feature"):  # type: ignore
+            recipient = domain_request.creator
+        else:
+            recipient = domain_request.submitter
 
+        # Return the content of the rendered views
+        context = {"domain_request": domain_request, "recipient": recipient}
         return {
             "subject_text": subject_template.render(context=context),
             "email_body_text": template.render(context=context),
@@ -2737,6 +2771,7 @@ admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
+admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
