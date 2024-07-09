@@ -1197,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </svg>
               </td>
               <td>
-                  <span class="${suborganization ? 'ellipsis ellipsis--30 vertical-align-middle' : ''}">${suborganization}</span>
+                  <span class="${suborganization ? 'ellipsis ellipsis--30 vertical-align-middle' : ''}" aria-label="${suborganization}" title="${suborganization}">${suborganization}</span>
               </td>
               <td>
                 <a href="${actionUrl}">
