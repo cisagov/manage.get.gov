@@ -1698,8 +1698,34 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             for name, data in fieldsets:
                 fields = data.get("fields", [])
                 fields = tuple(field for field in fields if field not in self.superuser_only_fields)
-                modified_fieldsets.append((name, {"fields": fields}))
+
+                # Handle Type of organization and its Show details
+                if name == "Type of organization":
+                    show_details_fields = (
+                        "federal_type",
+                        "federal_agency",
+                        "tribe_name",
+                        "federally_recognized_tribe",
+                        "state_recognized_tribe",
+                        "about_your_organization",
+                    )
+                    fields = tuple(field for field in fields if field not in show_details_fields)
+                    modified_fieldsets.append((name, {"fields": fields + show_details_fields}))
+                # Handle Organization name and mailing address and its Show details
+                elif name == "Organization name and mailing address":
+                    show_details_address_fields = (
+                        "address_line1",
+                        "address_line2",
+                        "city",
+                        "zipcode",
+                        "urbanization",
+                    )
+                    fields = tuple(field for field in fields if field not in show_details_address_fields)
+                    modified_fieldsets.append((name, {"fields": fields + show_details_address_fields}))
+                else:
+                    modified_fieldsets.append((name, {"fields": fields}))
             return modified_fieldsets
+
         return fieldsets
 
     # Table ordering
