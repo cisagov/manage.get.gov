@@ -19,7 +19,7 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
-from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -448,8 +448,9 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "senior_official": (Contact, _name_sort),
         "submitter": (Contact, _name_sort),
+        # == Senior Official == # 
+        "senior_official": (SeniorOfficial, _name_sort),
         # == User == #
         "creator": (User, _name_sort),
         "user": (User, _name_sort),
