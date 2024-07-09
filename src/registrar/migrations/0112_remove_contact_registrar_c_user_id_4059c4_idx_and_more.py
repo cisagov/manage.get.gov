@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0109_domaininformation_sub_organization_and_more"),
+        ("registrar", "0111_create_groups_v15"),
     ]
 
     operations = [
