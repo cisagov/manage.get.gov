@@ -1,20 +1,25 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from registrar.models import Contact
+from registrar.models import Contact, User
 
 
 class TestUserPostSave(TestCase):
     def setUp(self):
-        self.username = "test_user"
+        Contact.objects.all().delete()
+        self.username = "test_signal_user"
         self.first_name = "First"
         self.last_name = "Last"
-        self.email = "info@example.com"
+        self.email = "signal@example.com"
         self.phone = "202-555-0133"
 
         self.preferred_first_name = "One"
         self.preferred_last_name = "Two"
         self.preferred_email = "front_desk@example.com"
         self.preferred_phone = "202-555-0134"
+    
+    def tearDown(self):
+        Contact.objects.all().delete()
+        User.objects.all().delete()
 
     def test_user_created_without_matching_contact(self):
         """Expect 1 Contact containing data copied from User."""

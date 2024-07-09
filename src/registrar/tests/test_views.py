@@ -13,8 +13,7 @@ from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.views.domain import DomainNameserversView
-
-from .common import MockEppLib, less_console_noise  # type: ignore
+from .common import MockEppLib, create_test_user, less_console_noise  # type: ignore
 from unittest.mock import patch
 from django.urls import reverse
 
@@ -53,45 +52,18 @@ class TestViews(TestCase):
 
 
 class TestWithUser(MockEppLib):
+    """Class for executing tests with a test user.
+    Note that tests share the test user within their test class, so the user
+    cannot be changed within a test."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.client = Client()
+        cls.user = create_test_user()
 
-    # def setUp(self):
-    #     super().setUp()
-        username = "test_user"
-        first_name = "First"
-        last_name = "Last"
-        email = "info@example.com"
-        phone = "8003111234"
-        cls.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email, phone=phone
-        )
-        title = "test title"
-        cls.user.contact.title = title
-        cls.user.contact.save()
-
-        username_regular_incomplete = "test_regular_user_incomplete"
-        username_other_incomplete = "test_other_user_incomplete"
-        first_name_2 = "Incomplete"
-        email_2 = "unicorn@igorville.com"
-        # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
-        cls.incomplete_regular_user = get_user_model().objects.create(
-            username=username_regular_incomplete,
-            first_name=first_name_2,
-            email=email_2,
-            verification_type=User.VerificationTypeChoices.REGULAR,
-        )
-        # in the case below, other user is representative of GRANDFATHERED,
-        # VERIFIED_BY_STAFF, INVITED, FIXTURE_USER, ie. IAL1
-        cls.incomplete_other_user = get_user_model().objects.create(
-            username=username_other_incomplete,
-            first_name=first_name_2,
-            email=email_2,
-            verification_type=User.VerificationTypeChoices.VERIFIED_BY_STAFF,
-        )
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
 
     def tearDown(self):
         # delete any domain requests too
@@ -99,28 +71,36 @@ class TestWithUser(MockEppLib):
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
 
-    # @classmethod
-    # def tearDownClass(cls):
-    #     super()
-    #     User.objects.all().delete()
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        #remove all contacts - this can be removed after signals are deleted
+        Contact.objects.all().delete()
+        User.objects.all().delete()
 
 
 class TestEnvironmentVariablesEffects(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = create_test_user()
+
     def setUp(self):
         self.client = Client()
-        username = "test_user"
-        first_name = "First"
-        last_name = "Last"
-        email = "info@example.com"
-        self.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email
-        )
         self.client.force_login(self.user)
 
     def tearDown(self):
         super().tearDown()
+        UserDomainRole.objects.all().delete()
         Domain.objects.all().delete()
-        self.user.delete()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        # remove all contacts - this can be removed after signals are deleted
+        Contact.objects.all().delete()
+        User.objects.all().delete()
 
     @override_settings(IS_PRODUCTION=True)
     def test_production_environment(self):
@@ -191,9 +171,12 @@ class HomeTests(TestWithUser):
         super().setUp()
         self.client.force_login(self.user)
 
-    def tearDown(self):
-        super().tearDown()
-        Contact.objects.all().delete()
+    # def tearDown(self):
+    #     super().tearDown()
+    #     Contact.objects.all().delete()
+    #     UserDomainRole.objects.all().delete()
+    #     Domain.objects.all().delete()
+    #     DomainRequest.objects.all().delete()
 
     def test_empty_domain_table(self):
         response = self.client.get("/")
@@ -248,7 +231,7 @@ class HomeTests(TestWithUser):
         test_domain.expiration_date = date(2011, 10, 10)
         test_domain.save()
 
-        UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
+        test_role, _ = UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
 
         # Grab the json response of the domains list
         response = self.client.get("/get-domains-json/")
@@ -258,6 +241,9 @@ class HomeTests(TestWithUser):
 
         # Check that we have the right text content.
         self.assertContains(response, expired_text, count=1)
+
+        test_role.delete()
+        test_domain.delete()
 
     def test_state_help_text_no_expiration_date(self):
         """Tests if each domain state has help text when expiration date is None"""
@@ -301,6 +287,9 @@ class HomeTests(TestWithUser):
 
         # Check that we have the right text content.
         self.assertContains(response, unknown_text, count=1)
+
+        UserDomainRole.objects.all().delete()
+        Domain.objects.all().delete()
 
     def test_home_deletes_withdrawn_domain_request(self):
         """Tests if the user can delete a DomainRequest in the 'withdrawn' status"""
@@ -438,6 +427,9 @@ class HomeTests(TestWithUser):
 
         self.assertEqual(edge_case, contact_2)
 
+        DomainRequest.objects.all().delete()
+        Contact.objects.all().delete()
+
     def test_home_deletes_domain_request_and_shared_orphans(self):
         """Test the edge case for an object that will become orphaned after a delete
         (but is not an orphan at the time of deletion)"""
@@ -495,6 +487,9 @@ class HomeTests(TestWithUser):
         orphan = Contact.objects.filter(id=contact_shared.id)
         self.assertFalse(orphan.exists())
 
+        DomainRequest.objects.all().delete()
+        Contact.objects.all().delete()
+
     def test_domain_request_form_view(self):
         response = self.client.get("/request/", follow=True)
         self.assertContains(
@@ -506,12 +501,20 @@ class HomeTests(TestWithUser):
         """Domain request form not accessible for an ineligible user.
         This test should be solid enough since all domain request wizard
         views share the same permissions class"""
-        self.user.status = User.RESTRICTED
-        self.user.save()
-
         with less_console_noise():
+            username = "restricted_user"
+            first_name = "First"
+            last_name = "Last"
+            email = "restricted@example.com"
+            phone = "8003111234"
+            status = User.RESTRICTED
+            restricted_user = get_user_model().objects.create(
+                username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, status=status
+            )
+            self.client.force_login(restricted_user)
             response = self.client.get("/request/", follow=True)
             self.assertEqual(response.status_code, 403)
+            restricted_user.delete()
 
 
 class FinishUserProfileTests(TestWithUser, WebTest):
@@ -523,6 +526,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
     def setUp(self):
         super().setUp()
+        self.initial_user_title = self.user.title
         self.user.title = None
         self.user.save()
         self.client.force_login(self.user)
@@ -533,6 +537,8 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
     def tearDown(self):
         super().tearDown()
+        self.user.title = self.initial_user_title
+        self.user.save()
         PublicContact.objects.filter(domain=self.domain).delete()
         self.role.delete()
         self.domain.delete()
@@ -555,7 +561,18 @@ class FinishUserProfileTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_new_user_with_profile_feature_on(self):
         """Tests that a new user is redirected to the profile setup page when profile_feature is on"""
-        self.app.set_user(self.incomplete_regular_user.username)
+        username_regular_incomplete = "test_regular_user_incomplete"
+        first_name_2 = "Incomplete"
+        email_2 = "unicorn@igorville.com"
+        # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
+        incomplete_regular_user = get_user_model().objects.create(
+            username=username_regular_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.REGULAR,
+        )
+
+        self.app.set_user(incomplete_regular_user.username)
         with override_flag("profile_feature", active=True):
             # This will redirect the user to the setup page.
             # Follow implicity checks if our redirect is working.
@@ -593,8 +610,17 @@ class FinishUserProfileTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_new_user_goes_to_domain_request_with_profile_feature_on(self):
         """Tests that a new user is redirected to the domain request page when profile_feature is on"""
-
-        self.app.set_user(self.incomplete_regular_user.username)
+        username_regular_incomplete = "test_regular_user_incomplete"
+        first_name_2 = "Incomplete"
+        email_2 = "unicorn@igorville.com"
+        # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
+        incomplete_regular_user = get_user_model().objects.create(
+            username=username_regular_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.REGULAR,
+        )
+        self.app.set_user(incomplete_regular_user.username)
         with override_flag("profile_feature", active=True):
             # This will redirect the user to the setup page
             finish_setup_page = self.app.get(reverse("domain-request:")).follow()
@@ -666,6 +692,7 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
 
     def setUp(self):
         super().setUp()
+        self.initial_user_title = self.user.title
         self.user.title = None
         self.user.save()
         self.client.force_login(self.user)
@@ -676,6 +703,8 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
 
     def tearDown(self):
         super().tearDown()
+        self.user.title = self.initial_user_title
+        self.user.save()
         PublicContact.objects.filter(domain=self.domain).delete()
         self.role.delete()
         Domain.objects.all().delete()
@@ -695,7 +724,18 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
     def test_new_user_with_profile_feature_on(self):
         """Tests that a new user is redirected to the profile setup page when profile_feature is on,
         and testing that the confirmation modal is present"""
-        self.app.set_user(self.incomplete_other_user.username)
+        username_other_incomplete = "test_other_user_incomplete"
+        first_name_2 = "Incomplete"
+        email_2 = "unicorn@igorville.com"
+        # in the case below, other user is representative of GRANDFATHERED,
+        # VERIFIED_BY_STAFF, INVITED, FIXTURE_USER, ie. IAL1
+        incomplete_other_user = get_user_model().objects.create(
+            username=username_other_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.VERIFIED_BY_STAFF,
+        )
+        self.app.set_user(incomplete_other_user.username)
         with override_flag("profile_feature", active=True):
             # This will redirect the user to the user profile page.
             # Follow implicity checks if our redirect is working.

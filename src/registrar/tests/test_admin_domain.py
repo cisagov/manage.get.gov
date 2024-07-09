@@ -9,6 +9,7 @@ from registrar.admin import (
     DomainAdmin,
 )
 from registrar.models import (
+    Contact,
     Domain,
     DomainRequest,
     DomainInformation,

@@ -835,6 +835,19 @@ def create_user():
     user.groups.set([group])
     return user
 
+def create_test_user():
+    username = "test_user"
+    first_name = "First"
+    last_name = "Last"
+    email = "info@example.com"
+    phone = "8003111234"
+    user = get_user_model().objects.create(
+        username=username, first_name=first_name, last_name=last_name, email=email, phone=phone
+    )
+    title = "test title"
+    user.contact.title = title
+    user.contact.save()
+    return user
 
 def create_ready_domain():
     domain, _ = Domain.objects.get_or_create(name="city.gov", state=Domain.State.READY)
