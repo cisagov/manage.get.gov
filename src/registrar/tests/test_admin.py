@@ -939,7 +939,10 @@ class TestDomainRequestAdmin(MockEppLib):
         SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
         SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
 
-        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+        contact, _ = Contact.objects.get_or_create(
+            first_name="Henry",
+            last_name="McFakerson"
+        )
         domain_request = completed_domain_request(submitter=contact, name="city1.gov")
         request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
         model_admin = AuditedAdmin(DomainRequest, self.site)
@@ -2943,7 +2946,10 @@ class TestDomainInformationAdmin(TestCase):
         SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
         SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
 
-        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+        contact, _ = Contact.objects.get_or_create(
+            first_name="Henry",
+            last_name="McFakerson"
+        )
         domain_request = completed_domain_request(
             submitter=contact, name="city1244.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW
         )
