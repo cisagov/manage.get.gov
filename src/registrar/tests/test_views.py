@@ -621,7 +621,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(completed_setup_page, "Manage your domain")
 
     @less_console_noise_decorator
-    def test_new_user_with_empty_name_profile_feature_on(self):
+    def test_new_user_with_empty_name_can_add_name(self):
         """Tests that a new user without a name can still enter this information accordingly"""
         self.incomplete_regular_user.contact.first_name = None
         self.incomplete_regular_user.contact.last_name = None
