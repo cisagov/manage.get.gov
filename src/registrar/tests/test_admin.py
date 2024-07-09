@@ -939,9 +939,7 @@ class TestDomainRequestAdmin(MockEppLib):
     def test_domain_request_senior_official_is_alphabetically_sorted(self):
         """Tests if the senior offical dropdown is alphanetically sorted in the django admin display"""
 
-        SeniorOfficial.objects.get_or_create(
-            first_name="mary", last_name="joe", title="some other guy"
-        )
+        SeniorOfficial.objects.get_or_create(first_name="mary", last_name="joe", title="some other guy")
         SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
         SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
 
@@ -2948,9 +2946,7 @@ class TestDomainInformationAdmin(TestCase):
     def test_domain_information_senior_official_is_alphabetically_sorted(self):
         """Tests if the senior offical dropdown is alphanetically sorted in the django admin display"""
 
-        SeniorOfficial.objects.get_or_create(
-            first_name="mary", last_name="joe", title="some other guy"
-        )
+        SeniorOfficial.objects.get_or_create(first_name="mary", last_name="joe", title="some other guy")
         SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
         SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
 
