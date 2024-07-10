@@ -25,7 +25,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         # Check if the provided file path is valid.
         if not os.path.isfile(domain_request_csv_path):
             raise argparse.ArgumentTypeError(f"Invalid file path '{domain_request_csv_path}'")
-        
+
         # Simple check to make sure we don't accidentally pass in the wrong file. Crude but it works.
         if not "request" in domain_request_csv_path.lower():
             raise argparse.ArgumentTypeError(f"Invalid file for domain requests: '{domain_request_csv_path}'")
@@ -38,17 +38,19 @@ class Command(BaseCommand, PopulateScriptTemplate):
         # and the value as the actual contact object for faster computation.
         self.domain_ao_dict = {}
         for contact in contacts:
-            # Get the 
+            # Get the
             domain_request_id = ao_dict[contact.id]
             self.domain_ao_dict[domain_request_id] = contact
 
         self.mass_update_records(
             DomainRequest, filter_conditions={"senior_official__isnull": True}, fields_to_update=["senior_official"]
         )
-    
+
     def add_arguments(self, parser):
         """Add command line arguments."""
-        parser.add_argument("--domain_request_csv_path",  help="A csv containing the domain request id and the contact id")
+        parser.add_argument(
+            "--domain_request_csv_path", help="A csv containing the domain request id and the contact id"
+        )
 
     def read_csv_file_and_get_contacts(self, file):
         dict_data = {}
@@ -66,7 +68,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
                 ao_ids.append(ao_id)
 
         return (dict_data, ao_ids)
-    
+
     def get_valid_contacts(self, ao_ids):
         return Contact.objects.filter(id__in=ao_ids)
 

@@ -1240,38 +1240,23 @@ class TestRepopulateDomainInformationSeniorOfficial(TestCase):
         self.gov_admin, _ = FederalAgency.objects.get_or_create(agency="gov Administration")
 
         self.contact_1, _ = Contact.objects.get_or_create(
-            first_name="a",
-            last_name="b",
-            title="c",
-            email="a@igorville.gov"
+            first_name="a", last_name="b", title="c", email="a@igorville.gov"
         )
 
         self.contact_2, _ = Contact.objects.get_or_create(
-            first_name="a2",
-            last_name="b2",
-            title="c2",
-            email="a2@igorville.gov"
+            first_name="a2", last_name="b2", title="c2", email="a2@igorville.gov"
         )
 
         self.contact_3, _ = Contact.objects.get_or_create(
-            first_name="a3",
-            last_name="b3",
-            title="c3",
-            email="a3@igorville.gov"
+            first_name="a3", last_name="b3", title="c3", email="a3@igorville.gov"
         )
 
         self.contact_4, _ = Contact.objects.get_or_create(
-            first_name="a4",
-            last_name="b4",
-            title="c4",
-            email="a4@igorville.gov"
+            first_name="a4", last_name="b4", title="c4", email="a4@igorville.gov"
         )
 
         self.contact_5, _ = Contact.objects.get_or_create(
-            first_name="a5",
-            last_name="b5",
-            title="c5",
-            email="a5@igorville.gov"
+            first_name="a5", last_name="b5", title="c5", email="a5@igorville.gov"
         )
 
         self.domain_request_1 = completed_domain_request(
@@ -1279,7 +1264,7 @@ class TestRepopulateDomainInformationSeniorOfficial(TestCase):
             federal_agency=self.amtrak,
             federal_type=BranchChoices.EXECUTIVE,
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            senior_official=self.contact_1
+            senior_official=self.contact_1,
         )
         self.domain_request_2 = completed_domain_request(
             name="cheesefactory.gov",
@@ -1340,27 +1325,32 @@ class TestRepopulateDomainInformationSeniorOfficial(TestCase):
         The 'call_command' function from Django's management framework is then used to
         execute the populate_first_ready command with the specified arguments.
         """
-        #with less_console_noise():
+        # with less_console_noise():
         with patch(
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
             return_value=True,
         ):
             # Fake file path. Does not matter.
-            call_command("repopulate_domain_information_senior_official", domain_info_csv_path="registrar/tests/data/fake_domain_information.csv")
+            call_command(
+                "repopulate_domain_information_senior_official",
+                domain_info_csv_path="registrar/tests/data/fake_domain_information.csv",
+            )
 
-    #@less_console_noise_decorator
+    # @less_console_noise_decorator
     def test_transfer_federal_agency_type_script(self):
         """
         Tests that the transfer_federal_agency_type script updates what we expect, and skips what we expect
         """
 
-        with patch("registrar.management.commands.repopulate_domain_information_senior_official.Command.read_csv_file_and_get_contacts") as mock_read_csv:
+        with patch(
+            "registrar.management.commands.repopulate_domain_information_senior_official.Command.read_csv_file_and_get_contacts"
+        ) as mock_read_csv:
             expected_dict = {
                 self.contact_1.id: self.domain_information_1.id,
                 self.contact_2.id: self.domain_information_2.id,
                 self.contact_3.id: self.domain_information_3.id,
                 self.contact_4.id: self.domain_information_4.id,
-                self.contact_5.id: self.domain_information_5.id
+                self.contact_5.id: self.domain_information_5.id,
             }
             expected_ao_ids = [
                 self.contact_1.id,
@@ -1420,38 +1410,23 @@ class TestRepopulateDomainRequestSeniorOfficial(TestCase):
         self.gov_admin, _ = FederalAgency.objects.get_or_create(agency="gov Administration")
 
         self.contact_1, _ = Contact.objects.get_or_create(
-            first_name="a",
-            last_name="b",
-            title="c",
-            email="a@igorville.gov"
+            first_name="a", last_name="b", title="c", email="a@igorville.gov"
         )
 
         self.contact_2, _ = Contact.objects.get_or_create(
-            first_name="a2",
-            last_name="b2",
-            title="c2",
-            email="a2@igorville.gov"
+            first_name="a2", last_name="b2", title="c2", email="a2@igorville.gov"
         )
 
         self.contact_3, _ = Contact.objects.get_or_create(
-            first_name="a3",
-            last_name="b3",
-            title="c3",
-            email="a3@igorville.gov"
+            first_name="a3", last_name="b3", title="c3", email="a3@igorville.gov"
         )
 
         self.contact_4, _ = Contact.objects.get_or_create(
-            first_name="a4",
-            last_name="b4",
-            title="c4",
-            email="a4@igorville.gov"
+            first_name="a4", last_name="b4", title="c4", email="a4@igorville.gov"
         )
 
         self.contact_5, _ = Contact.objects.get_or_create(
-            first_name="a5",
-            last_name="b5",
-            title="c5",
-            email="a5@igorville.gov"
+            first_name="a5", last_name="b5", title="c5", email="a5@igorville.gov"
         )
 
         self.domain_request_1 = completed_domain_request(
@@ -1459,7 +1434,7 @@ class TestRepopulateDomainRequestSeniorOfficial(TestCase):
             federal_agency=self.amtrak,
             federal_type=BranchChoices.EXECUTIVE,
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            senior_official=self.contact_1
+            senior_official=self.contact_1,
         )
         self.domain_request_2 = completed_domain_request(
             name="cheesefactory.gov",
@@ -1514,27 +1489,32 @@ class TestRepopulateDomainRequestSeniorOfficial(TestCase):
         The 'call_command' function from Django's management framework is then used to
         execute the populate_first_ready command with the specified arguments.
         """
-        #with less_console_noise():
+        # with less_console_noise():
         with patch(
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
             return_value=True,
         ):
             # Fake file path. Does not matter.
-            call_command("repopulate_domain_request_senior_official", domain_request_csv_path="registrar/tests/data/fake_domain_request.csv")
+            call_command(
+                "repopulate_domain_request_senior_official",
+                domain_request_csv_path="registrar/tests/data/fake_domain_request.csv",
+            )
 
-    #@less_console_noise_decorator
+    # @less_console_noise_decorator
     def test_repopulate_domain_request_senior_official_script(self):
         """
         Tests that the transfer_federal_agency_type script updates what we expect, and skips what we expect
         """
 
-        with patch("registrar.management.commands.repopulate_domain_request_senior_official.Command.read_csv_file_and_get_contacts") as mock_read_csv:
+        with patch(
+            "registrar.management.commands.repopulate_domain_request_senior_official.Command.read_csv_file_and_get_contacts"
+        ) as mock_read_csv:
             expected_dict = {
                 self.contact_1.id: self.domain_request_1.id,
                 self.contact_2.id: self.domain_request_2.id,
                 self.contact_3.id: self.domain_request_3.id,
                 self.contact_4.id: self.domain_request_4.id,
-                self.contact_5.id: self.domain_request_5.id
+                self.contact_5.id: self.domain_request_5.id,
             }
             expected_ao_ids = [
                 self.contact_1.id,

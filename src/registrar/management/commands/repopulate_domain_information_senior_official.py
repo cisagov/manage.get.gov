@@ -39,19 +39,21 @@ class Command(BaseCommand, PopulateScriptTemplate):
         # and the value as the actual contact object for faster computation.
         self.domain_ao_dict = {}
         for contact in contacts:
-            # Get the 
+            # Get the
             domain_info_id = ao_dict[contact.id]
             self.domain_ao_dict[domain_info_id] = contact
-        
+
         print(f"dict is: {self.domain_ao_dict}")
 
         self.mass_update_records(
             DomainInformation, filter_conditions={"senior_official__isnull": True}, fields_to_update=["senior_official"]
         )
-    
+
     def add_arguments(self, parser):
         """Add command line arguments."""
-        parser.add_argument("--domain_info_csv_path",  help="A csv containing the domain information id and the contact id")
+        parser.add_argument(
+            "--domain_info_csv_path", help="A csv containing the domain information id and the contact id"
+        )
 
     def read_csv_file_and_get_contacts(self, file):
         dict_data = {}
@@ -65,7 +67,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
                 ao_ids.append(ao_id)
 
         return (dict_data, ao_ids)
-    
+
     def get_valid_contacts(self, ao_ids):
         return Contact.objects.filter(id__in=ao_ids)
 

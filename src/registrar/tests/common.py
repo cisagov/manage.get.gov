@@ -865,7 +865,7 @@ def completed_domain_request(  # noqa
     """A completed domain request."""
     if not user:
         user = get_user_model().objects.create(username="username" + str(uuid.uuid4())[:8])
-    
+
     if not senior_official:
         senior_official, _ = Contact.objects.get_or_create(
             first_name="Testy",
