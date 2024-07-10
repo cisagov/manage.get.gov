@@ -1077,11 +1077,6 @@ class TestImportTables(TestCase):
                 for table_name in table_names:
                     mock_path_exists.assert_any_call(f"{table_name}_1.csv")
 
-                # Check that clean_tables is called for Contact
-                mock_get_model.assert_any_call("registrar", "Contact")
-                model_mock = mock_get_model.return_value
-                model_mock.objects.all().delete.assert_called()
-
                 # Check that logger.info was called for each successful import
                 for table_name in table_names:
                     mock_logger.info.assert_any_call(f"Successfully imported {table_name}_1.csv into {table_name}")

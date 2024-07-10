@@ -598,33 +598,6 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
         return filters
 
 
-class UserContactInline(admin.StackedInline):
-    """Edit a user's profile on the user page."""
-
-    model = models.Contact
-
-    # Read only that we'll leverage for CISA Analysts
-    analyst_readonly_fields = [
-        "user",
-        "email",
-    ]
-
-    def get_readonly_fields(self, request, obj=None):
-        """Set the read-only state on form elements.
-        We have 1 conditions that determine which fields are read-only:
-        admin user permissions.
-        """
-
-        readonly_fields = list(self.readonly_fields)
-
-        if request.user.has_perm("registrar.full_access_permission"):
-            return readonly_fields
-        # Return restrictive Read-only fields for analysts and
-        # users who might not belong to groups
-        readonly_fields.extend([field for field in self.analyst_readonly_fields])
-        return readonly_fields  # Read-only fields for analysts
-
-
 class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     """Custom user admin class to use our inlines."""
 
@@ -640,8 +613,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         fields = "__all__"
 
     _meta = Meta()
-
-    inlines = [UserContactInline]
 
     list_display = (
         "username",
@@ -920,29 +891,19 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = [
         "name",
         "email",
-        "user_exists",
     ]
     # this ordering effects the ordering of results
-    # in autocomplete_fields for user
+    # in autocomplete_fields
     ordering = ["first_name", "last_name", "email"]
 
     fieldsets = [
         (
             None,
-            {"fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]},
+            {"fields": ["first_name", "middle_name", "last_name", "title", "email", "phone"]},
         )
     ]
 
-    autocomplete_fields = ["user"]
-
     change_form_template = "django/admin/email_clipboard_change_form.html"
-
-    def user_exists(self, obj):
-        """Check if the Contact has a related User"""
-        return "Yes" if obj.user is not None else "No"
-
-    user_exists.short_description = "Is user"  # type: ignore
-    user_exists.admin_order_field = "user"  # type: ignore
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -961,10 +922,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     name.admin_order_field = "first_name"  # type: ignore
 
     # Read only that we'll leverage for CISA Analysts
-    analyst_readonly_fields = [
-        "user",
-        "email",
-    ]
+    analyst_readonly_fields: list[str] = ["email"]
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
