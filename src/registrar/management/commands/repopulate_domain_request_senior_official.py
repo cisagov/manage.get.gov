@@ -31,11 +31,19 @@ class Command(BaseCommand, PopulateScriptTemplate):
             raise argparse.ArgumentTypeError(f"Invalid file for domain requests: '{domain_request_csv_path}'")
 
         # Get all ao data.
-        self.ao_dict = {}
-        self.ao_dict = self.read_csv_file_and_get_contacts(domain_request_csv_path)
+        ao_dict, ao_ids = self.read_csv_file_and_get_contacts(domain_request_csv_path)
+        contacts = self.get_valid_contacts(ao_ids)
+
+        # Store the ao data we want to recover in a dict of the domain info id,
+        # and the value as the actual contact object for faster computation.
+        self.domain_ao_dict = {}
+        for contact in contacts:
+            # Get the
+            domain_request_id = ao_dict[contact.id]
+            self.domain_ao_dict[domain_request_id] = contact
 
         self.mass_update_records(
-            DomainRequest, filter_conditions={"senior_official__isnull": True, }, fields_to_update=["senior_official"]
+            DomainRequest, filter_conditions={"senior_official__isnull": True}, fields_to_update=["senior_official"]
         )
 
     def add_arguments(self, parser):
@@ -45,7 +53,8 @@ class Command(BaseCommand, PopulateScriptTemplate):
         )
 
     def read_csv_file_and_get_contacts(self, file):
-        dict_data: dict = {}
+        dict_data = {}
+        ao_ids = []
         with open(file, "r") as requested_file:
             reader = csv.DictReader(requested_file)
             for row in reader:
@@ -55,21 +64,25 @@ class Command(BaseCommand, PopulateScriptTemplate):
                     logger.info("Skipping update on row: no data found.")
                     break
 
-                dict_data[domain_request_id] = ao_id
+                dict_data[ao_id] = domain_request_id
+                ao_ids.append(ao_id)
 
-        return dict_data
+        return (dict_data, ao_ids)
+
+    def get_valid_contacts(self, ao_ids):
+        return Contact.objects.filter(id__in=ao_ids)
 
     def update_record(self, record: DomainRequest):
         """Defines how we update the federal_type field on each record."""
-        contact_id = self.ao_dict.get(record.id)
-        record.senior_official_id = contact_id
-        # record.senior_official = Contact.objects.get(id=contact_id)
+        contact = self.domain_ao_dict.get(record.id)
+        record.senior_official = contact
         logger.info(f"{TerminalColors.OKCYAN}Updating {str(record)} => {record.senior_official}{TerminalColors.ENDC}")
 
     def should_skip_record(self, record) -> bool:  # noqa
         """Defines the conditions in which we should skip updating a record."""
+        contact = self.domain_ao_dict.get(record.id)
         # Don't update this record if there isn't ao data to pull from
-        if not self.ao_dict.get(record.id):
+        if not contact:
             logger.info(
                 f"{TerminalColors.YELLOW}Skipping update for {str(record)} => "
                 f"Missing authorizing_official data.{TerminalColors.ENDC}"
