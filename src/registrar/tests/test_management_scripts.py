@@ -1337,7 +1337,7 @@ class TestRepopulateDomainInformationSeniorOfficial(TestCase):
             )
 
     # @less_console_noise_decorator
-    def test_transfer_federal_agency_type_script(self):
+    def test_repopulate_domain_information_senior_official_script(self):
         """
         Tests that the transfer_federal_agency_type script updates what we expect, and skips what we expect
         """
@@ -1352,14 +1352,7 @@ class TestRepopulateDomainInformationSeniorOfficial(TestCase):
                 self.contact_4.id: self.domain_information_4.id,
                 self.contact_5.id: self.domain_information_5.id,
             }
-            expected_ao_ids = [
-                self.contact_1.id,
-                self.contact_2.id,
-                self.contact_3.id,
-                self.contact_4.id,
-                self.contact_5.id,
-            ]
-            mock_read_csv.return_value = (expected_dict, expected_ao_ids)
+            mock_read_csv.return_value = expected_dict
 
             self.domain_information_1.senior_official = None
             self.domain_information_1.save()
@@ -1516,14 +1509,7 @@ class TestRepopulateDomainRequestSeniorOfficial(TestCase):
                 self.contact_4.id: self.domain_request_4.id,
                 self.contact_5.id: self.domain_request_5.id,
             }
-            expected_ao_ids = [
-                self.contact_1.id,
-                self.contact_2.id,
-                self.contact_3.id,
-                self.contact_4.id,
-                self.contact_5.id,
-            ]
-            mock_read_csv.return_value = (expected_dict, expected_ao_ids)
+            mock_read_csv.return_value = expected_dict
 
             self.domain_request_1.senior_official = None
             self.domain_request_1.save()
