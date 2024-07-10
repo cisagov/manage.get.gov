@@ -4,7 +4,7 @@ import logging
 import os
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors
-from registrar.models import FederalAgency, DomainInformation, Contact
+from registrar.models import DomainInformation
 
 
 logger = logging.getLogger(__name__)
@@ -27,12 +27,13 @@ class Command(BaseCommand, PopulateScriptTemplate):
             raise argparse.ArgumentTypeError(f"Invalid file path '{domain_info_csv_path}'")
 
         # Simple check to make sure we don't accidentally pass in the wrong file. Crude but it works.
-        if not "information" in domain_info_csv_path.lower():
+        if "information" not in domain_info_csv_path.lower():
             raise argparse.ArgumentTypeError(f"Invalid file for domain information: '{domain_info_csv_path}'")
 
         # Get all ao data.
         self.ao_dict = {}
         self.ao_dict = self.read_csv_file_and_get_contacts(domain_info_csv_path)
+        print(self.ao_dict)
         self.mass_update_records(
             DomainInformation, filter_conditions={"senior_official__isnull": True}, fields_to_update=["senior_official"]
         )
@@ -48,9 +49,12 @@ class Command(BaseCommand, PopulateScriptTemplate):
         with open(file, "r") as requested_file:
             reader = csv.DictReader(requested_file)
             for row in reader:
-                domain_info_id = row["id"]
-                ao_id = row["authorizing_official"]
-                dict_data[domain_info_id] = ao_id
+                domain_info_id = row.get("id")
+                ao_id = row.get("authorizing_official")
+                if ao_id:
+                    ao_id = int(ao_id)
+                if domain_info_id and ao_id:
+                    dict_data[int(domain_info_id)] = ao_id
 
         return dict_data
 
@@ -62,7 +66,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
     def should_skip_record(self, record) -> bool:  # noqa
         """Defines the conditions in which we should skip updating a record."""
         # Don't update this record if there isn't ao data to pull from
-        if not self.ao_dict.get(record.id):
+        if self.ao_dict.get(record.id) is None:
             logger.info(
                 f"{TerminalColors.YELLOW}Skipping update for {str(record)} => "
                 f"Missing authorizing_official data.{TerminalColors.ENDC}"

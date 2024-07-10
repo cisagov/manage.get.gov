@@ -1343,7 +1343,8 @@ class TestRepopulateDomainInformationSeniorOfficial(TestCase):
         """
 
         with patch(
-            "registrar.management.commands.repopulate_domain_information_senior_official.Command.read_csv_file_and_get_contacts"
+            "registrar.management.commands.repopulate_domain_information_senior_official.Command."
+            "read_csv_file_and_get_contacts"
         ) as mock_read_csv:
             expected_dict = {
                 self.contact_1.id: self.domain_information_1.id,
@@ -1500,7 +1501,8 @@ class TestRepopulateDomainRequestSeniorOfficial(TestCase):
         """
 
         with patch(
-            "registrar.management.commands.repopulate_domain_request_senior_official.Command.read_csv_file_and_get_contacts"
+            "registrar.management.commands.repopulate_domain_request_senior_official.Command"
+            ".read_csv_file_and_get_contacts"
         ) as mock_read_csv:
             expected_dict = {
                 self.contact_1.id: self.domain_request_1.id,

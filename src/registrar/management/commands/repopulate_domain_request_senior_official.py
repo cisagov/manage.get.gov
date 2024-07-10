@@ -4,7 +4,7 @@ import logging
 import os
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors
-from registrar.models import DomainRequest, Contact
+from registrar.models import DomainRequest
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
             raise argparse.ArgumentTypeError(f"Invalid file path '{domain_request_csv_path}'")
 
         # Simple check to make sure we don't accidentally pass in the wrong file. Crude but it works.
-        if not "request" in domain_request_csv_path.lower():
+        if "request" not in domain_request_csv_path.lower():
             raise argparse.ArgumentTypeError(f"Invalid file for domain requests: '{domain_request_csv_path}'")
 
         # Get all ao data.
@@ -35,7 +35,11 @@ class Command(BaseCommand, PopulateScriptTemplate):
         self.ao_dict = self.read_csv_file_and_get_contacts(domain_request_csv_path)
         print(self.ao_dict)
         self.mass_update_records(
-            DomainRequest, filter_conditions={"senior_official__isnull": True, }, fields_to_update=["senior_official"]
+            DomainRequest,
+            filter_conditions={
+                "senior_official__isnull": True,
+            },
+            fields_to_update=["senior_official"],
         )
 
     def add_arguments(self, parser):
@@ -49,16 +53,18 @@ class Command(BaseCommand, PopulateScriptTemplate):
         with open(file, "r") as requested_file:
             reader = csv.DictReader(requested_file)
             for row in reader:
-                domain_request_id = row["id"]
-                ao_id = row["authorizing_official"]
-                dict_data[domain_request_id] = ao_id
+                domain_request_id = row.get("id")
+                ao_id = row.get("authorizing_official")
+                if ao_id:
+                    ao_id = int(ao_id)
+                if domain_request_id and ao_id:
+                    dict_data[int(domain_request_id)] = ao_id
 
         return dict_data
 
     def update_record(self, record: DomainRequest):
         """Defines how we update the federal_type field on each record."""
-        contact_id = self.ao_dict.get(record.id)
-        record.senior_official_id = contact_id
+        record.senior_official_id = self.ao_dict.get(record.id)
         # record.senior_official = Contact.objects.get(id=contact_id)
         logger.info(f"{TerminalColors.OKCYAN}Updating {str(record)} => {record.senior_official}{TerminalColors.ENDC}")
 
