@@ -9,8 +9,6 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models.domain_group import DomainGroup
-from registrar.models.suborganization import Suborganization
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -2688,32 +2686,20 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         obj.requestor = request.user if request.user.is_authenticated else None
         super().save_model(request, obj, form, change)
 
+
 class PortfolioAdmin(ListHeaderAdmin):
-
-    change_form_template = "django/admin/portfolio_change_form.html"
-
+    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
-   
+    # readonly_fields = [
+    #     "requestor",
+    # ]
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
         "creator",
         "federal_agency",
     ]
-
-    def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Add related suborganizations and domain groups"""
-        obj = self.get_object(request, object_id)
-
-        # ---- Domain Groups
-        domain_groups = DomainGroup.objects.filter(portfolio=obj)
-
-        # ---- Suborganizations
-        suborganizations = Suborganization.objects.filter(portfolio=obj)
-
-        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
-        return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
 
