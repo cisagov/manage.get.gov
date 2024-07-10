@@ -33,7 +33,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         # Get all ao data.
         self.ao_dict = {}
         self.ao_dict = self.read_csv_file_and_get_contacts(domain_request_csv_path)
-
+        print(self.ao_dict)
         self.mass_update_records(
             DomainRequest, filter_conditions={"senior_official__isnull": True, }, fields_to_update=["senior_official"]
         )
@@ -69,7 +69,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
     def should_skip_record(self, record) -> bool:  # noqa
         """Defines the conditions in which we should skip updating a record."""
         # Don't update this record if there isn't ao data to pull from
-        if not self.ao_dict.get(record.id):
+        if self.ao_dict.get(record.id) is None:
             logger.info(
                 f"{TerminalColors.YELLOW}Skipping update for {str(record)} => "
                 f"Missing authorizing_official data.{TerminalColors.ENDC}"
