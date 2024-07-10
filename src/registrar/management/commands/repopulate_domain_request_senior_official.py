@@ -4,7 +4,7 @@ import logging
 import os
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors
-from registrar.models import FederalAgency, DomainInformation, Contact
+from registrar.models import DomainRequest, Contact
 
 
 logger = logging.getLogger(__name__)
@@ -16,33 +16,33 @@ class Command(BaseCommand, PopulateScriptTemplate):
     which provides reusable logging and bulk updating functions for mass-updating fields.
     """
 
-    help = "Loops through each valid User object and updates its verification_type value"
-    prompt_title = "Do you wish to update all Senior Officials for Domain Information?"
+    help = """Loops through each valid DomainRequest object and updates its senior official field"""
+    prompt_title = "Do you wish to update all Senior Officials for Domain Requests?"
 
-    def handle(self, domain_info_csv_path, **kwargs):
-        """Loops through each valid DomainInformation object and updates its senior official field"""
+    def handle(self, domain_request_csv_path, **kwargs):
+        """Loops through each valid DomainRequest object and updates its senior official field"""
 
         # Check if the provided file path is valid.
-        if not os.path.isfile(domain_info_csv_path):
-            raise argparse.ArgumentTypeError(f"Invalid file path '{domain_info_csv_path}'")
-
+        if not os.path.isfile(domain_request_csv_path):
+            raise argparse.ArgumentTypeError(f"Invalid file path '{domain_request_csv_path}'")
+        
         # Simple check to make sure we don't accidentally pass in the wrong file. Crude but it works.
-        if not "information" in domain_info_csv_path.lower():
-            raise argparse.ArgumentTypeError(f"Invalid file for domain information: '{domain_info_csv_path}'")
+        if not "request" in domain_request_csv_path.lower():
+            raise argparse.ArgumentTypeError(f"Invalid file for domain requests: '{domain_request_csv_path}'")
 
         # Get all ao data.
-        ao_dict, contacts = self.read_csv_file_and_get_contacts(domain_info_csv_path)
+        ao_dict, contacts = self.read_csv_file_and_get_contacts(domain_request_csv_path)
 
         # Store the ao data we want to recover in a dict of the domain info id,
         # and the value as the actual contact object for faster computation.
         self.domain_ao_dict = {}
         for contact in contacts:
             # Get the 
-            domain_info_id = ao_dict[contact.id]
-            self.domain_ao_dict[domain_info_id] = contact
+            domain_request_id = ao_dict[contact.id]
+            self.domain_ao_dict[domain_request_id] = contact
 
         self.mass_update_records(
-            DomainInformation, filter_conditions={"senior_official__isnull": True}, fields_to_update=["senior_official"]
+            DomainRequest, filter_conditions={"senior_official__isnull": True}, fields_to_update=["senior_official"]
         )
     
     def add_arguments(self, parser):
@@ -55,15 +55,15 @@ class Command(BaseCommand, PopulateScriptTemplate):
         with open(file, "r") as requested_file:
             reader = csv.DictReader(requested_file)
             for row in reader:
-                domain_info_id = row["id"]
+                domain_request_id = row["id"]
                 ao_id = row["authorizing_official"]
-                dict_data[ao_id] = domain_info_id
+                dict_data[ao_id] = domain_request_id
                 ao_ids.append(ao_id)
         
         all_valid_contacts = Contact.objects.filter(id__in=ao_ids)
         return (dict_data, all_valid_contacts)
 
-    def update_record(self, record: DomainInformation):
+    def update_record(self, record: DomainRequest):
         """Defines how we update the federal_type field on each record."""
         contact = self.domain_ao_dict.get(record.id)
         record.senior_official = contact
