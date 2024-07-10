@@ -51,10 +51,6 @@ class Command(BaseCommand, PopulateScriptTemplate):
             for row in reader:
                 domain_request_id = row["id"]
                 ao_id = row["authorizing_official"]
-                if not row or not domain_request_id or not ao_id:
-                    logger.info("Skipping update on row: no data found.")
-                    break
-
                 dict_data[domain_request_id] = ao_id
 
         return dict_data
