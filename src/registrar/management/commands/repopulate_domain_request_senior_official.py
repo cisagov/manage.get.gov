@@ -47,7 +47,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
     
     def add_arguments(self, parser):
         """Add command line arguments."""
-        parser.add_argument("--domain_info_csv_path",  help="A csv containing the domain information id and the contact id")
+        parser.add_argument("--domain_request_csv_path",  help="A csv containing the domain request id and the contact id")
 
     def read_csv_file_and_get_contacts(self, file):
         dict_data = {}
@@ -57,6 +57,10 @@ class Command(BaseCommand, PopulateScriptTemplate):
             for row in reader:
                 domain_request_id = row["id"]
                 ao_id = row["authorizing_official"]
+                if not row or not domain_request_id or not ao_id:
+                    logger.info("Skipping update on row: no data found.")
+                    break
+
                 dict_data[ao_id] = domain_request_id
                 ao_ids.append(ao_id)
         
