@@ -31,7 +31,9 @@ class Command(BaseCommand, PopulateScriptTemplate):
             raise argparse.ArgumentTypeError(f"Invalid file for domain information: '{domain_info_csv_path}'")
 
         # Get all ao data.
-        ao_dict, contacts = self.read_csv_file_and_get_contacts(domain_info_csv_path)
+        ao_dict, ao_ids = self.read_csv_file_and_get_contacts(domain_info_csv_path)
+        print(f"aodict: {ao_dict} ao_ids: {ao_ids}")
+        contacts = self.get_valid_contacts(ao_ids)
 
         # Store the ao data we want to recover in a dict of the domain info id,
         # and the value as the actual contact object for faster computation.
@@ -40,6 +42,8 @@ class Command(BaseCommand, PopulateScriptTemplate):
             # Get the 
             domain_info_id = ao_dict[contact.id]
             self.domain_ao_dict[domain_info_id] = contact
+        
+        print(f"dict is: {self.domain_ao_dict}")
 
         self.mass_update_records(
             DomainInformation, filter_conditions={"senior_official__isnull": True}, fields_to_update=["senior_official"]
@@ -59,9 +63,11 @@ class Command(BaseCommand, PopulateScriptTemplate):
                 ao_id = row["authorizing_official"]
                 dict_data[ao_id] = domain_info_id
                 ao_ids.append(ao_id)
-        
-        all_valid_contacts = Contact.objects.filter(id__in=ao_ids)
-        return (dict_data, all_valid_contacts)
+
+        return (dict_data, ao_ids)
+    
+    def get_valid_contacts(self, ao_ids):
+        return Contact.objects.filter(id__in=ao_ids)
 
     def update_record(self, record: DomainInformation):
         """Defines how we update the federal_type field on each record."""

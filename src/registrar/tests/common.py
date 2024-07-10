@@ -860,17 +860,21 @@ def completed_domain_request(  # noqa
     federal_agency=None,
     federal_type=None,
     action_needed_reason=None,
+    senior_official=None,
 ):
     """A completed domain request."""
     if not user:
         user = get_user_model().objects.create(username="username" + str(uuid.uuid4())[:8])
-    so, _ = Contact.objects.get_or_create(
-        first_name="Testy",
-        last_name="Tester",
-        title="Chief Tester",
-        email="testy@town.com",
-        phone="(555) 555 5555",
-    )
+    
+    if not senior_official:
+        senior_official, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(555) 555 5555",
+        )
+
     domain, _ = DraftDomain.objects.get_or_create(name=name)
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
@@ -908,7 +912,7 @@ def completed_domain_request(  # noqa
         address_line2="address 2",
         state_territory="NY",
         zipcode="10002",
-        senior_official=so,
+        senior_official=senior_official,
         requested_domain=domain,
         submitter=submitter,
         creator=user,

@@ -1225,3 +1225,357 @@ class TestTransferFederalAgencyType(TestCase):
 
         # We don't expect this field to be updated (as it has duplicate data)
         self.assertEqual(self.gov_admin.federal_type, None)
+
+
+class TestRepopulateDomainInformationSeniorOfficial(TestCase):
+    """Tests for the repopulate_domain_information_senior_official script"""
+
+    def setUp(self):
+        """Creates a fake domain object"""
+        super().setUp()
+
+        self.amtrak, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+        self.legislative_branch, _ = FederalAgency.objects.get_or_create(agency="Legislative Branch")
+        self.library_of_congress, _ = FederalAgency.objects.get_or_create(agency="Library of Congress")
+        self.gov_admin, _ = FederalAgency.objects.get_or_create(agency="gov Administration")
+
+        self.contact_1, _ = Contact.objects.get_or_create(
+            first_name="a",
+            last_name="b",
+            title="c",
+            email="a@igorville.gov"
+        )
+
+        self.contact_2, _ = Contact.objects.get_or_create(
+            first_name="a2",
+            last_name="b2",
+            title="c2",
+            email="a2@igorville.gov"
+        )
+
+        self.contact_3, _ = Contact.objects.get_or_create(
+            first_name="a3",
+            last_name="b3",
+            title="c3",
+            email="a3@igorville.gov"
+        )
+
+        self.contact_4, _ = Contact.objects.get_or_create(
+            first_name="a4",
+            last_name="b4",
+            title="c4",
+            email="a4@igorville.gov"
+        )
+
+        self.contact_5, _ = Contact.objects.get_or_create(
+            first_name="a5",
+            last_name="b5",
+            title="c5",
+            email="a5@igorville.gov"
+        )
+
+        self.domain_request_1 = completed_domain_request(
+            name="testgov.gov",
+            federal_agency=self.amtrak,
+            federal_type=BranchChoices.EXECUTIVE,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            senior_official=self.contact_1
+        )
+        self.domain_request_2 = completed_domain_request(
+            name="cheesefactory.gov",
+            federal_agency=self.legislative_branch,
+            federal_type=BranchChoices.LEGISLATIVE,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+        self.domain_request_3 = completed_domain_request(
+            name="meowardslaw.gov",
+            federal_agency=self.library_of_congress,
+            federal_type=BranchChoices.JUDICIAL,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+
+        # Duplicate fields with invalid data - we expect to skip updating these
+        self.domain_request_4 = completed_domain_request(
+            name="baddata.gov",
+            federal_agency=self.gov_admin,
+            federal_type=BranchChoices.EXECUTIVE,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+        self.domain_request_5 = completed_domain_request(
+            name="worsedata.gov",
+            federal_agency=self.gov_admin,
+            federal_type=BranchChoices.JUDICIAL,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+
+        self.domain_request_1.approve()
+        self.domain_request_2.approve()
+        self.domain_request_3.approve()
+        self.domain_request_4.approve()
+        self.domain_request_5.approve()
+
+        self.domain_information_1 = DomainInformation.objects.get(domain_request=self.domain_request_1)
+        self.domain_information_2 = DomainInformation.objects.get(domain_request=self.domain_request_2)
+        self.domain_information_3 = DomainInformation.objects.get(domain_request=self.domain_request_3)
+        self.domain_information_4 = DomainInformation.objects.get(domain_request=self.domain_request_4)
+        self.domain_information_5 = DomainInformation.objects.get(domain_request=self.domain_request_5)
+
+    def tearDown(self):
+        """Deletes all DB objects related to migrations"""
+        super().tearDown()
+
+        # Delete domains and related information
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        User.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
+        FederalAgency.objects.all().delete()
+
+    def run_repopulate_domain_information_senior_official(self):
+        """
+        This method executes the transfer_federal_agency_type command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the populate_first_ready command with the specified arguments.
+        """
+        #with less_console_noise():
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            # Fake file path. Does not matter.
+            call_command("repopulate_domain_information_senior_official", domain_info_csv_path="registrar/tests/data/fake_domain_information.csv")
+
+    #@less_console_noise_decorator
+    def test_transfer_federal_agency_type_script(self):
+        """
+        Tests that the transfer_federal_agency_type script updates what we expect, and skips what we expect
+        """
+
+        with patch("registrar.management.commands.repopulate_domain_information_senior_official.Command.read_csv_file_and_get_contacts") as mock_read_csv:
+            expected_dict = {
+                self.contact_1.id: self.domain_information_1.id,
+                self.contact_2.id: self.domain_information_2.id,
+                self.contact_3.id: self.domain_information_3.id,
+                self.contact_4.id: self.domain_information_4.id,
+                self.contact_5.id: self.domain_information_5.id
+            }
+            expected_ao_ids = [
+                self.contact_1.id,
+                self.contact_2.id,
+                self.contact_3.id,
+                self.contact_4.id,
+                self.contact_5.id,
+            ]
+            mock_read_csv.return_value = (expected_dict, expected_ao_ids)
+
+            self.domain_information_1.senior_official = None
+            self.domain_information_1.save()
+
+            self.domain_information_2.senior_official = None
+            self.domain_information_2.save()
+
+            self.domain_information_3.senior_official = None
+            self.domain_information_3.save()
+
+            self.domain_information_4.senior_official = None
+            self.domain_information_4.save()
+
+            self.domain_information_5.senior_official = None
+            self.domain_information_5.save()
+
+            self.assertEqual(self.domain_information_1.senior_official, None)
+            self.assertEqual(self.domain_information_2.senior_official, None)
+            self.assertEqual(self.domain_information_3.senior_official, None)
+            self.assertEqual(self.domain_information_4.senior_official, None)
+            self.assertEqual(self.domain_information_5.senior_official, None)
+
+            self.run_repopulate_domain_information_senior_official()
+
+            self.domain_information_1.refresh_from_db()
+            self.domain_information_2.refresh_from_db()
+            self.domain_information_3.refresh_from_db()
+            self.domain_information_4.refresh_from_db()
+            self.domain_information_5.refresh_from_db()
+
+            self.assertEqual(self.domain_information_1.senior_official, self.contact_1)
+            self.assertEqual(self.domain_information_2.senior_official, self.contact_2)
+            self.assertEqual(self.domain_information_3.senior_official, self.contact_3)
+            self.assertEqual(self.domain_information_4.senior_official, self.contact_4)
+            self.assertEqual(self.domain_information_5.senior_official, self.contact_5)
+
+
+class TestRepopulateDomainRequestSeniorOfficial(TestCase):
+    """Tests for the repopulate_domain_request_senior_official script"""
+
+    def setUp(self):
+        """Creates a fake domain object"""
+        super().setUp()
+
+        self.amtrak, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+        self.legislative_branch, _ = FederalAgency.objects.get_or_create(agency="Legislative Branch")
+        self.library_of_congress, _ = FederalAgency.objects.get_or_create(agency="Library of Congress")
+        self.gov_admin, _ = FederalAgency.objects.get_or_create(agency="gov Administration")
+
+        self.contact_1, _ = Contact.objects.get_or_create(
+            first_name="a",
+            last_name="b",
+            title="c",
+            email="a@igorville.gov"
+        )
+
+        self.contact_2, _ = Contact.objects.get_or_create(
+            first_name="a2",
+            last_name="b2",
+            title="c2",
+            email="a2@igorville.gov"
+        )
+
+        self.contact_3, _ = Contact.objects.get_or_create(
+            first_name="a3",
+            last_name="b3",
+            title="c3",
+            email="a3@igorville.gov"
+        )
+
+        self.contact_4, _ = Contact.objects.get_or_create(
+            first_name="a4",
+            last_name="b4",
+            title="c4",
+            email="a4@igorville.gov"
+        )
+
+        self.contact_5, _ = Contact.objects.get_or_create(
+            first_name="a5",
+            last_name="b5",
+            title="c5",
+            email="a5@igorville.gov"
+        )
+
+        self.domain_request_1 = completed_domain_request(
+            name="testgov.gov",
+            federal_agency=self.amtrak,
+            federal_type=BranchChoices.EXECUTIVE,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            senior_official=self.contact_1
+        )
+        self.domain_request_2 = completed_domain_request(
+            name="cheesefactory.gov",
+            federal_agency=self.legislative_branch,
+            federal_type=BranchChoices.LEGISLATIVE,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+        self.domain_request_3 = completed_domain_request(
+            name="meowardslaw.gov",
+            federal_agency=self.library_of_congress,
+            federal_type=BranchChoices.JUDICIAL,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+
+        # Duplicate fields with invalid data - we expect to skip updating these
+        self.domain_request_4 = completed_domain_request(
+            name="baddata.gov",
+            federal_agency=self.gov_admin,
+            federal_type=BranchChoices.EXECUTIVE,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+        self.domain_request_5 = completed_domain_request(
+            name="worsedata.gov",
+            federal_agency=self.gov_admin,
+            federal_type=BranchChoices.JUDICIAL,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+
+        self.domain_request_1.approve()
+        self.domain_request_2.approve()
+        self.domain_request_3.approve()
+        self.domain_request_4.approve()
+        self.domain_request_5.approve()
+
+    def tearDown(self):
+        """Deletes all DB objects related to migrations"""
+        super().tearDown()
+
+        # Delete domains and related information
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        User.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
+        FederalAgency.objects.all().delete()
+
+    def run_repopulate_domain_request_senior_official(self):
+        """
+        This method executes the transfer_federal_agency_type command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the populate_first_ready command with the specified arguments.
+        """
+        #with less_console_noise():
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            # Fake file path. Does not matter.
+            call_command("repopulate_domain_request_senior_official", domain_request_csv_path="registrar/tests/data/fake_domain_request.csv")
+
+    #@less_console_noise_decorator
+    def test_repopulate_domain_request_senior_official_script(self):
+        """
+        Tests that the transfer_federal_agency_type script updates what we expect, and skips what we expect
+        """
+
+        with patch("registrar.management.commands.repopulate_domain_request_senior_official.Command.read_csv_file_and_get_contacts") as mock_read_csv:
+            expected_dict = {
+                self.contact_1.id: self.domain_request_1.id,
+                self.contact_2.id: self.domain_request_2.id,
+                self.contact_3.id: self.domain_request_3.id,
+                self.contact_4.id: self.domain_request_4.id,
+                self.contact_5.id: self.domain_request_5.id
+            }
+            expected_ao_ids = [
+                self.contact_1.id,
+                self.contact_2.id,
+                self.contact_3.id,
+                self.contact_4.id,
+                self.contact_5.id,
+            ]
+            mock_read_csv.return_value = (expected_dict, expected_ao_ids)
+
+            self.domain_request_1.senior_official = None
+            self.domain_request_1.save()
+
+            self.domain_request_2.senior_official = None
+            self.domain_request_2.save()
+
+            self.domain_request_3.senior_official = None
+            self.domain_request_3.save()
+
+            self.domain_request_4.senior_official = None
+            self.domain_request_4.save()
+
+            self.domain_request_5.senior_official = None
+            self.domain_request_5.save()
+
+            self.assertEqual(self.domain_request_1.senior_official, None)
+            self.assertEqual(self.domain_request_2.senior_official, None)
+            self.assertEqual(self.domain_request_3.senior_official, None)
+            self.assertEqual(self.domain_request_4.senior_official, None)
+            self.assertEqual(self.domain_request_5.senior_official, None)
+
+            self.run_repopulate_domain_request_senior_official()
+
+            self.domain_request_1.refresh_from_db()
+            self.domain_request_2.refresh_from_db()
+            self.domain_request_3.refresh_from_db()
+            self.domain_request_4.refresh_from_db()
+            self.domain_request_5.refresh_from_db()
+
+            self.assertEqual(self.domain_request_1.senior_official, self.contact_1)
+            self.assertEqual(self.domain_request_2.senior_official, self.contact_2)
+            self.assertEqual(self.domain_request_3.senior_official, self.contact_3)
+            self.assertEqual(self.domain_request_4.senior_official, self.contact_4)
+            self.assertEqual(self.domain_request_5.senior_official, self.contact_5)
