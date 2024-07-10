@@ -1,0 +1,34 @@
+{% extends 'django/admin/email_clipboard_change_form.html' %}
+{% load i18n static %}
+
+{% block after_related_objects %}
+    <div class="module aligned padding-3">
+        <h2>Associated domain groups and suborganizations</h2>
+        <div class="grid-row grid-gap mobile:padding-x-1 desktop:padding-x-4">
+            <div class="mobile:grid-col-12 tablet:grid-col-6 desktop:grid-col-4">
+                <h3>Domain groups</h3>
+                <ul class="margin-0 padding-0">
+                {% for domain_group in domain_groups %}
+                    <li>
+                        <a href="{% url 'admin:registrar_domaingroup_change' domain_group.pk %}">
+                            {{ domain_group.name }}
+                        </a>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>    
+            <div class="mobile:grid-col-12 tablet:grid-col-6 desktop:grid-col-4">
+                <h3>Suborganizations</h3>
+                <ul class="margin-0 padding-0">
+                {% for suborganization in suborganizations %}
+                    <li>
+                        <a href="{% url 'admin:registrar_suborganization_change' suborganization.pk %}">
+                            {{ suborganization.name }}
+                        </a>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}
