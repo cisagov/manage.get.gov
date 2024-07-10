@@ -9,6 +9,8 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
+from registrar.models.domain_group import DomainGroup
+from registrar.models.suborganization import Suborganization
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -598,6 +600,33 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
         return filters
 
 
+class UserContactInline(admin.StackedInline):
+    """Edit a user's profile on the user page."""
+
+    model = models.Contact
+
+    # Read only that we'll leverage for CISA Analysts
+    analyst_readonly_fields = [
+        "user",
+        "email",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 1 conditions that determine which fields are read-only:
+        admin user permissions.
+        """
+
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields  # Read-only fields for analysts
+
+
 class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     """Custom user admin class to use our inlines."""
 
@@ -613,6 +642,8 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         fields = "__all__"
 
     _meta = Meta()
+
+    inlines = [UserContactInline]
 
     list_display = (
         "username",
@@ -891,19 +922,29 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = [
         "name",
         "email",
+        "user_exists",
     ]
     # this ordering effects the ordering of results
-    # in autocomplete_fields
+    # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
     fieldsets = [
         (
             None,
-            {"fields": ["first_name", "middle_name", "last_name", "title", "email", "phone"]},
+            {"fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]},
         )
     ]
 
+    autocomplete_fields = ["user"]
+
     change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    def user_exists(self, obj):
+        """Check if the Contact has a related User"""
+        return "Yes" if obj.user is not None else "No"
+
+    user_exists.short_description = "Is user"  # type: ignore
+    user_exists.admin_order_field = "user"  # type: ignore
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -922,7 +963,10 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     name.admin_order_field = "first_name"  # type: ignore
 
     # Read only that we'll leverage for CISA Analysts
-    analyst_readonly_fields: list[str] = ["email"]
+    analyst_readonly_fields = [
+        "user",
+        "email",
+    ]
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -1285,10 +1329,11 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "is_election_board", "federal_agency")
+    readonly_fields = ("other_contacts", "is_election_board")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
+        "federal_agency",
         "creator",
         "type_of_work",
         "more_organization_information",
@@ -1601,13 +1646,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "current_websites",
         "alternative_domains",
         "is_election_board",
-        "federal_agency",
         "status_history",
         "action_needed_reason_email",
     )
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
+        "federal_agency",
         "creator",
         "about_your_organization",
         "requested_domain",
@@ -2643,20 +2688,32 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         obj.requestor = request.user if request.user.is_authenticated else None
         super().save_model(request, obj, form, change)
 
-
 class PortfolioAdmin(ListHeaderAdmin):
-    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+
+    change_form_template = "django/admin/portfolio_change_form.html"
+
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
-    # readonly_fields = [
-    #     "requestor",
-    # ]
+   
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
         "creator",
         "federal_agency",
     ]
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Add related suborganizations and domain groups"""
+        obj = self.get_object(request, object_id)
+
+        # ---- Domain Groups
+        domain_groups = DomainGroup.objects.filter(portfolio=obj)
+
+        # ---- Suborganizations
+        suborganizations = Suborganization.objects.filter(portfolio=obj)
+
+        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
+        return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
 
