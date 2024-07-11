@@ -1043,19 +1043,6 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
 
-class SeniorOfficialAdmin(ListHeaderAdmin):
-    """Custom Senior Official Admin class."""
-
-    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
-    search_fields = ["first_name", "last_name", "email"]
-    search_help_text = "Search by first name, last name or email."
-    list_display = ["first_name", "last_name", "email"]
-
-    # this ordering effects the ordering of results
-    # in autocomplete_fields for Senior Official
-    ordering = ["first_name", "last_name"]
-
-
 class WebsiteResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
     import/export file"""
@@ -1636,6 +1623,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ),
     ]
 
+    # Readonly fields for analysts and superusers
     readonly_fields = (
         "other_contacts",
         "current_websites",
@@ -1646,6 +1634,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "action_needed_reason_email",
     )
 
+    # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "creator",
         "about_your_organization",
@@ -1678,9 +1667,19 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "sub_organization",
     ]
 
+    # DEVELOPER's NOTE:
+    # Normally, to exclude a field from an Admin form, we could simply utilize
+    # Django's "exclude" feature.  However, it causes a "missing key" error if we
+    # go that route for this particular form.  The error gets thrown by our
+    # custom fieldset.html code and is due to the fact that "exclude" removes
+    # fields from base_fields but not fieldsets.  Rather than reworking our
+    # custom frontend, it seems more straightforward (and easier to read) to simply
+    # modify the fieldsets list so that it excludes any fields we want to remove
+    # based on permissions (eg. superuser_only_fields) or other conditions.
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
+        # Create a modified version of fieldsets to exclude certain fields
         if not request.user.has_perm("registrar.full_access_permission"):
             modified_fieldsets = []
             for name, data in fieldsets:
@@ -2800,7 +2799,6 @@ admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
-admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
