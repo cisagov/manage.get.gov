@@ -4,8 +4,6 @@ name: Manual Build and Deploy
 run-name: Manually build and deploy branch to sandbox of choice
 
 on:
-  # delete on pull_request after testing
-  pull_request:
   workflow_dispatch:
     inputs:
       environment:
