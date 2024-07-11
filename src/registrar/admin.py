@@ -2689,6 +2689,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             obj.organization_name = obj.federal_agency.agency
         super().save_model(request, obj, form, change)
 
+
 class FederalAgencyResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
     import/export file"""
