@@ -147,12 +147,12 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% if field.field.name == "action_needed_reason_email" %}
         {{ field.field }}
         <p class="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
-        {% else %}
-        {{ field.field }}
     {% elif field.field.name == "rejection_reason_email" %}
         {{ field.field }}
         <p class="no-email-message" class="{% if original_object.rejection_reason %}display-none{% endif %}">No email will be sent.</p>
         {% else %}
+        {{ field.field }}
+    {% else %}
         {{ field.field }}
     {% endif %}
 {% endblock field_other %}
