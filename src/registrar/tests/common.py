@@ -910,7 +910,7 @@ def completed_domain_request(  # noqa
         address_line2="address 2",
         state_territory="NY",
         zipcode="10002",
-        senior_official=senior_official,
+        senior_official=so,
         requested_domain=domain,
         submitter=submitter,
         creator=user,
