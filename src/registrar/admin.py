@@ -2811,8 +2811,9 @@ admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
-admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
+admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
+
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
