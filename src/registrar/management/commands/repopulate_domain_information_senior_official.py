@@ -16,7 +16,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
     which provides reusable logging and bulk updating functions for mass-updating fields.
     """
 
-    help = "Loops through each valid User object and updates its verification_type value"
+    help = "Loops through each valid DomainInformation object and updates its Senior Official"
     prompt_title = "Do you wish to update all Senior Officials for Domain Information?"
 
     def handle(self, domain_info_csv_path, **kwargs):
@@ -59,7 +59,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         return dict_data
 
     def update_record(self, record: DomainInformation):
-        """Defines how we update the federal_type field on each record."""
+        """Defines how we update the senior official field on each record."""
         record.senior_official_id = self.ao_dict.get(record.id)
         logger.info(f"{TerminalColors.OKCYAN}Updating {str(record)} => {record.senior_official}{TerminalColors.ENDC}")
 
