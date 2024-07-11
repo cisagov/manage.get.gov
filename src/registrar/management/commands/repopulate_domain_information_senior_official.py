@@ -33,7 +33,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         # Get all ao data.
         self.ao_dict = {}
         self.ao_dict = self.read_csv_file_and_get_contacts(domain_info_csv_path)
-        print(self.ao_dict)
+
         self.mass_update_records(
             DomainInformation, filter_conditions={"senior_official__isnull": True}, fields_to_update=["senior_official"]
         )

@@ -33,7 +33,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         # Get all ao data.
         self.ao_dict = {}
         self.ao_dict = self.read_csv_file_and_get_contacts(domain_request_csv_path)
-        print(self.ao_dict)
+
         self.mass_update_records(
             DomainRequest,
             filter_conditions={
