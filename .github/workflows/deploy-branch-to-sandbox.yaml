@@ -1,4 +1,4 @@
-# This workflow 
+# Manually deploy a branch of choice to an environment of choice.
 
 name: Manual Build and Deploy
 run-name: Manually build and deploy branch to sandbox of choice
