@@ -169,6 +169,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         }
         labels = {
             "action_needed_reason_email": "Auto-generated email",
+            "rejection_reason_email":  "Auto-generated email",
         }
 
     def __init__(self, *args, **kwargs):
@@ -448,7 +449,7 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "senior_official": (Contact, _name_sort),
+        "senior_official": (SeniorOfficial, _name_sort),
         "submitter": (Contact, _name_sort),
         # == User == #
         "creator": (User, _name_sort),
@@ -1562,6 +1563,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "status_history",
                     "status",
                     "rejection_reason",
+                    "rejection_reason_email",
                     "action_needed_reason",
                     "action_needed_reason_email",
                     "investigator",
@@ -1750,10 +1752,19 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         # If the reason is in a state where we can send out an email,
         # set the email to a default one if a custom email isn't provided.
-        if obj.action_needed_reason and obj.action_needed_reason != obj.ActionNeededReasons.OTHER:
+        if (
+            obj.status == obj.ActionNeededReasons.ACTION_NEEDED and
+            obj.action_needed_reason and 
+            obj.action_needed_reason != obj.ActionNeededReasons.OTHER
+        ):
             obj = self._handle_existing_action_needed_reason_email(obj, original_obj)
         else:
             obj.action_needed_reason_email = None
+        
+        if obj.status == obj.ActionNeededReasons.REJECTED and obj.rejection_reason:
+            obj = self._handle_existing_rejection_reason_email(obj, original_obj)
+        else:
+            obj.rejection_reason_email = None
 
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
@@ -1766,6 +1777,19 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # We should only save if we don't display any errors in the steps above.
         if should_save:
             return super().save_model(request, obj, form, change)
+
+    def _handle_existing_rejection_reason_email(self, obj, original_obj):
+        # Get the default email
+        text = self._get_rejection_reason_default_email(obj, obj.rejection_reason_email)
+        body_text = text.get("email_body_text")
+
+        # Set the action_needed_reason_email to the default
+        reason_changed = obj.rejection_reason != original_obj.rejection_reason
+        is_default_email = body_text == obj.rejection_reason_email
+        if body_text and is_default_email and reason_changed:
+            obj.rejection_reason_email = body_text
+
+        return obj
 
     def _handle_existing_action_needed_reason_email(self, obj, original_obj):
         """
@@ -2023,6 +2047,46 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         else:
             template_path = "emails/action_needed_reasons/custom_email.txt"
             context["custom_email_content"] = custom_text
+
+        email_body_text = get_template(template_path).render(context=context)
+
+        email_body_text_cleaned = None
+        if email_body_text:
+            email_body_text_cleaned = email_body_text.strip().lstrip("\n")
+
+        return {
+            "subject_text": subject_text,
+            "email_body_text": email_body_text_cleaned,
+        }
+
+    def _get_rejection_reason_default_email(self, domain_request, rejection_reason: str, custom_text=None):
+        """Returns the default email associated with the given rejection reason"""
+        if rejection_reason is None:
+            return {
+                "subject_text": None,
+                "email_body_text": None,
+            }
+
+        if flag_is_active(None, "profile_feature"):  # type: ignore
+            recipient = domain_request.creator
+        else:
+            recipient = domain_request.submitter
+
+        # Return the context of the rendered views
+        context = {"domain_request": domain_request, "recipient": recipient}
+
+        # Get the email subject
+        template_subject_path = f"emails/status_change_rejected_subject.txt"
+        subject_text = get_template(template_subject_path).render(context=context)
+
+        # Get the email body
+        template_path = f"emails/status_change_rejected.txt"
+        if custom_text:
+            context["custom_email_content"] = custom_text
+        else:
+            # Returns the content of a given rejection reason
+            reason_context_name = f"get_{rejection_reason}"
+            context[reason_context_name] = True
 
         email_body_text = get_template(template_path).render(context=context)
 

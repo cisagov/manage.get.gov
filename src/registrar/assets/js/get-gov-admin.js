@@ -361,18 +361,28 @@ function initializeWidgetOnList(list, parentId) {
 */
 (function (){
     let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+    // This is the "auto-generated email" field for rejection reason
+    let rejectionReasonEmailFormGroup = document.querySelector('.field-rejection_reason_email')
     // This is the "action needed reason" field
     let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
     // This is the "auto-generated email" field
     let actionNeededReasonEmailFormGroup = document.querySelector('.field-action_needed_reason_email')
 
-    if (rejectionReasonFormGroup && actionNeededReasonFormGroup && actionNeededReasonEmailFormGroup) {
+
+    if (rejectionReasonFormGroup && 
+        rejectionReasonEmailFormGroup && 
+        actionNeededReasonFormGroup && 
+        actionNeededReasonEmailFormGroup)
+    {
         let statusSelect = document.getElementById('id_status')
         let isRejected = statusSelect.value == "rejected"
         let isActionNeeded = statusSelect.value == "action needed"
 
-        // Initial handling of rejectionReasonFormGroup display
+        // Initial handling of rejection display
         showOrHideObject(rejectionReasonFormGroup, show=isRejected)
+        showOrHideObject(rejectionReasonEmailFormGroup, show=isRejected)
+
+        // Initial handling of the action needed display
         showOrHideObject(actionNeededReasonFormGroup, show=isActionNeeded)
         showOrHideObject(actionNeededReasonEmailFormGroup, show=isActionNeeded)
 
@@ -382,6 +392,7 @@ function initializeWidgetOnList(list, parentId) {
             // Then track if its shown or hidden in our session cache.
             isRejected = statusSelect.value == "rejected"
             showOrHideObject(rejectionReasonFormGroup, show=isRejected)
+            showOrHideObject(rejectionReasonEmailFormGroup, show=isRejected)
             addOrRemoveSessionBoolean("showRejectionReason", add=isRejected)
 
             isActionNeeded = statusSelect.value == "action needed"
@@ -522,8 +533,7 @@ function initializeWidgetOnList(list, parentId) {
 })();
 
 
-/** An IIFE that hooks to the show/hide button underneath action needed reason.
- * This shows the auto generated email on action needed reason.
+/** An IIFE that displays the auto generated email for action needed reason
 */
 (function () {
     let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
@@ -570,15 +580,77 @@ function initializeWidgetOnList(list, parentId) {
 
     // Show the text field. Hide the "no email" message.
     function showActionNeededEmail(actionNeededEmail){
-        let noEmailMessage = document.getElementById("no-email-message");
+        let noEmailMessage = actionNeededEmail.querySelector(".no-email-message");
         showElement(actionNeededEmail);
         hideElement(noEmailMessage);
     }
 
     // Hide the text field. Show the "no email" message.
-    function showNoEmailMessage(actionNeededEmail) {
-        let noEmailMessage = document.getElementById("no-email-message");
-        hideElement(actionNeededEmail);
+    function showNoEmailMessage(emailElement) {
+        let noEmailMessage = emailElement.querySelector(".no-email-message");
+        hideElement(emailElement);
+        showElement(noEmailMessage);
+    }
+
+})();
+
+
+/** An IIFE that displays the auto generated email for rejection reason
+*/
+(function () {
+    let rejectionReasonDropdown = document.querySelector("#id_rejection_reason");
+    let rejectionEmail = document.querySelector("#id_rejection_reason_email");
+    if(actionNeededReasonDropdown && actionNeededEmail) {
+        // Add a change listener to the action needed reason dropdown 
+        handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!actionNeededReasonDropdown.value || actionNeededReasonDropdown.value == "other") {
+                showNoEmailMessage(actionNeededEmail);
+            }
+        });
+    }
+
+    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
+        actionNeededReasonDropdown.addEventListener("change", function() {
+            let reason = actionNeededReasonDropdown.value;
+
+            // If a reason isn't specified, no email will be sent.
+            // You also cannot save the model in this state.
+            // This flow occurs if you switch back to the empty picker state.
+            if(!reason) {
+                showNoEmailMessage(actionNeededEmail);
+                return;
+            }
+            
+            let actionNeededEmails = JSON.parse(document.getElementById('action-needed-emails-data').textContent)
+            let emailData = actionNeededEmails[reason];
+            if (emailData) {
+                let emailBody = emailData.email_body_text
+                if (emailBody) {
+                    actionNeededEmail.value = emailBody
+                    showActionNeededEmail(actionNeededEmail);
+                }else {
+                    showNoEmailMessage(actionNeededEmail);
+                }
+            }else {
+                showNoEmailMessage(actionNeededEmail);
+            }
+
+        });
+    }
+
+    // Show the text field. Hide the "no email" message.
+    function showActionNeededEmail(actionNeededEmail){
+        let noEmailMessage = actionNeededEmail.querySelector(".no-email-message");
+        showElement(actionNeededEmail);
+        hideElement(noEmailMessage);
+    }
+
+    // Hide the text field. Show the "no email" message.
+    function showNoEmailMessage(emailElement) {
+        let noEmailMessage = emailElement.querySelector(".no-email-message");
+        hideElement(emailElement);
         showElement(noEmailMessage);
     }
 

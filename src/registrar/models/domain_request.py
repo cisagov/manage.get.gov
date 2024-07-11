@@ -288,6 +288,11 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
+    rejection_reason_email = models.TextField(
+        null=True,
+        blank=True,
+    )
+
     action_needed_reason = models.TextField(
         choices=ActionNeededReasons.choices,
         null=True,
@@ -594,16 +599,28 @@ class DomainRequest(TimeStampedModel):
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
 
-    def _cache_status_and_action_needed_reason(self):
-        """Maintains a cache of properties so we can avoid a DB call"""
+
+    def _cache_properties(self):
+        """
+        Maintains a cache of properties so we can avoid a DB call.
+        This is useful for comparisons on if the given property is being changed or not.
+        """
+
+        # Cache status
+        self._cached_status = self.status
+
+        # Cache action_needed_reason + email
         self._cached_action_needed_reason = self.action_needed_reason
         self._cached_action_needed_reason_email = self.action_needed_reason_email
-        self._cached_status = self.status
+
+        # Cache rejection_reason + email
+        self._cached_rejection_reason = self.rejection_reason
+        self._cached_rejection_reason_email = self.rejection_reason_email
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Store original values for caching purposes. Used to compare them on save.
-        self._cache_status_and_action_needed_reason()
+        self._cache_properties()
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
@@ -618,7 +635,7 @@ class DomainRequest(TimeStampedModel):
             self.sync_action_needed_reason()
 
         # Update the cached values after saving
-        self._cache_status_and_action_needed_reason()
+        self._cache_properties()
 
     def sync_action_needed_reason(self):
         """Checks if we need to send another action needed email"""
@@ -1003,6 +1020,8 @@ class DomainRequest(TimeStampedModel):
             "action needed",
             "emails/status_change_rejected.txt",
             "emails/status_change_rejected_subject.txt",
+            # Passes in if we should send a custom email or not - handles empty strings
+            custom_email_content=self.rejection_reason_email if self.rejection_reason_email else None
         )
 
     @transition(
