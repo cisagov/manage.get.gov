@@ -1636,7 +1636,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ),
     ]
 
-    # Readonly fields for analysts and superusers
     readonly_fields = (
         "other_contacts",
         "current_websites",
@@ -1647,7 +1646,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "action_needed_reason_email",
     )
 
-    # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "creator",
         "about_your_organization",
@@ -1680,52 +1678,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "sub_organization",
     ]
 
-    # DEVELOPER's NOTE:
-    # Normally, to exclude a field from an Admin form, we could simply utilize
-    # Django's "exclude" feature.  However, it causes a "missing key" error if we
-    # go that route for this particular form.  The error gets thrown by our
-    # custom fieldset.html code and is due to the fact that "exclude" removes
-    # fields from base_fields but not fieldsets.  Rather than reworking our
-    # custom frontend, it seems more straightforward (and easier to read) to simply
-    # modify the fieldsets list so that it excludes any fields we want to remove
-    # based on permissions (eg. superuser_only_fields) or other conditions.
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
-        # Create a modified version of fieldsets to exclude certain fields
         if not request.user.has_perm("registrar.full_access_permission"):
             modified_fieldsets = []
             for name, data in fieldsets:
                 fields = data.get("fields", [])
                 fields = tuple(field for field in fields if field not in self.superuser_only_fields)
-
-                # Handle Type of organization and its Show details
-                if name == "Type of organization":
-                    show_details_fields = (
-                        "federal_type",
-                        "federal_agency",
-                        "tribe_name",
-                        "federally_recognized_tribe",
-                        "state_recognized_tribe",
-                        "about_your_organization",
-                    )
-                    fields = tuple(field for field in fields if field not in show_details_fields)
-                    modified_fieldsets.append((name, {"fields": fields + show_details_fields}))
-                # Handle Organization name and mailing address and its Show details
-                elif name == "Organization name and mailing address":
-                    show_details_address_fields = (
-                        "address_line1",
-                        "address_line2",
-                        "city",
-                        "zipcode",
-                        "urbanization",
-                    )
-                    fields = tuple(field for field in fields if field not in show_details_address_fields)
-                    modified_fieldsets.append((name, {"fields": fields + show_details_address_fields}))
-                else:
-                    modified_fieldsets.append((name, {"fields": fields}))
+                modified_fieldsets.append((name, {**data, "fields": fields}))
             return modified_fieldsets
-
         return fieldsets
 
     # Table ordering
