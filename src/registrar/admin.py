@@ -2688,6 +2688,7 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         obj.requestor = request.user if request.user.is_authenticated else None
         super().save_model(request, obj, form, change)
 
+
 class PortfolioAdmin(ListHeaderAdmin):
 
     change_form_template = "django/admin/portfolio_change_form.html"
@@ -2695,7 +2696,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
-   
+
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
         "creator",
