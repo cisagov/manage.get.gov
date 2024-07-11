@@ -1962,6 +1962,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
         extra_context["action_needed_reason_emails"] = self.get_all_action_needed_reason_emails_as_json(obj)
+        extra_context["rejection_reason_emails"] = self.get_all_rejection_reason_emails_as_json(obj)
         extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
 
         # Call the superclass method with updated extra_context
@@ -2017,6 +2018,19 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             "subject_text": subject_text,
             "email_body_text": email_body_text_cleaned,
         }
+
+    def get_all_rejection_reason_emails_as_json(self, domain_request):
+        """Returns a json dictionary of every action needed reason and its associated email
+        for this particular domain request."""
+        emails = {}
+        for rejection_reason in domain_request.RejectionReasons:
+            enum_value = rejection_reason.value
+            custom_text = None
+            if domain_request.rejection_reason == enum_value and domain_request.rejection_reason_email:
+                custom_text = domain_request.rejection_reason_email
+
+            emails[enum_value] = self._get_rejection_reason_default_email(domain_request, enum_value, custom_text)
+        return json.dumps(emails)
 
     def _get_rejection_reason_default_email(self, domain_request, rejection_reason: str, custom_text=None):
         """Returns the default email associated with the given rejection reason"""

@@ -165,9 +165,15 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         Given that we have a limited number of emails, doing it this way makes sense.
         {% endcomment %}
         {% if action_needed_reason_emails %}
-        <script id="action-needed-emails-data" type="application/json">
-            {{ action_needed_reason_emails|safe }}
-        </script>
+            <script id="action-needed-emails-data" type="application/json">
+                {{ action_needed_reason_emails|safe }}
+            </script>
+        {% endif %}
+    {% elif field.field.name == "rejection_reason_email" %}
+        {% if rejection_reason_emails %}
+            <script id="rejection-emails-data" type="application/json">
+                {{ rejection_reason_emails|safe }}
+            </script>
         {% endif %}
     {% elif field.field.name == "creator" %}
         <div class="flex-container tablet:margin-top-2">

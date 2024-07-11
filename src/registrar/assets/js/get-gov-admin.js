@@ -580,14 +580,14 @@ function initializeWidgetOnList(list, parentId) {
 
     // Show the text field. Hide the "no email" message.
     function showActionNeededEmail(actionNeededEmail){
-        let noEmailMessage = actionNeededEmail.querySelector(".no-email-message");
+        let noEmailMessage = actionNeededEmail.parentElement.querySelector(".no-email-message");
         showElement(actionNeededEmail);
         hideElement(noEmailMessage);
     }
 
     // Hide the text field. Show the "no email" message.
     function showNoEmailMessage(emailElement) {
-        let noEmailMessage = emailElement.querySelector(".no-email-message");
+        let noEmailMessage = emailElement.parentElement.querySelector(".no-email-message");
         hideElement(emailElement);
         showElement(noEmailMessage);
     }
@@ -600,56 +600,62 @@ function initializeWidgetOnList(list, parentId) {
 (function () {
     let rejectionReasonDropdown = document.querySelector("#id_rejection_reason");
     let rejectionEmail = document.querySelector("#id_rejection_reason_email");
-    if(actionNeededReasonDropdown && actionNeededEmail) {
+    console.log(`dropdown ${rejectionReasonDropdown}, email ${rejectionEmail}`)
+    if(rejectionReasonDropdown && rejectionEmail) {
         // Add a change listener to the action needed reason dropdown 
-        handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
+        handleChangeRejectionEmail(rejectionReasonDropdown, rejectionEmail);
 
         document.addEventListener('DOMContentLoaded', function() {
-            if (!actionNeededReasonDropdown.value || actionNeededReasonDropdown.value == "other") {
-                showNoEmailMessage(actionNeededEmail);
+            if (!rejectionReasonDropdown.value) {
+                showNoEmailMessage(rejectionEmail);
             }
         });
     }
 
-    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
-        actionNeededReasonDropdown.addEventListener("change", function() {
-            let reason = actionNeededReasonDropdown.value;
-
+    function handleChangeRejectionEmail(rejectionReasonDropdown, rejectionEmail) {
+        rejectionReasonDropdown.addEventListener("change", function() {
+            let reason = rejectionReasonDropdown.value;
+            console.log(`reason ${reason}`)
             // If a reason isn't specified, no email will be sent.
             // You also cannot save the model in this state.
             // This flow occurs if you switch back to the empty picker state.
             if(!reason) {
-                showNoEmailMessage(actionNeededEmail);
+                showNoEmailMessage(rejectionEmail);
                 return;
             }
             
-            let actionNeededEmails = JSON.parse(document.getElementById('action-needed-emails-data').textContent)
-            let emailData = actionNeededEmails[reason];
+            let rejectionEmails = JSON.parse(document.getElementById('rejection-emails-data').textContent)
+            console.log(`emails ${rejectionEmails}`)
+            let emailData = rejectionEmails[reason];
+            console.log(`emialData ${emailData}`)
             if (emailData) {
                 let emailBody = emailData.email_body_text
+                console.log(`emailBody ${emailBody}`)
                 if (emailBody) {
-                    actionNeededEmail.value = emailBody
-                    showActionNeededEmail(actionNeededEmail);
+                    rejectionEmail.value = emailBody
+                    showRejectionEmail(rejectionEmail);
                 }else {
-                    showNoEmailMessage(actionNeededEmail);
+                    showNoEmailMessage(rejectionEmail);
                 }
             }else {
-                showNoEmailMessage(actionNeededEmail);
+                showNoEmailMessage(rejectionEmail);
             }
 
         });
     }
 
     // Show the text field. Hide the "no email" message.
-    function showActionNeededEmail(actionNeededEmail){
-        let noEmailMessage = actionNeededEmail.querySelector(".no-email-message");
-        showElement(actionNeededEmail);
+    function showRejectionEmail(rejectionEmail){
+        let noEmailMessage = rejectionEmail.parentElement.querySelector(".no-email-message");
+        console.log(`showRejectionEmail => noEmail ${noEmailMessage}, rjectionEmial ${rejectionEmail}`)
+        showElement(rejectionEmail);
         hideElement(noEmailMessage);
     }
 
     // Hide the text field. Show the "no email" message.
     function showNoEmailMessage(emailElement) {
-        let noEmailMessage = emailElement.querySelector(".no-email-message");
+        let noEmailMessage = emailElement.parentElement.querySelector(".no-email-message");
+        console.log(`showNoEmailMessage => noEmail ${noEmailMessage}, emailElement ${emailElement}`)
         hideElement(emailElement);
         showElement(noEmailMessage);
     }
