@@ -2814,7 +2814,6 @@ admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
 admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
 
-
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
 
