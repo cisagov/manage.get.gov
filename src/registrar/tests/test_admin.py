@@ -243,14 +243,10 @@ class TestDomainAdmin(MockEppLib, WebTest):
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
         )
-
-        # Due to the relation between User <==> Contact,
-        # the underlying contact has to be modified this way.
-        _creator.contact.email = "meoward.jones@igorville.gov"
-        _creator.contact.phone = "(555) 123 12345"
-        _creator.contact.title = "Treat inspector"
-        _creator.contact.save()
 
         # Create a fake domain request
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
@@ -943,7 +939,7 @@ class TestDomainRequestAdmin(MockEppLib):
         SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
         SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
 
-        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+        contact, _ = Contact.objects.get_or_create(first_name="Henry", last_name="McFakerson")
         domain_request = completed_domain_request(submitter=contact, name="city1.gov")
         request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
         model_admin = AuditedAdmin(DomainRequest, self.site)
@@ -2094,14 +2090,10 @@ class TestDomainRequestAdmin(MockEppLib):
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
         )
-
-        # Due to the relation between User <==> Contact,
-        # the underlying contact has to be modified this way.
-        _creator.contact.email = "meoward.jones@igorville.gov"
-        _creator.contact.phone = "(555) 123 12345"
-        _creator.contact.title = "Treat inspector"
-        _creator.contact.save()
 
         # Create a fake domain request
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
@@ -2119,11 +2111,11 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # == Check for the creator == #
 
-        # Check for the right title, email, and phone number in the response.
+        # Check for the right title and phone number in the response.
+        # Email will appear more than once
         expected_creator_fields = [
             # Field, expected value
             ("title", "Treat inspector"),
-            ("email", "meoward.jones@igorville.gov"),
             ("phone", "(555) 123 12345"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
@@ -2140,6 +2132,7 @@ class TestDomainRequestAdmin(MockEppLib):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
         self.assertContains(response, "Testy2 Tester2")
+        self.assertContains(response, "meoward.jones@igorville.gov")
 
         # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
@@ -2948,7 +2941,7 @@ class TestDomainInformationAdmin(TestCase):
         SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
         SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
 
-        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+        contact, _ = Contact.objects.get_or_create(first_name="Henry", last_name="McFakerson")
         domain_request = completed_domain_request(
             submitter=contact, name="city1244.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW
         )
@@ -3167,14 +3160,10 @@ class TestDomainInformationAdmin(TestCase):
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
         )
-
-        # Due to the relation between User <==> Contact,
-        # the underlying contact has to be modified this way.
-        _creator.contact.email = "meoward.jones@igorville.gov"
-        _creator.contact.phone = "(555) 123 12345"
-        _creator.contact.title = "Treat inspector"
-        _creator.contact.save()
 
         # Create a fake domain request
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
@@ -3197,16 +3186,16 @@ class TestDomainInformationAdmin(TestCase):
 
         # == Check for the creator == #
 
-        # Check for the right title, email, and phone number in the response.
+        # Check for the right title and phone number in the response.
         # We only need to check for the end tag
         # (Otherwise this test will fail if we change classes, etc)
         expected_creator_fields = [
             # Field, expected value
             ("title", "Treat inspector"),
-            ("email", "meoward.jones@igorville.gov"),
             ("phone", "(555) 123 12345"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
+        self.assertContains(response, "meoward.jones@igorville.gov")
 
         # Check for the field itself
         self.assertContains(response, "Meoward Jones")
@@ -4118,7 +4107,7 @@ class TestContactAdmin(TestCase):
 
             readonly_fields = self.admin.get_readonly_fields(request)
 
-            expected_fields = ["user", "email"]
+            expected_fields = ["email"]
 
             self.assertEqual(readonly_fields, expected_fields)
 
@@ -4134,15 +4123,18 @@ class TestContactAdmin(TestCase):
             self.assertEqual(readonly_fields, expected_fields)
 
     def test_change_view_for_joined_contact_five_or_less(self):
-        """Create a contact, join it to 4 domain requests. The 5th join will be a user.
-        Assert that the warning on the contact form lists 5 joins."""
+        """Create a contact, join it to 4 domain requests.
+        Assert that the warning on the contact form lists 4 joins."""
         with less_console_noise():
             self.client.force_login(self.superuser)
 
             # Create an instance of the model
-            contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+            contact, _ = Contact.objects.get_or_create(
+                first_name="Henry",
+                last_name="McFakerson",
+            )
 
-            # join it to 4 domain requests. The 5th join will be a user.
+            # join it to 4 domain requests.
             domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
             domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
             domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
@@ -4165,24 +4157,26 @@ class TestContactAdmin(TestCase):
                     f"domainrequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
                     "<li>Joined to DomainRequest: <a href='/admin/registrar/"
                     f"domainrequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
-                    "<li>Joined to User: <a href='/admin/registrar/"
-                    f"user/{self.staffuser.pk}/change/'>staff@example.com</a></li>"
                     "</ul>",
                 )
 
     def test_change_view_for_joined_contact_five_or_more(self):
-        """Create a contact, join it to 5 domain requests. The 6th join will be a user.
+        """Create a contact, join it to 6 domain requests.
         Assert that the warning on the contact form lists 5 joins and a '1 more' ellispsis."""
         with less_console_noise():
             self.client.force_login(self.superuser)
             # Create an instance of the model
-            # join it to 5 domain requests. The 6th join will be a user.
-            contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+            # join it to 6 domain requests.
+            contact, _ = Contact.objects.get_or_create(
+                first_name="Henry",
+                last_name="McFakerson",
+            )
             domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
             domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
             domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
             domain_request4 = completed_domain_request(submitter=contact, name="city4.gov")
             domain_request5 = completed_domain_request(submitter=contact, name="city5.gov")
+            completed_domain_request(submitter=contact, name="city6.gov")
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Use the test client to simulate the request
                 response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))

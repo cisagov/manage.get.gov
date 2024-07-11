@@ -1477,8 +1477,8 @@ class TestDomainContactInformation(TestDomainOverview):
 
     def test_domain_your_contact_information_content(self):
         """Logged-in user's contact information appears on the page."""
-        self.user.contact.first_name = "Testy"
-        self.user.contact.save()
+        self.user.first_name = "Testy"
+        self.user.save()
         page = self.app.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Testy")
 
