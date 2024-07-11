@@ -703,6 +703,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "last_name",
         "title",
         "email",
+        "phone",
         "Permissions",
         "is_active",
         "groups",
