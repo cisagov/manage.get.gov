@@ -1731,46 +1731,37 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if not change:
             return super().save_model(request, obj, form, change)
 
-        # == Handle non-status changes == #
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
 
-        # If the reason is in a state where we can send out an email,
-        # set the email to a default one if a custom email isn't provided.
-        if obj.action_needed_reason and obj.action_needed_reason != obj.ActionNeededReasons.OTHER:
-            obj = self._handle_existing_action_needed_reason_email(obj, original_obj)
-        else:
+        # == Handle action_needed_reason == #
+        # Store the email that was sent out if one was sent and it isn't saved to a variable yet
+        if not obj.action_needed_reason or obj.action_needed_reason == obj.ActionNeededReasons.OTHER:
+            # Reset the action needed email to none if we don't send out an email.
             obj.action_needed_reason_email = None
+        else:
+            # We send out an email -- store which one we send out.
+            # Set the email to a default one if a custom email isn't provided.
+            default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+            body_text = default_email.get("email_body_text")
 
+            # Set the action_needed_reason_email to the default
+            reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
+            is_default_email = body_text == obj.action_needed_reason_email
+            if body_text and is_default_email and reason_changed:
+                obj.action_needed_reason_email = body_text
+
+        # == Handle status == #
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
             return super().save_model(request, obj, form, change)
+        else:
+            # Run some checks on the current object for invalid status changes
+            obj, should_save = self._handle_status_change(request, obj, original_obj)
 
-        # == Handle status changes == #
-        # Run some checks on the current object for invalid status changes
-        obj, should_save = self._handle_status_change(request, obj, original_obj)
-
-        # We should only save if we don't display any errors in the steps above.
-        if should_save:
-            return super().save_model(request, obj, form, change)
-
-    def _handle_existing_action_needed_reason_email(self, obj, original_obj):
-        """
-        Changes the action_needed_reason to the default email.
-        This occurs if the email changes and if it is empty.
-        """
-
-        # Get the default email
-        text = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
-        body_text = text.get("email_body_text")
-
-        # Set the action_needed_reason_email to the default
-        reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
-        is_default_email = body_text == obj.action_needed_reason_email
-        if body_text and is_default_email and reason_changed:
-            obj.action_needed_reason_email = body_text
-
-        return obj
+            # We should only save if we don't display any errors in the steps above.
+            if should_save:
+                return super().save_model(request, obj, form, change)
 
     def _handle_status_change(self, request, obj, original_obj):
         """
@@ -1976,17 +1967,18 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         for this particular domain request."""
         emails = {}
         for action_needed_reason in domain_request.ActionNeededReasons:
-            enum_value = action_needed_reason.value
-            custom_text = None
-            if domain_request.action_needed_reason == enum_value and domain_request.action_needed_reason_email:
-                custom_text = domain_request.action_needed_reason_email
+            if action_needed_reason != DomainRequest.ActionNeededReasons.OTHER:
+                enum_value = action_needed_reason.value
+                custom_text = None
+                if domain_request.action_needed_reason == enum_value and domain_request.action_needed_reason_email:
+                    custom_text = domain_request.action_needed_reason_email
 
-            emails[enum_value] = self._get_action_needed_reason_default_email(domain_request, enum_value, custom_text)
+                emails[enum_value] = self._get_action_needed_reason_default_email(domain_request, enum_value, custom_text)
         return json.dumps(emails)
 
-    def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason: str, custom_text=None):
+    def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason, custom_text=None):
         """Returns the default email associated with the given action needed reason"""
-        if action_needed_reason is None or action_needed_reason == domain_request.ActionNeededReasons.OTHER:
+        if not action_needed_reason:
             return {
                 "subject_text": None,
                 "email_body_text": None,

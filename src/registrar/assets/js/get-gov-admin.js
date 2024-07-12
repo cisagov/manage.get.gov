@@ -528,65 +528,54 @@ function initializeWidgetOnList(list, parentId) {
 (function () {
     let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     let actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
+    let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent);
     let noEmailMessage = document.getElementById("no-email-message");
     const emptyReasonText = "---------"
     const noEmailText = "No email will be sent."
-    if(actionNeededReasonDropdown && actionNeededEmail) {
+    if(actionNeededReasonDropdown && actionNeededEmail && actionNeededEmailData) {
         // Add a change listener to the action needed reason dropdown 
-        handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
+        handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail, actionNeededEmailData);
 
         document.addEventListener('DOMContentLoaded', function() {
-            if (!actionNeededReasonDropdown.value) {
-                noEmailMessage.innerHTML = emptyReasonText
-                showNoEmailMessage(actionNeededEmail, noEmailMessage);
-            } else if (actionNeededReasonDropdown.value == "other") {
-                noEmailMessage.innerHTML = noEmailText
+            let reason = actionNeededReasonDropdown.value;
+            noEmailMessage.innerHTML = reason ? noEmailText : emptyReasonText;
+            if (reason && reason != "other") {
+                // Show the email
+                showElement(actionNeededEmail);
+                hideElement(noEmailMessage);
+            } else {
+                // Show the no email message
+                hideElement(actionNeededEmail);
+                showElement(noEmailMessage);
             }
         });
     }
 
-    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
+    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail, actionNeededEmailData) {
         actionNeededReasonDropdown.addEventListener("change", function() {
             let reason = actionNeededReasonDropdown.value;
+            let actionNeededEmailsJson = JSON.parse(actionNeededEmailData)
 
-            // If a reason isn't specified, no email will be sent.
-            // You also cannot save the model in this state.
-            // This flow occurs if you switch back to the empty picker state.
-            if(!reason) {
-                noEmailMessage.innerHTML = emptyReasonText
-                showNoEmailMessage(actionNeededEmail, noEmailMessage);
-                return;
-            }else if (reason === "other") {
-                noEmailMessage.innerHTML = noEmailText
-            }
-            
-            let actionNeededEmails = JSON.parse(document.getElementById('action-needed-emails-data').textContent)
-            let emailData = actionNeededEmails[reason];
-            if (emailData) {
+            // Show the "no email will be sent" text only if a reason is actually selected.
+            noEmailMessage.innerHTML = reason ? noEmailText : emptyReasonText;
+            if (reason && reason in actionNeededEmailsJson) {
+                let emailData = actionNeededEmailsJson[reason];
                 let emailBody = emailData.email_body_text
                 if (emailBody) {
+                    // Show the email
                     actionNeededEmail.value = emailBody
-                    showActionNeededEmail(actionNeededEmail, noEmailMessage);
+                    showElement(actionNeededEmail);
+                    hideElement(noEmailMessage);
                 }else {
-                    showNoEmailMessage(actionNeededEmail, noEmailMessage);
+                    // Show the no email message
+                    hideElement(actionNeededEmail);
+                    showElement(noEmailMessage);
                 }
             }else {
-                showNoEmailMessage(actionNeededEmail, noEmailMessage);
+                // Show the no email message
+                hideElement(actionNeededEmail);
+                showElement(noEmailMessage);
             }
-
         });
     }
-
-    // Show the text field. Hide the "no email" message.
-    function showActionNeededEmail(actionNeededEmail, noEmailMessage){
-        showElement(actionNeededEmail);
-        hideElement(noEmailMessage);
-    }
-
-    // Hide the text field. Show the "no email" message.
-    function showNoEmailMessage(actionNeededEmail, noEmailMessage) {
-        hideElement(actionNeededEmail);
-        showElement(noEmailMessage);
-    }
-
 })();
