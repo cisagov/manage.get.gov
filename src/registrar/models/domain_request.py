@@ -614,7 +614,7 @@ class DomainRequest(TimeStampedModel):
 
         # Handle the action needed email.
         # An email is sent out when action_needed_reason is changed or added.
-        if self.status == self.DomainRequestStatus.ACTION_NEEDED and self.action_needed_reason:
+        if self.action_needed_reason and self.status == self.DomainRequestStatus.ACTION_NEEDED:
             self.sync_action_needed_reason()
 
         # Update the cached values after saving
@@ -625,8 +625,7 @@ class DomainRequest(TimeStampedModel):
         was_already_action_needed = self._cached_status == self.DomainRequestStatus.ACTION_NEEDED
         reason_exists = self._cached_action_needed_reason is not None and self.action_needed_reason is not None
         reason_changed = self._cached_action_needed_reason != self.action_needed_reason
-        reason_email_changed = self._cached_action_needed_reason_email != self.action_needed_reason_email
-        if was_already_action_needed and (reason_exists and reason_changed or reason_email_changed):
+        if was_already_action_needed and reason_exists and reason_changed:
             # We don't send emails out in state "other"
             if self.action_needed_reason != self.ActionNeededReasons.OTHER:
                 self._send_action_needed_reason_email(email_content=self.action_needed_reason_email)
@@ -880,43 +879,22 @@ class DomainRequest(TimeStampedModel):
     def _send_action_needed_reason_email(self, send_email=True, email_content=None):
         """Sends out an automatic email for each valid action needed reason provided"""
 
-        email_template_name: str = ""
-        email_template_subject_name: str = ""
-
-        if email_content is not None:
-            email_template_name = "custom_email.txt"
-
-        # Check for the "type" of action needed reason.
-        can_send_email = True
-        match self.action_needed_reason:
-            # Add to this match if you need to pass in a custom filename for these templates.
-            case self.ActionNeededReasons.OTHER, _:
-                # Unknown and other are default cases - do nothing
-                can_send_email = False
-
-        # Assumes that the template name matches the action needed reason if nothing is specified.
-        # This is so you can override if you need, or have this taken care of for you.
-        if not email_template_name:
-            email_template_name = f"{self.action_needed_reason}.txt"
-
-        if not email_template_subject_name:
-            email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
+        email_template_name = "custom_email.txt"
+        email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
 
         bcc_address = ""
         if settings.IS_PRODUCTION:
             bcc_address = settings.DEFAULT_FROM_EMAIL
 
-        # If we can, try to send out an email as long as send_email=True
-        if can_send_email:
-            self._send_status_update_email(
-                new_status="action needed",
-                email_template=f"emails/action_needed_reasons/{email_template_name}",
-                email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
-                send_email=send_email,
-                bcc_address=bcc_address,
-                custom_email_content=email_content,
-                wrap_email=True,
-            )
+        self._send_status_update_email(
+            new_status="action needed",
+            email_template=f"emails/action_needed_reasons/{email_template_name}",
+            email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
+            send_email=send_email,
+            bcc_address=bcc_address,
+            custom_email_content=email_content,
+            wrap_email=True,
+        )
 
     @transition(
         field="status",
