@@ -528,13 +528,19 @@ function initializeWidgetOnList(list, parentId) {
 (function () {
     let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     let actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
+    let noEmailMessage = document.getElementById("no-email-message");
+    const emptyReasonText = "---------"
+    const noEmailText = "No email will be sent."
     if(actionNeededReasonDropdown && actionNeededEmail) {
         // Add a change listener to the action needed reason dropdown 
         handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
 
         document.addEventListener('DOMContentLoaded', function() {
-            if (!actionNeededReasonDropdown.value || actionNeededReasonDropdown.value == "other") {
-                showNoEmailMessage(actionNeededEmail);
+            if (!actionNeededReasonDropdown.value) {
+                noEmailMessage.innerHTML = emptyReasonText
+                showNoEmailMessage(actionNeededEmail, noEmailMessage);
+            }else if (actionNeededReasonDropdown.value == "other") {
+                noEmailMessage.innerHTML = noEmailText
             }
         });
     }
@@ -547,8 +553,11 @@ function initializeWidgetOnList(list, parentId) {
             // You also cannot save the model in this state.
             // This flow occurs if you switch back to the empty picker state.
             if(!reason) {
-                showNoEmailMessage(actionNeededEmail);
+                noEmailMessage.innerHTML = emptyReasonText
+                showNoEmailMessage(actionNeededEmail, noEmailMessage);
                 return;
+            }else if (reason === "other") {
+                noEmailMessage.innerHTML = noEmailText
             }
             
             let actionNeededEmails = JSON.parse(document.getElementById('action-needed-emails-data').textContent)
@@ -557,27 +566,25 @@ function initializeWidgetOnList(list, parentId) {
                 let emailBody = emailData.email_body_text
                 if (emailBody) {
                     actionNeededEmail.value = emailBody
-                    showActionNeededEmail(actionNeededEmail);
+                    showActionNeededEmail(actionNeededEmail, noEmailMessage);
                 }else {
-                    showNoEmailMessage(actionNeededEmail);
+                    showNoEmailMessage(actionNeededEmail, noEmailMessage);
                 }
             }else {
-                showNoEmailMessage(actionNeededEmail);
+                showNoEmailMessage(actionNeededEmail, noEmailMessage);
             }
 
         });
     }
 
     // Show the text field. Hide the "no email" message.
-    function showActionNeededEmail(actionNeededEmail){
-        let noEmailMessage = document.getElementById("no-email-message");
+    function showActionNeededEmail(actionNeededEmail, noEmailMessage){
         showElement(actionNeededEmail);
         hideElement(noEmailMessage);
     }
 
     // Hide the text field. Show the "no email" message.
-    function showNoEmailMessage(actionNeededEmail) {
-        let noEmailMessage = document.getElementById("no-email-message");
+    function showNoEmailMessage(actionNeededEmail, noEmailMessage) {
         hideElement(actionNeededEmail);
         showElement(noEmailMessage);
     }
