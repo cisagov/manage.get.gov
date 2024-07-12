@@ -1736,20 +1736,14 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         # == Handle action_needed_reason == #
         # Store the email that was sent out if one was sent and it isn't saved to a variable yet
-        if not obj.action_needed_reason or obj.action_needed_reason == obj.ActionNeededReasons.OTHER:
-            # Reset the action needed email to none if we don't send out an email.
-            obj.action_needed_reason_email = None
-        else:
-            # We send out an email -- store which one we send out.
-            # Set the email to a default one if a custom email isn't provided.
-            default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
-            body_text = default_email.get("email_body_text")
-
-            # Set the action_needed_reason_email to the default
+        default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+        if default_email:
+            # Set the action_needed_reason_email to the default.
+            # Since this check occurs after save, if the user enters a value then
+            # we won't update.
             reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
-            is_default_email = body_text == obj.action_needed_reason_email
-            if body_text and is_default_email and reason_changed:
-                obj.action_needed_reason_email = body_text
+            if reason_changed and default_email == obj.action_needed_reason_email:
+                obj.action_needed_reason_email = default_email
 
         # == Handle status == #
         if obj.status == original_obj.status:
@@ -1967,24 +1961,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         for this particular domain request."""
         emails = {}
         for action_needed_reason in domain_request.ActionNeededReasons:
-            if action_needed_reason != DomainRequest.ActionNeededReasons.OTHER:
-                enum_value = action_needed_reason.value
-                custom_text = None
-                if domain_request.action_needed_reason == enum_value and domain_request.action_needed_reason_email:
-                    custom_text = domain_request.action_needed_reason_email
-
-                emails[enum_value] = self._get_action_needed_reason_default_email(
-                    domain_request, enum_value, custom_text
-                )
+            # Map the action_needed_reason to its default email
+            emails[action_needed_reason.value] = self._get_action_needed_reason_default_email(
+                domain_request, action_needed_reason.value
+            )
         return json.dumps(emails)
 
-    def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason, custom_text=None):
+    def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason):
         """Returns the default email associated with the given action needed reason"""
-        if not action_needed_reason:
-            return {
-                "subject_text": None,
-                "email_body_text": None,
-            }
+        if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
+            return None
 
         if flag_is_active(None, "profile_feature"):  # type: ignore
             recipient = domain_request.creator
@@ -1994,27 +1980,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Return the context of the rendered views
         context = {"domain_request": domain_request, "recipient": recipient}
 
-        # Get the email subject
-        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
-        subject_text = get_template(template_subject_path).render(context=context)
-
         # Get the email body
-        if not custom_text:
-            template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
-        else:
-            template_path = "emails/action_needed_reasons/custom_email.txt"
-            context["custom_email_content"] = custom_text
+        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
 
         email_body_text = get_template(template_path).render(context=context)
-
         email_body_text_cleaned = None
         if email_body_text:
             email_body_text_cleaned = email_body_text.strip().lstrip("\n")
 
-        return {
-            "subject_text": subject_text,
-            "email_body_text": email_body_text_cleaned,
-        }
+        return email_body_text_cleaned
 
     def process_log_entry(self, log_entry):
         """Process a log entry and return filtered entry dictionary if applicable."""

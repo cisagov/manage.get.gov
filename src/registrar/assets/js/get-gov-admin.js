@@ -528,7 +528,7 @@ function initializeWidgetOnList(list, parentId) {
 (function () {
     let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     let actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
-    let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent);
+    let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
     let noEmailMessage = document.getElementById("no-email-message");
     const emptyReasonText = "---------"
     const noEmailText = "No email will be sent."
