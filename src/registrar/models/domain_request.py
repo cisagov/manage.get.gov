@@ -612,8 +612,8 @@ class DomainRequest(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
-        # Handle the action needed email. We send one when moving to action_needed,
-        # but we don't send one when we are _already_ in the state and change the reason.
+        # Handle the action needed email.
+        # An email is sent out when action_needed_reason is changed or added.
         if self.status == self.DomainRequestStatus.ACTION_NEEDED and self.action_needed_reason:
             self.sync_action_needed_reason()
 
@@ -683,7 +683,15 @@ class DomainRequest(TimeStampedModel):
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
     def _send_status_update_email(
-        self, new_status, email_template, email_template_subject, bcc_address="", context=None, **kwargs
+        self,
+        new_status,
+        email_template,
+        email_template_subject,
+        bcc_address="",
+        context=None,
+        send_email=True,
+        wrap_email=False,
+        custom_email_content=None,
     ):
         """Send a status update email to the creator.
 
@@ -694,7 +702,11 @@ class DomainRequest(TimeStampedModel):
         If the waffle flag "profile_feature" is active, then this email will be sent to the
         domain request creator rather than the submitter
 
-        kwargs:
+        Optional args:
+        bcc_address: str -> the address to bcc to
+
+        context: dict -> The context sent to the template
+
         send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
 
@@ -703,11 +715,6 @@ class DomainRequest(TimeStampedModel):
 
         custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
-
-        # Email config options
-        wrap_email = kwargs.get("wrap_email", False)
-        send_email = kwargs.get("send_email", True)
-        custom_email_content = kwargs.get("custom_email_content", None)
 
         recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
         if recipient is None or recipient.email is None:

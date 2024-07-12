@@ -1973,7 +1973,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 if domain_request.action_needed_reason == enum_value and domain_request.action_needed_reason_email:
                     custom_text = domain_request.action_needed_reason_email
 
-                emails[enum_value] = self._get_action_needed_reason_default_email(domain_request, enum_value, custom_text)
+                emails[enum_value] = self._get_action_needed_reason_default_email(
+                    domain_request, enum_value, custom_text
+                )
         return json.dumps(emails)
 
     def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason, custom_text=None):
