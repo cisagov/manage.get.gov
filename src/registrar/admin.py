@@ -1742,8 +1742,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Since this check occurs after save, if the user enters a value then
             # we won't update.
             reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
-            if reason_changed and default_email == obj.action_needed_reason_email:
-                obj.action_needed_reason_email = default_email
+            if reason_changed:
+                request.session["action_needed_email_sent"] = True
+                logger.info("added session object")
+                if default_email == obj.action_needed_reason_email:
+                    obj.action_needed_reason_email = default_email
 
         # == Handle status == #
         if obj.status == original_obj.status:
@@ -1952,6 +1955,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
         extra_context["action_needed_reason_emails"] = self.get_all_action_needed_reason_emails_as_json(obj)
         extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
+
+        # Denote if an action needed email was sent or not
+        email_sent = request.session.get("action_needed_email_sent", False)
+        extra_context["action_needed_email_sent"] = email_sent
+        if email_sent:
+            email_sent = request.session["action_needed_email_sent"] = False
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)

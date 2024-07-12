@@ -36,6 +36,15 @@ function openInNewTab(el, removeAttribute = false){
     }
 };
 
+// Adds or removes a boolean from our session
+function addOrRemoveSessionBoolean(name, add){
+    if (add) {
+        sessionStorage.setItem(name, "true");
+    }else {
+        sessionStorage.removeItem(name); 
+    }
+}
+
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Event handlers.
 
@@ -418,15 +427,6 @@ function initializeWidgetOnList(list, parentId) {
             object.classList.add("display-none");
         }
     }
-
-    // Adds or removes a boolean from our session
-    function addOrRemoveSessionBoolean(name, add){
-        if (add) {
-            sessionStorage.setItem(name, "true");
-        }else {
-            sessionStorage.removeItem(name); 
-        }
-    }
 })();
 
 /** An IIFE for toggling the submit bar on domain request forms
@@ -529,9 +529,12 @@ function initializeWidgetOnList(list, parentId) {
     let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     let actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
     let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
-    let noEmailMessage = document.getElementById("no-email-message");
-    const emptyReasonText = "-"
-    const noEmailText = "No email will be sent."
+    let noEmailMessage = document.querySelector("#no-email-message");
+    const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
+    const oldEmailValue = actionNeededEmailData ? actionNeededEmailData.value : null;
+    const emptyReasonText = "-";
+    const noEmailText = "No email will be sent.";
+    const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
     if(actionNeededReasonDropdown && actionNeededEmail && actionNeededEmailData) {
         // Add a change listener to the action needed reason dropdown 
         handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail, actionNeededEmailData);
@@ -548,6 +551,16 @@ function initializeWidgetOnList(list, parentId) {
                 hideElement(actionNeededEmail);
                 showElement(noEmailMessage);
             }
+            
+            let emailWasSent = document.getElementById("action-needed-email-sent")
+            console.log(`email ${emailWasSent.value} vs session ${sessionStorage.getItem("actionNeededEmailSent")} vs id ${domainRequestId}`)
+            if (emailWasSent && emailWasSent.value) {
+                // add the session object
+                if (sessionStorage.getItem(`actionNeededEmailSent-${domainRequestId}`) === null) {
+                    sessionStorage.setItem(`actionNeededEmailSent-${domainRequestId}`, domainRequestId);
+                }
+                actionNeededEmail.readOnly = true
+            }
         });
     }
 
@@ -558,8 +571,6 @@ function initializeWidgetOnList(list, parentId) {
 
             // Show the "no email will be sent" text only if a reason is actually selected.
             noEmailMessage.innerHTML = reason ? noEmailText : emptyReasonText;
-            console.log(`reaso: ${reason} vs in ${reason in actionNeededEmailsJson}`)
-            console.log(noEmailMessage)
             if (reason && reason in actionNeededEmailsJson) {
                 let emailBody = actionNeededEmailsJson[reason];
                 if (emailBody) {
@@ -567,6 +578,17 @@ function initializeWidgetOnList(list, parentId) {
                     actionNeededEmail.value = emailBody
                     showElement(actionNeededEmail);
                     hideElement(noEmailMessage);
+                    
+                    // Reset the session object on change since change refreshes the email content.
+                    // Only do this if we change the action needed reason, or if we:
+                    // change the reason => modify email content => change back to old reason.
+                    if (oldDropdownValue != actionNeededReasonDropdown.value || oldEmailValue != actionNeededEmail.value) {
+                        let emailSent = sessionStorage.getItem(`actionNeededEmailSent-${domainRequestId}`)
+                        if (emailSent !== null){
+                            sessionStorage.removeItem(`actionNeededEmailSent-${domainRequestId}`);
+                        }
+                        actionNeededEmail.readOnly = false;
+                    }
                 }else {
                     // Show the no email message
                     hideElement(actionNeededEmail);

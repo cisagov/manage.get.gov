@@ -147,6 +147,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% if field.field.name == "action_needed_reason_email" %}
         {{ field.field }}
         <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
+        <input id="action-needed-email-sent" class="display-none" value="{{action_needed_email_sent}}">
     {% else %}
         {{ field.field }}
     {% endif %}
