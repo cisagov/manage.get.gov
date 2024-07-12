@@ -27,10 +27,10 @@ import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from django.utils import timezone
 from api.tests.common import less_console_noise_decorator
-from .common import MockDb, MockEppLib, less_console_noise, get_time_aware_date
+from .common import MockDbForSharedTests, MockDbForIndividualTests, MockEppLib, less_console_noise, get_time_aware_date
 
 
-class CsvReportsTest(MockDb):
+class CsvReportsTest(MockDbForSharedTests):
     """Tests to determine if we are uploading our reports correctly.
     """
 
@@ -199,7 +199,7 @@ class CsvReportsTest(MockDb):
             self.assertEqual(expected_file_content, response.content)
 
 
-class ExportDataTest(MockDb, MockEppLib):
+class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     """Test the ExportData class from csv_export.
     """
 
@@ -588,7 +588,7 @@ class ExportDataTest(MockDb, MockEppLib):
             self.assertEqual(csv_content, expected_content)
 
 
-class HelperFunctions(MockDb):
+class HelperFunctions(MockDbForSharedTests):
     """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
 
     def test_get_default_start_date(self):

@@ -43,7 +43,7 @@ from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
-    MockDb,
+    MockDbForSharedTests,
     AuditedAdminMockData,
     completed_domain_request,
     generic_domain_object,
@@ -956,7 +956,7 @@ class TestListHeaderAdmin(TestCase):
             )
 
 
-class TestMyUserAdmin(MockDb):
+class TestMyUserAdmin(MockDbForSharedTests):
 
     @classmethod
     def setUpClass(cls):
@@ -1105,7 +1105,7 @@ class TestMyUserAdmin(MockDb):
         domain_deleted, _ = Domain.objects.get_or_create(
             name="domain_deleted.gov", state=Domain.State.DELETED, deleted=timezone.make_aware(datetime(2024, 4, 2))
         )
-        _, created = UserDomainRole.objects.get_or_create(
+        UserDomainRole.objects.get_or_create(
             user=self.meoward_user, domain=domain_deleted, role=UserDomainRole.Roles.MANAGER
         )
 
