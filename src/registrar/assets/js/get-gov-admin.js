@@ -530,7 +530,7 @@ function initializeWidgetOnList(list, parentId) {
     let actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
     let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
     let noEmailMessage = document.getElementById("no-email-message");
-    const emptyReasonText = "---------"
+    const emptyReasonText = "-"
     const noEmailText = "No email will be sent."
     if(actionNeededReasonDropdown && actionNeededEmail && actionNeededEmailData) {
         // Add a change listener to the action needed reason dropdown 
@@ -558,9 +558,10 @@ function initializeWidgetOnList(list, parentId) {
 
             // Show the "no email will be sent" text only if a reason is actually selected.
             noEmailMessage.innerHTML = reason ? noEmailText : emptyReasonText;
+            console.log(`reaso: ${reason} vs in ${reason in actionNeededEmailsJson}`)
+            console.log(noEmailMessage)
             if (reason && reason in actionNeededEmailsJson) {
-                let emailData = actionNeededEmailsJson[reason];
-                let emailBody = emailData.email_body_text
+                let emailBody = actionNeededEmailsJson[reason];
                 if (emailBody) {
                     // Show the email
                     actionNeededEmail.value = emailBody
