@@ -418,14 +418,10 @@ class TestDomainAdminWClient(TestCase):
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
         )
-
-        # Due to the relation between User <==> Contact,
-        # the underlying contact has to be modified this way.
-        _creator.contact.email = "meoward.jones@igorville.gov"
-        _creator.contact.phone = "(555) 123 12345"
-        _creator.contact.title = "Treat inspector"
-        _creator.contact.save()
 
         # Create a fake domain request
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)

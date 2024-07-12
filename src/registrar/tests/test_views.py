@@ -30,10 +30,9 @@ logger = logging.getLogger(__name__)
 
 class TestViews(TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.client = Client()
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
 
     def test_health_check_endpoint(self):
         response = self.client.get("/health")
@@ -74,8 +73,6 @@ class TestWithUser(MockEppLib):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        #remove all contacts - this can be removed after signals are deleted
-        Contact.objects.all().delete()
         User.objects.all().delete()
 
 
@@ -98,8 +95,6 @@ class TestEnvironmentVariablesEffects(TestCase):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        # remove all contacts - this can be removed after signals are deleted
-        Contact.objects.all().delete()
         User.objects.all().delete()
 
     @override_settings(IS_PRODUCTION=True)
@@ -125,7 +120,7 @@ class TestEnvironmentVariablesEffects(TestCase):
         fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
 
         # Add a role
-        fake_role, _ = UserDomainRole.objects.get_or_create(
+        UserDomainRole.objects.get_or_create(
             user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER
         )
 
@@ -148,7 +143,7 @@ class TestEnvironmentVariablesEffects(TestCase):
         fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
 
         # Add a role
-        fake_role, _ = UserDomainRole.objects.get_or_create(
+        UserDomainRole.objects.get_or_create(
             user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER
         )
 
@@ -178,6 +173,7 @@ class HomeTests(TestWithUser):
     #     Domain.objects.all().delete()
     #     DomainRequest.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_empty_domain_table(self):
         response = self.client.get("/")
         self.assertContains(response, "You don't have any registered domains.")
@@ -376,7 +372,10 @@ class HomeTests(TestWithUser):
         )
 
         # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakey",
+        )
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
@@ -409,17 +408,12 @@ class HomeTests(TestWithUser):
         igorville = DomainRequest.objects.filter(requested_domain__name="igorville.gov")
         self.assertFalse(igorville.exists())
 
-        # Check if the orphaned contact was deleted
+        # Check if the orphaned contacts were deleted
         orphan = Contact.objects.filter(id=contact.id)
         self.assertFalse(orphan.exists())
+        orphan = Contact.objects.filter(id=contact_user.id)
+        self.assertFalse(orphan.exists())
 
-        # All non-orphan contacts should still exist and are unaltered
-        try:
-            current_user = Contact.objects.filter(id=contact_user.id).get()
-        except Contact.DoesNotExist:
-            self.fail("contact_user (a non-orphaned contact) was deleted")
-
-        self.assertEqual(current_user, contact_user)
         try:
             edge_case = Contact.objects.filter(id=contact_2.id).get()
         except Contact.DoesNotExist:
@@ -451,7 +445,10 @@ class HomeTests(TestWithUser):
         )
 
         # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakey",
+        )
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
@@ -590,7 +587,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(finish_setup_page, "Enter your phone number.")
 
             # Check for the name of the save button
-            self.assertContains(finish_setup_page, "contact_setup_save_button")
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
@@ -637,10 +634,11 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(finish_setup_page, "Enter your phone number.")
 
             # Check for the name of the save button
-            self.assertContains(finish_setup_page, "contact_setup_save_button")
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "firstname"
             finish_setup_form["phone"] = "(201) 555-0123"
             finish_setup_form["title"] = "CEO"
             finish_setup_form["last_name"] = "example"
@@ -652,7 +650,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             # Submit the form using the specific submit button to execute the redirect
             completed_setup_page = self._submit_form_webtest(
-                finish_setup_form, follow=True, name="contact_setup_submit_button"
+                finish_setup_form, follow=True, name="user_setup_submit_button"
             )
             self.assertEqual(completed_setup_page.status_code, 200)
 
@@ -783,6 +781,8 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
             self.assertContains(save_page, "Your profile has been updated.")
 
             # We need to assert that logo is not clickable and links to manage your domain are not present
+            # NOTE: "anage" is not a typo.  It is to accomodate the fact that the "m" is uppercase in one
+            # instance and lowercase in the other.
             self.assertContains(save_page, "anage your domains", count=2)
             self.assertNotContains(
                 save_page, "Before you can manage your domains, we need you to add contact information"
@@ -918,7 +918,10 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_request_when_profile_feature_on(self):
         """test that Your profile is in request page when profile feature is on"""
 
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakerson",
+        )
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
             creator=self.user,
@@ -937,7 +940,10 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_request_when_profile_feature_off(self):
         """test that Your profile is not in request page when profile feature is off"""
 
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakerson",
+        )
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
             creator=self.user,

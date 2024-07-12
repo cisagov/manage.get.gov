@@ -810,6 +810,8 @@ def create_superuser():
     user = User.objects.create_user(
         username="superuser",
         email="admin@example.com",
+        first_name="first",
+        last_name="last",
         is_staff=True,
         password=p,
     )
@@ -826,6 +828,8 @@ def create_user():
     user = User.objects.create_user(
         username="staffuser",
         email="staff@example.com",
+        first_name="first",
+        last_name="last",
         is_staff=True,
         password=p,
     )
@@ -841,12 +845,10 @@ def create_test_user():
     last_name = "Last"
     email = "info@example.com"
     phone = "8003111234"
-    user = get_user_model().objects.create(
-        username=username, first_name=first_name, last_name=last_name, email=email, phone=phone
-    )
     title = "test title"
-    user.contact.title = title
-    user.contact.save()
+    user = get_user_model().objects.create(
+        username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, title=title
+    )
     return user
 
 def create_ready_domain():

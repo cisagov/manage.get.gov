@@ -3026,7 +3026,10 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         )
 
         # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakey",
+        )
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(

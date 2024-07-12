@@ -40,7 +40,7 @@ from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
-    ContactForm,
+    UserForm,
     SeniorOfficialContactForm,
     DomainOrgNameAddressForm,
     DomainAddUserForm,
@@ -573,7 +573,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
     """Domain your contact information editing view."""
 
     template_name = "domain_your_contact_information.html"
-    form_class = ContactForm
+    form_class = UserForm
 
     @waffle_flag("!profile_feature")  # type: ignore
     def dispatch(self, request, *args, **kwargs):  # type: ignore
@@ -582,7 +582,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.request.user.contact
+        form_kwargs["instance"] = self.request.user
         return form_kwargs
 
     def get_success_url(self):

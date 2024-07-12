@@ -209,10 +209,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
 
 class TestDomainOverview(TestWithDomainPermissions, WebTest):
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.client.force_login(cls.user)
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
@@ -1505,8 +1501,8 @@ class TestDomainContactInformation(TestDomainOverview):
     @less_console_noise_decorator
     def test_domain_your_contact_information_content(self):
         """Logged-in user's contact information appears on the page."""
-        self.user.contact.first_name = "Testy"
-        self.user.contact.save()
+        self.user.first_name = "Testy"
+        self.user.save()
         page = self.app.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Testy")
 

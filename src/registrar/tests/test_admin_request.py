@@ -64,8 +64,7 @@ class TestDomainRequestAdmin(MockEppLib):
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/",
             follow=True,
@@ -87,8 +86,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create a fake domain request and domain
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
             follow=True,
@@ -135,8 +133,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create a fake domain request and domain
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED)
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
             follow=True,
@@ -204,8 +201,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create a fake domain request and domain
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
             follow=True,
@@ -234,8 +230,7 @@ class TestDomainRequestAdmin(MockEppLib):
         _domain_request.alternative_domains.add(fake_website)
         _domain_request.save()
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
             follow=True,
@@ -281,8 +276,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create a fake domain request
         _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
             follow=True,
@@ -332,8 +326,7 @@ class TestDomainRequestAdmin(MockEppLib):
         _domain_request.current_websites.add(fake_website)
         _domain_request.save()
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
             follow=True,
@@ -354,8 +347,7 @@ class TestDomainRequestAdmin(MockEppLib):
     @less_console_noise_decorator
     def test_domain_sortable(self):
         """Tests if the DomainRequest sorts by domain correctly"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
 
         multiple_unalphabetical_domain_objects("domain_request")
 
@@ -368,8 +360,7 @@ class TestDomainRequestAdmin(MockEppLib):
     @less_console_noise_decorator
     def test_submitter_sortable(self):
         """Tests if the DomainRequest sorts by submitter correctly"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
 
         multiple_unalphabetical_domain_objects("domain_request")
 
@@ -402,8 +393,7 @@ class TestDomainRequestAdmin(MockEppLib):
     @less_console_noise_decorator
     def test_investigator_sortable(self):
         """Tests if the DomainRequest sorts by investigator correctly"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
 
         multiple_unalphabetical_domain_objects("domain_request")
         additional_domain_request = generic_domain_object("domain_request", "Xylophone")
@@ -693,8 +683,7 @@ class TestDomainRequestAdmin(MockEppLib):
             action_needed_reason=DomainRequest.ActionNeededReasons.BAD_NAME,
         )
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
             follow=True,
@@ -1165,8 +1154,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Get the other contact
         other_contact = domain_request.other_contacts.all().first()
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
             follow=True,
@@ -1193,8 +1181,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create a fake domain request
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
             follow=True,
@@ -1217,20 +1204,15 @@ class TestDomainRequestAdmin(MockEppLib):
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title = "Treat inspector"
         )
-
-        # Due to the relation between User <==> Contact,
-        # the underlying contact has to be modified this way.
-        _creator.contact.email = "meoward.jones@igorville.gov"
-        _creator.contact.phone = "(555) 123 12345"
-        _creator.contact.title = "Treat inspector"
-        _creator.contact.save()
 
         # Create a fake domain request
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
             follow=True,
@@ -1246,10 +1228,10 @@ class TestDomainRequestAdmin(MockEppLib):
         expected_creator_fields = [
             # Field, expected value
             ("title", "Treat inspector"),
-            ("email", "meoward.jones@igorville.gov"),
             ("phone", "(555) 123 12345"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
+        self.assertContains(response, "meoward.jones@igorville.gov")
 
         # Check for the field itself
         self.assertContains(response, "Meoward Jones")
@@ -1328,8 +1310,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create a sample domain request
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
             follow=True,
@@ -1394,6 +1375,8 @@ class TestDomainRequestAdmin(MockEppLib):
             "alternative_domains",
             "is_election_board",
             "federal_agency",
+            "status_history",
+            "action_needed_reason_email",
             "id",
             "created_at",
             "updated_at",
@@ -1454,6 +1437,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "federal_agency",
+                "status_history",
+                "action_needed_reason_email",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -1484,6 +1469,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "federal_agency",
+                "status_history",
+                "action_needed_reason_email",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
@@ -1694,8 +1681,7 @@ class TestDomainRequestAdmin(MockEppLib):
             investigator_user.is_staff = True
             investigator_user.save()
 
-            p = "userpass"
-            self.client.login(username="staffuser", password=p)
+            self.client.force_login(self.staffuser)
             response = self.client.get(
                 "/admin/registrar/domainrequest/",
                 {
@@ -1745,8 +1731,7 @@ class TestDomainRequestAdmin(MockEppLib):
             investigator_user_2.is_staff = False
             investigator_user_2.save()
 
-            p = "userpass"
-            self.client.login(username="staffuser", password=p)
+            self.client.force_login(self.staffuser)
 
             request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
@@ -1795,8 +1780,7 @@ class TestDomainRequestAdmin(MockEppLib):
             investigator_user_3.is_staff = True
             investigator_user_3.save()
 
-            p = "userpass"
-            self.client.login(username="staffuser", password=p)
+            self.client.force_login(self.staffuser)
             request = RequestFactory().get("/")
 
             # These names have metadata embedded in them. :investigator implicitly tests if
@@ -1819,8 +1803,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create a fake domain request
         _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
             follow=True,
@@ -1850,8 +1833,7 @@ class TestDomainRequestAdmin(MockEppLib):
             status=DomainRequest.DomainRequestStatus.IN_REVIEW, generic_org_type="interstate"
         )
 
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
             follow=True,
