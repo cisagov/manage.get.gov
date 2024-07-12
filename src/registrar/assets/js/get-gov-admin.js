@@ -539,7 +539,7 @@ function initializeWidgetOnList(list, parentId) {
             if (!actionNeededReasonDropdown.value) {
                 noEmailMessage.innerHTML = emptyReasonText
                 showNoEmailMessage(actionNeededEmail, noEmailMessage);
-            }else if (actionNeededReasonDropdown.value == "other") {
+            } else if (actionNeededReasonDropdown.value == "other") {
                 noEmailMessage.innerHTML = noEmailText
             }
         });
