@@ -1496,7 +1496,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assert_email_is_accurate("custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
 
-        # Tests if a new email gets sent when just the email is changed
+        # Tests if a new email gets sent when just the email is changed.
+        # An email should NOT be sent out if we just modify the email content.
         self.transition_state_and_send_email(
             domain_request,
             action_needed,
@@ -1504,7 +1505,22 @@ class TestDomainRequestAdmin(MockEppLib):
             action_needed_reason_email="dummy email content",
         )
 
-        self.assert_email_is_accurate("dummy email content", 5, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
+
+        # Set the request back to in review
+        domain_request.in_review()
+
+        # no email was sent, so no email should be stored
+        self.assertEqual(domain_request.action_needed_reason_email, None)
+
+        # Try sending another email when changing states AND including content
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=questionable_so,
+            action_needed_reason_email="custom content when starting anew",
+        )
+        self.assert_email_is_accurate("custom content when starting anew", 5, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 6)
 
     def test_save_model_sends_submitted_email(self):
