@@ -1383,7 +1383,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             for name, data in fieldsets:
                 fields = data.get("fields", [])
                 fields = tuple(field for field in fields if field not in DomainInformationAdmin.superuser_only_fields)
-                modified_fieldsets.append((name, {"fields": fields}))
+                modified_fieldsets.append((name, {**data, "fields": fields}))
             return modified_fieldsets
         return fieldsets
 
