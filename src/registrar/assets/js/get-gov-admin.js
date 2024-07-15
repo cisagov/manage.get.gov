@@ -563,11 +563,9 @@ function initializeWidgetOnList(list, parentId) {
             if (sessionStorage.getItem(emailSentSessionVariableName) !== null) {
                 // Show the readonly field, hide the editable field
                 showReadonly(actionNeededEmail.parentElement)
-                console.log("adding data")
             }else {
                 // No email was sent out -- show the editable field
                 hideReadonly(actionNeededEmail.parentElement)
-                console.log("removing data")
             }
         });
     }
@@ -593,7 +591,6 @@ function initializeWidgetOnList(list, parentId) {
                     if (oldDropdownValue !== actionNeededReasonDropdown.value || oldEmailValue !== actionNeededEmail.value) {
                         let emailSent = sessionStorage.getItem(emailSentSessionVariableName)
                         if (emailSent !== null){
-                            console.log("removing data")
                             addOrRemoveSessionBoolean(emailSentSessionVariableName, add=false)
                         }
                     }

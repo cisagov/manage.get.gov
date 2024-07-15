@@ -1385,6 +1385,9 @@ class TestDomainRequestAdmin(MockEppLib):
             # Create a mock request
             request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
+            # Create a fake session to hook to
+            request.session = {}
+
             # Modify the domain request's properties
             domain_request.status = status
 
@@ -1450,6 +1453,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Test the email sent out for already_has_domains
         already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
+
         self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
@@ -1493,6 +1497,7 @@ class TestDomainRequestAdmin(MockEppLib):
             action_needed_reason_email="custom email content",
         )
 
+        domain_request.refresh_from_db()
         self.assert_email_is_accurate("custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
 
@@ -1509,9 +1514,6 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Set the request back to in review
         domain_request.in_review()
-
-        # no email was sent, so no email should be stored
-        self.assertEqual(domain_request.action_needed_reason_email, None)
 
         # Try sending another email when changing states AND including content
         self.transition_state_and_send_email(

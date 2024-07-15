@@ -597,7 +597,6 @@ class DomainRequest(TimeStampedModel):
     def _cache_status_and_action_needed_reason(self):
         """Maintains a cache of properties so we can avoid a DB call"""
         self._cached_action_needed_reason = self.action_needed_reason
-        self._cached_action_needed_reason_email = self.action_needed_reason_email
         self._cached_status = self.status
 
     def __init__(self, *args, **kwargs):
@@ -625,6 +624,7 @@ class DomainRequest(TimeStampedModel):
         was_already_action_needed = self._cached_status == self.DomainRequestStatus.ACTION_NEEDED
         reason_exists = self._cached_action_needed_reason is not None and self.action_needed_reason is not None
         reason_changed = self._cached_action_needed_reason != self.action_needed_reason
+        print(f"was_already_action_needed {was_already_action_needed} reason_exists {reason_exists} and {reason_changed}")
         if was_already_action_needed and reason_exists and reason_changed:
             # We don't send emails out in state "other"
             if self.action_needed_reason != self.ActionNeededReasons.OTHER:

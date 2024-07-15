@@ -1736,16 +1736,21 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         # == Handle action_needed_reason == #
 
-        default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
         reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
         if reason_changed:
-            # Track that we sent out an email
+            # Track the fact that we sent out an email
             request.session["action_needed_email_sent"] = True
 
-            # Set the action_needed_reason_email to the default.
-            # Since this check occurs after save, if the user enters a value then
-            # we won't update.
-            if default_email and default_email == obj.action_needed_reason_email:
+            # Set the action_needed_reason_email to the default if nothing exists.
+            # Since this check occurs after save, if the user enters a value then we won't update.
+
+            default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+            if obj.action_needed_reason_email:
+                emails = self.get_all_action_needed_reason_emails(obj)
+                is_custom_email = obj.action_needed_reason_email not in emails.values()
+                if not is_custom_email:
+                    obj.action_needed_reason_email = default_email
+            else:
                 obj.action_needed_reason_email = default_email
 
         # == Handle status == #
@@ -1953,7 +1958,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
-        extra_context["action_needed_reason_emails"] = self.get_all_action_needed_reason_emails_as_json(obj)
+        emails = self.get_all_action_needed_reason_emails(obj)
+        extra_context["action_needed_reason_emails"] = json.dumps(emails)
         extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
 
         # Denote if an action needed email was sent or not
@@ -1965,16 +1971,18 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
 
-    def get_all_action_needed_reason_emails_as_json(self, domain_request):
+    def get_all_action_needed_reason_emails(self, domain_request):
         """Returns a json dictionary of every action needed reason and its associated email
         for this particular domain request."""
+
         emails = {}
         for action_needed_reason in domain_request.ActionNeededReasons:
             # Map the action_needed_reason to its default email
             emails[action_needed_reason.value] = self._get_action_needed_reason_default_email(
                 domain_request, action_needed_reason.value
             )
-        return json.dumps(emails)
+        
+        return emails
 
     def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason):
         """Returns the default email associated with the given action needed reason"""
