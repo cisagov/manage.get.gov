@@ -531,30 +531,21 @@ function initializeWidgetOnList(list, parentId) {
     var actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
     var readonlyView = document.querySelector("#action-needed-reason-email-readonly");
 
+    let emailWasSent = document.getElementById("action-needed-email-sent");
     let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
-    const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
-    const oldEmailValue = actionNeededEmailData ? actionNeededEmailData.value : null;
+    let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
 
     const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
     const emailSentSessionVariableName = `actionNeededEmailSent-${domainRequestId}`;
-    const emptyReasonText = "-";
-    const noEmailText = "No email will be sent.";
+    const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
+    const oldEmailValue = actionNeededEmailData ? actionNeededEmailData.value : null;
 
     if(actionNeededReasonDropdown && actionNeededEmail && domainRequestId) {
         // Add a change listener to dom load
-        handleDomLoadActionNeededEmail();
-
-        // Add a change listener to the action needed reason dropdown 
-        let actionNeededEmailsJson = JSON.parse(actionNeededEmailData)
-        handleChangeActionNeededEmail(actionNeededEmailsJson);
-    }
-
-    function handleDomLoadActionNeededEmail() {
         document.addEventListener('DOMContentLoaded', function() {
             let reason = actionNeededReasonDropdown.value;
 
             // Handle the session boolean (to enable/disable editing)
-            let emailWasSent = document.getElementById("action-needed-email-sent");
             if (emailWasSent && emailWasSent.value === "True") {
                 // An email was sent out - store that information in a session variable
                 addOrRemoveSessionBoolean(emailSentSessionVariableName, add=true);
@@ -563,9 +554,8 @@ function initializeWidgetOnList(list, parentId) {
             // Show an editable email field or a readonly one
             updateActionNeededEmailDisplay(reason)
         });
-    }
 
-    function handleChangeActionNeededEmail(actionNeededEmailsJson) {
+        // Add a change listener to the action needed reason dropdown
         actionNeededReasonDropdown.addEventListener("change", function() {
             let reason = actionNeededReasonDropdown.value;
             let emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
@@ -592,13 +582,13 @@ function initializeWidgetOnList(list, parentId) {
     // Likewise, if we've sent this email before, we should just display the content.
     function updateActionNeededEmailDisplay(reason) {
         let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
-        let collapseableDiv = readonlyView.querySelector('.collapse--dgsimple');
+        let collapseableDiv = readonlyView.querySelector(".collapse--dgsimple");
         if ((reason && reason != "other") && !emailHasBeenSentBefore) {
             showElement(actionNeededEmail.parentElement)
             hideElement(readonlyView)
         } else {
             if (!reason || reason === "other") {
-                collapseableDiv.innerHTML = reason ? noEmailText : emptyReasonText;
+                collapseableDiv.innerHTML = reason ? "No email will be sent." : "-";
             }
             hideElement(actionNeededEmail.parentElement)
             showElement(readonlyView)
