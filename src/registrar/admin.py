@@ -1981,7 +1981,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             emails[action_needed_reason.value] = self._get_action_needed_reason_default_email(
                 domain_request, action_needed_reason.value
             )
-        
+
         return emails
 
     def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason):
