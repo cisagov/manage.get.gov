@@ -145,6 +145,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block field_other %}
     {% if field.field.name == "action_needed_reason_email" %}
+    <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
     <div id="action-needed-reason-email-readonly" class="readonly textarea-wrapper display-none">
         <div id="action_needed_reason_email_readonly" class="dja-readonly-textarea-container padding-1 margin-top-0 padding-top-0 margin-bottom-1 thin-border collapse--dgsimple collapsed">
             <label class="max-full" for="action_needed_reason_email_view_more">
@@ -153,7 +154,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             <textarea id="action_needed_reason_email_view_more" cols="40" rows="20" class="{% if not original_object.action_needed_reason %}display-none{% endif %}" readonly>
                 {{ original_object.action_needed_reason_email }}
             </textarea>
-            <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
         </div>
         <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-0 margin-bottom-1 margin-left-1">
             <span>Show details</span>
@@ -165,7 +165,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
     <div>
         {{ field.field }}
-        <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
         <input id="action-needed-email-sent" class="display-none" value="{{action_needed_email_sent}}">
     </div>
     {% else %}
