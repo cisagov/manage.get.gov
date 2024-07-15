@@ -1735,18 +1735,18 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
 
         # == Handle action_needed_reason == #
-        # Store the email that was sent out if one was sent and it isn't saved to a variable yet
+
         default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
-        if default_email:
+        reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
+        if reason_changed:
+            # Track that we sent out an email
+            request.session["action_needed_email_sent"] = True
+
             # Set the action_needed_reason_email to the default.
             # Since this check occurs after save, if the user enters a value then
             # we won't update.
-            reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
-            if reason_changed:
-                request.session["action_needed_email_sent"] = True
-                logger.info("added session object")
-                if default_email == obj.action_needed_reason_email:
-                    obj.action_needed_reason_email = default_email
+            if default_email and default_email == obj.action_needed_reason_email:
+                obj.action_needed_reason_email = default_email
 
         # == Handle status == #
         if obj.status == original_obj.status:
@@ -1960,7 +1960,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         email_sent = request.session.get("action_needed_email_sent", False)
         extra_context["action_needed_email_sent"] = email_sent
         if email_sent:
-            email_sent = request.session["action_needed_email_sent"] = False
+            request.session["action_needed_email_sent"] = False
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
