@@ -1519,7 +1519,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.transition_state_and_send_email(
             domain_request,
             action_needed,
-            action_needed_reason=questionable_so,
+            action_needed_reason=eligibility_unclear,
             action_needed_reason_email="custom content when starting anew",
         )
         self.assert_email_is_accurate("custom content when starting anew", 5, EMAIL, bcc_email_address=BCC_EMAIL)
