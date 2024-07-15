@@ -11,6 +11,7 @@ from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 from .domain_request import DomainRequest
+from django.contrib.postgres.fields import ArrayField
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -60,6 +61,56 @@ class User(AbstractUser):
         # after they login.
         FIXTURE_USER = "fixture_user", "Created by fixtures"
 
+    class UserPortfolioRoleChoices(models.TextChoices):
+        """
+        """
+
+        ORGANIZATION_ADMIN = "organization_admin", "Admin"
+        ORGANIZATION_ADMIN_READ_ONLY = "organization_admin_read_only", "Admin read only"
+        ORGANIZATION_MEMBER = "organization_member", "Member"
+
+    class UserPortfolioPermissionChoices(models.TextChoices):
+        """
+        """
+
+        VIEW_DOMAINS = "view_domains", "View all domains and domain reports"
+        # EDIT_DOMAINS is really self.domains. We add is hear and leverage it in has_permission
+        # so we have one way to test for portfolio and domain edit permissions
+        # Do we need to check for portfolio domains specifically?
+        EDIT_DOMAINS = "edit_domains", "User is a manager on a domain"
+
+        VIEW_MEMBER = "view_member", "View members"
+        EDIT_MEMBER = "edit_member", "Create and edit members"
+        
+        VIEW_REQUESTS = "view_requests", "View requests"
+        EDIT_REQUESTS = "edit_requests", "Create and edit requests"
+        
+        VIEW_PORTFOLIO = "view_portfolio", "View organization"
+        EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
+
+    
+    PORTFOLIO_ROLE_PERMISSIONS = {
+        UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
+            UserPortfolioPermissionChoices.VIEW_DOMAINS,
+            UserPortfolioPermissionChoices.VIEW_MEMBER,
+            UserPortfolioPermissionChoices.EDIT_MEMBER,
+            UserPortfolioPermissionChoices.VIEW_REQUESTS,
+            UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+        ],
+        UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
+            UserPortfolioPermissionChoices.VIEW_DOMAINS,
+            UserPortfolioPermissionChoices.VIEW_MEMBER,
+            UserPortfolioPermissionChoices.VIEW_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO, 
+        ],
+        UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO, 
+        ],
+    }
+
+
     # #### Constants for choice fields ####
     RESTRICTED = "restricted"
     STATUS_CHOICES = ((RESTRICTED, RESTRICTED),)
@@ -78,6 +129,34 @@ class User(AbstractUser):
         "registrar.Domain",
         through="registrar.UserDomainRole",
         related_name="users",
+    )
+
+    portfolio = models.ForeignKey(
+        "registrar.Portfolio",
+        null=True,
+        blank=True,
+        related_name="user",
+        on_delete=models.PROTECT,
+    )
+
+    portfolio_roles = ArrayField(
+        models.CharField(
+            max_length=50,
+            choices=UserPortfolioRoleChoices.choices,
+        ),
+        null=True,
+        blank=True,
+        help_text="Select one or more roles.",
+    )
+
+    portfolio_permissions = ArrayField(
+        models.CharField(
+            max_length=50,
+            choices=UserPortfolioPermissionChoices.choices,
+        ),
+        null=True,
+        blank=True,
+        help_text="Select one or more permissions.",
     )
 
     phone = PhoneNumberField(
@@ -168,6 +247,31 @@ class User(AbstractUser):
 
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
+    
+    def has_role(self, role):
+        """Do not rely on roles when testing for perms in views"""
+        return role in self.portfolio_roles if self.portfolio_roles else False
+    
+    def has_portfolio_permissions(self, portfolio_permission):
+        """The views should only call this guy when testing for perms and not rely on roles"""
+
+        if portfolio_permission == self.UserPortfolioPermissionChoices.EDIT_DOMAINS and self.domains.exists():
+            return self.domains
+
+        return portfolio_permission in self.portfolio_permissions if self.portfolio_permissions else False
+    
+    def save(self, *args, **kwargs):
+        self.update_permissions_from_roles()
+        super().save(*args, **kwargs)
+
+    def update_permissions_from_roles(self):
+        print('update permissions when saving')
+        new_portfolio_permissions = set(self.portfolio_permissions or [])
+        print(f'new_portfolio_permissions {new_portfolio_permissions}')
+        for role in self.portfolio_roles or []:
+            print(f'role {role}')
+            new_portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
+        self.portfolio_permissions = list(new_portfolio_permissions)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):

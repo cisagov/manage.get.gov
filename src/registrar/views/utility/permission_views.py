@@ -3,7 +3,7 @@
 import abc  # abstract base class
 
 from django.views.generic import DetailView, DeleteView, TemplateView
-from registrar.models import Domain, DomainRequest, DomainInvitation
+from registrar.models import Domain, DomainRequest, DomainInvitation, Portfolio
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 
@@ -15,6 +15,7 @@ from .mixins import (
     DomainRequestWizardPermission,
     UserDeleteDomainRolePermission,
     UserProfilePermission,
+    PortfolioBasePermission,
 )
 import logging
 
@@ -163,3 +164,23 @@ class UserProfilePermissionView(UserProfilePermission, DetailView, abc.ABC):
     @abc.abstractmethod
     def template_name(self):
         raise NotImplementedError
+
+
+class PortfolioPermissionView(PortfolioBasePermission, DetailView, abc.ABC):
+    """Abstract base view for portfolio views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+    # DetailView property for what model this is viewing
+    model = Portfolio
+    # variable name in template context for the model object
+    context_object_name = "portfolio"
+
+    # Abstract property enforces NotImplementedError on an attribute.
+    @property
+    @abc.abstractmethod
+    def template_name(self):
+        raise NotImplementedError
+

@@ -146,9 +146,15 @@ class CheckPortfolioMiddleware:
         if current_path == self.home:
             if has_organization_feature_flag:
                 if request.user.is_authenticated:
-                    user_portfolios = Portfolio.objects.filter(creator=request.user)
-                    if user_portfolios.exists():
-                        first_portfolio = user_portfolios.first()
-                        home_with_portfolio = reverse("portfolio-domains", kwargs={"portfolio_id": first_portfolio.id})
+                    # user_portfolios = Portfolio.objects.filter(creator=request.user)
+
+                    required_permission = User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO
+
+                    if request.user.has_portfolio_permissions(required_permission):
+                        print('user has portfolio')
+                        portfolio = request.user.portfolio
+                        home_with_portfolio = reverse("portfolio-domains", kwargs={"portfolio_id": portfolio.id})
                         return HttpResponseRedirect(home_with_portfolio)
+                    
+                    print('user does not have a portfolio')
         return None

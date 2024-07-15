@@ -652,6 +652,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "is_superuser",
                     "groups",
                     "user_permissions",
+                    "portfolio",
+                    "portfolio_roles",
+                    "portfolio_permissions",
                 )
             },
         ),

@@ -9,6 +9,7 @@ from registrar.models import (
     DomainInformation,
     UserDomainRole,
 )
+from registrar.models.user import User
 import logging
 
 
@@ -395,6 +396,31 @@ class UserProfilePermission(PermissionsLoginMixin):
 
         # Check if the user is authenticated
         if not self.request.user.is_authenticated:
+            return False
+
+        return True
+    
+
+class PortfolioBasePermission(PermissionsLoginMixin):
+    """Permission mixin that redirects to portfolio pages if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to this portfolio.
+
+        The user is in self.request.user and the portfolio can be looked
+        up from the portfolio's primary key in self.kwargs["pk"]
+        """
+        if not self.request.user.is_authenticated:
+            return False
+
+        # portfolio_id = self.kwargs["pk"]
+        # portfolio = Portfolio.objects.get(pk=portfolio_id)
+
+        # The 'Base' portfolio permission is VIEW_PORTFOLIO
+        required_permission = User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO
+
+        if not self.request.user.has_portfolio_permissions(required_permission):
             return False
 
         return True

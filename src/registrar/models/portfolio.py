@@ -23,7 +23,7 @@ class Portfolio(TimeStampedModel):
 
     # Stores who created this model. If no creator is specified in DJA,
     # then the creator will default to the current request user"""
-    creator = models.ForeignKey("registrar.User", on_delete=models.PROTECT, help_text="Associated user", unique=False)
+    creator = models.ForeignKey("registrar.User", on_delete=models.PROTECT, help_text="Associated user", related_name="creator", unique=False)
 
     notes = models.TextField(
         null=True,
