@@ -2449,6 +2449,8 @@ class TestDomainRequestAdmin(MockEppLib):
             request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
             request.user = self.superuser
 
+            request.session = {}
+
             # Define a custom implementation for is_active
             def custom_is_active(self):
                 return domain_is_active  # Override to return True
