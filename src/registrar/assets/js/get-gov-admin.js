@@ -526,109 +526,82 @@ function initializeWidgetOnList(list, parentId) {
  * This shows the auto generated email on action needed reason.
 */
 (function () {
-    let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
-    let actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
+    // Since this is an iife, these vars will be removed from memory afterwards
+    var actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
+    var actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
+    var readonlyView = document.querySelector("#action-needed-reason-email-readonly");
+
     let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
-    let noEmailMessage = document.querySelector("#no-email-message");
     const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
     const oldEmailValue = actionNeededEmailData ? actionNeededEmailData.value : null;
-    const emptyReasonText = "-";
-    const noEmailText = "No email will be sent.";
+
     const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
     const emailSentSessionVariableName = `actionNeededEmailSent-${domainRequestId}`;
+    const emptyReasonText = "-";
+    const noEmailText = "No email will be sent.";
 
-    if(actionNeededReasonDropdown && actionNeededEmail && actionNeededEmailData && domainRequestId) {
+    if(actionNeededReasonDropdown && actionNeededEmail && domainRequestId) {
+        // Add a change listener to dom load
+        handleDomLoadActionNeededEmail();
+
         // Add a change listener to the action needed reason dropdown 
-        handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail, actionNeededEmailData);
+        let actionNeededEmailsJson = JSON.parse(actionNeededEmailData)
+        handleChangeActionNeededEmail(actionNeededEmailsJson);
+    }
+
+    function handleDomLoadActionNeededEmail() {
         document.addEventListener('DOMContentLoaded', function() {
             let reason = actionNeededReasonDropdown.value;
-            noEmailMessage.innerHTML = reason ? noEmailText : emptyReasonText;
-            if (reason && reason != "other") {
-                // Show the email
-                showElement(actionNeededEmail);
-                hideElement(noEmailMessage);
-            } else {
-                // Show the no email message
-                hideElement(actionNeededEmail);
-                showElement(noEmailMessage);
-            }
-            
 
-            let emailWasSent = document.getElementById("action-needed-email-sent")
+            // Handle the session boolean (to enable/disable editing)
+            let emailWasSent = document.getElementById("action-needed-email-sent");
             if (emailWasSent && emailWasSent.value === "True") {
                 // An email was sent out - store that information in a session variable
-                addOrRemoveSessionBoolean(emailSentSessionVariableName, add=true)
+                addOrRemoveSessionBoolean(emailSentSessionVariableName, add=true);
             }
 
-            if (sessionStorage.getItem(emailSentSessionVariableName) !== null) {
-                // Show the readonly field, hide the editable field
-                showReadonly(actionNeededEmail.parentElement)
-            }else {
-                // No email was sent out -- show the editable field
-                hideReadonly(actionNeededEmail.parentElement)
-            }
+            // Show an editable email field or a readonly one
+            updateActionNeededEmailDisplay(reason)
         });
     }
 
-    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail, actionNeededEmailData) {
+    function handleChangeActionNeededEmail(actionNeededEmailsJson) {
         actionNeededReasonDropdown.addEventListener("change", function() {
             let reason = actionNeededReasonDropdown.value;
-            let actionNeededEmailsJson = JSON.parse(actionNeededEmailData)
+            let emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
+            if (reason && emailBody) {
+                // Replace the email content
+                actionNeededEmail.value = emailBody;
 
-            // Show the "no email will be sent" text only if a reason is actually selected.
-            noEmailMessage.innerHTML = reason ? noEmailText : emptyReasonText;
-            if (reason && reason in actionNeededEmailsJson) {
-                let emailBody = actionNeededEmailsJson[reason];
-                if (emailBody) {
-                    // Show the email
-                    actionNeededEmail.value = emailBody
-                    showElement(actionNeededEmail);
-                    hideElement(noEmailMessage);
-                    
-                    // Reset the session object on change since change refreshes the email content.
-                    // Only do this if we change the action needed reason, or if we:
-                    // change the reason => modify email content => change back to old reason.
-                    if (oldDropdownValue !== actionNeededReasonDropdown.value || oldEmailValue !== actionNeededEmail.value) {
-                        let emailSent = sessionStorage.getItem(emailSentSessionVariableName)
-                        if (emailSent !== null){
-                            addOrRemoveSessionBoolean(emailSentSessionVariableName, add=false)
-                        }
+                // Reset the session object on change since change refreshes the email content.
+                if (oldDropdownValue !== actionNeededReasonDropdown.value || oldEmailValue !== actionNeededEmail.value) {
+                    let emailSent = sessionStorage.getItem(emailSentSessionVariableName)
+                    if (emailSent !== null){
+                        addOrRemoveSessionBoolean(emailSentSessionVariableName, add=false)
                     }
-
-                    if (sessionStorage.getItem(emailSentSessionVariableName) !== null) {
-                        // Show the readonly field, hide the editable field
-                        showReadonly(actionNeededEmail.parentElement)
-                    }else {
-                        // No email was sent out -- show the editable field
-                        hideReadonly(actionNeededEmail.parentElement)
-                    }
-
-                }else {
-                    // Show the no email message
-                    hideElement(actionNeededEmail);
-                    showElement(noEmailMessage);
                 }
-            }else {
-                // Show the no email message
-                hideElement(actionNeededEmail);
-                showElement(noEmailMessage);
             }
+
+            // Show an editable email field or a readonly one
+            updateActionNeededEmailDisplay(reason)
         });
     }
 
-    function showReadonly(actionNeededEmailParent) {
-        let readonlyView = document.querySelector("#action-needed-reason-email-readonly")
-        if (readonlyView) {
-            showElement(readonlyView)
-            hideElement(actionNeededEmailParent)
-        }
-    }
-
-    function hideReadonly(actionNeededEmailParent) {
-        let readonlyView = document.querySelector("#action-needed-reason-email-readonly")
-        if (readonlyView) {
+    // Shows an editable email field or a readonly one.
+    // If the email doesn't exist or if we're of reason "other", display that no email was sent.
+    // Likewise, if we've sent this email before, we should just display the content.
+    function updateActionNeededEmailDisplay(reason) {
+        let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
+        let collapseableDiv = readonlyView.querySelector('.collapse--dgsimple');
+        if ((reason && reason != "other") && !emailHasBeenSentBefore) {
+            showElement(actionNeededEmail.parentElement)
             hideElement(readonlyView)
-            showElement(actionNeededEmailParent)
+        } else {
+            if (!reason || reason === "other") {
+                collapseableDiv.innerHTML = reason ? noEmailText : emptyReasonText;
+            }
+            hideElement(actionNeededEmail.parentElement)
+            showElement(readonlyView)
         }
     }
 })();

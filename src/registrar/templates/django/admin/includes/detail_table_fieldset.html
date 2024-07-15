@@ -145,9 +145,8 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block field_other %}
     {% if field.field.name == "action_needed_reason_email" %}
-    <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
-    <div id="action-needed-reason-email-readonly" class="readonly display-none">
-        <div class="collapse--dgsimple collapsed">
+    <div id="action-needed-reason-email-readonly" class="readonly margin-top-0 padding-top-0 display-none">
+        <div class="margin-top-05 collapse--dgsimple collapsed">
         {{ field.field.value|linebreaks }}
         </div>
         <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-0 margin-bottom-1 margin-left-1">
@@ -157,7 +156,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             </svg>
         </button>
     </div>
-
     <div>
         {{ field.field }}
         <input id="action-needed-email-sent" class="display-none" value="{{action_needed_email_sent}}">
