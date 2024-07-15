@@ -559,7 +559,7 @@ function initializeWidgetOnList(list, parentId) {
                 if (sessionStorage.getItem(`actionNeededEmailSent-${domainRequestId}`) === null) {
                     sessionStorage.setItem(`actionNeededEmailSent-${domainRequestId}`, domainRequestId);
                 }
-                actionNeededEmail.readOnly = true
+                hideReadonly(actionNeededEmail.parentElement)
             }
         });
     }
@@ -587,7 +587,7 @@ function initializeWidgetOnList(list, parentId) {
                         if (emailSent !== null){
                             sessionStorage.removeItem(`actionNeededEmailSent-${domainRequestId}`);
                         }
-                        actionNeededEmail.readOnly = false;
+                        showReadonly(actionNeededEmail.parentElement)
                     }
                 }else {
                     // Show the no email message
@@ -601,4 +601,21 @@ function initializeWidgetOnList(list, parentId) {
             }
         });
     }
+
+    function showReadonly(actionNeededEmailParent) {
+        let readonlyView = document.querySelector("#action-needed-reason-email-readonly")
+        if (readonlyView) {
+            hideElement(readonlyView)
+            showElement(actionNeededEmailParent)
+        }
+    }
+
+    function hideReadonly(actionNeededEmailParent) {
+        let readonlyView = document.querySelector("#action-needed-reason-email-readonly")
+        if (readonlyView) {
+            showElement(readonlyView)
+            hideElement(actionNeededEmailParent)
+        }
+    }
+
 })();
