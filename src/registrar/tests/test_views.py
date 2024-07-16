@@ -546,36 +546,36 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.app.set_user(self.incomplete_regular_user.username)
 
         # Test when first_name is empty
-        self.incomplete_regular_user.contact.first_name = ""
-        self.incomplete_regular_user.contact.last_name = "Doe"
-        self.incomplete_regular_user.contact.save()
+        self.incomplete_regular_user.first_name = ""
+        self.incomplete_regular_user.last_name = "Doe"
+        self.incomplete_regular_user.save()
 
         finish_setup_page = self.app.get(reverse("home")).follow()
         form = finish_setup_page.form
         self.assertEqual(form["full_name"].value, "")
 
         # Test when last_name is empty
-        self.incomplete_regular_user.contact.first_name = "John"
-        self.incomplete_regular_user.contact.last_name = ""
-        self.incomplete_regular_user.contact.save()
+        self.incomplete_regular_user.first_name = "John"
+        self.incomplete_regular_user.last_name = ""
+        self.incomplete_regular_user.save()
 
         finish_setup_page = self.app.get(reverse("home")).follow()
         form = finish_setup_page.form
         self.assertEqual(form["full_name"].value, "")
 
         # Test when both first_name and last_name are empty
-        self.incomplete_regular_user.contact.first_name = ""
-        self.incomplete_regular_user.contact.last_name = ""
-        self.incomplete_regular_user.contact.save()
+        self.incomplete_regular_user.first_name = ""
+        self.incomplete_regular_user.last_name = ""
+        self.incomplete_regular_user.save()
 
         finish_setup_page = self.app.get(reverse("home")).follow()
         form = finish_setup_page.form
         self.assertEqual(form["full_name"].value, "")
 
         # Test when both first_name and last_name are present
-        self.incomplete_regular_user.contact.first_name = "John"
-        self.incomplete_regular_user.contact.last_name = "Doe"
-        self.incomplete_regular_user.contact.save()
+        self.incomplete_regular_user.first_name = "John"
+        self.incomplete_regular_user.last_name = "Doe"
+        self.incomplete_regular_user.save()
 
         finish_setup_page = self.app.get(reverse("home")).follow()
         form = finish_setup_page.form
@@ -622,8 +622,8 @@ class FinishUserProfileTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_new_user_with_empty_name_can_add_name(self):
         """Tests that a new user without a name can still enter this information accordingly"""
-        self.incomplete_regular_user.contact.first_name = None
-        self.incomplete_regular_user.contact.last_name = None
+        self.incomplete_regular_user.first_name = ""
+        self.incomplete_regular_user.last_name = ""
         self.incomplete_regular_user.save()
         self.app.set_user(self.incomplete_regular_user.username)
         with override_flag("profile_feature", active=True):
@@ -647,6 +647,8 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "test"
+            finish_setup_form["last_name"] = "test2"
             finish_setup_form["phone"] = "(201) 555-0123"
             finish_setup_form["title"] = "CEO"
             finish_setup_form["last_name"] = "example"
