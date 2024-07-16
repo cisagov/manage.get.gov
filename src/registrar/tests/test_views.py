@@ -656,7 +656,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             self.assertEqual(save_page.status_code, 200)
             self.assertContains(save_page, "Your profile has been updated.")
-
+            # temp
             # Try to navigate back to the home page.
             # This is the same as clicking the back button.
             completed_setup_page = self.app.get(reverse("home"))
