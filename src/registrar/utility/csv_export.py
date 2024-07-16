@@ -274,11 +274,6 @@ class DomainExport(BaseExport):
     """
 
     @classmethod
-    def export_data_to_csv(cls, csv_file, start_date=None, end_date=None):
-        """Pass in the start_date and end_date variables to the report"""
-        super().export_data_to_csv(csv_file, start_date=start_date, end_date=end_date)
-
-    @classmethod
     def model(cls):
         # Return the model class that this export handles
         return DomainInformation
@@ -554,11 +549,6 @@ class DomainDataTypeUser(DomainDataType):
     """
 
     @classmethod
-    def export_data_to_csv(cls, csv_file, request=None):
-        """Pass in the start_date and end_date variables to the report"""
-        super().export_data_to_csv(csv_file, request=request)
-
-    @classmethod
     def get_filter_conditions(cls, request=None):
         """
         Get a Q object of filter conditions to filter when building queryset.
@@ -566,7 +556,6 @@ class DomainDataTypeUser(DomainDataType):
         user_domain_roles = UserDomainRole.objects.filter(user=request.user)
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
         return Q(id__in=domain_ids)
-
 
 
 class DomainDataFull(DomainExport):
