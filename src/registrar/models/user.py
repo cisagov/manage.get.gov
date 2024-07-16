@@ -161,10 +161,13 @@ class User(AbstractUser):
         """Return count of ineligible requests"""
         return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.INELIGIBLE).count()
 
-    def get_formatted_name(self):
+    def get_formatted_name(self, return_unknown_when_none=True):
         """Returns the contact's name in Western order."""
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
-        return " ".join(names) if names else "Unknown"
+        if names:
+            return " ".join(names)
+        else:
+            return "Unknown" if return_unknown_when_none else None
 
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
