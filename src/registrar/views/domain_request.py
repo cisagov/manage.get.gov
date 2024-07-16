@@ -792,15 +792,15 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         self.object = self.get_object()
         self.object.delete()
 
-        # Delete orphaned contacts - but only for if they are not associated with a user
-        Contact.objects.filter(id__in=contacts_to_delete, user=None).delete()
+        # Delete orphaned contacts
+        Contact.objects.filter(id__in=contacts_to_delete).delete()
 
         # After a delete occurs, do a second sweep on any returned duplicates.
         # This determines if any of these three fields share a contact, which is used for
         # the edge case where the same user may be an SO, and a submitter, for example.
         if len(duplicates) > 0:
             duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
-            Contact.objects.filter(id__in=duplicates_to_delete, user=None).delete()
+            Contact.objects.filter(id__in=duplicates_to_delete).delete()
 
         # Return a 200 response with an empty body
         return HttpResponse(status=200)

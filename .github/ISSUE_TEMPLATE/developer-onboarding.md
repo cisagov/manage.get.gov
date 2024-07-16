@@ -16,6 +16,8 @@ assignees: abroddrick
 
 There are several tools we use locally that you will need to have.
 - [ ] [Install the cf CLI v7](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac) for the ability to deploy
+  - If you are using Windows, installation information can be found [here](https://github.com/cloudfoundry/cli/wiki/V8-CLI-Installation-Guide#installers-and-compressed-binaries)
+  - Alternatively, for Windows, [consider using chocolately](https://community.chocolatey.org/packages/cloudfoundry-cli/7.2.0)
 - [ ] Make sure you have `gpg` >2.1.7. Run `gpg --version` to check. If not, [install gnupg](https://formulae.brew.sh/formula/gnupg)
 - [ ] Install the [Github CLI](https://cli.github.com/)
 
@@ -70,6 +72,7 @@ when setting up your key in Github.
 
 Now test commit signing is working by checking out a branch (`yourname/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your GPG credential) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
 
+### MacOS
 **Note:** if you are on a mac and not able to successfully create a signed commit, getting the following error:
 ```zsh
 error: gpg failed to sign the data
@@ -89,6 +92,15 @@ or
 ```bash
 source ~/.zshrc
 ```
+
+### Windows
+If GPG doesn't work out of the box with git for you:
+- You can [download the GPG binary directly](https://gnupg.org/download/). 
+- It may be helpful to use [gpg4win](https://www.gpg4win.org/get-gpg4win.html). 
+
+From there, you should be able to access gpg through the terminal. 
+
+Additionally, consider a gpg key manager like Kleopatra if you run into issues with environment variables or with the gpg service not running on startup. 
 
 ## Setting up developer sandbox
 

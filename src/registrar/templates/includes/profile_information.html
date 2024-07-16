@@ -13,10 +13,10 @@
     </h3>
     <div class="usa-summary-box__text">
       <ul>
-        <li>Full name: <b>{{ user.contact.get_formatted_name }}</b></li>
+        <li>Full name: <b>{{ user.get_formatted_name }}</b></li>
         <li>Organization email: <b>{{ user.email }}</b></li>
-        <li>Title or role in your organization: <b>{{ user.contact.title }}</b></li>
-        <li>Phone: <b>{{ user.contact.phone.as_national }}</b></li>
+        <li>Title or role in your organization: <b>{{ user.title }}</b></li>
+        <li>Phone: <b>{{ user.phone.as_national }}</b></li>
       </ul>
     </div>
   </div>
