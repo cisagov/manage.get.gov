@@ -10,7 +10,7 @@
     line-height: 1.1;
 }
 
-.usa-logo button.usa-button--unstyled.disabled-button:hover{
+.usa-logo button:hover{
     color: #{$dhs-dark-gray-85};
 }
 
@@ -72,7 +72,9 @@
         border-top: solid 1px color('base');
         border-bottom: solid 1px color('base-light');
 
-        .usa-logo__text a {
+        .usa-logo__text a,
+        .usa-logo__text button,
+        .usa-logo__text button:hover {
             color: color('white');
         }
         .usa-nav {
@@ -110,6 +112,10 @@
                 color: color('primary-lighter');
                 font-size: 16px;
             }
+        }
+        > .usa-navbar {
+            // This is a dangerous override to USWDS, necessary because we have a tooltip on the logo
+            overflow: visible;
         }
     }
 }
