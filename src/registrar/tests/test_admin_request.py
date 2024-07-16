@@ -42,6 +42,12 @@ logger = logging.getLogger(__name__)
 
 @boto3_mocking.patching
 class TestDomainRequestAdmin(MockEppLib):
+    """Test DomainRequestAdmin class as either staff or super user.
+    
+    Notes:
+      all tests share superuser/staffuser; do not change these models in tests
+      tests have available staffuser, superuser, client, admin and test_helper
+    """
 
     @classmethod
     def setUpClass(self):
@@ -60,6 +66,20 @@ class TestDomainRequestAdmin(MockEppLib):
             model=DomainRequest,
         )
         self.mock_client = MockSESClient()
+
+    def tearDown(self):
+        super().tearDown()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
+        self.mock_client.EMAILS_SENT.clear()
+
+    @classmethod
+    def tearDownClass(self):
+        super().tearDownClass()
+        User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -1853,19 +1873,5 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Check if response contains expected_html
         self.assertIn(expected_html, response_content)
-
-    def tearDown(self):
-        super().tearDown()
-        Domain.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        DomainRequest.objects.all().delete()
-        Contact.objects.all().delete()
-        Website.objects.all().delete()
-        self.mock_client.EMAILS_SENT.clear()
-
-    @classmethod
-    def tearDownClass(self):
-        super().tearDownClass()
-        User.objects.all().delete()
 
 

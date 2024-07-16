@@ -181,7 +181,12 @@ class TestDomainRequestAdminForm(TestCase):
 
 
 class TestDomainInvitationAdmin(TestCase):
-    """Tests for the DomainInvitation page"""
+    """Tests for the DomainInvitationAdmin class as super user
+
+    Notes:
+      all tests share superuser; do not change this model in tests
+      tests have available superuser, client, and admin
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -246,6 +251,12 @@ class TestDomainInvitationAdmin(TestCase):
 
 
 class TestHostAdmin(TestCase):
+    """Tests for the HostAdmin class as super user
+
+    Notes:
+      all tests share superuser; do not change this model in tests
+      tests have available superuser, client, and admin
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -317,6 +328,12 @@ class TestHostAdmin(TestCase):
 
 
 class TestDomainInformationAdmin(TestCase):
+    """Tests for the DomainInformationAdmin class as super or staff user
+
+    Notes:
+      all tests share superuser/staffuser; do not change these models in tests
+      tests have available staffuser, superuser, client, test_helper and admin
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -699,6 +716,12 @@ class TestDomainInformationAdmin(TestCase):
 
 
 class TestUserDomainRoleAdmin(TestCase):
+    """Tests for the UserDomainRoleAdmin class as super user
+
+    Notes:
+      all tests share superuser; do not change this model in tests
+      tests have available superuser, client, test_helper and admin
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -876,6 +899,12 @@ class TestUserDomainRoleAdmin(TestCase):
             fake_user.delete()
 
 class TestListHeaderAdmin(TestCase):
+    """Tests for the ListHeaderAdmin class as super user
+
+    Notes:
+      all tests share superuser; do not change this model in tests
+      tests have available superuser, client and admin
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -957,6 +986,13 @@ class TestListHeaderAdmin(TestCase):
 
 
 class TestMyUserAdmin(MockDbForSharedTests):
+    """Tests for the MyUserAdmin class as super or staff user
+
+    Notes:
+      all tests share superuser/staffuser; do not change these models in tests
+      all tests share MockDb; do not change models defined therein in tests
+      tests have available staffuser, superuser, client, test_helper and admin
+    """
 
     @classmethod
     def setUpClass(cls):

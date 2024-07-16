@@ -36,6 +36,12 @@ logger = logging.getLogger(__name__)
 
 
 class TestDomainAdminAsStaff(MockEppLib):
+    """Test DomainAdmin class as staff user.
+    
+    Notes:
+      all tests share staffuser; do not change staffuser model in tests
+      tests have available staffuser, client, and admin
+    """
 
     @classmethod
     def setUpClass(self):
@@ -367,6 +373,12 @@ class TestDomainAdminAsStaff(MockEppLib):
 
 
 class TestDomainAdminWClient(TestCase):
+    """Test DomainAdmin class as super user.
+    
+    Notes:
+      all tests share superuser; tests must not update superuser
+      tests have available superuser, client, and admin
+    """
 
     @classmethod
     def setUpClass(self):
@@ -651,6 +663,14 @@ class TestDomainAdminWClient(TestCase):
 
 
 class TestDomainAdminWebTest(MockEppLib, WebTest):
+    """Test DomainAdmin class as super user, using WebTest.
+    WebTest allows for easier handling of forms and html responses.
+    
+    Notes:
+      all tests share superuser; tests must not update superuser
+      tests have available superuser, app, and admin
+    """
+
     # csrf checks do not work with WebTest.
     # We disable them here. TODO for another ticket.
     csrf_checks = False

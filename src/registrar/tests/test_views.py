@@ -8,6 +8,7 @@ from api.tests.common import less_console_noise_decorator
 from registrar.models.contact import Contact
 from registrar.models.domain import Domain
 from registrar.models.draft_domain import DraftDomain
+from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio import Portfolio
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
@@ -988,16 +989,17 @@ class PortfoliosTests(TestWithUser, WebTest):
 
     def setUp(self):
         super().setUp()
-        self.user.save()
         self.client.force_login(self.user)
         self.domain, _ = Domain.objects.get_or_create(name="sampledomain.gov", state=Domain.State.READY)
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
-        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="xyz inc")
+        self.federal_agency = FederalAgency.objects.create()
+        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="xyz inc", federal_agency=self.federal_agency)
 
     def tearDown(self):
         Portfolio.objects.all().delete()
+        self.federal_agency.delete()
         super().tearDown()
         PublicContact.objects.filter(domain=self.domain).delete()
         UserDomainRole.objects.all().delete()

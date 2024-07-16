@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.db.utils import IntegrityError
+from django.db import transaction
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
 
@@ -23,15 +24,12 @@ from registrar.models.transition_domain import TransitionDomain
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
 from registrar.utility.constants import BranchChoices
 
-from .common import MockSESClient, less_console_noise, completed_domain_request, set_domain_request_investigators
+from .common import MockSESClient, less_console_noise, completed_domain_request, set_domain_request_investigators, create_test_user
 from django_fsm import TransitionNotAllowed
 from waffle.testutils import override_flag
 
 from api.tests.common import less_console_noise_decorator
 
-# Test comment for push -- will remove
-# The DomainRequest submit method has a side effect of sending an email
-# with AWS SES, so mock that out in all of these test cases
 @boto3_mocking.patching
 class TestDomainRequest(TestCase):
     @less_console_noise_decorator
@@ -92,6 +90,11 @@ class TestDomainRequest(TestCase):
 
     def tearDown(self):
         super().tearDown()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DraftDomain.objects.all().delete()
+        Domain.objects.all().delete()
+        User.objects.all().delete()
         self.mock_client.EMAILS_SENT.clear()
 
     def assertNotRaises(self, exception_type):
@@ -121,103 +124,103 @@ class TestDomainRequest(TestCase):
         self.assertEqual(domain_request.federal_agency, expected_federal_agency)
 
     def test_empty_create_fails(self):
-        """Can't create a completely empty domain request.
-        NOTE: something about theexception this test raises messes up with the
-        atomic block in a custom tearDown method for the parent test class."""
+        """Can't create a completely empty domain request."""
         with less_console_noise():
-            with self.assertRaisesRegex(IntegrityError, "creator"):
-                DomainRequest.objects.create()
+            with transaction.atomic():
+                with self.assertRaisesRegex(IntegrityError, "creator"):
+                    DomainRequest.objects.create()
 
+    @less_console_noise_decorator
     def test_minimal_create(self):
         """Can create with just a creator."""
-        with less_console_noise():
-            user, _ = User.objects.get_or_create(username="testy")
-            domain_request = DomainRequest.objects.create(creator=user)
-            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.STARTED)
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = DomainRequest.objects.create(creator=user)
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.STARTED)
 
+    @less_console_noise_decorator
     def test_full_create(self):
         """Can create with all fields."""
-        with less_console_noise():
-            user, _ = User.objects.get_or_create(username="testy")
-            contact = Contact.objects.create()
-            com_website, _ = Website.objects.get_or_create(website="igorville.com")
-            gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
-            domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-            domain_request = DomainRequest.objects.create(
-                creator=user,
-                investigator=user,
-                generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-                federal_type=BranchChoices.EXECUTIVE,
-                is_election_board=False,
-                organization_name="Test",
-                address_line1="100 Main St.",
-                address_line2="APT 1A",
-                state_territory="CA",
-                zipcode="12345-6789",
-                senior_official=contact,
-                requested_domain=domain,
-                submitter=contact,
-                purpose="Igorville rules!",
-                anything_else="All of Igorville loves the dotgov program.",
-                is_policy_acknowledged=True,
-            )
-            domain_request.current_websites.add(com_website)
-            domain_request.alternative_domains.add(gov_website)
-            domain_request.other_contacts.add(contact)
-            domain_request.save()
+        user, _ = User.objects.get_or_create(username="testy")
+        contact = Contact.objects.create()
+        com_website, _ = Website.objects.get_or_create(website="igorville.com")
+        gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
+        domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(
+            creator=user,
+            investigator=user,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_type=BranchChoices.EXECUTIVE,
+            is_election_board=False,
+            organization_name="Test",
+            address_line1="100 Main St.",
+            address_line2="APT 1A",
+            state_territory="CA",
+            zipcode="12345-6789",
+            senior_official=contact,
+            requested_domain=domain,
+            submitter=contact,
+            purpose="Igorville rules!",
+            anything_else="All of Igorville loves the dotgov program.",
+            is_policy_acknowledged=True,
+        )
+        domain_request.current_websites.add(com_website)
+        domain_request.alternative_domains.add(gov_website)
+        domain_request.other_contacts.add(contact)
+        domain_request.save()
 
+    @less_console_noise_decorator
     def test_domain_info(self):
         """Can create domain info with all fields."""
-        with less_console_noise():
-            user, _ = User.objects.get_or_create(username="testy")
-            contact = Contact.objects.create()
-            domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-            information = DomainInformation.objects.create(
-                creator=user,
-                generic_org_type=DomainInformation.OrganizationChoices.FEDERAL,
-                federal_type=BranchChoices.EXECUTIVE,
-                is_election_board=False,
-                organization_name="Test",
-                address_line1="100 Main St.",
-                address_line2="APT 1A",
-                state_territory="CA",
-                zipcode="12345-6789",
-                senior_official=contact,
-                submitter=contact,
-                purpose="Igorville rules!",
-                anything_else="All of Igorville loves the dotgov program.",
-                is_policy_acknowledged=True,
-                domain=domain,
-            )
-            information.other_contacts.add(contact)
-            information.save()
-            self.assertEqual(information.domain.id, domain.id)
-            self.assertEqual(information.id, domain.domain_info.id)
+        user, _ = User.objects.get_or_create(username="testy")
+        contact = Contact.objects.create()
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        information = DomainInformation.objects.create(
+            creator=user,
+            generic_org_type=DomainInformation.OrganizationChoices.FEDERAL,
+            federal_type=BranchChoices.EXECUTIVE,
+            is_election_board=False,
+            organization_name="Test",
+            address_line1="100 Main St.",
+            address_line2="APT 1A",
+            state_territory="CA",
+            zipcode="12345-6789",
+            senior_official=contact,
+            submitter=contact,
+            purpose="Igorville rules!",
+            anything_else="All of Igorville loves the dotgov program.",
+            is_policy_acknowledged=True,
+            domain=domain,
+        )
+        information.other_contacts.add(contact)
+        information.save()
+        self.assertEqual(information.domain.id, domain.id)
+        self.assertEqual(information.id, domain.domain_info.id)
 
+    @less_console_noise_decorator
     def test_status_fsm_submit_fail(self):
-        with less_console_noise():
-            user, _ = User.objects.get_or_create(username="testy")
-            domain_request = DomainRequest.objects.create(creator=user)
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = DomainRequest.objects.create(creator=user)
 
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                with less_console_noise():
-                    with self.assertRaises(ValueError):
-                        # can't submit a domain request with a null domain name
-                        domain_request.submit()
-
-    def test_status_fsm_submit_succeed(self):
-        with less_console_noise():
-            user, _ = User.objects.get_or_create(username="testy")
-            site = DraftDomain.objects.create(name="igorville.gov")
-            domain_request = DomainRequest.objects.create(creator=user, requested_domain=site)
-
-            # no submitter email so this emits a log warning
-
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                with less_console_noise():
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                with self.assertRaises(ValueError):
+                    # can't submit a domain request with a null domain name
                     domain_request.submit()
-            self.assertEqual(domain_request.status, domain_request.DomainRequestStatus.SUBMITTED)
 
+    @less_console_noise_decorator
+    def test_status_fsm_submit_succeed(self):
+        user, _ = User.objects.get_or_create(username="testy")
+        site = DraftDomain.objects.create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(creator=user, requested_domain=site)
+
+        # no submitter email so this emits a log warning
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                domain_request.submit()
+        self.assertEqual(domain_request.status, domain_request.DomainRequestStatus.SUBMITTED)
+
+    @less_console_noise_decorator
     def check_email_sent(
         self, domain_request, msg, action, expected_count, expected_content=None, expected_email="mayor@igorville.com"
     ):
@@ -225,10 +228,9 @@ class TestDomainRequest(TestCase):
 
         with self.subTest(msg=msg, action=action):
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                with less_console_noise():
-                    # Perform the specified action
-                    action_method = getattr(domain_request, action)
-                    action_method()
+                # Perform the specified action
+                action_method = getattr(domain_request, action)
+                action_method()
 
             # Check if an email was sent
             sent_emails = [
@@ -899,81 +901,81 @@ class TestDomainRequest(TestCase):
                 with self.assertRaises(TransitionNotAllowed):
                     self.approved_domain_request.reject_with_prejudice()
 
+    @less_console_noise_decorator
     def test_approve_from_rejected_clears_rejection_reason(self):
         """When transitioning from rejected to approved on a domain request,
         the rejection_reason is cleared."""
 
-        with less_console_noise():
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
-            domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
+        domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
-            # Approve
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                domain_request.approve()
+        # Approve
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            domain_request.approve()
 
-            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.APPROVED)
-            self.assertEqual(domain_request.rejection_reason, None)
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.APPROVED)
+        self.assertEqual(domain_request.rejection_reason, None)
 
+    @less_console_noise_decorator
     def test_in_review_from_rejected_clears_rejection_reason(self):
         """When transitioning from rejected to in_review on a domain request,
         the rejection_reason is cleared."""
 
-        with less_console_noise():
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
-            domain_request.domain_is_not_active = True
-            domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
+        domain_request.domain_is_not_active = True
+        domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
-            # Approve
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                domain_request.in_review()
+        # Approve
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            domain_request.in_review()
 
-            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.IN_REVIEW)
-            self.assertEqual(domain_request.rejection_reason, None)
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.IN_REVIEW)
+        self.assertEqual(domain_request.rejection_reason, None)
 
+    @less_console_noise_decorator
     def test_action_needed_from_rejected_clears_rejection_reason(self):
         """When transitioning from rejected to action_needed on a domain request,
         the rejection_reason is cleared."""
 
-        with less_console_noise():
-            # Create a sample domain request
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
-            domain_request.domain_is_not_active = True
-            domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.REJECTED)
+        domain_request.domain_is_not_active = True
+        domain_request.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
-            # Approve
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                domain_request.action_needed()
+        # Approve
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            domain_request.action_needed()
 
-            self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
-            self.assertEqual(domain_request.rejection_reason, None)
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.ACTION_NEEDED)
+        self.assertEqual(domain_request.rejection_reason, None)
 
+    @less_console_noise_decorator
     def test_has_rationale_returns_true(self):
         """has_rationale() returns true when a domain request has no_other_contacts_rationale"""
-        with less_console_noise():
-            self.started_domain_request.no_other_contacts_rationale = "You talkin' to me?"
-            self.started_domain_request.save()
-            self.assertEquals(self.started_domain_request.has_rationale(), True)
+        self.started_domain_request.no_other_contacts_rationale = "You talkin' to me?"
+        self.started_domain_request.save()
+        self.assertEquals(self.started_domain_request.has_rationale(), True)
 
+    @less_console_noise_decorator
     def test_has_rationale_returns_false(self):
         """has_rationale() returns false when a domain request has no no_other_contacts_rationale"""
-        with less_console_noise():
-            self.assertEquals(self.started_domain_request.has_rationale(), False)
+        self.assertEquals(self.started_domain_request.has_rationale(), False)
 
+    @less_console_noise_decorator
     def test_has_other_contacts_returns_true(self):
         """has_other_contacts() returns true when a domain request has other_contacts"""
-        with less_console_noise():
-            # completed_domain_request has other contacts by default
-            self.assertEquals(self.started_domain_request.has_other_contacts(), True)
+        # completed_domain_request has other contacts by default
+        self.assertEquals(self.started_domain_request.has_other_contacts(), True)
 
+    @less_console_noise_decorator
     def test_has_other_contacts_returns_false(self):
         """has_other_contacts() returns false when a domain request has no other_contacts"""
-        with less_console_noise():
-            domain_request = completed_domain_request(
-                status=DomainRequest.DomainRequestStatus.STARTED, name="no-others.gov", has_other_contacts=False
-            )
-            self.assertEquals(domain_request.has_other_contacts(), False)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED, name="no-others.gov", has_other_contacts=False
+        )
+        self.assertEquals(domain_request.has_other_contacts(), False)
 
 
 class TestPermissions(TestCase):
@@ -1072,8 +1074,13 @@ class TestInvitations(TestCase):
         self.invitation, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=self.domain)
         self.user, _ = User.objects.get_or_create(email=self.email)
 
+    def tearDown(self):
+        super().tearDown()
         # clean out the roles each time
         UserDomainRole.objects.all().delete()
+        self.domain.delete()
+        self.invitation.delete()
+        User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_retrieval_creates_role(self):
@@ -1630,17 +1637,16 @@ class TestDomainInformationCustomSave(TestCase):
 
 
 class TestDomainRequestIncomplete(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.factory = RequestFactory()
+        cls.user = create_test_user()
+
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
-        self.factory = RequestFactory()
-        username = "test_user"
-        first_name = "First"
-        last_name = "Last"
-        email = "info@example.com"
-        self.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email
-        )
         so, _ = Contact.objects.get_or_create(
             first_name="Meowy",
             last_name="Meoward",
@@ -1697,6 +1703,11 @@ class TestDomainRequestIncomplete(TestCase):
         super().tearDown()
         DomainRequest.objects.all().delete()
         Contact.objects.all().delete()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls.user.delete()
 
     @less_console_noise_decorator
     def test_is_federal_complete(self):
