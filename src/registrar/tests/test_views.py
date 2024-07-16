@@ -643,7 +643,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(finish_setup_page, "Enter your phone number.")
 
             # Check for the name of the save button
-            self.assertContains(finish_setup_page, "contact_setup_save_button")
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
