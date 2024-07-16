@@ -56,7 +56,7 @@ from .common import (
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
-from unittest.mock import ANY, patch, Mock
+from unittest.mock import patch, Mock
 
 import logging
 
@@ -109,7 +109,7 @@ class TestFsmModelResource(TestCase):
 
 
 class TestDomainRequestAdminForm(TestCase):
-    
+
     def test_form_choices(self):
         with less_console_noise():
             # Create a test domain request with an initial state of started
@@ -197,7 +197,7 @@ class TestDomainInvitationAdmin(TestCase):
     def setUp(self):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
-        
+
     def tearDown(self):
         """Delete all DomainInvitation objects"""
         DomainInvitation.objects.all().delete()
@@ -361,7 +361,7 @@ class TestDomainInformationAdmin(TestCase):
         DomainRequest.objects.all().delete()
         Domain.objects.all().delete()
         Contact.objects.all().delete()
-    
+
     @classmethod
     def tearDownClass(cls):
         User.objects.all().delete()
@@ -737,7 +737,7 @@ class TestUserDomainRoleAdmin(TestCase):
             url="/admin/registrar/UserDomainRole/",
             model=UserDomainRole,
         )
-         
+
     def setUp(self):
         """Setup environment for a mock admin user"""
         super().setUp()
@@ -748,7 +748,7 @@ class TestUserDomainRoleAdmin(TestCase):
         super().tearDown()
         Domain.objects.all().delete()
         UserDomainRole.objects.all().delete()
-    
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -898,6 +898,7 @@ class TestUserDomainRoleAdmin(TestCase):
             fake_domain.delete()
             fake_user.delete()
 
+
 class TestListHeaderAdmin(TestCase):
     """Tests for the ListHeaderAdmin class as super user
 
@@ -913,7 +914,7 @@ class TestListHeaderAdmin(TestCase):
         cls.factory = RequestFactory()
         cls.admin = ListHeaderAdmin(model=DomainRequest, admin_site=None)
         cls.superuser = create_superuser()
-    
+
     def setUp(self):
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -922,7 +923,7 @@ class TestListHeaderAdmin(TestCase):
         # delete any domain requests too
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
-    
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -1010,7 +1011,7 @@ class TestMyUserAdmin(MockDbForSharedTests):
     def tearDown(self):
         super().tearDown()
         DomainRequest.objects.all().delete()
-    
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -1205,6 +1206,7 @@ class TestMyUserAdmin(MockDbForSharedTests):
         domain_request_ineligible.delete()
         domain_deleted.delete()
 
+
 class AuditedAdminTest(TestCase):
 
     @classmethod
@@ -1212,7 +1214,7 @@ class AuditedAdminTest(TestCase):
         super().setUpClass()
         cls.site = AdminSite()
         cls.factory = RequestFactory()
-    
+
     def setUp(self):
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -1223,7 +1225,7 @@ class AuditedAdminTest(TestCase):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         DomainInvitation.objects.all().delete()
-    
+
     def order_by_desired_field_helper(self, obj_to_sort: AuditedAdmin, request, field_name, *obj_names):
         with less_console_noise():
             formatted_sort_fields = []
@@ -1462,7 +1464,7 @@ class DomainSessionVariableTest(TestCase):
         cls.factory = RequestFactory()
         cls.admin = DomainAdmin(Domain, None)
         cls.superuser = create_superuser()
-    
+
     def setUp(self):
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -1471,7 +1473,7 @@ class DomainSessionVariableTest(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
-    
+
     def test_session_vars_set_correctly(self):
         """Checks if session variables are being set correctly"""
 
@@ -1590,11 +1592,11 @@ class TestContactAdmin(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.site = AdminSite()
-        cls.factory = RequestFactory() 
+        cls.factory = RequestFactory()
         cls.admin = ContactAdmin(model=get_user_model(), admin_site=None)
         cls.superuser = create_superuser()
         cls.staffuser = create_user()
-    
+
     def setUp(self):
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -1608,7 +1610,7 @@ class TestContactAdmin(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
-    
+
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
@@ -1684,7 +1686,7 @@ class TestContactAdmin(TestCase):
                     f"domainrequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
                     "</ul>",
                 )
-            
+
             # cleanup this test
             DomainRequest.objects.all().delete()
             contact.delete()
@@ -1868,7 +1870,7 @@ class TestDraftDomain(TestCase):
     def tearDown(self):
         super().tearDown()
         DraftDomain.objects.all().delete()
-    
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -1903,14 +1905,14 @@ class TestFederalAgency(TestCase):
         cls.admin = FederalAgencyAdmin(model=FederalAgency, admin_site=cls.site)
         cls.factory = RequestFactory()
         cls.test_helper = GenericTestHelper(admin=cls.admin)
-    
+
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
 
     def tearDown(self):
         super().tearDown()
         FederalAgency.objects.all().delete()
-    
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()

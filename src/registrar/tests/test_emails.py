@@ -6,7 +6,7 @@ from django.test import TestCase
 from waffle.testutils import override_flag
 from registrar.utility import email
 from registrar.utility.email import send_templated_email
-from .common import completed_domain_request, less_console_noise
+from .common import completed_domain_request
 
 from api.tests.common import less_console_noise_decorator
 from datetime import datetime

@@ -31,7 +31,7 @@ from .common import (
     MockEppLib,
     GenericTestHelper,
 )
-from unittest.mock import ANY, patch
+from unittest.mock import patch
 
 from django.conf import settings
 import boto3_mocking  # type: ignore
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 @boto3_mocking.patching
 class TestDomainRequestAdmin(MockEppLib):
     """Test DomainRequestAdmin class as either staff or super user.
-    
+
     Notes:
       all tests share superuser/staffuser; do not change these models in tests
       tests have available staffuser, superuser, client, admin and test_helper
@@ -878,9 +878,7 @@ class TestDomainRequestAdmin(MockEppLib):
             DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.RejectionReasons.SECOND_DOMAIN_REASONING,
         )
-        self.assert_email_is_accurate(
-            "Your domain request was rejected because Testorg has a .gov domain.", 0, EMAIL
-        )
+        self.assert_email_is_accurate("Your domain request was rejected because Testorg has a .gov domain.", 0, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Approve
@@ -1226,7 +1224,7 @@ class TestDomainRequestAdmin(MockEppLib):
             last_name="Jones",
             email="meoward.jones@igorville.gov",
             phone="(555) 123 12345",
-            title = "Treat inspector"
+            title="Treat inspector",
         )
 
         # Create a fake domain request
@@ -1306,9 +1304,7 @@ class TestDomainRequestAdmin(MockEppLib):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
 
         # Create a mock request
-        request = self.factory.post(
-            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk), follow=True
-        )
+        request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk), follow=True)
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             # Modify the domain request's property
@@ -1350,9 +1346,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Yes, select ineligible status")
 
         # Create a mock request
-        request = self.factory.post(
-            "/admin/registrar/domainrequest{}/change/".format(domain_request.pk), follow=True
-        )
+        request = self.factory.post("/admin/registrar/domainrequest{}/change/".format(domain_request.pk), follow=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             # Modify the domain request's property
             domain_request.status = DomainRequest.DomainRequestStatus.INELIGIBLE
@@ -1873,5 +1867,3 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Check if response contains expected_html
         self.assertIn(expected_html, response_content)
-
-

@@ -31,8 +31,7 @@ from .common import MockDbForSharedTests, MockDbForIndividualTests, MockEppLib, 
 
 
 class CsvReportsTest(MockDbForSharedTests):
-    """Tests to determine if we are uploading our reports correctly.
-    """
+    """Tests to determine if we are uploading our reports correctly."""
 
     def setUp(self):
         """setup fake comain data"""
@@ -200,8 +199,7 @@ class CsvReportsTest(MockDbForSharedTests):
 
 
 class ExportDataTest(MockDbForIndividualTests, MockEppLib):
-    """Test the ExportData class from csv_export.
-    """
+    """Test the ExportData class from csv_export."""
 
     @less_console_noise_decorator
     def test_domain_data_type(self):

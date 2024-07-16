@@ -42,6 +42,7 @@ from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
 from api.tests.common import less_console_noise_decorator
+
 logger = logging.getLogger(__name__)
 
 
@@ -802,7 +803,7 @@ class MockDbForSharedTests(MockDb):
     def setUpClass(cls):
         super().setUpClass()
         cls.sharedSetUp()
-    
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -815,11 +816,10 @@ class MockDbForIndividualTests(MockDb):
     def setUp(self):
         super().setUp()
         self.sharedSetUp()
-    
+
     def tearDown(self):
         super().tearDown()
         self.sharedTearDown()
-    
 
 
 def mock_user():
@@ -867,6 +867,7 @@ def create_user():
     user.groups.set([group])
     return user
 
+
 def create_test_user():
     username = "test_user"
     first_name = "First"
@@ -878,6 +879,7 @@ def create_test_user():
         username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, title=title
     )
     return user
+
 
 def create_ready_domain():
     domain, _ = Domain.objects.get_or_create(name="city.gov", state=Domain.State.READY)

@@ -2,7 +2,6 @@ from django.test import TestCase
 from django.db.utils import IntegrityError
 from django.db import transaction
 from unittest.mock import patch
-from django.contrib.auth import get_user_model
 
 from django.test import RequestFactory
 
@@ -24,11 +23,18 @@ from registrar.models.transition_domain import TransitionDomain
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
 from registrar.utility.constants import BranchChoices
 
-from .common import MockSESClient, less_console_noise, completed_domain_request, set_domain_request_investigators, create_test_user
+from .common import (
+    MockSESClient,
+    less_console_noise,
+    completed_domain_request,
+    set_domain_request_investigators,
+    create_test_user,
+)
 from django_fsm import TransitionNotAllowed
 from waffle.testutils import override_flag
 
 from api.tests.common import less_console_noise_decorator
+
 
 @boto3_mocking.patching
 class TestDomainRequest(TestCase):

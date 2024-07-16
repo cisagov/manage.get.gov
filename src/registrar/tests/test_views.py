@@ -121,9 +121,7 @@ class TestEnvironmentVariablesEffects(TestCase):
         fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
 
         # Add a role
-        UserDomainRole.objects.get_or_create(
-            user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER)
 
         with patch.object(DomainNameserversView, "get_initial", side_effect=self.side_effect_raise_value_error):
             with self.assertRaises(ValueError):
@@ -144,9 +142,7 @@ class TestEnvironmentVariablesEffects(TestCase):
         fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
 
         # Add a role
-        UserDomainRole.objects.get_or_create(
-            user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER)
 
         with patch.object(DomainNameserversView, "get_initial", side_effect=self.side_effect_raise_value_error):
             with self.assertRaises(ValueError):
@@ -228,7 +224,9 @@ class HomeTests(TestWithUser):
         test_domain.expiration_date = date(2011, 10, 10)
         test_domain.save()
 
-        test_role, _ = UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
+        test_role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
+        )
 
         # Grab the json response of the domains list
         response = self.client.get("/get-domains-json/")
@@ -995,7 +993,9 @@ class PortfoliosTests(TestWithUser, WebTest):
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
         self.federal_agency = FederalAgency.objects.create()
-        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="xyz inc", federal_agency=self.federal_agency)
+        self.portfolio, _ = Portfolio.objects.get_or_create(
+            creator=self.user, organization_name="xyz inc", federal_agency=self.federal_agency
+        )
 
     def tearDown(self):
         Portfolio.objects.all().delete()

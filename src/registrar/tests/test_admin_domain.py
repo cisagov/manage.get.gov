@@ -9,7 +9,6 @@ from registrar.admin import (
     DomainAdmin,
 )
 from registrar.models import (
-    Contact,
     Domain,
     DomainRequest,
     DomainInformation,
@@ -37,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 class TestDomainAdminAsStaff(MockEppLib):
     """Test DomainAdmin class as staff user.
-    
+
     Notes:
       all tests share staffuser; do not change staffuser model in tests
       tests have available staffuser, client, and admin
@@ -52,7 +51,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.factory = RequestFactory()
 
     def setUp(self):
-        self.client = Client(HTTP_HOST="localhost:8080")      
+        self.client = Client(HTTP_HOST="localhost:8080")
         self.client.force_login(self.staffuser)
         super().setUp()
 
@@ -62,11 +61,11 @@ class TestDomainAdminAsStaff(MockEppLib):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
-   
+
     @classmethod
     def tearDownClass(self):
         User.objects.all().delete()
-        super().tearDownClass()     
+        super().tearDownClass()
 
     @less_console_noise_decorator
     def test_staff_can_see_cisa_region_federal(self):
@@ -374,7 +373,7 @@ class TestDomainAdminAsStaff(MockEppLib):
 
 class TestDomainAdminWClient(TestCase):
     """Test DomainAdmin class as super user.
-    
+
     Notes:
       all tests share superuser; tests must not update superuser
       tests have available superuser, client, and admin
@@ -389,7 +388,7 @@ class TestDomainAdminWClient(TestCase):
         self.superuser = create_superuser()
 
     def setUp(self):
-        self.client = Client(HTTP_HOST="localhost:8080")      
+        self.client = Client(HTTP_HOST="localhost:8080")
         self.client.force_login(self.superuser)
         super().setUp()
 
@@ -399,11 +398,11 @@ class TestDomainAdminWClient(TestCase):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
-   
+
     @classmethod
     def tearDownClass(self):
         User.objects.all().delete()
-        super().tearDownClass()   
+        super().tearDownClass()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -665,7 +664,7 @@ class TestDomainAdminWClient(TestCase):
 class TestDomainAdminWebTest(MockEppLib, WebTest):
     """Test DomainAdmin class as super user, using WebTest.
     WebTest allows for easier handling of forms and html responses.
-    
+
     Notes:
       all tests share superuser; tests must not update superuser
       tests have available superuser, app, and admin
@@ -693,11 +692,11 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
-   
+
     @classmethod
     def tearDownClass(self):
         User.objects.all().delete()
-        super().tearDownClass()   
+        super().tearDownClass()
 
     @less_console_noise_decorator
     @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
@@ -866,4 +865,3 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
     @skip("Waiting on epp lib to implement")
     def test_place_and_remove_hold_epp(self):
         raise
-
