@@ -12,37 +12,24 @@
 
     {% if user.has_contact_info %}
         {# Title #}
-        {% if user.title or user.contact.title %}
-            {% if user.contact.title %}
-                {{ user.contact.title }}
-            {% else %}
-                {{ user.title }}
-            {% endif %}
+        {% if user.title %}
+            {{ user.title }}
             <br>
         {% else %}
             None<br>
         {% endif %}
         {# Email #}
-        {% if user.email or user.contact.email %}
-            {% if user.contact.email %}
-                {{ user.contact.email }}
-                {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
-            {% else %}
-                {{ user.email }}
-                {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
-            {% endif %}
+        {% if user.email %}
+            {{ user.email }}
+            {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
             <br class="admin-icon-group__br">
         {% else %}
             None<br>
         {% endif %}
 
         {# Phone #}
-        {% if user.phone or user.contact.phone %}
-            {% if user.contact.phone %}
-                {{ user.contact.phone }}
-            {% else %}
-                {{ user.phone }}
-            {% endif %}
+        {% if user.phone %}
+            {{ user.phone }}
             <br>
         {% else %}
             None<br>

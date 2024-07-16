@@ -1209,29 +1209,22 @@ class TestUser(TestCase):
         # test with a user with contact info defined
         self.assertTrue(self.user.has_contact_info())
         # test with a user without contact info defined
-        self.user.contact.title = None
-        self.user.contact.email = None
-        self.user.contact.phone = None
+        self.user.title = None
+        self.user.email = None
+        self.user.phone = None
         self.assertFalse(self.user.has_contact_info())
 
 
 class TestContact(TestCase):
     def setUp(self):
-        self.email_for_invalid = "intern@igorville.gov"
-        self.invalid_user, _ = User.objects.get_or_create(
-            username=self.email_for_invalid,
-            email=self.email_for_invalid,
-            first_name="",
-            last_name="",
-            phone="",
-        )
-        self.invalid_contact, _ = Contact.objects.get_or_create(user=self.invalid_user)
-
         self.email = "mayor@igorville.gov"
         self.user, _ = User.objects.get_or_create(
             email=self.email, first_name="Jeff", last_name="Lebowski", phone="123456789"
         )
-        self.contact, _ = Contact.objects.get_or_create(user=self.user)
+        self.contact, _ = Contact.objects.get_or_create(
+            first_name="Jeff",
+            last_name="Lebowski",
+        )
 
         self.contact_as_so, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
         self.domain_request = DomainRequest.objects.create(creator=self.user, senior_official=self.contact_as_so)
@@ -1242,98 +1235,15 @@ class TestContact(TestCase):
         Contact.objects.all().delete()
         User.objects.all().delete()
 
-    def test_saving_contact_updates_user_first_last_names_and_phone(self):
-        """When a contact is updated, we propagate the changes to the linked user if it exists."""
-
-        # User and Contact are created and linked as expected.
-        # An empty User object should create an empty contact.
-        self.assertEqual(self.invalid_contact.first_name, "")
-        self.assertEqual(self.invalid_contact.last_name, "")
-        self.assertEqual(self.invalid_contact.phone, "")
-        self.assertEqual(self.invalid_user.first_name, "")
-        self.assertEqual(self.invalid_user.last_name, "")
-        self.assertEqual(self.invalid_user.phone, "")
-
-        # Manually update the contact - mimicking production (pre-existing data)
-        self.invalid_contact.first_name = "Joey"
-        self.invalid_contact.last_name = "Baloney"
-        self.invalid_contact.phone = "123456789"
-        self.invalid_contact.save()
-
-        # Refresh the user object to reflect the changes made in the database
-        self.invalid_user.refresh_from_db()
-
-        # Updating the contact's first and last names propagate to the user
-        self.assertEqual(self.invalid_contact.first_name, "Joey")
-        self.assertEqual(self.invalid_contact.last_name, "Baloney")
-        self.assertEqual(self.invalid_contact.phone, "123456789")
-        self.assertEqual(self.invalid_user.first_name, "Joey")
-        self.assertEqual(self.invalid_user.last_name, "Baloney")
-        self.assertEqual(self.invalid_user.phone, "123456789")
-
-    def test_saving_contact_does_not_update_user_first_last_names_and_phone(self):
-        """When a contact is updated, we avoid propagating the changes to the linked user if it already has a value"""
-
-        # User and Contact are created and linked as expected
-        self.assertEqual(self.contact.first_name, "Jeff")
-        self.assertEqual(self.contact.last_name, "Lebowski")
-        self.assertEqual(self.contact.phone, "123456789")
-        self.assertEqual(self.user.first_name, "Jeff")
-        self.assertEqual(self.user.last_name, "Lebowski")
-        self.assertEqual(self.user.phone, "123456789")
-
-        self.contact.first_name = "Joey"
-        self.contact.last_name = "Baloney"
-        self.contact.phone = "987654321"
-        self.contact.save()
-
-        # Refresh the user object to reflect the changes made in the database
-        self.user.refresh_from_db()
-
-        # Updating the contact's first and last names propagate to the user
-        self.assertEqual(self.contact.first_name, "Joey")
-        self.assertEqual(self.contact.last_name, "Baloney")
-        self.assertEqual(self.contact.phone, "987654321")
-        self.assertEqual(self.user.first_name, "Jeff")
-        self.assertEqual(self.user.last_name, "Lebowski")
-        self.assertEqual(self.user.phone, "123456789")
-
-    def test_saving_contact_does_not_update_user_email(self):
-        """When a contact's email is updated, the change is not propagated to the user."""
-        self.contact.email = "joey.baloney@diaperville.com"
-        self.contact.save()
-
-        # Refresh the user object to reflect the changes made in the database
-        self.user.refresh_from_db()
-
-        # Updating the contact's email does not propagate
-        self.assertEqual(self.contact.email, "joey.baloney@diaperville.com")
-        self.assertEqual(self.user.email, "mayor@igorville.gov")
-
-    def test_saving_contact_does_not_update_user_email_when_none(self):
-        """When a contact's email is updated, and the first/last name is none,
-        the change is not propagated to the user."""
-        self.invalid_contact.email = "joey.baloney@diaperville.com"
-        self.invalid_contact.save()
-
-        # Refresh the user object to reflect the changes made in the database
-        self.invalid_user.refresh_from_db()
-
-        # Updating the contact's email does not propagate
-        self.assertEqual(self.invalid_contact.email, "joey.baloney@diaperville.com")
-        self.assertEqual(self.invalid_user.email, "intern@igorville.gov")
-
     def test_has_more_than_one_join(self):
         """Test the Contact model method, has_more_than_one_join"""
-        # test for a contact which has one user defined
-        self.assertFalse(self.contact.has_more_than_one_join("user"))
-        self.assertTrue(self.contact.has_more_than_one_join("senior_official"))
         # test for a contact which is assigned as a senior official on a domain request
         self.assertFalse(self.contact_as_so.has_more_than_one_join("senior_official"))
         self.assertTrue(self.contact_as_so.has_more_than_one_join("submitted_domain_requests"))
 
     def test_has_contact_info(self):
         """Test that has_contact_info properly returns"""
+        self.contact.title = "Title"
         # test with a contact with contact info defined
         self.assertTrue(self.contact.has_contact_info())
         # test with a contact without contact info defined

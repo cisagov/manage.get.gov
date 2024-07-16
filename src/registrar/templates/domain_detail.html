@@ -62,7 +62,7 @@
     {# Conditionally display profile #}
     {% if not has_profile_feature_flag %}
     {% url 'domain-your-contact-information' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url editable=domain.is_editable %}
+    {% include "includes/summary_item.html" with title='Your contact information' value=request.user contact='true' edit_link=url editable=domain.is_editable %}
     {% endif %}
 
     {% url 'domain-security-email' pk=domain.id as url %}

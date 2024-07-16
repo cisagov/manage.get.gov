@@ -1,6 +1,6 @@
 from django import forms
 
-from registrar.models.contact import Contact
+from registrar.models.user import User
 
 from django.core.validators import MaxLengthValidator
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
@@ -13,7 +13,7 @@ class UserProfileForm(forms.ModelForm):
     redirect = forms.CharField(widget=forms.HiddenInput(), required=False)
 
     class Meta:
-        model = Contact
+        model = User
         fields = ["first_name", "middle_name", "last_name", "title", "email", "phone"]
         widgets = {
             "first_name": forms.TextInput,

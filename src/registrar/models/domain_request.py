@@ -135,6 +135,13 @@ class DomainRequest(TimeStampedModel):
         @classmethod
         def get_org_label(cls, org_name: str):
             """Returns the associated label for a given org name"""
+            # This is an edgecase on domains with no org.
+            # This unlikely to happen but
+            # a break will occur in certain edge cases without this.
+            # (more specifically, csv exports).
+            if not org_name:
+                return None
+
             org_names = org_name.split("_election")
             if len(org_names) > 0:
                 org_name = org_names[0]

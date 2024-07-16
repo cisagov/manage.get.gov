@@ -4,7 +4,7 @@ import abc  # abstract base class
 
 from django.views.generic import DetailView, DeleteView, TemplateView
 from registrar.models import Domain, DomainRequest, DomainInvitation
-from registrar.models.contact import Contact
+from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 
 from .mixins import (
@@ -154,9 +154,9 @@ class UserProfilePermissionView(UserProfilePermission, DetailView, abc.ABC):
     """
 
     # DetailView property for what model this is viewing
-    model = Contact
+    model = User
     # variable name in template context for the model object
-    context_object_name = "contact"
+    context_object_name = "user"
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property
