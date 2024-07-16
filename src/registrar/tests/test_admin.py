@@ -2288,72 +2288,71 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "When a domain request is in ineligible status")
             self.assertContains(response, "Yes, select ineligible status")
 
+    @less_console_noise_decorator
     def test_readonly_when_restricted_creator(self):
-        self.maxDiff = None
-        with less_console_noise():
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                domain_request.creator.status = User.RESTRICTED
-                domain_request.creator.save()
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            domain_request.creator.status = User.RESTRICTED
+            domain_request.creator.save()
 
-            request = self.factory.get("/")
-            request.user = self.superuser
+        request = self.factory.get("/")
+        request.user = self.superuser
 
-            readonly_fields = self.admin.get_readonly_fields(request, domain_request)
+        readonly_fields = self.admin.get_readonly_fields(request, domain_request)
 
-            expected_fields = [
-                "other_contacts",
-                "current_websites",
-                "alternative_domains",
-                "is_election_board",
-                "federal_agency",
-                "status_history",
-                "id",
-                "created_at",
-                "updated_at",
-                "status",
-                "rejection_reason",
-                "action_needed_reason",
-                "action_needed_reason_email",
-                "federal_agency",
-                "portfolio",
-                "sub_organization",
-                "creator",
-                "investigator",
-                "generic_org_type",
-                "is_election_board",
-                "organization_type",
-                "federally_recognized_tribe",
-                "state_recognized_tribe",
-                "tribe_name",
-                "federal_type",
-                "organization_name",
-                "address_line1",
-                "address_line2",
-                "city",
-                "state_territory",
-                "zipcode",
-                "urbanization",
-                "about_your_organization",
-                "senior_official",
-                "approved_domain",
-                "requested_domain",
-                "submitter",
-                "purpose",
-                "no_other_contacts_rationale",
-                "anything_else",
-                "has_anything_else_text",
-                "cisa_representative_email",
-                "cisa_representative_first_name",
-                "cisa_representative_last_name",
-                "has_cisa_representative",
-                "is_policy_acknowledged",
-                "submission_date",
-                "notes",
-                "alternative_domains",
-            ]
+        expected_fields = [
+            "other_contacts",
+            "current_websites",
+            "alternative_domains",
+            "is_election_board",
+            "federal_agency",
+            "status_history",
+            "id",
+            "created_at",
+            "updated_at",
+            "status",
+            "rejection_reason",
+            "action_needed_reason",
+            "action_needed_reason_email",
+            "federal_agency",
+            "portfolio",
+            "sub_organization",
+            "creator",
+            "investigator",
+            "generic_org_type",
+            "is_election_board",
+            "organization_type",
+            "federally_recognized_tribe",
+            "state_recognized_tribe",
+            "tribe_name",
+            "federal_type",
+            "organization_name",
+            "address_line1",
+            "address_line2",
+            "city",
+            "state_territory",
+            "zipcode",
+            "urbanization",
+            "about_your_organization",
+            "senior_official",
+            "approved_domain",
+            "requested_domain",
+            "submitter",
+            "purpose",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "has_anything_else_text",
+            "cisa_representative_email",
+            "cisa_representative_first_name",
+            "cisa_representative_last_name",
+            "has_cisa_representative",
+            "is_policy_acknowledged",
+            "submission_date",
+            "notes",
+            "alternative_domains",
+        ]
 
-            self.assertEqual(readonly_fields, expected_fields)
+        self.assertEqual(readonly_fields, expected_fields)
 
     def test_readonly_fields_for_analyst(self):
         with less_console_noise():
