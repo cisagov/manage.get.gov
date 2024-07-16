@@ -108,7 +108,7 @@ class BaseExport(ABC):
         return Q()
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, request=None, start_date=None, end_date=None):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -191,7 +191,7 @@ class BaseExport(ABC):
         return cls.update_queryset(queryset, **kwargs)
 
     @classmethod
-    def export_data_to_csv(cls, csv_file, start_date=None, end_date=None):
+    def export_data_to_csv(cls, csv_file, request=None, start_date=None, end_date=None):
         """
         All domain metadata:
         Exports domains of all statuses plus domain managers.
@@ -204,7 +204,7 @@ class BaseExport(ABC):
         prefetch_related = cls.get_prefetch_related()
         exclusions = cls.get_exclusions()
         annotations_for_sort = cls.get_annotations_for_sort()
-        filter_conditions = cls.get_filter_conditions(start_date, end_date)
+        filter_conditions = cls.get_filter_conditions(request, start_date, end_date)
         computed_fields = cls.get_computed_fields()
         related_table_fields = cls.get_related_table_fields()
 
@@ -543,6 +543,21 @@ class DomainDataType(DomainExport):
             "federal_agency__agency",
         ]
 
+class DomainDataTypeUser(DomainDataType):
+    """
+    The DomainDataType report, but sliced on the current request user
+    """
+
+    @classmethod
+    def get_filter_conditions(cls, request=None, start_date=None, end_date=None):
+        """
+        Get a Q object of filter conditions to filter when building queryset.
+        """
+        user_domain_roles = UserDomainRole.objects.filter(user=request.user)
+        domain_ids = user_domain_roles.values_list("domain_id", flat=True)
+        return Q(id__in=domain_ids)
+
+
 
 class DomainDataFull(DomainExport):
     """
@@ -601,7 +616,7 @@ class DomainDataFull(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, request=None, start_date=None, end_date=None):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -696,7 +711,7 @@ class DomainDataFederal(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, request=None, start_date=None, end_date=None):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -794,7 +809,7 @@ class DomainGrowth(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, request=None, start_date=None, end_date=None):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -866,7 +881,7 @@ class DomainManaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, request=None, start_date=None, end_date=None):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -1001,7 +1016,7 @@ class DomainUnmanaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, request=None, start_date=None, end_date=None):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -1231,7 +1246,7 @@ class DomainRequestGrowth(DomainRequestExport):
         ]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, request=None, start_date=None, end_date=None):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """

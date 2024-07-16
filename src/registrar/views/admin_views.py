@@ -157,6 +157,14 @@ class ExportDataType(View):
         csv_export.DomainDataType.export_data_to_csv(response)
         return response
 
+class ExportDataTypeUser(View):
+    """Returns a domain report for a given user on the request"""
+    def get(self, request, *args, **kwargs):
+        # match the CSV example with all the fields
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="your-domains.csv"'
+        csv_export.DomainDataTypeUser.export_data_to_csv(response, request)
+        return response
 
 class ExportDataFull(View):
     def get(self, request, *args, **kwargs):
@@ -194,7 +202,7 @@ class ExportDataDomainsGrowth(View):
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="domain-growth-report-{start_date}-to-{end_date}.csv"'
-        csv_export.DomainGrowth.export_data_to_csv(response, start_date, end_date)
+        csv_export.DomainGrowth.export_data_to_csv(response, start_date=start_date, end_date=end_date)
 
         return response
 
@@ -206,7 +214,7 @@ class ExportDataRequestsGrowth(View):
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="requests-{start_date}-to-{end_date}.csv"'
-        csv_export.DomainRequestGrowth.export_data_to_csv(response, start_date, end_date)
+        csv_export.DomainRequestGrowth.export_data_to_csv(response, start_date=start_date, end_date=end_date)
 
         return response
 
@@ -217,7 +225,7 @@ class ExportDataManagedDomains(View):
         end_date = request.GET.get("end_date", "")
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="managed-domains-{start_date}-to-{end_date}.csv"'
-        csv_export.DomainManaged.export_data_to_csv(response, start_date, end_date)
+        csv_export.DomainManaged.export_data_to_csv(response, start_date=start_date, end_date=end_date)
 
         return response
 
@@ -228,6 +236,6 @@ class ExportDataUnmanagedDomains(View):
         end_date = request.GET.get("end_date", "")
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="unmanaged-domains-{start_date}-to-{end_date}.csv"'
-        csv_export.DomainUnmanaged.export_data_to_csv(response, start_date, end_date)
+        csv_export.DomainUnmanaged.export_data_to_csv(response, start_date=start_date, end_date=end_date)
 
         return response
