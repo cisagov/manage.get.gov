@@ -7,8 +7,6 @@ def index(request):
     context = {}
 
     if request.user.is_authenticated:
-        context["has_organization_feature_flag"] = flag_is_active(request, "organization_feature")
-
         # This controls the creation of a new domain request in the wizard
         request.session["new_request"] = True
 

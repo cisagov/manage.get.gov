@@ -4,10 +4,6 @@
 
 {% block title %} Home | {% endblock %}
 
-{% comment %}
-  home and portfolio_base test for is_authenticated
-{% endcomment %}
-
 {% block content %}
 <main id="main-content" class="grid-container">
 {% if user.is_authenticated %}

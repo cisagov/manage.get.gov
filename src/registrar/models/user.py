@@ -292,8 +292,6 @@ class User(AbstractUser):
 
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
-        user_portfolios = Portfolio.objects.filter(creator=self)
-
-        user_portfolios_exist = user_portfolios.exists()
+        user_portfolios_exist = Portfolio.objects.filter(creator=self).exists()
 
         return has_organization_feature_flag and user_portfolios_exist

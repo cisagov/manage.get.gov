@@ -1,9 +1,12 @@
+import logging
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from registrar.models import UserDomainRole, Domain
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -101,6 +104,7 @@ def serialize_domain(domain):
                 suborganization_name = suborganization.name
     except Domain.domain_info.RelatedObjectDoesNotExist:
         domain_info = None
+        logger.debug(f'Issue in domains_json: We could not find domain_info for {domain}')
 
     return {
         "id": domain.id,
