@@ -70,7 +70,7 @@
     @include at-media(desktop) {
         background-color: color('primary-darker');
         border-top: solid 1px color('base');
-        border-bottom: solid 1px color('base-light');
+        border-bottom: solid 1px color('base-lighter');
 
         .usa-logo__text a,
         .usa-logo__text button,
@@ -78,7 +78,7 @@
             color: color('white');
         }
         .usa-nav {
-            background-color: color('primary-lighter');
+            background-color: color('primary-lightest');
         }
         .usa-nav__primary-item:last-child {
             margin-left: auto;
