@@ -255,8 +255,12 @@ class User(AbstractUser):
     def has_portfolio_permissions(self, portfolio_permission):
         """The views should only call this guy when testing for perms and not rely on roles"""
 
+        # TODO: this does not seem to be working
         if portfolio_permission == self.UserPortfolioPermissionChoices.EDIT_DOMAINS and self.domains.exists():
-            return self.domains
+            print(f'portfolio_permission {portfolio_permission}')
+            return True
+        
+        print(f'portfolio_permission {portfolio_permission}')
 
         return portfolio_permission in self.portfolio_permissions if self.portfolio_permissions else False
     

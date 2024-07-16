@@ -683,6 +683,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 "fields": (
                     "is_active",
                     "groups",
+                    "portfolio",
+                    "portfolio_roles",
+                    "portfolio_permissions",
                 )
             },
         ),
@@ -712,6 +715,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "Important dates",
         "last_login",
         "date_joined",
+        "portfolio",
+        "portfolio_roles",
+        "portfolio_permissions",
     ]
 
     list_filter = (

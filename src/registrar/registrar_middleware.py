@@ -6,7 +6,7 @@ import logging
 from urllib.parse import parse_qs
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from registrar.models.portfolio import Portfolio
+from registrar.context_processors import has_base_portfolio_permission, has_domains_portfolio_permission, has_requests_portfolio_permission
 from registrar.models.user import User
 from waffle.decorators import flag_is_active
 
@@ -148,13 +148,19 @@ class CheckPortfolioMiddleware:
                 if request.user.is_authenticated:
                     # user_portfolios = Portfolio.objects.filter(creator=request.user)
 
-                    required_permission = User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO
-
-                    if request.user.has_portfolio_permissions(required_permission):
-                        print('user has portfolio')
+                    if has_base_portfolio_permission(request):
+                        # print('user has portfolio')
                         portfolio = request.user.portfolio
-                        home_with_portfolio = reverse("portfolio-domains", kwargs={"portfolio_id": portfolio.id})
-                        return HttpResponseRedirect(home_with_portfolio)
+
+                        if has_domains_portfolio_permission(request):
+                            portfolio_redirect = reverse("portfolio-domains", kwargs={"portfolio_id": portfolio.id})
+                        elif has_requests_portfolio_permission(request):
+                            portfolio_redirect = reverse("portfolio-requests", kwargs={"portfolio_id": portfolio.id})
+                        else:
+                            # View organization is the lowest access
+                            portfolio_redirect = reverse("portfolio-organization", kwargs={"portfolio_id": portfolio.id})
+
+                        return HttpResponseRedirect(portfolio_redirect)
                     
-                    print('user does not have a portfolio')
+                    # print('user does not have a portfolio')
         return None

@@ -1,5 +1,7 @@
 from django.conf import settings
 
+from registrar.models.user import User
+
 
 def language_code(request):
     """Add LANGUAGE_CODE to the template context.
@@ -36,3 +38,20 @@ def is_demo_site(request):
 def is_production(request):
     """Add a boolean if this is our production site."""
     return {"IS_PRODUCTION": settings.IS_PRODUCTION}
+
+
+def has_base_portfolio_permission(request):
+    """"""
+    return {"has_base_portfolio_permission": request.user.has_portfolio_permissions(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)}
+
+def has_domains_portfolio_permission(request):
+    """"""
+    return {"has_domains_portfolio_permission": request.user.has_portfolio_permissions(User.UserPortfolioPermissionChoices.VIEW_DOMAINS)}
+
+def has_requests_portfolio_permission(request):
+    """"""
+    return {"has_requests_portfolio_permission": request.user.has_portfolio_permissions(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)}
+
+def has_organization_portfolio_permission(request):
+    """"""
+    return {"has_organization_portfolio_permission": request.user.has_portfolio_permissions(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)}
