@@ -163,7 +163,7 @@ class ExportDataTypeUser(View):
         # match the CSV example with all the fields
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="your-domains.csv"'
-        csv_export.DomainDataTypeUser.export_data_to_csv(response, request)
+        csv_export.DomainDataTypeUser.export_data_to_csv(response, request=request)
         return response
 
 class ExportDataFull(View):
@@ -225,6 +225,7 @@ class ExportDataManagedDomains(View):
         end_date = request.GET.get("end_date", "")
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="managed-domains-{start_date}-to-{end_date}.csv"'
+        # Note: start_date doesn't appear to be used in the underlying report - is ths intentional?
         csv_export.DomainManaged.export_data_to_csv(response, start_date=start_date, end_date=end_date)
 
         return response
