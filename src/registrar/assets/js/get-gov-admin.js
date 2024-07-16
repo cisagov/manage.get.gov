@@ -583,12 +583,20 @@ function initializeWidgetOnList(list, parentId) {
     function updateActionNeededEmailDisplay(reason) {
         let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
         let collapseableDiv = readonlyView.querySelector(".collapse--dgsimple");
+        let showMoreButton = document.querySelector("#action_needed_reason_email__show_details");
         if ((reason && reason != "other") && !emailHasBeenSentBefore) {
             showElement(actionNeededEmail.parentElement)
             hideElement(readonlyView)
+            hideElement(showMoreButton)
         } else {
             if (!reason || reason === "other") {
                 collapseableDiv.innerHTML = reason ? "No email will be sent." : "-";
+                hideElement(showMoreButton)
+                if (collapseableDiv.classList.contains("collapsed")) {
+                    showMoreButton.click()
+                }
+            }else {
+                showElement(showMoreButton)
             }
             hideElement(actionNeededEmail.parentElement)
             showElement(readonlyView)
