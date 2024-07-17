@@ -395,7 +395,7 @@ class DomainExport(BaseExport):
             "State": model.get("state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
-            "Security contact email": model.get("security_contact_email"),
+            "Security contact email": security_contact_email,
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
