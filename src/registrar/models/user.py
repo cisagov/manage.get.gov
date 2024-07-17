@@ -115,7 +115,8 @@ class User(AbstractUser):
             self.title,
             self.phone,
         ]
-        return None not in user_values
+
+        return None not in user_values and "" not in user_values
 
     def __str__(self):
         # this info is pulled from Login.gov
