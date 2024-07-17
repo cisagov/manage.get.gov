@@ -29,6 +29,5 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.removeChild(textArea);
 
         alert('Summary copied to clipboard!');
-        alert("hello");
     });
 });
