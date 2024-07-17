@@ -367,8 +367,8 @@ class ExportDataTest(MockDb, MockEppLib):
                 # Call the export functions
                 DomainGrowth.export_data_to_csv(
                     csv_file,
-                    self.start_date.strftime("%Y-%m-%d"),
-                    self.end_date.strftime("%Y-%m-%d"),
+                    start_date=self.start_date.strftime("%Y-%m-%d"),
+                    end_date=self.end_date.strftime("%Y-%m-%d"),
                 )
                 # Reset the CSV file's position to the beginning
                 csv_file.seek(0)
@@ -409,8 +409,8 @@ class ExportDataTest(MockDb, MockEppLib):
         # Call the export functions
         DomainManaged.export_data_to_csv(
             csv_file,
-            self.start_date.strftime("%Y-%m-%d"),
-            self.end_date.strftime("%Y-%m-%d"),
+            start_date=self.start_date.strftime("%Y-%m-%d"),
+            end_date=self.end_date.strftime("%Y-%m-%d"),
         )
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
@@ -446,7 +446,9 @@ class ExportDataTest(MockDb, MockEppLib):
         # Create a CSV file in memory
         csv_file = StringIO()
         DomainUnmanaged.export_data_to_csv(
-            csv_file, self.start_date.strftime("%Y-%m-%d"), self.end_date.strftime("%Y-%m-%d")
+            csv_file, 
+            start_date=self.start_date.strftime("%Y-%m-%d"), 
+            end_date=self.end_date.strftime("%Y-%m-%d")
         )
 
         # Reset the CSV file's position to the beginning
@@ -493,8 +495,8 @@ class ExportDataTest(MockDb, MockEppLib):
             # Call the export functions
             DomainRequestGrowth.export_data_to_csv(
                 csv_file,
-                self.start_date.strftime("%Y-%m-%d"),
-                self.end_date.strftime("%Y-%m-%d"),
+                start_date=self.start_date.strftime("%Y-%m-%d"),
+                end_date=self.end_date.strftime("%Y-%m-%d"),
             )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
