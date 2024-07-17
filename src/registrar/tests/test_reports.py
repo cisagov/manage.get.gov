@@ -47,10 +47,10 @@ class CsvReportsTest(MockDb):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"),
-                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"),
-                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,\r\n"),
-                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\r\n"),
+                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
+                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
             # we just want to verify what is being written.
@@ -69,12 +69,12 @@ class CsvReportsTest(MockDb):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"),
-                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"),
-                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,\r\n"),
-                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\r\n"),
-                call("adomain2.gov,Interstate,,,,,\r\n"),
-                call("zdomain12.gov,Interstate,,,,,\r\n"),
+                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
+                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
+                call("adomain2.gov,Interstate,,,,,(blank)\r\n"),
+                call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
             # we just want to verify what is being written.
