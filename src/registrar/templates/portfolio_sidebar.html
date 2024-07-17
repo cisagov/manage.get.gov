@@ -12,7 +12,15 @@
           </a>
         </li>
       {% endif %}
-      {% if has_requests_portfolio_permission %}
+
+      <li class="usa-sidenav__item">
+        {% url 'portfolio-organization' portfolio.id as url %}
+        <a href="{{ url }}" {% if request.path == url %}class="usa-current"{% endif %}> 
+          Organization
+        </a>
+      </li>
+
+      {% if has_domain_requests_portfolio_permission %}
       <li class="usa-sidenav__item">
         {% url 'portfolio-domain-requests' portfolio.id as url %} 
         <a href="{{ url }}" {% if request.path == url %}class="usa-current"{% endif %}> 
@@ -26,12 +34,7 @@
           Members
         </a>
       </li>
-      <li class="usa-sidenav__item">
-        {% url 'portfolio-organization' portfolio.id as url %}
-        <a href="{{ url }}" {% if request.path == url %}class="usa-current"{% endif %}> 
-          Organization
-        </a>
-      </li>
+      
       <li class="usa-sidenav__item">
         <a href="#">
           Senior official

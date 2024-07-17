@@ -240,6 +240,7 @@ TEMPLATES = [
                 "registrar.context_processors.canonical_path",
                 "registrar.context_processors.is_demo_site",
                 "registrar.context_processors.is_production",
+                "registrar.context_processors.portfolio_permissions",
             ],
         },
     },

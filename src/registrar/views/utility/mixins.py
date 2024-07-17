@@ -2,7 +2,7 @@
 
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
-from registrar.context_processors import has_base_portfolio_permission, has_domains_portfolio_permission, has_organization_portfolio_permission, has_requests_portfolio_permission
+from registrar.context_processors import portfolio_permissions
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -402,7 +402,7 @@ class UserProfilePermission(PermissionsLoginMixin):
         return True
     
 
-class PortfolioPermission(PermissionsLoginMixin):
+class PortfolioBasePermission(PermissionsLoginMixin):
     """Permission mixin that redirects to portfolio pages if user
     has access, otherwise 403"""
 
@@ -415,15 +415,15 @@ class PortfolioPermission(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
-        # portfolio_id = self.kwargs["pk"]
-        # portfolio = Portfolio.objects.get(pk=portfolio_id)
+        permission_dict = portfolio_permissions(self.request)
+        has_permission = permission_dict['has_base_portfolio_permission']
 
-        if not has_base_portfolio_permission(self.request):
+        if not has_permission:
             return False
 
         return True
     
-class PortfolioDomainsPermission(PortfolioPermission):
+class PortfolioDomainsPermission(PortfolioBasePermission):
     """
     """
 
@@ -431,18 +431,16 @@ class PortfolioDomainsPermission(PortfolioPermission):
         """
         """
 
-        permission_dict = has_domains_portfolio_permission(self.request)
+        permission_dict = portfolio_permissions(self.request)
         has_permission = permission_dict['has_domains_portfolio_permission']
 
         if not has_permission:
             return False
-        
-        print('return true')
 
         return True
     
 
-class PortfolioDomainRequestsPermission(PortfolioPermission):
+class PortfolioDomainRequestsPermission(PortfolioBasePermission):
     """
     """
 
@@ -450,24 +448,8 @@ class PortfolioDomainRequestsPermission(PortfolioPermission):
         """
         """
 
-        permission_dict = has_requests_portfolio_permission(self.request)
-        has_permission = permission_dict['has_requests_portfolio_permission']
-
-        if not has_permission:
-            return False
-
-        return True
-    
-class PortfolioOrganizationssPermission(PortfolioPermission):
-    """
-    """
-
-    def has_permission(self):
-        """
-        """
-
-        permission_dict = has_organization_portfolio_permission(self.request)
-        has_permission = permission_dict['has_organization_portfolio_permission']
+        permission_dict = portfolio_permissions(self.request)
+        has_permission = permission_dict['has_domain_requests_portfolio_permission']
 
         if not has_permission:
             return False

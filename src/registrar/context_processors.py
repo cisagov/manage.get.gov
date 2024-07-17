@@ -40,18 +40,10 @@ def is_production(request):
     return {"IS_PRODUCTION": settings.IS_PRODUCTION}
 
 
-def has_base_portfolio_permission(request):
+def portfolio_permissions(request):
     """"""
-    return {"has_base_portfolio_permission": request.user.has_portfolio_permissions(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)}
-
-def has_domains_portfolio_permission(request):
-    """"""
-    return {"has_domains_portfolio_permission": request.user.has_portfolio_permissions(User.UserPortfolioPermissionChoices.VIEW_DOMAINS)}
-
-def has_requests_portfolio_permission(request):
-    """"""
-    return {"has_requests_portfolio_permission": request.user.has_portfolio_permissions(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)}
-
-def has_organization_portfolio_permission(request):
-    """"""
-    return {"has_organization_portfolio_permission": request.user.has_portfolio_permissions(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)}
+    return {
+        "has_base_portfolio_permission": request.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO),
+        "has_domains_portfolio_permission": request.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_DOMAINS),
+        "has_domain_requests_portfolio_permission": request.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)
+    }

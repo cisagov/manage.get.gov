@@ -63,6 +63,7 @@ class User(AbstractUser):
 
     class UserPortfolioRoleChoices(models.TextChoices):
         """
+        Roles make it easier for admins to look at 
         """
 
         ORGANIZATION_ADMIN = "organization_admin", "Admin"
@@ -149,15 +150,15 @@ class User(AbstractUser):
         help_text="Select one or more roles.",
     )
 
-    portfolio_permissions = ArrayField(
-        models.CharField(
-            max_length=50,
-            choices=UserPortfolioPermissionChoices.choices,
-        ),
-        null=True,
-        blank=True,
-        help_text="Select one or more permissions.",
-    )
+    # portfolio_permissions = ArrayField(
+    #     models.CharField(
+    #         max_length=50,
+    #         choices=UserPortfolioPermissionChoices.choices,
+    #     ),
+    #     null=True,
+    #     blank=True,
+    #     help_text="Select one or more permissions.",
+    # )
 
     phone = PhoneNumberField(
         null=True,
@@ -252,30 +253,30 @@ class User(AbstractUser):
         """Do not rely on roles when testing for perms in views"""
         return role in self.portfolio_roles if self.portfolio_roles else False
     
-    def has_portfolio_permissions(self, portfolio_permission):
+    def has_portfolio_permission(self, portfolio_permission):
         """The views should only call this guy when testing for perms and not rely on roles"""
 
         # TODO: this does not seem to be working
-        if portfolio_permission == self.UserPortfolioPermissionChoices.EDIT_DOMAINS and self.domains.exists():
-            print(f'portfolio_permission {portfolio_permission}')
-            return True
+        # if portfolio_permission == self.UserPortfolioPermissionChoices.EDIT_DOMAINS and self.domains.exists():
+        #     return True
+
+        if not self.portfolio:
+            return False
         
-        print(f'portfolio_permission {portfolio_permission}')
-
-        return portfolio_permission in self.portfolio_permissions if self.portfolio_permissions else False
+        portfolio_permissions = self.get_portfolio_permissions()
+        
+        return portfolio_permission in portfolio_permissions
     
-    def save(self, *args, **kwargs):
-        self.update_permissions_from_roles()
-        super().save(*args, **kwargs)
+    def get_portfolio_permissions(self):
+        """
+        Retrieve the permissions for the user's portfolio roles.
+        """
+        portfolio_permissions = set()  # Use a set to avoid duplicate permissions
 
-    def update_permissions_from_roles(self):
-        print('update permissions when saving')
-        new_portfolio_permissions = set(self.portfolio_permissions or [])
-        print(f'new_portfolio_permissions {new_portfolio_permissions}')
-        for role in self.portfolio_roles or []:
-            print(f'role {role}')
-            new_portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
-        self.portfolio_permissions = list(new_portfolio_permissions)
+        for role in self.portfolio_roles:
+            if role in self.PORTFOLIO_ROLE_PERMISSIONS:
+                portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS[role])
+        return list(portfolio_permissions)  # Convert back to list if necessary
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):

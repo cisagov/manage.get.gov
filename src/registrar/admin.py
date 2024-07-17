@@ -654,7 +654,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "user_permissions",
                     "portfolio",
                     "portfolio_roles",
-                    "portfolio_permissions",
                 )
             },
         ),
@@ -685,7 +684,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "groups",
                     "portfolio",
                     "portfolio_roles",
-                    "portfolio_permissions",
                 )
             },
         ),
@@ -717,7 +715,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "date_joined",
         "portfolio",
         "portfolio_roles",
-        "portfolio_permissions",
     ]
 
     list_filter = (

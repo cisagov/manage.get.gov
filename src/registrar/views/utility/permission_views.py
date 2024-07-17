@@ -15,10 +15,9 @@ from .mixins import (
     DomainRequestWizardPermission,
     PortfolioDomainRequestsPermission,
     PortfolioDomainsPermission,
-    PortfolioOrganizationssPermission,
     UserDeleteDomainRolePermission,
     UserProfilePermission,
-    PortfolioPermission,
+    PortfolioBasePermission,
 )
 import logging
 
@@ -169,7 +168,7 @@ class UserProfilePermissionView(UserProfilePermission, DetailView, abc.ABC):
         raise NotImplementedError
 
 
-class PortfolioBasePermissionView(PortfolioPermission, DetailView, abc.ABC):
+class PortfolioBasePermissionView(PortfolioBasePermission, DetailView, abc.ABC):
     """Abstract base view for portfolio views that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify
@@ -196,8 +195,3 @@ class PortfolioDomainsPermissionView(PortfolioDomainsPermission, PortfolioBasePe
 class PortfolioDomainRequestsPermissionView(PortfolioDomainRequestsPermission, PortfolioBasePermissionView, abc.ABC):
     """
     """
-    
-class PortfolioOrganizationssPermissionView(PortfolioOrganizationssPermission, PortfolioBasePermissionView, abc.ABC):
-    """
-    """
-
