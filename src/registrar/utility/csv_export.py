@@ -329,13 +329,7 @@ class DomainExport(BaseExport):
         Fetch all PublicContact entries and return a mapping of registry_id to email.
         """
         public_contacts = PublicContact.objects.values_list("registry_id", "email")
-
-        email_dict = {}
-        invalid_emails = {DefaultEmail.LEGACY_DEFAULT, DefaultEmail.PUBLIC_CONTACT_DEFAULT}
-        for registry_id, email in public_contacts:
-            scrubbed_email = email if email and email not in invalid_emails else "(blank)"
-            email_dict[registry_id] = scrubbed_email
-        return email_dict
+        return {registry_id: email for registry_id, email in public_contacts}
 
     @classmethod
     def get_all_domain_invitations(cls):
@@ -380,6 +374,12 @@ class DomainExport(BaseExport):
 
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
+
+        security_contact_email = model.get("security_contact_email")
+        invalid_emails = {DefaultEmail.LEGACY_DEFAULT, DefaultEmail.PUBLIC_CONTACT_DEFAULT}
+        if not security_contact_email or security_contact_email in invalid_emails:
+            security_contact_email = "(blank)"
+
         FIELDS = {
             "Domain name": model.get("domain__name"),
             "Status": human_readable_status,
@@ -392,7 +392,7 @@ class DomainExport(BaseExport):
             "State": model.get("state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
-            "Security contact email": model.get("security_contact_email"),
+            "Security contact email": security_contact_email,
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
