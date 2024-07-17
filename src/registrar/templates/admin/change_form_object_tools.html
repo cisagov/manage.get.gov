@@ -16,5 +16,12 @@
         <p class="margin-0 padding-0">
             <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
         </p>
+        {% if opts.model_name == 'domainrequest' %}
+        <p class="margin-0 padding-0">
+            <button id="copy-summary-btn" class="button">{% translate "Copy request summary" %}</button>
+            <!-- <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "Copy request summary" %}</a> -->
+        </p>
+        {% endif %}
     {% endif %}
 {% endblock %}
+
