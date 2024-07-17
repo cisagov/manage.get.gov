@@ -376,11 +376,11 @@ class DomainExport(BaseExport):
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
 
         security_contact_email = model.get("security_contact_email")
-        invalid_emails = {DefaultEmail.LEGACY_DEFAULT, DefaultEmail.PUBLIC_CONTACT_DEFAULT}
+        invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
         if (
             not security_contact_email
             or not isinstance(security_contact_email, str)
-            or security_contact_email.lower() in invalid_emails
+            or security_contact_email.lower().strip() in invalid_emails
         ):
             security_contact_email = "(blank)"
 
