@@ -32,6 +32,17 @@
           </form>
         </section>
       </div>
+      {% if portfolio %}
+      <div  class="mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3">
+        <section aria-label="Domains report component" class="flex-6 desktop:margin-top-205">
+          <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled">
+            <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+              <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+            </svg>Export as csv
+          </a>
+        </section>
+      </div>
+      {% endif %}
     </div>
     {% if portfolio %}
     <div class="display-flex flex-align-center margin-top-1"> 
@@ -167,6 +178,18 @@
     <div class="domains__no-search-results display-none">
       <p>No results found</p>
     </div>
+
+    {% if not portfolio %}
+    <div class="grid-row">
+      <div class="grid-col">
+        <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled">
+          <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+          </svg>Export as csv
+        </a>
+      </div>
+    </div>
+    {% endif %}
   </section>
   <nav aria-label="Pagination" class="usa-pagination flex-justify" id="domains-pagination">
     <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
