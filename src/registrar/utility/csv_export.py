@@ -377,7 +377,7 @@ class DomainExport(BaseExport):
         if (
             not security_contact_email
             or not isinstance(security_contact_email, str)
-            or security_contact_email.lower() in invalid_emails
+            or security_contact_email.lower().strip() in invalid_emails
         ):
             security_contact_email = "(blank)"
 
