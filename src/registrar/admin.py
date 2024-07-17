@@ -2649,8 +2649,6 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 class PortfolioAdmin(ListHeaderAdmin):
 
-    change_form_template = "django/admin/portfolio_change_form.html"
-
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
@@ -2660,19 +2658,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         "creator",
         "federal_agency",
     ]
-
-    def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Add related suborganizations and domain groups"""
-        obj = self.get_object(request, object_id)
-
-        # ---- Domain Groups
-        domain_groups = DomainGroup.objects.filter(portfolio=obj)
-
-        # ---- Suborganizations
-        suborganizations = Suborganization.objects.filter(portfolio=obj)
-
-        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
-        return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
 
