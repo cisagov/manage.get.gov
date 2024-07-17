@@ -18,6 +18,7 @@ from django.contrib.postgres.aggregates import StringAgg
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
+from registrar.utility.enums import DefaultEmail
 
 
 logger = logging.getLogger(__name__)
@@ -328,7 +329,13 @@ class DomainExport(BaseExport):
         Fetch all PublicContact entries and return a mapping of registry_id to email.
         """
         public_contacts = PublicContact.objects.values_list("registry_id", "email")
-        return {registry_id: email for registry_id, email in public_contacts}
+
+        email_dict = {}
+        invalid_emails = {DefaultEmail.LEGACY_DEFAULT, DefaultEmail.PUBLIC_CONTACT_DEFAULT}
+        for registry_id, email in public_contacts:
+            scrubbed_email = email if email and email not in invalid_emails else "(blank)"
+            email_dict[registry_id] = scrubbed_email
+        return email_dict
 
     @classmethod
     def get_all_domain_invitations(cls):
