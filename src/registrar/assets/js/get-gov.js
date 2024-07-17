@@ -1826,6 +1826,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function setupListener(){
+
+    
+
     document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
       // Get the "{field_name}" and "edit-button"
       let fieldIdParts = button.id.split("__")
@@ -1849,11 +1852,26 @@ document.addEventListener('DOMContentLoaded', function() {
               let firstName = document.querySelector("#id_first_name");
               let middleName = document.querySelector("#id_middle_name");
               let lastName = document.querySelector("#id_last_name");
-              if (firstName && lastName) {
+              if (firstName && lastName && firstName.value && lastName.value) {
                 let values = [firstName.value, middleName.value, lastName.value]
                 readonlyField.innerHTML = values.join(" ");
               }else {
-                readonlyField.innerHTML = "Unknown";
+                let fullNameField = document.querySelector('#full_name__edit-button-readonly');
+                let svg = fullNameField.querySelector("svg use")
+                if (svg) {
+                  const currentHref = svg.getAttribute('xlink:href');
+                  if (currentHref) {
+                    const parts = currentHref.split('#');
+                    if (parts.length === 2) {
+                      // Keep the path before '#' and replace the part after '#' with 'invalid'
+                      const newHref = parts[0] + '#error';
+                      svg.setAttribute('xlink:href', newHref);
+                      fullNameField.classList.add("input-with-edit-button__error")
+                      label = fullNameField.querySelector(".input-with-edit-button__readonly-field")
+                      label.innerHTML = "Unknown";
+                    }
+                  }
+                }
               }
               
               // Technically, the full_name field is optional, but we want to display it as required. 
@@ -1873,6 +1891,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function showInputOnErrorFields(){
     document.addEventListener('DOMContentLoaded', function() {
+
       // Get all input elements within the form
       let form = document.querySelector("#finish-profile-setup-form");
       let inputs = form ? form.querySelectorAll("input") : null;
@@ -1911,9 +1930,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   };
 
-  // Hookup all edit buttons to the `handleEditButtonClick` function
   setupListener();
 
   // Show the input fields if an error exists
   showInputOnErrorFields();
+
 })();

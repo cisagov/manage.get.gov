@@ -87,13 +87,10 @@ class Contact(TimeStampedModel):
                 return getattr(self, relation).count() > threshold
         return False
 
-    def get_formatted_name(self, return_unknown_when_none=True):
+    def get_formatted_name(self):
         """Returns the contact's name in Western order."""
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
-        if names:
-            return " ".join(names)
-        else:
-            return "Unknown" if return_unknown_when_none else None
+        return " ".join(names) if names else "Unknown"
 
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
