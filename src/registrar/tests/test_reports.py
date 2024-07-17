@@ -402,6 +402,7 @@ class ExportDataTest(MockDb, MockEppLib):
 
         squeaker@rocks.com is invited to domain2 (DNS_NEEDED) and domain10 (No managers).
         She should show twice in this report but not in test_DomainManaged."""
+        self.maxDiff = None
         # Create a CSV file in memory
         csv_file = StringIO()
         # Call the export functions
