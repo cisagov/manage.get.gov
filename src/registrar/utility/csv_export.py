@@ -543,6 +543,7 @@ class DomainDataType(DomainExport):
             "federal_agency__agency",
         ]
 
+
 class DomainDataTypeUser(DomainDataType):
     """
     The DomainDataType report, but sliced on the current request user
