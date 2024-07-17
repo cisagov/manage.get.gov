@@ -379,7 +379,7 @@ class DomainExport(BaseExport):
         invalid_emails = {DefaultEmail.LEGACY_DEFAULT, DefaultEmail.PUBLIC_CONTACT_DEFAULT}
 
         security_contact_email = "(blank)"
-        if security_contact_email and isinstance(security_contact_email, str) and security_contact_email.lower() in invalid_emails:
+        if security_contact_email and isinstance(security_contact_email, str) and not security_contact_email.lower() in invalid_emails:
             security_contact_email = model.get("security_contact_email")
 
         FIELDS = {
