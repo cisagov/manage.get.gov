@@ -208,6 +208,7 @@ class ExportDataTest(MockDb, MockEppLib):
     @less_console_noise_decorator
     def test_domain_data_type(self):
         """Shows security contacts, domain managers, so"""
+        self.maxDiff = None
         # Add security email information
         self.domain_1.name = "defaultsecurity.gov"
         self.domain_1.save()
