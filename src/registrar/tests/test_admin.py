@@ -1399,12 +1399,17 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "status in [submitted,in review,action needed]", count=1)
 
     @less_console_noise_decorator
-    def transition_state_and_send_email(self, domain_request, status, rejection_reason=None, action_needed_reason=None):
+    def transition_state_and_send_email(
+        self, domain_request, status, rejection_reason=None, action_needed_reason=None, action_needed_reason_email=None
+    ):
         """Helper method for the email test cases."""
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             # Create a mock request
             request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+
+            # Create a fake session to hook to
+            request.session = {}
 
             # Modify the domain request's properties
             domain_request.status = status
@@ -1414,6 +1419,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
             if action_needed_reason:
                 domain_request.action_needed_reason = action_needed_reason
+
+            if action_needed_reason_email:
+                domain_request.action_needed_reason_email = action_needed_reason_email
 
             # Use the model admin's save_model method
             self.admin.save_model(request, domain_request, form=None, change=True)
@@ -1468,6 +1476,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Test the email sent out for already_has_domains
         already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
+
         self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
@@ -1487,7 +1496,7 @@ class TestDomainRequestAdmin(MockEppLib):
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-        # Test the email sent out for questionable_so
+        # Test that a custom email is sent out for questionable_so
         questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
         self.assert_email_is_accurate(
@@ -1501,6 +1510,43 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Should be unchanged from before
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
+
+        # Tests if an analyst can override existing email content
+        questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=questionable_so,
+            action_needed_reason_email="custom email content",
+        )
+
+        domain_request.refresh_from_db()
+        self.assert_email_is_accurate("custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
+
+        # Tests if a new email gets sent when just the email is changed.
+        # An email should NOT be sent out if we just modify the email content.
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=questionable_so,
+            action_needed_reason_email="dummy email content",
+        )
+
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
+
+        # Set the request back to in review
+        domain_request.in_review()
+
+        # Try sending another email when changing states AND including content
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=eligibility_unclear,
+            action_needed_reason_email="custom content when starting anew",
+        )
+        self.assert_email_is_accurate("custom content when starting anew", 5, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 6)
 
     def test_save_model_sends_submitted_email(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
@@ -2242,71 +2288,71 @@ class TestDomainRequestAdmin(MockEppLib):
             self.assertContains(response, "When a domain request is in ineligible status")
             self.assertContains(response, "Yes, select ineligible status")
 
+    @less_console_noise_decorator
     def test_readonly_when_restricted_creator(self):
-        with less_console_noise():
-            domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                domain_request.creator.status = User.RESTRICTED
-                domain_request.creator.save()
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            domain_request.creator.status = User.RESTRICTED
+            domain_request.creator.save()
 
-            request = self.factory.get("/")
-            request.user = self.superuser
+        request = self.factory.get("/")
+        request.user = self.superuser
 
-            readonly_fields = self.admin.get_readonly_fields(request, domain_request)
+        readonly_fields = self.admin.get_readonly_fields(request, domain_request)
 
-            expected_fields = [
-                "other_contacts",
-                "current_websites",
-                "alternative_domains",
-                "is_election_board",
-                "status_history",
-                "action_needed_reason_email",
-                "id",
-                "created_at",
-                "updated_at",
-                "status",
-                "rejection_reason",
-                "action_needed_reason",
-                "action_needed_reason_email",
-                "federal_agency",
-                "portfolio",
-                "sub_organization",
-                "creator",
-                "investigator",
-                "generic_org_type",
-                "is_election_board",
-                "organization_type",
-                "federally_recognized_tribe",
-                "state_recognized_tribe",
-                "tribe_name",
-                "federal_type",
-                "organization_name",
-                "address_line1",
-                "address_line2",
-                "city",
-                "state_territory",
-                "zipcode",
-                "urbanization",
-                "about_your_organization",
-                "senior_official",
-                "approved_domain",
-                "requested_domain",
-                "submitter",
-                "purpose",
-                "no_other_contacts_rationale",
-                "anything_else",
-                "has_anything_else_text",
-                "cisa_representative_email",
-                "cisa_representative_first_name",
-                "cisa_representative_last_name",
-                "has_cisa_representative",
-                "is_policy_acknowledged",
-                "submission_date",
-                "notes",
-                "alternative_domains",
-            ]
+        expected_fields = [
+            "other_contacts",
+            "current_websites",
+            "alternative_domains",
+            "is_election_board",
+            "federal_agency",
+            "status_history",
+            "id",
+            "created_at",
+            "updated_at",
+            "status",
+            "rejection_reason",
+            "action_needed_reason",
+            "action_needed_reason_email",
+            "federal_agency",
+            "portfolio",
+            "sub_organization",
+            "creator",
+            "investigator",
+            "generic_org_type",
+            "is_election_board",
+            "organization_type",
+            "federally_recognized_tribe",
+            "state_recognized_tribe",
+            "tribe_name",
+            "federal_type",
+            "organization_name",
+            "address_line1",
+            "address_line2",
+            "city",
+            "state_territory",
+            "zipcode",
+            "urbanization",
+            "about_your_organization",
+            "senior_official",
+            "approved_domain",
+            "requested_domain",
+            "submitter",
+            "purpose",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "has_anything_else_text",
+            "cisa_representative_email",
+            "cisa_representative_first_name",
+            "cisa_representative_last_name",
+            "has_cisa_representative",
+            "is_policy_acknowledged",
+            "submission_date",
+            "notes",
+            "alternative_domains",
+        ]
 
-            self.assertEqual(readonly_fields, expected_fields)
+        self.assertEqual(readonly_fields, expected_fields)
 
     def test_readonly_fields_for_analyst(self):
         with less_console_noise():
@@ -2353,7 +2399,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "status_history",
-                "action_needed_reason_email",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
@@ -2422,6 +2467,8 @@ class TestDomainRequestAdmin(MockEppLib):
             # Create a request object with a superuser
             request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
             request.user = self.superuser
+
+            request.session = {}
 
             # Define a custom implementation for is_active
             def custom_is_active(self):
