@@ -78,6 +78,7 @@ class User(AbstractUser):
         # EDIT_DOMAINS is really self.domains. We add is hear and leverage it in has_permission
         # so we have one way to test for portfolio and domain edit permissions
         # Do we need to check for portfolio domains specifically?
+        # NOTE: A user on an org can currently invite a user outside the org
         EDIT_DOMAINS = "edit_domains", "User is a manager on a domain"
 
         VIEW_MEMBER = "view_member", "View members"
@@ -150,15 +151,15 @@ class User(AbstractUser):
         help_text="Select one or more roles.",
     )
 
-    # portfolio_permissions = ArrayField(
-    #     models.CharField(
-    #         max_length=50,
-    #         choices=UserPortfolioPermissionChoices.choices,
-    #     ),
-    #     null=True,
-    #     blank=True,
-    #     help_text="Select one or more permissions.",
-    # )
+    portfolio_additional_permissions = ArrayField(
+        models.CharField(
+            max_length=50,
+            choices=UserPortfolioPermissionChoices.choices,
+        ),
+        null=True,
+        blank=True,
+        help_text="Select one or more additional permissions.",
+    )
 
     phone = PhoneNumberField(
         null=True,
@@ -256,9 +257,10 @@ class User(AbstractUser):
     def has_portfolio_permission(self, portfolio_permission):
         """The views should only call this guy when testing for perms and not rely on roles"""
 
-        # TODO: this does not seem to be working
-        # if portfolio_permission == self.UserPortfolioPermissionChoices.EDIT_DOMAINS and self.domains.exists():
-        #     return True
+        # EDIT_DOMAINS === user is a manager on a domain (has UserDomainRole)
+        # NOTE: Should we check whether the domain is in the portfolio?
+        if portfolio_permission == self.UserPortfolioPermissionChoices.EDIT_DOMAINS and self.domains.exists():
+            return True
 
         if not self.portfolio:
             return False
@@ -276,6 +278,7 @@ class User(AbstractUser):
         for role in self.portfolio_roles:
             if role in self.PORTFOLIO_ROLE_PERMISSIONS:
                 portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS[role])
+        portfolio_permissions.update(self.portfolio_additional_permissions)
         return list(portfolio_permissions)  # Convert back to list if necessary
 
     @classmethod
