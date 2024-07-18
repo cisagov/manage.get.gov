@@ -657,7 +657,7 @@ function hideDeletedForms() {
   });
 }
 
-// Checks for if we want to display Urbanization or not 
+// Checks for if we want to display Urbanization or not
 document.addEventListener('DOMContentLoaded', function() {
   var stateTerritoryField = document.querySelector('select[name="organization_contact-state_territory"]');
 
@@ -681,10 +681,8 @@ function setupUrbanizationToggle(stateTerritoryField) {
     }
   }
 
-  // Initial check
   toggleUrbanizationField();
 
-  // Add event listener for changes
   stateTerritoryField.addEventListener('change', toggleUrbanizationField);
 }
 
