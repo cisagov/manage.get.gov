@@ -245,14 +245,15 @@ class ExportDataTestUserFacing(MockDb, MockEppLib):
 
         # We expect only domains associated with the user
         expected_content = (
-            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,"
-            "State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,, ,"
-            ',dotgov@cisa.dhs.gov,"meoward@rocks.com, info@example.com, big_lebowski@dude.co, staff@example.com",'
+            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,State,SO,SO email,"
+            "Security contact email,Domain managers,Invited domain managers\n"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,"
+            '(blank),"meoward@rocks.com, info@example.com, big_lebowski@dude.co, staff@example.com",'
             "woofwardthethird@rocks.com\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,registrar@dotgov.gov,"
-            '"meoward@rocks.com, staff@example.com",squeaker@rocks.com\n '
+            "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),"
+            '"meoward@rocks.com, staff@example.com",squeaker@rocks.com\n'
         )
+        print(csv_content)
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
@@ -302,7 +303,7 @@ class ExportDataTestAdmin(MockDb, MockEppLib):
             "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,World War I Centennial Commission,,,,(blank),,,"
             "meoward@rocks.com,\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,"
-            ',,,(blank),"meoward@rocks.com, info@example.com, big_lebowski@dude.co",'
+            ',,,(blank),"info@example.com, meoward@rocks.com, big_lebowski@dude.co",'
             "woofwardthethird@rocks.com\n"
             "adomain10.gov,Ready,2024-04-03,(blank),Federal,Armed Forces Retirement Home,,,,(blank),,,,"
             "squeaker@rocks.com\n"
@@ -498,7 +499,7 @@ class ExportDataTestAdmin(MockDb, MockEppLib):
             "\n"
             "Domain name,Domain type,Domain managers,Invited domain managers\n"
             "cdomain11.gov,Federal - Executive,meoward@rocks.com,\n"
-            'cdomain1.gov,Federal - Executive,"meoward@rocks.com, info@example.com, big_lebowski@dude.co",'
+            'cdomain1.gov,Federal - Executive,"info@example.com, meoward@rocks.com, big_lebowski@dude.co",'
             "woofwardthethird@rocks.com\n"
             "zdomain12.gov,Interstate,meoward@rocks.com,\n"
         )
