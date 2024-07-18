@@ -534,6 +534,7 @@ class OrganizationContact(DomainRequestWizard):
     template_name = "domain_request_org_contact.html"
     forms = [forms.OrganizationContactForm]
 
+
 class AboutYourOrganization(DomainRequestWizard):
     template_name = "domain_request_about_your_organization.html"
     forms = [forms.AboutYourOrganizationForm]
