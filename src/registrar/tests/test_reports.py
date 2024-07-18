@@ -205,6 +205,7 @@ class ExportDataTest(MockDb, MockEppLib):
 
     def setUp(self):
         super().setUp()
+        self.factory = RequestFactory()
 
     def tearDown(self):
         super().tearDown()
