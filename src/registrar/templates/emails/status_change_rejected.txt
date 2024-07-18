@@ -42,7 +42,6 @@ Your domain request was rejected because we determined that {{ domain_request.or
 eligible for a .gov domain. .Gov domains are only available to official U.S.-based 
 government organizations. 
 
-
 Learn more about eligibility for .gov domains 
 <https://get.gov/domains/eligibility/>.
 
