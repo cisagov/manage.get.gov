@@ -245,7 +245,8 @@ class ExportDataTestUserFacing(MockDb, MockEppLib):
 
         # We expect only domains associated with the user
         expected_content = (
-            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,State,SO,SO email,"
+            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
+            "City,State,SO,SO email,"
             "Security contact email,Domain managers,Invited domain managers\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,"
             '(blank),"meoward@rocks.com, info@example.com, big_lebowski@dude.co, staff@example.com",'
