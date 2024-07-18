@@ -554,7 +554,6 @@ class ExportDataTest(MockDb, MockEppLib):
             csv_file.seek(0)
             # Read the content into a variable
             csv_content = csv_file.read()
-            print(csv_content)
             expected_content = (
                 # Header
                 "Domain request,Status,Domain type,Federal type,"

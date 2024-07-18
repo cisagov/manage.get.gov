@@ -3723,8 +3723,8 @@ class TestMyUserAdmin(MockDb):
 
         self.assertEqual(response.status_code, 200)
 
-        self.assertContains(response,"Portfolio roles:")
-        self.assertContains(response,"Portfolio additional permissions:")
+        self.assertContains(response, "Portfolio roles:")
+        self.assertContains(response, "Portfolio additional permissions:")
 
 
 class AuditedAdminTest(TestCase):

@@ -43,7 +43,13 @@ def is_production(request):
 def portfolio_permissions(request):
     """"""
     return {
-        "has_base_portfolio_permission": request.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO),
-        "has_domains_portfolio_permission": request.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_DOMAINS),
-        "has_domain_requests_portfolio_permission": request.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)
+        "has_base_portfolio_permission": request.user.has_portfolio_permission(
+            User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO
+        ),
+        "has_domains_portfolio_permission": request.user.has_portfolio_permission(
+            User.UserPortfolioPermissionChoices.VIEW_DOMAINS
+        ),
+        "has_domain_requests_portfolio_permission": request.user.has_portfolio_permission(
+            User.UserPortfolioPermissionChoices.VIEW_REQUESTS
+        ),
     }

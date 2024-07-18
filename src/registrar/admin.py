@@ -35,7 +35,6 @@ from django_admin_multiple_choice_list_filter.list_filters import MultipleChoice
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.postgres.forms import SimpleArrayField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from django.utils.translation import gettext_lazy as _
@@ -91,6 +90,7 @@ class UserResource(resources.ModelResource):
     class Meta:
         model = models.User
 
+
 class FilteredSelectMultipleArrayWidget(FilteredSelectMultiple):
     def __init__(self, verbose_name, is_stacked=False, choices=(), **kwargs):
         super().__init__(verbose_name, is_stacked, **kwargs)
@@ -98,26 +98,25 @@ class FilteredSelectMultipleArrayWidget(FilteredSelectMultiple):
 
     def value_from_datadict(self, data, files, name):
         values = super().value_from_datadict(data, files, name)
-        # print(f'value_from_datadict - values: {values}')
         return values or []
 
     def get_context(self, name, value, attrs):
-        # print(f'get_context - initial value: {value}')
         if value is None:
             value = []
         elif isinstance(value, str):
-            value = value.split(',')
-        # print(f'get_context - processed value: {value}')
-        self.choices = [(choice, label) for choice, label in self.choices if choice in value] + [(choice, label) for choice, label in self.choices if choice not in value]
-        # print(f'get_context - choices: {self.choices}')
+            value = value.split(",")
+        self.choices = [(choice, label) for choice, label in self.choices if choice in value] + [
+            (choice, label) for choice, label in self.choices if choice not in value
+        ]
         context = super().get_context(name, value, attrs)
         return context
-    
+
+
 class MyUserAdminForm(UserChangeForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs.
 
     It inherits from UserChangeForm which has special handling for the password and username fields."""
-    
+
     class Meta:
         model = models.User
         fields = "__all__"
@@ -125,8 +124,14 @@ class MyUserAdminForm(UserChangeForm):
         widgets = {
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
-            "portfolio_roles": FilteredSelectMultipleArrayWidget("portfolio_roles", is_stacked=False, choices=User.UserPortfolioRoleChoices.choices),
-            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget("portfolio_additional_permissions", is_stacked=False, choices=User.UserPortfolioPermissionChoices.choices),
+            "portfolio_roles": FilteredSelectMultipleArrayWidget(
+                "portfolio_roles", is_stacked=False, choices=User.UserPortfolioRoleChoices.choices
+            ),
+            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
+                "portfolio_additional_permissions",
+                is_stacked=False,
+                choices=User.UserPortfolioPermissionChoices.choices,
+            ),
         }
 
     def __init__(self, *args, **kwargs):

@@ -1,8 +1,13 @@
 from django.shortcuts import get_object_or_404, render
 from registrar.models.portfolio import Portfolio
-from registrar.views.utility.permission_views import PortfolioDomainRequestsPermissionView, PortfolioDomainsPermissionView, PortfolioBasePermissionView
+from registrar.views.utility.permission_views import (
+    PortfolioDomainRequestsPermissionView,
+    PortfolioDomainsPermissionView,
+    PortfolioBasePermissionView,
+)
 from waffle.decorators import flag_is_active
 from django.views.generic import View
+
 
 class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
 
@@ -19,6 +24,7 @@ class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
 
         return render(request, "portfolio_domains.html", context)
 
+
 class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
 
     template_name = "portfolio_requests.html"
@@ -34,6 +40,7 @@ class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
             request.session["new_request"] = True
 
         return render(request, "portfolio_requests.html", context)
+
 
 class PortfolioOrganizationView(PortfolioBasePermissionView, View):
 

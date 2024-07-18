@@ -10,7 +10,6 @@ from registrar.models import (
     DomainInformation,
     UserDomainRole,
 )
-from registrar.models.user import User
 import logging
 
 
@@ -400,7 +399,7 @@ class UserProfilePermission(PermissionsLoginMixin):
             return False
 
         return True
-    
+
 
 class PortfolioBasePermission(PermissionsLoginMixin):
     """Permission mixin that redirects to portfolio pages if user
@@ -416,40 +415,37 @@ class PortfolioBasePermission(PermissionsLoginMixin):
             return False
 
         permission_dict = portfolio_permissions(self.request)
-        has_permission = permission_dict['has_base_portfolio_permission']
+        has_permission = permission_dict["has_base_portfolio_permission"]
 
         if not has_permission:
             return False
 
         return True
-    
+
+
 class PortfolioDomainsPermission(PortfolioBasePermission):
-    """
-    """
+    """ """
 
     def has_permission(self):
-        """
-        """
+        """ """
 
         permission_dict = portfolio_permissions(self.request)
-        has_permission = permission_dict['has_domains_portfolio_permission']
+        has_permission = permission_dict["has_domains_portfolio_permission"]
 
         if not has_permission:
             return False
 
         return True
-    
+
 
 class PortfolioDomainRequestsPermission(PortfolioBasePermission):
-    """
-    """
+    """ """
 
     def has_permission(self):
-        """
-        """
+        """ """
 
         permission_dict = portfolio_permissions(self.request)
-        has_permission = permission_dict['has_domain_requests_portfolio_permission']
+        has_permission = permission_dict["has_domain_requests_portfolio_permission"]
 
         if not has_permission:
             return False

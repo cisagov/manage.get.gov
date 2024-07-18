@@ -149,20 +149,22 @@ class CheckPortfolioMiddleware:
                     # user_portfolios = Portfolio.objects.filter(creator=request.user)
 
                     permission_dict = portfolio_permissions(request)
-                    has_portfolio_base_permission = permission_dict['has_base_portfolio_permission']
+                    has_portfolio_base_permission = permission_dict["has_base_portfolio_permission"]
 
                     if has_portfolio_base_permission:
                         portfolio = request.user.portfolio
 
                         permission_dict = portfolio_permissions(request)
-                        has_portfolio_domains_permission = permission_dict['has_domains_portfolio_permission']
+                        has_portfolio_domains_permission = permission_dict["has_domains_portfolio_permission"]
 
                         if has_portfolio_domains_permission:
                             portfolio_redirect = reverse("portfolio-domains", kwargs={"portfolio_id": portfolio.id})
                         else:
                             # View organization is the lowest access
-                            portfolio_redirect = reverse("portfolio-organization", kwargs={"portfolio_id": portfolio.id})
+                            portfolio_redirect = reverse(
+                                "portfolio-organization", kwargs={"portfolio_id": portfolio.id}
+                            )
 
                         return HttpResponseRedirect(portfolio_redirect)
-                    
+
         return None

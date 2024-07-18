@@ -188,10 +188,8 @@ class PortfolioBasePermissionView(PortfolioBasePermission, DetailView, abc.ABC):
 
 
 class PortfolioDomainsPermissionView(PortfolioDomainsPermission, PortfolioBasePermissionView, abc.ABC):
-    """
-    """
-    
+    """ """
+
 
 class PortfolioDomainRequestsPermissionView(PortfolioDomainRequestsPermission, PortfolioBasePermissionView, abc.ABC):
-    """
-    """
+    """ """

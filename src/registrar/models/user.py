@@ -63,7 +63,7 @@ class User(AbstractUser):
 
     class UserPortfolioRoleChoices(models.TextChoices):
         """
-        Roles make it easier for admins to look at 
+        Roles make it easier for admins to look at
         """
 
         ORGANIZATION_ADMIN = "organization_admin", "Admin"
@@ -71,8 +71,7 @@ class User(AbstractUser):
         ORGANIZATION_MEMBER = "organization_member", "Member"
 
     class UserPortfolioPermissionChoices(models.TextChoices):
-        """
-        """
+        """ """
 
         VIEW_DOMAINS = "view_domains", "View all domains and domain reports"
         # EDIT_DOMAINS is really self.domains. We add is hear and leverage it in has_permission
@@ -83,14 +82,13 @@ class User(AbstractUser):
 
         VIEW_MEMBER = "view_member", "View members"
         EDIT_MEMBER = "edit_member", "Create and edit members"
-        
+
         VIEW_REQUESTS = "view_requests", "View requests"
         EDIT_REQUESTS = "edit_requests", "Create and edit requests"
-        
+
         VIEW_PORTFOLIO = "view_portfolio", "View organization"
         EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
 
-    
     PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             UserPortfolioPermissionChoices.VIEW_DOMAINS,
@@ -105,13 +103,12 @@ class User(AbstractUser):
             UserPortfolioPermissionChoices.VIEW_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_MEMBER,
             UserPortfolioPermissionChoices.VIEW_REQUESTS,
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO, 
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO, 
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
         ],
     }
-
 
     # #### Constants for choice fields ####
     RESTRICTED = "restricted"
@@ -249,24 +246,22 @@ class User(AbstractUser):
 
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
-    
+
     def has_portfolio_permission(self, portfolio_permission):
         """The views should only call this guy when testing for perms and not rely on roles"""
-
-        print(f"IN has_portfolio_permission")
 
         # EDIT_DOMAINS === user is a manager on a domain (has UserDomainRole)
         # NOTE: Should we check whether the domain is in the portfolio?
         if portfolio_permission == self.UserPortfolioPermissionChoices.EDIT_DOMAINS and self.domains.exists():
             return True
-        
+
         if not self.portfolio:
             return False
-                
+
         portfolio_permissions = self._get_portfolio_permissions()
-        
+
         return portfolio_permission in portfolio_permissions
-    
+
     def _get_portfolio_permissions(self):
         """
         Retrieve the permissions for the user's portfolio roles.
