@@ -2,7 +2,6 @@
 
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
-from registrar.context_processors import portfolio_permissions
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -414,40 +413,34 @@ class PortfolioBasePermission(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
-        permission_dict = portfolio_permissions(self.request)
-        has_permission = permission_dict["has_base_portfolio_permission"]
-
-        if not has_permission:
-            return False
-
-        return True
+        return self.request.user.has_base_portfolio_permission()
 
 
 class PortfolioDomainsPermission(PortfolioBasePermission):
-    """ """
+    """Permission mixin that allows access to portfolio domain pages if user
+    has access, otherwise 403"""
 
     def has_permission(self):
-        """ """
+        """Check if this user has access to domains for this portfolio.
 
-        permission_dict = portfolio_permissions(self.request)
-        has_permission = permission_dict["has_domains_portfolio_permission"]
+        The user is in self.request.user and the portfolio can be looked
+        up from the portfolio's primary key in self.kwargs["pk"]"""
 
-        if not has_permission:
+        if not self.request.user.is_authenticated:
             return False
-
-        return True
+        return self.request.user.has_domains_portfolio_permission()
 
 
 class PortfolioDomainRequestsPermission(PortfolioBasePermission):
-    """ """
+    """Permission mixin that allows access to portfolio domain request pages if user
+    has access, otherwise 403"""
 
     def has_permission(self):
-        """ """
+        """Check if this user has access to domain requests for this portfolio.
 
-        permission_dict = portfolio_permissions(self.request)
-        has_permission = permission_dict["has_domain_requests_portfolio_permission"]
+        The user is in self.request.user and the portfolio can be looked
+        up from the portfolio's primary key in self.kwargs["pk"]"""
 
-        if not has_permission:
+        if not self.request.user.is_authenticated:
             return False
-
-        return True
+        return self.request.user.has_domain_requests_portfolio_permission()

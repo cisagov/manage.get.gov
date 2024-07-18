@@ -92,6 +92,8 @@ class UserResource(resources.ModelResource):
 
 
 class FilteredSelectMultipleArrayWidget(FilteredSelectMultiple):
+    """Custom widget to allow for editing an ArrayField in a widget similar to filter_horizontal widget"""
+
     def __init__(self, verbose_name, is_stacked=False, choices=(), **kwargs):
         super().__init__(verbose_name, is_stacked, **kwargs)
         self.choices = choices
@@ -654,10 +656,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "group",
         "status",
     )
-
-    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
-    # to activate the edit/delete/view buttons
-    # filter_horizontal = ("portfolio_roles",)
 
     # Renames inherited AbstractUser label 'email_address to 'email'
     def formfield_for_dbfield(self, dbfield, **kwargs):

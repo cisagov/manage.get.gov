@@ -1,7 +1,5 @@
 from django.conf import settings
 
-from registrar.models.user import User
-
 
 def language_code(request):
     """Add LANGUAGE_CODE to the template context.
@@ -50,15 +48,9 @@ def portfolio_permissions(request):
                 "has_domain_requests_portfolio_permission": False,
             }
         return {
-            "has_base_portfolio_permission": request.user.has_portfolio_permission(
-                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO
-            ),
-            "has_domains_portfolio_permission": request.user.has_portfolio_permission(
-                User.UserPortfolioPermissionChoices.VIEW_DOMAINS
-            ),
-            "has_domain_requests_portfolio_permission": request.user.has_portfolio_permission(
-                User.UserPortfolioPermissionChoices.VIEW_REQUESTS
-            ),
+            "has_base_portfolio_permission": request.user.has_base_portfolio_permission(),
+            "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(),
+            "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(),
         }
     except AttributeError:
         # Handles cases where request.user might not exist

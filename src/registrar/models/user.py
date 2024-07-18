@@ -247,7 +247,21 @@ class User(AbstractUser):
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
 
-    def has_portfolio_permission(self, portfolio_permission):
+    def _get_portfolio_permissions(self):
+        """
+        Retrieve the permissions for the user's portfolio roles.
+        """
+        portfolio_permissions = set()  # Use a set to avoid duplicate permissions
+
+        if self.portfolio_roles:
+            for role in self.portfolio_roles:
+                if role in self.PORTFOLIO_ROLE_PERMISSIONS:
+                    portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS[role])
+        if self.portfolio_additional_permissions:
+            portfolio_permissions.update(self.portfolio_additional_permissions)
+        return list(portfolio_permissions)  # Convert back to list if necessary
+
+    def _has_portfolio_permission(self, portfolio_permission):
         """The views should only call this guy when testing for perms and not rely on roles"""
 
         # EDIT_DOMAINS === user is a manager on a domain (has UserDomainRole)
@@ -262,19 +276,19 @@ class User(AbstractUser):
 
         return portfolio_permission in portfolio_permissions
 
-    def _get_portfolio_permissions(self):
-        """
-        Retrieve the permissions for the user's portfolio roles.
-        """
-        portfolio_permissions = set()  # Use a set to avoid duplicate permissions
+    # the methods below are checks for individual portfolio permissions.  they are defined here
+    # to make them easier to call elsewhere throughout the application
+    def has_base_portfolio_permission(self):
+        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
-        if self.portfolio_roles:
-            for role in self.portfolio_roles:
-                if role in self.PORTFOLIO_ROLE_PERMISSIONS:
-                    portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS[role])
-        if self.portfolio_additional_permissions:
-            portfolio_permissions.update(self.portfolio_additional_permissions)
-        return list(portfolio_permissions)  # Convert back to list if necessary
+    def has_domains_portfolio_permission(self):
+        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_DOMAINS)
+
+    def has_edit_domains_portfolio_permission(self):
+        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
+
+    def has_domain_requests_portfolio_permission(self):
+        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):

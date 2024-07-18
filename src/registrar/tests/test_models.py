@@ -1231,9 +1231,9 @@ class TestUser(TestCase):
         self.user.save()
         self.user.refresh_from_db()
 
-        user_can_view_domains = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_DOMAINS)
-        user_can_view_requests = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)
-        user_can_edit_domains = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
+        user_can_view_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
         self.assertFalse(user_can_view_domains)
         self.assertFalse(user_can_view_requests)
@@ -1243,9 +1243,9 @@ class TestUser(TestCase):
         self.user.save()
         self.user.refresh_from_db()
 
-        user_can_view_domains = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_DOMAINS)
-        user_can_view_requests = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)
-        user_can_edit_domains = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
+        user_can_view_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
         self.assertTrue(user_can_view_domains)
         self.assertFalse(user_can_view_requests)
@@ -1255,9 +1255,9 @@ class TestUser(TestCase):
         self.user.save()
         self.user.refresh_from_db()
 
-        user_can_view_domains = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_DOMAINS)
-        user_can_view_requests = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)
-        user_can_edit_domains = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
+        user_can_view_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
         self.assertTrue(user_can_view_domains)
         self.assertTrue(user_can_view_requests)
@@ -1267,9 +1267,9 @@ class TestUser(TestCase):
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
 
-        user_can_view_domains = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_DOMAINS)
-        user_can_view_requests = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)
-        user_can_edit_domains = self.user.has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
+        user_can_view_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
         self.assertTrue(user_can_view_domains)
         self.assertTrue(user_can_view_requests)
