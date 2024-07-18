@@ -42,20 +42,28 @@ def is_production(request):
 
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
-    if not request.user.is_authenticated:
+    try:
+        if not request.user or not request.user.is_authenticated:
+            return {
+                "has_base_portfolio_permission": False,
+                "has_domains_portfolio_permission": False,
+                "has_domain_requests_portfolio_permission": False,
+            }
+        return {
+            "has_base_portfolio_permission": request.user.has_portfolio_permission(
+                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO
+            ),
+            "has_domains_portfolio_permission": request.user.has_portfolio_permission(
+                User.UserPortfolioPermissionChoices.VIEW_DOMAINS
+            ),
+            "has_domain_requests_portfolio_permission": request.user.has_portfolio_permission(
+                User.UserPortfolioPermissionChoices.VIEW_REQUESTS
+            ),
+        }
+    except AttributeError:
+        # Handles cases where request.user might not exist
         return {
             "has_base_portfolio_permission": False,
             "has_domains_portfolio_permission": False,
             "has_domain_requests_portfolio_permission": False,
         }
-    return {
-        "has_base_portfolio_permission": request.user.has_portfolio_permission(
-            User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO
-        ),
-        "has_domains_portfolio_permission": request.user.has_portfolio_permission(
-            User.UserPortfolioPermissionChoices.VIEW_DOMAINS
-        ),
-        "has_domain_requests_portfolio_permission": request.user.has_portfolio_permission(
-            User.UserPortfolioPermissionChoices.VIEW_REQUESTS
-        ),
-    }

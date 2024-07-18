@@ -3614,7 +3614,7 @@ class TestMyUserAdmin(MockDb):
                     },
                 ),
                 ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
-                ("Permissions", {"fields": ("is_active", "groups")}),
+                ("Permissions", {"fields": ("is_active", "groups", "portfolio", "portfolio_roles", "portfolio_additional_permissions")}),
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
             )
             self.assertEqual(fieldsets, expected_fieldsets)
