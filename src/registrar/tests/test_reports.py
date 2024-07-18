@@ -1,9 +1,7 @@
 import io
 from django.test import Client, RequestFactory
 from io import StringIO
-from registrar.models.domain_request import DomainRequest
-from registrar.models.domain import Domain
-from registrar.models.user_domain_role import UserDomainRole
+from registrar.models import DomainRequest, Domain, DomainInformation, UserDomainRole
 from registrar.utility.csv_export import (
     DomainDataFull,
     DomainDataType,
@@ -604,21 +602,38 @@ class ExportDataTest(MockDb, MockEppLib):
     def test_domain_data_type_user(self):
         """Shows security contacts, domain managers, so for the current user"""
 
-        # Add security email information
-        self.domain_1.name = "defaultsecurity.gov"
-        self.domain_1.save()
+        # We add these here due to a data interference issue with MockDB
+        new_domain_1, _ = Domain.objects.get_or_create(name="interfere.gov", state=Domain.State.READY)
+        new_domain_2, _ = Domain.objects.get_or_create(name="somedomain123.gov", state=Domain.State.DNS_NEEDED)
+        new_domain_3, _ = Domain.objects.get_or_create(name="noaccess.gov", state=Domain.State.ON_HOLD)
+
+        DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=new_domain_1,
+            generic_org_type="federal",
+            federal_agency=self.federal_agency_1,
+            federal_type="executive",
+            is_election_board=False,
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=new_domain_2, generic_org_type="interstate", is_election_board=True
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=new_domain_3,
+            generic_org_type="federal",
+            federal_agency=self.federal_agency_2,
+            is_election_board=False,
+        )
         # Invoke setter
-        self.domain_1.security_contact
-        self.domain_2.security_contact
-        self.domain_3.security_contact
-        # Add a first ready date on the first domain. Leaving the others blank.
-        self.domain_1.first_ready = get_default_start_date()
-        self.domain_1.save()
+        new_domain_1.security_contact
+        new_domain_2.security_contact
+        new_domain_3.security_contact
 
         # Create a user and associate it with some domains
         user = create_user()
-        UserDomainRole.objects.create(user=user, domain=self.domain_1)
-        UserDomainRole.objects.create(user=user, domain=self.domain_2)
+        UserDomainRole.objects.create(user=user, domain=new_domain_1)
+        UserDomainRole.objects.create(user=user, domain=new_domain_2)
 
         # Create a request object
         request = self.factory.get("/")
@@ -635,14 +650,12 @@ class ExportDataTest(MockDb, MockEppLib):
 
         # We expect only domains associated with the user
         expected_content = (
-            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
-            "City,State,SO,SO email,"
-            "Security contact email,Domain managers,Invited domain managers\n"
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,"
-            '(blank),"meoward@rocks.com, info@example.com, big_lebowski@dude.co, staff@example.com",'
-            "woofwardthethird@rocks.com\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),"
-            '"meoward@rocks.com, staff@example.com",squeaker@rocks.com\n'
+            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,"
+            "State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
+            "interfere.gov,Ready,(blank),2023-05-25,Federal - Executive,World War I Centennial Commission,,,"
+            ", ,,security@mail.gov,staff@example.com,\n"
+            "somedomain123.gov,Dns needed,(blank),2023-05-25,Interstate,,,,, ,,"
+            "security@mail.gov,staff@example.com,\n"
         )
 
         # Normalize line endings and remove commas,
