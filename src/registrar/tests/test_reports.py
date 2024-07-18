@@ -1,9 +1,7 @@
 import io
 from django.test import Client, RequestFactory
 from io import StringIO
-from registrar.models.domain_request import DomainRequest
-from registrar.models.domain import Domain
-from registrar.models.user_domain_role import UserDomainRole
+from registrar.models import DomainRequest, Domain, User, UserDomainRole
 from registrar.utility.csv_export import (
     DomainDataFull,
     DomainDataType,
@@ -616,7 +614,15 @@ class ExportDataTest(MockDb, MockEppLib):
         self.domain_1.save()
 
         # Create a user and associate it with some domains
-        user = create_user()
+        p = "1234"
+        user = User.objects.create_user(
+            username="exampleuser1234",
+            email="exampleuser1234@example.com",
+            first_name="first",
+            last_name="last",
+            is_staff=False,
+            password=p,
+        )
         UserDomainRole.objects.create(user=user, domain=self.domain_1)
         UserDomainRole.objects.create(user=user, domain=self.domain_2)
 
@@ -639,10 +645,10 @@ class ExportDataTest(MockDb, MockEppLib):
             "City,State,SO,SO email,"
             "Security contact email,Domain managers,Invited domain managers\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,"
-            '(blank),"meoward@rocks.com, info@example.com, big_lebowski@dude.co, staff@example.com",'
+            '(blank),"meoward@rocks.com, info@example.com, big_lebowski@dude.co, exampleuser1234@example.com",'
             "woofwardthethird@rocks.com\n"
             "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),"
-            '"meoward@rocks.com, staff@example.com",squeaker@rocks.com\n'
+            '"meoward@rocks.com, exampleuser1234@example.com",squeaker@rocks.com\n'
         )
 
         # Normalize line endings and remove commas,
