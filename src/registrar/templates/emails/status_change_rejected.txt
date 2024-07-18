@@ -43,12 +43,11 @@ eligible for a .gov domain. .Gov domains are only available to official U.S.-bas
 government organizations. 
 
 
-DEMONSTRATE ELIGIBILITY
-If you can provide documentation that demonstrates your eligibility, reply to this email. 
-This can include links to (or copies of) your authorizing legislation, your founding 
-charter or bylaws, or other similar documentation. Without this, we can’t approve a 
-.gov domain for your organization. Learn more about eligibility for .gov domains 
-<https://get.gov/domains/eligibility/>.{% elif domain_request.rejection_reason == 'naming_not_met' %}
+Learn more about eligibility for .gov domains 
+<https://get.gov/domains/eligibility/>.
+
+If you have questions or comments, reply to this email.
+{% elif domain_request.rejection_reason == 'naming_not_met' %}
 Your domain request was rejected because it does not meet our naming requirements. 
 Domains should uniquely identify a government organization and be clear to the 
 general public. Learn more about naming requirements for your type of organization 
