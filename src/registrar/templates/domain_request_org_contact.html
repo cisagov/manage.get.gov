@@ -1,5 +1,5 @@
 {% extends 'domain_request_form.html' %}
-{% load field_helpers url_helpers %}
+{% load field_helpers url_helpers static %}
 
 {% block form_instructions %}
   <p>If your domain request is approved, the name of your organization and your city/state will be listed in <a href="{% public_site_url 'about/data/' %}" target="_blank">.gov’s public data.</a></p>  
@@ -37,7 +37,12 @@
       {% input_with_errors forms.0.zipcode %}
     {% endwith %}
 
-    {% input_with_errors forms.0.urbanization %}
+    <div id="urbanization-field" style="display: none;">
+      {% input_with_errors forms.0.urbanization %}
+    </div>
 
   </fieldset>
 {% endblock %}
+
+<script src="{% static 'js/get-gov.js' %}" defer></script>
+

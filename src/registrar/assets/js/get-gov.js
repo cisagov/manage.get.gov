@@ -657,6 +657,37 @@ function hideDeletedForms() {
   });
 }
 
+// Checks for if we want to display Urbanization or not 
+document.addEventListener('DOMContentLoaded', function() {
+  var stateTerritoryField = document.querySelector('select[name="organization_contact-state_territory"]');
+
+  if (!stateTerritoryField) {
+    // console.log("State territory field not found, skipping urbanization setup.");
+    return; // Exit if the field is not found
+  }
+
+  setupUrbanizationToggle(stateTerritoryField);
+});
+
+function setupUrbanizationToggle(stateTerritoryField) {
+  var urbanizationField = document.getElementById('urbanization-field');
+  
+  function toggleUrbanizationField() {
+    // console.log("Selected value:", stateTerritoryField.value);
+    if (stateTerritoryField.value === 'PR') { // For Puerto Rico
+      urbanizationField.style.display = 'block';
+    } else {
+      urbanizationField.style.display = 'none';
+    }
+  }
+
+  // Initial check
+  toggleUrbanizationField();
+
+  // Add event listener for changes
+  stateTerritoryField.addEventListener('change', toggleUrbanizationField);
+}
+
 /**
  * An IIFE that attaches a click handler for our dynamic formsets
  *
