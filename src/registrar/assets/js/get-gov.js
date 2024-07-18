@@ -1140,6 +1140,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
     const statusIndicator = document.querySelector('.domain__filter-indicator');
     const statusToggle = document.querySelector('.usa-button--filter');
+    const noPortfolioFlag = document.getElementById('no-portfolio-js-flag');
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1176,6 +1177,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const suborganization = domain.suborganization ? domain.suborganization : '';
 
             const row = document.createElement('tr');
+
+            let markupForSuborganizationRow = '';
+
+            if (!noPortfolioFlag) {
+              markupForSuborganizationRow = `
+                <td>
+                    <span class="${suborganization ? 'ellipsis ellipsis--30 vertical-align-middle' : ''}" aria-label="${suborganization}" title="${suborganization}">${suborganization}</span>
+                </td>
+              `
+            }
+
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="Domain name">
                 ${domain.name}
@@ -1196,9 +1208,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
                 </svg>
               </td>
-              <td>
-                  <span class="${suborganization ? 'ellipsis ellipsis--30 vertical-align-middle' : ''}" aria-label="${suborganization}" title="${suborganization}">${suborganization}</span>
-              </td>
+              ${markupForSuborganizationRow}
               <td>
                 <a href="${actionUrl}">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">

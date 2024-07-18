@@ -29,8 +29,14 @@ body {
 
 #wrapper.dashboard {
   background-color: color('primary-lightest');
-  padding-top: units(5);
+  padding-top: units(5)!important;
 }
+
+#wrapper.dashboard--portfolio {
+  background-color: color('gray-1');
+  padding-top: units(4)!important;
+}
+
 
 .section--outlined {
   background-color: color('white');

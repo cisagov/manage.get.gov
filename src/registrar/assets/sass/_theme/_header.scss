@@ -69,7 +69,7 @@
 .usa-header--extended {
     @include at-media(desktop) {
         background-color: color('primary-darker');
-        border-top: solid 1px color('base');
+        border-top: solid 1px color('base-light');
         border-bottom: solid 1px color('base-lighter');
 
         .usa-logo__text a,
@@ -83,7 +83,7 @@
         .usa-nav__primary-item:last-child {
             margin-left: auto;
             .usa-nav-link {
-                padding-right: 0;
+                margin-right: units(-2);
             }
         }
         .usa-nav__primary {
