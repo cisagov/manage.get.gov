@@ -213,7 +213,7 @@ class ExportDataTestUserFacing(MockDb, MockEppLib):
     @less_console_noise_decorator
     def test_domain_data_type_user(self):
         """Shows security contacts, domain managers, so for the current user"""
-        self.maxDiff = None
+
         # Add security email information
         self.domain_1.name = "defaultsecurity.gov"
         self.domain_1.save()
@@ -257,6 +257,7 @@ class ExportDataTestUserFacing(MockDb, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
 
@@ -272,7 +273,7 @@ class ExportDataTestAdmin(MockDb, MockEppLib):
     @less_console_noise_decorator
     def test_domain_data_type(self):
         """Shows security contacts, domain managers, so"""
-        self.maxDiff = None
+
         # Add security email information
         self.domain_1.name = "defaultsecurity.gov"
         self.domain_1.save()
