@@ -104,7 +104,7 @@ def serialize_domain(domain):
                 suborganization_name = suborganization.name
     except Domain.domain_info.RelatedObjectDoesNotExist:
         domain_info = None
-        logger.debug(f'Issue in domains_json: We could not find domain_info for {domain}')
+        logger.debug(f"Issue in domains_json: We could not find domain_info for {domain}")
 
     return {
         "id": domain.id,
