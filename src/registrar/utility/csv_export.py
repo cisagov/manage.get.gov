@@ -18,6 +18,7 @@ from django.contrib.postgres.aggregates import StringAgg
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
+from registrar.utility.enums import DefaultEmail
 
 
 logger = logging.getLogger(__name__)
@@ -371,6 +372,15 @@ class DomainExport(BaseExport):
         if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
             domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
 
+        security_contact_email = model.get("security_contact_email")
+        invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
+        if (
+            not security_contact_email
+            or not isinstance(security_contact_email, str)
+            or security_contact_email.lower().strip() in invalid_emails
+        ):
+            security_contact_email = "(blank)"
+
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
         FIELDS = {
@@ -385,7 +395,7 @@ class DomainExport(BaseExport):
             "State": model.get("state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
-            "Security contact email": model.get("security_contact_email"),
+            "Security contact email": security_contact_email,
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
