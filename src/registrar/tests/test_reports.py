@@ -1,7 +1,16 @@
 import io
 from django.test import Client, RequestFactory, TestCase
 from io import StringIO
-from registrar.models import DomainRequest, Domain, DomainInformation, UserDomainRole, User, PublicContact, DomainInvitation, FederalAgency
+from registrar.models import (
+    DomainRequest,
+    Domain,
+    DomainInformation,
+    UserDomainRole,
+    User,
+    PublicContact,
+    DomainInvitation,
+    FederalAgency,
+)
 from registrar.utility.csv_export import (
     DomainDataFull,
     DomainDataType,
@@ -216,7 +225,7 @@ class ExportDataTestUserFacing(TestCase):
         DomainInvitation.objects.all().delete()
         FederalAgency.objects.all().delete()
 
-    #@less_console_noise_decorator
+    # @less_console_noise_decorator
     def test_domain_data_type_user(self):
         """Shows security contacts, domain managers, so for the current user"""
 
@@ -276,7 +285,7 @@ class ExportDataTestUserFacing(TestCase):
             "State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
             "interfere.gov,Ready,(blank),(blank),Federal - Executive,,,"
             ", ,,(blank),staff@example.com,\n"
-            "somedomain123.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,"
+            "somedomain1234.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,"
             "(blank),staff@example.com,\n"
         )
 
@@ -293,7 +302,6 @@ class ExportDataTest(MockDb, MockEppLib):
 
     def setUp(self):
         super().setUp()
-        self.factory = RequestFactory()
 
     def tearDown(self):
         super().tearDown()
