@@ -344,7 +344,11 @@ class DomainExport(BaseExport):
         """
         Fetch all UserDomainRole entries and return a mapping of domain to user__email.
         """
-        user_domain_roles = UserDomainRole.objects.select_related("user").order_by("domain__name", "user__email").values_list("domain__name", "user__email")
+        user_domain_roles = (
+            UserDomainRole.objects.select_related("user")
+            .order_by("domain__name", "user__email")
+            .values_list("domain__name", "user__email")
+        )
         return list(user_domain_roles)
 
     @classmethod
