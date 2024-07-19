@@ -230,7 +230,10 @@ class BaseExport(ABC):
         cls.write_csv_before(writer, **export_kwargs)
 
         # Write the csv file
-        cls.write_csv(writer, columns, models_dict)
+        rows = cls.write_csv(writer, columns, models_dict)
+
+        # Return rows that for easier parsing and testing
+        return rows
 
     @classmethod
     def write_csv(
@@ -256,6 +259,9 @@ class BaseExport(ABC):
             write_header(writer, columns)
 
         writer.writerows(rows)
+
+        # Return rows for easier parsing and testing
+        return rows
 
     @classmethod
     @abstractmethod
@@ -560,23 +566,16 @@ class DomainDataTypeUser(DomainDataType):
     """
 
     @classmethod
-    def export_data_to_csv(cls, csv_file, request=None):
-        logger.warning("in export_data_to_csv")
-        super().export_data_to_csv(csv_file, request=request)
-
-    @classmethod
     def get_filter_conditions(cls, request=None):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
         if request is None or not hasattr(request, "user") or not request.user:
             # Return nothing
-            logger.warning(f"returning nothing: {request}")
             return Q(id__in=[])
 
         user_domain_roles = UserDomainRole.objects.filter(user=request.user)
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
-        logger.warning(f"roles: {user_domain_roles} ids: {domain_ids}")
         return Q(id__in=domain_ids)
 
 
