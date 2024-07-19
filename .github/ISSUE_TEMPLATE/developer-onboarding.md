@@ -85,9 +85,9 @@ git config --global commit.gpgsign true
 git config --global user.signingkey <YOUR KEY>
 ```
 
-Where <YOUR KEY> is the path to the private key you generated when running `ssh-keygen`. Usually this is located in ~\.ssh\.
+Where `<YOUR KEY>` is the path to the private key you generated when running `ssh-keygen`. Usually this is located in ~\.ssh\.
 
-Now test commit signing is working by checking out a branch (`yourname/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your key passphrase) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
+Now test commit signing is working by checking out a branch (`yourinitials/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your key passphrase) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
 
 ### MacOS
 **Note:** if you are on a mac and not able to successfully create a signed commit, getting the following error:
