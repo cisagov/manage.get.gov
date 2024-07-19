@@ -10,6 +10,7 @@ from django.urls import reverse
 from registrar.admin import (
     DomainRequestAdmin,
     MyUserAdmin,
+    AuditedAdmin,
 )
 from registrar.models import (
     Domain,
@@ -19,6 +20,7 @@ from registrar.models import (
     User,
     Contact,
     Website,
+    SeniorOfficial,
 )
 from .common import (
     MockSESClient,
@@ -80,6 +82,40 @@ class TestDomainRequestAdmin(MockEppLib):
     def tearDownClass(self):
         super().tearDownClass()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_domain_request_senior_official_is_alphabetically_sorted(self):
+        """Tests if the senior offical dropdown is alphanetically sorted in the django admin display"""
+
+        so_mary, _ = SeniorOfficial.objects.get_or_create(first_name="mary", last_name="joe", title="some other guy")
+        so_alex, _ = SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
+        so_zoup, _ = SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
+
+        contact, _ = Contact.objects.get_or_create(first_name="Henry", last_name="McFakerson")
+        domain_request = completed_domain_request(submitter=contact, name="city1.gov")
+        request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+        model_admin = AuditedAdmin(DomainRequest, self.site)
+
+        # Get the queryset that would be returned for the list
+        senior_offical_queryset = model_admin.formfield_for_foreignkey(
+            DomainInformation.senior_official.field, request
+        ).queryset
+
+        # Make the list we're comparing on a bit prettier display-wise. Optional step.
+        current_sort_order = []
+        for official in senior_offical_queryset:
+            current_sort_order.append(f"{official.first_name} {official.last_name}")
+
+        expected_sort_order = ["alex smoe", "mary joe", "Zoup Soup"]
+
+        self.assertEqual(current_sort_order, expected_sort_order)
+
+        DomainInformation.objects.all().delete()
+        domain_request.delete()
+        contact.delete()
+        so_mary.delete()
+        so_alex.delete()
+        so_zoup.delete()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -534,12 +570,17 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "status in [submitted,in review,action needed]", count=1)
 
     @less_console_noise_decorator
-    def transition_state_and_send_email(self, domain_request, status, rejection_reason=None, action_needed_reason=None):
+    def transition_state_and_send_email(
+        self, domain_request, status, rejection_reason=None, action_needed_reason=None, action_needed_reason_email=None
+    ):
         """Helper method for the email test cases."""
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             # Create a mock request
             request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
+
+            # Create a fake session to hook to
+            request.session = {}
 
             # Modify the domain request's properties
             domain_request.status = status
@@ -549,6 +590,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
             if action_needed_reason:
                 domain_request.action_needed_reason = action_needed_reason
+
+            if action_needed_reason_email:
+                domain_request.action_needed_reason_email = action_needed_reason_email
 
             # Use the model admin's save_model method
             self.admin.save_model(request, domain_request, form=None, change=True)
@@ -604,6 +648,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Test the email sent out for already_has_domains
         already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
+
         self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
@@ -623,7 +668,7 @@ class TestDomainRequestAdmin(MockEppLib):
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-        # Test the email sent out for questionable_so
+        # Test that a custom email is sent out for questionable_so
         questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
         self.assert_email_is_accurate(
@@ -637,6 +682,93 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Should be unchanged from before
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
+
+        # Tests if an analyst can override existing email content
+        questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=questionable_so,
+            action_needed_reason_email="custom email content",
+        )
+
+        domain_request.refresh_from_db()
+        self.assert_email_is_accurate("custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
+
+        # Tests if a new email gets sent when just the email is changed.
+        # An email should NOT be sent out if we just modify the email content.
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=questionable_so,
+            action_needed_reason_email="dummy email content",
+        )
+
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
+
+        # Set the request back to in review
+        domain_request.in_review()
+
+        # Try sending another email when changing states AND including content
+        self.transition_state_and_send_email(
+            domain_request,
+            action_needed,
+            action_needed_reason=eligibility_unclear,
+            action_needed_reason_email="custom content when starting anew",
+        )
+        self.assert_email_is_accurate("custom content when starting anew", 5, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 6)
+
+    # def test_action_needed_sends_reason_email_prod_bcc(self):
+    #     """When an action needed reason is set, an email is sent out and help@get.gov
+    #     is BCC'd in production"""
+    #     # Ensure there is no user with this email
+    #     EMAIL = "mayor@igorville.gov"
+    #     BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
+    #     User.objects.filter(email=EMAIL).delete()
+    #     in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
+    #     action_needed = DomainRequest.DomainRequestStatus.ACTION_NEEDED
+
+    #     # Create a sample domain request
+    #     domain_request = completed_domain_request(status=in_review)
+
+    #     # Test the email sent out for already_has_domains
+    #     already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
+    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
+    #     self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
+    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+    #     # Test the email sent out for bad_name
+    #     bad_name = DomainRequest.ActionNeededReasons.BAD_NAME
+    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=bad_name)
+    #     self.assert_email_is_accurate(
+    #         "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS", 1, EMAIL, bcc_email_address=BCC_EMAIL
+    #     )
+    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    #     # Test the email sent out for eligibility_unclear
+    #     eligibility_unclear = DomainRequest.ActionNeededReasons.ELIGIBILITY_UNCLEAR
+    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=eligibility_unclear)
+    #     self.assert_email_is_accurate(
+    #         "ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", 2, EMAIL, bcc_email_address=BCC_EMAIL
+    #     )
+    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+    #     # Test the email sent out for questionable_so
+    #     questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
+    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
+    #     self.assert_email_is_accurate(
+    #         "SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address=BCC_EMAIL
+    #     )
+    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
+
+    #     # Assert that no other emails are sent on OTHER
+    #     other = DomainRequest.ActionNeededReasons.OTHER
+    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=other)
+
+    #     # Should be unchanged from before
+    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
 
     @less_console_noise_decorator
     def test_save_model_sends_submitted_email(self):
@@ -1390,7 +1522,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "is_election_board",
             "federal_agency",
             "status_history",
-            "action_needed_reason_email",
             "id",
             "created_at",
             "updated_at",
@@ -1452,7 +1583,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "federal_agency",
                 "status_history",
-                "action_needed_reason_email",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -1484,7 +1614,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "federal_agency",
                 "status_history",
-                "action_needed_reason_email",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
@@ -1554,6 +1683,8 @@ class TestDomainRequestAdmin(MockEppLib):
             request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
             request.user = self.superuser
 
+            request.session = {}
+            
             # Define a custom implementation for is_active
             def custom_is_active(self):
                 return domain_is_active  # Override to return True

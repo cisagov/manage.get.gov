@@ -555,6 +555,60 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         return page.follow() if follow else page
 
     @less_console_noise_decorator
+    @override_flag("profile_feature", active=True)
+    def test_full_name_initial_value(self):
+        """Test that full_name initial value is empty when first_name or last_name is empty.
+        This will later be displayed as "unknown" using javascript."""
+        username_regular_incomplete = "test_regular_user_incomplete"
+        first_name_2 = "Incomplete"
+        email_2 = "unicorn@igorville.com"
+        incomplete_regular_user = get_user_model().objects.create(
+            username=username_regular_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.REGULAR,
+        )
+        self.app.set_user(incomplete_regular_user.username)
+
+        # Test when first_name is empty
+        incomplete_regular_user.first_name = ""
+        incomplete_regular_user.last_name = "Doe"
+        incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when last_name is empty
+        incomplete_regular_user.first_name = "John"
+        incomplete_regular_user.last_name = ""
+        incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when both first_name and last_name are empty
+        incomplete_regular_user.first_name = ""
+        incomplete_regular_user.last_name = ""
+        incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when both first_name and last_name are present
+        incomplete_regular_user.first_name = "John"
+        incomplete_regular_user.last_name = "Doe"
+        incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "John Doe")
+
+        incomplete_regular_user.delete()
+
+    @less_console_noise_decorator
     def test_new_user_with_profile_feature_on(self):
         """Tests that a new user is redirected to the profile setup page when profile_feature is on"""
         username_regular_incomplete = "test_regular_user_incomplete"
@@ -602,6 +656,58 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             # This is the same as clicking the back button.
             completed_setup_page = self.app.get(reverse("home"))
             self.assertContains(completed_setup_page, "Manage your domain")
+        incomplete_regular_user.delete()
+
+    @less_console_noise_decorator
+    def test_new_user_with_empty_name_can_add_name(self):
+        """Tests that a new user without a name can still enter this information accordingly"""
+        username_regular_incomplete = "test_regular_user_incomplete"
+        email = "unicorn@igorville.com"
+        # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
+        incomplete_regular_user = get_user_model().objects.create(
+            username=username_regular_incomplete,
+            first_name="",
+            last_name="",
+            email=email,
+            verification_type=User.VerificationTypeChoices.REGULAR,
+        )
+        self.app.set_user(incomplete_regular_user.username)
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the setup page.
+            # Follow implicity checks if our redirect is working.
+            finish_setup_page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
+
+            # Assert that we're on the right page
+            self.assertContains(finish_setup_page, "Finish setting up your profile")
+
+            finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
+
+            self.assertEqual(finish_setup_page.status_code, 200)
+
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(finish_setup_page, "Enter your phone number.")
+
+            # Check for the name of the save button
+            self.assertContains(finish_setup_page, "user_setup_save_button")
+
+            # Add a phone number
+            finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "test"
+            finish_setup_form["last_name"] = "test2"
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            save_page = self._submit_form_webtest(finish_setup_form, follow=True)
+
+            self.assertEqual(save_page.status_code, 200)
+            self.assertContains(save_page, "Your profile has been updated.")
+
+            # Try to navigate back to the home page.
+            # This is the same as clicking the back button.
+            completed_setup_page = self.app.get(reverse("home"))
+            self.assertContains(completed_setup_page, "Manage your domain")
+        incomplete_regular_user.delete()
 
     @less_console_noise_decorator
     def test_new_user_goes_to_domain_request_with_profile_feature_on(self):
@@ -659,6 +765,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertNotContains(completed_setup_page, "What contact information should we use to reach you?")
 
             self.assertContains(completed_setup_page, "You’re about to start your .gov domain request")
+        incomplete_regular_user.delete()
 
     @less_console_noise_decorator
     def test_new_user_with_profile_feature_off(self):
