@@ -207,105 +207,12 @@ class CsvReportsTest(MockDb):
             self.assertEqual(expected_file_content, response.content)
 
 
-# There seems to be a data interference issue with MockDb that affects only
-# the entire test suite when ran through our actions. For this test, we forgo that for now.
-class ExportDataTestUserFacing(TestCase):
-    """Tests our data exports for users"""
-
-    def setUp(self):
-        self.client = Client(HTTP_HOST="localhost:8080")
-
-    def tearDown(self):
-        PublicContact.objects.all().delete()
-        Domain.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        DomainRequest.objects.all().delete()
-        User.objects.all().delete()
-        UserDomainRole.objects.all().delete()
-        DomainInvitation.objects.all().delete()
-        FederalAgency.objects.all().delete()
-
-    @less_console_noise_decorator
-    def test_domain_data_type_user(self):
-        """Shows security contacts, domain managers, so for the current user"""
-
-        p = "userpass"
-        unrelated_user = User.objects.create(
-            username="unrelatedUser",
-            email="unrelatedUser@example.com",
-            first_name="firstName",
-            last_name="lastName",
-            password=p,
-        )
-
-        # We add these here due to a data interference issue with MockDB
-        new_domain_1 = Domain.objects.create(name="interfere.gov", state=Domain.State.READY)
-        new_domain_2 = Domain.objects.create(name="somedomain1234.gov", state=Domain.State.DNS_NEEDED)
-        new_domain_3 = Domain.objects.create(name="noaccess.gov", state=Domain.State.ON_HOLD)
-
-        DomainInformation.objects.create(
-            creator=unrelated_user,
-            domain=new_domain_1,
-            generic_org_type="federal",
-            federal_type="executive",
-            is_election_board=False,
-        )
-        DomainInformation.objects.create(
-            creator=unrelated_user, domain=new_domain_2, generic_org_type="interstate", is_election_board=True
-        )
-        DomainInformation.objects.create(
-            creator=unrelated_user,
-            domain=new_domain_3,
-            generic_org_type="federal",
-            is_election_board=False,
-        )
-
-        # Create a user and associate it with some domains
-        user = create_user()
-        UserDomainRole.objects.create(user=user, domain=new_domain_1)
-        UserDomainRole.objects.create(user=user, domain=new_domain_2)
-
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-        response = self.client.get(
-            "/",
-            follow=True,
-        )
-
-        request = response.wsgi_request
-
-        # Create a CSV file in memory
-        csv_file = StringIO()
-        # Call the export functions
-        DomainDataTypeUser.export_data_to_csv(csv_file, request=request)
-        # Reset the CSV file's position to the beginning
-        csv_file.seek(0)
-        # Read the content into a variable
-        csv_content = csv_file.read()
-
-        # We expect only domains associated with the user
-        expected_content = (
-            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,"
-            "State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "interfere.gov,Ready,(blank),(blank),Federal - Executive,,,"
-            ", ,,(blank),staff@example.com,\n"
-            "somedomain1234.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,"
-            "(blank),staff@example.com,\n"
-        )
-
-        # Normalize line endings and remove commas,
-        # spaces and leading/trailing whitespace
-        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
-        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        self.maxDiff = None
-        self.assertEqual(csv_content, expected_content)
-
-
 class ExportDataTest(MockDb, MockEppLib):
     """Tests our data exports for admin"""
 
     def setUp(self):
         super().setUp()
+        self.factory = RequestFactory()
 
     def tearDown(self):
         super().tearDown()
@@ -358,6 +265,58 @@ class ExportDataTest(MockDb, MockEppLib):
             "meoward@rocks.com,squeaker@rocks.com\n"
             "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,,(blank),,,meoward@rocks.com,\n"
         )
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
+        self.assertEqual(csv_content, expected_content)
+
+    @less_console_noise_decorator
+    def test_domain_data_type_user(self):
+        """Shows security contacts, domain managers, so for the current user"""
+
+        # Add security email information
+        self.domain_1.name = "defaultsecurity.gov"
+        self.domain_1.save()
+        # Invoke setter
+        self.domain_1.security_contact
+        self.domain_2.security_contact
+        self.domain_3.security_contact
+        # Add a first ready date on the first domain. Leaving the others blank.
+        self.domain_1.first_ready = get_default_start_date()
+        self.domain_1.save()
+
+        # Create a user and associate it with some domains
+        user = create_user()
+        UserDomainRole.objects.create(user=user, domain=self.domain_1)
+        UserDomainRole.objects.create(user=user, domain=self.domain_2)
+
+        # Create a request object
+        request = self.factory.get("/")
+        request.user = user
+
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        # Call the export functions
+        DomainDataTypeUser.export_data_to_csv(csv_file, request=request)
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+        # Read the content into a variable
+        csv_content = csv_file.read()
+
+        # We expect only domains associated with the user
+        expected_content = (
+            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
+            "City,State,SO,SO email,"
+            "Security contact email,Domain managers,Invited domain managers\n"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,"
+            '(blank),"meoward@rocks.com, info@example.com, big_lebowski@dude.co, staff@example.com",'
+            "woofwardthethird@rocks.com\n"
+            "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),"
+            '"meoward@rocks.com, staff@example.com",squeaker@rocks.com\n'
+        )
+
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
