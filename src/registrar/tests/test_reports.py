@@ -265,6 +265,8 @@ class ExportDataTestUserFacing(TestCase):
         UserDomainRole.objects.create(user=user, domain=new_domain_1)
         UserDomainRole.objects.create(user=user, domain=new_domain_2)
 
+        user.refresh_from_db()
+
         # Create a request object
         request = self.factory.get("/")
         request.user = user
