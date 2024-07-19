@@ -110,6 +110,26 @@ body {
   }
 }
 
+.section--outlined__header--no-portfolio {
+  .section--outlined__search,
+  .section--outlined__utility-button {
+    margin-top: units(2);
+  }
+
+  @include at-media(tablet) {
+    display: flex;
+    column-gap: units(3);
+
+    .section--outlined__search,
+    .section--outlined__utility-button {
+      margin-top: 0;
+    }
+    .section--outlined__search {
+      flex-grow: 4;
+    }
+  }
+}
+
 .break-word {
   word-break: break-word;
 }
