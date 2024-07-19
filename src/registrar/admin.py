@@ -1001,6 +1001,16 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
+    def save_model(self, request, obj, form, change):
+        # Clear warning messages before saving
+        storage = messages.get_messages(request)
+        storage.used = False
+        for message in storage:
+            if message.level == messages.WARNING:
+                storage.used = True
+
+        return super().save_model(request, obj, form, change)
+
 
 class SeniorOfficialAdmin(ListHeaderAdmin):
     """Custom Senior Official Admin class."""
