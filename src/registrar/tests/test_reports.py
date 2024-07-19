@@ -1,7 +1,7 @@
 import io
 from django.test import Client, RequestFactory
 from io import StringIO
-from registrar.models import DomainRequest, Domain, DomainInformation, UserDomainRole
+from registrar.models import DomainRequest, Domain, DomainInformation, UserDomainRole, User
 from registrar.utility.csv_export import (
     DomainDataFull,
     DomainDataType,
@@ -214,27 +214,34 @@ class ExportDataTestUserFacing(MockEppLib):
     def test_domain_data_type_user(self):
         """Shows security contacts, domain managers, so for the current user"""
 
+        p = "userpass"
+        unrelated_user = User.objects.create_user(
+            username="unrelatedUser",
+            email="unrelatedUser@example.com",
+            first_name="firstName",
+            last_name="lastName",
+            password=p,
+        )
+
         # We add these here due to a data interference issue with MockDB
         new_domain_1, _ = Domain.objects.get_or_create(name="interfere.gov", state=Domain.State.READY)
         new_domain_2, _ = Domain.objects.get_or_create(name="somedomain123.gov", state=Domain.State.DNS_NEEDED)
         new_domain_3, _ = Domain.objects.get_or_create(name="noaccess.gov", state=Domain.State.ON_HOLD)
 
         DomainInformation.objects.get_or_create(
-            creator=self.user,
+            creator=unrelated_user,
             domain=new_domain_1,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_1,
             federal_type="executive",
             is_election_board=False,
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=new_domain_2, generic_org_type="interstate", is_election_board=True
+            creator=unrelated_user, domain=new_domain_2, generic_org_type="interstate", is_election_board=True
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user,
+            creator=unrelated_user,
             domain=new_domain_3,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_2,
             is_election_board=False,
         )
         # Invoke setter
@@ -264,7 +271,7 @@ class ExportDataTestUserFacing(MockEppLib):
         expected_content = (
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,"
             "State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "interfere.gov,Ready,(blank),2023-05-25,Federal - Executive,World War I Centennial Commission,,,"
+            "interfere.gov,Ready,(blank),2023-05-25,Federal - Executive,,,"
             ", ,,security@mail.gov,staff@example.com,\n"
             "somedomain123.gov,Dns needed,(blank),2023-05-25,Interstate,,,,, ,,"
             "security@mail.gov,staff@example.com,\n"
