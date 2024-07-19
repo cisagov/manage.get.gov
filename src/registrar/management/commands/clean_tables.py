@@ -72,7 +72,7 @@ class Command(BaseCommand):
                 with transaction.atomic():
                     deleted, _ = model.objects.filter(pk__in=pks).delete()
                     total_deleted += deleted
-                logger.debug(f"Deleted {deleted} objects, total deleted: {total_deleted}")
+                logger.debug(f"Deleted {deleted} {table_name}s, total deleted: {total_deleted}")
             logger.info(f"Successfully cleaned table {table_name}, deleted {total_deleted} rows")
         except LookupError:
             logger.error(f"Model for table {table_name} not found.")
