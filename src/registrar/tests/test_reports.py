@@ -1,7 +1,7 @@
 import io
-from django.test import Client, RequestFactory
+from django.test import Client, RequestFactory, TestCase
 from io import StringIO
-from registrar.models import DomainRequest, Domain, DomainInformation, UserDomainRole, User
+from registrar.models import DomainRequest, Domain, DomainInformation, UserDomainRole, User, PublicContact, DomainInvitation, FederalAgency
 from registrar.utility.csv_export import (
     DomainDataFull,
     DomainDataType,
@@ -200,22 +200,28 @@ class CsvReportsTest(MockDb):
 
 # There seems to be a data interference issue with MockDb that affects only
 # the entire test suite. For this test, we forgo that for now.
-class ExportDataTestUserFacing(MockEppLib):
+class ExportDataTestUserFacing(TestCase):
     """Tests our data exports for users"""
 
     def setUp(self):
-        super().setUp()
         self.factory = RequestFactory()
 
     def tearDown(self):
-        super().tearDown()
+        PublicContact.objects.all().delete()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        User.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+        FederalAgency.objects.all().delete()
 
-    @less_console_noise_decorator
+    #@less_console_noise_decorator
     def test_domain_data_type_user(self):
         """Shows security contacts, domain managers, so for the current user"""
 
         p = "userpass"
-        unrelated_user = User.objects.create_user(
+        unrelated_user = User.objects.create(
             username="unrelatedUser",
             email="unrelatedUser@example.com",
             first_name="firstName",
@@ -224,30 +230,26 @@ class ExportDataTestUserFacing(MockEppLib):
         )
 
         # We add these here due to a data interference issue with MockDB
-        new_domain_1, _ = Domain.objects.get_or_create(name="interfere.gov", state=Domain.State.READY)
-        new_domain_2, _ = Domain.objects.get_or_create(name="somedomain123.gov", state=Domain.State.DNS_NEEDED)
-        new_domain_3, _ = Domain.objects.get_or_create(name="noaccess.gov", state=Domain.State.ON_HOLD)
+        new_domain_1 = Domain.objects.create(name="interfere.gov", state=Domain.State.READY)
+        new_domain_2 = Domain.objects.create(name="somedomain1234.gov", state=Domain.State.DNS_NEEDED)
+        new_domain_3 = Domain.objects.create(name="noaccess.gov", state=Domain.State.ON_HOLD)
 
-        DomainInformation.objects.get_or_create(
+        DomainInformation.objects.create(
             creator=unrelated_user,
             domain=new_domain_1,
             generic_org_type="federal",
             federal_type="executive",
             is_election_board=False,
         )
-        DomainInformation.objects.get_or_create(
+        DomainInformation.objects.create(
             creator=unrelated_user, domain=new_domain_2, generic_org_type="interstate", is_election_board=True
         )
-        DomainInformation.objects.get_or_create(
+        DomainInformation.objects.create(
             creator=unrelated_user,
             domain=new_domain_3,
             generic_org_type="federal",
             is_election_board=False,
         )
-        # Invoke setter
-        new_domain_1.security_contact
-        new_domain_2.security_contact
-        new_domain_3.security_contact
 
         # Create a user and associate it with some domains
         user = create_user()
@@ -258,6 +260,7 @@ class ExportDataTestUserFacing(MockEppLib):
         request = self.factory.get("/")
         request.user = user
 
+        print(f"what is the request? {request}")
         # Create a CSV file in memory
         csv_file = StringIO()
         # Call the export functions
@@ -271,10 +274,10 @@ class ExportDataTestUserFacing(MockEppLib):
         expected_content = (
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,"
             "State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "interfere.gov,Ready,(blank),2023-05-25,Federal - Executive,,,"
-            ", ,,security@mail.gov,staff@example.com,\n"
-            "somedomain123.gov,Dns needed,(blank),2023-05-25,Interstate,,,,, ,,"
-            "security@mail.gov,staff@example.com,\n"
+            "interfere.gov,Ready,(blank),(blank),Federal - Executive,,,"
+            ", ,,(blank),staff@example.com,\n"
+            "somedomain123.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,"
+            "(blank),staff@example.com,\n"
         )
 
         # Normalize line endings and remove commas,

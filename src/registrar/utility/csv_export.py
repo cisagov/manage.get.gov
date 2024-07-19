@@ -565,10 +565,13 @@ class DomainDataTypeUser(DomainDataType):
         Get a Q object of filter conditions to filter when building queryset.
         """
         if request is None or not hasattr(request, "user") or not request.user:
-            return Q()
+            # Return nothing
+            logger.info(f"returning nothing: {request}")
+            return Q(id__in=[])
 
         user_domain_roles = UserDomainRole.objects.filter(user=request.user)
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
+        logger.info(f"roles: {user_domain_roles} ids: {domain_ids}")
         return Q(id__in=domain_ids)
 
 
