@@ -43,7 +43,6 @@ class TestProcessedMigrations(TestCase):
         DomainInformation.objects.all().delete()
         DomainInvitation.objects.all().delete()
         TransitionDomain.objects.all().delete()
-        FederalAgency.objects.all().delete()
 
         # Delete users
         User.objects.all().delete()
@@ -185,6 +184,7 @@ class TestOrganizationMigration(TestCase):
         """Defines the file name of migration_json and the folder its contained in"""
         self.test_data_file_location = "registrar/tests/data"
         self.migration_json_filename = "test_migrationFilepaths.json"
+        self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
 
     def tearDown(self):
         """Deletes all DB objects related to migrations"""
@@ -197,6 +197,7 @@ class TestOrganizationMigration(TestCase):
         # Delete users
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
+        self.federal_agency.delete()
 
     def run_load_domains(self):
         """
@@ -331,7 +332,6 @@ class TestOrganizationMigration(TestCase):
 
             # Lets test the first one
             transition = transition_domains.first()
-            federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
             expected_transition_domain = TransitionDomain(
                 username="alexandra.bobbitt5@test.com",
                 domain_name="fakewebsite2.gov",
@@ -340,7 +340,7 @@ class TestOrganizationMigration(TestCase):
                 generic_org_type="Federal",
                 organization_name="Fanoodle",
                 federal_type="Executive",
-                federal_agency=federal_agency,
+                federal_agency=self.federal_agency,
                 epp_creation_date=datetime.date(2004, 5, 7),
                 epp_expiration_date=datetime.date(2023, 9, 30),
                 first_name="Seline",
@@ -395,8 +395,7 @@ class TestOrganizationMigration(TestCase):
             # == Third, test that we've loaded data as we expect == #
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
-            federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
-
+            
             expected_creator = User.objects.filter(username="System").get()
             expected_so = Contact.objects.filter(
                 first_name="Seline", middle_name="testmiddle2", last_name="Tower"
@@ -404,7 +403,7 @@ class TestOrganizationMigration(TestCase):
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
                 generic_org_type="federal",
-                federal_agency=federal_agency,
+                federal_agency=self.federal_agency,
                 federal_type="executive",
                 organization_name="Fanoodle",
                 address_line1="93001 Arizona Drive",
@@ -451,8 +450,7 @@ class TestOrganizationMigration(TestCase):
             # == Fourth, test that no data is overwritten as we expect == #
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
-            federal_agency, _ = FederalAgency.objects.get_or_create(agency="Department of Commerce")
-
+            
             expected_creator = User.objects.filter(username="System").get()
             expected_so = Contact.objects.filter(
                 first_name="Seline", middle_name="testmiddle2", last_name="Tower"
@@ -460,7 +458,7 @@ class TestOrganizationMigration(TestCase):
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
                 generic_org_type="federal",
-                federal_agency=federal_agency,
+                federal_agency=self.federal_agency,
                 federal_type="executive",
                 organization_name="Fanoodle",
                 address_line1="93001 Galactic Way",

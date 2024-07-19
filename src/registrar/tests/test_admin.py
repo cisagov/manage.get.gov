@@ -1909,10 +1909,6 @@ class TestFederalAgency(TestCase):
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
 
-    def tearDown(self):
-        super().tearDown()
-        FederalAgency.objects.all().delete()
-
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()

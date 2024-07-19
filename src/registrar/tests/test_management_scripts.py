@@ -1184,7 +1184,10 @@ class TestTransferFederalAgencyType(TestCase):
         User.objects.all().delete()
         Contact.objects.all().delete()
         Website.objects.all().delete()
-        FederalAgency.objects.all().delete()
+        self.amtrak.delete()
+        self.legislative_branch.delete()
+        self.library_of_congress.delete()
+        self.gov_admin.delete()
 
     def run_transfer_federal_agency_type(self):
         """

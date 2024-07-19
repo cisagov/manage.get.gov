@@ -793,7 +793,8 @@ class MockDb(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
         DomainInvitation.objects.all().delete()
-        FederalAgency.objects.all().delete()
+        cls.federal_agency_1.delete()
+        cls.federal_agency_2.delete()
 
 
 class MockDbForSharedTests(MockDb):
