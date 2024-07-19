@@ -673,7 +673,7 @@ class MockDb(TestCase):
             username="meoward_username", first_name="first_meoward", last_name="last_meoward", email="meoward@rocks.com"
         )
 
-        lebowski_user = get_user_model().objects.create(
+        cls.lebowski_user = get_user_model().objects.create(
             username="big_lebowski", first_name="big", last_name="lebowski", email="big_lebowski@dude.co"
         )
 
@@ -686,7 +686,7 @@ class MockDb(TestCase):
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=lebowski_user, domain=cls.domain_1, role=UserDomainRole.Roles.MANAGER
+            user=cls.lebowski_user, domain=cls.domain_1, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = UserDomainRole.objects.get_or_create(
