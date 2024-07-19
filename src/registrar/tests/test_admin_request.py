@@ -1684,7 +1684,7 @@ class TestDomainRequestAdmin(MockEppLib):
             request.user = self.superuser
 
             request.session = {}
-            
+
             # Define a custom implementation for is_active
             def custom_is_active(self):
                 return domain_is_active  # Override to return True

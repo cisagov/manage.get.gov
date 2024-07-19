@@ -395,7 +395,7 @@ class TestOrganizationMigration(TestCase):
             # == Third, test that we've loaded data as we expect == #
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
-            
+
             expected_creator = User.objects.filter(username="System").get()
             expected_so = Contact.objects.filter(
                 first_name="Seline", middle_name="testmiddle2", last_name="Tower"
@@ -450,7 +450,7 @@ class TestOrganizationMigration(TestCase):
             # == Fourth, test that no data is overwritten as we expect == #
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
-            
+
             expected_creator = User.objects.filter(username="System").get()
             expected_so = Contact.objects.filter(
                 first_name="Seline", middle_name="testmiddle2", last_name="Tower"

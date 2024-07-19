@@ -7,7 +7,6 @@ from api.tests.common import less_console_noise_decorator
 from gevent.exceptions import ConcurrentObjectUseError
 from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.errors import RegistryError, LoginError
-from .common import less_console_noise
 import logging
 
 try:
