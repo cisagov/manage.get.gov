@@ -208,12 +208,12 @@ class CsvReportsTest(MockDb):
 
 
 # There seems to be a data interference issue with MockDb that affects only
-# the entire test suite. For this test, we forgo that for now.
+# the entire test suite when ran through our actions. For this test, we forgo that for now.
 class ExportDataTestUserFacing(TestCase):
     """Tests our data exports for users"""
 
     def setUp(self):
-        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
 
     def tearDown(self):
         PublicContact.objects.all().delete()
@@ -265,23 +265,40 @@ class ExportDataTestUserFacing(TestCase):
         UserDomainRole.objects.create(user=user, domain=new_domain_1)
         UserDomainRole.objects.create(user=user, domain=new_domain_2)
 
-        user.refresh_from_db()
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/",
+            follow=True,
+        )
 
-        # Create a request object
-        request = self.factory.get("/")
-        request.user = user
+        request = response.wsgi_request
 
         # Create a CSV file in memory
         csv_file = StringIO()
-
         # Call the export functions
-        rows = DomainDataTypeUser.export_data_to_csv(csv_file, request=request)
-        # Extract domain names from the list
-        domain_names = [row[0] for row in rows]
+        DomainDataTypeUser.export_data_to_csv(csv_file, request=request)
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+        # Read the content into a variable
+        csv_content = csv_file.read()
 
-        self.assertIn("interfere.gov", domain_names)
-        self.assertIn("somedomain1234.gov", domain_names)
-        self.assertNotIn("noaccess.gov", domain_names)
+        # We expect only domains associated with the user
+        expected_content = (
+            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,"
+            "State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
+            "interfere.gov,Ready,(blank),(blank),Federal - Executive,,,"
+            ", ,,(blank),staff@example.com,\n"
+            "somedomain1234.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,"
+            "(blank),staff@example.com,\n"
+        )
+
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
+        self.assertEqual(csv_content, expected_content)
 
 
 class ExportDataTest(MockDb, MockEppLib):
