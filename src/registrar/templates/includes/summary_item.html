@@ -112,8 +112,11 @@
       <div class="text-right">
       <a
           href="{{ edit_link }}"
-          class="usa-link font-sans-sm"
+          class="usa-link usa-link--icon font-sans-sm line-height-sans-5"
       >
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+          <use xlink:href="{% static 'img/sprite.svg' %}#edit"></use>
+        </svg>
         Edit<span class="sr-only"> {{ title }}</span>
       </a>
       </div>
