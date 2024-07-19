@@ -1,15 +1,10 @@
 import io
-from django.test import Client, RequestFactory, TestCase
+from django.test import Client, RequestFactory
 from io import StringIO
 from registrar.models import (
     DomainRequest,
     Domain,
-    DomainInformation,
     UserDomainRole,
-    User,
-    PublicContact,
-    DomainInvitation,
-    FederalAgency,
 )
 from registrar.utility.csv_export import (
     DomainDataFull,
