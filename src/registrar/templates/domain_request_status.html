@@ -42,10 +42,13 @@
     </div>
     <br>
     <p><b class="review__step__name">Last updated:</b> {{DomainRequest.updated_at|date:"F j, Y"}}</p>
+  
+    {% if DomainRequest.status != 'rejected' %}
     <p>{% include "includes/domain_request.html" %}</p>
     <p><a href="{% url 'domain-request-withdraw-confirmation' pk=DomainRequest.id %}" class="usa-button usa-button--outline withdraw_outline">
       Withdraw request</a>
     </p>
+    {% endif %}
   </div>
 
   <div class="grid-col desktop:grid-offset-2 maxw-tablet">
@@ -86,8 +89,8 @@
       {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization heading_level=heading_level %}
     {% endif %}
 
-    {% if DomainRequest.authorizing_official %}
-      {% include "includes/summary_item.html" with title='Authorizing official' value=DomainRequest.authorizing_official contact='true' heading_level=heading_level %}
+    {% if DomainRequest.senior_official %}
+      {% include "includes/summary_item.html" with title='Senior official' value=DomainRequest.senior_official contact='true' heading_level=heading_level %}
     {% endif %}
 
     {% if DomainRequest.current_websites.all %}

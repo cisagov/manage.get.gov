@@ -177,7 +177,7 @@ class LoadExtraTransitionDomain:
                 # STEP 3: Parse agency data
                 updated_transition_domain = self.parse_agency_data(domain_name, transition_domain)
 
-                # STEP 4: Parse ao data
+                # STEP 4: Parse so data
                 updated_transition_domain = self.parse_authority_data(domain_name, transition_domain)
 
                 # STEP 5: Parse creation and expiration data
@@ -326,7 +326,7 @@ class LoadExtraTransitionDomain:
             )
 
     def parse_authority_data(self, domain_name, transition_domain) -> TransitionDomain:
-        """Grabs authorizing_offical data from the parsed files and associates it
+        """Grabs senior_offical data from the parsed files and associates it
         with a transition_domain object, then returns that object."""
         if not isinstance(transition_domain, TransitionDomain):
             raise ValueError("Not a valid object, must be TransitionDomain")
@@ -336,7 +336,7 @@ class LoadExtraTransitionDomain:
             self.parse_logs.create_log_item(
                 EnumFilenames.AGENCY_ADHOC,
                 LogCode.ERROR,
-                f"Could not add authorizing_official on {domain_name}, no data exists.",
+                f"Could not add senior_official on {domain_name}, no data exists.",
                 domain_name,
                 not self.debug,
             )

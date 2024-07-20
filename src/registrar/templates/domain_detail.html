@@ -56,13 +56,13 @@
     {% url 'domain-org-name-address' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=domain.is_editable %}
 
-    {% url 'domain-authorizing-official' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true' edit_link=url editable=domain.is_editable %}
+    {% url 'domain-senior-official' pk=domain.id as url %}
+    {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=domain.is_editable %}
 
     {# Conditionally display profile #}
     {% if not has_profile_feature_flag %}
     {% url 'domain-your-contact-information' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url editable=domain.is_editable %}
+    {% include "includes/summary_item.html" with title='Your contact information' value=request.user contact='true' edit_link=url editable=domain.is_editable %}
     {% endif %}
 
     {% url 'domain-security-email' pk=domain.id as url %}

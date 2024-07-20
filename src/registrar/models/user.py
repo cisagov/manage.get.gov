@@ -23,10 +23,6 @@ class User(AbstractUser):
     A custom user model that performs identically to the default user model
     but can be customized later.
 
-    This model uses signals [as defined in [signals.py](../../src/registrar/signals.py)].
-    When a new user is created through Login.gov, a contact object will be created and
-    associated on the contacts `user` field.
-
     If the `user` object already exists, said user object
     will be updated if any updates are made to it through Login.gov.
     """
@@ -113,17 +109,14 @@ class User(AbstractUser):
         Tracks if the user finished their profile setup or not. This is so
         we can globally enforce that new users provide additional account information before proceeding.
         """
-
-        # Change this to self once the user and contact objects are merged.
-        # For now, since they are linked, lets test on the underlying contact object.
-        user_info = self.contact  # noqa
         user_values = [
-            user_info.first_name,
-            user_info.last_name,
-            user_info.title,
-            user_info.phone,
+            self.first_name,
+            self.last_name,
+            self.title,
+            self.phone,
         ]
-        return None not in user_values
+
+        return None not in user_values and "" not in user_values
 
     def __str__(self):
         # this info is pulled from Login.gov
@@ -169,8 +162,13 @@ class User(AbstractUser):
         """Return count of ineligible requests"""
         return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.INELIGIBLE).count()
 
+    def get_formatted_name(self):
+        """Returns the contact's name in Western order."""
+        names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
+        return " ".join(names) if names else "Unknown"
+
     def has_contact_info(self):
-        return bool(self.contact.title or self.contact.email or self.contact.phone)
+        return bool(self.title or self.email or self.phone)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):

@@ -59,7 +59,7 @@ class TestEmails(TestCase):
 
         self.assertIn("Type of organization:", body)
         self.assertIn("Federal", body)
-        self.assertIn("Authorizing official:", body)
+        self.assertIn("Senior official:", body)
         self.assertIn("Testy Tester", body)
         self.assertIn(".gov domain:", body)
         self.assertIn("city.gov", body)
@@ -177,7 +177,7 @@ class TestEmails(TestCase):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertNotIn("About your organization:", body)
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"10002\n\nAuthorizing official:")
+        self.assertRegex(body, r"10002\n\nSenior official:")
 
     @boto3_mocking.patching
     def test_submission_confirmation_anything_else_spacing(self):

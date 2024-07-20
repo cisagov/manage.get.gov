@@ -389,7 +389,7 @@ class AuditedAdminMockData:
                 zipcode: str = "10002",
                 about_your_organization: str = "e-Government",
                 anything_else: str = "There is more",
-                authorizing_official: Contact = self.dummy_contact(item_name, "authorizing_official"),
+                senior_official: Contact = self.dummy_contact(item_name, "senior_official"),
                 submitter: Contact = self.dummy_contact(item_name, "submitter"),
                 creator: User = self.dummy_user(item_name, "creator"),
             }
@@ -407,7 +407,7 @@ class AuditedAdminMockData:
             zipcode="10002",
             about_your_organization="e-Government",
             anything_else="There is more",
-            authorizing_official=self.dummy_contact(item_name, "authorizing_official"),
+            senior_official=self.dummy_contact(item_name, "senior_official"),
             submitter=self.dummy_contact(item_name, "submitter"),
             creator=creator,
         )
@@ -810,6 +810,8 @@ def create_superuser():
     user = User.objects.create_user(
         username="superuser",
         email="admin@example.com",
+        first_name="first",
+        last_name="last",
         is_staff=True,
         password=p,
     )
@@ -826,6 +828,8 @@ def create_user():
     user = User.objects.create_user(
         username="staffuser",
         email="staff@example.com",
+        first_name="first",
+        last_name="last",
         is_staff=True,
         password=p,
     )
@@ -864,7 +868,7 @@ def completed_domain_request(  # noqa
     """A completed domain request."""
     if not user:
         user = get_user_model().objects.create(username="username" + str(uuid.uuid4())[:8])
-    ao, _ = Contact.objects.get_or_create(
+    so, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
         title="Chief Tester",
@@ -908,7 +912,7 @@ def completed_domain_request(  # noqa
         address_line2="address 2",
         state_territory="NY",
         zipcode="10002",
-        authorizing_official=ao,
+        senior_official=so,
         requested_domain=domain,
         submitter=submitter,
         creator=user,
@@ -1550,8 +1554,6 @@ class MockEppLib(TestCase):
 
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None).lower()
-
-        print(request_name)
 
         # Define a dictionary to map request names to data and extension values
         request_mappings = {

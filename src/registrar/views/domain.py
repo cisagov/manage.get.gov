@@ -40,8 +40,8 @@ from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
-    ContactForm,
-    AuthorizingOfficialContactForm,
+    UserForm,
+    SeniorOfficialContactForm,
     DomainOrgNameAddressForm,
     DomainAddUserForm,
     DomainSecurityEmailForm,
@@ -228,18 +228,18 @@ class DomainOrgNameAddressView(DomainFormBaseView):
         return super().form_valid(form)
 
 
-class DomainAuthorizingOfficialView(DomainFormBaseView):
-    """Domain authorizing official editing view."""
+class DomainSeniorOfficialView(DomainFormBaseView):
+    """Domain senior official editing view."""
 
     model = Domain
-    template_name = "domain_authorizing_official.html"
+    template_name = "domain_senior_official.html"
     context_object_name = "domain"
-    form_class = AuthorizingOfficialContactForm
+    form_class = SeniorOfficialContactForm
 
     def get_form_kwargs(self, *args, **kwargs):
-        """Add domain_info.authorizing_official instance to make a bound form."""
+        """Add domain_info.senior_official instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.object.domain_info.authorizing_official
+        form_kwargs["instance"] = self.object.domain_info.senior_official
 
         domain_info = self.get_domain_info_from_domain()
         invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]
@@ -256,10 +256,10 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
-        return reverse("domain-authorizing-official", kwargs={"pk": self.object.pk})
+        return reverse("domain-senior-official", kwargs={"pk": self.object.pk})
 
     def form_valid(self, form):
-        """The form is valid, save the authorizing official."""
+        """The form is valid, save the senior official."""
 
         # Set the domain information in the form so that it can be accessible
         # to associate a new Contact, if a new Contact is needed
@@ -267,7 +267,7 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
         form.set_domain_info(self.object.domain_info)
         form.save()
 
-        messages.success(self.request, "The authorizing official for this domain has been updated.")
+        messages.success(self.request, "The senior official for this domain has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -573,7 +573,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
     """Domain your contact information editing view."""
 
     template_name = "domain_your_contact_information.html"
-    form_class = ContactForm
+    form_class = UserForm
 
     @waffle_flag("!profile_feature")  # type: ignore
     def dispatch(self, request, *args, **kwargs):  # type: ignore
@@ -582,7 +582,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.request.user.contact
+        form_kwargs["instance"] = self.request.user
         return form_kwargs
 
     def get_success_url(self):

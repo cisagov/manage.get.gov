@@ -57,12 +57,10 @@ class TestWithUser(MockEppLib):
         last_name = "Last"
         email = "info@example.com"
         phone = "8003111234"
-        self.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email, phone=phone
-        )
         title = "test title"
-        self.user.contact.title = title
-        self.user.contact.save()
+        self.user = get_user_model().objects.create(
+            username=username, first_name=first_name, last_name=last_name, title=title, email=email, phone=phone
+        )
 
         username_regular_incomplete = "test_regular_user_incomplete"
         username_other_incomplete = "test_other_user_incomplete"
@@ -374,14 +372,17 @@ class HomeTests(TestWithUser):
         )
 
         # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakey",
+        )
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
-            authorizing_official=contact,
+            senior_official=contact,
             submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
@@ -392,7 +393,7 @@ class HomeTests(TestWithUser):
             creator=self.user,
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
-            authorizing_official=contact_2,
+            senior_official=contact_2,
             submitter=contact_shared,
         )
         domain_request_2.other_contacts.set([contact_shared])
@@ -407,17 +408,12 @@ class HomeTests(TestWithUser):
         igorville = DomainRequest.objects.filter(requested_domain__name="igorville.gov")
         self.assertFalse(igorville.exists())
 
-        # Check if the orphaned contact was deleted
+        # Check if the orphaned contacts were deleted
         orphan = Contact.objects.filter(id=contact.id)
         self.assertFalse(orphan.exists())
+        orphan = Contact.objects.filter(id=contact_user.id)
+        self.assertFalse(orphan.exists())
 
-        # All non-orphan contacts should still exist and are unaltered
-        try:
-            current_user = Contact.objects.filter(id=contact_user.id).get()
-        except Contact.DoesNotExist:
-            self.fail("contact_user (a non-orphaned contact) was deleted")
-
-        self.assertEqual(current_user, contact_user)
         try:
             edge_case = Contact.objects.filter(id=contact_2.id).get()
         except Contact.DoesNotExist:
@@ -446,14 +442,17 @@ class HomeTests(TestWithUser):
         )
 
         # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakey",
+        )
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
-            authorizing_official=contact,
+            senior_official=contact,
             submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
@@ -464,7 +463,7 @@ class HomeTests(TestWithUser):
             creator=self.user,
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
-            authorizing_official=contact_2,
+            senior_official=contact_2,
             submitter=contact_shared,
         )
         domain_request_2.other_contacts.set([contact_shared])
@@ -540,6 +539,49 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         return page.follow() if follow else page
 
     @less_console_noise_decorator
+    @override_flag("profile_feature", active=True)
+    def test_full_name_initial_value(self):
+        """Test that full_name initial value is empty when first_name or last_name is empty.
+        This will later be displayed as "unknown" using javascript."""
+        self.app.set_user(self.incomplete_regular_user.username)
+
+        # Test when first_name is empty
+        self.incomplete_regular_user.first_name = ""
+        self.incomplete_regular_user.last_name = "Doe"
+        self.incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when last_name is empty
+        self.incomplete_regular_user.first_name = "John"
+        self.incomplete_regular_user.last_name = ""
+        self.incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when both first_name and last_name are empty
+        self.incomplete_regular_user.first_name = ""
+        self.incomplete_regular_user.last_name = ""
+        self.incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when both first_name and last_name are present
+        self.incomplete_regular_user.first_name = "John"
+        self.incomplete_regular_user.last_name = "Doe"
+        self.incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "John Doe")
+
+    @less_console_noise_decorator
     def test_new_user_with_profile_feature_on(self):
         """Tests that a new user is redirected to the profile setup page when profile_feature is on"""
         self.app.set_user(self.incomplete_regular_user.username)
@@ -560,10 +602,53 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(finish_setup_page, "Enter your phone number.")
 
             # Check for the name of the save button
-            self.assertContains(finish_setup_page, "contact_setup_save_button")
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            save_page = self._submit_form_webtest(finish_setup_form, follow=True)
+
+            self.assertEqual(save_page.status_code, 200)
+            self.assertContains(save_page, "Your profile has been updated.")
+
+            # Try to navigate back to the home page.
+            # This is the same as clicking the back button.
+            completed_setup_page = self.app.get(reverse("home"))
+            self.assertContains(completed_setup_page, "Manage your domain")
+
+    @less_console_noise_decorator
+    def test_new_user_with_empty_name_can_add_name(self):
+        """Tests that a new user without a name can still enter this information accordingly"""
+        self.incomplete_regular_user.first_name = ""
+        self.incomplete_regular_user.last_name = ""
+        self.incomplete_regular_user.save()
+        self.app.set_user(self.incomplete_regular_user.username)
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the setup page.
+            # Follow implicity checks if our redirect is working.
+            finish_setup_page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
+
+            # Assert that we're on the right page
+            self.assertContains(finish_setup_page, "Finish setting up your profile")
+
+            finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
+
+            self.assertEqual(finish_setup_page.status_code, 200)
+
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(finish_setup_page, "Enter your phone number.")
+
+            # Check for the name of the save button
+            self.assertContains(finish_setup_page, "user_setup_save_button")
+
+            # Add a phone number
+            finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "test"
+            finish_setup_form["last_name"] = "test2"
             finish_setup_form["phone"] = "(201) 555-0123"
             finish_setup_form["title"] = "CEO"
             finish_setup_form["last_name"] = "example"
@@ -598,10 +683,11 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(finish_setup_page, "Enter your phone number.")
 
             # Check for the name of the save button
-            self.assertContains(finish_setup_page, "contact_setup_save_button")
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "firstname"
             finish_setup_form["phone"] = "(201) 555-0123"
             finish_setup_form["title"] = "CEO"
             finish_setup_form["last_name"] = "example"
@@ -613,7 +699,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             # Submit the form using the specific submit button to execute the redirect
             completed_setup_page = self._submit_form_webtest(
-                finish_setup_form, follow=True, name="contact_setup_submit_button"
+                finish_setup_form, follow=True, name="user_setup_submit_button"
             )
             self.assertEqual(completed_setup_page.status_code, 200)
 
@@ -730,6 +816,8 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
             self.assertContains(save_page, "Your profile has been updated.")
 
             # We need to assert that logo is not clickable and links to manage your domain are not present
+            # NOTE: "anage" is not a typo.  It is to accomodate the fact that the "m" is uppercase in one
+            # instance and lowercase in the other.
             self.assertContains(save_page, "anage your domains", count=2)
             self.assertNotContains(
                 save_page, "Before you can manage your domains, we need you to add contact information"
@@ -865,13 +953,16 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_request_when_profile_feature_on(self):
         """test that Your profile is in request page when profile feature is on"""
 
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakerson",
+        )
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
-            authorizing_official=contact_user,
+            senior_official=contact_user,
             submitter=contact_user,
         )
         with override_flag("profile_feature", active=True):
@@ -884,13 +975,16 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_request_when_profile_feature_off(self):
         """test that Your profile is not in request page when profile feature is off"""
 
-        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakerson",
+        )
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
-            authorizing_official=contact_user,
+            senior_official=contact_user,
             submitter=contact_user,
         )
         with override_flag("profile_feature", active=False):
@@ -965,7 +1059,7 @@ class PortfoliosTests(TestWithUser, WebTest):
             # Assert that we're on the right page
             self.assertContains(portfolio_page, self.portfolio.organization_name)
 
-            self.assertContains(portfolio_page, "<h1>Domains</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
 
     @less_console_noise_decorator
     def test_no_redirect_when_org_flag_false(self):

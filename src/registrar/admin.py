@@ -9,17 +9,17 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
+from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
-from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
-from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -166,6 +166,9 @@ class DomainRequestAdminForm(forms.ModelForm):
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+        }
+        labels = {
+            "action_needed_reason_email": "Auto-generated email",
         }
 
     def __init__(self, *args, **kwargs):
@@ -445,8 +448,9 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "authorizing_official": (Contact, _name_sort),
         "submitter": (Contact, _name_sort),
+        # == Senior Official == #
+        "senior_official": (SeniorOfficial, _name_sort),
         # == User == #
         "creator": (User, _name_sort),
         "user": (User, _name_sort),
@@ -594,12 +598,6 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
         return filters
 
 
-class UserContactInline(admin.StackedInline):
-    """Edit a user's profile on the user page."""
-
-    model = models.Contact
-
-
 class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     """Custom user admin class to use our inlines."""
 
@@ -615,8 +613,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         fields = "__all__"
 
     _meta = Meta()
-
-    inlines = [UserContactInline]
 
     list_display = (
         "username",
@@ -646,7 +642,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("Personal info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -677,7 +673,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -701,12 +697,13 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "Personal Info",
+        "User profile",
         "first_name",
         "middle_name",
         "last_name",
         "title",
         "email",
+        "phone",
         "Permissions",
         "is_active",
         "groups",
@@ -895,29 +892,19 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = [
         "name",
         "email",
-        "user_exists",
     ]
     # this ordering effects the ordering of results
-    # in autocomplete_fields for user
+    # in autocomplete_fields
     ordering = ["first_name", "last_name", "email"]
 
     fieldsets = [
         (
             None,
-            {"fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]},
+            {"fields": ["first_name", "middle_name", "last_name", "title", "email", "phone"]},
         )
     ]
 
-    autocomplete_fields = ["user"]
-
     change_form_template = "django/admin/email_clipboard_change_form.html"
-
-    def user_exists(self, obj):
-        """Check if the Contact has a related User"""
-        return "Yes" if obj.user is not None else "No"
-
-    user_exists.short_description = "Is user"  # type: ignore
-    user_exists.admin_order_field = "user"  # type: ignore
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -936,9 +923,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     name.admin_order_field = "first_name"  # type: ignore
 
     # Read only that we'll leverage for CISA Analysts
-    analyst_readonly_fields = [
-        "user",
-    ]
+    analyst_readonly_fields: list[str] = ["email"]
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -1016,6 +1001,19 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context["tabtitle"] = "Contacts"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
+
+
+class SeniorOfficialAdmin(ListHeaderAdmin):
+    """Custom Senior Official Admin class."""
+
+    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+    search_fields = ["first_name", "last_name", "email"]
+    search_help_text = "Search by first name, last name or email."
+    list_display = ["first_name", "last_name", "email"]
+
+    # this ordering effects the ordering of results
+    # in autocomplete_fields for Senior Official
+    ordering = ["first_name", "last_name"]
 
 
 class WebsiteResource(resources.ModelResource):
@@ -1234,9 +1232,9 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "sub_organization", "creator", "submitter", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
-        ("Contacts", {"fields": ["authorizing_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
         (
             "Type of organization",
@@ -1310,9 +1308,11 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     autocomplete_fields = [
         "creator",
         "domain_request",
-        "authorizing_official",
+        "senior_official",
         "domain",
         "submitter",
+        "portfolio",
+        "sub_organization",
     ]
 
     # Table ordering
@@ -1322,6 +1322,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:
@@ -1342,7 +1343,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             for name, data in fieldsets:
                 fields = data.get("fields", [])
                 fields = tuple(field for field in fields if field not in DomainInformationAdmin.superuser_only_fields)
-                modified_fieldsets.append((name, {"fields": fields}))
+                modified_fieldsets.append((name, {**data, "fields": fields}))
             return modified_fieldsets
         return fieldsets
 
@@ -1485,6 +1486,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
+    # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
+    # This is not a field that exists on the model.
+    def status_history(self, obj):
+        return "No changelog to display."
+
+    status_history.short_description = "Status History"  # type: ignore
+
     # Filters
     list_filter = (
         StatusListFilter,
@@ -1510,9 +1518,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {
                 "fields": [
                     "portfolio",
+                    "sub_organization",
+                    "status_history",
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
+                    "action_needed_reason_email",
                     "investigator",
                     "creator",
                     "submitter",
@@ -1526,7 +1537,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             "Contacts",
             {
                 "fields": [
-                    "authorizing_official",
+                    "senior_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
                     "cisa_representative_first_name",
@@ -1592,6 +1603,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "alternative_domains",
         "is_election_board",
         "federal_agency",
+        "status_history",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -1615,13 +1627,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "requested_domain",
         "submitter",
         "creator",
-        "authorizing_official",
+        "senior_official",
         "investigator",
+        "portfolio",
+        "sub_organization",
     ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     superuser_only_fields = [
         "portfolio",
+        "sub_organization",
     ]
 
     # DEVELOPER's NOTE:
@@ -1642,7 +1657,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             for name, data in fieldsets:
                 fields = data.get("fields", [])
                 fields = tuple(field for field in fields if field not in self.superuser_only_fields)
-                modified_fieldsets.append((name, {"fields": fields}))
+                modified_fieldsets.append((name, {**data, "fields": fields}))
             return modified_fieldsets
         return fieldsets
 
@@ -1689,29 +1704,39 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if not change:
             return super().save_model(request, obj, form, change)
 
-        # == Handle non-status changes == #
-        # Change this in #1901. Add a check on "not self.action_needed_reason_email"
-        if obj.action_needed_reason:
-            self._handle_action_needed_reason_email(obj)
-            should_save = True
-
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
+
+        # == Handle action_needed_reason == #
+
+        reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
+        if reason_changed:
+            # Track the fact that we sent out an email
+            request.session["action_needed_email_sent"] = True
+
+            # Set the action_needed_reason_email to the default if nothing exists.
+            # Since this check occurs after save, if the user enters a value then we won't update.
+
+            default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+            if obj.action_needed_reason_email:
+                emails = self.get_all_action_needed_reason_emails(obj)
+                is_custom_email = obj.action_needed_reason_email not in emails.values()
+                if not is_custom_email:
+                    obj.action_needed_reason_email = default_email
+            else:
+                obj.action_needed_reason_email = default_email
+
+        # == Handle status == #
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
             return super().save_model(request, obj, form, change)
+        else:
+            # Run some checks on the current object for invalid status changes
+            obj, should_save = self._handle_status_change(request, obj, original_obj)
 
-        # == Handle status changes == #
-        # Run some checks on the current object for invalid status changes
-        obj, should_save = self._handle_status_change(request, obj, original_obj)
-
-        # We should only save if we don't display any errors in the steps above.
-        if should_save:
-            return super().save_model(request, obj, form, change)
-
-    def _handle_action_needed_reason_email(self, obj):
-        text = self._get_action_needed_reason_default_email_text(obj, obj.action_needed_reason)
-        obj.action_needed_reason_email = text.get("email_body_text")
+            # We should only save if we don't display any errors in the steps above.
+            if should_save:
+                return super().save_model(request, obj, form, change)
 
     def _handle_status_change(self, request, obj, original_obj):
         """
@@ -1906,44 +1931,54 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
-        extra_context["action_needed_reason_emails"] = self.get_all_action_needed_reason_emails_as_json(obj)
+        emails = self.get_all_action_needed_reason_emails(obj)
+        extra_context["action_needed_reason_emails"] = json.dumps(emails)
+        extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
+
+        # Denote if an action needed email was sent or not
+        email_sent = request.session.get("action_needed_email_sent", False)
+        extra_context["action_needed_email_sent"] = email_sent
+        if email_sent:
+            request.session["action_needed_email_sent"] = False
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
 
-    def get_all_action_needed_reason_emails_as_json(self, domain_request):
+    def get_all_action_needed_reason_emails(self, domain_request):
         """Returns a json dictionary of every action needed reason and its associated email
         for this particular domain request."""
+
         emails = {}
         for action_needed_reason in domain_request.ActionNeededReasons:
-            enum_value = action_needed_reason.value
-            # Change this in #1901. Just add a check for the current value.
-            emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value)
-        return json.dumps(emails)
+            # Map the action_needed_reason to its default email
+            emails[action_needed_reason.value] = self._get_action_needed_reason_default_email(
+                domain_request, action_needed_reason.value
+            )
 
-    def _get_action_needed_reason_default_email_text(self, domain_request, action_needed_reason: str):
+        return emails
+
+    def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason):
         """Returns the default email associated with the given action needed reason"""
-        if action_needed_reason is None or action_needed_reason == domain_request.ActionNeededReasons.OTHER:
-            return {
-                "subject_text": None,
-                "email_body_text": None,
-            }
+        if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
+            return None
+
+        if flag_is_active(None, "profile_feature"):  # type: ignore
+            recipient = domain_request.creator
+        else:
+            recipient = domain_request.submitter
+
+        # Return the context of the rendered views
+        context = {"domain_request": domain_request, "recipient": recipient}
 
         # Get the email body
         template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
-        template = get_template(template_path)
 
-        # Get the email subject
-        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
-        subject_template = get_template(template_subject_path)
+        email_body_text = get_template(template_path).render(context=context)
+        email_body_text_cleaned = None
+        if email_body_text:
+            email_body_text_cleaned = email_body_text.strip().lstrip("\n")
 
-        # Return the content of the rendered views
-        context = {"domain_request": domain_request}
-
-        return {
-            "subject_text": subject_template.render(context=context),
-            "email_body_text": template.render(context=context),
-        }
+        return email_body_text_cleaned
 
     def process_log_entry(self, log_entry):
         """Process a log entry and return filtered entry dictionary if applicable."""
@@ -2036,14 +2071,7 @@ class DomainInformationInline(admin.StackedInline):
     fieldsets = DomainInformationAdmin.fieldsets
     readonly_fields = DomainInformationAdmin.readonly_fields
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-
-    autocomplete_fields = [
-        "creator",
-        "domain_request",
-        "authorizing_official",
-        "domain",
-        "submitter",
-    ]
+    autocomplete_fields = DomainInformationAdmin.autocomplete_fields
 
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
@@ -2155,8 +2183,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ),
     )
 
-    # this ordering effects the ordering of results
-    # in autocomplete_fields for domain
+    # this ordering effects the ordering of results in autocomplete_fields for domain
     ordering = ["name"]
 
     def generic_org_type(self, obj):
@@ -2238,24 +2265,11 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
             extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
             extra_context["domain_state"] = domain.get_state_display()
-
-            # Pass in what the an extended expiration date would be for the expiration date modal
-            self._set_expiration_date_context(domain, extra_context)
+            extra_context["curr_exp_date"] = (
+                domain.expiration_date if domain.expiration_date is not None else self._get_current_date()
+            )
 
         return super().changeform_view(request, object_id, form_url, extra_context)
-
-    def _set_expiration_date_context(self, domain, extra_context):
-        """Given a domain, calculate the an extended expiration date
-        from the current registry expiration date."""
-        years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
-        try:
-            curr_exp_date = domain.registry_expiration_date
-        except KeyError:
-            # No expiration date was found. Return none.
-            extra_context["extended_expiration_date"] = None
-        else:
-            new_date = curr_exp_date + relativedelta(years=years_to_extend_by)
-            extra_context["extended_expiration_date"] = new_date
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
@@ -2284,11 +2298,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             self.message_user(request, "Object is not of type Domain.", messages.ERROR)
             return None
 
-        years = self._get_calculated_years_for_exp_date(obj)
-
         # Renew the domain.
         try:
-            obj.renew_domain(length=years)
+            obj.renew_domain()
             self.message_user(
                 request,
                 "Successfully extended the expiration date.",
@@ -2312,37 +2324,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
 
         return HttpResponseRedirect(".")
-
-    def _get_calculated_years_for_exp_date(self, obj, extension_period: int = 1):
-        """Given the current date, an extension period, and a registry_expiration_date
-        on the domain object, calculate the number of years needed to extend the
-        current expiration date by the extension period.
-        """
-        # Get the date we want to update to
-        desired_date = self._get_current_date() + relativedelta(years=extension_period)
-
-        # Grab the current expiration date
-        try:
-            exp_date = obj.registry_expiration_date
-        except KeyError:
-            # if no expiration date from registry, set it to today
-            logger.warning("current expiration date not set; setting to today")
-            exp_date = self._get_current_date()
-
-        # If the expiration date is super old (2020, for example), we need to
-        # "catch up" to the current year, so we add the difference.
-        # If both years match, then lets just proceed as normal.
-        calculated_exp_date = exp_date + relativedelta(years=extension_period)
-
-        year_difference = desired_date.year - exp_date.year
-
-        years = extension_period
-        if desired_date > calculated_exp_date:
-            # Max probably isn't needed here (no code flow), but it guards against negative and 0.
-            # In both of those cases, we just want to extend by the extension_period.
-            years = max(extension_period, year_difference)
-
-        return years
 
     # Workaround for unit tests, as we cannot mock date directly.
     # it is immutable. Rather than dealing with a convoluted workaround,
@@ -2686,6 +2667,11 @@ class PortfolioAdmin(ListHeaderAdmin):
     # readonly_fields = [
     #     "requestor",
     # ]
+    # Creates select2 fields (with search bars)
+    autocomplete_fields = [
+        "creator",
+        "federal_agency",
+    ]
 
     def save_model(self, request, obj, form, change):
 
@@ -2769,6 +2755,10 @@ class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["name", "portfolio"]
+    autocomplete_fields = [
+        "portfolio",
+    ]
+    search_fields = ["name"]
 
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
@@ -2796,6 +2786,7 @@ admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
+admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)

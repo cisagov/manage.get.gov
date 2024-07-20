@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Union
 import logging
-
 from django.apps import apps
 from django.conf import settings
 from django.db import models
@@ -136,6 +135,13 @@ class DomainRequest(TimeStampedModel):
         @classmethod
         def get_org_label(cls, org_name: str):
             """Returns the associated label for a given org name"""
+            # This is an edgecase on domains with no org.
+            # This unlikely to happen but
+            # a break will occur in certain edge cases without this.
+            # (more specifically, csv exports).
+            if not org_name:
+                return None
+
             org_names = org_name.split("_election")
             if len(org_names) > 0:
                 org_name = org_names[0]
@@ -266,7 +272,7 @@ class DomainRequest(TimeStampedModel):
         """Defines common action needed reasons for domain requests"""
 
         ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
-        QUESTIONABLE_AUTHORIZING_OFFICIAL = ("questionable_authorizing_official", "Questionable authorizing official")
+        QUESTIONABLE_SENIOR_OFFICIAL = ("questionable_senior_official", "Questionable senior official")
         ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
         BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
         OTHER = ("other", "Other (no auto-email sent)")
@@ -315,8 +321,17 @@ class DomainRequest(TimeStampedModel):
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        related_name="DomainInformation_portfolio",
+        related_name="DomainRequest_portfolio",
         help_text="Portfolio associated with this domain request",
+    )
+
+    sub_organization = models.ForeignKey(
+        "registrar.Suborganization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="request_sub_organization",
+        help_text="The suborganization that this domain request is included under",
     )
 
     # This is the domain request user who created this domain request. The contact
@@ -423,11 +438,11 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    authorizing_official = models.ForeignKey(
+    senior_official = models.ForeignKey(
         "registrar.Contact",
         null=True,
         blank=True,
-        related_name="authorizing_official",
+        related_name="senior_official",
         on_delete=models.PROTECT,
     )
 
@@ -444,7 +459,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Domain associated with this request; will be blank until request is approved",
-        related_name="domain_request",
+        related_name="domain_request_approved_domain",
         on_delete=models.SET_NULL,
     )
 
@@ -452,7 +467,7 @@ class DomainRequest(TimeStampedModel):
         "DraftDomain",
         null=True,
         blank=True,
-        related_name="domain_request",
+        related_name="domain_request_requested_domain",
         on_delete=models.PROTECT,
     )
 
@@ -603,9 +618,10 @@ class DomainRequest(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
-        # Handle the action needed email. We send one when moving to action_needed,
-        # but we don't send one when we are _already_ in the state and change the reason.
-        self.sync_action_needed_reason()
+        # Handle the action needed email.
+        # An email is sent out when action_needed_reason is changed or added.
+        if self.action_needed_reason and self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.sync_action_needed_reason()
 
         # Update the cached values after saving
         self._cache_status_and_action_needed_reason()
@@ -615,10 +631,10 @@ class DomainRequest(TimeStampedModel):
         was_already_action_needed = self._cached_status == self.DomainRequestStatus.ACTION_NEEDED
         reason_exists = self._cached_action_needed_reason is not None and self.action_needed_reason is not None
         reason_changed = self._cached_action_needed_reason != self.action_needed_reason
-        if was_already_action_needed and (reason_exists and reason_changed):
+        if was_already_action_needed and reason_exists and reason_changed:
             # We don't send emails out in state "other"
             if self.action_needed_reason != self.ActionNeededReasons.OTHER:
-                self._send_action_needed_reason_email()
+                self._send_action_needed_reason_email(email_content=self.action_needed_reason_email)
 
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
@@ -672,7 +688,15 @@ class DomainRequest(TimeStampedModel):
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
     def _send_status_update_email(
-        self, new_status, email_template, email_template_subject, send_email=True, bcc_address="", wrap_email=False
+        self,
+        new_status,
+        email_template,
+        email_template_subject,
+        bcc_address="",
+        context=None,
+        send_email=True,
+        wrap_email=False,
+        custom_email_content=None,
     ):
         """Send a status update email to the creator.
 
@@ -683,11 +707,18 @@ class DomainRequest(TimeStampedModel):
         If the waffle flag "profile_feature" is active, then this email will be sent to the
         domain request creator rather than the submitter
 
+        Optional args:
+        bcc_address: str -> the address to bcc to
+
+        context: dict -> The context sent to the template
+
         send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
 
         wrap_email: bool -> Wraps emails using `wrap_text_and_preserve_paragraphs` if any given
         paragraph exceeds our desired max length (for prettier display).
+
+        custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
 
         recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
@@ -705,15 +736,21 @@ class DomainRequest(TimeStampedModel):
             return None
 
         try:
+            if not context:
+                context = {
+                    "domain_request": self,
+                    # This is the user that we refer to in the email
+                    "recipient": recipient,
+                }
+
+            if custom_email_content:
+                context["custom_email_content"] = custom_email_content
+
             send_templated_email(
                 email_template,
                 email_template_subject,
                 recipient.email,
-                context={
-                    "domain_request": self,
-                    # This is the user that we refer to in the email
-                    "recipient": recipient,
-                },
+                context=context,
                 bcc_address=bcc_address,
                 wrap_email=wrap_email,
             )
@@ -771,8 +808,8 @@ class DomainRequest(TimeStampedModel):
                 "submission confirmation",
                 "emails/submission_confirmation.txt",
                 "emails/submission_confirmation_subject.txt",
-                True,
-                bcc_address,
+                send_email=True,
+                bcc_address=bcc_address,
             )
 
     @transition(
@@ -842,43 +879,28 @@ class DomainRequest(TimeStampedModel):
 
         # Send out an email if an action needed reason exists
         if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
-            self._send_action_needed_reason_email(send_email)
+            email_content = self.action_needed_reason_email
+            self._send_action_needed_reason_email(send_email, email_content)
 
-    def _send_action_needed_reason_email(self, send_email=True):
+    def _send_action_needed_reason_email(self, send_email=True, email_content=None):
         """Sends out an automatic email for each valid action needed reason provided"""
 
-        # Store the filenames of the template and template subject
-        email_template_name: str = ""
-        email_template_subject_name: str = ""
-
-        # Check for the "type" of action needed reason.
-        can_send_email = True
-        match self.action_needed_reason:
-            # Add to this match if you need to pass in a custom filename for these templates.
-            case self.ActionNeededReasons.OTHER, _:
-                # Unknown and other are default cases - do nothing
-                can_send_email = False
-
-        # Assumes that the template name matches the action needed reason if nothing is specified.
-        # This is so you can override if you need, or have this taken care of for you.
-        if not email_template_name and not email_template_subject_name:
-            email_template_name = f"{self.action_needed_reason}.txt"
-            email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
+        email_template_name = "custom_email.txt"
+        email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
 
         bcc_address = ""
         if settings.IS_PRODUCTION:
             bcc_address = settings.DEFAULT_FROM_EMAIL
 
-        # If we can, try to send out an email as long as send_email=True
-        if can_send_email:
-            self._send_status_update_email(
-                new_status="action needed",
-                email_template=f"emails/action_needed_reasons/{email_template_name}",
-                email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
-                send_email=send_email,
-                bcc_address=bcc_address,
-                wrap_email=True,
-            )
+        self._send_status_update_email(
+            new_status="action needed",
+            email_template=f"emails/action_needed_reasons/{email_template_name}",
+            email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
+            send_email=send_email,
+            bcc_address=bcc_address,
+            custom_email_content=email_content,
+            wrap_email=True,
+        )
 
     @transition(
         field="status",
@@ -936,7 +958,7 @@ class DomainRequest(TimeStampedModel):
             "domain request approved",
             "emails/status_change_approved.txt",
             "emails/status_change_approved_subject.txt",
-            send_email,
+            send_email=send_email,
         )
 
     @transition(
@@ -1128,8 +1150,8 @@ class DomainRequest(TimeStampedModel):
             and self.zipcode is None
         )
 
-    def _is_authorizing_official_complete(self):
-        return self.authorizing_official is not None
+    def _is_senior_official_complete(self):
+        return self.senior_official is not None
 
     def _is_requested_domain_complete(self):
         return self.requested_domain is not None
@@ -1191,10 +1213,10 @@ class DomainRequest(TimeStampedModel):
         has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
             self._is_organization_name_and_address_complete()
-            and self._is_authorizing_official_complete()
+            and self._is_senior_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
-            # NOTE: This flag leaves submitter as empty (request wont submit) hence preset to True
+            # NOTE: This flag leaves submitter as empty (request wont submit) hence set to True
             and (self._is_submitter_complete() if not has_profile_feature_flag else True)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()

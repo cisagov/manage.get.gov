@@ -16,7 +16,7 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 
-from ..models import Contact, DomainInformation, Domain
+from ..models import Contact, DomainInformation, Domain, User
 from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
@@ -203,6 +203,63 @@ NameserverFormset = formset_factory(
 )
 
 
+class UserForm(forms.ModelForm):
+    """Form for updating users."""
+
+    email = forms.EmailField(max_length=None)
+
+    class Meta:
+        model = User
+        fields = ["first_name", "middle_name", "last_name", "title", "email", "phone"]
+        widgets = {
+            "first_name": forms.TextInput,
+            "middle_name": forms.TextInput,
+            "last_name": forms.TextInput,
+            "title": forms.TextInput,
+            "email": forms.EmailInput,
+            "phone": RegionalPhoneNumberWidget,
+        }
+
+    # the database fields have blank=True so ModelForm doesn't create
+    # required fields by default. Use this list in __init__ to mark each
+    # of these fields as required
+    required = ["first_name", "last_name", "title", "email", "phone"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # take off maxlength attribute for the phone number field
+        # which interferes with out input_with_errors template tag
+        self.fields["phone"].widget.attrs.pop("maxlength", None)
+
+        # Define a custom validator for the email field with a custom error message
+        email_max_length_validator = MaxLengthValidator(320, message="Response must be less than 320 characters.")
+        self.fields["email"].validators.append(email_max_length_validator)
+
+        for field_name in self.required:
+            self.fields[field_name].required = True
+
+        # Set custom form label
+        self.fields["middle_name"].label = "Middle name (optional)"
+
+        # Set custom error messages
+        self.fields["first_name"].error_messages = {"required": "Enter your first name / given name."}
+        self.fields["last_name"].error_messages = {"required": "Enter your last name / family name."}
+        self.fields["title"].error_messages = {
+            "required": "Enter your title or role in your organization (e.g., Chief Information Officer)"
+        }
+        self.fields["email"].error_messages = {
+            "required": "Enter your email address in the required format, like name@example.com."
+        }
+        self.fields["phone"].error_messages["required"] = "Enter your phone number."
+        self.domainInfo = None
+
+    def set_domain_info(self, domainInfo):
+        """Set the domain information for the form.
+        The form instance is associated with the contact itself. In order to access the associated
+        domain information object, this needs to be set in the form by the view."""
+        self.domainInfo = domainInfo
+
+
 class ContactForm(forms.ModelForm):
     """Form for updating contacts."""
 
@@ -260,10 +317,10 @@ class ContactForm(forms.ModelForm):
         self.domainInfo = domainInfo
 
 
-class AuthorizingOfficialContactForm(ContactForm):
-    """Form for updating authorizing official contacts."""
+class SeniorOfficialContactForm(ContactForm):
+    """Form for updating senior official contacts."""
 
-    JOIN = "authorizing_official"
+    JOIN = "senior_official"
 
     def __init__(self, disable_fields=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -273,13 +330,13 @@ class AuthorizingOfficialContactForm(ContactForm):
 
         # Set custom error messages
         self.fields["first_name"].error_messages = {
-            "required": "Enter the first name / given name of your authorizing official."
+            "required": "Enter the first name / given name of your senior official."
         }
         self.fields["last_name"].error_messages = {
-            "required": "Enter the last name / family name of your authorizing official."
+            "required": "Enter the last name / family name of your senior official."
         }
         self.fields["title"].error_messages = {
-            "required": "Enter the title or role your authorizing official has in your \
+            "required": "Enter the title or role your senior official has in your \
             organization (e.g., Chief Information Officer)."
         }
         self.fields["email"].error_messages = {
@@ -306,21 +363,21 @@ class AuthorizingOfficialContactForm(ContactForm):
         is_federal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
         is_tribal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
 
-        # Get the Contact object from the db for the Authorizing Official
-        db_ao = Contact.objects.get(id=self.instance.id)
+        # Get the Contact object from the db for the Senior Official
+        db_so = Contact.objects.get(id=self.instance.id)
 
         if (is_federal or is_tribal) and self.has_changed():
             # This action should be blocked by the UI, as the text fields are readonly.
             # If they get past this point, we forbid it this way.
             # This could be malicious, so lets reserve information for the backend only.
-            raise ValueError("Authorizing Official cannot be modified for federal or tribal domains.")
-        elif db_ao.has_more_than_one_join("information_authorizing_official"):
-            # Handle the case where the domain information object is available and the AO Contact
+            raise ValueError("Senior Official cannot be modified for federal or tribal domains.")
+        elif db_so.has_more_than_one_join("information_senior_official"):
+            # Handle the case where the domain information object is available and the SO Contact
             # has more than one joined object.
             # In this case, create a new Contact, and update the new Contact with form data.
-            # Then associate with domain information object as the authorizing_official
+            # Then associate with domain information object as the senior_official
             data = dict(self.cleaned_data.items())
-            self.domainInfo.authorizing_official = Contact.objects.create(**data)
+            self.domainInfo.senior_official = Contact.objects.create(**data)
             self.domainInfo.save()
         else:
             # If all checks pass, just save normally
