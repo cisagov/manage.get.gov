@@ -143,7 +143,7 @@ class CheckPortfolioMiddleware:
         if current_path == self.home and request.user.is_authenticated and request.user.is_org_user(request):
 
             if request.user.has_base_portfolio_permission():
-                portfolio = request.user.portfolio0
+                portfolio = request.user.portfolio
 
                 # Add the portfolio to the request object
                 request.portfolio = portfolio
