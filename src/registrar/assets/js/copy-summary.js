@@ -8,25 +8,42 @@ document.addEventListener('DOMContentLoaded', function() {
         const alternativeDomains = Array.from(document.querySelectorAll('#id_alternative_domains')).map(el => el.text).join(', ');
         const submitter = document.getElementById('id_submitter').value;
         const seniorOfficial = document.getElementById('id_senior_official').value;
-        const otherContacts = Array.from(document.querySelectorAll('#id_other_contacts option:checked')).map(el => el.text).join('\n* ');
+        const otherContacts = Array.from(document.querySelectorAll('#id_other_contacts option:checked')).map(el => el.text).join('\n ');
 
-        const summary = `*Recommendation:*\n\n` +
-                        `*Organization Type:* ${organizationType}\n\n` +
-                        `*Requested Domain:* ${requestedDomain}\n\n` +
-                        `*Existing website(s):*\n${existingWebsites}\n\n` +
-                        `*Rationale:*\n\n` +
-                        `*Alternate Domain(s):*\n* ${alternativeDomains.split(', ').join('\n* ')}\n\n` +
-                        `*Submitter:*\n\n* ${submitter}\n\n` +
-                        `*Senior Official:*\n\n* ${seniorOfficial}\n\n` +
-                        `*Additional Contact(s):*\n\n* ${otherContacts}\n\n`;
+        const summary = `<strong>Recommendation:</strong></br>` +
+                        `<strong>Organization Type:</strong> ${organizationType}</br>` +
+                        `<strong>Requested Domain:</strong> ${requestedDomain}</br>` +
+                        `<strong>Existing website(s):</strong> ${existingWebsites}</br>` +
+                        `<strong>Rationale:</strong>` +
+                        `<strong>Alternate Domain(s):</strong> ${alternativeDomains.split(', ').join('\n ')}</br>` +
+                        `<strong>Submitter:</strong> ${submitter}</br>` +
+                        `<strong>Senior Official:</strong> ${seniorOfficial}</br>` +
+                        `<strong>Additional Contact(s):</strong> ${otherContacts}</br>`;
 
-        // Create a temporary textarea element to hold the summary
-        const textArea = document.createElement('textarea');
-        textArea.value = summary;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
+        // Create a temporary element
+        let tempElement = document.createElement('div');
+        tempElement.innerHTML = summary;
+        // Append the element to the body
+        document.body.appendChild(tempElement);
+
+        // Use the Selection and Range APIs to select the element's content
+        let range = document.createRange();
+        range.selectNodeContents(tempElement);
+        let selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        // Use the Clipboard API to write the selected HTML content to the clipboard
+        navigator.clipboard.write([
+            new ClipboardItem({
+                'text/html': new Blob([tempElement.innerHTML], { type: 'text/html' })
+            })
+        ]).then(() => {
+            console.log('Bold text copied to clipboard successfully!');
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+        document.body.removeChild(tempElement); 
 
         alert('Summary copied to clipboard!');
     });

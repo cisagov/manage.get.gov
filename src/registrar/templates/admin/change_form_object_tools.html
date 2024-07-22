@@ -13,15 +13,16 @@
             </li>
         </ul>
     {% else %}
-        <p class="margin-0 padding-0">
-            <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
-        </p>
-        {% if opts.model_name == 'domainrequest' %}
-        <p class="margin-0 padding-0">
-            <button id="copy-summary-btn" class="button">{% translate "Copy request summary" %}</button>
-            <!-- <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "Copy request summary" %}</a> -->
-        </p>
-        {% endif %}
+        <ul>
+            <li>
+                <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
+            </li>
+            {% if opts.model_name == 'domainrequest' %}
+            <li>
+                <a id="copy-summary-btn" class="historylink" href="#">{% translate "Copy request summary" %}</a>
+            </li>
+            {% endif %}
+        </ul>
     {% endif %}
 {% endblock %}
 
