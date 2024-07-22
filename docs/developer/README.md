@@ -358,3 +358,6 @@ Then, copy the variables under the section labled `s3`.
 2. Under models, click `Waffle flags`.
 3. Click the `disable_email_sending` record. This should exist by default, if not - create one with that name.
 4. (Important) Set the field `everyone` to `Yes`. This field overrides all other settings 
+
+## Request Flow FSM Diagram
+There is a diagram detailing the flow of domain requests and resulting domain objects [here](https://miro.com/app/board/uXjVMuqbLOk=/?moveToWidget=3458764594819017396&cot=14)
