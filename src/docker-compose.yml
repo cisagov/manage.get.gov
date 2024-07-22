@@ -113,4 +113,3 @@ services:
       - .:/zap/wrk/
     links: ["app"]
     profiles: ["owasp-scan"]
-    
