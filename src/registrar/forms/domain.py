@@ -511,26 +511,17 @@ class DomainOrgNameAddressForm(forms.ModelForm):
 class DomainSuborganizationForm(forms.ModelForm):
     """Form for updating the suborganization"""
 
+    sub_organization = forms.ModelChoiceField(
+        queryset=Suborganization.objects.none(),
+        required=False,
+        widget=forms.Select(),
+    )
+
     class Meta:
         model = DomainInformation
         fields = [
             "sub_organization",
         ]
-        error_messages = {
-            "sub_organization": {"required": "Select a suborganization."},
-        }
-        widgets = {
-            "sub_organization": forms.Select(
-                attrs={
-                    "required": False,
-                },
-            ),
-        }
-
-    # the database fields have blank=True so ModelForm doesn't create
-    # required fields by default. Use this list in __init__ to mark each
-    # of these fields as required
-    required = ["sub_organization"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -539,8 +530,13 @@ class DomainSuborganizationForm(forms.ModelForm):
             self.fields['sub_organization'].queryset = Suborganization.objects.filter(
                 portfolio=self.instance.portfolio
             )
-        else:
-            self.fields['sub_organization'].queryset = Suborganization.objects.none()
+        
+        # Set custom form label
+        self.fields["sub_organization"].label = "Suborganization name"
+
+        # Use the combobox rather than the regular select widget
+        self.fields['sub_organization'].widget.template_name = "django/forms/widgets/combobox.html"
+
 
 
 class DomainDnssecForm(forms.Form):
