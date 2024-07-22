@@ -152,9 +152,7 @@ class CheckPortfolioMiddleware:
                     portfolio_redirect = reverse("portfolio-domains", kwargs={"portfolio_id": portfolio.id})
                 else:
                     # View organization is the lowest access
-                    portfolio_redirect = reverse(
-                        "portfolio-organization", kwargs={"portfolio_id": portfolio.id}
-                    )
+                    portfolio_redirect = reverse("portfolio-organization", kwargs={"portfolio_id": portfolio.id})
 
                 return HttpResponseRedirect(portfolio_redirect)
 
