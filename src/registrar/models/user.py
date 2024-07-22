@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
+from registrar.models.portfolio import Portfolio
 from registrar.models.user_domain_role import UserDomainRole
 
 from .domain_invitation import DomainInvitation
@@ -12,6 +13,7 @@ from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 from .domain_request import DomainRequest
 from django.contrib.postgres.fields import ArrayField
+from waffle.decorators import flag_is_active
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -195,7 +197,8 @@ class User(AbstractUser):
             self.title,
             self.phone,
         ]
-        return None not in user_values
+
+        return None not in user_values and "" not in user_values
 
     def __str__(self):
         # this info is pulled from Login.gov
@@ -410,3 +413,9 @@ class User(AbstractUser):
         """
 
         self.check_domain_invitations_on_login()
+
+    def is_org_user(self, request):
+        has_organization_feature_flag = flag_is_active(request, "organization_feature")
+        user_portfolios_exist = Portfolio.objects.filter(creator=self).exists()
+
+        return has_organization_feature_flag and user_portfolios_exist

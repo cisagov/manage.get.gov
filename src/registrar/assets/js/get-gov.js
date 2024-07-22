@@ -1140,6 +1140,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
     const statusIndicator = document.querySelector('.domain__filter-indicator');
     const statusToggle = document.querySelector('.usa-button--filter');
+    const noPortfolioFlag = document.getElementById('no-portfolio-js-flag');
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1173,8 +1174,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
+            const suborganization = domain.suborganization ? domain.suborganization : '';
 
             const row = document.createElement('tr');
+
+            let markupForSuborganizationRow = '';
+
+            if (!noPortfolioFlag) {
+              markupForSuborganizationRow = `
+                <td>
+                    <span class="${suborganization ? 'ellipsis ellipsis--30 vertical-align-middle' : ''}" aria-label="${suborganization}" title="${suborganization}">${suborganization}</span>
+                </td>
+              `
+            }
+
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="Domain name">
                 ${domain.name}
@@ -1195,6 +1208,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
                 </svg>
               </td>
+              ${markupForSuborganizationRow}
               <td>
                 <a href="${actionUrl}">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -1826,6 +1840,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function setupListener(){
+
+    
+
     document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
       // Get the "{field_name}" and "edit-button"
       let fieldIdParts = button.id.split("__")
@@ -1834,12 +1851,61 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // When the edit button is clicked, show the input field under it
         handleEditButtonClick(fieldName, button);
+
+        let editableFormGroup = button.parentElement.parentElement.parentElement;
+        if (editableFormGroup){
+          let readonlyField = editableFormGroup.querySelector(".input-with-edit-button__readonly-field")
+          let inputField = document.getElementById(`id_${fieldName}`);
+          if (!inputField || !readonlyField) {
+            return;
+          }
+
+          let inputFieldValue = inputField.value
+          if (inputFieldValue || fieldName == "full_name"){
+            if (fieldName == "full_name"){
+              let firstName = document.querySelector("#id_first_name");
+              let middleName = document.querySelector("#id_middle_name");
+              let lastName = document.querySelector("#id_last_name");
+              if (firstName && lastName && firstName.value && lastName.value) {
+                let values = [firstName.value, middleName.value, lastName.value]
+                readonlyField.innerHTML = values.join(" ");
+              }else {
+                let fullNameField = document.querySelector('#full_name__edit-button-readonly');
+                let svg = fullNameField.querySelector("svg use")
+                if (svg) {
+                  const currentHref = svg.getAttribute('xlink:href');
+                  if (currentHref) {
+                    const parts = currentHref.split('#');
+                    if (parts.length === 2) {
+                      // Keep the path before '#' and replace the part after '#' with 'invalid'
+                      const newHref = parts[0] + '#error';
+                      svg.setAttribute('xlink:href', newHref);
+                      fullNameField.classList.add("input-with-edit-button__error")
+                      label = fullNameField.querySelector(".input-with-edit-button__readonly-field")
+                      label.innerHTML = "Unknown";
+                    }
+                  }
+                }
+              }
+              
+              // Technically, the full_name field is optional, but we want to display it as required. 
+              // This style is applied to readonly fields (gray text). This just removes it, as
+              // this is difficult to achieve otherwise by modifying the .readonly property.
+              if (readonlyField.classList.contains("text-base")) {
+                readonlyField.classList.remove("text-base")
+              }
+            }else {
+              readonlyField.innerHTML = inputFieldValue
+            }
+          }
+        }
       }
     });
   }
 
   function showInputOnErrorFields(){
     document.addEventListener('DOMContentLoaded', function() {
+
       // Get all input elements within the form
       let form = document.querySelector("#finish-profile-setup-form");
       let inputs = form ? form.querySelectorAll("input") : null;
@@ -1878,9 +1944,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   };
 
-  // Hookup all edit buttons to the `handleEditButtonClick` function
   setupListener();
 
   // Show the input fields if an error exists
   showInputOnErrorFields();
+
 })();

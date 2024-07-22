@@ -36,6 +36,15 @@ function openInNewTab(el, removeAttribute = false){
     }
 };
 
+// Adds or removes a boolean from our session
+function addOrRemoveSessionBoolean(name, add){
+    if (add) {
+        sessionStorage.setItem(name, "true");
+    }else {
+        sessionStorage.removeItem(name); 
+    }
+}
+
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Event handlers.
 
@@ -420,15 +429,6 @@ function initializeWidgetOnList(list, parentId) {
             object.classList.add("display-none");
         }
     }
-
-    // Adds or removes a boolean from our session
-    function addOrRemoveSessionBoolean(name, add){
-        if (add) {
-            sessionStorage.setItem(name, "true");
-        }else {
-            sessionStorage.removeItem(name); 
-        }
-    }
 })();
 
 /** An IIFE for toggling the submit bar on domain request forms
@@ -528,54 +528,80 @@ function initializeWidgetOnList(list, parentId) {
  * This shows the auto generated email on action needed reason.
 */
 (function () {
-    let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
-    let actionNeededEmail = document.querySelector("#action_needed_reason_email_view_more");
-    if(actionNeededReasonDropdown && actionNeededEmail) {
-        // Add a change listener to the action needed reason dropdown 
-        handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail);
-    }
+    // Since this is an iife, these vars will be removed from memory afterwards
+    var actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
+    var actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
+    var readonlyView = document.querySelector("#action-needed-reason-email-readonly");
 
-    function handleChangeActionNeededEmail(actionNeededReasonDropdown, actionNeededEmail) {
-        actionNeededReasonDropdown.addEventListener("change", function() {
+    let emailWasSent = document.getElementById("action-needed-email-sent");
+    let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
+    let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
+
+    const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
+    const emailSentSessionVariableName = `actionNeededEmailSent-${domainRequestId}`;
+    const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
+    const oldEmailValue = actionNeededEmailData ? actionNeededEmailData.value : null;
+
+    if(actionNeededReasonDropdown && actionNeededEmail && domainRequestId) {
+        // Add a change listener to dom load
+        document.addEventListener('DOMContentLoaded', function() {
             let reason = actionNeededReasonDropdown.value;
 
-            // If a reason isn't specified, no email will be sent.
-            // You also cannot save the model in this state.
-            // This flow occurs if you switch back to the empty picker state.
-            if(!reason) {
-                showNoEmailMessage(actionNeededEmail);
-                return;
-            }
-            
-            let actionNeededEmails = JSON.parse(document.getElementById('action-needed-emails-data').textContent)
-            let emailData = actionNeededEmails[reason];
-            if (emailData) {
-                let emailBody = emailData.email_body_text
-                if (emailBody) {
-                    actionNeededEmail.value = emailBody
-                    showActionNeededEmail(actionNeededEmail);
-                }else {
-                    showNoEmailMessage(actionNeededEmail);
-                }
-            }else {
-                showNoEmailMessage(actionNeededEmail);
+            // Handle the session boolean (to enable/disable editing)
+            if (emailWasSent && emailWasSent.value === "True") {
+                // An email was sent out - store that information in a session variable
+                addOrRemoveSessionBoolean(emailSentSessionVariableName, add=true);
             }
 
+            // Show an editable email field or a readonly one
+            updateActionNeededEmailDisplay(reason)
+        });
+
+        // Add a change listener to the action needed reason dropdown
+        actionNeededReasonDropdown.addEventListener("change", function() {
+            let reason = actionNeededReasonDropdown.value;
+            let emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
+            if (reason && emailBody) {
+                // Replace the email content
+                actionNeededEmail.value = emailBody;
+
+                // Reset the session object on change since change refreshes the email content.
+                if (oldDropdownValue !== actionNeededReasonDropdown.value || oldEmailValue !== actionNeededEmail.value) {
+                    let emailSent = sessionStorage.getItem(emailSentSessionVariableName)
+                    if (emailSent !== null){
+                        addOrRemoveSessionBoolean(emailSentSessionVariableName, add=false)
+                    }
+                }
+            }
+
+            // Show an editable email field or a readonly one
+            updateActionNeededEmailDisplay(reason)
         });
     }
 
-    // Show the text field. Hide the "no email" message.
-    function showActionNeededEmail(actionNeededEmail){
-        let noEmailMessage = document.getElementById("no-email-message");
-        showElement(actionNeededEmail);
-        hideElement(noEmailMessage);
+    // Shows an editable email field or a readonly one.
+    // If the email doesn't exist or if we're of reason "other", display that no email was sent.
+    // Likewise, if we've sent this email before, we should just display the content.
+    function updateActionNeededEmailDisplay(reason) {
+        let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
+        let collapseableDiv = readonlyView.querySelector(".collapse--dgsimple");
+        let showMoreButton = document.querySelector("#action_needed_reason_email__show_details");
+        if ((reason && reason != "other") && !emailHasBeenSentBefore) {
+            showElement(actionNeededEmail.parentElement)
+            hideElement(readonlyView)
+            hideElement(showMoreButton)
+        } else {
+            if (!reason || reason === "other") {
+                collapseableDiv.innerHTML = reason ? "No email will be sent." : "-";
+                hideElement(showMoreButton)
+                if (collapseableDiv.classList.contains("collapsed")) {
+                    showMoreButton.click()
+                }
+            }else {
+                showElement(showMoreButton)
+            }
+            hideElement(actionNeededEmail.parentElement)
+            showElement(readonlyView)
+        }
     }
-
-    // Hide the text field. Show the "no email" message.
-    function showNoEmailMessage(actionNeededEmail) {
-        let noEmailMessage = document.getElementById("no-email-message");
-        hideElement(actionNeededEmail);
-        showElement(noEmailMessage);
-    }
-
 })();

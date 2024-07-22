@@ -539,6 +539,49 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         return page.follow() if follow else page
 
     @less_console_noise_decorator
+    @override_flag("profile_feature", active=True)
+    def test_full_name_initial_value(self):
+        """Test that full_name initial value is empty when first_name or last_name is empty.
+        This will later be displayed as "unknown" using javascript."""
+        self.app.set_user(self.incomplete_regular_user.username)
+
+        # Test when first_name is empty
+        self.incomplete_regular_user.first_name = ""
+        self.incomplete_regular_user.last_name = "Doe"
+        self.incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when last_name is empty
+        self.incomplete_regular_user.first_name = "John"
+        self.incomplete_regular_user.last_name = ""
+        self.incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when both first_name and last_name are empty
+        self.incomplete_regular_user.first_name = ""
+        self.incomplete_regular_user.last_name = ""
+        self.incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when both first_name and last_name are present
+        self.incomplete_regular_user.first_name = "John"
+        self.incomplete_regular_user.last_name = "Doe"
+        self.incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "John Doe")
+
+    @less_console_noise_decorator
     def test_new_user_with_profile_feature_on(self):
         """Tests that a new user is redirected to the profile setup page when profile_feature is on"""
         self.app.set_user(self.incomplete_regular_user.username)
@@ -563,6 +606,49 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             # Add a phone number
             finish_setup_form = finish_setup_page.form
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            save_page = self._submit_form_webtest(finish_setup_form, follow=True)
+
+            self.assertEqual(save_page.status_code, 200)
+            self.assertContains(save_page, "Your profile has been updated.")
+
+            # Try to navigate back to the home page.
+            # This is the same as clicking the back button.
+            completed_setup_page = self.app.get(reverse("home"))
+            self.assertContains(completed_setup_page, "Manage your domain")
+
+    @less_console_noise_decorator
+    def test_new_user_with_empty_name_can_add_name(self):
+        """Tests that a new user without a name can still enter this information accordingly"""
+        self.incomplete_regular_user.first_name = ""
+        self.incomplete_regular_user.last_name = ""
+        self.incomplete_regular_user.save()
+        self.app.set_user(self.incomplete_regular_user.username)
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the setup page.
+            # Follow implicity checks if our redirect is working.
+            finish_setup_page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
+
+            # Assert that we're on the right page
+            self.assertContains(finish_setup_page, "Finish setting up your profile")
+
+            finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
+
+            self.assertEqual(finish_setup_page.status_code, 200)
+
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(finish_setup_page, "Enter your phone number.")
+
+            # Check for the name of the save button
+            self.assertContains(finish_setup_page, "user_setup_save_button")
+
+            # Add a phone number
+            finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "test"
+            finish_setup_form["last_name"] = "test2"
             finish_setup_form["phone"] = "(201) 555-0123"
             finish_setup_form["title"] = "CEO"
             finish_setup_form["last_name"] = "example"

@@ -1,0 +1,92 @@
+# Manually deploy a branch of choice to an environment of choice.
+
+name: Manual Build and Deploy
+run-name: Manually build and deploy branch to sandbox of choice
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'backup'
+        type: 'choice'
+        options:
+          - ab
+          - backup
+          - cb
+          - dk
+          - es
+          - gd
+          - ko
+          - ky
+          - nl
+          - rb
+          - rh
+          - rjm
+          - meoward
+          - bob
+          - hotgov
+          - litterbox
+          - ms
+      # GitHub Actions has no "good" way yet to dynamically input branches
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'main'
+        type: string
+      
+
+jobs:
+  variables:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setting global variables
+        uses: actions/github-script@v6
+        id: var
+        with:
+          script: |
+            core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]);
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Compile USWDS assets
+        working-directory: ./src
+        run: |
+          docker compose run node npm install npm@latest &&
+          docker compose run node npm install &&
+          docker compose run node npx gulp copyAssets &&
+          docker compose run node npx gulp compile
+      - name: Collect static assets 
+        working-directory: ./src
+        run: docker compose run app python manage.py collectstatic --no-input
+      - name: Deploy to cloud.gov sandbox
+        uses: cloud-gov/cg-cli-tools@main
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+          CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+          CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ env.ENVIRONMENT }}
+          cf_manifest: ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
+  comment:
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    steps:
+      - uses: actions/github-script@v6
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🥳 Successfully deployed to developer sandbox **[${{ env.ENVIRONMENT }}](https://getgov-${{ env.ENVIRONMENT }}.app.cloud.gov/)**.'
+            })
+          
+

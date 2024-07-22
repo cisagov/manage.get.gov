@@ -741,6 +741,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "last_name",
         "title",
         "email",
+        "phone",
         "Permissions",
         "is_active",
         "groups",
@@ -1383,7 +1384,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             for name, data in fieldsets:
                 fields = data.get("fields", [])
                 fields = tuple(field for field in fields if field not in DomainInformationAdmin.superuser_only_fields)
-                modified_fieldsets.append((name, {"fields": fields}))
+                modified_fieldsets.append((name, {**data, "fields": fields}))
             return modified_fieldsets
         return fieldsets
 
@@ -1644,7 +1645,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "is_election_board",
         "federal_agency",
         "status_history",
-        "action_needed_reason_email",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -1698,7 +1698,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             for name, data in fieldsets:
                 fields = data.get("fields", [])
                 fields = tuple(field for field in fields if field not in self.superuser_only_fields)
-                modified_fieldsets.append((name, {"fields": fields}))
+                modified_fieldsets.append((name, {**data, "fields": fields}))
             return modified_fieldsets
         return fieldsets
 
@@ -1745,29 +1745,39 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if not change:
             return super().save_model(request, obj, form, change)
 
-        # == Handle non-status changes == #
-        # Change this in #1901. Add a check on "not self.action_needed_reason_email"
-        if obj.action_needed_reason:
-            self._handle_action_needed_reason_email(obj)
-            should_save = True
-
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
+
+        # == Handle action_needed_reason == #
+
+        reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
+        if reason_changed:
+            # Track the fact that we sent out an email
+            request.session["action_needed_email_sent"] = True
+
+            # Set the action_needed_reason_email to the default if nothing exists.
+            # Since this check occurs after save, if the user enters a value then we won't update.
+
+            default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+            if obj.action_needed_reason_email:
+                emails = self.get_all_action_needed_reason_emails(obj)
+                is_custom_email = obj.action_needed_reason_email not in emails.values()
+                if not is_custom_email:
+                    obj.action_needed_reason_email = default_email
+            else:
+                obj.action_needed_reason_email = default_email
+
+        # == Handle status == #
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
             return super().save_model(request, obj, form, change)
+        else:
+            # Run some checks on the current object for invalid status changes
+            obj, should_save = self._handle_status_change(request, obj, original_obj)
 
-        # == Handle status changes == #
-        # Run some checks on the current object for invalid status changes
-        obj, should_save = self._handle_status_change(request, obj, original_obj)
-
-        # We should only save if we don't display any errors in the steps above.
-        if should_save:
-            return super().save_model(request, obj, form, change)
-
-    def _handle_action_needed_reason_email(self, obj):
-        text = self._get_action_needed_reason_default_email_text(obj, obj.action_needed_reason)
-        obj.action_needed_reason_email = text.get("email_body_text")
+            # We should only save if we don't display any errors in the steps above.
+            if should_save:
+                return super().save_model(request, obj, form, change)
 
     def _handle_status_change(self, request, obj, original_obj):
         """
@@ -1962,49 +1972,54 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
-        extra_context["action_needed_reason_emails"] = self.get_all_action_needed_reason_emails_as_json(obj)
+        emails = self.get_all_action_needed_reason_emails(obj)
+        extra_context["action_needed_reason_emails"] = json.dumps(emails)
         extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
+
+        # Denote if an action needed email was sent or not
+        email_sent = request.session.get("action_needed_email_sent", False)
+        extra_context["action_needed_email_sent"] = email_sent
+        if email_sent:
+            request.session["action_needed_email_sent"] = False
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
 
-    def get_all_action_needed_reason_emails_as_json(self, domain_request):
+    def get_all_action_needed_reason_emails(self, domain_request):
         """Returns a json dictionary of every action needed reason and its associated email
         for this particular domain request."""
+
         emails = {}
         for action_needed_reason in domain_request.ActionNeededReasons:
-            enum_value = action_needed_reason.value
-            # Change this in #1901. Just add a check for the current value.
-            emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value)
-        return json.dumps(emails)
+            # Map the action_needed_reason to its default email
+            emails[action_needed_reason.value] = self._get_action_needed_reason_default_email(
+                domain_request, action_needed_reason.value
+            )
 
-    def _get_action_needed_reason_default_email_text(self, domain_request, action_needed_reason: str):
+        return emails
+
+    def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason):
         """Returns the default email associated with the given action needed reason"""
-        if action_needed_reason is None or action_needed_reason == domain_request.ActionNeededReasons.OTHER:
-            return {
-                "subject_text": None,
-                "email_body_text": None,
-            }
-
-        # Get the email body
-        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
-        template = get_template(template_path)
-
-        # Get the email subject
-        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
-        subject_template = get_template(template_subject_path)
+        if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
+            return None
 
         if flag_is_active(None, "profile_feature"):  # type: ignore
             recipient = domain_request.creator
         else:
             recipient = domain_request.submitter
 
-        # Return the content of the rendered views
+        # Return the context of the rendered views
         context = {"domain_request": domain_request, "recipient": recipient}
-        return {
-            "subject_text": subject_template.render(context=context),
-            "email_body_text": template.render(context=context),
-        }
+
+        # Get the email body
+        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
+
+        email_body_text = get_template(template_path).render(context=context)
+        email_body_text_cleaned = None
+        if email_body_text:
+            email_body_text_cleaned = email_body_text.strip().lstrip("\n")
+
+        return email_body_text_cleaned
 
     def process_log_entry(self, log_entry):
         """Process a log entry and return filtered entry dictionary if applicable."""
