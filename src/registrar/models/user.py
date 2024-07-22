@@ -73,7 +73,8 @@ class User(AbstractUser):
     class UserPortfolioPermissionChoices(models.TextChoices):
         """ """
 
-        VIEW_DOMAINS = "view_domains", "View all domains and domain reports"
+        VIEW_ALL_DOMAINS = "view_all_domains", "View all domains and domain reports"
+        VIEW_MANAGED_DOMAINS = "view_managed_domains", "View managed domains"
         # EDIT_DOMAINS is really self.domains. We add is hear and leverage it in has_permission
         # so we have one way to test for portfolio and domain edit permissions
         # Do we need to check for portfolio domains specifically?
@@ -83,7 +84,8 @@ class User(AbstractUser):
         VIEW_MEMBER = "view_member", "View members"
         EDIT_MEMBER = "edit_member", "Create and edit members"
 
-        VIEW_REQUESTS = "view_requests", "View requests"
+        VIEW_ALL_REQUESTS = "view_all_requests", "View all requests"
+        VIEW_CREATED_REQUESTS = "view_created_requests", "View created requests"
         EDIT_REQUESTS = "edit_requests", "Create and edit requests"
 
         VIEW_PORTFOLIO = "view_portfolio", "View organization"
@@ -91,18 +93,18 @@ class User(AbstractUser):
 
     PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
-            UserPortfolioPermissionChoices.VIEW_DOMAINS,
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_MEMBER,
             UserPortfolioPermissionChoices.EDIT_MEMBER,
-            UserPortfolioPermissionChoices.VIEW_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
-            UserPortfolioPermissionChoices.VIEW_DOMAINS,
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_MEMBER,
-            UserPortfolioPermissionChoices.VIEW_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
@@ -262,7 +264,7 @@ class User(AbstractUser):
         return list(portfolio_permissions)  # Convert back to list if necessary
 
     def _has_portfolio_permission(self, portfolio_permission):
-        """The views should only call this guy when testing for perms and not rely on roles"""
+        """The views should only call this function when testing for perms and not rely on roles."""
 
         # EDIT_DOMAINS === user is a manager on a domain (has UserDomainRole)
         # NOTE: Should we check whether the domain is in the portfolio?
@@ -282,13 +284,13 @@ class User(AbstractUser):
         return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
     def has_domains_portfolio_permission(self):
-        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_DOMAINS)
+        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
 
     def has_edit_domains_portfolio_permission(self):
         return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
 
     def has_domain_requests_portfolio_permission(self):
-        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_REQUESTS)
+        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):

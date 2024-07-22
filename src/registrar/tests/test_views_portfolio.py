@@ -77,7 +77,7 @@ class TestPortfolioViews(TestWithUser, WebTest):
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
             User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            User.UserPortfolioPermissionChoices.VIEW_DOMAINS,
+            User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
         ]
         self.user.save()
         self.user.refresh_from_db()
@@ -148,8 +148,8 @@ class TestPortfolioViews(TestWithUser, WebTest):
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
             User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            User.UserPortfolioPermissionChoices.VIEW_DOMAINS,
-            User.UserPortfolioPermissionChoices.VIEW_REQUESTS,
+            User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            User.UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
         ]
         self.user.save()
         self.user.refresh_from_db()

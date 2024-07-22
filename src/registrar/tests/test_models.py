@@ -1227,52 +1227,52 @@ class TestUser(TestCase):
         """
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
 
-        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_DOMAINS]
+        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
         self.user.save()
         self.user.refresh_from_db()
 
-        user_can_view_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
         user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
-        self.assertFalse(user_can_view_domains)
-        self.assertFalse(user_can_view_requests)
+        self.assertFalse(user_can_view_all_domains)
+        self.assertFalse(user_can_view_all_requests)
         self.assertFalse(user_can_edit_domains)
 
         self.user.portfolio = portfolio
         self.user.save()
         self.user.refresh_from_db()
 
-        user_can_view_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
         user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
-        self.assertTrue(user_can_view_domains)
-        self.assertFalse(user_can_view_requests)
+        self.assertTrue(user_can_view_all_domains)
+        self.assertFalse(user_can_view_all_requests)
         self.assertFalse(user_can_edit_domains)
 
         self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         self.user.save()
         self.user.refresh_from_db()
 
-        user_can_view_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
         user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
-        self.assertTrue(user_can_view_domains)
-        self.assertTrue(user_can_view_requests)
+        self.assertTrue(user_can_view_all_domains)
+        self.assertTrue(user_can_view_all_requests)
         self.assertFalse(user_can_edit_domains)
 
         UserDomainRole.objects.all().get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
 
-        user_can_view_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
         user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
-        self.assertTrue(user_can_view_domains)
-        self.assertTrue(user_can_view_requests)
+        self.assertTrue(user_can_view_all_domains)
+        self.assertTrue(user_can_view_all_requests)
         self.assertTrue(user_can_edit_domains)
 
         Portfolio.objects.all().delete()
