@@ -31,72 +31,47 @@ on:
           - rjm
           - dk
 
+
 jobs:
-  connect-to-service:
+  reset-db:
     runs-on: ubuntu-latest
     env:
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
-
     steps:
-      # - name: Delete existing data for ${{ github.event.inputs.environment }}
-      #   uses: cloud-gov/cg-cli-tools@main
-      #   with:
-      #     cf_username: ${{ secrets[env.CF_USERNAME] }}
-      #     cf_password: ${{ secrets[env.CF_PASSWORD] }}
-      #     cf_org: cisa-dotgov
-      #     cf_space: ${{ github.event.inputs.environment }}
-      #     cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py flush --no-input' --name flush"
+      - name: Drop Tables for ${{ github.event.inputs.environment }}
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ github.event.inputs.environment }}
+          cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py drop_tables --no-input' --name flush"
+      
+      - name: Run Django migrations for ${{ github.event.inputs.environment }}
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ github.event.inputs.environment }}
+          cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py migrate' --name migrate"
 
-      # - name: Target organization and space
-      #   run: |
-      #     cf target -o cisa-dotgov -s nl
+      - name: Run fixtures for ${{ github.event.inputs.environment }}
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ github.event.inputs.environment }}
+          cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py load' --name load"
 
-      - name: Connect to service
-        id: connect
-        run: |
-          cf connect-to-service -no-client getgov-${{ github.event.inputs.environment }} getgov-${{ github.event.inputs.environment }}-database > connection_info.txt
-          cat connection_info.txt
+      - name: Create cache table for ${{ github.event.inputs.environment }}
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ github.event.inputs.environment }}
+          cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py createcachetable' --name createcachetable"
 
-      - name: Extract connection details
-        id: extract
-        run: |
-          port=$(grep -oP 'port:\s*\K\d+' connection_info.txt)
-          username=$(grep -oP 'user:\s*\K\w+' connection_info.txt)
-          broker_name=$(grep -oP 'dbname:\s*\K\w+' connection_info.txt)
-          echo "::set-output name=port::$port"
-          echo "::set-output name=username::$username"
-          echo "::set-output name=broker_name::$broker_name"
-
-      - name: Connect to PostgreSQL
-        run: |
-          psql -h localhost -p ${{ steps.extract.outputs.port }} -U ${{ steps.extract.outputs.username }} -d ${{ steps.extract.outputs.broker_name }}
-        env:
-          PGPASSWORD: ${{ secrets.PG_PASSWORD }}
-
-      - name: Get table names
-        id: get_tables
-        run: |
-          tables=$(psql -h localhost -p ${{ steps.extract.outputs.port }} -U ${{ steps.extract.outputs.username }} -d ${{ steps.extract.outputs.broker_name }} -c "\dt" -t | awk '{print $3}')
-          echo "::set-output name=tables::$tables"
-
-      - name: Drop all tables
-        run: |
-          for table in ${{ steps.get_tables.outputs.tables }}
-          do
-            psql -h localhost -p ${{ steps.extract.outputs.port }} -U ${{ steps.extract.outputs.username }} -d ${{ steps.extract.outputs.broker_name }} -c "DROP TABLE IF EXISTS $table CASCADE;"
-          done
-        env:
-          PGPASSWORD: ${{ secrets.PG_PASSWORD }}
-
-      # - name: Migrate
-      #   run: |
-      #     cf ssh getgov-${{ github.event.inputs.environment }} -c "/tmp/lifecycle/shell ./manage.py migrate"
-
-      # - name: Run fixtures
-      #   run: |
-      #     cf ssh getgov-${{ github.event.inputs.environment }} -c "/tmp/lifecycle/shell ./manage.py load"
-
-      # - name: Create cache table
-      #   run: |
-      #     cf ssh getgov-${{ github.event.inputs.environment }} -c "/tmp/lifecycle/shell ./manage.py createcachetable"
