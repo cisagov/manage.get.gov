@@ -53,8 +53,13 @@
       {% endif %}
     {% endif %}
 
-    {% url 'domain-org-name-address' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=domain.is_editable %}
+    {% if portfolio %}
+      {% url 'domain-suborganization' pk=domain.id as url %}
+      {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=domain.is_editable %}
+    {% else %}
+      {% url 'domain-org-name-address' pk=domain.id as url %}
+      {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=domain.is_editable %}
+    {% endif %}
 
     {% url 'domain-senior-official' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=domain.is_editable %}
