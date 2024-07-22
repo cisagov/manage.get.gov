@@ -1,6 +1,8 @@
-{% extends 'portfolio.html' %}
+{% extends 'portfolio_base.html' %}
 
 {% load static %}
+
+{% block title %} Domain requests | {% endblock %}
 
 {% block portfolio_content %}
     <h1 id="domain-requests-header">Domain requests</h1>
@@ -16,6 +18,6 @@
             Start a new domain request
         </a>
     </p>
-       
+    
     {% include "includes/domain_requests_table.html" with portfolio=portfolio %}
 {% endblock %}
