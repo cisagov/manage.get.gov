@@ -228,10 +228,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             if request.path_info == self.NEW_URL_NAME:
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
-                # intro page. Only TEMPORARY context needed is has_profile_flag
-                has_profile_flag = flag_is_active(self.request, "profile_feature")
-                context_stuff = {"has_profile_feature_flag": has_profile_flag}
-                return render(request, "domain_request_intro.html", context=context_stuff)
+                # intro page.
+                return render(request, "domain_request_intro.html", {})
             else:
                 return self.goto(self.steps.first)
 
@@ -380,7 +378,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
-        has_profile_flag = flag_is_active(self.request, "profile_feature")
 
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request, self.request):
@@ -397,8 +394,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
                 You’ll only be able to withdraw your request.",
                 "review_form_is_complete": True,
-                # Use the profile waffle feature flag to toggle profile features throughout domain requests
-                "has_profile_feature_flag": has_profile_flag,
                 "user": self.request.user,
             }
         else:  # form is not complete
@@ -414,7 +409,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "modal_description": 'This request cannot be submitted yet.\
                 Return to the request and visit the steps that are marked as "incomplete."',
                 "review_form_is_complete": False,
-                "has_profile_feature_flag": has_profile_flag,
                 "user": self.request.user,
             }
         return context_stuff
@@ -740,13 +734,6 @@ class Finished(DomainRequestWizard):
 class DomainRequestStatus(DomainRequestPermissionView):
     template_name = "domain_request_status.html"
 
-    def get_context_data(self, **kwargs):
-        """Extend get_context_data to add has_profile_feature_flag to context"""
-        context = super().get_context_data(**kwargs)
-        # This is a django waffle flag which toggles features based off of the "flag" table
-        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
-        return context
-
 
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
@@ -756,13 +743,6 @@ class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """
 
     template_name = "domain_request_withdraw_confirmation.html"
-
-    def get_context_data(self, **kwargs):
-        """Extend get_context_data to add has_profile_feature_flag to context"""
-        context = super().get_context_data(**kwargs)
-        # This is a django waffle flag which toggles features based off of the "flag" table
-        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
-        return context
 
 
 class DomainRequestWithdrawn(DomainRequestPermissionWithdrawView):

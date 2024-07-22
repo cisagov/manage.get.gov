@@ -1,0 +1,9 @@
+@use "uswds-core" as *;
+
+.usa-banner {
+    background-color: color('primary-darker');
+}
+
+.usa-identifier__logo {
+    height: units(7);
+}
