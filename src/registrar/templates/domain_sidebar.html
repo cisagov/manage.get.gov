@@ -54,15 +54,12 @@
         </ul>
         {% endif %}
       </li>
-
-      <li class="usa-sidenav__item">
-        {% url 'domain-org-name-address' pk=domain.id as url %}
-        <a href="{{ url }}"
-          {% if request.path == url %}class="usa-current"{% endif %}
-        >
-            Organization name and mailing address
-        </a>
-      </li>      
+      
+      {% if is_org_user %}
+        {% include "includes/domain_sidenav_item.html" with url_name="domain-suborganization" item_text="Suborganization"%}
+      {% else %}
+        {% include "includes/domain_sidenav_item.html" with url_name="domain-org-name-address" item_text="Organization name and mailing address"%}
+      {% endif %}    
 
       <li class="usa-sidenav__item">
         {% url 'domain-senior-official' pk=domain.id as url %}

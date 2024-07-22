@@ -3,6 +3,7 @@ from .domain import (
     DomainView,
     DomainSeniorOfficialView,
     DomainOrgNameAddressView,
+    DomainSubOrganizationView,
     DomainDNSView,
     DomainNameserversView,
     DomainDNSSECView,

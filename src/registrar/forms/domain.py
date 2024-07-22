@@ -16,7 +16,7 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 
-from ..models import Contact, DomainInformation, Domain, User
+from ..models import Contact, DomainInformation, Domain, User, Suborganization
 from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
@@ -506,6 +506,41 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         old_value = self.initial.get(field_name, None)
         new_value = self.cleaned_data.get(field_name, None)
         return old_value == new_value
+
+
+class DomainSuborganizationForm(forms.ModelForm):
+    """Form for updating the suborganization"""
+
+    class Meta:
+        model = DomainInformation
+        fields = [
+            "sub_organization",
+        ]
+        error_messages = {
+            "sub_organization": {"required": "Select a suborganization."},
+        }
+        widgets = {
+            "sub_organization": forms.Select(
+                attrs={
+                    "required": False,
+                },
+            ),
+        }
+
+    # the database fields have blank=True so ModelForm doesn't create
+    # required fields by default. Use this list in __init__ to mark each
+    # of these fields as required
+    required = ["sub_organization"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["sub_organization"].required = False
+        if self.instance and self.instance.portfolio:
+            self.fields['sub_organization'].queryset = Suborganization.objects.filter(
+                portfolio=self.instance.portfolio
+            )
+        else:
+            self.fields['sub_organization'].queryset = Suborganization.objects.none()
 
 
 class DomainDnssecForm(forms.Form):

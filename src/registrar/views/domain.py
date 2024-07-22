@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.views.generic.edit import FormMixin
 from django.conf import settings
 
+from registrar.forms.domain import DomainSuborganizationForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -216,6 +217,34 @@ class DomainOrgNameAddressView(DomainFormBaseView):
         form.save()
 
         messages.success(self.request, "The organization information for this domain has been updated.")
+
+        # superclass has the redirect
+        return super().form_valid(form)
+
+
+class DomainSubOrganizationView(DomainFormBaseView):
+    """Suborganization view"""
+
+    model = Domain
+    template_name = "domain_suborganization.html"
+    context_object_name = "domain"
+    form_class = DomainSuborganizationForm
+
+    def get_form_kwargs(self, *args, **kwargs):
+        """Add domain_info.organization_name instance to make a bound form."""
+        form_kwargs = super().get_form_kwargs(*args, **kwargs)
+        form_kwargs["instance"] = self.object.domain_info
+        return form_kwargs
+
+    def get_success_url(self):
+        """Redirect to the overview page for the domain."""
+        return reverse("domain-suborganization", kwargs={"pk": self.object.pk})
+
+    def form_valid(self, form):
+        """The form is valid, save the organization name and mailing address."""
+        form.save()
+
+        messages.success(self.request, "The suborganization name for this domain has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
