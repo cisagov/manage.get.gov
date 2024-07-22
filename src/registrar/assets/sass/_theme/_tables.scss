@@ -34,22 +34,6 @@
       pointer-events: none;
     }
   }
-
-  // Ticket #1510
-  // @include at-media('desktop') {
-  //   th:first-child {
-  //     width: 220px;
-  //   }
-  //   th:nth-child(2) {
-  //     width: 175px;
-  //   }
-  //   th:nth-child(3) {
-  //     width: 130px;
-  //   }
-  //   th:nth-child(5) {
-  //     width: 130px;
-  //   }
-  // }
 }
 
 .dotgov-table {
@@ -93,49 +77,6 @@
 
     thead tr:first-child th:first-child {
       border-top: none;
-    }
-  }
-}
-@media (min-width: 1040px){
-  .domain-requests__table {
-    th:nth-of-type(1) {
-      width: 200px;
-    }
-
-    th:nth-of-type(2) {
-      width: 158px;
-    }
-
-    th:nth-of-type(3) {
-      width: 120px;
-    }
-
-    th:nth-of-type(4) {
-      width: 95px;
-    }
-
-    th:nth-of-type(5) {
-      width: 85px;
-    }
-  }
-}
-
-@media (min-width: 1040px){
-  .domains__table {
-    th:nth-of-type(1) {
-      width: 200px;
-    }
-
-    th:nth-of-type(2) {
-      width: 158px;
-    }
-
-    th:nth-of-type(3) {
-      width: 215px;
-    }
-
-    th:nth-of-type(4) {
-      width: 95px;
     }
   }
 }
