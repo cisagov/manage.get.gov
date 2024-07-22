@@ -1955,7 +1955,7 @@ document.addEventListener('DOMContentLoaded', function() {
  * An IIFE that adds the default selection on comboboxes to the input field.
  * This is because this action doesn't get fired by the time the page loads
  */
-(function finishUserSetupListener() {
+(function loadInitialValuesForComboBoxes() {
   document.addEventListener('DOMContentLoaded', (event) => {
     const comboBoxElements = document.querySelectorAll('.usa-combo-box');
     comboBoxElements.forEach(comboBox => {
