@@ -3,14 +3,10 @@
 <div class="margin-bottom-4 tablet:margin-bottom-0">
   <nav aria-label="Domain sections">
     <ul class="usa-sidenav">
-      <li class="usa-sidenav__item">
-        {% url 'domain' pk=domain.id as url %} 
-        <a href="{{ url }}" 
-          {% if request.path == url %}class="usa-current"{% endif %}
-        >
-          Domain overview
-        </a>
-      </li>
+
+      {% with url_name="domain" %}
+        {% include "includes/domain_sidenav_item.html" with item_text="Domain overview" %}
+      {% endwith %}
 
       {% if domain.is_editable %}
       <li class="usa-sidenav__item">
@@ -55,50 +51,35 @@
         {% endif %}
       </li>
       
-      {% if is_org_user %}
-        {% include "includes/domain_sidenav_item.html" with url_name="domain-suborganization" item_text="Suborganization"%}
+      {% if portfolio %}
+        {% with url_name="domain-suborganization" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
+        {% endwith %}
       {% else %}
-        {% include "includes/domain_sidenav_item.html" with url_name="domain-org-name-address" item_text="Organization name and mailing address"%}
+        {% with url_name="domain-org-name-address" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Organization name and mailing address" %}
+        {% endwith %}
       {% endif %}    
 
-      <li class="usa-sidenav__item">
-        {% url 'domain-senior-official' pk=domain.id as url %}
-        <a href="{{ url }}"
-          {% if request.path == url %}class="usa-current"{% endif %}
-        >
-            Senior official
-        </a>
-      </li>
+      {% with url_name="domain-senior-official" %}
+        {% include "includes/domain_sidenav_item.html" with item_text="Senior official" %}
+      {% endwith %}
 
       {% if not has_profile_feature_flag %}
       {# Conditionally display profile link in main nav #}
-      <li class="usa-sidenav__item">
-        {% url 'domain-your-contact-information' pk=domain.id as url %}
-        <a href="{{ url }}"
-          {% if request.path == url %}class="usa-current"{% endif %}
-        >
-            Your contact information
-        </a>
-      </li>
+        {% with url_name="domain-your-contact-information" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Your contact information" %}
+        {% endwith %}
       {% endif %}
 
-      <li class="usa-sidenav__item">
-        {% url 'domain-security-email' pk=domain.id as url %}
-        <a href="{{ url }}"
-          {% if request.path == url %}class="usa-current"{% endif %}
-        >
-            Security email
-        </a>
-      </li>
+      {% with url_name="domain-security-email" %}
+        {% include "includes/domain_sidenav_item.html" with item_text="Security email" %}
+      {% endwith %}
 
-      <li class="usa-sidenav__item">
-        {% url 'domain-users' pk=domain.id as url %}
-        <a href="{{ url }}"
-          {% if request.path|startswith:url %}class="usa-current"{% endif %}
-        >
-            Domain managers
-        </a>
-      </li>
+      {% with url_name="domain-users" %}
+        {% include "includes/domain_sidenav_item.html" with item_text="Domain managers" %}
+      {% endwith %}
+
       {% endif %}
     </ul>
   </nav>
