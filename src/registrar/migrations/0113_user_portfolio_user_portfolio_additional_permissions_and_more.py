@@ -73,7 +73,7 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(
                 help_text="Associated user",
                 on_delete=django.db.models.deletion.PROTECT,
-                related_name="creator",
+                related_name="created_portfolios",
                 to=settings.AUTH_USER_MODEL,
             ),
         ),
