@@ -3665,9 +3665,6 @@ class TestMyUserAdmin(MockDb):
                         "fields": (
                             "is_active",
                             "groups",
-                            "portfolio",
-                            "portfolio_roles",
-                            "portfolio_additional_permissions",
                         )
                     },
                 ),
@@ -3766,7 +3763,7 @@ class TestMyUserAdmin(MockDb):
         expected_href = reverse("admin:registrar_domain_change", args=[domain_deleted.pk])
         self.assertNotContains(response, expected_href)
 
-    def test_analyst_can_see_selects_for_portfolio_role_and_permissions_in_user_form(self):
+    def test_analyst_cannot_see_selects_for_portfolio_role_and_permissions_in_user_form(self):
         """Can only test for the presence of a base element. The multiselects and the h2->h3 conversion are all
         dynamically generated."""
 
@@ -3779,8 +3776,8 @@ class TestMyUserAdmin(MockDb):
 
         self.assertEqual(response.status_code, 200)
 
-        self.assertContains(response, "Portfolio roles:")
-        self.assertContains(response, "Portfolio additional permissions:")
+        self.assertNotContains(response, "Portfolio roles:")
+        self.assertNotContains(response, "Portfolio additional permissions:")
 
 
 class AuditedAdminTest(TestCase):
