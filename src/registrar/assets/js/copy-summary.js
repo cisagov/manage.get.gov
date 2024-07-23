@@ -55,31 +55,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
         //------ Submitter
         // Function to extract text by ID and handle missing elements
-        function extractTextById(id) {
-            const element = document.getElementById(id);
-            return element ? element.textContent.trim()+"," : '';
+        function extractTextById(id, divElement) {
+            if (divElement) {
+                const element = divElement.querySelector(`#${id}`);
+                return element ? ", " + element.textContent.trim() : '';
+            }
+            return '';
         }
         // Extract the submitter name, title, email, and phone number
-        const submitterName = extractTextById('contact_info_name');
-        const submitterTitle = extractTextById('contact_info_title');
-        const submitterEmail = extractTextById('contact_info_email');
-        const submitterPhone = extractTextById('contact_info_phone');
-        // Format the contact information
+        const submitterDiv = document.querySelector('.form-row.field-submitter');
+        const submitterNameElement = document.getElementById('id_submitter');
+        const submitterName = submitterNameElement.options[submitterNameElement.selectedIndex].text;
+        const submitterTitle = extractTextById('contact_info_title', submitterDiv);
+        const submitterEmail = extractTextById('contact_info_email', submitterDiv);
+        const submitterPhone = extractTextById('contact_info_phone', submitterDiv);
         let submitterInfo = `${submitterName} ${submitterTitle} ${submitterEmail} ${submitterPhone}`;
 
 
         //------ Senior Official
+        const seniorOfficialDiv = document.querySelector('.form-row.field-senior_official');
         const seniorOfficialElement = document.getElementById('id_senior_official');
-        const seniorOfficial = seniorOfficialElement.options[seniorOfficialElement.selectedIndex].text;
+        const seniorOfficialName = seniorOfficialElement.options[seniorOfficialElement.selectedIndex].text;
+        const seniorOfficialTitle = extractTextById('contact_info_title', seniorOfficialDiv);
+        const seniorOfficialEmail = extractTextById('contact_info_email', seniorOfficialDiv);
+        const seniorOfficialPhone = extractTextById('contact_info_phone', seniorOfficialDiv);
+        let seniorOfficialInfo = `${seniorOfficialName} ${seniorOfficialTitle} ${seniorOfficialEmail} ${seniorOfficialPhone}`;
 
         const summary = `<strong>Recommendation:</strong></br>` +
                         `<strong>Organization Type:</strong> ${organizationType}</br>` +
                         `<strong>Requested Domain:</strong> ${requestedDomain}</br>` +
-                        `<strong>Existing website(s):</strong> ${existingWebsites.join(',')}</br>` +
+                        `<strong>Existing website(s):</strong> ${existingWebsites.join(', ')}</br>` +
                         `<strong>Rationale:</strong></br>` +
-                        `<strong>Alternate Domain(s):</strong> ${alternativeDomains.join(',')}</br>` +
+                        `<strong>Alternate Domain(s):</strong> ${alternativeDomains.join(', ')}</br>` +
                         `<strong>Submitter:</strong> ${submitterInfo}</br>` +
-                        `<strong>Senior Official:</strong> ${seniorOfficial}</br>` +
+                        `<strong>Senior Official:</strong> ${seniorOfficialInfo}</br>` +
                         `<strong>Additional Contact(s):</strong> ${otherContactsSummary}</br>`;
 
         // Create a temporary element
