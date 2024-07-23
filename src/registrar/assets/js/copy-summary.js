@@ -1,41 +1,86 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('copy-summary-btn').addEventListener('click', function() {
-        // Generate the summary text
+        /// Generate the summary text
 
+        //------ Organization Type
         const organizationTypeElement = document.getElementById('id_organization_type');
         const organizationType = organizationTypeElement.options[organizationTypeElement.selectedIndex].text;
 
+        //------ Alternative Domains
         const alternativeDomainsDiv = document.querySelector('.form-row.field-alternative_domains .readonly');
         const alternativeDomainslinks = alternativeDomainsDiv.querySelectorAll('a');
         const alternativeDomains = Array.from(alternativeDomainslinks).map(link => link.textContent);
 
+        //------ Existing Websites
         const existingWebsitesDiv = document.querySelector('.form-row.field-current_websites .readonly');
         const existingWebsiteslinks = existingWebsitesDiv.querySelectorAll('a');
         const existingWebsites = Array.from(existingWebsiteslinks).map(link => link.textContent);
 
+        //------ Additional Contacts
+        // 1 - Create a hyperlinks map so we can display contact details and also link to the contact
         const otherContactsDiv = document.querySelector('.form-row.field-other_contacts .readonly');
-        const otherContactslinks = otherContactsDiv.querySelectorAll('a');
-        const otherContacts = Array.from(otherContactslinks).map(link => link.textContent);
+        const otherContactLinks = otherContactsDiv.querySelectorAll('a');
+        const nameToUrlMap = {};
+        otherContactLinks.forEach(link => {
+          const name = link.textContent.trim();
+          const url = link.href;
+          nameToUrlMap[name] = url;
+        });
+    
+        // 2 - Iterate through contact details and assemble html for summary
+        let otherContactsSummary = ""
+        // Get the table rows of contact details
+        const otherContactsTable = document.querySelector('.form-row.field-other_contacts table tbody');
+        const otherContactsRows = otherContactsTable.querySelectorAll('tr');
+        const bulletList = document.createElement('ul');
+        otherContactsRows.forEach(contactRow => {
+        // Extract the contact details
+        const name = contactRow.querySelector('th').textContent.trim();
+        const title = contactRow.querySelectorAll('td')[0].textContent.trim();
+        const email = contactRow.querySelectorAll('td')[1].textContent.trim();
+        const phone = contactRow.querySelectorAll('td')[2].textContent.trim();
+        const url = nameToUrlMap[name] || '#';
+        // Format the contact information
+        const listItem = document.createElement('li');
+        listItem.innerH = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
+        bulletList.appendChild(listItem);
+        });
+        otherContactsSummary += bulletList.outerHTML
 
+
+        //------ Requested Domains
         const requestedDomainElement = document.getElementById('id_requested_domain');
         const requestedDomain = requestedDomainElement.options[requestedDomainElement.selectedIndex].text;
 
-        const submitterElement = document.getElementById('id_submitter');
-        const submitter = submitterElement.options[submitterElement.selectedIndex].text;
+        //------ Submitter
+        // Function to extract text by ID and handle missing elements
+        function extractTextById(id) {
+            const element = document.getElementById(id);
+            return element ? element.textContent.trim()+"," : '';
+        }
+        // Extract the submitter name, title, email, and phone number
+        const submitterName = extractTextById('contact_info_name');
+        const submitterTitle = extractTextById('contact_info_title');
+        const submitterEmail = extractTextById('contact_info_email');
+        const submitterPhone = extractTextById('contact_info_phone');
+        // Format the contact information
+        let submitterInfo = `${submitterName} ${submitterTitle} ${submitterEmail} ${submitterPhone}`;
 
+
+        //------ Senior Official
         const seniorOfficialElement = document.getElementById('id_senior_official');
         const seniorOfficial = seniorOfficialElement.options[seniorOfficialElement.selectedIndex].text;
 
         const summary = `<strong>Recommendation:</strong></br>` +
                         `<strong>Organization Type:</strong> ${organizationType}</br>` +
                         `<strong>Requested Domain:</strong> ${requestedDomain}</br>` +
-                        `<strong>Existing website(s):</strong> ${existingWebsites.join('</br>')}</br>` +
+                        `<strong>Existing website(s):</strong> ${existingWebsites.join(',')}</br>` +
                         `<strong>Rationale:</strong></br>` +
-                        `<strong>Alternate Domain(s):</strong> ${alternativeDomains.join('</br>')}</br>` +
-                        `<strong>Submitter:</strong> ${submitter}</br>` +
+                        `<strong>Alternate Domain(s):</strong> ${alternativeDomains.join(',')}</br>` +
+                        `<strong>Submitter:</strong> ${submitterInfo}</br>` +
                         `<strong>Senior Official:</strong> ${seniorOfficial}</br>` +
-                        `<strong>Additional Contact(s):</strong> ${otherContacts.join('</br>')}</br>`;
+                        `<strong>Additional Contact(s):</strong> ${otherContactsSummary}</br>`;
 
         // Create a temporary element
         let tempElement = document.createElement('div');

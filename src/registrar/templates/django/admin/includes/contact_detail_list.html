@@ -2,25 +2,28 @@
 
 <address class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} {% if user.has_contact_info %}margin-bottom-1{% endif %} dja-address-contact-list">
 
+
     {% if show_formatted_name %}
         {% if user.get_formatted_name %}
-            <a href="{% url 'admin:registrar_contact_change' user.id %}">{{ user.get_formatted_name }}</a><br />
+            <a id="contact_info_name" href="{% url 'admin:registrar_contact_change' user.id %}">{{ user.get_formatted_name }}</a>
         {% else %}
-            None<br />
+            None
         {% endif %}
     {% endif %}
+    </br>
 
     {% if user.has_contact_info %}
         {# Title #}
         {% if user.title %}
-            {{ user.title }}
-            <br>
+            <span id="contact_info_title">{{ user.title }}</span>
         {% else %}
-            None<br>
+            None
         {% endif %}
+         </br>
+
         {# Email #}
         {% if user.email %}
-            {{ user.email }}
+            <span id="contact_info_email">{{ user.email }}</span>
             {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
             <br class="admin-icon-group__br">
         {% else %}
@@ -29,7 +32,7 @@
 
         {# Phone #}
         {% if user.phone %}
-            {{ user.phone }}
+            <span id="contact_info_phone">{{ user.phone.as_national }}</span>
             <br>
         {% else %}
             None<br>
@@ -40,6 +43,6 @@
     {% endif %}
 
     {% if user_verification_type %}
-        {{ user_verification_type }}
+        <span id="contact_info_phone">{{ user_verification_type }}</span>
     {% endif %}
 </address>
