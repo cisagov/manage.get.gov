@@ -527,19 +527,16 @@ class DomainSuborganizationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.portfolio:
-            self.fields['sub_organization'].queryset = Suborganization.objects.filter(
-                portfolio=self.instance.portfolio
-            )
-        
+            self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=self.instance.portfolio)
+
         # Set custom form label
         self.fields["sub_organization"].label = "Suborganization name"
 
         # Use the combobox rather than the regular select widget
-        self.fields['sub_organization'].widget.template_name = "django/forms/widgets/combobox.html"
+        self.fields["sub_organization"].widget.template_name = "django/forms/widgets/combobox.html"
 
         # TODO: Remove in #2352
-        DomainHelper.disable_field(self.fields['sub_organization'], disable_required=True)
-
+        DomainHelper.disable_field(self.fields["sub_organization"], disable_required=True)
 
 
 class DomainDnssecForm(forms.Form):

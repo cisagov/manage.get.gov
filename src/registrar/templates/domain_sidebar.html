@@ -8,6 +8,16 @@
         {% include "includes/domain_sidenav_item.html" with item_text="Domain overview" %}
       {% endwith %}
 
+      {% if portfolio %}
+        {% with url_name="domain-suborganization" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
+        {% endwith %}
+      {% else %}
+        {% with url_name="domain-org-name-address" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Organization name and mailing address" %}
+        {% endwith %}
+      {% endif %}    
+
       {% if domain.is_editable %}
       <li class="usa-sidenav__item">
         {% url 'domain-dns' pk=domain.id as url %}
@@ -50,16 +60,6 @@
         </ul>
         {% endif %}
       </li>
-      
-      {% if portfolio %}
-        {% with url_name="domain-suborganization" %}
-          {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
-        {% endwith %}
-      {% else %}
-        {% with url_name="domain-org-name-address" %}
-          {% include "includes/domain_sidenav_item.html" with item_text="Organization name and mailing address" %}
-        {% endwith %}
-      {% endif %}    
 
       {% with url_name="domain-senior-official" %}
         {% include "includes/domain_sidenav_item.html" with item_text="Senior official" %}

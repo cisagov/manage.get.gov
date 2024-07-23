@@ -67,10 +67,8 @@ error messages, if necessary.
     {% include "includes/readonly_input.html" %}
   {% endif %}
 
-  {# this is the input field, itself. Toggleable because of the show_readonly flag. #}
-  {% if not remove_input_field %}
-    {% include widget.template_name %}
-  {% endif %}
+  {# this is the input field, itself #}
+  {% include widget.template_name %}
 
   {% if append_gov %}
       <span class="padding-top-05 padding-left-2px">.gov </span>
