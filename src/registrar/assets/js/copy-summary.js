@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = nameToUrlMap[name] || '#';
         // Format the contact information
         const listItem = document.createElement('li');
-        listItem.innerH = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
+        listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
         bulletList.appendChild(listItem);
         });
         otherContactsSummary += bulletList.outerHTML
