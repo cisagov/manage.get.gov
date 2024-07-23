@@ -701,9 +701,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
 
     readonly_fields = ("verification_type",)
 
-    # Hide Username (uuid), Groups and Permissions
-    # Q: Now that we're using Groups and Permissions,
-    # do we expose those to analysts to view?
     analyst_fieldsets = (
         (
             None,
@@ -724,6 +721,30 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "portfolio",
                     "portfolio_roles",
                     "portfolio_additional_permissions",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    # TODO: delete after we merge organization feature
+    analyst_fieldsets_no_portfolio = (
+        (
+            None,
+            {
+                "fields": (
+                    "status",
+                    "verification_type",
+                )
+            },
+        ),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "groups",
                 )
             },
         ),
@@ -757,6 +778,23 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "portfolio",
         "portfolio_roles",
         "portfolio_additional_permissions",
+    ]
+
+    # TODO: delete after we merge organization feature
+    analyst_readonly_fields_no_portfolio = [
+        "User profile",
+        "first_name",
+        "middle_name",
+        "last_name",
+        "title",
+        "email",
+        "phone",
+        "Permissions",
+        "is_active",
+        "groups",
+        "Important dates",
+        "last_login",
+        "date_joined",
     ]
 
     list_filter = (
@@ -831,8 +869,12 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             # Show all fields for all access users
             return super().get_fieldsets(request, obj)
         elif request.user.has_perm("registrar.analyst_access_permission"):
-            # show analyst_fieldsets for analysts
-            return self.analyst_fieldsets
+            if flag_is_active(request, "organization_feature"):
+                # show analyst_fieldsets for analysts
+                return self.analyst_fieldsets
+            else:
+                # TODO: delete after we merge organization feature
+                return self.analyst_fieldsets_no_portfolio
         else:
             # any admin user should belong to either full_access_group
             # or cisa_analyst_group
@@ -846,7 +888,11 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         else:
             # Return restrictive Read-only fields for analysts and
             # users who might not belong to groups
-            return self.analyst_readonly_fields
+            if flag_is_active(request, "organization_feature"):
+                return self.analyst_readonly_fields
+            else:
+                # TODO: delete after we merge organization feature
+                return self.analyst_readonly_fields_no_portfolio
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add user's related domains and requests to context"""
