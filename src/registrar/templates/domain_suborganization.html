@@ -15,11 +15,16 @@
         If you believe there is an error please contact <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
     </p>
 
-    {% include "includes/required_fields.html" %}
+    {% if suborganization_is_editable %}
+        {% include "includes/required_fields.html" %}
+    {% endif %}
+
     <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
         {% csrf_token %}
         {% input_with_errors form.sub_organization %}
-        <button type="submit" class="usa-button">Save</button>
+        {% if suborganization_is_editable %}
+            <button type="submit" class="usa-button">Save</button>
+        {% endif %}
     </form>
 
 {% endblock %}

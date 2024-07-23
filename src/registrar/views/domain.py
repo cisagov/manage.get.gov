@@ -26,6 +26,7 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models.public_contact import PublicContact
+from registrar.models.utility.domain_helper import DomainHelper
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
@@ -222,6 +223,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
         return super().form_valid(form)
 
 
+# TODO: Edit will be added in #2352
 class DomainSubOrganizationView(DomainFormBaseView):
     """Suborganization view"""
 
@@ -248,6 +250,15 @@ class DomainSubOrganizationView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+
+        # TODO: Switch to True #2352
+        suborganization_is_editable = False
+        context["suborganization_is_editable"] = suborganization_is_editable
+        return context
 
 
 class DomainSeniorOfficialView(DomainFormBaseView):

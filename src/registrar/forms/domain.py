@@ -508,6 +508,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         return old_value == new_value
 
 
+# TODO: Will be refined in #2352
 class DomainSuborganizationForm(forms.ModelForm):
     """Form for updating the suborganization"""
 
@@ -535,6 +536,9 @@ class DomainSuborganizationForm(forms.ModelForm):
 
         # Use the combobox rather than the regular select widget
         self.fields['sub_organization'].widget.template_name = "django/forms/widgets/combobox.html"
+
+        # TODO: Remove in #2352
+        DomainHelper.disable_field(self.fields['sub_organization'], disable_required=True)
 
 
 
