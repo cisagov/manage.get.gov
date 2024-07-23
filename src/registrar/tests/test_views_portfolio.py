@@ -165,6 +165,8 @@ class TestPortfolioViews(TestWithUser, WebTest):
                 portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
             )
 
+            # reducing portfolio permissions to just VIEW_PORTFOLIO, which should remove domains
+            # and domain requests from nav
             self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
             self.user.save()
             self.user.refresh_from_db()
