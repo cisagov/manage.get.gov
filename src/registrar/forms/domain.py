@@ -513,7 +513,7 @@ class DomainSuborganizationForm(forms.ModelForm):
 
     sub_organization = forms.ModelChoiceField(
         queryset=Suborganization.objects.none(),
-        required=False,
+        required=True,
         widget=forms.Select(),
     )
 
@@ -525,7 +525,6 @@ class DomainSuborganizationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["sub_organization"].required = False
         if self.instance and self.instance.portfolio:
             self.fields['sub_organization'].queryset = Suborganization.objects.filter(
                 portfolio=self.instance.portfolio

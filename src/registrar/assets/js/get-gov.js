@@ -1965,10 +1965,17 @@ document.addEventListener('DOMContentLoaded', function() {
       // Find the selected option
       const selectedOption = select.querySelector('option[selected]');
       
-      // If there's a selected option, set its text as the input value
+      // If there's a selected option, set its text as the input value.
+      // If the default name is "------", then this indicates that the field is blank.
+      // Don't populate in this case.
       if (selectedOption) {
-        input.value = selectedOption.textContent;
-        comboBox.classList.add('usa-combo-box--pristine');
+        // Check to make sure the value isn't just a line of dashes.
+        // Caveat: we can't have any suborgs named "------". This is OK.
+        const isEmptyValue = /^-+$/.test(selectedOption.textContent);
+        if (!isEmptyValue) {
+          input.value = selectedOption.textContent;
+          comboBox.classList.add('usa-combo-box--pristine');
+        }
       }
     });
   });
