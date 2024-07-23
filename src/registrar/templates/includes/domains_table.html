@@ -8,7 +8,7 @@
       <span class="display-none" id="no-portfolio-js-flag"></span>
       {% endif %}
       <div class="section--outlined__search{% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
-        <section aria-label="Domains search component" class="tablet:margin-top-2">
+        <section aria-label="Domains search component" class="margin-top-2">
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
             <button class="usa-button usa-button--unstyled margin-right-3 domains__reset-search display-none" type="button">
@@ -36,7 +36,7 @@
         </section>
       </div>
       <div class="section--outlined__utility-button{% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
-        <section aria-label="Domains report component" class="tablet:margin-top-205">
+        <section aria-label="Domains report component" class="mobile-lg:margin-top-205">
           <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled">
             <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24" height="24">
               <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
