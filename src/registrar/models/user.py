@@ -289,7 +289,7 @@ class User(AbstractUser):
         return (
             self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
             or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
-            or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
+            # or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
         )
 
     def has_edit_domains_portfolio_permission(self):
@@ -299,7 +299,7 @@ class User(AbstractUser):
         return (
             self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
             or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
-            or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_REQUESTS)
+            # or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_REQUESTS)
         )
 
     @classmethod

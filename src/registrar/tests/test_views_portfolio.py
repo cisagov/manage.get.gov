@@ -28,7 +28,7 @@ class TestPortfolioViews(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_middleware_does_not_redirect_if_no_permission(self):
-        """"""
+        """Test that user with no portfolio permission is not redirected when attempting to access home"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.save()
@@ -42,7 +42,7 @@ class TestPortfolioViews(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_middleware_does_not_redirect_if_no_portfolio(self):
-        """ """
+        """Test that user with no assigned portfolio is not redirected when attempting to access home"""
         self.app.set_user(self.user.username)
         self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
         self.user.save()
@@ -56,7 +56,7 @@ class TestPortfolioViews(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_middleware_redirects_to_portfolio_organization_page(self):
-        """"""
+        """Test that user with VIEW_PORTFOLIO is redirected to portfolio organization page"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
@@ -72,7 +72,7 @@ class TestPortfolioViews(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_middleware_redirects_to_portfolio_domains_page(self):
-        """"""
+        """Test that user with VIEW_PORTFOLIO and VIEW_ALL_DOMAINS is redirected to portfolio domains page"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
@@ -92,7 +92,7 @@ class TestPortfolioViews(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_portfolio_domains_page_403_when_user_not_have_permission(self):
-        """"""
+        """Test that user without proper permission is denied access to portfolio domain view"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.save()
@@ -103,13 +103,12 @@ class TestPortfolioViews(TestWithUser, WebTest):
             response = self.app.get(
                 reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk}), status=403
             )
-            # Assert the response is a 403
             # Assert the response is a 403 Forbidden
             self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_domain_requests_page_403_when_user_not_have_permission(self):
-        """"""
+        """Test that user without proper permission is denied access to portfolio domain view"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.save()
@@ -120,13 +119,12 @@ class TestPortfolioViews(TestWithUser, WebTest):
             response = self.app.get(
                 reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk}), status=403
             )
-            # Assert the response is a 403
             # Assert the response is a 403 Forbidden
             self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_403_when_user_not_have_permission(self):
-        """"""
+        """Test that user without proper permission is not allowed access to portfolio organization page"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.save()
@@ -137,13 +135,12 @@ class TestPortfolioViews(TestWithUser, WebTest):
             response = self.app.get(
                 reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}), status=403
             )
-            # Assert the response is a 403
             # Assert the response is a 403 Forbidden
             self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_navigation_links_hidden_when_user_not_have_permission(self):
-        """This test is AMAZING"""
+        """Test that navigation links are hidden when user does not have portfolio permissions"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
