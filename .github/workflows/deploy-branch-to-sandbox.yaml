@@ -28,6 +28,7 @@ on:
           - bob
           - hotgov
           - litterbox
+          - ms
       # GitHub Actions has no "good" way yet to dynamically input branches
       branch:
         description: 'Branch to deploy'
@@ -53,6 +54,7 @@ jobs:
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
+          docker compose run node npm install npm@latest &&
           docker compose run node npm install &&
           docker compose run node npx gulp copyAssets &&
           docker compose run node npx gulp compile

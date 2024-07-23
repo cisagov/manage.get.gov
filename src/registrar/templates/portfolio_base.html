@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block wrapper %}
+  <div id="wrapper" class="dashboard--portfolio">
+      {% block content %}
+        
+        <main id="main-content" class="grid-container">
+            {% if user.is_authenticated %}
+            {# the entire logged in page goes here #}
+            
+            <div class="tablet:grid-col-12">
+                {% block messages %}
+                    {% include "includes/form_messages.html" %}
+                {% endblock %}
+            
+                {% block portfolio_content %}{% endblock %}
+            
+            </div>            
+            {% else %} {# not user.is_authenticated #}
+            {# the entire logged out page goes here #}
+            
+            <p><a class="usa-button" href="{% url 'login' %}">
+            Sign in
+            </a></p>
+            
+            {% endif %}
+        </main>
+
+      {% endblock %}
+
+    <div role="complementary">{% block complementary %}{% endblock %}</div>
+
+    {% block content_bottom %}{% endblock %}
+  </div>
+{% endblock wrapper %}
