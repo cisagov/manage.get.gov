@@ -1,7 +1,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('copy-summary-btn').addEventListener('click', function() {
-        /// Generate the summary text
+        /// Generate a rich HTML summary text and copy to clipboard
 
         //------ Organization Type
         const organizationTypeElement = document.getElementById('id_organization_type');
@@ -20,33 +20,38 @@ document.addEventListener('DOMContentLoaded', function() {
         //------ Additional Contacts
         // 1 - Create a hyperlinks map so we can display contact details and also link to the contact
         const otherContactsDiv = document.querySelector('.form-row.field-other_contacts .readonly');
-        const otherContactLinks = otherContactsDiv.querySelectorAll('a');
-        const nameToUrlMap = {};
-        otherContactLinks.forEach(link => {
-          const name = link.textContent.trim();
-          const url = link.href;
-          nameToUrlMap[name] = url;
-        });
+        let otherContactLinks = [];
+        if (otherContactsDiv) {
+            otherContactLinks = otherContactsDiv.querySelectorAll('a');
+            const nameToUrlMap = {};
+            otherContactLinks.forEach(link => {
+              const name = link.textContent.trim();
+              const url = link.href;
+              nameToUrlMap[name] = url;
+            });
+        }
     
         // 2 - Iterate through contact details and assemble html for summary
         let otherContactsSummary = ""
         // Get the table rows of contact details
         const otherContactsTable = document.querySelector('.form-row.field-other_contacts table tbody');
-        const otherContactsRows = otherContactsTable.querySelectorAll('tr');
-        const bulletList = document.createElement('ul');
-        otherContactsRows.forEach(contactRow => {
-        // Extract the contact details
-        const name = contactRow.querySelector('th').textContent.trim();
-        const title = contactRow.querySelectorAll('td')[0].textContent.trim();
-        const email = contactRow.querySelectorAll('td')[1].textContent.trim();
-        const phone = contactRow.querySelectorAll('td')[2].textContent.trim();
-        const url = nameToUrlMap[name] || '#';
-        // Format the contact information
-        const listItem = document.createElement('li');
-        listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
-        bulletList.appendChild(listItem);
-        });
-        otherContactsSummary += bulletList.outerHTML
+        if (otherContactsTable) {
+            const otherContactsRows = otherContactsTable.querySelectorAll('tr');
+            const bulletList = document.createElement('ul');
+            otherContactsRows.forEach(contactRow => {
+            // Extract the contact details
+            const name = contactRow.querySelector('th').textContent.trim();
+            const title = contactRow.querySelectorAll('td')[0].textContent.trim();
+            const email = contactRow.querySelectorAll('td')[1].textContent.trim();
+            const phone = contactRow.querySelectorAll('td')[2].textContent.trim();
+            const url = nameToUrlMap[name] || '#';
+            // Format the contact information
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
+            bulletList.appendChild(listItem);
+            });
+            otherContactsSummary += bulletList.outerHTML
+        }
 
 
         //------ Requested Domains
@@ -69,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const submitterTitle = extractTextById('contact_info_title', submitterDiv);
         const submitterEmail = extractTextById('contact_info_email', submitterDiv);
         const submitterPhone = extractTextById('contact_info_phone', submitterDiv);
-        let submitterInfo = `${submitterName} ${submitterTitle} ${submitterEmail} ${submitterPhone}`;
+        let submitterInfo = `${submitterName}${submitterTitle}${submitterEmail}${submitterPhone}`;
 
 
         //------ Senior Official
@@ -79,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const seniorOfficialTitle = extractTextById('contact_info_title', seniorOfficialDiv);
         const seniorOfficialEmail = extractTextById('contact_info_email', seniorOfficialDiv);
         const seniorOfficialPhone = extractTextById('contact_info_phone', seniorOfficialDiv);
-        let seniorOfficialInfo = `${seniorOfficialName} ${seniorOfficialTitle} ${seniorOfficialEmail} ${seniorOfficialPhone}`;
+        let seniorOfficialInfo = `${seniorOfficialName}${seniorOfficialTitle}${seniorOfficialEmail}${seniorOfficialPhone}`;
 
         const summary = `<strong>Recommendation:</strong></br>` +
                         `<strong>Organization Type:</strong> ${organizationType}</br>` +
