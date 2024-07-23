@@ -695,6 +695,10 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    autocomplete_fields = [
+        "portfolio",
+    ]
+
     readonly_fields = ("verification_type",)
 
     # Hide Username (uuid), Groups and Permissions
