@@ -188,8 +188,16 @@ class PortfolioBasePermissionView(PortfolioBasePermission, DetailView, abc.ABC):
 
 
 class PortfolioDomainsPermissionView(PortfolioDomainsPermission, PortfolioBasePermissionView, abc.ABC):
-    """ """
+    """Abstract base view for portfolio domains views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
 
 
 class PortfolioDomainRequestsPermissionView(PortfolioDomainRequestsPermission, PortfolioBasePermissionView, abc.ABC):
-    """ """
+    """Abstract base view for portfolio domain request views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
