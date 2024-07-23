@@ -4,7 +4,6 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
-from registrar.models.portfolio import Portfolio
 from registrar.models.user_domain_role import UserDomainRole
 
 from .domain_invitation import DomainInvitation
@@ -287,13 +286,21 @@ class User(AbstractUser):
         return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
     def has_domains_portfolio_permission(self):
-        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+        return (
+            self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+            or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
+            or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
+        )
 
     def has_edit_domains_portfolio_permission(self):
         return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
 
     def has_domain_requests_portfolio_permission(self):
-        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+        return (
+            self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+            or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
+            or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_REQUESTS)
+        )
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
@@ -416,6 +423,4 @@ class User(AbstractUser):
 
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
-        user_portfolios_exist = Portfolio.objects.filter(creator=self).exists()
-
-        return has_organization_feature_flag and user_portfolios_exist
+        return has_organization_feature_flag and self.has_base_portfolio_permission()

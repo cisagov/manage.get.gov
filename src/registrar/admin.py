@@ -107,6 +107,8 @@ class FilteredSelectMultipleArrayWidget(FilteredSelectMultiple):
             value = []
         elif isinstance(value, str):
             value = value.split(",")
+        # alter self.choices to be a list of selected and unselected choices, based on value;
+        # order such that selected choices come before unselected choices
         self.choices = [(choice, label) for choice, label in self.choices if choice in value] + [
             (choice, label) for choice, label in self.choices if choice not in value
         ]
