@@ -1,10 +1,6 @@
 import logging
 from django.conf import settings
 from django.core.management import BaseCommand
-from django.apps import apps
-from django.db import connection, transaction
-
-from registrar.management.commands.utility.terminal_helper import TerminalHelper
 
 logger = logging.getLogger(__name__)
 
