@@ -35,6 +35,7 @@ from django_admin_multiple_choice_list_filter.list_filters import MultipleChoice
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from django.utils.translation import gettext_lazy as _
 
@@ -90,6 +91,31 @@ class UserResource(resources.ModelResource):
         model = models.User
 
 
+class FilteredSelectMultipleArrayWidget(FilteredSelectMultiple):
+    """Custom widget to allow for editing an ArrayField in a widget similar to filter_horizontal widget"""
+
+    def __init__(self, verbose_name, is_stacked=False, choices=(), **kwargs):
+        super().__init__(verbose_name, is_stacked, **kwargs)
+        self.choices = choices
+
+    def value_from_datadict(self, data, files, name):
+        values = super().value_from_datadict(data, files, name)
+        return values or []
+
+    def get_context(self, name, value, attrs):
+        if value is None:
+            value = []
+        elif isinstance(value, str):
+            value = value.split(",")
+        # alter self.choices to be a list of selected and unselected choices, based on value;
+        # order such that selected choices come before unselected choices
+        self.choices = [(choice, label) for choice, label in self.choices if choice in value] + [
+            (choice, label) for choice, label in self.choices if choice not in value
+        ]
+        context = super().get_context(name, value, attrs)
+        return context
+
+
 class MyUserAdminForm(UserChangeForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs.
 
@@ -102,6 +128,14 @@ class MyUserAdminForm(UserChangeForm):
         widgets = {
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
+            "portfolio_roles": FilteredSelectMultipleArrayWidget(
+                "portfolio_roles", is_stacked=False, choices=User.UserPortfolioRoleChoices.choices
+            ),
+            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
+                "portfolio_additional_permissions",
+                is_stacked=False,
+                choices=User.UserPortfolioPermissionChoices.choices,
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -652,18 +686,49 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "is_superuser",
                     "groups",
                     "user_permissions",
+                    "portfolio",
+                    "portfolio_roles",
+                    "portfolio_additional_permissions",
                 )
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    autocomplete_fields = [
+        "portfolio",
+    ]
+
     readonly_fields = ("verification_type",)
 
-    # Hide Username (uuid), Groups and Permissions
-    # Q: Now that we're using Groups and Permissions,
-    # do we expose those to analysts to view?
     analyst_fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "status",
+                    "verification_type",
+                )
+            },
+        ),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "groups",
+                    "portfolio",
+                    "portfolio_roles",
+                    "portfolio_additional_permissions",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    # TODO: delete after we merge organization feature
+    analyst_fieldsets_no_portfolio = (
         (
             None,
             {
@@ -697,6 +762,26 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
+        "User profile",
+        "first_name",
+        "middle_name",
+        "last_name",
+        "title",
+        "email",
+        "phone",
+        "Permissions",
+        "is_active",
+        "groups",
+        "Important dates",
+        "last_login",
+        "date_joined",
+        "portfolio",
+        "portfolio_roles",
+        "portfolio_additional_permissions",
+    ]
+
+    # TODO: delete after we merge organization feature
+    analyst_readonly_fields_no_portfolio = [
         "User profile",
         "first_name",
         "middle_name",
@@ -784,8 +869,12 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             # Show all fields for all access users
             return super().get_fieldsets(request, obj)
         elif request.user.has_perm("registrar.analyst_access_permission"):
-            # show analyst_fieldsets for analysts
-            return self.analyst_fieldsets
+            if flag_is_active(request, "organization_feature"):
+                # show analyst_fieldsets for analysts
+                return self.analyst_fieldsets
+            else:
+                # TODO: delete after we merge organization feature
+                return self.analyst_fieldsets_no_portfolio
         else:
             # any admin user should belong to either full_access_group
             # or cisa_analyst_group
@@ -799,7 +888,11 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         else:
             # Return restrictive Read-only fields for analysts and
             # users who might not belong to groups
-            return self.analyst_readonly_fields
+            if flag_is_active(request, "organization_feature"):
+                return self.analyst_readonly_fields
+            else:
+                # TODO: delete after we merge organization feature
+                return self.analyst_readonly_fields_no_portfolio
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add user's related domains and requests to context"""

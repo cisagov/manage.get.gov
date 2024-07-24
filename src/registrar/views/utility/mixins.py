@@ -398,3 +398,49 @@ class UserProfilePermission(PermissionsLoginMixin):
             return False
 
         return True
+
+
+class PortfolioBasePermission(PermissionsLoginMixin):
+    """Permission mixin that redirects to portfolio pages if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to this portfolio.
+
+        The user is in self.request.user and the portfolio can be looked
+        up from the portfolio's primary key in self.kwargs["pk"]
+        """
+        if not self.request.user.is_authenticated:
+            return False
+
+        return self.request.user.has_base_portfolio_permission()
+
+
+class PortfolioDomainsPermission(PortfolioBasePermission):
+    """Permission mixin that allows access to portfolio domain pages if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to domains for this portfolio.
+
+        The user is in self.request.user and the portfolio can be looked
+        up from the portfolio's primary key in self.kwargs["pk"]"""
+
+        if not self.request.user.is_authenticated:
+            return False
+        return self.request.user.has_domains_portfolio_permission()
+
+
+class PortfolioDomainRequestsPermission(PortfolioBasePermission):
+    """Permission mixin that allows access to portfolio domain request pages if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to domain requests for this portfolio.
+
+        The user is in self.request.user and the portfolio can be looked
+        up from the portfolio's primary key in self.kwargs["pk"]"""
+
+        if not self.request.user.is_authenticated:
+            return False
+        return self.request.user.has_domain_requests_portfolio_permission()

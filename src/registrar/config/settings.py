@@ -244,6 +244,7 @@ TEMPLATES = [
                 "registrar.context_processors.add_portfolio_to_context",
                 "registrar.context_processors.add_path_to_context",
                 "registrar.context_processors.add_has_profile_feature_flag_to_context",
+                "registrar.context_processors.portfolio_permissions",
             ],
         },
     },
