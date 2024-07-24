@@ -9,7 +9,12 @@
       {% endwith %}
 
       {% if portfolio %}
-        {% with url_name="domain-suborganization" %}
+        {% comment %} TODO - uncomment in #2352
+          {% with url_name="domain-suborganization" %}
+            {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
+          {% endwith %}
+        {% endcomment %}
+        {% with url="#" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
         {% endwith %}
       {% else %}

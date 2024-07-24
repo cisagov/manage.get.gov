@@ -508,37 +508,6 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         return old_value == new_value
 
 
-# TODO: Will be refined in #2352
-class DomainSuborganizationForm(forms.ModelForm):
-    """Form for updating the suborganization"""
-
-    sub_organization = forms.ModelChoiceField(
-        queryset=Suborganization.objects.none(),
-        required=True,
-        widget=forms.Select(),
-    )
-
-    class Meta:
-        model = DomainInformation
-        fields = [
-            "sub_organization",
-        ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance and self.instance.portfolio:
-            self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=self.instance.portfolio)
-
-        # Set custom form label
-        self.fields["sub_organization"].label = "Suborganization name"
-
-        # Use the combobox rather than the regular select widget
-        self.fields["sub_organization"].widget.template_name = "django/forms/widgets/combobox.html"
-
-        # TODO: Remove in #2352
-        DomainHelper.disable_field(self.fields["sub_organization"], disable_required=True)
-
-
 class DomainDnssecForm(forms.Form):
     """Form for enabling and disabling dnssec"""
 

@@ -182,11 +182,12 @@ urlpatterns = [
         views.DomainOrgNameAddressView.as_view(),
         name="domain-org-name-address",
     ),
-    path(
-        "domain/<int:pk>/suborganization",
-        views.DomainSubOrganizationView.as_view(),
-        name="domain-suborganization",
-    ),
+    # TODO - uncomment in #2352
+    # path(
+    #     "domain/<int:pk>/suborganization",
+    #     views.DomainSubOrganizationView.as_view(),
+    #     name="domain-suborganization",
+    # ),
     path(
         "domain/<int:pk>/senior-official",
         views.DomainSeniorOfficialView.as_view(),
