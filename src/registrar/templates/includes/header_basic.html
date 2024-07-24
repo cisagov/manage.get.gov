@@ -1,0 +1,39 @@
+{% load static %}
+
+<header class="usa-header usa-header--basic">
+  <div class="usa-nav-container">
+    <div class="usa-navbar">
+        {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
+      <button type="button" class="usa-menu-btn">Menu</button>
+    </div>
+    {% block usa_nav %}
+    <nav class="usa-nav" aria-label="Primary navigation">
+      <button type="button" class="usa-nav__close">
+        <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
+      </button>
+      <ul class="usa-nav__primary usa-accordion">
+        <li class="usa-nav__primary-item">
+          {% if user.is_authenticated %}
+          <span class="usa-nav__username ellipsis">{{ user.email }}</span>
+        </li>
+        {% if has_profile_feature_flag %}
+        <li class="usa-nav__primary-item">
+          {% url 'user-profile' as user_profile_url %}
+          {% url 'finish-user-profile-setup' as finish_setup_url %}
+          <a class="usa-nav-link {% if request.path == user_profile_url or request.path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+              <span class="text-primary">Your profile</span>
+          </a>
+        </li>
+        {% endif %}
+        <li class="usa-nav__primary-item">
+          <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>
+          {% else %}
+          <a href="{% url 'login' %}"><span>Sign in</span></a>
+          {% endif %}
+        </li>
+      </ul>
+    </nav>
+    {% block usa_nav_secondary %}{% endblock %}
+    {% endblock %}
+  </div>
+</header>

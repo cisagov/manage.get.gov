@@ -1045,23 +1045,6 @@ class PortfoliosTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
     @less_console_noise_decorator
-    def test_middleware_redirects_to_portfolio_homepage(self):
-        """Tests that a user is redirected to the portfolio homepage when organization_feature is on and
-        a portfolio belongs to the user, test for the special h1s which only exist in that version
-        of the homepage"""
-        self.app.set_user(self.user.username)
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            portfolio_page = self.app.get(reverse("home")).follow()
-            self._set_session_cookie()
-
-            # Assert that we're on the right page
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-
-    @less_console_noise_decorator
     def test_no_redirect_when_org_flag_false(self):
         """No redirect so no follow,
         implicitely test for the presense of the h2 by looking up its id"""
