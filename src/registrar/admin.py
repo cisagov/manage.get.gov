@@ -1389,10 +1389,11 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "is_election_board", "federal_agency")
+    readonly_fields = ("other_contacts", "is_election_board")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
+        "federal_agency",
         "creator",
         "type_of_work",
         "more_organization_information",
@@ -1705,12 +1706,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "current_websites",
         "alternative_domains",
         "is_election_board",
-        "federal_agency",
         "status_history",
     )
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
+        "federal_agency",
         "creator",
         "about_your_organization",
         "requested_domain",
@@ -2763,13 +2764,11 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 
 class PortfolioAdmin(ListHeaderAdmin):
-    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
-    # readonly_fields = [
-    #     "requestor",
-    # ]
+
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
         "creator",

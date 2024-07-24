@@ -2305,7 +2305,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "current_websites",
             "alternative_domains",
             "is_election_board",
-            "federal_agency",
             "status_history",
             "id",
             "created_at",
@@ -2366,8 +2365,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "current_websites",
                 "alternative_domains",
                 "is_election_board",
-                "federal_agency",
                 "status_history",
+                "federal_agency",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -2397,7 +2396,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "current_websites",
                 "alternative_domains",
                 "is_election_board",
-                "federal_agency",
                 "status_history",
             ]
 
