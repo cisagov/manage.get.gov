@@ -16,7 +16,7 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 
-from ..models import Contact, DomainInformation, Domain, User, Suborganization
+from ..models import Contact, DomainInformation, Domain, User
 from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
