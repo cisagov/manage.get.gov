@@ -2,7 +2,6 @@
 
 <section class="section--outlined domains{% if portfolio is not None %} margin-top-0{% endif %}" id="domains">
     <div class="grid-row">
-      <!-- Use portfolio_base_permission when merging into 2366 then delete this comment -->
       {% if portfolio is None %}
         <div class="mobile:grid-col-12 desktop:grid-col-6">
           <h2 id="domains-header" class="flex-6">Domains</h2>
@@ -41,7 +40,6 @@
         </section>
       </div>
     </div>
-    <!-- Use portfolio_base_permission when merging into 2366 then delete this comment -->
     {% if portfolio %}
     <div class="display-flex flex-align-center margin-top-1"> 
       <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
@@ -145,7 +143,6 @@
             <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
             <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
             <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
-            <!-- Use portfolio_base_permission when merging into 2366 then delete this comment -->
             {% if portfolio %}
               <th data-sortable="suborganization" scope="col" role="columnheader">Suborganization</th>
             {% endif %}

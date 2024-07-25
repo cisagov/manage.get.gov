@@ -61,7 +61,6 @@ def add_path_to_context(request):
 def add_has_profile_feature_flag_to_context(request):
     return {"has_profile_feature_flag": flag_is_active(request, "profile_feature")}
 
-
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
     try:
