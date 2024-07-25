@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, ANY, patch
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-
+from waffle.testutils import override_flag
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -32,6 +32,9 @@ from registrar.models import (
     UserDomainRole,
     User,
     FederalAgency,
+    Portfolio,
+    Suborganization,
+    SeniorOfficial,
 )
 from datetime import date, datetime, timedelta
 from django.utils import timezone
@@ -1086,7 +1089,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
         page = self.client.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Senior official", count=13)
+        self.assertContains(page, "Senior official", count=14)
 
     def test_domain_senior_official_content(self):
         """Senior official information appears on the page."""
@@ -1095,6 +1098,38 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.save()
         page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Testy")
+    
+    @override_flag("profile_feature", active=True)
+    def test_domain_senior_official_content_profile_feature(self):
+        """A portfolios senior official appears on the page 
+        when the profile_feature flag is on."""
+        self.domain_information.senior_official = Contact(first_name="Testy")
+        self.domain_information.senior_official.save()
+        self.domain_information.save()
+
+        # The page should not contain the SO on domain information
+        page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        self.assertNotContains(page, "Testy")
+
+        # Add a portfolio to the current domain
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        suborganization = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        self.domain_information.portfolio = portfolio
+        self.domain_information.save()
+        self.domain_information.refresh_from_db()
+
+        senior_official = SeniorOfficial.objects.create(first_name="Bob", last_name="Unoriginal")
+        portfolio.senior_official = senior_official
+        portfolio.save()
+        portfolio.refresh_from_db()
+        
+        # The page should contain the SO on portfolio
+        page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        self.assertNotContains(page, "Bob")
+
+        # Cleanup the portfolio and suborg
+        portfolio.delete()
+        suborganization.delete()
 
     def test_domain_edit_senior_official_in_place(self):
         """When editing a senior official for domain information and SO is not
@@ -1299,7 +1334,7 @@ class TestDomainOrganization(TestDomainOverview):
         """Can load domain's org name and mailing address page."""
         page = self.client.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         # once on the sidebar, once in the page title, once as H1
-        self.assertContains(page, "Organization name and mailing address", count=3)
+        self.assertContains(page, "Organization name and mailing address", count=4)
 
     def test_domain_org_name_address_content(self):
         """Org name and address information appears on the page."""
