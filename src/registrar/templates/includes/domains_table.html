@@ -8,6 +8,9 @@
           <h2 id="domains-header" class="flex-6">Domains</h2>
         </div>
         <span class="display-none" id="no-portfolio-js-flag"></span>
+      {% else %}
+        <!-- Embedding the portfolio value in a data attribute -->
+        <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
       {% endif %}
       <div class="mobile:grid-col-12 desktop:grid-col-6">
         <section aria-label="Domains search component" class="flex-6 margin-y-2">
