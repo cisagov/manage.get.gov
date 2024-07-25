@@ -19,6 +19,7 @@ from registrar.models import (
 )
 
 import boto3_mocking
+from registrar.models.portfolio import Portfolio
 from registrar.models.transition_domain import TransitionDomain
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
 from registrar.utility.constants import BranchChoices
@@ -1213,6 +1214,68 @@ class TestUser(TestCase):
         self.user.email = None
         self.user.phone = None
         self.assertFalse(self.user.has_contact_info())
+
+    def test_has_portfolio_permission(self):
+        """
+        0. Returns False when user does not have a permission
+        1. Returns False when a user does not have a portfolio
+        2. Returns True when user has direct permission
+        3. Returns True when user has permission through a role
+        4. Returns True EDIT_DOMAINS when user does not have the perm but has UserDomainRole
+
+        Note: This tests _get_portfolio_permissions as a side effect
+        """
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+
+        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
+
+        self.assertFalse(user_can_view_all_domains)
+        self.assertFalse(user_can_view_all_requests)
+        self.assertFalse(user_can_edit_domains)
+
+        self.user.portfolio = portfolio
+        self.user.save()
+        self.user.refresh_from_db()
+
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
+
+        self.assertTrue(user_can_view_all_domains)
+        self.assertFalse(user_can_view_all_requests)
+        self.assertFalse(user_can_edit_domains)
+
+        self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
+
+        self.assertTrue(user_can_view_all_domains)
+        self.assertTrue(user_can_view_all_requests)
+        self.assertFalse(user_can_edit_domains)
+
+        UserDomainRole.objects.all().get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
+
+        self.assertTrue(user_can_view_all_domains)
+        self.assertTrue(user_can_view_all_requests)
+        self.assertTrue(user_can_edit_domains)
+
+        Portfolio.objects.all().delete()
 
 
 class TestContact(TestCase):

@@ -2305,7 +2305,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "current_websites",
             "alternative_domains",
             "is_election_board",
-            "federal_agency",
             "status_history",
             "id",
             "created_at",
@@ -2366,8 +2365,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "current_websites",
                 "alternative_domains",
                 "is_election_board",
-                "federal_agency",
                 "status_history",
+                "federal_agency",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -2397,7 +2396,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "current_websites",
                 "alternative_domains",
                 "is_election_board",
-                "federal_agency",
                 "status_history",
             ]
 
@@ -3659,7 +3657,15 @@ class TestMyUserAdmin(MockDb):
                     },
                 ),
                 ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
-                ("Permissions", {"fields": ("is_active", "groups")}),
+                (
+                    "Permissions",
+                    {
+                        "fields": (
+                            "is_active",
+                            "groups",
+                        )
+                    },
+                ),
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
             )
             self.assertEqual(fieldsets, expected_fieldsets)
@@ -3754,6 +3760,22 @@ class TestMyUserAdmin(MockDb):
         self.assertNotContains(response, domain_deleted.name)
         expected_href = reverse("admin:registrar_domain_change", args=[domain_deleted.pk])
         self.assertNotContains(response, expected_href)
+
+    def test_analyst_cannot_see_selects_for_portfolio_role_and_permissions_in_user_form(self):
+        """Can only test for the presence of a base element. The multiselects and the h2->h3 conversion are all
+        dynamically generated."""
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/user/{}/change/".format(self.meoward_user.id),
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertNotContains(response, "Portfolio roles:")
+        self.assertNotContains(response, "Portfolio additional permissions:")
 
 
 class AuditedAdminTest(TestCase):
