@@ -1131,7 +1131,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.assertContains(page, "Suborganization")
         self.assertNotContains(page, "Organization name")
 
-        # Make sure that we're using the right SO value
+        # Make sure that we're using the right SO value.
         self.assertNotContains(page, "Testy")
         self.assertContains(page, "Bob")
 
