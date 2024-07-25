@@ -67,39 +67,3 @@ class PortfolioOrgAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
-
-        # self.is_federal = self.instance.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
-        # self.is_tribal = self.instance.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
-
-        # field_to_disable = None
-        # if self.is_federal:
-        #     field_to_disable = "federal_agency"
-        # elif self.is_tribal:
-        #     field_to_disable = "organization_name"
-
-        # if field_to_disable is not None:
-        #     DomainHelper.disable_field(self.fields[field_to_disable], disable_required=True)
-
-    # def save(self, commit=True):
-    #     """Override the save() method of the BaseModelForm."""
-    #     if self.has_changed():
-
-    #         if self.is_federal and not self._field_unchanged("federal_agency"):
-    #             raise ValueError("federal_agency cannot be modified when the generic_org_type is federal")
-    #         elif self.is_tribal and not self._field_unchanged("organization_name"):
-    #             raise ValueError("organization_name cannot be modified when the generic_org_type is tribal")
-
-    #     else:
-    #         super().save()
-
-    # def _field_unchanged(self, field_name) -> bool:
-    #     """
-    #     Checks if a specified field has not changed between the old value
-    #     and the new value.
-
-    #     The old value is grabbed from self.initial.
-    #     The new value is grabbed from self.cleaned_data.
-    #     """
-    #     old_value = self.initial.get(field_name, None)
-    #     new_value = self.cleaned_data.get(field_name, None)
-    #     return old_value == new_value

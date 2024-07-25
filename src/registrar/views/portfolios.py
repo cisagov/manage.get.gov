@@ -63,6 +63,7 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
     def get_context_data(self, **kwargs):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
+        # no need to add portfolio to request context here
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
         context["has_organization_feature_flag"] = flag_is_active(self.request, "organization_feature")
         return context
@@ -70,11 +71,11 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
     def get_object(self, queryset=None):
         """Get the portfolio object based on the URL parameter."""
         return get_object_or_404(Portfolio, id=self.kwargs.get("portfolio_id"))
-    
+
     def get_form_kwargs(self):
         """Include the instance in the form kwargs."""
         kwargs = super().get_form_kwargs()
-        kwargs['instance'] = self.get_object()
+        kwargs["instance"] = self.get_object()
         return kwargs
 
     def get(self, request, *args, **kwargs):
