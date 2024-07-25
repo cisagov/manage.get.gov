@@ -13,6 +13,7 @@ from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.views.domain import DomainNameserversView
+from registrar.models import SeniorOfficial, Suborganization
 
 from .common import MockEppLib, less_console_noise  # type: ignore
 from unittest.mock import patch
@@ -87,6 +88,14 @@ class TestWithUser(MockEppLib):
         super().tearDown()
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
+        # For some reason, if this is done on the test directly,
+        # we get a django.db.models.deletion.ProtectedError on "User".
+        # In either event, it doesn't hurt to have these here given their
+        # relationship.
+        Suborganization.objects.all().delete()
+        Portfolio.objects.all().delete()
+        SeniorOfficial.objects.all().delete()
+
         User.objects.all().delete()
 
 

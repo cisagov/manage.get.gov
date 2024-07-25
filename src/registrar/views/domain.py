@@ -23,9 +23,9 @@ from registrar.models import (
     DomainInvitation,
     User,
     UserDomainRole,
+    Portfolio,
+    PublicContact,
 )
-from registrar.models.portfolio import Portfolio
-from registrar.models.public_contact import PublicContact
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
@@ -240,7 +240,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
             senior_official = portfolio.senior_official if portfolio else None
         else:
             senior_official = self.object.domain_info.senior_official
-        form_kwargs["instance"] = senior_official 
+        form_kwargs["instance"] = senior_official
 
         domain_info = self.get_domain_info_from_domain()
         invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]

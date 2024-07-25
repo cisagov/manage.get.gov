@@ -1098,38 +1098,42 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.save()
         page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Testy")
-    
-    @override_flag("profile_feature", active=True)
+
+    @override_flag("organization_feature", active=True)
     def test_domain_senior_official_content_profile_feature(self):
-        """A portfolios senior official appears on the page 
-        when the profile_feature flag is on."""
+        """A portfolios senior official appears on the page
+        when the organization_feature flag is on."""
+
+        # Add a SO to the domain information object
         self.domain_information.senior_official = Contact(first_name="Testy")
         self.domain_information.senior_official.save()
         self.domain_information.save()
 
-        # The page should not contain the SO on domain information
-        page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        self.assertNotContains(page, "Testy")
-
         # Add a portfolio to the current domain
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborganization = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
         self.domain_information.portfolio = portfolio
         self.domain_information.save()
         self.domain_information.refresh_from_db()
 
+        # Add a SO to the portfolio
         senior_official = SeniorOfficial.objects.create(first_name="Bob", last_name="Unoriginal")
         portfolio.senior_official = senior_official
         portfolio.save()
         portfolio.refresh_from_db()
-        
-        # The page should contain the SO on portfolio
-        page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        self.assertNotContains(page, "Bob")
 
-        # Cleanup the portfolio and suborg
-        portfolio.delete()
-        suborganization.delete()
+        # The page should not contain the SO on domain information.
+        # However, the page should contain the SO on portfolio
+        page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+
+        # Make sure that we're on the portfolio page.
+        # This also implicity tests that the flag is working.
+        self.assertContains(page, "Suborganization")
+        self.assertNotContains(page, "Organization name")
+
+        # Make sure that we're using the right SO value
+        self.assertNotContains(page, "Testy")
+        self.assertContains(page, "Bob")
 
     def test_domain_edit_senior_official_in_place(self):
         """When editing a senior official for domain information and SO is not
