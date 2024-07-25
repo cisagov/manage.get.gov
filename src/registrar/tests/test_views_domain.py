@@ -1126,7 +1126,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         # However, the page should contain the SO on portfolio
         page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
 
-        # Make sure that we're on the portfolio page.
+        # Make sure that we're in the portfolio "view".
         # This also implicity tests that the flag is working.
         self.assertContains(page, "Suborganization")
         self.assertNotContains(page, "Organization name")
