@@ -88,6 +88,8 @@ body {
     }
     .section--outlined__search {
       flex-grow: 4;
+      max-width: 383px;
+      margin-left: auto;
     }
   }
 }
