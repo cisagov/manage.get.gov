@@ -7,7 +7,7 @@
       <h2 id="domains-header" class="display-inline-block">Domains</h2>
       <span class="display-none" id="no-portfolio-js-flag"></span>
       {% endif %}
-      <div class="section--outlined__search{% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
+      <div class="section--outlined__search tablet:margin-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
         <section aria-label="Domains search component" class="margin-top-2">
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
