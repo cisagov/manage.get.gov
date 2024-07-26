@@ -16,25 +16,39 @@ class SeniorOfficial(TimeStampedModel):
         blank=False,
         verbose_name="first name",
     )
+
     last_name = models.CharField(
         null=False,
         blank=False,
         verbose_name="last name",
     )
+
     title = models.CharField(
         null=False,
         blank=False,
         verbose_name="title / role",
     )
+
     phone = PhoneNumberField(
         null=True,
         blank=True,
     )
+
     email = models.EmailField(
         null=True,
         blank=True,
         max_length=320,
     )
+
+    federal_agency = models.ForeignKey(
+        "registrar.FederalAgency",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="so_federal_agency",
+        help_text="The federal agency this user is associated with",
+    )
+
 
     def get_formatted_name(self):
         """Returns the contact's name in Western order."""
