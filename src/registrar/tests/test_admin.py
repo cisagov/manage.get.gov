@@ -746,8 +746,9 @@ class TestUserDomainRoleAdmin(TestCase):
     def tearDown(self):
         """Delete all Users, Domains, and UserDomainRoles"""
         super().tearDown()
-        Domain.objects.all().delete()
         UserDomainRole.objects.all().delete()
+        Domain.objects.all().delete()
+        User.objects.exclude(username="superuser").delete()
 
     @classmethod
     def tearDownClass(cls):
@@ -793,11 +794,6 @@ class TestUserDomainRoleAdmin(TestCase):
             # Assert that sorting in reverse works correctly
             self.test_helper.assert_table_sorted("-2", ("-domain__name",))
 
-            # delete data from test
-            UserDomainRole.objects.all().delete()
-            Domain.objects.all().delete()
-            fake_user.delete()
-
     def test_user_sortable(self):
         """Tests if the UserDomainrole sorts by user correctly"""
         with less_console_noise():
@@ -818,11 +814,6 @@ class TestUserDomainRoleAdmin(TestCase):
 
             # Assert that sorting in reverse works correctly
             self.test_helper.assert_table_sorted("-1", ("-user__first_name", "-user__last_name"))
-
-            # delete data from this test
-            UserDomainRole.objects.all().delete()
-            fake_domain.delete()
-            User.objects.exclude(username="superuser").delete()
 
     def test_email_not_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
@@ -856,11 +847,6 @@ class TestUserDomainRoleAdmin(TestCase):
             # We only need to check for the end of the HTML string
             self.assertNotContains(response, "Stewart Jones AntarcticPolarBears@example.com</a></th>")
 
-            # cleanup this test
-            UserDomainRole.objects.all().delete()
-            Domain.objects.all().delete()
-            fake_user.delete()
-
     def test_email_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
         Should return results for an valid email."""
@@ -892,11 +878,6 @@ class TestUserDomainRoleAdmin(TestCase):
 
             # We only need to check for the end of the HTML string
             self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
-
-            # cleanup this test
-            UserDomainRole.objects.all().delete()
-            fake_domain.delete()
-            fake_user.delete()
 
 
 class TestListHeaderAdmin(TestCase):
