@@ -1046,23 +1046,23 @@ class TestDomainInformation(TestCase):
             domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
             domain_request.approve()
 
-        # should be an information present for this domain
-        domain = Domain.objects.get(name="igorville.gov")
-        domain_information = DomainInformation.objects.filter(domain=domain)
-        self.assertTrue(domain_information.exists())
+            # should be an information present for this domain
+            domain = Domain.objects.get(name="igorville.gov")
+            domain_information = DomainInformation.objects.filter(domain=domain)
+            self.assertTrue(domain_information.exists())
 
-        # Test that both objects are what we expect
-        current_domain_information = domain_information.get().__dict__
-        expected_domain_information = DomainInformation(
-            creator=user,
-            domain=domain,
-            notes="test notes",
-            domain_request=domain_request,
-            federal_agency=FederalAgency.objects.get(agency="Non-Federal Agency"),
-        ).__dict__
+            # Test that both objects are what we expect
+            current_domain_information = domain_information.get().__dict__
+            expected_domain_information = DomainInformation(
+                creator=user,
+                domain=domain,
+                notes="test notes",
+                domain_request=domain_request,
+                federal_agency=FederalAgency.objects.get(agency="Non-Federal Agency"),
+            ).__dict__
 
-        # Test the two records for consistency
-        self.assertEqual(self.clean_dict(current_domain_information), self.clean_dict(expected_domain_information))
+            # Test the two records for consistency
+            self.assertEqual(self.clean_dict(current_domain_information), self.clean_dict(expected_domain_information))
 
     def clean_dict(self, dict_obj):
         """Cleans dynamic fields in a dictionary"""
@@ -1677,6 +1677,7 @@ class TestDomainRequestIncomplete(TestCase):
         )
         alt, _ = Website.objects.get_or_create(website="MeowardMeowardMeoward1.gov")
         current, _ = Website.objects.get_or_create(website="MeowardMeowardMeoward.com")
+        self.amtrak, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
         self.domain_request = DomainRequest.objects.create(
             generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_type="executive",
@@ -1709,6 +1710,7 @@ class TestDomainRequestIncomplete(TestCase):
         super().tearDown()
         DomainRequest.objects.all().delete()
         Contact.objects.all().delete()
+        self.amtrak.delete()
 
     @classmethod
     def tearDownClass(cls):

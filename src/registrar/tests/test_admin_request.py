@@ -1,7 +1,7 @@
 from datetime import datetime
 from django.utils import timezone
 import re
-from django.test import RequestFactory, Client, override_settings
+from django.test import RequestFactory, Client, TestCase, override_settings
 from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
 from api.tests.common import less_console_noise_decorator
@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.urls import reverse
 from registrar.admin import (
     DomainRequestAdmin,
+    DomainRequestAdminForm,
     MyUserAdmin,
     AuditedAdmin,
 )
@@ -1998,3 +1999,75 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Check if response contains expected_html
         self.assertIn(expected_html, response_content)
+
+
+class TestDomainRequestAdminForm(TestCase):
+
+    def test_form_choices(self):
+        with less_console_noise():
+            # Create a test domain request with an initial state of started
+            domain_request = completed_domain_request()
+
+            # Create a form instance with the test domain request
+            form = DomainRequestAdminForm(instance=domain_request)
+
+            # Verify that the form choices match the available transitions for started
+            expected_choices = [("started", "Started"), ("submitted", "Submitted")]
+            self.assertEqual(form.fields["status"].widget.choices, expected_choices)
+
+            # cleanup
+            domain_request.delete()
+
+    def test_form_no_rejection_reason(self):
+        with less_console_noise():
+            # Create a test domain request with an initial state of started
+            domain_request = completed_domain_request()
+
+            # Create a form instance with the test domain request
+            form = DomainRequestAdminForm(instance=domain_request)
+
+            form = DomainRequestAdminForm(
+                instance=domain_request,
+                data={
+                    "status": DomainRequest.DomainRequestStatus.REJECTED,
+                    "rejection_reason": None,
+                },
+            )
+            self.assertFalse(form.is_valid())
+            self.assertIn("rejection_reason", form.errors)
+
+            rejection_reason = form.errors.get("rejection_reason")
+            self.assertEqual(rejection_reason, ["A reason is required for this status."])
+
+            # cleanup
+            domain_request.delete()
+
+    def test_form_choices_when_no_instance(self):
+        with less_console_noise():
+            # Create a form instance without an instance
+            form = DomainRequestAdminForm()
+
+            # Verify that the form choices show all choices when no instance is provided;
+            # this is necessary to show all choices when creating a new domain
+            # request in django admin;
+            # note that FSM ensures that no domain request exists with invalid status,
+            # so don't need to test for invalid status
+            self.assertEqual(
+                form.fields["status"].widget.choices,
+                DomainRequest._meta.get_field("status").choices,
+            )
+
+    def test_form_choices_when_ineligible(self):
+        with less_console_noise():
+            # Create a form instance with a domain request with ineligible status
+            ineligible_domain_request = DomainRequest(status="ineligible")
+
+            # Attempt to create a form with the ineligible domain request
+            # The form should not raise an error, but choices should be the
+            # full list of possible choices
+            form = DomainRequestAdminForm(instance=ineligible_domain_request)
+
+            self.assertEqual(
+                form.fields["status"].widget.choices,
+                DomainRequest._meta.get_field("status").choices,
+            )

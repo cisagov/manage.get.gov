@@ -6,7 +6,6 @@ from api.tests.common import less_console_noise_decorator
 from django.urls import reverse
 from registrar.admin import (
     DomainAdmin,
-    DomainRequestAdminForm,
     DomainInvitationAdmin,
     ListHeaderAdmin,
     MyUserAdmin,
@@ -106,78 +105,6 @@ class TestFsmModelResource(TestCase):
         # Assert that field.save() in super().import_field() is called only for non-FSMField
         field_mock.save.assert_called_once()
         fsm_field_mock.save.assert_not_called()
-
-
-class TestDomainRequestAdminForm(TestCase):
-
-    def test_form_choices(self):
-        with less_console_noise():
-            # Create a test domain request with an initial state of started
-            domain_request = completed_domain_request()
-
-            # Create a form instance with the test domain request
-            form = DomainRequestAdminForm(instance=domain_request)
-
-            # Verify that the form choices match the available transitions for started
-            expected_choices = [("started", "Started"), ("submitted", "Submitted")]
-            self.assertEqual(form.fields["status"].widget.choices, expected_choices)
-
-            # cleanup
-            domain_request.delete()
-
-    def test_form_no_rejection_reason(self):
-        with less_console_noise():
-            # Create a test domain request with an initial state of started
-            domain_request = completed_domain_request()
-
-            # Create a form instance with the test domain request
-            form = DomainRequestAdminForm(instance=domain_request)
-
-            form = DomainRequestAdminForm(
-                instance=domain_request,
-                data={
-                    "status": DomainRequest.DomainRequestStatus.REJECTED,
-                    "rejection_reason": None,
-                },
-            )
-            self.assertFalse(form.is_valid())
-            self.assertIn("rejection_reason", form.errors)
-
-            rejection_reason = form.errors.get("rejection_reason")
-            self.assertEqual(rejection_reason, ["A reason is required for this status."])
-
-            # cleanup
-            domain_request.delete()
-
-    def test_form_choices_when_no_instance(self):
-        with less_console_noise():
-            # Create a form instance without an instance
-            form = DomainRequestAdminForm()
-
-            # Verify that the form choices show all choices when no instance is provided;
-            # this is necessary to show all choices when creating a new domain
-            # request in django admin;
-            # note that FSM ensures that no domain request exists with invalid status,
-            # so don't need to test for invalid status
-            self.assertEqual(
-                form.fields["status"].widget.choices,
-                DomainRequest._meta.get_field("status").choices,
-            )
-
-    def test_form_choices_when_ineligible(self):
-        with less_console_noise():
-            # Create a form instance with a domain request with ineligible status
-            ineligible_domain_request = DomainRequest(status="ineligible")
-
-            # Attempt to create a form with the ineligible domain request
-            # The form should not raise an error, but choices should be the
-            # full list of possible choices
-            form = DomainRequestAdminForm(instance=ineligible_domain_request)
-
-            self.assertEqual(
-                form.fields["status"].widget.choices,
-                DomainRequest._meta.get_field("status").choices,
-            )
 
 
 class TestDomainInvitationAdmin(TestCase):
@@ -1123,7 +1050,7 @@ class TestMyUserAdmin(MockDbForSharedTests):
         domain_deleted, _ = Domain.objects.get_or_create(
             name="domain_deleted.gov", state=Domain.State.DELETED, deleted=timezone.make_aware(datetime(2024, 4, 2))
         )
-        UserDomainRole.objects.get_or_create(
+        role, _ = UserDomainRole.objects.get_or_create(
             user=self.meoward_user, domain=domain_deleted, role=UserDomainRole.Roles.MANAGER
         )
 
@@ -1178,14 +1105,25 @@ class TestMyUserAdmin(MockDbForSharedTests):
         self.assertNotContains(response, expected_href)
 
         # Must clean up within test since MockDB is shared across tests for performance reasons
-        domain_request_started.delete()
-        domain_request_submitted.delete()
-        domain_request_in_review.delete()
-        domain_request_withdrawn.delete()
-        domain_request_approved.delete()
-        domain_request_rejected.delete()
-        domain_request_ineligible.delete()
+        domain_request_started_id = domain_request_started.id
+        domain_request_submitted_id = domain_request_submitted.id
+        domain_request_in_review_id = domain_request_in_review.id
+        domain_request_withdrawn_id = domain_request_withdrawn.id
+        domain_request_approved_id = domain_request_approved.id
+        domain_request_rejected_id = domain_request_rejected.id
+        domain_request_ineligible_id = domain_request_ineligible.id
+        domain_request_ids = [
+            domain_request_started_id,
+            domain_request_submitted_id,
+            domain_request_in_review_id,
+            domain_request_withdrawn_id,
+            domain_request_approved_id,
+            domain_request_rejected_id,
+            domain_request_ineligible_id,
+        ]
+        DomainRequest.objects.filter(id__in=domain_request_ids).delete()
         domain_deleted.delete()
+        role.delete()
 
 
 class AuditedAdminTest(TestCase):
@@ -1574,7 +1512,7 @@ class TestContactAdmin(TestCase):
         super().setUpClass()
         cls.site = AdminSite()
         cls.factory = RequestFactory()
-        cls.admin = ContactAdmin(model=get_user_model(), admin_site=None)
+        cls.admin = ContactAdmin(model=Contact, admin_site=None)
         cls.superuser = create_superuser()
         cls.staffuser = create_user()
 

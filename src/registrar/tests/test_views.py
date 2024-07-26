@@ -68,8 +68,8 @@ class TestWithUser(MockEppLib):
     def tearDown(self):
         # delete any domain requests too
         super().tearDown()
-        DomainRequest.objects.all().delete()
-        DomainInformation.objects.all().delete()
+        # DomainRequest.objects.all().delete()
+        # DomainInformation.objects.all().delete()
 
     @classmethod
     def tearDownClass(cls):
@@ -162,13 +162,6 @@ class HomeTests(TestWithUser):
     def setUp(self):
         super().setUp()
         self.client.force_login(self.user)
-
-    # def tearDown(self):
-    #     super().tearDown()
-    #     Contact.objects.all().delete()
-    #     UserDomainRole.objects.all().delete()
-    #     Domain.objects.all().delete()
-    #     DomainRequest.objects.all().delete()
 
     @less_console_noise_decorator
     def test_empty_domain_table(self):
@@ -533,6 +526,8 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
     def tearDown(self):
         super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
         self.user.title = self.initial_user_title
         self.user.save()
         PublicContact.objects.filter(domain=self.domain).delete()
@@ -918,9 +913,10 @@ class UserProfileTests(TestWithUser, WebTest):
         PublicContact.objects.filter(domain=self.domain).delete()
         self.role.delete()
         self.domain.delete()
-        Contact.objects.all().delete()
-        DraftDomain.objects.all().delete()
         DomainRequest.objects.all().delete()
+        DraftDomain.objects.all().delete()
+        Contact.objects.all().delete()
+        DomainInformation.objects.all().delete()
 
     @less_console_noise_decorator
     def error_500_main_nav_with_profile_feature_turned_on(self):

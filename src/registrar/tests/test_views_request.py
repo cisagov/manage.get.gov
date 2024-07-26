@@ -37,8 +37,15 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def setUp(self):
         super().setUp()
+        self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
         self.app.set_user(self.user.username)
         self.TITLES = DomainRequestWizard.TITLES
+
+    def tearDown(self):
+        super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        self.federal_agency.delete()
 
     @less_console_noise_decorator
     def test_domain_request_form_intro_acknowledgement(self):
@@ -231,9 +238,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        # federal agency so we have to fill in federal_agency
-        federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
+        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -589,9 +594,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        # federal agency so we have to fill in federal_agency
-        federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
+        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -2499,9 +2502,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        # federal agency so we have to fill in federal_agency
-        federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
+        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -2572,9 +2573,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        # federal agency so we have to fill in federal_agency
-        federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
+        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -2833,6 +2832,11 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
 
+    def tearDown(self):
+        super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+
     @less_console_noise_decorator
     def test_domain_request_status(self):
         """Checking domain request status page"""
@@ -2965,6 +2969,8 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
 
     def tearDown(self):
         super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
 
     @less_console_noise_decorator
     def test_unlocked_steps_empty_domain_request(self):
