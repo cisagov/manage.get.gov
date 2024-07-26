@@ -3,7 +3,7 @@ import csv
 import logging
 import os
 from django.core.management import BaseCommand
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+from registrar.management.commands.utility.terminal_helper import TerminalHelper
 from registrar.models import SeniorOfficial, FederalAgency
 
 
@@ -62,7 +62,7 @@ class Command(BaseCommand):
                     if not is_duplicate:
                         added_senior_officials.append(new_so)
                         message = f"Added record: {new_so}"
-                        TerminalHelper.colorful_logger("INFO", "OKBLUE", message)
+                        TerminalHelper.colorful_logger("INFO", "OKCYAN", message)
                     else:
                         skipped_rows.append(new_so)
                         message = f"Skipping add on duplicate record: {new_so}"
