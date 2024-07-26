@@ -8,7 +8,7 @@
         {% include "includes/domain_sidenav_item.html" with item_text="Domain overview" %}
       {% endwith %}
 
-      {% if portfolio %}
+      {% if is_org_user %}
         {% comment %} TODO - uncomment in #2352
           {% with url_name="domain-suborganization" %}
             {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}

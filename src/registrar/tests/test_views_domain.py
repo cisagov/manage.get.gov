@@ -1112,9 +1112,17 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         # Add a portfolio to the current domain
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
         Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+
+        # Add the portfolio to the domain_information object
         self.domain_information.portfolio = portfolio
         self.domain_information.save()
         self.domain_information.refresh_from_db()
+
+        # Add portfolio perms to the user object
+        self.user.portfolio = portfolio
+        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        self.user.save()
+        self.user.refresh_from_db()
 
         # Add a SO to the portfolio
         senior_official = SeniorOfficial.objects.create(first_name="Bob", last_name="Unoriginal")

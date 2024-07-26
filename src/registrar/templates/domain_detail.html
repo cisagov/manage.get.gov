@@ -53,7 +53,7 @@
       {% endif %}
     {% endif %}
 
-    {% if portfolio %}
+    {% if is_org_user %}
       {% comment %} TODO - uncomment in #2352 and add to edit_link
       {% url 'domain-suborganization' pk=domain.id as url %}
       {% endcomment %}

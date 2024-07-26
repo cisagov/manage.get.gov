@@ -143,7 +143,7 @@
             <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
             <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
             <!-- Use portfolio_base_permission when merging into 2366 then delete this comment -->
-            {% if portfolio %}
+            {% if is_org_user %}
               <th data-sortable="suborganization" scope="col" role="columnheader">Suborganization</th>
             {% endif %}
             <th 
