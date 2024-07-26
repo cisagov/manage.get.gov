@@ -25,7 +25,7 @@ class FederalAgency(TimeStampedModel):
         help_text="Federal agency type (executive, judicial, legislative, etc.)",
     )
 
-    agency = models.CharField(
+    initials = models.CharField(
         max_length=10,
         null=True,
         blank=True,

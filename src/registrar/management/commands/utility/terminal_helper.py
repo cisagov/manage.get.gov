@@ -373,3 +373,22 @@ class TerminalHelper:
             logger.info(f"{TerminalColors.MAGENTA}Writing to file " f" {filepath}..." f"{TerminalColors.ENDC}")
             with open(f"{filepath}", "w+") as f:
                 f.write(file_contents)
+
+    @staticmethod
+    def colorful_logger(log_level, color, message):
+        """Adds some color to your log output.
+
+        Args:
+            log_level: str -> Desired log level. ex: "INFO", "WARNING", "ERROR"
+            color: str | TerminalColors -> Output color. ex: TerminalColors.YELLOW or "YELLOW"
+            message: str -> Message to display.
+        """
+        log_method = getattr(logger, log_level.lower(), logger.info)
+
+        if isinstance(color, str):
+            terminal_color = getattr(TerminalColors, color.upper(), TerminalColors.OKBLUE)
+        else:
+            terminal_color = color
+
+        colored_message = f"{terminal_color}{message}{TerminalColors.ENDC}"
+        log_method(colored_message)
