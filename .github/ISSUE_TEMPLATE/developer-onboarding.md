@@ -21,6 +21,21 @@ There are several tools we use locally that you will need to have.
 - [ ] Make sure you have `gpg` >2.1.7. Run `gpg --version` to check. If not, [install gnupg](https://formulae.brew.sh/formula/gnupg)
   - Alternatively, you can skip this step and [use ssh keys](#setting-up-commit-signing-with-ssh) instead
 - [ ] Install the [Github CLI](https://cli.github.com/)
+Optional
+- [ ] Install the Slack Desktop App
+
+## For Developing on a DHS furnished device
+
+The following tools much be requested through the DHS IT portal:
+- [ ] Docker Community Edition
+- [ ] Git
+- [ ] VSCode (our preferred editor)
+The following tools are optional, but also must be requested through the IT portal:
+- [ ] Python 3.10
+- [ ] NodeJS (latest version available)
+- [ ] Putty
+- [ ] Windows Subsystem for Linux
+- [ ] Github Desktop
 
 ## Access
 
