@@ -26,7 +26,6 @@ from .common import (
     GenericTestHelper,
 )
 from unittest.mock import ANY, call, patch
-from unittest import skip
 
 import boto3_mocking  # type: ignore
 import logging
@@ -171,44 +170,6 @@ class TestDomainAdminAsStaff(MockEppLib):
         domain_information.delete()
         _domain_request.delete()
         _creator.delete()
-
-    @skip("Why did this test stop working, and is is a good test")
-    def test_place_and_remove_hold(self):
-        domain = create_ready_domain()
-        # get admin page and assert Place Hold button
-        response = self.client.get(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Place hold")
-        self.assertNotContains(response, "Remove hold")
-
-        # submit place_client_hold and assert Remove Hold button
-        response = self.client.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_place_client_hold": "Place hold", "name": domain.name},
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Remove hold")
-        self.assertNotContains(response, "Place hold")
-
-        # submit remove client hold and assert Place hold button
-        response = self.client.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_remove_client_hold": "Remove hold", "name": domain.name},
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Place hold")
-        self.assertNotContains(response, "Remove hold")
-
-        # clean up this test's data
-        domain.delete()
 
     @less_console_noise_decorator
     def test_deletion_is_successful(self):
@@ -371,7 +332,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         domain.delete()
 
 
-class TestDomainAdminWClient(TestCase):
+class TestDomainAdminWithClient(TestCase):
     """Test DomainAdmin class as super user.
 
     Notes:
@@ -510,7 +471,7 @@ class TestDomainAdminWClient(TestCase):
         self.assertContains(response, domain.name)
 
         # Contains some test tools
-        self.test_helper = GenericTestHelper(
+        test_helper = GenericTestHelper(
             factory=self.factory,
             user=self.superuser,
             admin=self.admin,
@@ -524,7 +485,7 @@ class TestDomainAdminWClient(TestCase):
             ("first_ready_at", 'Date when this domain first moved into "ready" state; date will never change'),
             ("deleted_at", 'Will appear blank unless the domain is in "deleted" state'),
         ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_values)
+        test_helper.assert_response_contains_distinct_values(response, expected_values)
 
     @less_console_noise_decorator
     def test_helper_text_state(self):
@@ -533,11 +494,11 @@ class TestDomainAdminWClient(TestCase):
         """
 
         # Add domain data
-        self.ready_domain, _ = Domain.objects.get_or_create(name="fakeready.gov", state=Domain.State.READY)
-        self.unknown_domain, _ = Domain.objects.get_or_create(name="fakeunknown.gov", state=Domain.State.UNKNOWN)
-        self.dns_domain, _ = Domain.objects.get_or_create(name="fakedns.gov", state=Domain.State.DNS_NEEDED)
-        self.hold_domain, _ = Domain.objects.get_or_create(name="fakehold.gov", state=Domain.State.ON_HOLD)
-        self.deleted_domain, _ = Domain.objects.get_or_create(name="fakedeleted.gov", state=Domain.State.DELETED)
+        ready_domain, _ = Domain.objects.get_or_create(name="fakeready.gov", state=Domain.State.READY)
+        unknown_domain, _ = Domain.objects.get_or_create(name="fakeunknown.gov", state=Domain.State.UNKNOWN)
+        dns_domain, _ = Domain.objects.get_or_create(name="fakedns.gov", state=Domain.State.DNS_NEEDED)
+        hold_domain, _ = Domain.objects.get_or_create(name="fakehold.gov", state=Domain.State.ON_HOLD)
+        deleted_domain, _ = Domain.objects.get_or_create(name="fakedeleted.gov", state=Domain.State.DELETED)
 
         # We don't need to check for all text content, just a portion of it
         expected_unknown_domain_message = "The creator of the associated domain request has not logged in to"
@@ -545,11 +506,11 @@ class TestDomainAdminWClient(TestCase):
         expected_hold_message = "While on hold, this domain"
         expected_deleted_message = "This domain was permanently removed from the registry."
         expected_messages = [
-            (self.ready_domain, "This domain has name servers and is ready for use."),
-            (self.unknown_domain, expected_unknown_domain_message),
-            (self.dns_domain, expected_dns_message),
-            (self.hold_domain, expected_hold_message),
-            (self.deleted_domain, expected_deleted_message),
+            (ready_domain, "This domain has name servers and is ready for use."),
+            (unknown_domain, expected_unknown_domain_message),
+            (dns_domain, expected_dns_message),
+            (hold_domain, expected_hold_message),
+            (deleted_domain, expected_deleted_message),
         ]
 
         for domain, message in expected_messages:
@@ -809,7 +770,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
         domain_change_page = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
 
         self.assertContains(domain_change_page, "fake.gov")
-        # click the "Manage" link
+        # click the "Delete" link
         confirmation_page = domain_change_page.click("Delete", index=0)
 
         content_slice = "When a domain is deleted:"
@@ -861,7 +822,3 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
             # Web test has issues grabbing up to date data from the db, so we can test
             # the returned view instead
             self.assertContains(response, '<div class="readonly">On hold</div>')
-
-    @skip("Waiting on epp lib to implement")
-    def test_place_and_remove_hold_epp(self):
-        raise

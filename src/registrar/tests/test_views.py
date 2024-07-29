@@ -65,12 +65,6 @@ class TestWithUser(MockEppLib):
         super().setUp()
         self.client = Client()
 
-    def tearDown(self):
-        # delete any domain requests too
-        super().tearDown()
-        # DomainRequest.objects.all().delete()
-        # DomainInformation.objects.all().delete()
-
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -486,24 +480,24 @@ class HomeTests(TestWithUser):
             "You’re about to start your .gov domain request.",
         )
 
+    @less_console_noise_decorator
     def test_domain_request_form_with_ineligible_user(self):
         """Domain request form not accessible for an ineligible user.
         This test should be solid enough since all domain request wizard
         views share the same permissions class"""
-        with less_console_noise():
-            username = "restricted_user"
-            first_name = "First"
-            last_name = "Last"
-            email = "restricted@example.com"
-            phone = "8003111234"
-            status = User.RESTRICTED
-            restricted_user = get_user_model().objects.create(
-                username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, status=status
-            )
-            self.client.force_login(restricted_user)
-            response = self.client.get("/request/", follow=True)
-            self.assertEqual(response.status_code, 403)
-            restricted_user.delete()
+        username = "restricted_user"
+        first_name = "First"
+        last_name = "Last"
+        email = "restricted@example.com"
+        phone = "8003111234"
+        status = User.RESTRICTED
+        restricted_user = get_user_model().objects.create(
+            username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, status=status
+        )
+        self.client.force_login(restricted_user)
+        response = self.client.get("/request/", follow=True)
+        self.assertEqual(response.status_code, 403)
+        restricted_user.delete()
 
 
 class FinishUserProfileTests(TestWithUser, WebTest):

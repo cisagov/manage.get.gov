@@ -77,6 +77,7 @@ class TestDomainRequestAdmin(MockEppLib):
         DomainRequest.objects.all().delete()
         Contact.objects.all().delete()
         Website.objects.all().delete()
+        SeniorOfficial.objects.all().delete()
         self.mock_client.EMAILS_SENT.clear()
 
     @classmethod
@@ -110,13 +111,6 @@ class TestDomainRequestAdmin(MockEppLib):
         expected_sort_order = ["alex smoe", "mary joe", "Zoup Soup"]
 
         self.assertEqual(current_sort_order, expected_sort_order)
-
-        DomainInformation.objects.all().delete()
-        domain_request.delete()
-        contact.delete()
-        so_mary.delete()
-        so_alex.delete()
-        so_zoup.delete()
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -267,7 +261,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain_request.requested_domain.name)
-        self.test_helper.assertContains(response, "<span>Show details</span>")
+        self.assertContains(response, "<span>Show details</span>")
 
     @less_console_noise_decorator
     def test_analyst_can_see_and_edit_alternative_domain(self):
