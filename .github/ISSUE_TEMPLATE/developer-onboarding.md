@@ -48,7 +48,12 @@ cf login -a api.fr.cloud.gov  --sso
 
  **Note:** As mentioned in the [Login documentation](https://developers.login.gov/testing/), the sandbox Login account is different account from your regular, production Login account. If you have not created a Login account for the sandbox before, you will need to create a new account first.
 
-- [ ] Optional- add yourself as a codeowner if desired. See the [Developer readme](https://github.com/cisagov/getgov/blob/main/docs/developer/README.md) for how to do this and what it does.
+Follow the [.gov onboarding dev setup instructions](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.94jwfwkpkhdx). Confirm you successfully set up the following accounts.
+- [ ] Identity sandbox accounts - 1 superuser access account and 1 analyst access account.
+- [ ] Login.gov account to access stable
+
+**Optional**
+- [ ] Add yourself as a codeowner if desired. See the [Developer readme](https://github.com/cisagov/getgov/blob/main/docs/developer/README.md) for how to do this and what it does.
 
 ### Steps for the onboarder
 - [ ] Add the onboardee to cloud.gov org (cisa-dotgov) 
