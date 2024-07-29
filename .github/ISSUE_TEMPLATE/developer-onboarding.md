@@ -30,7 +30,8 @@ The following tools much be requested through the DHS IT portal:
 - [ ] Docker Community Edition
 - [ ] Git
 - [ ] VSCode (our preferred editor)
-The following tools are optional, but also must be requested through the IT portal:
+
+The following tools are optional, but also can be requested through the DHS IT portal:
 - [ ] Python 3.10
 - [ ] NodeJS (latest version available)
 - [ ] Putty
