@@ -10,7 +10,6 @@ from registrar.models import (
     UserDomainRole,
     User,
 )
-from registrar.tests.test_views import TestWithUser
 from .common import create_test_user
 from waffle.testutils import override_flag
 
