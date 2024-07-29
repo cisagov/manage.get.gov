@@ -12,99 +12,102 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         lamb_chops, _ = DraftDomain.objects.get_or_create(name="lamb-chops.gov")
         short_ribs, _ = DraftDomain.objects.get_or_create(name="short-ribs.gov")
         beef_chuck, _ = DraftDomain.objects.get_or_create(name="beef-chuck.gov")
         stew_beef, _ = DraftDomain.objects.get_or_create(name="stew-beef.gov")
 
         # Create domain requests for the user
-        self.domain_requests = [
+        cls.domain_requests = [
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=lamb_chops,
                 submission_date="2024-01-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-01-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=short_ribs,
                 submission_date="2024-02-01",
                 status=DomainRequest.DomainRequestStatus.WITHDRAWN,
                 created_at="2024-02-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=beef_chuck,
                 submission_date="2024-03-01",
                 status=DomainRequest.DomainRequestStatus.REJECTED,
                 created_at="2024-03-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=stew_beef,
                 submission_date="2024-04-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-04-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=None,
                 submission_date="2024-05-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-05-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=None,
                 submission_date="2024-06-01",
                 status=DomainRequest.DomainRequestStatus.WITHDRAWN,
                 created_at="2024-06-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=None,
                 submission_date="2024-07-01",
                 status=DomainRequest.DomainRequestStatus.REJECTED,
                 created_at="2024-07-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=None,
                 submission_date="2024-08-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-08-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=None,
                 submission_date="2024-09-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-09-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=None,
                 submission_date="2024-10-01",
                 status=DomainRequest.DomainRequestStatus.WITHDRAWN,
                 created_at="2024-10-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=None,
                 submission_date="2024-11-01",
                 status=DomainRequest.DomainRequestStatus.REJECTED,
                 created_at="2024-11-01",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=None,
                 submission_date="2024-11-02",
                 status=DomainRequest.DomainRequestStatus.WITHDRAWN,
                 created_at="2024-11-02",
             ),
             DomainRequest.objects.create(
-                creator=self.user,
+                creator=cls.user,
                 requested_domain=None,
                 submission_date="2024-12-01",
                 status=DomainRequest.DomainRequestStatus.APPROVED,
@@ -112,9 +115,11 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
             ),
         ]
 
-    def tearDown(self):
-        super().tearDown()
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
         DomainRequest.objects.all().delete()
+        DraftDomain.objects.all().delete()
 
     def test_get_domain_requests_json_authenticated(self):
         """Test that domain requests are returned properly for an authenticated user."""
