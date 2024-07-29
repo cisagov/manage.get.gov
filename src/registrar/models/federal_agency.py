@@ -35,7 +35,8 @@ class FederalAgency(TimeStampedModel):
     is_fceb = models.BooleanField(
         null=True,
         blank=True,
-        verbose_name="Determines if this agency is FCEB",
+        verbose_name="FCEB",
+        help_text="Determines if this agency is FCEB",
     )
 
     def __str__(self) -> str:
