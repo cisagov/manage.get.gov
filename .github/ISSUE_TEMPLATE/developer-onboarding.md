@@ -12,31 +12,26 @@ assignees: abroddrick
 - Onboardee: _GH handle of person being onboarded_
 - Onboarder: _GH handle of onboard buddy_
 
-## Installation
+## Installation 
 
-There are several tools we use locally that you will need to have.
-- [ ] [Install the cf CLI v7](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac) for the ability to deploy
+There are several tools we use locally that you will need to have. Tools marked with * need to be requested through the DHS IT portal when operating on a DHS device
+
+- [ ] [Cloudfoundry CLI](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac)
   - If you are using Windows, installation information can be found [here](https://github.com/cloudfoundry/cli/wiki/V8-CLI-Installation-Guide#installers-and-compressed-binaries)
   - Alternatively, for Windows, [consider using chocolately](https://community.chocolatey.org/packages/cloudfoundry-cli/7.2.0)
-- [ ] Make sure you have `gpg` >2.1.7. Run `gpg --version` to check. If not, [install gnupg](https://formulae.brew.sh/formula/gnupg)
-  - Alternatively, you can skip this step and [use ssh keys](#setting-up-commit-signing-with-ssh) instead
-- [ ] Install the [Github CLI](https://cli.github.com/)
-Optional
-- [ ] Install the Slack Desktop App
-
-## For Developing on a DHS furnished device
-
-The following tools must be requested through the DHS IT portal:
-- [ ] Docker Community Edition
-- [ ] Git
-- [ ] VSCode (our preferred editor)
+- [ ] [GPG](https://gnupg.org/download/)
+  - This may not work on DHS devices. Instead, you can [use ssh keys](#setting-up-commit-signing-with-ssh) instead
+- [ ] *Docker Community Edition
+- [ ] *Git
+- [ ] *VSCode (our preferred editor)
+- [ ] *Github Desktop
 
 The following tools are optional, but also can be requested through the DHS IT portal:
-- [ ] Python 3.10
-- [ ] NodeJS (latest version available)
-- [ ] Putty
-- [ ] Windows Subsystem for Linux
-- [ ] Github Desktop
+- [ ] Slack Desktop App
+- [ ] *Python 3.10
+- [ ] *NodeJS (latest version available)
+- [ ] *Putty
+- [ ] *Windows Subsystem for Linux
 
 ## Access
 
