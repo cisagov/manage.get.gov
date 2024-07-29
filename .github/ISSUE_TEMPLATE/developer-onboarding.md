@@ -53,7 +53,7 @@ cf login -a api.fr.cloud.gov  --sso
 
  **Note:** As mentioned in the [Login documentation](https://developers.login.gov/testing/), the sandbox Login account is different account from your regular, production Login account. If you have not created a Login account for the sandbox before, you will need to create a new account first.
 
-Follow the [.gov onboarding dev setup instructions](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.94jwfwkpkhdx). Mark the below checkboxes as complete to indicate you successfully set up the following accounts.
+Follow the [.gov onboarding dev setup instructions](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.94jwfwkpkhdx). Mark the below checkboxes as complete to confirm you successfully set up the following accounts.
 - [ ] Identity sandbox accounts - 1 superuser access account and 1 analyst access account.
 - [ ] Login.gov account to access stable
 
