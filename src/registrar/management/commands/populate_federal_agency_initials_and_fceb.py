@@ -4,7 +4,7 @@ import logging
 import os
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import TerminalHelper, PopulateScriptTemplate
-from registrar.models import SeniorOfficial, FederalAgency
+from registrar.models import FederalAgency
 
 
 logger = logging.getLogger(__name__)
@@ -16,15 +16,15 @@ class Command(BaseCommand, PopulateScriptTemplate):
 
     def add_arguments(self, parser):
         """Add command line arguments."""
-        parser.add_argument("senior_official_csv_path", help="A csv containing information about the SeniorOfficials")
+        parser.add_argument("federal_cio_csv_path", help="A csv containing information about federal CIOs")
 
-    def handle(self, senior_official_csv_path, **kwargs):
+    def handle(self, federal_cio_csv_path, **kwargs):
         """Loops through each valid User object and updates its verification_type value"""
         # Check if the provided file path is valid.
-        if not os.path.isfile(senior_official_csv_path):
-            raise argparse.ArgumentTypeError(f"Invalid file path '{senior_official_csv_path}'")
+        if not os.path.isfile(federal_cio_csv_path):
+            raise argparse.ArgumentTypeError(f"Invalid file path '{federal_cio_csv_path}'")
 
-        self.federal_agency_dict = self.get_agency_dict(senior_official_csv_path)
+        self.federal_agency_dict = self.get_agency_dict(federal_cio_csv_path)
 
         filter_condition = {"agency__isnull": False}
         self.mass_update_records(FederalAgency, filter_condition, ["initials", "is_fceb"])
@@ -42,14 +42,14 @@ class Command(BaseCommand, PopulateScriptTemplate):
 
         message = f"Updating {record} => initials: {initials} | is_fceb: {record.is_fceb}"
         TerminalHelper.colorful_logger("INFO", "OKCYAN", message)
-    
+
     def should_skip_record(self, record) -> bool:
         return record.agency not in self.federal_agency_dict
 
-    def get_agency_dict(self, senior_official_csv_path):
+    def get_agency_dict(self, federal_cio_csv_path):
         """Returns a dictionary keyed by the agency name containing initials and agency status"""
         agency_dict = {}
-        with open(senior_official_csv_path, "r") as requested_file:
+        with open(federal_cio_csv_path, "r") as requested_file:
             reader = csv.DictReader(requested_file)
             for row in reader:
                 agency_name = row.get("Agency")
@@ -57,5 +57,5 @@ class Command(BaseCommand, PopulateScriptTemplate):
                     initials = row.get("Initials")
                     agency_status = row.get("Agency Status")
                     agency_dict[agency_name.strip()] = (initials, agency_status)
-        
+
         return agency_dict

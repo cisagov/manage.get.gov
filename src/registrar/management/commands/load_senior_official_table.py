@@ -16,19 +16,19 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         """Add command line arguments."""
-        parser.add_argument("senior_official_csv_path", help="A csv containing information about the SeniorOfficials")
+        parser.add_argument("federal_cio_csv_path", help="A csv containing information about federal CIOs")
 
-    def handle(self, senior_official_csv_path, **kwargs):
+    def handle(self, federal_cio_csv_path, **kwargs):
         """Loops through each valid DomainRequest object and updates its senior official field"""
 
         # Check if the provided file path is valid.
-        if not os.path.isfile(senior_official_csv_path):
-            raise argparse.ArgumentTypeError(f"Invalid file path '{senior_official_csv_path}'")
+        if not os.path.isfile(federal_cio_csv_path):
+            raise argparse.ArgumentTypeError(f"Invalid file path '{federal_cio_csv_path}'")
 
         # Get all ao data.
         added_senior_officials = []
         skipped_rows = []
-        with open(senior_official_csv_path, "r") as requested_file:
+        with open(federal_cio_csv_path, "r") as requested_file:
             reader = csv.DictReader(requested_file)
 
             existing_senior_officials = SeniorOfficial.objects.all().prefetch_related("federal_agency")
@@ -69,7 +69,7 @@ class Command(BaseCommand):
                         TerminalHelper.colorful_logger("WARNING", "YELLOW", message)
                 else:
                     skipped_rows.append(row)
-                    message = f"Skipping row: {row}"
+                    message = f"Skipping row (missing first_name, last_name, or title): {row}"
                     TerminalHelper.colorful_logger("WARNING", "YELLOW", message)
 
         added_message = f"Added {len(added_senior_officials)} records"

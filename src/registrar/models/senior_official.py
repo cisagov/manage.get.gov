@@ -49,7 +49,6 @@ class SeniorOfficial(TimeStampedModel):
         help_text="The federal agency this user is associated with",
     )
 
-
     def get_formatted_name(self):
         """Returns the contact's name in Western order."""
         names = [n for n in [self.first_name, self.last_name] if n]
