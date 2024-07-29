@@ -110,14 +110,7 @@ class Command(BaseCommand):
 
         # Bulk update the SO fields (if any)
         if len(updated_rows) > 0:
-            updated_fields = [
-                "first_name",
-                "last_name",
-                "title",
-                "email",
-                "phone",
-                "federal_agency"
-            ]
+            updated_fields = ["first_name", "last_name", "title", "email", "phone", "federal_agency"]
             SeniorOfficial.objects.bulk_update(updated_rows, updated_fields)
 
             skipped_message = f"Updated {len(updated_rows)} records"
