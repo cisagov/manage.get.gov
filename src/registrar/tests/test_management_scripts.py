@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 class TestPopulateVerificationType(MockEppLib):
     """Tests for the populate_organization_type script"""
 
+    @less_console_noise_decorator
     def setUp(self):
         """Creates a fake domain object"""
         super().setUp()
@@ -134,6 +135,7 @@ class TestPopulateVerificationType(MockEppLib):
 class TestPopulateOrganizationType(MockEppLib):
     """Tests for the populate_organization_type script"""
 
+    @less_console_noise_decorator
     def setUp(self):
         """Creates a fake domain object"""
         super().setUp()
@@ -206,6 +208,7 @@ class TestPopulateOrganizationType(MockEppLib):
         ):
             call_command("populate_organization_type", "registrar/tests/data/fake_election_domains.csv")
 
+    @less_console_noise_decorator
     def assert_expected_org_values_on_request_and_info(
         self,
         domain_request: DomainRequest,
@@ -248,6 +251,7 @@ class TestPopulateOrganizationType(MockEppLib):
         """Does nothing for mocking purposes"""
         pass
 
+    @less_console_noise_decorator
     def test_request_and_info_city_not_in_csv(self):
         """
         Tests what happens to a city domain that is not defined in the CSV.
@@ -283,6 +287,7 @@ class TestPopulateOrganizationType(MockEppLib):
         # All values should be the same
         self.assert_expected_org_values_on_request_and_info(city_request, city_info, expected_values)
 
+    @less_console_noise_decorator
     def test_request_and_info_federal(self):
         """
         Tests what happens to a federal domain after the script is run (should be unchanged).
@@ -317,6 +322,7 @@ class TestPopulateOrganizationType(MockEppLib):
         # All values should be the same
         self.assert_expected_org_values_on_request_and_info(federal_request, federal_info, expected_values)
 
+    @less_console_noise_decorator
     def test_request_and_info_tribal_add_election_office(self):
         """
         Tests if a tribal domain in the election csv changes organization_type to TRIBAL - ELECTION
@@ -357,6 +363,7 @@ class TestPopulateOrganizationType(MockEppLib):
 
         self.assert_expected_org_values_on_request_and_info(tribal_request, tribal_info, expected_values)
 
+    @less_console_noise_decorator
     def test_request_and_info_tribal_doesnt_remove_election_office(self):
         """
         Tests if a tribal domain in the election csv changes organization_type to TRIBAL_ELECTION
@@ -410,6 +417,7 @@ class TestPopulateOrganizationType(MockEppLib):
 class TestPopulateFirstReady(TestCase):
     """Tests for the populate_first_ready script"""
 
+    @less_console_noise_decorator
     def setUp(self):
         """Creates a fake domain object"""
         super().setUp()
@@ -538,6 +546,7 @@ class TestPopulateFirstReady(TestCase):
 
 
 class TestPatchAgencyInfo(TestCase):
+    @less_console_noise_decorator
     def setUp(self):
         self.user, _ = User.objects.get_or_create(username="testuser")
         self.domain, _ = Domain.objects.get_or_create(name="testdomain.gov")
@@ -561,6 +570,7 @@ class TestPatchAgencyInfo(TestCase):
 
 
 class TestExtendExpirationDates(MockEppLib):
+    @less_console_noise_decorator
     def setUp(self):
         """Defines the file name of migration_json and the folder its contained in"""
         super().setUp()
@@ -883,6 +893,7 @@ class TestExportTables(MockEppLib):
     def tearDown(self):
         self.logger_patcher.stop()
 
+    @less_console_noise_decorator
     @patch("os.makedirs")
     @patch("os.path.exists")
     @patch("os.remove")
@@ -1114,6 +1125,7 @@ class TestImportTables(TestCase):
 class TestTransferFederalAgencyType(TestCase):
     """Tests for the transfer_federal_agency_type script"""
 
+    @less_console_noise_decorator
     def setUp(self):
         """Creates a fake domain object"""
         super().setUp()
@@ -1173,7 +1185,9 @@ class TestTransferFederalAgencyType(TestCase):
         User.objects.all().delete()
         Contact.objects.all().delete()
         Website.objects.all().delete()
-        FederalAgency.objects.all().delete()
+        FederalAgency.objects.filter(
+            id__in=[self.amtrak.id, self.legislative_branch.id, self.library_of_congress.id, self.gov_admin.id]
+        ).delete()
 
     def run_transfer_federal_agency_type(self):
         """

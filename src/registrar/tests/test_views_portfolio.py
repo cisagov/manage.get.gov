@@ -9,7 +9,7 @@ from registrar.models import (
     UserDomainRole,
     User,
 )
-from .test_views import TestWithUser
+from .common import create_test_user
 from waffle.testutils import override_flag
 
 import logging
@@ -17,14 +17,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestPortfolioViews(TestWithUser, WebTest):
+class TestPortfolioViews(WebTest):
     def setUp(self):
         super().setUp()
+        self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
+
+    def tearDown(self):
+        Portfolio.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
 
     @less_console_noise_decorator
     def test_middleware_does_not_redirect_if_no_permission(self):
@@ -182,11 +192,3 @@ class TestPortfolioViews(TestWithUser, WebTest):
             self.assertNotContains(
                 portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
             )
-
-    def tearDown(self):
-        Portfolio.objects.all().delete()
-        UserDomainRole.objects.all().delete()
-        DomainRequest.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        Domain.objects.all().delete()
-        super().tearDown()

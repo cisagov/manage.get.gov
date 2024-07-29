@@ -24,7 +24,6 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
     def tearDown(self):
         super().tearDown()
         UserDomainRole.objects.all().delete()
-        UserDomainRole.objects.all().delete()
 
     @less_console_noise_decorator
     def test_get_domains_json_unauthenticated(self):
