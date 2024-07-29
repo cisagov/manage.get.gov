@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from django.conf import settings
 from django.urls import reverse
-
+from api.tests.common import less_console_noise_decorator
 from .common import MockSESClient, completed_domain_request  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -37,14 +37,23 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def setUp(self):
         super().setUp()
+        self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
         self.app.set_user(self.user.username)
         self.TITLES = DomainRequestWizard.TITLES
 
+    def tearDown(self):
+        super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        self.federal_agency.delete()
+
+    @less_console_noise_decorator
     def test_domain_request_form_intro_acknowledgement(self):
         """Tests that user is presented with intro acknowledgement page"""
         intro_page = self.app.get(reverse("domain-request:"))
         self.assertContains(intro_page, "You’re about to start your .gov domain request")
 
+    @less_console_noise_decorator
     def test_domain_request_form_intro_is_skipped_when_edit_access(self):
         """Tests that user is NOT presented with intro acknowledgement page when accessed through 'edit'"""
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
@@ -55,6 +64,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         redirect_url = detail_page.url
         self.assertEqual(redirect_url, "/request/generic_org_type/")
 
+    @less_console_noise_decorator
     def test_domain_request_form_empty_submit(self):
         """Tests empty submit on the first page after the acknowledgement page"""
         intro_page = self.app.get(reverse("domain-request:"))
@@ -77,31 +87,31 @@ class DomainRequestTests(TestWithUser, WebTest):
         result = type_page.forms[0].submit()
         self.assertIn("What kind of U.S.-based government organization do you represent?", result)
 
+    @less_console_noise_decorator
     def test_domain_request_multiple_domain_requests_exist(self):
         """Test that an info message appears when user has multiple domain requests already"""
         # create and submit a domain request
         domain_request = completed_domain_request(user=self.user)
         mock_client = MockSESClient()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                domain_request.submit()
-                domain_request.save()
+            domain_request.submit()
+            domain_request.save()
 
         # now, attempt to create another one
-        with less_console_noise():
-            intro_page = self.app.get(reverse("domain-request:"))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            intro_form = intro_page.forms[0]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            intro_result = intro_form.submit()
+        intro_page = self.app.get(reverse("domain-request:"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
 
-            # follow first redirect
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            type_page = intro_result.follow()
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
-            self.assertContains(type_page, "You cannot submit this request yet")
+        self.assertContains(type_page, "You cannot submit this request yet")
 
+    @less_console_noise_decorator
     def test_domain_request_into_acknowledgement_creates_new_request(self):
         """
         We had to solve a bug where the wizard was creating 2 requests on first intro acknowledgement ('continue')
@@ -155,6 +165,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(domain_request_count, 2)
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_request_form_submission(self):
         """
         Can fill out the entire form and submit.
@@ -227,9 +238,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        # federal agency so we have to fill in federal_agency
-        federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
+        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -524,6 +533,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(num_pages, num_pages_tested)
 
     @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_domain_request_form_submission_incomplete(self):
         num_pages_tested = 0
         # skipping elections, type_of_work, tribal_government
@@ -584,9 +594,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        # federal agency so we have to fill in federal_agency
-        federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
+        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -879,6 +887,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.assertEqual(num_pages, num_pages_tested)
 
+    @less_console_noise_decorator
     def test_domain_request_form_conditional_federal(self):
         """Federal branch question is shown for federal organizations."""
         intro_page = self.app.get(reverse("domain-request:"))
@@ -934,6 +943,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         contact_page = federal_result.follow()
         self.assertContains(contact_page, "Federal agency")
 
+    @less_console_noise_decorator
     def test_domain_request_form_conditional_elections(self):
         """Election question is shown for other organizations."""
         intro_page = self.app.get(reverse("domain-request:"))
@@ -988,6 +998,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         contact_page = election_result.follow()
         self.assertNotContains(contact_page, "Federal agency")
 
+    @less_console_noise_decorator
     def test_domain_request_form_section_skipping(self):
         """Can skip forward and back in sections"""
         intro_page = self.app.get(reverse("domain-request:"))
@@ -1025,6 +1036,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             0,
         )
 
+    @less_console_noise_decorator
     def test_domain_request_form_nonfederal(self):
         """Non-federal organizations don't have to provide their federal agency."""
         intro_page = self.app.get(reverse("domain-request:"))
@@ -1069,6 +1081,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(contact_result.status_code, 302)
         self.assertEqual(contact_result["Location"], "/request/about_your_organization/")
 
+    @less_console_noise_decorator
     def test_domain_request_about_your_organization_special(self):
         """Special districts have to answer an additional question."""
         intro_page = self.app.get(reverse("domain-request:"))
@@ -1097,6 +1110,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
 
+    @less_console_noise_decorator
     def test_federal_agency_dropdown_excludes_expected_values(self):
         """The Federal Agency dropdown on a domain request form should not
         include options for gov Administration and Non-Federal Agency"""
@@ -1144,6 +1158,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # make sure correct federal agency options still show up
         self.assertContains(org_contact_page, "General Services Administration")
 
+    @less_console_noise_decorator
     def test_yes_no_contact_form_inits_blank_for_new_domain_request(self):
         """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
@@ -1151,6 +1166,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
 
+    @less_console_noise_decorator
     def test_yes_no_additional_form_inits_blank_for_new_domain_request(self):
         """On the Additional Details page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
@@ -1163,6 +1179,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Check the anything else yes/no field
         self.assertEquals(additional_form["additional_details-has_anything_else_text"].value, None)
 
+    @less_console_noise_decorator
     def test_yes_no_form_inits_yes_for_domain_request_with_other_contacts(self):
         """On the Other Contacts page, the yes/no form gets initialized with YES selected if the
         domain request has other contacts"""
@@ -1183,6 +1200,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
 
+    @less_console_noise_decorator
     def test_yes_no_form_inits_yes_for_cisa_representative_and_anything_else(self):
         """On the Additional Details page, the yes/no form gets initialized with YES selected
         for both yes/no radios if the domain request has a values for cisa_representative_first_name and
@@ -1214,6 +1232,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
         self.assertEquals(yes_no_anything_else, "True")
 
+    @less_console_noise_decorator
     def test_yes_no_form_inits_no_for_domain_request_with_no_other_contacts_rationale(self):
         """On the Other Contacts page, the yes/no form gets initialized with NO selected if the
         domain request has no other contacts"""
@@ -1236,6 +1255,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
 
+    @less_console_noise_decorator
     def test_yes_no_form_for_domain_request_with_no_cisa_representative_and_anything_else(self):
         """On the Additional details page, the form preselects "no" when has_cisa_representative
         and anything_else is no"""
@@ -1271,6 +1291,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
         self.assertEquals(yes_no_anything_else, "False")
 
+    @less_console_noise_decorator
     def test_submitting_additional_details_deletes_cisa_representative_and_anything_else(self):
         """When a user submits the Additional Details form with no selected for all fields,
         the domain request's data gets wiped when submitted"""
@@ -1332,6 +1353,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(domain_request.cisa_representative_last_name, None)
         self.assertEqual(domain_request.cisa_representative_email, None)
 
+    @less_console_noise_decorator
     def test_submitting_additional_details_populates_cisa_representative_and_anything_else(self):
         """When a user submits the Additional Details form,
         the domain request's data gets submitted"""
@@ -1385,6 +1407,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(domain_request.has_cisa_representative, True)
         self.assertEqual(domain_request.has_anything_else_text, True)
 
+    @less_console_noise_decorator
     def test_if_cisa_representative_yes_no_form_is_yes_then_field_is_required(self):
         """Applicants with a cisa representative must provide a value"""
         domain_request = completed_domain_request(
@@ -1417,6 +1440,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(response, "Enter the first name / given name of the CISA regional representative.")
         self.assertContains(response, "Enter the last name / family name of the CISA regional representative.")
 
+    @less_console_noise_decorator
     def test_if_anything_else_yes_no_form_is_yes_then_field_is_required(self):
         """Applicants with a anything else must provide a value"""
         domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
@@ -1447,6 +1471,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         expected_message = "Provide additional details you’d like us to know. If you have nothing to add, select “No.”"
         self.assertContains(response, expected_message)
 
+    @less_console_noise_decorator
     def test_additional_details_form_fields_required(self):
         """When a user submits the Additional Details form without checking the
         has_cisa_representative and has_anything_else_text fields, the form should deny this action"""
@@ -1480,6 +1505,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # due to screen reader information / html.
         self.assertContains(response, "This question is required.", count=4)
 
+    @less_console_noise_decorator
     def test_submitting_other_contacts_deletes_no_other_contacts_rationale(self):
         """When a user submits the Other Contacts form with other contacts selected, the domain request's
         no other contacts rationale gets deleted"""
@@ -1528,6 +1554,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             None,
         )
 
+    @less_console_noise_decorator
     def test_submitting_no_other_contacts_rationale_deletes_other_contacts(self):
         """When a user submits the Other Contacts form with no other contacts selected, the domain request's
         other contacts get deleted for other contacts that exist and are not joined to other objects
@@ -1570,6 +1597,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             "Hello again!",
         )
 
+    @less_console_noise_decorator
     def test_submitting_no_other_contacts_rationale_removes_reference_other_contacts_when_joined(self):
         """When a user submits the Other Contacts form with no other contacts selected, the domain request's
         other contacts references get removed for other contacts that exist and are joined to other objects"""
@@ -1665,6 +1693,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             "Hello again!",
         )
 
+    @less_console_noise_decorator
     def test_if_yes_no_form_is_no_then_no_other_contacts_required(self):
         """Applicants with no other contacts have to give a reason."""
         other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
@@ -1680,6 +1709,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Assert that it is not returned, ie the contacts form is not required
         self.assertNotContains(response, "Enter the first name / given name of this contact.")
 
+    @less_console_noise_decorator
     def test_if_yes_no_form_is_yes_then_other_contacts_required(self):
         """Applicants with other contacts do not have to give a reason."""
         other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
@@ -1695,6 +1725,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Assert that it is returned, ie the contacts form is required
         self.assertContains(response, "Enter the first name / given name of this contact.")
 
+    @less_console_noise_decorator
     def test_delete_other_contact(self):
         """Other contacts can be deleted after being saved to database.
 
@@ -1779,6 +1810,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(domain_request.other_contacts.count(), 1)
         self.assertEqual(domain_request.other_contacts.first().first_name, "Testy3")
 
+    @less_console_noise_decorator
     def test_delete_other_contact_does_not_allow_zero_contacts(self):
         """Delete Other Contact does not allow submission with zero contacts."""
         # Populate the database with a domain request that
@@ -1851,6 +1883,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(domain_request.other_contacts.count(), 1)
         self.assertEqual(domain_request.other_contacts.first().first_name, "Testy2")
 
+    @less_console_noise_decorator
     def test_delete_other_contact_sets_visible_empty_form_as_required_after_failed_submit(self):
         """When you:
             1. add an empty contact,
@@ -1928,6 +1961,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Enter the first name ...
         self.assertContains(response, "Enter the first name / given name of this contact.")
 
+    @less_console_noise_decorator
     def test_edit_other_contact_in_place(self):
         """When you:
             1. edit an existing contact which is not joined to another model,
@@ -2009,6 +2043,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEquals(other_contact_pk, other_contact.id)
         self.assertEquals("Testy3", other_contact.first_name)
 
+    @less_console_noise_decorator
     def test_edit_other_contact_creates_new(self):
         """When you:
             1. edit an existing contact which IS joined to another model,
@@ -2089,6 +2124,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         senior_official = domain_request.senior_official
         self.assertEquals("Testy", senior_official.first_name)
 
+    @less_console_noise_decorator
     def test_edit_senior_official_in_place(self):
         """When you:
             1. edit a senior official which is not joined to another model,
@@ -2154,6 +2190,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEquals(so_pk, updated_so.id)
         self.assertEquals("Testy2", updated_so.first_name)
 
+    @less_console_noise_decorator
     def test_edit_senior_official_creates_new(self):
         """When you:
             1. edit an existing senior official which IS joined to another model,
@@ -2226,6 +2263,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         senior_official = domain_request.senior_official
         self.assertEquals("Testy2", senior_official.first_name)
 
+    @less_console_noise_decorator
     def test_edit_submitter_in_place(self):
         """When you:
             1. edit a submitter (your contact) which is not joined to another model,
@@ -2290,6 +2328,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEquals(submitter_pk, updated_submitter.id)
         self.assertEquals("Testy2", updated_submitter.first_name)
 
+    @less_console_noise_decorator
     def test_edit_submitter_creates_new(self):
         """When you:
             1. edit an existing your contact which IS joined to another model,
@@ -2362,6 +2401,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         submitter = domain_request.submitter
         self.assertEquals("Testy2", submitter.first_name)
 
+    @less_console_noise_decorator
     def test_domain_request_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
         intro_page = self.app.get(reverse("domain-request:"))
@@ -2390,6 +2430,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
 
+    @less_console_noise_decorator
     def test_domain_request_tribal_government(self):
         """Tribal organizations have to answer an additional question."""
         intro_page = self.app.get(reverse("domain-request:"))
@@ -2421,6 +2462,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # and the step is on the sidebar list.
         self.assertContains(tribal_government_page, self.TITLES[Step.TRIBAL_GOVERNMENT])
 
+    @less_console_noise_decorator
     def test_domain_request_so_dynamic_text(self):
         intro_page = self.app.get(reverse("domain-request:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -2460,9 +2502,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        # federal agency so we have to fill in federal_agency
-        federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
+        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -2493,6 +2533,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         so_page = election_page.click(str(self.TITLES["senior_official"]), index=0)
         self.assertContains(so_page, "Domain requests from cities")
 
+    @less_console_noise_decorator
     def test_domain_request_dotgov_domain_dynamic_text(self):
         intro_page = self.app.get(reverse("domain-request:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -2532,9 +2573,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        # federal agency so we have to fill in federal_agency
-        federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        org_contact_form["organization_contact-federal_agency"] = federal_agency.id
+        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -2595,6 +2634,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "CityofEudoraKS.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
 
+    @less_console_noise_decorator
     def test_domain_request_formsets(self):
         """Users are able to add more than one of some fields."""
         current_sites_page = self.app.get(reverse("domain-request:current_sites"))
@@ -2749,6 +2789,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
+    @less_console_noise_decorator
     def test_long_org_name_in_domain_request(self):
         """
         Make sure the long name is displaying in the domain request form,
@@ -2771,6 +2812,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.assertContains(type_page, "Federal: an agency of the U.S. government")
 
+    @less_console_noise_decorator
     def test_submit_modal_no_domain_text_fallback(self):
         """When user clicks on submit your domain request and the requested domain
         is null (possible through url direct access to the review page), present
@@ -2790,6 +2832,12 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
 
+    def tearDown(self):
+        super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+
+    @less_console_noise_decorator
     def test_domain_request_status(self):
         """Checking domain request status page"""
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
@@ -2803,6 +2851,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
 
+    @less_console_noise_decorator
     def test_domain_request_status_with_ineligible_user(self):
         """Checking domain request status page whith a blocked user.
         The user should still have access to view."""
@@ -2819,6 +2868,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
 
+    @less_console_noise_decorator
     def test_domain_request_withdraw(self):
         """Checking domain request status page"""
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
@@ -2849,6 +2899,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         response = self.client.get("/get-domain-requests-json/")
         self.assertContains(response, "Withdrawn")
 
+    @less_console_noise_decorator
     def test_domain_request_withdraw_no_permissions(self):
         """Can't withdraw domain requests as a restricted user."""
         self.user.status = User.RESTRICTED
@@ -2873,6 +2924,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
                     page = self.client.get(reverse(url_name, kwargs={"pk": domain_request.pk}))
                     self.assertEqual(page.status_code, 403)
 
+    @less_console_noise_decorator
     def test_domain_request_status_no_permissions(self):
         """Can't access domain requests without being the creator."""
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
@@ -2892,6 +2944,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
                     page = self.client.get(reverse(url_name, kwargs={"pk": domain_request.pk}))
                     self.assertEqual(page.status_code, 403)
 
+    @less_console_noise_decorator
     def test_approved_domain_request_not_in_active_requests(self):
         """An approved domain request is not shown in the Active
         Requests table on home.html."""
@@ -2916,13 +2969,17 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
 
     def tearDown(self):
         super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_unlocked_steps_empty_domain_request(self):
         """Test when all fields in the domain request are empty."""
         unlocked_steps = self.wizard.db_check_for_unlocking_steps()
         expected_dict = []
         self.assertEqual(unlocked_steps, expected_dict)
 
+    @less_console_noise_decorator
     def test_unlocked_steps_full_domain_request(self):
         """Test when all fields in the domain request are filled."""
 
@@ -2959,6 +3016,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
+    @less_console_noise_decorator
     def test_unlocked_steps_partial_domain_request(self):
         """Test when some fields in the domain request are filled."""
 

@@ -31,14 +31,14 @@ import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from django.utils import timezone
 from api.tests.common import less_console_noise_decorator
-from .common import MockDb, MockEppLib, less_console_noise, get_time_aware_date, create_user
+from .common import MockDbForSharedTests, MockDbForIndividualTests, MockEppLib, less_console_noise, get_time_aware_date
 
 
-class CsvReportsTest(MockDb):
-    """Tests to determine if we are uploading our reports correctly"""
+class CsvReportsTest(MockDbForSharedTests):
+    """Tests to determine if we are uploading our reports correctly."""
 
     def setUp(self):
-        """Create fake domain data"""
+        """setup fake comain data"""
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
         self.factory = RequestFactory()
@@ -202,15 +202,8 @@ class CsvReportsTest(MockDb):
             self.assertEqual(expected_file_content, response.content)
 
 
-class ExportDataTest(MockDb, MockEppLib):
-    """Tests our data exports for admin"""
-
-    def setUp(self):
-        super().setUp()
-        self.factory = RequestFactory()
-
-    def tearDown(self):
-        super().tearDown()
+class ExportDataTest(MockDbForIndividualTests, MockEppLib):
+    """Test the ExportData class from csv_export."""
 
     @less_console_noise_decorator
     def test_domain_data_type(self):
@@ -244,7 +237,7 @@ class ExportDataTest(MockDb, MockEppLib):
             "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,World War I Centennial Commission,,,,(blank),,,"
             "meoward@rocks.com,\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,"
-            ',,,(blank),"meoward@rocks.com, info@example.com, big_lebowski@dude.co",'
+            ',,,(blank),"big_lebowski@dude.co, info@example.com, meoward@rocks.com",'
             "woofwardthethird@rocks.com\n"
             "adomain10.gov,Ready,2024-04-03,(blank),Federal,Armed Forces Retirement Home,,,,(blank),,,,"
             "squeaker@rocks.com\n"
@@ -283,13 +276,12 @@ class ExportDataTest(MockDb, MockEppLib):
         self.domain_1.save()
 
         # Create a user and associate it with some domains
-        user = create_user()
-        UserDomainRole.objects.create(user=user, domain=self.domain_1)
-        UserDomainRole.objects.create(user=user, domain=self.domain_2)
+        UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
 
         # Create a request object
-        request = self.factory.get("/")
-        request.user = user
+        factory = RequestFactory()
+        request = factory.get("/")
+        request.user = self.user
 
         # Create a CSV file in memory
         csv_file = StringIO()
@@ -306,10 +298,10 @@ class ExportDataTest(MockDb, MockEppLib):
             "City,State,SO,SO email,"
             "Security contact email,Domain managers,Invited domain managers\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,"
-            '(blank),"meoward@rocks.com, info@example.com, big_lebowski@dude.co, staff@example.com",'
+            '(blank),"big_lebowski@dude.co, info@example.com, meoward@rocks.com",'
             "woofwardthethird@rocks.com\n"
             "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),"
-            '"meoward@rocks.com, staff@example.com",squeaker@rocks.com\n'
+            '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
         )
 
         # Normalize line endings and remove commas,
@@ -492,7 +484,7 @@ class ExportDataTest(MockDb, MockEppLib):
             "\n"
             "Domain name,Domain type,Domain managers,Invited domain managers\n"
             "cdomain11.gov,Federal - Executive,meoward@rocks.com,\n"
-            'cdomain1.gov,Federal - Executive,"meoward@rocks.com, info@example.com, big_lebowski@dude.co",'
+            'cdomain1.gov,Federal - Executive,"big_lebowski@dude.co, info@example.com, meoward@rocks.com",'
             "woofwardthethird@rocks.com\n"
             "zdomain12.gov,Interstate,meoward@rocks.com,\n"
         )
@@ -500,6 +492,7 @@ class ExportDataTest(MockDb, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -654,7 +647,7 @@ class ExportDataTest(MockDb, MockEppLib):
             self.assertEqual(csv_content, expected_content)
 
 
-class HelperFunctions(MockDb):
+class HelperFunctions(MockDbForSharedTests):
     """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
 
     def test_get_default_start_date(self):
