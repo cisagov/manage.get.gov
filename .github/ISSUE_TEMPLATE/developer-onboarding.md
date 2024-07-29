@@ -144,10 +144,16 @@ We have three types of environments: stable, staging, and sandbox. Stable (produ
 
 All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](../../ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](../../ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox. 
 
-# Known Issues
+## Known Issues
 
-## SSL Verification Failure
+### SSL Verification Failure
 Some developers, especially those using Government Furnished Equipment (GFE), have problems installing python packages due to an SSL verification failure. This happens because GFE has a custom certificate chain installed, but python uses its own certificate bundle. As a result, when pip tries to verify the TLS connection to download a package, it cannot and so the download fails. To resolve this, if you are running locally you can use --use-feature=truststore to direct pip to use the local certificate store. If you are running a docker container, you will need to export the root certificate and pull it into the container. Ask another developer how to do this properly.
 
-## Checksum Error
-There is an unresolved issue with python package installation that occurs after the above SSL Verification failure has been resolved. It often manifests as a checksum error, where the hash of a download .whl file (python package) does not match the expected value. This appears to be because pythonhosted.org is cutting off download connections to some devices for some packages (the behavior is somewhat inconsistent). We have outstanding issues with PyPA and DHS IT to fix this.
+### Puppeteer Download Error
+When building the node image either individually or with docker compose, there may be an error caused by a node package call puppeteer. This can be resolved by adding `ENV PUPPETEER_SKIP_DOWNLOAD=true` to [node.Dockerfile](../../src/node.Dockerfile) after the COPY command.
+
+### Checksum Error
+There is an unresolved issue with python package installation that occurs after the above SSL Verification failure has been resolved. It often manifests as a checksum error, where the hash of a download .whl file (python package) does not match the expected value. This appears to be because pythonhosted.org is cutting off download connections to some devices for some packages (the behavior is somewhat inconsistent). We have outstanding issues with PyPA and DHS IT to fix this. In the meantime we have a [workaround](#developing-using-docker)
+
+## Developing Using Docker
+While we have unresolved issues with certain devices, you can pull a pre-built docker image from matthewswspence/getgov-base that comes with all the needed packages installed. To do this, you will need to change the very first line in the main [Dockerfile](../../src/Dockerfile) to `FROM matthewswspence/getgov-base:latest`. Note: this change will need to be reverted before any branch can be merged. Additionally, this will only resolve the [checksum error](#checksum-error), you will still need to resolve any other issues through the listed instructions. We are actively working to resolve this inconvenience.
