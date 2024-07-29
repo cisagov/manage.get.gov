@@ -89,9 +89,9 @@ class TestDomainRequestAdmin(MockEppLib):
     def test_domain_request_senior_official_is_alphabetically_sorted(self):
         """Tests if the senior offical dropdown is alphanetically sorted in the django admin display"""
 
-        so_mary, _ = SeniorOfficial.objects.get_or_create(first_name="mary", last_name="joe", title="some other guy")
-        so_alex, _ = SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
-        so_zoup, _ = SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
+        SeniorOfficial.objects.get_or_create(first_name="mary", last_name="joe", title="some other guy")
+        SeniorOfficial.objects.get_or_create(first_name="alex", last_name="smoe", title="some guy")
+        SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
 
         contact, _ = Contact.objects.get_or_create(first_name="Henry", last_name="McFakerson")
         domain_request = completed_domain_request(submitter=contact, name="city1.gov")
@@ -1515,7 +1515,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "current_websites",
             "alternative_domains",
             "is_election_board",
-            "federal_agency",
             "status_history",
             "id",
             "created_at",
@@ -1561,7 +1560,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "notes",
             "alternative_domains",
         ]
-
+        self.maxDiff = None
         self.assertEqual(readonly_fields, expected_fields)
 
     def test_readonly_fields_for_analyst(self):
@@ -1576,8 +1575,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "current_websites",
                 "alternative_domains",
                 "is_election_board",
-                "federal_agency",
                 "status_history",
+                "federal_agency",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -1590,9 +1589,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_policy_acknowledged",
                 "cisa_representative_first_name",
                 "cisa_representative_last_name",
-                "cisa_representative_email",
+                "cisa_representative_email"
             ]
-
             self.assertEqual(readonly_fields, expected_fields)
 
     def test_readonly_fields_for_superuser(self):
@@ -1607,7 +1605,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "current_websites",
                 "alternative_domains",
                 "is_election_board",
-                "federal_agency",
                 "status_history",
             ]
 

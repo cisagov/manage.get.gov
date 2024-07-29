@@ -578,7 +578,7 @@ class TestDomainAdminWithClient(TestCase):
         index = f"{domain.id}"
 
         # Contains some test tools
-        self.test_helper = GenericTestHelper(
+        test_helper = GenericTestHelper(
             factory=self.factory,
             user=self.superuser,
             admin=self.admin,
@@ -588,7 +588,7 @@ class TestDomainAdminWithClient(TestCase):
         )
 
         # Simulate selecting a single record, then clicking "Delete selected domains"
-        response = self.test_helper.get_table_delete_confirmation_page("0", index)
+        response = test_helper.get_table_delete_confirmation_page("0", index)
 
         # Check that our content exists
         content_slice = "When a domain is deleted:"

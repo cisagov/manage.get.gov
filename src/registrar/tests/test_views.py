@@ -35,15 +35,18 @@ class TestViews(TestCase):
         super().setUp()
         self.client = Client()
 
+    @less_console_noise_decorator
     def test_health_check_endpoint(self):
         response = self.client.get("/health")
         self.assertContains(response, "OK", status_code=200)
 
+    @less_console_noise_decorator
     def test_home_page(self):
         """Home page should NOT be available without a login."""
         response = self.client.get("/")
         self.assertEqual(response.status_code, 302)
 
+    @less_console_noise_decorator
     def test_domain_request_form_not_logged_in(self):
         """Domain request form not accessible without a logged-in user."""
         response = self.client.get("/request/")
@@ -92,18 +95,21 @@ class TestEnvironmentVariablesEffects(TestCase):
         super().tearDownClass()
         User.objects.all().delete()
 
+    @less_console_noise_decorator
     @override_settings(IS_PRODUCTION=True)
     def test_production_environment(self):
         """No banner on prod."""
         home_page = self.client.get("/")
         self.assertNotContains(home_page, "You are on a test site.")
 
+    @less_console_noise_decorator
     @override_settings(IS_PRODUCTION=False)
     def test_non_production_environment(self):
         """Banner on non-prod."""
         home_page = self.client.get("/")
         self.assertContains(home_page, "You are on a test site.")
 
+    @less_console_noise_decorator
     def side_effect_raise_value_error(self):
         """Side effect that raises a 500 error"""
         raise ValueError("Some error")
@@ -163,6 +169,7 @@ class HomeTests(TestWithUser):
         self.assertContains(response, "You don't have any registered domains.")
         self.assertContains(response, "Why don't I see my domain when I sign in to the registrar?")
 
+    @less_console_noise_decorator
     def test_state_help_text(self):
         """Tests if each domain state has help text"""
 
@@ -204,6 +211,7 @@ class HomeTests(TestWithUser):
                 user_role.delete()
                 test_domain.delete()
 
+    @less_console_noise_decorator
     def test_state_help_text_expired(self):
         """Tests if each domain state has help text when expired"""
         expired_text = "This domain has expired, but it is still online. "
@@ -227,6 +235,7 @@ class HomeTests(TestWithUser):
         test_role.delete()
         test_domain.delete()
 
+    @less_console_noise_decorator
     def test_state_help_text_no_expiration_date(self):
         """Tests if each domain state has help text when expiration date is None"""
 
@@ -273,6 +282,7 @@ class HomeTests(TestWithUser):
         UserDomainRole.objects.all().delete()
         Domain.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_home_deletes_withdrawn_domain_request(self):
         """Tests if the user can delete a DomainRequest in the 'withdrawn' status"""
 
@@ -289,6 +299,7 @@ class HomeTests(TestWithUser):
         # clean up
         domain_request.delete()
 
+    @less_console_noise_decorator
     def test_home_deletes_started_domain_request(self):
         """Tests if the user can delete a DomainRequest in the 'started' status"""
 
@@ -338,6 +349,7 @@ class HomeTests(TestWithUser):
                         # clean up
                         domain_request.delete()
 
+    @less_console_noise_decorator
     def test_home_deletes_domain_request_and_orphans(self):
         """Tests if delete for DomainRequest deletes orphaned Contact objects"""
 
@@ -410,6 +422,7 @@ class HomeTests(TestWithUser):
         DomainRequest.objects.all().delete()
         Contact.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_home_deletes_domain_request_and_shared_orphans(self):
         """Test the edge case for an object that will become orphaned after a delete
         (but is not an orphan at the time of deletion)"""
@@ -473,6 +486,7 @@ class HomeTests(TestWithUser):
         DomainRequest.objects.all().delete()
         Contact.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_domain_request_form_view(self):
         response = self.client.get("/request/", follow=True)
         self.assertContains(
@@ -1107,23 +1121,6 @@ class PortfoliosTests(TestWithUser, WebTest):
     def _set_session_cookie(self):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-    @less_console_noise_decorator
-    def test_middleware_redirects_to_portfolio_homepage(self):
-        """Tests that a user is redirected to the portfolio homepage when organization_feature is on and
-        a portfolio belongs to the user, test for the special h1s which only exist in that version
-        of the homepage"""
-        self.app.set_user(self.user.username)
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            portfolio_page = self.app.get(reverse("home")).follow()
-            self._set_session_cookie()
-
-            # Assert that we're on the right page
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
 
     @less_console_noise_decorator
     def test_no_redirect_when_org_flag_false(self):

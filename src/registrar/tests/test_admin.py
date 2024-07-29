@@ -1008,7 +1008,15 @@ class TestMyUserAdmin(MockDbForSharedTests):
                     },
                 ),
                 ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
-                ("Permissions", {"fields": ("is_active", "groups")}),
+                (
+                    "Permissions",
+                    {
+                        "fields": (
+                            "is_active",
+                            "groups",
+                        )
+                    },
+                ),
                 ("Important dates", {"fields": ("last_login", "date_joined")}),
             )
             self.assertEqual(fieldsets, expected_fieldsets)
@@ -1124,6 +1132,21 @@ class TestMyUserAdmin(MockDbForSharedTests):
         DomainRequest.objects.filter(id__in=domain_request_ids).delete()
         domain_deleted.delete()
         role.delete()
+
+    def test_analyst_cannot_see_selects_for_portfolio_role_and_permissions_in_user_form(self):
+        """Can only test for the presence of a base element. The multiselects and the h2->h3 conversion are all
+        dynamically generated."""
+        
+        self.client.force_login(self.staffuser)
+        response = self.client.get(
+            "/admin/registrar/user/{}/change/".format(self.meoward_user.id),
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertNotContains(response, "Portfolio roles:")
+        self.assertNotContains(response, "Portfolio additional permissions:")
 
 
 class AuditedAdminTest(TestCase):
