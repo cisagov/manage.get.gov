@@ -19,7 +19,7 @@ class Command(BaseCommand):
         parser.add_argument("federal_cio_csv_path", help="A csv containing information about federal CIOs")
 
     def handle(self, federal_cio_csv_path, **kwargs):
-        """Loops through each valid DomainRequest object and updates its senior official field"""
+        """Populates the SeniorOfficial table with data given to it through a CSV"""
 
         # Check if the provided file path is valid.
         if not os.path.isfile(federal_cio_csv_path):
@@ -36,20 +36,18 @@ class Command(BaseCommand):
             Note: 
             If the row is missing a first_name, last_name, or title - it will not be added.
             """,
-            prompt_title="Do you wish to load records into the SeniorOfficial table?"
+            prompt_title="Do you wish to load records into the SeniorOfficial table?",
         )
         logger.info("Updating...")
 
-        # Get all ao data.
-        added_senior_officials = []
-        skipped_rows = []
+        # Get all existing data.
+        existing_senior_officials = SeniorOfficial.objects.all().prefetch_related("federal_agency")
+        existing_agencies = FederalAgency.objects.all()
+
+        # Read the CSV
+        added_senior_officials, skipped_rows = [], []
         with open(federal_cio_csv_path, "r") as requested_file:
-            reader = csv.DictReader(requested_file)
-
-            existing_senior_officials = SeniorOfficial.objects.all().prefetch_related("federal_agency")
-            existing_fed_agencies = FederalAgency.objects.all()
-            for row in reader:
-
+            for row in csv.DictReader(requested_file):
                 # Note: the csv doesn't have a phone field, but we can try to pull one anyway.
                 so_kwargs = {
                     "first_name": row.get("First Name"),
@@ -59,22 +57,21 @@ class Command(BaseCommand):
                     "phone": row.get("Phone"),
                 }
 
-                # Only first_name, last_name, and title are required
-                required_fields = ["first_name", "last_name", "title"]
-                if row and all(so_kwargs[field] for field in required_fields):
-                    _agency = row.get("Agency")
-                    if _agency:
-                        _federal_agency = existing_fed_agencies.filter(agency=_agency.strip()).first()
-                        so_kwargs["federal_agency"] = _federal_agency
+                # Handle the federal_agency record seperately (db call)
+                agency_name = row.get("Agency").strip() if row.get("Agency") else None
 
+                # Only first_name, last_name, and title are required
+                if row and all(so_kwargs[field] for field in ["first_name", "last_name", "title"]):
+
+                    # Get the underlying federal agency record
+                    if agency_name:
+                        so_kwargs["federal_agency"] = existing_agencies.filter(agency=agency_name).first()
+
+                    # Create a new SeniorOfficial object
                     new_so = SeniorOfficial(**so_kwargs)
 
                     # Before adding this record, check to make sure we aren't adding a duplicate.
-                    is_duplicate = existing_senior_officials.filter(
-                        # Check on every field that we're adding
-                        **{key: value for key, value in so_kwargs.items()}
-                    ).exists()
-                    if not is_duplicate:
+                    if not existing_senior_officials.filter(**so_kwargs).exists():
                         added_senior_officials.append(new_so)
                         message = f"Added record: {new_so}"
                         TerminalHelper.colorful_logger("INFO", "OKCYAN", message)
@@ -87,11 +84,13 @@ class Command(BaseCommand):
                     message = f"Skipping row (missing first_name, last_name, or title): {row}"
                     TerminalHelper.colorful_logger("WARNING", "YELLOW", message)
 
+        # Bulk create the SO fields
+        SeniorOfficial.objects.bulk_create(added_senior_officials)
+
+        # Log what happened
         added_message = f"Added {len(added_senior_officials)} records"
         TerminalHelper.colorful_logger("INFO", "OKGREEN", added_message)
 
         if len(skipped_rows) > 0:
             skipped_message = f"Skipped {len(skipped_rows)} records"
             TerminalHelper.colorful_logger("WARNING", "MAGENTA", skipped_message)
-
-        SeniorOfficial.objects.bulk_create(added_senior_officials)

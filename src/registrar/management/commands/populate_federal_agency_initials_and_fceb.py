@@ -19,20 +19,28 @@ class Command(BaseCommand, PopulateScriptTemplate):
         parser.add_argument("federal_cio_csv_path", help="A csv containing information about federal CIOs")
 
     def handle(self, federal_cio_csv_path, **kwargs):
-        """Loops through each valid User object and updates its verification_type value"""
+        """Loops through each FederalAgency object and attempts to update is_fceb and initials"""
+
         # Check if the provided file path is valid.
         if not os.path.isfile(federal_cio_csv_path):
             raise argparse.ArgumentTypeError(f"Invalid file path '{federal_cio_csv_path}'")
 
-        self.federal_agency_dict = self.get_agency_dict(federal_cio_csv_path)
+        # Returns a dictionary keyed by the agency name containing initials and agency status
+        self.federal_agency_dict = {}
+        with open(federal_cio_csv_path, "r") as requested_file:
+            for row in csv.DictReader(requested_file):
+                agency_name = row.get("Agency")
+                if agency_name:
+                    initials = row.get("Initials")
+                    agency_status = row.get("Agency Status")
+                    self.federal_agency_dict[agency_name.strip()] = (initials, agency_status)
 
-        filter_condition = {"agency__isnull": False}
-        self.mass_update_records(FederalAgency, filter_condition, ["initials", "is_fceb"])
+        # Update every federal agency record
+        self.mass_update_records(FederalAgency, {"agency__isnull": False}, ["initials", "is_fceb"])
 
     def update_record(self, record: FederalAgency):
-        """Defines how we update the verification_type field"""
-        dict_tuple = self.federal_agency_dict.get(record.agency)
-        initials, agency_status = dict_tuple
+        """For each record, update the initials and is_fceb field if data exists for it"""
+        initials, agency_status = self.federal_agency_dict.get(record.agency)
 
         record.initials = initials
         if agency_status and isinstance(agency_status, str) and agency_status.strip().upper() == "FCEB":
@@ -44,18 +52,5 @@ class Command(BaseCommand, PopulateScriptTemplate):
         TerminalHelper.colorful_logger("INFO", "OKCYAN", message)
 
     def should_skip_record(self, record) -> bool:
+        """Skip record update if there is no data for that particular agency"""
         return record.agency not in self.federal_agency_dict
-
-    def get_agency_dict(self, federal_cio_csv_path):
-        """Returns a dictionary keyed by the agency name containing initials and agency status"""
-        agency_dict = {}
-        with open(federal_cio_csv_path, "r") as requested_file:
-            reader = csv.DictReader(requested_file)
-            for row in reader:
-                agency_name = row.get("Agency")
-                if agency_name:
-                    initials = row.get("Initials")
-                    agency_status = row.get("Agency Status")
-                    agency_dict[agency_name.strip()] = (initials, agency_status)
-
-        return agency_dict
