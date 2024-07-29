@@ -26,7 +26,7 @@ Optional
 
 ## For Developing on a DHS furnished device
 
-The following tools much be requested through the DHS IT portal:
+The following tools must be requested through the DHS IT portal:
 - [ ] Docker Community Edition
 - [ ] Git
 - [ ] VSCode (our preferred editor)
@@ -139,3 +139,11 @@ Additionally, consider a gpg key manager like Kleopatra if you run into issues w
 We have three types of environments: stable, staging, and sandbox. Stable (production)and staging (pre-prod) get deployed via tagged release, and developer sandboxes are given to get.gov developers to mess around in a production-like environment without disrupting stable or staging. Each sandbox is namespaced and will automatically be deployed too when the appropriate branch syntax is used for that space in an open pull request. There are several things you need to setup to make the sandbox work for a developer. 
 
 All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](../../ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](../../ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox. 
+
+# Known Issues
+
+## SSL Verification Failure
+Some developers, especially those using Government Furnished Equipment (GFE), have problems installing python packages due to an SSL verification failure. This happens because GFE has a custom certificate chain installed, but python uses its own certificate bundle. As a result, when pip tries to verify the TLS connection to download a package, it cannot and so the download fails. To resolve this, if you are running locally you can use --use-feature=truststore to direct pip to use the local certificate store. If you are running a docker container, you will need to export the root certificate and pull it into the container. Ask another developer how to do this properly.
+
+## Checksum Error
+There is an unresolved issue with python package installation that occurs after the above SSL Verification failure has been resolved. It often manifests as a checksum error, where the hash of a download .whl file (python package) does not match the expected value. This appears to be because pythonhosted.org is cutting off download connections to some devices for some packages (the behavior is somewhat inconsistent). We have outstanding issues with PyPA and DHS IT to fix this.
