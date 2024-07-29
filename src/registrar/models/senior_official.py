@@ -12,20 +12,20 @@ class SeniorOfficial(TimeStampedModel):
     """
 
     first_name = models.CharField(
-        null=False,
-        blank=False,
+        null=True,
+        blank=True,
         verbose_name="first name",
     )
 
     last_name = models.CharField(
-        null=False,
-        blank=False,
+        null=True,
+        blank=True,
         verbose_name="last name",
     )
 
     title = models.CharField(
-        null=False,
-        blank=False,
+        null=True,
+        blank=True,
         verbose_name="title / role",
     )
 
