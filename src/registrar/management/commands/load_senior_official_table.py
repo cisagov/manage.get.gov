@@ -25,6 +25,21 @@ class Command(BaseCommand):
         if not os.path.isfile(federal_cio_csv_path):
             raise argparse.ArgumentTypeError(f"Invalid file path '{federal_cio_csv_path}'")
 
+        TerminalHelper.prompt_for_execution(
+            system_exit_on_terminate=True,
+            info_to_inspect=f"""
+            ==Proposed Changes==
+            CSV: {federal_cio_csv_path}
+
+            For each item in this CSV, a SeniorOffical record will be added.
+
+            Note: 
+            If the row is missing a first_name, last_name, or title - it will not be added.
+            """,
+            prompt_title="Do you wish to load records into the SeniorOfficial table?"
+        )
+        logger.info("Updating...")
+
         # Get all ao data.
         added_senior_officials = []
         skipped_rows = []

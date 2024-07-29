@@ -35,7 +35,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         initials, agency_status = dict_tuple
 
         record.initials = initials
-        if agency_status:
+        if agency_status and isinstance(agency_status, str) and agency_status.strip().upper() == "FCEB":
             record.is_fceb = True
         else:
             record.is_fceb = False

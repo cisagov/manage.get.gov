@@ -2,6 +2,7 @@ import copy
 from datetime import date, datetime, time
 from django.core.management import call_command
 from django.test import TestCase, override_settings
+from registrar.models.senior_official import SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from django.utils import timezone
 from django.utils.module_loading import import_string
@@ -1220,3 +1221,125 @@ class TestTransferFederalAgencyType(TestCase):
 
         # We don't expect this field to be updated (as it has duplicate data)
         self.assertEqual(self.gov_admin.federal_type, None)
+
+
+class TestLoadSeniorOfficialTable(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.csv_path = "registrar/tests/data/fake_federal_cio.csv"
+
+    def tearDown(self):
+        super().tearDown()
+        SeniorOfficial.objects.all().delete()
+        FederalAgency.objects.all().delete()
+
+    @less_console_noise_decorator
+    def run_load_senior_official_table(self):
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            return_value=True,
+        ):
+            call_command("load_senior_official_table", self.csv_path)
+
+    @less_console_noise_decorator
+    def test_load_senior_official_table(self):
+        """Ensures that running the senior official script creates the data we expect"""
+        # Get test FederalAgency objects
+        abmc, _ = FederalAgency.objects.get_or_create(agency="American Battle Monuments Commission")
+        achp, _ = FederalAgency.objects.get_or_create(agency="Advisory Council on Historic Preservation")
+
+        # run the script
+        self.run_load_senior_official_table()
+
+        # Check the data returned by the script
+        jan_uary = SeniorOfficial.objects.get(first_name="Jan", last_name="Uary")
+        self.assertEqual(jan_uary.title, "CIO")
+        self.assertEqual(jan_uary.email, "fakemrfake@igorville.gov")
+        self.assertEqual(jan_uary.federal_agency, abmc)
+
+        reggie_ronald = SeniorOfficial.objects.get(first_name="Reggie", last_name="Ronald")
+        self.assertEqual(reggie_ronald.title, "CIO")
+        self.assertEqual(reggie_ronald.email, "reggie.ronald@igorville.gov")
+        self.assertEqual(reggie_ronald.federal_agency, achp)
+
+        # Two should be created in total
+        self.assertEqual(SeniorOfficial.objects.count(), 2)
+
+    @less_console_noise_decorator
+    def test_load_senior_official_table_duplicate_entry(self):
+        """Ensures that duplicate data won't be created"""
+        # Create a SeniorOfficial that matches one in the CSV
+        abmc, _ = FederalAgency.objects.get_or_create(agency="American Battle Monuments Commission")
+        SeniorOfficial.objects.create(
+            first_name="Jan", last_name="Uary", title="CIO", email="fakemrfake@igorville.gov", federal_agency=abmc
+        )
+
+        self.assertEqual(SeniorOfficial.objects.count(), 1)
+
+        # run the script
+        self.run_load_senior_official_table()
+
+        # Check if only one new SeniorOfficial object was created
+        self.assertEqual(SeniorOfficial.objects.count(), 2)
+
+
+class TestPopulateFederalAgencyInitialsAndFceb(TestCase):
+    def setUp(self):
+        self.csv_path = "registrar/tests/data/fake_federal_cio.csv"
+
+        # Create test FederalAgency objects
+        self.agency1, _ = FederalAgency.objects.get_or_create(agency="American Battle Monuments Commission")
+        self.agency2, _ = FederalAgency.objects.get_or_create(agency="Advisory Council on Historic Preservation")
+        self.agency3, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+        self.agency4, _ = FederalAgency.objects.get_or_create(agency="John F. Kennedy Center for Performing Arts")
+
+    def tearDown(self):
+        SeniorOfficial.objects.all().delete()
+        FederalAgency.objects.all().delete()
+
+    @less_console_noise_decorator
+    def run_populate_federal_agency_initials_and_fceb(self):
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            return_value=True,
+        ):
+            call_command("populate_federal_agency_initials_and_fceb", self.csv_path)
+
+    @less_console_noise_decorator
+    def test_populate_federal_agency_initials_and_fceb(self):
+        """Ensures that the script generates the data we want"""
+        self.run_populate_federal_agency_initials_and_fceb()
+
+        # Refresh the objects from the database
+        self.agency1.refresh_from_db()
+        self.agency2.refresh_from_db()
+        self.agency3.refresh_from_db()
+        self.agency4.refresh_from_db()
+
+        # Check if FederalAgency objects were updated correctly
+        self.assertEqual(self.agency1.initials, "ABMC")
+        self.assertTrue(self.agency1.is_fceb)
+
+        self.assertEqual(self.agency2.initials, "ACHP")
+        self.assertTrue(self.agency2.is_fceb)
+
+        # We expect that this field doesn't have any data,
+        # as none is specified in the CSV
+        self.assertIsNone(self.agency3.initials)
+        self.assertIsNone(self.agency3.is_fceb)
+
+        self.assertEqual(self.agency4.initials, "KC")
+        self.assertFalse(self.agency4.is_fceb)
+
+    @less_console_noise_decorator
+    def test_populate_federal_agency_initials_and_fceb_missing_agency(self):
+        """A test to ensure that the script doesn't modify unrelated fields"""
+        # Add a FederalAgency that's not in the CSV
+        missing_agency = FederalAgency.objects.create(agency="Missing Agency")
+
+        self.run_populate_federal_agency_initials_and_fceb()
+
+        # Verify that the missing agency was not updated
+        missing_agency.refresh_from_db()
+        self.assertIsNone(missing_agency.initials)
+        self.assertIsNone(missing_agency.is_fceb)
