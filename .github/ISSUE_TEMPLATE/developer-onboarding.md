@@ -14,7 +14,7 @@ assignees: abroddrick
 
 ## Installation 
 
-There are several tools we use locally that you will need to have. Tools marked with * need to be requested through the DHS IT portal when operating on a DHS device
+There are several tools we use locally that you will need to have. 
 
 - [ ] [Cloudfoundry CLI](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac)
   - If you are using Windows, installation information can be found [here](https://github.com/cloudfoundry/cli/wiki/V8-CLI-Installation-Guide#installers-and-compressed-binaries)
@@ -27,11 +27,14 @@ There are several tools we use locally that you will need to have. Tools marked 
 - [ ] *Github Desktop
 
 The following tools are optional, but also can be requested through the DHS IT portal:
-- [ ] Slack Desktop App
+- [ ] **Slack Desktop App
 - [ ] *Python 3.10
 - [ ] *NodeJS (latest version available)
 - [ ] *Putty
 - [ ] *Windows Subsystem for Linux
+
+*   -> must be requested through DHS IT portal on DHS devices
+**  -> can be found in software center on DHS devices
 
 ## Access
 
