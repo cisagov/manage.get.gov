@@ -1136,7 +1136,7 @@ class TestMyUserAdmin(MockDbForSharedTests):
     def test_analyst_cannot_see_selects_for_portfolio_role_and_permissions_in_user_form(self):
         """Can only test for the presence of a base element. The multiselects and the h2->h3 conversion are all
         dynamically generated."""
-        
+
         self.client.force_login(self.staffuser)
         response = self.client.get(
             "/admin/registrar/user/{}/change/".format(self.meoward_user.id),

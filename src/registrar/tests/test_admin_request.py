@@ -1589,7 +1589,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_policy_acknowledged",
                 "cisa_representative_first_name",
                 "cisa_representative_last_name",
-                "cisa_representative_email"
+                "cisa_representative_email",
             ]
             self.assertEqual(readonly_fields, expected_fields)
 

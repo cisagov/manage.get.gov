@@ -26,7 +26,6 @@ from django.core.management import call_command
 from unittest.mock import MagicMock, call, mock_open, patch
 from api.views import get_current_federal, get_current_full
 from django.conf import settings
-from django.test import RequestFactory
 from botocore.exceptions import ClientError
 import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
