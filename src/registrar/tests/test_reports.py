@@ -6,6 +6,7 @@ from registrar.models import (
     Domain,
     UserDomainRole,
 )
+from registrar.models import Portfolio, DomainInformation, User
 from registrar.utility.csv_export import (
     DomainDataFull,
     DomainDataType,
@@ -32,6 +33,7 @@ from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # typ
 from django.utils import timezone
 from api.tests.common import less_console_noise_decorator
 from .common import MockDbForSharedTests, MockDbForIndividualTests, MockEppLib, less_console_noise, get_time_aware_date
+from waffle.testutils import override_flag
 
 
 class CsvReportsTest(MockDbForSharedTests):
@@ -310,6 +312,78 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
+
+    @less_console_noise_decorator
+    @override_flag("profile_feature", active=True)
+    def test_domain_data_type_user_with_portfolio(self):
+        """Tests DomainDataTypeUser export with portfolio permissions"""
+
+        # Create a portfolio and assign it to the user
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        self.user.portfolio = portfolio
+        self.user.save()
+
+        UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_1).delete()
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_3).delete()
+
+        # Add portfolios to the first and third domains
+        self.domain_1.domain_info.portfolio = portfolio
+        self.domain_3.domain_info.portfolio = portfolio
+
+        self.domain_1.domain_info.save()
+        self.domain_3.domain_info.save()
+
+        # Set up user permissions
+        self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        # Create a request object
+        factory = RequestFactory()
+        request = factory.get("/")
+        request.user = self.user
+
+        # Get the csv content
+        csv_content = self._run_domain_data_type_user_export(request)
+
+        # We expect only domains associated with the user's portfolio
+        self.assertIn(self.domain_1.name, csv_content)
+        self.assertIn(self.domain_3.name, csv_content)
+        self.assertNotIn(self.domain_2.name, csv_content)
+
+        # Test the output for readonly admin
+        self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
+        self.user.save()
+
+        self.assertIn(self.domain_1.name, csv_content)
+        self.assertIn(self.domain_3.name, csv_content)
+        self.assertNotIn(self.domain_2.name, csv_content)
+
+        # Get the csv content
+        csv_content = self._run_domain_data_type_user_export(request)
+        self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        self.user.save()
+
+        self.assertNotIn(self.domain_1.name, csv_content)
+        self.assertNotIn(self.domain_3.name, csv_content)
+        self.assertIn(self.domain_2.name, csv_content)
+
+        # Get the csv content
+        csv_content = self._run_domain_data_type_user_export(request)
+
+    def _run_domain_data_type_user_export(self, request):
+        """Helper function to run the export_data_to_csv function on DomainDataTypeUser"""
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        # Call the export functions
+        DomainDataTypeUser.export_data_to_csv(csv_file, request=request)
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+        # Read the content into a variable
+        csv_content = csv_file.read()
+
+        return csv_content
 
     @less_console_noise_decorator
     def test_domain_data_full(self):

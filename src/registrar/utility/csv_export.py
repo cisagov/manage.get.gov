@@ -582,6 +582,7 @@ class DomainDataTypeUser(DomainDataType):
             request.user.has_base_portfolio_permission() and 
             request.user.has_view_all_domains_permission()
         ):
+            # Question: should we also include all domains in UserDomainRole as well?
             models = DomainInformation.objects.filter(portfolio=request.user.portfolio)
         else:
             models = UserDomainRole.objects.filter(user=request.user)
