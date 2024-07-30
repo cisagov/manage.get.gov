@@ -128,6 +128,11 @@ a.withdraw:active {
   vertical-align: bottom;
 }
 
+a.historylink .usa-icon {
+  vertical-align: middle;
+  margin: 0px;
+}
+
 a.usa-button--unstyled:visited {
   color: color('primary');
 }
