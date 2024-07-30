@@ -35,7 +35,7 @@ class Command(BaseCommand):
 
             Note: 
                 - If the row is missing SO data - it will not be added.
-                - Given we can add the row, a blank first_name will be replaced with "-"
+                - Given we can add the row, any blank first_name will be replaced with "-".
             """,
             prompt_title="Do you wish to load records into the SeniorOfficial table?",
         )
