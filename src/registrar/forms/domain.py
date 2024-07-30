@@ -458,7 +458,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
     # the database fields have blank=True so ModelForm doesn't create
     # required fields by default. Use this list in __init__ to mark each
     # of these fields as required
-    required = ["organization_name", "address_line1", "city", "zipcode"]
+    required = ["organization_name", "address_line1", "city", "state_territory", "zipcode"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
