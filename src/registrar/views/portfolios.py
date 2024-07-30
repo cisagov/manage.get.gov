@@ -64,6 +64,9 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
         # no need to add portfolio to request context here
+
+        context["has_edit_org_portfolio_permission"] = self.request.user.has_edit_org_portfolio_permission()
+
         context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
         context["has_organization_feature_flag"] = flag_is_active(self.request, "organization_feature")
         return context
