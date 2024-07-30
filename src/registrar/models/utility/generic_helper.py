@@ -170,18 +170,11 @@ class CreateOrUpdateOrganizationTypeHelper:
                 # There is no avenue for this to occur in the UI,
                 # as such - this can only occur if the object is initialized in this way.
                 # Or if there are pre-existing data.
-                logger.debug(
-                    "create_or_update_organization_type() -> is_election_board "
-                    f"cannot exist for {generic_org_type}. Setting to None."
-                )
                 self.instance.is_election_board = None
             self.instance.organization_type = generic_org_type
         else:
             # This can only happen with manual data tinkering, which causes these to be out of sync.
             if self.instance.is_election_board is None:
-                logger.warning(
-                    "create_or_update_organization_type() -> is_election_board is out of sync. Updating value."
-                )
                 self.instance.is_election_board = False
 
             if self.instance.is_election_board:
@@ -218,10 +211,6 @@ class CreateOrUpdateOrganizationTypeHelper:
                 # There is no avenue for this to occur in the UI,
                 # as such - this can only occur if the object is initialized in this way.
                 # Or if there are pre-existing data.
-                logger.warning(
-                    "create_or_update_organization_type() -> is_election_board "
-                    f"cannot exist for {current_org_type}. Setting to None."
-                )
                 self.instance.is_election_board = None
         else:
             # if self.instance.organization_type is set to None, then this means

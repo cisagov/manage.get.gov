@@ -1,5 +1,6 @@
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
+from registrar.config import settings
 from registrar.models.portfolio import Portfolio
 from django_webtest import WebTest  # type: ignore
 from registrar.models import (
@@ -9,7 +10,7 @@ from registrar.models import (
     UserDomainRole,
     User,
 )
-from .test_views import TestWithUser
+from .common import create_test_user
 from waffle.testutils import override_flag
 
 import logging
@@ -17,14 +18,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestPortfolioViews(TestWithUser, WebTest):
+class TestPortfolio(WebTest):
     def setUp(self):
         super().setUp()
+        self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
+
+    def tearDown(self):
+        Portfolio.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
 
     @less_console_noise_decorator
     def test_middleware_does_not_redirect_if_no_permission(self):
@@ -183,10 +194,69 @@ class TestPortfolioViews(TestWithUser, WebTest):
                 portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
             )
 
-    def tearDown(self):
-        Portfolio.objects.all().delete()
-        UserDomainRole.objects.all().delete()
-        DomainRequest.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        Domain.objects.all().delete()
-        super().tearDown()
+
+class TestPortfolioOrganization(TestPortfolio):
+
+    def test_portfolio_org_name(self):
+        """Can load portfolio's org name page."""
+        with override_flag("organization_feature", active=True):
+            self.app.set_user(self.user.username)
+            self.user.portfolio = self.portfolio
+            self.user.portfolio_additional_permissions = [
+                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ]
+            self.user.save()
+            self.user.refresh_from_db()
+
+            page = self.app.get(reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}))
+            self.assertContains(
+                page, "The name of your federal agency will be publicly listed as the domain registrant."
+            )
+
+    def test_domain_org_name_address_content(self):
+        """Org name and address information appears on the page."""
+        with override_flag("organization_feature", active=True):
+            self.app.set_user(self.user.username)
+            self.user.portfolio = self.portfolio
+            self.user.portfolio_additional_permissions = [
+                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ]
+            self.user.save()
+            self.user.refresh_from_db()
+
+            self.portfolio.organization_name = "Hotel California"
+            self.portfolio.save()
+            page = self.app.get(reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}))
+            # Once in the sidenav, once in the main nav, once in the form
+            self.assertContains(page, "Hotel California", count=3)
+
+    def test_domain_org_name_address_form(self):
+        """Submitting changes works on the org name address page."""
+        with override_flag("organization_feature", active=True):
+            self.app.set_user(self.user.username)
+            self.user.portfolio = self.portfolio
+            self.user.portfolio_additional_permissions = [
+                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ]
+            self.user.save()
+            self.user.refresh_from_db()
+
+            self.portfolio.address_line1 = "1600 Penn Ave"
+            self.portfolio.save()
+            portfolio_org_name_page = self.app.get(
+                reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk})
+            )
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+            portfolio_org_name_page.form["address_line1"] = "6 Downing st"
+            portfolio_org_name_page.form["city"] = "London"
+
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            success_result_page = portfolio_org_name_page.form.submit()
+            self.assertEqual(success_result_page.status_code, 200)
+
+            self.assertContains(success_result_page, "6 Downing st")
+            self.assertContains(success_result_page, "London")
