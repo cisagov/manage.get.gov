@@ -36,7 +36,7 @@ class Command(BaseCommand):
             Note: 
                 - If the row is missing SO data - it will not be added.
                 - Given we can add the row, any blank first_name will be replaced with "-".
-            """,
+            """,  # noqa: W291
             prompt_title="Do you wish to load records into the SeniorOfficial table?",
         )
         logger.info("Updating...")
