@@ -8,13 +8,13 @@ from api.tests.common import less_console_noise_decorator
 from registrar.models.contact import Contact
 from registrar.models.domain import Domain
 from registrar.models.draft_domain import DraftDomain
+from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio import Portfolio
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.views.domain import DomainNameserversView
-
-from .common import MockEppLib, less_console_noise  # type: ignore
+from .common import MockEppLib, create_test_user, less_console_noise  # type: ignore
 from unittest.mock import patch
 from django.urls import reverse
 
@@ -30,18 +30,23 @@ logger = logging.getLogger(__name__)
 
 
 class TestViews(TestCase):
+
     def setUp(self):
+        super().setUp()
         self.client = Client()
 
+    @less_console_noise_decorator
     def test_health_check_endpoint(self):
         response = self.client.get("/health")
         self.assertContains(response, "OK", status_code=200)
 
+    @less_console_noise_decorator
     def test_home_page(self):
         """Home page should NOT be available without a login."""
         response = self.client.get("/")
         self.assertEqual(response.status_code, 302)
 
+    @less_console_noise_decorator
     def test_domain_request_form_not_logged_in(self):
         """Domain request form not accessible without a logged-in user."""
         response = self.client.get("/request/")
@@ -50,75 +55,61 @@ class TestViews(TestCase):
 
 
 class TestWithUser(MockEppLib):
+    """Class for executing tests with a test user.
+    Note that tests share the test user within their test class, so the user
+    cannot be changed within a test."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = create_test_user()
+
     def setUp(self):
         super().setUp()
-        username = "test_user"
-        first_name = "First"
-        last_name = "Last"
-        email = "info@example.com"
-        phone = "8003111234"
-        title = "test title"
-        self.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, title=title, email=email, phone=phone
-        )
+        self.client = Client()
 
-        username_regular_incomplete = "test_regular_user_incomplete"
-        username_other_incomplete = "test_other_user_incomplete"
-        first_name_2 = "Incomplete"
-        email_2 = "unicorn@igorville.com"
-        # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
-        self.incomplete_regular_user = get_user_model().objects.create(
-            username=username_regular_incomplete,
-            first_name=first_name_2,
-            email=email_2,
-            verification_type=User.VerificationTypeChoices.REGULAR,
-        )
-        # in the case below, other user is representative of GRANDFATHERED,
-        # VERIFIED_BY_STAFF, INVITED, FIXTURE_USER, ie. IAL1
-        self.incomplete_other_user = get_user_model().objects.create(
-            username=username_other_incomplete,
-            first_name=first_name_2,
-            email=email_2,
-            verification_type=User.VerificationTypeChoices.VERIFIED_BY_STAFF,
-        )
-
-    def tearDown(self):
-        # delete any domain requests too
-        super().tearDown()
-        DomainRequest.objects.all().delete()
-        DomainInformation.objects.all().delete()
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
         User.objects.all().delete()
 
 
 class TestEnvironmentVariablesEffects(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = create_test_user()
+
     def setUp(self):
         self.client = Client()
-        username = "test_user"
-        first_name = "First"
-        last_name = "Last"
-        email = "info@example.com"
-        self.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email
-        )
         self.client.force_login(self.user)
 
     def tearDown(self):
         super().tearDown()
+        UserDomainRole.objects.all().delete()
         Domain.objects.all().delete()
-        self.user.delete()
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
     @override_settings(IS_PRODUCTION=True)
     def test_production_environment(self):
         """No banner on prod."""
         home_page = self.client.get("/")
         self.assertNotContains(home_page, "You are on a test site.")
 
+    @less_console_noise_decorator
     @override_settings(IS_PRODUCTION=False)
     def test_non_production_environment(self):
         """Banner on non-prod."""
         home_page = self.client.get("/")
         self.assertContains(home_page, "You are on a test site.")
 
+    @less_console_noise_decorator
     def side_effect_raise_value_error(self):
         """Side effect that raises a 500 error"""
         raise ValueError("Some error")
@@ -130,9 +121,7 @@ class TestEnvironmentVariablesEffects(TestCase):
         fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
 
         # Add a role
-        fake_role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER)
 
         with patch.object(DomainNameserversView, "get_initial", side_effect=self.side_effect_raise_value_error):
             with self.assertRaises(ValueError):
@@ -153,9 +142,7 @@ class TestEnvironmentVariablesEffects(TestCase):
         fake_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
 
         # Add a role
-        fake_role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=self.user, domain=fake_domain, role=UserDomainRole.Roles.MANAGER)
 
         with patch.object(DomainNameserversView, "get_initial", side_effect=self.side_effect_raise_value_error):
             with self.assertRaises(ValueError):
@@ -176,15 +163,13 @@ class HomeTests(TestWithUser):
         super().setUp()
         self.client.force_login(self.user)
 
-    def tearDown(self):
-        super().tearDown()
-        Contact.objects.all().delete()
-
+    @less_console_noise_decorator
     def test_empty_domain_table(self):
         response = self.client.get("/")
         self.assertContains(response, "You don't have any registered domains.")
         self.assertContains(response, "Why don't I see my domain when I sign in to the registrar?")
 
+    @less_console_noise_decorator
     def test_state_help_text(self):
         """Tests if each domain state has help text"""
 
@@ -226,6 +211,7 @@ class HomeTests(TestWithUser):
                 user_role.delete()
                 test_domain.delete()
 
+    @less_console_noise_decorator
     def test_state_help_text_expired(self):
         """Tests if each domain state has help text when expired"""
         expired_text = "This domain has expired, but it is still online. "
@@ -233,7 +219,9 @@ class HomeTests(TestWithUser):
         test_domain.expiration_date = date(2011, 10, 10)
         test_domain.save()
 
-        UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
+        test_role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
+        )
 
         # Grab the json response of the domains list
         response = self.client.get("/get-domains-json/")
@@ -244,6 +232,10 @@ class HomeTests(TestWithUser):
         # Check that we have the right text content.
         self.assertContains(response, expired_text, count=1)
 
+        test_role.delete()
+        test_domain.delete()
+
+    @less_console_noise_decorator
     def test_state_help_text_no_expiration_date(self):
         """Tests if each domain state has help text when expiration date is None"""
 
@@ -287,6 +279,10 @@ class HomeTests(TestWithUser):
         # Check that we have the right text content.
         self.assertContains(response, unknown_text, count=1)
 
+        UserDomainRole.objects.all().delete()
+        Domain.objects.all().delete()
+
+    @less_console_noise_decorator
     def test_home_deletes_withdrawn_domain_request(self):
         """Tests if the user can delete a DomainRequest in the 'withdrawn' status"""
 
@@ -303,6 +299,7 @@ class HomeTests(TestWithUser):
         # clean up
         domain_request.delete()
 
+    @less_console_noise_decorator
     def test_home_deletes_started_domain_request(self):
         """Tests if the user can delete a DomainRequest in the 'started' status"""
 
@@ -352,6 +349,7 @@ class HomeTests(TestWithUser):
                         # clean up
                         domain_request.delete()
 
+    @less_console_noise_decorator
     def test_home_deletes_domain_request_and_orphans(self):
         """Tests if delete for DomainRequest deletes orphaned Contact objects"""
 
@@ -421,6 +419,10 @@ class HomeTests(TestWithUser):
 
         self.assertEqual(edge_case, contact_2)
 
+        DomainRequest.objects.all().delete()
+        Contact.objects.all().delete()
+
+    @less_console_noise_decorator
     def test_home_deletes_domain_request_and_shared_orphans(self):
         """Test the edge case for an object that will become orphaned after a delete
         (but is not an orphan at the time of deletion)"""
@@ -481,6 +483,10 @@ class HomeTests(TestWithUser):
         orphan = Contact.objects.filter(id=contact_shared.id)
         self.assertFalse(orphan.exists())
 
+        DomainRequest.objects.all().delete()
+        Contact.objects.all().delete()
+
+    @less_console_noise_decorator
     def test_domain_request_form_view(self):
         response = self.client.get("/request/", follow=True)
         self.assertContains(
@@ -488,16 +494,24 @@ class HomeTests(TestWithUser):
             "You’re about to start your .gov domain request.",
         )
 
+    @less_console_noise_decorator
     def test_domain_request_form_with_ineligible_user(self):
         """Domain request form not accessible for an ineligible user.
         This test should be solid enough since all domain request wizard
         views share the same permissions class"""
-        self.user.status = User.RESTRICTED
-        self.user.save()
-
-        with less_console_noise():
-            response = self.client.get("/request/", follow=True)
-            self.assertEqual(response.status_code, 403)
+        username = "restricted_user"
+        first_name = "First"
+        last_name = "Last"
+        email = "restricted@example.com"
+        phone = "8003111234"
+        status = User.RESTRICTED
+        restricted_user = get_user_model().objects.create(
+            username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, status=status
+        )
+        self.client.force_login(restricted_user)
+        response = self.client.get("/request/", follow=True)
+        self.assertEqual(response.status_code, 403)
+        restricted_user.delete()
 
 
 class FinishUserProfileTests(TestWithUser, WebTest):
@@ -509,6 +523,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
     def setUp(self):
         super().setUp()
+        self.initial_user_title = self.user.title
         self.user.title = None
         self.user.save()
         self.client.force_login(self.user)
@@ -519,6 +534,10 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
     def tearDown(self):
         super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        self.user.title = self.initial_user_title
+        self.user.save()
         PublicContact.objects.filter(domain=self.domain).delete()
         self.role.delete()
         self.domain.delete()
@@ -539,9 +558,74 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         return page.follow() if follow else page
 
     @less_console_noise_decorator
+    @override_flag("profile_feature", active=True)
+    def test_full_name_initial_value(self):
+        """Test that full_name initial value is empty when first_name or last_name is empty.
+        This will later be displayed as "unknown" using javascript."""
+        username_regular_incomplete = "test_regular_user_incomplete"
+        first_name_2 = "Incomplete"
+        email_2 = "unicorn@igorville.com"
+        incomplete_regular_user = get_user_model().objects.create(
+            username=username_regular_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.REGULAR,
+        )
+        self.app.set_user(incomplete_regular_user.username)
+
+        # Test when first_name is empty
+        incomplete_regular_user.first_name = ""
+        incomplete_regular_user.last_name = "Doe"
+        incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when last_name is empty
+        incomplete_regular_user.first_name = "John"
+        incomplete_regular_user.last_name = ""
+        incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when both first_name and last_name are empty
+        incomplete_regular_user.first_name = ""
+        incomplete_regular_user.last_name = ""
+        incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "")
+
+        # Test when both first_name and last_name are present
+        incomplete_regular_user.first_name = "John"
+        incomplete_regular_user.last_name = "Doe"
+        incomplete_regular_user.save()
+
+        finish_setup_page = self.app.get(reverse("home")).follow()
+        form = finish_setup_page.form
+        self.assertEqual(form["full_name"].value, "John Doe")
+
+        incomplete_regular_user.delete()
+
+    @less_console_noise_decorator
     def test_new_user_with_profile_feature_on(self):
         """Tests that a new user is redirected to the profile setup page when profile_feature is on"""
-        self.app.set_user(self.incomplete_regular_user.username)
+        username_regular_incomplete = "test_regular_user_incomplete"
+        first_name_2 = "Incomplete"
+        email_2 = "unicorn@igorville.com"
+        # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
+        incomplete_regular_user = get_user_model().objects.create(
+            username=username_regular_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.REGULAR,
+        )
+
+        self.app.set_user(incomplete_regular_user.username)
         with override_flag("profile_feature", active=True):
             # This will redirect the user to the setup page.
             # Follow implicity checks if our redirect is working.
@@ -575,12 +659,73 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             # This is the same as clicking the back button.
             completed_setup_page = self.app.get(reverse("home"))
             self.assertContains(completed_setup_page, "Manage your domain")
+        incomplete_regular_user.delete()
+
+    @less_console_noise_decorator
+    def test_new_user_with_empty_name_can_add_name(self):
+        """Tests that a new user without a name can still enter this information accordingly"""
+        username_regular_incomplete = "test_regular_user_incomplete"
+        email = "unicorn@igorville.com"
+        # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
+        incomplete_regular_user = get_user_model().objects.create(
+            username=username_regular_incomplete,
+            first_name="",
+            last_name="",
+            email=email,
+            verification_type=User.VerificationTypeChoices.REGULAR,
+        )
+        self.app.set_user(incomplete_regular_user.username)
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the setup page.
+            # Follow implicity checks if our redirect is working.
+            finish_setup_page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
+
+            # Assert that we're on the right page
+            self.assertContains(finish_setup_page, "Finish setting up your profile")
+
+            finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
+
+            self.assertEqual(finish_setup_page.status_code, 200)
+
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(finish_setup_page, "Enter your phone number.")
+
+            # Check for the name of the save button
+            self.assertContains(finish_setup_page, "user_setup_save_button")
+
+            # Add a phone number
+            finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "test"
+            finish_setup_form["last_name"] = "test2"
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            save_page = self._submit_form_webtest(finish_setup_form, follow=True)
+
+            self.assertEqual(save_page.status_code, 200)
+            self.assertContains(save_page, "Your profile has been updated.")
+
+            # Try to navigate back to the home page.
+            # This is the same as clicking the back button.
+            completed_setup_page = self.app.get(reverse("home"))
+            self.assertContains(completed_setup_page, "Manage your domain")
+        incomplete_regular_user.delete()
 
     @less_console_noise_decorator
     def test_new_user_goes_to_domain_request_with_profile_feature_on(self):
         """Tests that a new user is redirected to the domain request page when profile_feature is on"""
-
-        self.app.set_user(self.incomplete_regular_user.username)
+        username_regular_incomplete = "test_regular_user_incomplete"
+        first_name_2 = "Incomplete"
+        email_2 = "unicorn@igorville.com"
+        # in the case below, REGULAR user is 'Verified by Login.gov, ie. IAL2
+        incomplete_regular_user = get_user_model().objects.create(
+            username=username_regular_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.REGULAR,
+        )
+        self.app.set_user(incomplete_regular_user.username)
         with override_flag("profile_feature", active=True):
             # This will redirect the user to the setup page
             finish_setup_page = self.app.get(reverse("domain-request:")).follow()
@@ -623,6 +768,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertNotContains(completed_setup_page, "What contact information should we use to reach you?")
 
             self.assertContains(completed_setup_page, "You’re about to start your .gov domain request")
+        incomplete_regular_user.delete()
 
     @less_console_noise_decorator
     def test_new_user_with_profile_feature_off(self):
@@ -653,6 +799,7 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
 
     def setUp(self):
         super().setUp()
+        self.initial_user_title = self.user.title
         self.user.title = None
         self.user.save()
         self.client.force_login(self.user)
@@ -663,6 +810,8 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
 
     def tearDown(self):
         super().tearDown()
+        self.user.title = self.initial_user_title
+        self.user.save()
         PublicContact.objects.filter(domain=self.domain).delete()
         self.role.delete()
         Domain.objects.all().delete()
@@ -682,7 +831,18 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
     def test_new_user_with_profile_feature_on(self):
         """Tests that a new user is redirected to the profile setup page when profile_feature is on,
         and testing that the confirmation modal is present"""
-        self.app.set_user(self.incomplete_other_user.username)
+        username_other_incomplete = "test_other_user_incomplete"
+        first_name_2 = "Incomplete"
+        email_2 = "unicorn@igorville.com"
+        # in the case below, other user is representative of GRANDFATHERED,
+        # VERIFIED_BY_STAFF, INVITED, FIXTURE_USER, ie. IAL1
+        incomplete_other_user = get_user_model().objects.create(
+            username=username_other_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.VERIFIED_BY_STAFF,
+        )
+        self.app.set_user(incomplete_other_user.username)
         with override_flag("profile_feature", active=True):
             # This will redirect the user to the user profile page.
             # Follow implicity checks if our redirect is working.
@@ -761,9 +921,10 @@ class UserProfileTests(TestWithUser, WebTest):
         PublicContact.objects.filter(domain=self.domain).delete()
         self.role.delete()
         self.domain.delete()
-        Contact.objects.all().delete()
-        DraftDomain.objects.all().delete()
         DomainRequest.objects.all().delete()
+        DraftDomain.objects.all().delete()
+        Contact.objects.all().delete()
+        DomainInformation.objects.all().delete()
 
     @less_console_noise_decorator
     def error_500_main_nav_with_profile_feature_turned_on(self):
@@ -937,16 +1098,19 @@ class PortfoliosTests(TestWithUser, WebTest):
 
     def setUp(self):
         super().setUp()
-        self.user.save()
         self.client.force_login(self.user)
         self.domain, _ = Domain.objects.get_or_create(name="sampledomain.gov", state=Domain.State.READY)
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
-        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="xyz inc")
+        self.federal_agency = FederalAgency.objects.create()
+        self.portfolio, _ = Portfolio.objects.get_or_create(
+            creator=self.user, organization_name="xyz inc", federal_agency=self.federal_agency
+        )
 
     def tearDown(self):
         Portfolio.objects.all().delete()
+        self.federal_agency.delete()
         super().tearDown()
         PublicContact.objects.filter(domain=self.domain).delete()
         UserDomainRole.objects.all().delete()
@@ -957,23 +1121,6 @@ class PortfoliosTests(TestWithUser, WebTest):
     def _set_session_cookie(self):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-    @less_console_noise_decorator
-    def test_middleware_redirects_to_portfolio_homepage(self):
-        """Tests that a user is redirected to the portfolio homepage when organization_feature is on and
-        a portfolio belongs to the user, test for the special h1s which only exist in that version
-        of the homepage"""
-        self.app.set_user(self.user.username)
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            portfolio_page = self.app.get(reverse("home")).follow()
-            self._set_session_cookie()
-
-            # Assert that we're on the right page
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
 
     @less_console_noise_decorator
     def test_no_redirect_when_org_flag_false(self):

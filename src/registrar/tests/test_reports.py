@@ -1,12 +1,16 @@
 import io
 from django.test import Client, RequestFactory
 from io import StringIO
-from registrar.models.domain_request import DomainRequest
-from registrar.models.domain import Domain
+from registrar.models import (
+    DomainRequest,
+    Domain,
+    UserDomainRole,
+)
 from registrar.utility.csv_export import (
     DomainDataFull,
     DomainDataType,
     DomainDataFederal,
+    DomainDataTypeUser,
     DomainGrowth,
     DomainManaged,
     DomainUnmanaged,
@@ -27,14 +31,14 @@ import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from django.utils import timezone
 from api.tests.common import less_console_noise_decorator
-from .common import MockDb, MockEppLib, less_console_noise, get_time_aware_date
+from .common import MockDbForSharedTests, MockDbForIndividualTests, MockEppLib, less_console_noise, get_time_aware_date
 
 
-class CsvReportsTest(MockDb):
-    """Tests to determine if we are uploading our reports correctly"""
+class CsvReportsTest(MockDbForSharedTests):
+    """Tests to determine if we are uploading our reports correctly."""
 
     def setUp(self):
-        """Create fake domain data"""
+        """setup fake comain data"""
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
         self.factory = RequestFactory()
@@ -47,10 +51,10 @@ class CsvReportsTest(MockDb):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"),
-                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"),
-                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,\r\n"),
-                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\r\n"),
+                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
+                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
             # we just want to verify what is being written.
@@ -69,12 +73,12 @@ class CsvReportsTest(MockDb):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"),
-                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"),
-                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,\r\n"),
-                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\r\n"),
-                call("adomain2.gov,Interstate,,,,,\r\n"),
-                call("zdomain12.gov,Interstate,,,,,\r\n"),
+                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
+                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
+                call("adomain2.gov,Interstate,,,,,(blank)\r\n"),
+                call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
             # we just want to verify what is being written.
@@ -198,16 +202,13 @@ class CsvReportsTest(MockDb):
             self.assertEqual(expected_file_content, response.content)
 
 
-class ExportDataTest(MockDb, MockEppLib):
-    def setUp(self):
-        super().setUp()
-
-    def tearDown(self):
-        super().tearDown()
+class ExportDataTest(MockDbForIndividualTests, MockEppLib):
+    """Test the ExportData class from csv_export."""
 
     @less_console_noise_decorator
     def test_domain_data_type(self):
         """Shows security contacts, domain managers, so"""
+
         # Add security email information
         self.domain_1.name = "defaultsecurity.gov"
         self.domain_1.save()
@@ -233,29 +234,81 @@ class ExportDataTest(MockDb, MockEppLib):
         expected_content = (
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,State,SO,"
             "SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,,"
+            "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,World War I Centennial Commission,,,,(blank),,,"
             "meoward@rocks.com,\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,"
-            ', ,,dotgov@cisa.dhs.gov,"meoward@rocks.com, info@example.com, big_lebowski@dude.co",'
+            ',,,(blank),"big_lebowski@dude.co, info@example.com, meoward@rocks.com",'
             "woofwardthethird@rocks.com\n"
-            "adomain10.gov,Ready,2024-04-03,(blank),Federal,Armed Forces Retirement Home,,,, ,,,,"
+            "adomain10.gov,Ready,2024-04-03,(blank),Federal,Armed Forces Retirement Home,,,,(blank),,,,"
             "squeaker@rocks.com\n"
-            "bdomain4.gov,Unknown,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,,,\n"
-            "bdomain5.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,,,\n"
-            "bdomain6.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,,,\n"
-            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,Armed Forces Retirement Home,,,, ,,"
+            "bdomain4.gov,Unknown,(blank),(blank),Federal,Armed Forces Retirement Home,,,,(blank),,,,\n"
+            "bdomain5.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,,(blank),,,,\n"
+            "bdomain6.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,,(blank),,,,\n"
+            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,Armed Forces Retirement Home,,,,,,"
             "security@mail.gov,,\n"
-            "sdomain8.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,,,\n"
-            "xdomain7.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,,,\n"
-            "zdomain9.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,,,\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,registrar@dotgov.gov,"
+            "sdomain8.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,,(blank),,,,\n"
+            "xdomain7.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,,(blank),,,,\n"
+            "zdomain9.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,,(blank),,,,\n"
+            "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,,(blank),,,"
             "meoward@rocks.com,squeaker@rocks.com\n"
-            "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,, ,,,meoward@rocks.com,\n"
+            "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,,(blank),,,meoward@rocks.com,\n"
         )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
+        self.assertEqual(csv_content, expected_content)
+
+    @less_console_noise_decorator
+    def test_domain_data_type_user(self):
+        """Shows security contacts, domain managers, so for the current user"""
+
+        # Add security email information
+        self.domain_1.name = "defaultsecurity.gov"
+        self.domain_1.save()
+        # Invoke setter
+        self.domain_1.security_contact
+        self.domain_2.security_contact
+        self.domain_3.security_contact
+        # Add a first ready date on the first domain. Leaving the others blank.
+        self.domain_1.first_ready = get_default_start_date()
+        self.domain_1.save()
+
+        # Create a user and associate it with some domains
+        UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
+
+        # Create a request object
+        factory = RequestFactory()
+        request = factory.get("/")
+        request.user = self.user
+
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        # Call the export functions
+        DomainDataTypeUser.export_data_to_csv(csv_file, request=request)
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+        # Read the content into a variable
+        csv_content = csv_file.read()
+
+        # We expect only domains associated with the user
+        expected_content = (
+            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
+            "City,State,SO,SO email,"
+            "Security contact email,Domain managers,Invited domain managers\n"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,"
+            '(blank),"big_lebowski@dude.co, info@example.com, meoward@rocks.com",'
+            "woofwardthethird@rocks.com\n"
+            "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),"
+            '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
+        )
+
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -285,17 +338,18 @@ class ExportDataTest(MockDb, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
-            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,dotgov@cisa.dhs.gov\n"
-            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,\n"
+            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
-            "adomain2.gov,Interstate,,,,,registrar@dotgov.gov\n"
-            "zdomain12.gov,Interstate,,,,,\n"
+            "adomain2.gov,Interstate,,,,,(blank)\n"
+            "zdomain12.gov,Interstate,,,,,(blank)\n"
         )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -325,15 +379,16 @@ class ExportDataTest(MockDb, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
-            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,dotgov@cisa.dhs.gov\n"
-            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,\n"
+            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
         )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -366,8 +421,8 @@ class ExportDataTest(MockDb, MockEppLib):
                 # Call the export functions
                 DomainGrowth.export_data_to_csv(
                     csv_file,
-                    self.start_date.strftime("%Y-%m-%d"),
-                    self.end_date.strftime("%Y-%m-%d"),
+                    start_date=self.start_date.strftime("%Y-%m-%d"),
+                    end_date=self.end_date.strftime("%Y-%m-%d"),
                 )
                 # Reset the CSV file's position to the beginning
                 csv_file.seek(0)
@@ -402,13 +457,14 @@ class ExportDataTest(MockDb, MockEppLib):
 
         squeaker@rocks.com is invited to domain2 (DNS_NEEDED) and domain10 (No managers).
         She should show twice in this report but not in test_DomainManaged."""
+        self.maxDiff = None
         # Create a CSV file in memory
         csv_file = StringIO()
         # Call the export functions
         DomainManaged.export_data_to_csv(
             csv_file,
-            self.start_date.strftime("%Y-%m-%d"),
-            self.end_date.strftime("%Y-%m-%d"),
+            start_date=self.start_date.strftime("%Y-%m-%d"),
+            end_date=self.end_date.strftime("%Y-%m-%d"),
         )
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
@@ -428,7 +484,7 @@ class ExportDataTest(MockDb, MockEppLib):
             "\n"
             "Domain name,Domain type,Domain managers,Invited domain managers\n"
             "cdomain11.gov,Federal - Executive,meoward@rocks.com,\n"
-            'cdomain1.gov,Federal - Executive,"meoward@rocks.com, info@example.com, big_lebowski@dude.co",'
+            'cdomain1.gov,Federal - Executive,"big_lebowski@dude.co, info@example.com, meoward@rocks.com",'
             "woofwardthethird@rocks.com\n"
             "zdomain12.gov,Interstate,meoward@rocks.com,\n"
         )
@@ -436,6 +492,7 @@ class ExportDataTest(MockDb, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -444,7 +501,7 @@ class ExportDataTest(MockDb, MockEppLib):
         # Create a CSV file in memory
         csv_file = StringIO()
         DomainUnmanaged.export_data_to_csv(
-            csv_file, self.start_date.strftime("%Y-%m-%d"), self.end_date.strftime("%Y-%m-%d")
+            csv_file, start_date=self.start_date.strftime("%Y-%m-%d"), end_date=self.end_date.strftime("%Y-%m-%d")
         )
 
         # Reset the CSV file's position to the beginning
@@ -491,8 +548,8 @@ class ExportDataTest(MockDb, MockEppLib):
             # Call the export functions
             DomainRequestGrowth.export_data_to_csv(
                 csv_file,
-                self.start_date.strftime("%Y-%m-%d"),
-                self.end_date.strftime("%Y-%m-%d"),
+                start_date=self.start_date.strftime("%Y-%m-%d"),
+                end_date=self.end_date.strftime("%Y-%m-%d"),
             )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
@@ -554,7 +611,6 @@ class ExportDataTest(MockDb, MockEppLib):
             csv_file.seek(0)
             # Read the content into a variable
             csv_content = csv_file.read()
-            print(csv_content)
             expected_content = (
                 # Header
                 "Domain request,Status,Domain type,Federal type,"
@@ -591,7 +647,7 @@ class ExportDataTest(MockDb, MockEppLib):
             self.assertEqual(csv_content, expected_content)
 
 
-class HelperFunctions(MockDb):
+class HelperFunctions(MockDbForSharedTests):
     """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
 
     def test_get_default_start_date(self):

@@ -18,6 +18,7 @@ from django.contrib.postgres.aggregates import StringAgg
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
+from registrar.utility.enums import DefaultEmail
 
 
 logger = logging.getLogger(__name__)
@@ -108,7 +109,7 @@ class BaseExport(ABC):
         return Q()
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, **export_kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -144,7 +145,7 @@ class BaseExport(ABC):
         return queryset
 
     @classmethod
-    def write_csv_before(cls, csv_writer, start_date=None, end_date=None):
+    def write_csv_before(cls, csv_writer, **export_kwargs):
         """
         Write to csv file before the write_csv method.
         Override in subclasses where needed.
@@ -191,7 +192,7 @@ class BaseExport(ABC):
         return cls.update_queryset(queryset, **kwargs)
 
     @classmethod
-    def export_data_to_csv(cls, csv_file, start_date=None, end_date=None):
+    def export_data_to_csv(cls, csv_file, **export_kwargs):
         """
         All domain metadata:
         Exports domains of all statuses plus domain managers.
@@ -204,7 +205,7 @@ class BaseExport(ABC):
         prefetch_related = cls.get_prefetch_related()
         exclusions = cls.get_exclusions()
         annotations_for_sort = cls.get_annotations_for_sort()
-        filter_conditions = cls.get_filter_conditions(start_date, end_date)
+        filter_conditions = cls.get_filter_conditions(**export_kwargs)
         computed_fields = cls.get_computed_fields()
         related_table_fields = cls.get_related_table_fields()
 
@@ -226,10 +227,13 @@ class BaseExport(ABC):
         models_dict = convert_queryset_to_dict(annotated_queryset, is_model=False)
 
         # Write to csv file before the write_csv
-        cls.write_csv_before(writer, start_date, end_date)
+        cls.write_csv_before(writer, **export_kwargs)
 
         # Write the csv file
-        cls.write_csv(writer, columns, models_dict)
+        rows = cls.write_csv(writer, columns, models_dict)
+
+        # Return rows that for easier parsing and testing
+        return rows
 
     @classmethod
     def write_csv(
@@ -255,6 +259,9 @@ class BaseExport(ABC):
             write_header(writer, columns)
 
         writer.writerows(rows)
+
+        # Return rows for easier parsing and testing
+        return rows
 
     @classmethod
     @abstractmethod
@@ -343,7 +350,11 @@ class DomainExport(BaseExport):
         """
         Fetch all UserDomainRole entries and return a mapping of domain to user__email.
         """
-        user_domain_roles = UserDomainRole.objects.select_related("user").values_list("domain__name", "user__email")
+        user_domain_roles = (
+            UserDomainRole.objects.select_related("user")
+            .order_by("domain__name", "user__email")
+            .values_list("domain__name", "user__email")
+        )
         return list(user_domain_roles)
 
     @classmethod
@@ -371,6 +382,15 @@ class DomainExport(BaseExport):
         if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
             domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
 
+        security_contact_email = model.get("security_contact_email")
+        invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
+        if (
+            not security_contact_email
+            or not isinstance(security_contact_email, str)
+            or security_contact_email.lower().strip() in invalid_emails
+        ):
+            security_contact_email = "(blank)"
+
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
         FIELDS = {
@@ -385,7 +405,7 @@ class DomainExport(BaseExport):
             "State": model.get("state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
-            "Security contact email": model.get("security_contact_email"),
+            "Security contact email": security_contact_email,
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
@@ -544,6 +564,25 @@ class DomainDataType(DomainExport):
         ]
 
 
+class DomainDataTypeUser(DomainDataType):
+    """
+    The DomainDataType report, but sliced on the current request user
+    """
+
+    @classmethod
+    def get_filter_conditions(cls, request=None):
+        """
+        Get a Q object of filter conditions to filter when building queryset.
+        """
+        if request is None or not hasattr(request, "user") or not request.user:
+            # Return nothing
+            return Q(id__in=[])
+
+        user_domain_roles = UserDomainRole.objects.filter(user=request.user)
+        domain_ids = user_domain_roles.values_list("domain_id", flat=True)
+        return Q(domain__id__in=domain_ids)
+
+
 class DomainDataFull(DomainExport):
     """
     Shows security contacts, filtered by state
@@ -601,7 +640,7 @@ class DomainDataFull(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -696,7 +735,7 @@ class DomainDataFederal(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """

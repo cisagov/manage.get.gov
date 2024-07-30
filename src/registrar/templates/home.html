@@ -10,11 +10,11 @@
 {# the entire logged in page goes here #}
 
 {% block homepage_content %}
-
   <div class="tablet:grid-col-11 desktop:grid-col-10 tablet:grid-offset-1">
     {% block messages %}
       {% include "includes/form_messages.html" %}
     {% endblock %}
+  
     <h1>Manage your domains</h1>
 
     {% comment %}
@@ -32,26 +32,8 @@
     {% include "includes/domains_table.html" %}
     {% include "includes/domain_requests_table.html" %}
 
-    {# Note: Reimplement this after MVP #}
-    <!--
-    <section class="section--outlined tablet:grid-col-11 desktop:grid-col-10">
-      <h2>Archived domains</h2>
-      <p>You don't have any archived domains</p>
-    </section>
-    -->
-
-    <!-- Note: Uncomment below when this is being implemented post-MVP -->
-    <!-- <section class="tablet:grid-col-11 desktop:grid-col-10">
-      <h2 class="padding-top-1 mobile-lg:padding-top-3"> Export domains</h2>
-      <p>Download a list of your domains and their statuses as a csv file.</p>
-      <a href="{% url 'todo' %}" class="usa-button usa-button--outline">
-        Export domains as csv
-      </a>
-    </section>
-    -->
-
+  </div>
 {% endblock %}
-</div>
 
 {% else %} {# not user.is_authenticated #}
 {# the entire logged out page goes here #}

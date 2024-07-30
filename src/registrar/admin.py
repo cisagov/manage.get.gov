@@ -9,6 +9,8 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
+from registrar.models.domain_group import DomainGroup
+from registrar.models.suborganization import Suborganization
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -35,6 +37,7 @@ from django_admin_multiple_choice_list_filter.list_filters import MultipleChoice
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from django.utils.translation import gettext_lazy as _
 
@@ -90,6 +93,31 @@ class UserResource(resources.ModelResource):
         model = models.User
 
 
+class FilteredSelectMultipleArrayWidget(FilteredSelectMultiple):
+    """Custom widget to allow for editing an ArrayField in a widget similar to filter_horizontal widget"""
+
+    def __init__(self, verbose_name, is_stacked=False, choices=(), **kwargs):
+        super().__init__(verbose_name, is_stacked, **kwargs)
+        self.choices = choices
+
+    def value_from_datadict(self, data, files, name):
+        values = super().value_from_datadict(data, files, name)
+        return values or []
+
+    def get_context(self, name, value, attrs):
+        if value is None:
+            value = []
+        elif isinstance(value, str):
+            value = value.split(",")
+        # alter self.choices to be a list of selected and unselected choices, based on value;
+        # order such that selected choices come before unselected choices
+        self.choices = [(choice, label) for choice, label in self.choices if choice in value] + [
+            (choice, label) for choice, label in self.choices if choice not in value
+        ]
+        context = super().get_context(name, value, attrs)
+        return context
+
+
 class MyUserAdminForm(UserChangeForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs.
 
@@ -102,6 +130,14 @@ class MyUserAdminForm(UserChangeForm):
         widgets = {
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
+            "portfolio_roles": FilteredSelectMultipleArrayWidget(
+                "portfolio_roles", is_stacked=False, choices=User.UserPortfolioRoleChoices.choices
+            ),
+            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
+                "portfolio_additional_permissions",
+                is_stacked=False,
+                choices=User.UserPortfolioPermissionChoices.choices,
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -652,18 +688,49 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "is_superuser",
                     "groups",
                     "user_permissions",
+                    "portfolio",
+                    "portfolio_roles",
+                    "portfolio_additional_permissions",
                 )
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    autocomplete_fields = [
+        "portfolio",
+    ]
+
     readonly_fields = ("verification_type",)
 
-    # Hide Username (uuid), Groups and Permissions
-    # Q: Now that we're using Groups and Permissions,
-    # do we expose those to analysts to view?
     analyst_fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "status",
+                    "verification_type",
+                )
+            },
+        ),
+        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "groups",
+                    "portfolio",
+                    "portfolio_roles",
+                    "portfolio_additional_permissions",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    # TODO: delete after we merge organization feature
+    analyst_fieldsets_no_portfolio = (
         (
             None,
             {
@@ -703,6 +770,27 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "last_name",
         "title",
         "email",
+        "phone",
+        "Permissions",
+        "is_active",
+        "groups",
+        "Important dates",
+        "last_login",
+        "date_joined",
+        "portfolio",
+        "portfolio_roles",
+        "portfolio_additional_permissions",
+    ]
+
+    # TODO: delete after we merge organization feature
+    analyst_readonly_fields_no_portfolio = [
+        "User profile",
+        "first_name",
+        "middle_name",
+        "last_name",
+        "title",
+        "email",
+        "phone",
         "Permissions",
         "is_active",
         "groups",
@@ -783,8 +871,12 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             # Show all fields for all access users
             return super().get_fieldsets(request, obj)
         elif request.user.has_perm("registrar.analyst_access_permission"):
-            # show analyst_fieldsets for analysts
-            return self.analyst_fieldsets
+            if flag_is_active(request, "organization_feature"):
+                # show analyst_fieldsets for analysts
+                return self.analyst_fieldsets
+            else:
+                # TODO: delete after we merge organization feature
+                return self.analyst_fieldsets_no_portfolio
         else:
             # any admin user should belong to either full_access_group
             # or cisa_analyst_group
@@ -798,7 +890,11 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         else:
             # Return restrictive Read-only fields for analysts and
             # users who might not belong to groups
-            return self.analyst_readonly_fields
+            if flag_is_active(request, "organization_feature"):
+                return self.analyst_readonly_fields
+            else:
+                # TODO: delete after we merge organization feature
+                return self.analyst_readonly_fields_no_portfolio
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add user's related domains and requests to context"""
@@ -1000,6 +1096,16 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context["tabtitle"] = "Contacts"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
+
+    def save_model(self, request, obj, form, change):
+        # Clear warning messages before saving
+        storage = messages.get_messages(request)
+        storage.used = False
+        for message in storage:
+            if message.level == messages.WARNING:
+                storage.used = True
+
+        return super().save_model(request, obj, form, change)
 
 
 class SeniorOfficialAdmin(ListHeaderAdmin):
@@ -1285,10 +1391,11 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "is_election_board", "federal_agency")
+    readonly_fields = ("other_contacts", "is_election_board")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
+        "federal_agency",
         "creator",
         "type_of_work",
         "more_organization_information",
@@ -1601,12 +1708,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "current_websites",
         "alternative_domains",
         "is_election_board",
-        "federal_agency",
         "status_history",
     )
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
+        "federal_agency",
         "creator",
         "about_your_organization",
         "requested_domain",
@@ -2659,18 +2766,31 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 
 class PortfolioAdmin(ListHeaderAdmin):
-    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
+
+    change_form_template = "django/admin/portfolio_change_form.html"
+
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
-    # readonly_fields = [
-    #     "requestor",
-    # ]
+
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
         "creator",
         "federal_agency",
     ]
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Add related suborganizations and domain groups"""
+        obj = self.get_object(request, object_id)
+
+        # ---- Domain Groups
+        domain_groups = DomainGroup.objects.filter(portfolio=obj)
+
+        # ---- Suborganizations
+        suborganizations = Suborganization.objects.filter(portfolio=obj)
+
+        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
+        return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
 
@@ -2678,7 +2798,6 @@ class PortfolioAdmin(ListHeaderAdmin):
             # ---- update creator ----
             # Set the creator field to the current admin user
             obj.creator = request.user if request.user.is_authenticated else None
-
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
@@ -2687,7 +2806,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
-
         super().save_model(request, obj, form, change)
 
 

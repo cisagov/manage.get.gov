@@ -8,7 +8,7 @@
             <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
         {%endif %}
     </svg>
-    <div class="display-inline padding-left-05 margin-left-3 readonly-field {% if not field.field.required %}text-base{% endif %}">
+    <div class="display-inline padding-left-05 margin-left-3 input-with-edit-button__readonly-field {% if not field.field.required %}text-base{% endif %}">
         {% if field.name != "phone" %}
         {{ field.value }}
         {% else %}
