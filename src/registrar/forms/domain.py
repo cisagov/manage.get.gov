@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.forms import formset_factory
 from registrar.models import DomainRequest
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
+from registrar.models.suborganization import Suborganization
 from registrar.models.utility.domain_helper import DomainHelper
 from registrar.utility.errors import (
     NameserverError,
@@ -151,6 +152,45 @@ class DomainNameserverForm(forms.Form):
                 )
             else:
                 self.add_error("ip", str(e))
+
+
+class DomainSuborganizationForm(forms.ModelForm):
+    """Form for updating the suborganization"""
+
+    sub_organization = forms.ModelChoiceField(
+        queryset=Suborganization.objects.none(),
+        required=True,
+        widget=forms.Select(),
+    )
+
+    class Meta:
+        model = DomainInformation
+        fields = [
+            "sub_organization",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        # Get the incoming request object
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+
+        portfolio = None
+        if self.instance and self.instance.portfolio:
+            # Get suborgs under the portfolio that this is associated with first
+            portfolio = self.instance.portfolio
+        elif self.request and self.request.user and self.request.user.portfolio:
+            # Question: If no portfolio is associated with this record, 
+            # should we default to the user one?
+            # portfolio = self.request.user.portfolio
+            logger.warning(f"No portfolio was found for {self.instance}.")
+        
+        self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=portfolio)
+
+        # Set custom form label
+        self.fields["sub_organization"].label = "Suborganization name"
+
+        # Use the combobox rather than the regular select widget
+        self.fields["sub_organization"].widget.template_name = "django/forms/widgets/combobox.html"
 
 
 class BaseNameserverFormset(forms.BaseFormSet):
