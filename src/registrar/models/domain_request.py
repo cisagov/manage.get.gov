@@ -215,6 +215,14 @@ class DomainRequest(TimeStampedModel):
             }
             return org_election_map
 
+        @classmethod
+        def get_org_label(cls, org_name: str):
+            # Translating the key that is given to the direct readable value
+            if not org_name:
+                return None
+
+            return cls(org_name).label if org_name else None
+
     class OrganizationChoicesVerbose(models.TextChoices):
         """
         Tertiary organization choices
