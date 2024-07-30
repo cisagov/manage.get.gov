@@ -103,7 +103,7 @@ class Command(BaseCommand):
         new_so = SeniorOfficial(**so_kwargs)
 
         # Store a variable for the console logger
-        if any([old_first_name, new_so.last_name]):
+        if all([old_first_name, new_so.last_name]):
             record_display = new_so
         else:
             record_display = so_kwargs
