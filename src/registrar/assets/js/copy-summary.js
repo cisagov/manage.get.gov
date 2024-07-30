@@ -21,9 +21,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // 1 - Create a hyperlinks map so we can display contact details and also link to the contact
         const otherContactsDiv = document.querySelector('.form-row.field-other_contacts .readonly');
         let otherContactLinks = [];
+        const nameToUrlMap = {};
         if (otherContactsDiv) {
             otherContactLinks = otherContactsDiv.querySelectorAll('a');
-            const nameToUrlMap = {};
             otherContactLinks.forEach(link => {
               const name = link.textContent.trim();
               const url = link.href;
@@ -38,20 +38,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const contacts = document.querySelectorAll('.dja-detail-list dl');
 
         // Iterate through each contact element
+        const bulletList = document.createElement('ul');
         contacts.forEach(contact => {
             const name = contact.querySelector('a#contact_info_name').innerText;
             const title = contact.querySelector('span#contact_info_title').innerText;
             const email = contact.querySelector('span#contact_info_email').innerText;
             const phone = contact.querySelector('span#contact_info_phone').innerText;
-
             const url = nameToUrlMap[name] || '#';
+
             // Format the contact information
             const listItem = document.createElement('li');
             listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
             bulletList.appendChild(listItem);
-            });
-            otherContactsSummary += bulletList.outerHTML
         });
+        otherContactsSummary += bulletList.outerHTML
 
 
         //------ Requested Domains
@@ -115,12 +115,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 'text/html': new Blob([tempElement.innerHTML], { type: 'text/html' })
             })
         ]).then(() => {
-            console.log('Bold text copied to clipboard successfully!');
+            console.log('Summary copied to clipboard successfully!');
         }).catch(err => {
             console.error('Failed to copy text: ', err);
         });
         document.body.removeChild(tempElement); 
-
-        alert('Summary copied to clipboard!');
     });
 });

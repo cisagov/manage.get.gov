@@ -1,4 +1,5 @@
 {% load i18n admin_urls %}
+{% load i18n static %}
 
 {% comment %} Replace li with p for more semantic HTML if we have a single child {% endcomment %}
 {% block object-tools-items %}
@@ -19,7 +20,12 @@
             </li>
             {% if opts.model_name == 'domainrequest' %}
             <li>
-                <a id="copy-summary-btn" class="historylink" href="#">{% translate "Copy request summary" %}</a>
+                <a id="copy-summary-btn" class="historylink " href="#">
+                    <svg class="usa-icon" >
+                        <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                    </svg>
+                    <span>{% translate "Copy request summary" %}</span>
+                </a>
             </li>
             {% endif %}
         </ul>
