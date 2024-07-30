@@ -301,6 +301,11 @@ class User(AbstractUser):
             or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
             # or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_REQUESTS)
         )
+    
+    
+    def has_view_all_domains_permission(self):
+        """Determines if the current user can view all available domains in a given portfolio"""
+        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
