@@ -64,15 +64,15 @@ class User(AbstractUser):
 
     class UserPortfolioRoleChoices(models.TextChoices):
         """
-        Roles make it easier for admins to look at
+        Roles make it easier for admins to look at groups of users
         """
 
         ORGANIZATION_ADMIN = "organization_admin", "Admin"
         ORGANIZATION_ADMIN_READ_ONLY = "organization_admin_read_only", "Admin read only"
-        # ORGANIZATION_MEMBER is an abstract role where user.portfolio is true
+        ORGANIZATION_MEMBER = "organization_member", "Member"
 
     class UserPortfolioPermissionChoices(models.TextChoices):
-        """ """
+        """We test against permissions to manage access"""
 
         VIEW_ALL_DOMAINS = "view_all_domains", "View all domains and domain reports"
         VIEW_MANAGED_DOMAINS = "view_managed_domains", "View managed domains"
@@ -89,8 +89,8 @@ class User(AbstractUser):
         VIEW_CREATED_REQUESTS = "view_created_requests", "View created requests"
         EDIT_REQUESTS = "edit_requests", "Create and edit requests"
 
-        # VIEW_PORTFOLIO is an abstract permission that returns true when user.portfolio is true
         EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
+        VIEW_PORTFOLIO = "view_portfolio", "View organization"
 
     PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
@@ -105,6 +105,9 @@ class User(AbstractUser):
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_MEMBER,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+        ],
+        UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
         ],
     }
 
@@ -278,8 +281,7 @@ class User(AbstractUser):
     # the methods below are checks for individual portfolio permissions. They are defined here
     # to make them easier to call elsewhere throughout the application
     def has_base_portfolio_permission(self):
-        """Base role/permission, the user is simply linked to a portfolio"""
-        return self.portfolio is not None
+        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
     def has_edit_org_portfolio_permission(self):
         return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO)

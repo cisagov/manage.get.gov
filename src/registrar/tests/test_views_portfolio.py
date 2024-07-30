@@ -38,9 +38,24 @@ class TestPortfolio(WebTest):
         super().tearDown()
 
     @less_console_noise_decorator
+    def test_middleware_does_not_redirect_if_no_permission(self):
+        """Test that user with no portfolio permission is not redirected when attempting to access home"""
+        self.app.set_user(self.user.username)
+        self.user.portfolio = self.portfolio
+        self.user.save()
+        self.user.refresh_from_db()
+        with override_flag("organization_feature", active=True):
+            # This will redirect the user to the portfolio page.
+            # Follow implicity checks if our redirect is working.
+            portfolio_page = self.app.get(reverse("home"))
+            # Assert that we're on the right page
+            self.assertNotContains(portfolio_page, self.portfolio.organization_name)
+
+    @less_console_noise_decorator
     def test_middleware_does_not_redirect_if_no_portfolio(self):
         """Test that user with no assigned portfolio is not redirected when attempting to access home"""
         self.app.set_user(self.user.username)
+        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
         self.user.save()
         self.user.refresh_from_db()
         with override_flag("organization_feature", active=True):
@@ -52,9 +67,10 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_middleware_redirects_to_portfolio_organization_page(self):
-        """Test that user with a portfolio is redirected to portfolio organization page"""
+        """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to portfolio organization page"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
+        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
         self.user.save()
         self.user.refresh_from_db()
         with override_flag("organization_feature", active=True):
@@ -67,10 +83,12 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_middleware_redirects_to_portfolio_domains_page(self):
-        """Test that user with a portfolio and VIEW_ALL_DOMAINS is redirected to portfolio domains page"""
+        """Test that user with a portfolio, VIEW_PORTFOLIO, VIEW_ALL_DOMAINS
+        is redirected to portfolio domains page"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
+            User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
         ]
         self.user.save()
@@ -117,11 +135,28 @@ class TestPortfolio(WebTest):
             self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
+    def test_portfolio_organization_page_403_when_user_not_have_permission(self):
+        """Test that user without proper permission is not allowed access to portfolio organization page"""
+        self.app.set_user(self.user.username)
+        self.user.portfolio = self.portfolio
+        self.user.save()
+        self.user.refresh_from_db()
+        with override_flag("organization_feature", active=True):
+            # This will redirect the user to the portfolio page.
+            # Follow implicity checks if our redirect is working.
+            response = self.app.get(
+                reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}), status=403
+            )
+            # Assert the response is a 403 Forbidden
+            self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_portfolio_organization_page_read_only(self):
         """Test that user with a portfolio can access the portfolio organization page, read only"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.portfolio.city = "Los Angeles"
+        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
         self.portfolio.save()
         self.user.save()
         self.user.refresh_from_db()
@@ -142,6 +177,7 @@ class TestPortfolio(WebTest):
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
+            User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
         ]
         self.portfolio.city = "Los Angeles"
@@ -210,6 +246,7 @@ class TestPortfolio(WebTest):
             self.app.set_user(self.user.username)
             self.user.portfolio = self.portfolio
             self.user.portfolio_additional_permissions = [
+                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ]
             self.user.save()
@@ -227,6 +264,7 @@ class TestPortfolio(WebTest):
             self.app.set_user(self.user.username)
             self.user.portfolio = self.portfolio
             self.user.portfolio_additional_permissions = [
+                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ]
             self.user.save()
@@ -245,6 +283,7 @@ class TestPortfolio(WebTest):
             self.app.set_user(self.user.username)
             self.user.portfolio = self.portfolio
             self.user.portfolio_additional_permissions = [
+                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ]
             self.user.save()
