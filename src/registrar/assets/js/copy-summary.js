@@ -34,16 +34,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // 2 - Iterate through contact details and assemble html for summary
         let otherContactsSummary = ""
         // Get the table rows of contact details
-        const otherContactsTable = document.querySelector('.form-row.field-other_contacts table tbody');
-        if (otherContactsTable) {
-            const otherContactsRows = otherContactsTable.querySelectorAll('tr');
-            const bulletList = document.createElement('ul');
-            otherContactsRows.forEach(contactRow => {
-            // Extract the contact details
-            const name = contactRow.querySelector('th').textContent.trim();
-            const title = contactRow.querySelectorAll('td')[0].textContent.trim();
-            const email = contactRow.querySelectorAll('td')[1].textContent.trim();
-            const phone = contactRow.querySelectorAll('td')[2].textContent.trim();
+        // Select all contact elements
+        const contacts = document.querySelectorAll('.dja-detail-list dl');
+
+        // Iterate through each contact element
+        contacts.forEach(contact => {
+            const name = contact.querySelector('a#contact_info_name').innerText;
+            const title = contact.querySelector('span#contact_info_title').innerText;
+            const email = contact.querySelector('span#contact_info_email').innerText;
+            const phone = contact.querySelector('span#contact_info_phone').innerText;
+
             const url = nameToUrlMap[name] || '#';
             // Format the contact information
             const listItem = document.createElement('li');
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
             bulletList.appendChild(listItem);
             });
             otherContactsSummary += bulletList.outerHTML
-        }
+        });
 
 
         //------ Requested Domains
