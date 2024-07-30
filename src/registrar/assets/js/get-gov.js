@@ -1984,7 +1984,6 @@ document.addEventListener('DOMContentLoaded', function() {
 /**
  * An IIFE that adds the default selection on comboboxes to the input field.
  * This is because this action doesn't get fired by the time the page loads
- * TODO: Will be refined in #2352
  */
 (function loadInitialValuesForComboBoxes() {
   document.addEventListener('DOMContentLoaded', (event) => {

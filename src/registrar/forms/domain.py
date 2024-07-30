@@ -182,7 +182,7 @@ class DomainSuborganizationForm(forms.ModelForm):
             # Question: If no portfolio is associated with this record, 
             # should we default to the user one?
             # portfolio = self.request.user.portfolio
-            logger.warning(f"No portfolio was found for {self.instance}.")
+            logger.warning(f"No portfolio was found for {self.instance} on user {self.request.user}.")
         
         self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=portfolio)
 
