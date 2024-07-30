@@ -12,7 +12,7 @@ assignees: abroddrick
 - Onboardee: _GH handle of person being onboarded_
 - Onboarder: _GH handle of onboard buddy_
 
-## Installation 
+## Installation
 
 There are several tools we use locally that you will need to have. 
 
