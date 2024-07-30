@@ -134,7 +134,7 @@ class TestPortfolio(WebTest):
             # The read only label for city will be a h4
             self.assertContains(response, '<h4 class="read-only-label">City</h4>')
             self.assertNotContains(response, 'for="id_city"')
-            self.assertContains(response, '<p class="margin-top-0">Los Angeles</p>')
+            self.assertContains(response, '<p class="read-only-value">Los Angeles</p>')
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_edit_access(self):
@@ -156,7 +156,7 @@ class TestPortfolio(WebTest):
             self.assertContains(response, '<h4 class="read-only-label">Federal agency</h4>')
             # The read only label for city will be a h4
             self.assertNotContains(response, '<h4 class="read-only-label">City</h4>')
-            self.assertNotContains(response, '<p class="margin-top-0">Los Angeles</p>>')
+            self.assertNotContains(response, '<p class="read-only-value">Los Angeles</p>>')
             self.assertContains(response, 'for="id_city"')
 
     @less_console_noise_decorator
