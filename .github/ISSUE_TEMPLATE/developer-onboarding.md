@@ -21,20 +21,21 @@ There are several tools we use locally that you will need to have.
   - Alternatively, for Windows, [consider using chocolately](https://community.chocolatey.org/packages/cloudfoundry-cli/7.2.0)
 - [ ] [GPG](https://gnupg.org/download/)
   - This may not work on DHS devices. Instead, you can [use ssh keys](#setting-up-commit-signing-with-ssh) instead
-- [ ] *Docker Community Edition
-- [ ] *Git
-- [ ] *VSCode (our preferred editor)
-- [ ] *Github Desktop
+- [ ] Docker Community Edition*
+- [ ] Git*
+- [ ] VSCode (our preferred editor)*
+- [ ] Github Desktop*
 
 The following tools are optional, but also can be requested through the DHS IT portal:
-- [ ] **Slack Desktop App
-- [ ] *Python 3.10
-- [ ] *NodeJS (latest version available)
-- [ ] *Putty
-- [ ] *Windows Subsystem for Linux
+- [ ] Slack Desktop App**
+- [ ] Python 3.10*
+- [ ] NodeJS (latest version available)*
+- [ ] Putty*
+- [ ] Windows Subsystem for Linux*
 
-*   -> must be requested through DHS IT portal on DHS devices
-**  -> can be found in software center on DHS devices
+\* Must be requested through DHS IT portal on DHS devices
+
+** Downloadable via DHS Software Center
 
 ## Access
 
