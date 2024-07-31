@@ -11,12 +11,6 @@
     }
     .usa-icon {
         // align icon with x height
-        margin-top: units(0.5);
-        margin-right: units(0.5);
+        vertical-align: middle;
     }
-}
-
-.modelLink-icon {
-    margin-bottom: 2px;
-    vertical-align: middle;
 }
