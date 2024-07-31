@@ -224,7 +224,48 @@ class TestPortfolio(WebTest):
 
             # removing non-basic portfolio perms, which should remove domains
             # and domain requests from nav
-            self.user.portfolio_additional_permissions = []
+            self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+            self.user.save()
+            self.user.refresh_from_db()
+
+            portfolio_page = self.app.get(reverse("home")).follow()
+
+            self.assertContains(portfolio_page, self.portfolio.organization_name)
+            self.assertContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertNotContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertNotContains(
+                portfolio_page, reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk})
+            )
+            self.assertNotContains(
+                portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
+            )
+
+    @less_console_noise_decorator
+    def test_navigation_links_hidden_when_user_not_have_role(self):
+        """Test that admin / memmber roles are associated with the right access"""
+        self.app.set_user(self.user.username)
+        self.user.portfolio = self.portfolio
+        self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        self.user.save()
+        self.user.refresh_from_db()
+        with override_flag("organization_feature", active=True):
+            # This will redirect the user to the portfolio page.
+            # Follow implicity checks if our redirect is working.
+            portfolio_page = self.app.get(reverse("home")).follow()
+            # Assert that we're on the right page
+            self.assertContains(portfolio_page, self.portfolio.organization_name)
+            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertContains(
+                portfolio_page, reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk})
+            )
+            self.assertContains(
+                portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
+            )
+
+            # removing non-basic portfolio role, which should remove domains
+            # and domain requests from nav
+            self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
             self.user.save()
             self.user.refresh_from_db()
 
