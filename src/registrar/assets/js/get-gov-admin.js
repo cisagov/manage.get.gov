@@ -646,7 +646,7 @@ function initializeWidgetOnList(list, parentId) {
             const bulletList = document.createElement('ul');
 
             // CASE 1 - Contacts are not in a table (this happens if there is only one or two other contacts)
-            const contacts = document.querySelectorAll('.field-other_contacts .dja-detail-list dl');
+            const contacts = document.querySelectorAll('.field-other_contacts .dja-detail-list dt');
             if (contacts) {
                 contacts.forEach(contact => {
                     // Check if the <dl> element is not empty

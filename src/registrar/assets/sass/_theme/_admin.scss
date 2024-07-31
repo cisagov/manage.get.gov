@@ -377,6 +377,11 @@ input.admin-confirm-button {
     }
 }
 
+.usa-icon {
+    // align icon with x height
+    vertical-align: middle;      
+}
+
 .module--custom {
     a {
         font-size: 13px;
