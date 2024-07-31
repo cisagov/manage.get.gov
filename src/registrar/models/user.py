@@ -89,8 +89,8 @@ class User(AbstractUser):
         VIEW_CREATED_REQUESTS = "view_created_requests", "View created requests"
         EDIT_REQUESTS = "edit_requests", "Create and edit requests"
 
-        EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
         VIEW_PORTFOLIO = "view_portfolio", "View organization"
+        EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
 
     PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
