@@ -148,7 +148,9 @@ All automation for setting up a developer sandbox is documented in the scripts f
 ## Known Issues
 
 ### SSL Verification Failure
-Some developers, especially those using Government Furnished Equipment (GFE), have problems installing python packages due to an SSL verification failure. This happens because GFE has a custom certificate chain installed, but python uses its own certificate bundle. As a result, when pip tries to verify the TLS connection to download a package, it cannot and so the download fails. To resolve this, if you are running locally you can use --use-feature=truststore to direct pip to use the local certificate store. If you are running a docker container, you will need to export the root certificate and pull it into the container. Ask another developer how to do this properly.
+Some developers using Government Furnished Equipment (GFE) have problems using tools such as git and pip due to SSL verification failurse. This happens because GFE has a custom certificate chain installed, but these tools use their own certificate bundles. As a result, when they try to verify an ssl connection, they cannot and so the connection fails. To resolve this in pip you can use  --use-feature=truststore to direct pip to use the local certificate store. If you are running into this issue when using git on windows, run ```git config --global http.sslbackend schannel```.
+
+If you are running into these issues in a docker container you will need to export the root certificate and pull it into the container. Ask another developer how to do this properly.
 
 ### Puppeteer Download Error
 When building the node image either individually or with docker compose, there may be an error caused by a node package call puppeteer. This can be resolved by adding `ENV PUPPETEER_SKIP_DOWNLOAD=true` to [node.Dockerfile](../../src/node.Dockerfile) after the COPY command.
