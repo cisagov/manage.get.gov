@@ -20,13 +20,14 @@ There are several tools we use locally that you will need to have.
   - If you are using Windows, installation information can be found [here](https://github.com/cloudfoundry/cli/wiki/V8-CLI-Installation-Guide#installers-and-compressed-binaries)
   - Alternatively, for Windows, [consider using chocolately](https://community.chocolatey.org/packages/cloudfoundry-cli/7.2.0)
 - [ ] [GPG](https://gnupg.org/download/)
-  - This may not work on DHS devices. Instead, you can [use ssh keys](#setting-up-commit-signing-with-ssh) instead
+  - Make sure you have `gpg` >2.1.7. Run `gpg --version` to check. If not, [install gnupg](https://formulae.brew.sh/formula/gnupg)
+  - This may not work on DHS devices. Alternatively, you can [use ssh keys](#setting-up-commit-signing-with-ssh) instead.
 - [ ] Docker Community Edition*
 - [ ] Git*
 - [ ] VSCode (our preferred editor)*
 - [ ] Github Desktop*
 
-The following tools are optional, but also can be requested through the DHS IT portal:
+The following tools are optional  but recommended. For DHS devices, these can be requested through the DHS IT portal:
 - [ ] Slack Desktop App**
 - [ ] Python 3.10*
 - [ ] NodeJS (latest version available)*
