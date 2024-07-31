@@ -361,16 +361,18 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Get the csv content
-        csv_content = self._run_domain_data_type_user_export(request)
         self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         self.user.save()
+
+        csv_content = self._run_domain_data_type_user_export(request)
 
         self.assertNotIn(self.domain_1.name, csv_content)
         self.assertNotIn(self.domain_3.name, csv_content)
         self.assertIn(self.domain_2.name, csv_content)
-
-        # Get the csv content
-        csv_content = self._run_domain_data_type_user_export(request)
+        self.domain_1.delete()
+        self.domain_2.delete()
+        self.domain_3.delete()
+        portfolio.delete()
 
     def _run_domain_data_type_user_export(self, request):
         """Helper function to run the export_data_to_csv function on DomainDataTypeUser"""

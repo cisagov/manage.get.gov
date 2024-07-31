@@ -794,7 +794,6 @@ class MockDb(TestCase):
         UserDomainRole.objects.all().delete()
         User.objects.all().delete()
         DomainInvitation.objects.all().delete()
-        Portfolio.objects.all().delete()
         cls.federal_agency_1.delete()
         cls.federal_agency_2.delete()
 
