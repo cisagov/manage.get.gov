@@ -207,6 +207,7 @@ function addOrRemoveSessionBoolean(name, add){
     
 
 })();
+
 /** An IIFE for pages in DjangoAdmin that use a clipboard button
 */
 (function (){
@@ -233,21 +234,17 @@ function addOrRemoveSessionBoolean(name, add){
                     buttonIcon.setAttribute('xlink:href', baseHref + '#check');
 
                     // Change the button text
-                    nearestSpan = button.querySelector("span")
+                    let nearestSpan = button.querySelector("span")
+                    let original_text = nearestSpan.innerText
                     nearestSpan.innerText = "Copied to clipboard"
 
                     setTimeout(function() {
                         // Change back to the copy icon
                         buttonIcon.setAttribute('xlink:href', currentHref); 
-                        if (button.classList.contains('usa-button__small-text')) {
-                            nearestSpan.innerText = "Copy email";
-                        } else {
-                            nearestSpan.innerText = "Copy";
-                        }
+                        nearestSpan.innerText = original_text;
                     }, 2000);
 
                 }
-
             }).catch(function(error) {
                 console.error('Clipboard copy failed', error);
             });
@@ -603,5 +600,157 @@ function initializeWidgetOnList(list, parentId) {
             hideElement(actionNeededEmail.parentElement)
             showElement(readonlyView)
         }
+    }
+})();
+
+
+/** An IIFE for copy summary button (appears in DomainRegistry models)
+*/
+(function (){
+    const copyButton = document.getElementById('copy-summary-btn');
+
+    if (copyButton) {
+        copyButton.addEventListener('click', function() {
+            /// Generate a rich HTML summary text and copy to clipboard
+
+            //------ Organization Type
+            const organizationTypeElement = document.getElementById('id_organization_type');
+            const organizationType = organizationTypeElement.options[organizationTypeElement.selectedIndex].text;
+
+            //------ Alternative Domains
+            const alternativeDomainsDiv = document.querySelector('.form-row.field-alternative_domains .readonly');
+            const alternativeDomainslinks = alternativeDomainsDiv.querySelectorAll('a');
+            const alternativeDomains = Array.from(alternativeDomainslinks).map(link => link.textContent);
+
+            //------ Existing Websites
+            const existingWebsitesDiv = document.querySelector('.form-row.field-current_websites .readonly');
+            const existingWebsiteslinks = existingWebsitesDiv.querySelectorAll('a');
+            const existingWebsites = Array.from(existingWebsiteslinks).map(link => link.textContent);
+
+            //------ Additional Contacts
+            // 1 - Create a hyperlinks map so we can display contact details and also link to the contact
+            const otherContactsDiv = document.querySelector('.form-row.field-other_contacts .readonly');
+            let otherContactLinks = [];
+            const nameToUrlMap = {};
+            if (otherContactsDiv) {
+                otherContactLinks = otherContactsDiv.querySelectorAll('a');
+                otherContactLinks.forEach(link => {
+                const name = link.textContent.trim();
+                const url = link.href;
+                nameToUrlMap[name] = url;
+                });
+            }
+        
+            // 2 - Iterate through contact details and assemble html for summary
+            let otherContactsSummary = ""
+            // Get the table rows of contact details
+            // Select all contact elements
+            const contacts = document.querySelectorAll('.dja-detail-list dl');
+
+            // Iterate through each contact element
+            const bulletList = document.createElement('ul');
+            contacts.forEach(contact => {
+                const name = contact.querySelector('a#contact_info_name').innerText;
+                const title = contact.querySelector('span#contact_info_title').innerText;
+                const email = contact.querySelector('span#contact_info_email').innerText;
+                const phone = contact.querySelector('span#contact_info_phone').innerText;
+                const url = nameToUrlMap[name] || '#';
+
+                // Format the contact information
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
+                bulletList.appendChild(listItem);
+            });
+            otherContactsSummary += bulletList.outerHTML
+
+
+            //------ Requested Domains
+            const requestedDomainElement = document.getElementById('id_requested_domain');
+            const requestedDomain = requestedDomainElement.options[requestedDomainElement.selectedIndex].text;
+
+            //------ Submitter
+            // Function to extract text by ID and handle missing elements
+            function extractTextById(id, divElement) {
+                if (divElement) {
+                    const element = divElement.querySelector(`#${id}`);
+                    return element ? ", " + element.textContent.trim() : '';
+                }
+                return '';
+            }
+            // Extract the submitter name, title, email, and phone number
+            const submitterDiv = document.querySelector('.form-row.field-submitter');
+            const submitterNameElement = document.getElementById('id_submitter');
+            const submitterName = submitterNameElement.options[submitterNameElement.selectedIndex].text;
+            const submitterTitle = extractTextById('contact_info_title', submitterDiv);
+            const submitterEmail = extractTextById('contact_info_email', submitterDiv);
+            const submitterPhone = extractTextById('contact_info_phone', submitterDiv);
+            let submitterInfo = `${submitterName}${submitterTitle}${submitterEmail}${submitterPhone}`;
+
+
+            //------ Senior Official
+            const seniorOfficialDiv = document.querySelector('.form-row.field-senior_official');
+            const seniorOfficialElement = document.getElementById('id_senior_official');
+            const seniorOfficialName = seniorOfficialElement.options[seniorOfficialElement.selectedIndex].text;
+            const seniorOfficialTitle = extractTextById('contact_info_title', seniorOfficialDiv);
+            const seniorOfficialEmail = extractTextById('contact_info_email', seniorOfficialDiv);
+            const seniorOfficialPhone = extractTextById('contact_info_phone', seniorOfficialDiv);
+            let seniorOfficialInfo = `${seniorOfficialName}${seniorOfficialTitle}${seniorOfficialEmail}${seniorOfficialPhone}`;
+
+            const summary = `<strong>Recommendation:</strong></br>` +
+                            `<strong>Organization Type:</strong> ${organizationType}</br>` +
+                            `<strong>Requested Domain:</strong> ${requestedDomain}</br>` +
+                            `<strong>Existing website(s):</strong> ${existingWebsites.join(', ')}</br>` +
+                            `<strong>Rationale:</strong></br>` +
+                            `<strong>Alternate Domain(s):</strong> ${alternativeDomains.join(', ')}</br>` +
+                            `<strong>Submitter:</strong> ${submitterInfo}</br>` +
+                            `<strong>Senior Official:</strong> ${seniorOfficialInfo}</br>` +
+                            `<strong>Additional Contact(s):</strong> ${otherContactsSummary}</br>`;
+
+            // Create a temporary element
+            let tempElement = document.createElement('div');
+            tempElement.innerHTML = summary;
+            // Append the element to the body
+            document.body.appendChild(tempElement);
+
+            // Use the Selection and Range APIs to select the element's content
+            let range = document.createRange();
+            range.selectNodeContents(tempElement);
+            let selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+
+            // Use the Clipboard API to write the selected HTML content to the clipboard
+            navigator.clipboard.write([
+                new ClipboardItem({
+                    'text/html': new Blob([tempElement.innerHTML], { type: 'text/html' })
+                })
+            ]).then(() => {
+                // Change the icon to a checkmark on successful copy
+                let buttonIcon = copyButton.querySelector('.usa-button__clipboard use');
+                if (buttonIcon) {
+                    let currentHref = buttonIcon.getAttribute('xlink:href');
+                    let baseHref = currentHref.split('#')[0];
+
+                    // Append the new icon reference
+                    buttonIcon.setAttribute('xlink:href', baseHref + '#check');
+
+                    // Change the button text
+                    nearestSpan = copyButton.querySelector("span")
+                    original_text = nearestSpan.innerText
+                    nearestSpan.innerText = "Copied to clipboard"
+
+                    setTimeout(function() {
+                        // Change back to the copy icon
+                        buttonIcon.setAttribute('xlink:href', currentHref); 
+                        nearestSpan.innerText = original_text
+                    }, 2000);
+
+                }
+                console.log('Summary copied to clipboard successfully!');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+            document.body.removeChild(tempElement); 
+        });
     }
 })();

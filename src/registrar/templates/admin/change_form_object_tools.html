@@ -16,12 +16,12 @@
     {% else %}
         <ul>
             <li>
-                <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
+                <a href="{% add_preserved_filters history_url %}">{% translate "History" %}</a>
             </li>
             {% if opts.model_name == 'domainrequest' %}
             <li>
-                <a id="copy-summary-btn" class="historylink " href="#">
-                    <svg class="usa-icon" >
+                <a id="copy-summary-btn" class="usa-button__clipboard" type="button" href="#">
+                    <svg class="usa-icon modelLink-icon" >
                         <use xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
                     </svg>
                     <span>{% translate "Copy request summary" %}</span>
