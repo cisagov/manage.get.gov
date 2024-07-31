@@ -8,5 +8,6 @@ def index(request):
     if request.user.is_authenticated:
         # This controls the creation of a new domain request in the wizard
         request.session["new_request"] = True
+        context["user_domain_count"] = request.user.user_domain_count()
 
     return render(request, "home.html", context)

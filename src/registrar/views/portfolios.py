@@ -29,6 +29,7 @@ class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
             context["has_organization_feature_flag"] = flag_is_active(request, "organization_feature")
             portfolio = get_object_or_404(Portfolio, id=portfolio_id)
             context["portfolio"] = portfolio
+            context["user_domain_count"] = self.request.user.user_domain_count()
 
         return render(request, "portfolio_domains.html", context)
 
