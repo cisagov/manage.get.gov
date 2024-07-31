@@ -116,7 +116,7 @@ sed -i '' '/          - development/ {a\
           - '"$1"'
 }' .github/workflows/migrate.yaml
 
-sed -i '' '/          - development/ {a\
+sed -i '' '/          - backup/ {a\
           - '"$1"'
 }' .github/workflows/deploy-manual.yaml
 
