@@ -53,6 +53,10 @@
             {% endwith %}
         </div>
 
+        {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable padding-top-2" %}
+            {% input_with_errors form.title %}
+        {% endwith %}
+        
         {% public_site_url "help/account-management/#get-help-with-login.gov" as login_help_url %}
         {% with toggleable_input=True add_class="display-none" group_classes="usa-form-editable usa-form-editable padding-top-2 bold-usa-label" %}
             {% with link_href=login_help_url %}
