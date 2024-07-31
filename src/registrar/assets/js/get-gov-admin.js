@@ -212,11 +212,6 @@ function addOrRemoveSessionBoolean(name, add){
 */
 (function (){
 
-    function copyInnerTextToClipboard(elem) {
-        let text = elem.innerText
-        navigator.clipboard.writeText(text)
-    }
-
     function copyToClipboardAndChangeIcon(button) {
         // Assuming the input is the previous sibling of the button
         let input = button.previousElementSibling;
@@ -225,7 +220,7 @@ function addOrRemoveSessionBoolean(name, add){
         if (input) {
             navigator.clipboard.writeText(input.value).then(function() {
                 // Change the icon to a checkmark on successful copy
-                let buttonIcon = button.querySelector('.usa-button__clipboard use');
+                let buttonIcon = button.querySelector('.copy-to-clipboard use');
                 if (buttonIcon) {
                     let currentHref = buttonIcon.getAttribute('xlink:href');
                     let baseHref = currentHref.split('#')[0];
@@ -252,7 +247,7 @@ function addOrRemoveSessionBoolean(name, add){
     }
     
     function handleClipboardButtons() {
-        clipboardButtons = document.querySelectorAll(".usa-button__clipboard")
+        clipboardButtons = document.querySelectorAll(".copy-to-clipboard")
         clipboardButtons.forEach((button) => {
 
             // Handle copying the text to your clipboard,
@@ -275,20 +270,7 @@ function addOrRemoveSessionBoolean(name, add){
         });
     }
 
-    function handleClipboardLinks() {
-        let emailButtons = document.querySelectorAll(".usa-button__clipboard-link");
-        if (emailButtons){
-            emailButtons.forEach((button) => {
-                button.addEventListener("click", ()=>{
-                    copyInnerTextToClipboard(button);
-                })
-            });
-        }
-    }
-
     handleClipboardButtons();
-    handleClipboardLinks();
-
 })();
 
 
@@ -607,7 +589,7 @@ function initializeWidgetOnList(list, parentId) {
 /** An IIFE for copy summary button (appears in DomainRegistry models)
 */
 (function (){
-    const copyButton = document.getElementById('copy-summary-btn');
+    const copyButton = document.getElementById('id-copy-to-clipboard-summary');
 
     if (copyButton) {
         copyButton.addEventListener('click', function() {
@@ -743,11 +725,11 @@ function initializeWidgetOnList(list, parentId) {
             // Use the Clipboard API to write the selected HTML content to the clipboard
             navigator.clipboard.write([
                 new ClipboardItem({
-                    'text/html': new Blob([tempElement.innerHTML], { type: 'text/html' })
+                    'text/plain': new Blob([tempElement.innerHTML], { type: 'text/plain' })
                 })
             ]).then(() => {
                 // Change the icon to a checkmark on successful copy
-                let buttonIcon = copyButton.querySelector('.usa-button__clipboard use');
+                let buttonIcon = copyButton.querySelector('use');
                 if (buttonIcon) {
                     let currentHref = buttonIcon.getAttribute('xlink:href');
                     let baseHref = currentHref.split('#')[0];
@@ -768,6 +750,7 @@ function initializeWidgetOnList(list, parentId) {
 
                 }
                 console.log('Summary copied to clipboard successfully!');
+                console.log(tempElement.innerHTML);
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
             });
