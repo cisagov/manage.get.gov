@@ -25,7 +25,7 @@ There are several tools we use locally that you will need to have.
 - [ ] Docker Community Edition*
 - [ ] Git*
 - [ ] VSCode (our preferred editor)*
-- [ ] Github Desktop*
+- [ ] Github Desktop* or the Github CLI*
 
 The following tools are optional  but recommended. For DHS devices, these can be requested through the DHS IT portal:
 - [ ] Slack Desktop App**
@@ -34,7 +34,7 @@ The following tools are optional  but recommended. For DHS devices, these can be
 - [ ] Putty*
 - [ ] Windows Subsystem for Linux*
 
-\* Must be requested through DHS IT portal on DHS devices
+* Must be requested through DHS IT portal on DHS devices
 
 ** Downloadable via DHS Software Center
 
