@@ -424,3 +424,8 @@ class User(AbstractUser):
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
         return has_organization_feature_flag and self.has_base_portfolio_permission()
+    
+    def user_domain_count(self):
+        """Returns the number of domains associated with this user through UserDomainRole"""
+        available_domains = UserDomainRole.objects.filter(user=self, domain__isnull=False)
+        return available_domains.count()

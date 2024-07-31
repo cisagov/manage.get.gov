@@ -35,6 +35,7 @@
           </form>
         </section>
       </div>
+      {% if user_domains_count and user_domains_count > 0 %}
       <div class="section--outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
         <section aria-label="Domains report component" class="mobile-lg:margin-top-205">
           <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled" role="button">
@@ -44,6 +45,7 @@
           </a>
         </section>
       </div>
+      {% endif %}
     </div>
     <!-- Use portfolio_base_permission when merging into 2366 then delete this comment -->
     {% if portfolio %}
