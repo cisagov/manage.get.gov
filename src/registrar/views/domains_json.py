@@ -14,8 +14,7 @@ def get_domains_json(request):
     """Given the current request,
     get all domains that are associated with the UserDomainRole object"""
 
-    user_domain_roles = UserDomainRole.objects.filter(user=request.user).select_related("domain_info__sub_organization")
-    domain_ids = user_domain_roles.values_list("domain_id", flat=True)
+    domain_ids = request.user.get_user_domain_ids()
 
     objects = Domain.objects.filter(id__in=domain_ids)
     unfiltered_total = objects.count()
