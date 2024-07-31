@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
+from registrar.models.domain_information import DomainInformation
 from registrar.models.user_domain_role import UserDomainRole
 
 from .domain_invitation import DomainInvitation
@@ -428,8 +429,10 @@ class User(AbstractUser):
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
         return has_organization_feature_flag and self.has_base_portfolio_permission()
-    
-    def user_domain_count(self):
-        """Returns the number of domains associated with this user through UserDomainRole"""
-        available_domains = UserDomainRole.objects.filter(user=self, domain__isnull=False)
-        return available_domains.count()
+
+    def get_user_domain_ids(self):
+        """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
+        if self.has_base_portfolio_permission() and self.has_view_all_domains_permission():
+            return DomainInformation.objects.filter(portfolio=self.portfolio).values_list("domain_id", flat=True)
+        else:
+            return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)

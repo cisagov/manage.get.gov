@@ -577,18 +577,9 @@ class DomainDataTypeUser(DomainDataType):
         if request is None or not hasattr(request, "user") or not request.user:
             # Return nothing
             return Q(id__in=[])
-
-        if (
-            request.user.has_base_portfolio_permission() and 
-            request.user.has_view_all_domains_permission()
-        ):
-            # Question: should we also include all domains in UserDomainRole as well?
-            models = DomainInformation.objects.filter(portfolio=request.user.portfolio)
         else:
-            models = UserDomainRole.objects.filter(user=request.user)
-
-        domain_ids = models.values_list("domain_id", flat=True)
-        return Q(domain__id__in=domain_ids)
+            # Get all domains the user is associated with
+            return Q(domain__id__in=request.user.get_user_domain_ids())
 
 
 class DomainDataFull(DomainExport):
