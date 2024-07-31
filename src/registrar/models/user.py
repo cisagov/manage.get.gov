@@ -99,12 +99,14 @@ class User(AbstractUser):
             UserPortfolioPermissionChoices.EDIT_MEMBER,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_MEMBER,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
