@@ -33,10 +33,6 @@ from api.tests.common import less_console_noise_decorator
 logger = logging.getLogger(__name__)
 
 
-class CustomDeleteException(Exception):
-    pass
-
-
 class TestPopulateVerificationType(MockEppLib):
     """Tests for the populate_organization_type script"""
 

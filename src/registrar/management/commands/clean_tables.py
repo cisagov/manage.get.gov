@@ -64,15 +64,18 @@ class Command(BaseCommand):
             model = apps.get_model("registrar", table_name)
             BATCH_SIZE = 1000
             total_deleted = 0
-            while True:
-                pks = list(model.objects.values_list("pk", flat=True)[:BATCH_SIZE])
-                if not pks:
-                    break
+
+            # Get initial batch of primary keys
+            pks = list(model.objects.values_list("pk", flat=True)[:BATCH_SIZE])
+
+            while pks:
                 # Use a transaction to ensure database integrity
                 with transaction.atomic():
                     deleted, _ = model.objects.filter(pk__in=pks).delete()
                     total_deleted += deleted
                 logger.debug(f"Deleted {deleted} {table_name}s, total deleted: {total_deleted}")
+                # Get the next batch of primary keys
+                pks = list(model.objects.values_list("pk", flat=True)[:BATCH_SIZE])
             logger.info(f"Successfully cleaned table {table_name}, deleted {total_deleted} rows")
         except LookupError:
             logger.error(f"Model for table {table_name} not found.")
