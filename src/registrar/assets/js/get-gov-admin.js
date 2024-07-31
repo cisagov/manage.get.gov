@@ -628,21 +628,19 @@ function initializeWidgetOnList(list, parentId) {
             const bulletList = document.createElement('ul');
 
             // CASE 1 - Contacts are not in a table (this happens if there is only one or two other contacts)
-            const contacts = document.querySelectorAll('.field-other_contacts .dja-detail-list dt');
+            const contacts = document.querySelectorAll('.field-other_contacts .dja-detail-list dd');
             if (contacts) {
                 contacts.forEach(contact => {
                     // Check if the <dl> element is not empty
-                    if (contact.children.length > 0) {
-                        const name = contact.querySelector('a#contact_info_name').innerText;
-                        const title = contact.querySelector('span#contact_info_title').innerText;
-                        const email = contact.querySelector('span#contact_info_email').innerText;
-                        const phone = contact.querySelector('span#contact_info_phone').innerText;
-                        const url = nameToUrlMap[name] || '#';
-                        // Format the contact information
-                        const listItem = document.createElement('li');
-                        listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
-                        bulletList.appendChild(listItem);
-                    }
+                    const name = contact.querySelector('a#contact_info_name')?.innerText;
+                    const title = contact.querySelector('span#contact_info_title')?.innerText;
+                    const email = contact.querySelector('span#contact_info_email')?.innerText;
+                    const phone = contact.querySelector('span#contact_info_phone')?.innerText;
+                    const url = nameToUrlMap[name] || '#';
+                    // Format the contact information
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
+                    bulletList.appendChild(listItem);
                 });
 
             }
@@ -699,35 +697,29 @@ function initializeWidgetOnList(list, parentId) {
             const seniorOfficialPhone = extractTextById('contact_info_phone', seniorOfficialDiv);
             let seniorOfficialInfo = `${seniorOfficialName}${seniorOfficialTitle}${seniorOfficialEmail}${seniorOfficialPhone}`;
 
-            const summary = `<strong>Recommendation:</strong></br>` +
+            const html_summary = `<strong>Recommendation:</strong></br>` +
                             `<strong>Organization Type:</strong> ${organizationType}</br>` +
                             `<strong>Requested Domain:</strong> ${requestedDomain}</br>` +
-                            `<strong>Existing website(s):</strong> ${existingWebsites.join(', ')}</br>` +
+                            `<strong>Current Websites:</strong> ${existingWebsites.join(', ')}</br>` +
                             `<strong>Rationale:</strong></br>` +
-                            `<strong>Alternate Domain(s):</strong> ${alternativeDomains.join(', ')}</br>` +
+                            `<strong>Alternative Domains:</strong> ${alternativeDomains.join(', ')}</br>` +
                             `<strong>Submitter:</strong> ${submitterInfo}</br>` +
                             `<strong>Senior Official:</strong> ${seniorOfficialInfo}</br>` +
-                            `<strong>Additional Contact(s):</strong> ${otherContactsSummary}</br>`;
+                            `<strong>Other Employees:</strong> ${otherContactsSummary}</br>`;
+            const plain_summary = html_summary.replace(/<\/?[^>]+(>|$)/g, '');
 
-            // Create a temporary element
-            let tempElement = document.createElement('div');
-            tempElement.innerHTML = summary;
-            // Append the element to the body
-            document.body.appendChild(tempElement);
+            // Create Blobs with the summary content
+            const html_blob = new Blob([html_summary], { type: 'text/html' });
+            const plain_blob = new Blob([plain_summary], { type: 'text/plain' });
 
-            // Use the Selection and Range APIs to select the element's content
-            let range = document.createRange();
-            range.selectNodeContents(tempElement);
-            let selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
+            // Create a ClipboardItem with the Blobs
+            const clipboardItem = new ClipboardItem({
+                'text/html': html_blob,
+                'text/plain': plain_blob
+            });
 
-            // Use the Clipboard API to write the selected HTML content to the clipboard
-            navigator.clipboard.write([
-                new ClipboardItem({
-                    'text/plain': new Blob([tempElement.innerHTML], { type: 'text/plain' })
-                })
-            ]).then(() => {
+            // Write the ClipboardItem to the clipboard
+            navigator.clipboard.write([clipboardItem]).then(() => {
                 // Change the icon to a checkmark on successful copy
                 let buttonIcon = copyButton.querySelector('use');
                 if (buttonIcon) {
