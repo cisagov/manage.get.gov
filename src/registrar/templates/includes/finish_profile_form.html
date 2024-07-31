@@ -69,10 +69,6 @@
         {% endwith %}
 
         {% with toggleable_input=True toggleable_label=True group_classes="usa-form-editable padding-top-2" %}
-            {% input_with_errors form.title %}
-        {% endwith %}
-
-        {% with toggleable_input=True toggleable_label=True group_classes="usa-form-editable padding-top-2" %}
             {% with add_class="usa-input--medium" %}
                 {% input_with_errors form.phone %}
             {% endwith %}

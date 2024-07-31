@@ -201,6 +201,7 @@ class TestPortfolio(WebTest):
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
+            User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             User.UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
         ]
