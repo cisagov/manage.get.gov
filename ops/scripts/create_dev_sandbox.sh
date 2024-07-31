@@ -112,7 +112,7 @@ sed -i '' '/          - development/ {a\
           - '"$1"'
 }' .github/workflows/reset-db.yaml
 
-sed -i '' '/          - backup/ {a\
+sed -i '' '/          - development/ {a\
           - '"$1"'
 }' .github/workflows/migrate.yaml
 
