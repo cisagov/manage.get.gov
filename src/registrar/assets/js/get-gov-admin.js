@@ -649,15 +649,18 @@ function initializeWidgetOnList(list, parentId) {
             const contacts = document.querySelectorAll('.field-other_contacts .dja-detail-list dl');
             if (contacts) {
                 contacts.forEach(contact => {
-                    const name = contact.querySelector('a#contact_info_name').innerText;
-                    const title = contact.querySelector('span#contact_info_title').innerText;
-                    const email = contact.querySelector('span#contact_info_email').innerText;
-                    const phone = contact.querySelector('span#contact_info_phone').innerText;
-                    const url = nameToUrlMap[name] || '#';
-                    // Format the contact information
-                    const listItem = document.createElement('li');
-                    listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
-                    bulletList.appendChild(listItem);
+                    // Check if the <dl> element is not empty
+                    if (contact.children.length > 0) {
+                        const name = contact.querySelector('a#contact_info_name').innerText;
+                        const title = contact.querySelector('span#contact_info_title').innerText;
+                        const email = contact.querySelector('span#contact_info_email').innerText;
+                        const phone = contact.querySelector('span#contact_info_phone').innerText;
+                        const url = nameToUrlMap[name] || '#';
+                        // Format the contact information
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
+                        bulletList.appendChild(listItem);
+                    }
                 });
 
             }
