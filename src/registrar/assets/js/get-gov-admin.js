@@ -706,7 +706,9 @@ function initializeWidgetOnList(list, parentId) {
                             `<strong>Submitter:</strong> ${submitterInfo}</br>` +
                             `<strong>Senior Official:</strong> ${seniorOfficialInfo}</br>` +
                             `<strong>Other Employees:</strong> ${otherContactsSummary}</br>`;
-            const plain_summary = html_summary.replace(/<\/?[^>]+(>|$)/g, '');
+            
+            //Replace </br> with \n, then strip out all remaining html tags (replace <...> with '')
+            const plain_summary = html_summary.replace(/<\/br>|<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, '');
 
             // Create Blobs with the summary content
             const html_blob = new Blob([html_summary], { type: 'text/html' });
@@ -742,11 +744,9 @@ function initializeWidgetOnList(list, parentId) {
 
                 }
                 console.log('Summary copied to clipboard successfully!');
-                console.log(tempElement.innerHTML);
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
             });
-            document.body.removeChild(tempElement); 
         });
     }
 })();
