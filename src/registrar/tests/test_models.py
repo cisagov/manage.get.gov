@@ -1379,7 +1379,7 @@ class TestUser(TestCase):
         self.assertTrue(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
 
-        self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         self.user.save()
         self.user.refresh_from_db()
 
