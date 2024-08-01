@@ -1292,6 +1292,7 @@ class TestUser(TestCase):
         1. Returns False when a user does not have a portfolio
         2. Returns True when user has direct permission
         3. Returns True when user has permission through a role
+        4. Returns True EDIT_DOMAINS when user does not have the perm but has UserDomainRole
 
         Note: This tests _get_portfolio_permissions as a side effect
         """
@@ -1303,9 +1304,11 @@ class TestUser(TestCase):
 
         user_can_view_all_domains = self.user.has_domains_portfolio_permission()
         user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
         self.assertFalse(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
+        self.assertFalse(user_can_edit_domains)
 
         self.user.portfolio = portfolio
         self.user.save()
@@ -1313,9 +1316,11 @@ class TestUser(TestCase):
 
         user_can_view_all_domains = self.user.has_domains_portfolio_permission()
         user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
         self.assertTrue(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
+        self.assertFalse(user_can_edit_domains)
 
         self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         self.user.save()
@@ -1323,9 +1328,11 @@ class TestUser(TestCase):
 
         user_can_view_all_domains = self.user.has_domains_portfolio_permission()
         user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
+        self.assertFalse(user_can_edit_domains)
 
         UserDomainRole.objects.all().get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -1333,9 +1340,11 @@ class TestUser(TestCase):
 
         user_can_view_all_domains = self.user.has_domains_portfolio_permission()
         user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_edit_domains = self.user.has_edit_domains_portfolio_permission()
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
+        self.assertTrue(user_can_edit_domains)
 
         Portfolio.objects.all().delete()
 
