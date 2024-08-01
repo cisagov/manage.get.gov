@@ -64,7 +64,7 @@ class User(AbstractUser):
 
     class UserPortfolioRoleChoices(models.TextChoices):
         """
-        Roles make it easier for admins to look at groups of users
+        Roles are containers of UserPortfolioPermissionChoices
         """
 
         ORGANIZATION_ADMIN = "organization_admin", "Admin"

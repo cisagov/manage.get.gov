@@ -31,7 +31,7 @@
 
             {% include "includes/form_errors.html" with form=form %}
             {% include "includes/required_fields.html" %}
-            <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+            <form class="usa-form usa-form--large" method="post" novalidate>
                 {% csrf_token %}
                 <h4 class="read-only-label">Federal agency</h4>
                 <p class="read-only-value">
@@ -44,10 +44,7 @@
                 {% with add_class="usa-input--small" %}
                     {% input_with_errors form.zipcode %}
                 {% endwith %}
-                <button
-                type="submit"
-                class="usa-button"
-                >
+                <button type="submit" class="usa-button">
                 Save
                 </button>
             </form>

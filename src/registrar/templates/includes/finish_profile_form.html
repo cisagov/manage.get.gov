@@ -53,7 +53,7 @@
             {% endwith %}
         </div>
 
-        {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable padding-top-2" %}
+        {% with toggleable_input=True toggleable_label=True group_classes="usa-form-editable padding-top-2" %}
             {% input_with_errors form.title %}
         {% endwith %}
         
