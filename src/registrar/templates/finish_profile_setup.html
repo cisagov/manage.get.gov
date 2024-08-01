@@ -4,8 +4,8 @@
 {% block title %} Finish setting up your profile | {% endblock %}
 
 {# Disable the redirect  #}
-{% block logo %}
-    {% include "includes/gov_extended_logo.html" with logo_clickable=user_finished_setup %}
+{% block header %}
+    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup %}
 {% endblock %}
 
 {# Add the new form #}

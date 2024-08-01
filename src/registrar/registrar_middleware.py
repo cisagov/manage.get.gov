@@ -6,7 +6,6 @@ import logging
 from urllib.parse import parse_qs
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from registrar.models.portfolio import Portfolio
 from registrar.models.user import User
 from waffle.decorators import flag_is_active
 
@@ -141,14 +140,20 @@ class CheckPortfolioMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         current_path = request.path
 
-        has_organization_feature_flag = flag_is_active(request, "organization_feature")
+        if current_path == self.home and request.user.is_authenticated and request.user.is_org_user(request):
 
-        if current_path == self.home:
-            if has_organization_feature_flag:
-                if request.user.is_authenticated:
-                    user_portfolios = Portfolio.objects.filter(creator=request.user)
-                    if user_portfolios.exists():
-                        first_portfolio = user_portfolios.first()
-                        home_with_portfolio = reverse("portfolio-domains", kwargs={"portfolio_id": first_portfolio.id})
-                        return HttpResponseRedirect(home_with_portfolio)
+            if request.user.has_base_portfolio_permission():
+                portfolio = request.user.portfolio
+
+                # Add the portfolio to the request object
+                request.portfolio = portfolio
+
+                if request.user.has_domains_portfolio_permission():
+                    portfolio_redirect = reverse("portfolio-domains", kwargs={"portfolio_id": portfolio.id})
+                else:
+                    # View organization is the lowest access
+                    portfolio_redirect = reverse("portfolio-organization", kwargs={"portfolio_id": portfolio.id})
+
+                return HttpResponseRedirect(portfolio_redirect)
+
         return None

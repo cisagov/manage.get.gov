@@ -11,7 +11,7 @@ from django.urls import NoReverseMatch, reverse
 from registrar.models.user import User
 from registrar.models.utility.generic_helper import replace_url_queryparams
 from registrar.views.utility.permission_views import UserProfilePermissionView
-from waffle.decorators import flag_is_active, waffle_flag
+from waffle.decorators import waffle_flag
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +51,8 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        """Extend get_context_data to include has_profile_feature_flag"""
+        """Extend get_context_data"""
         context = super().get_context_data(**kwargs)
-        # This is a django waffle flag which toggles features based off of the "flag" table
-        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
 
         # Set the profile_back_button_text based on the redirect parameter
         if kwargs.get("redirect") == "domain-request:":
@@ -134,7 +132,7 @@ class FinishProfileSetupView(UserProfileView):
     base_view_name = "finish-user-profile-setup"
 
     def get_context_data(self, **kwargs):
-        """Extend get_context_data to include has_profile_feature_flag"""
+        """Extend get_context_data"""
         context = super().get_context_data(**kwargs)
 
         # Show back button conditional on user having finished setup
