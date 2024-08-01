@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
 
-from registrar.models.domain_information import DomainInformation
+from registrar.models import DomainInformation, UserDomainRole
 
 logger = logging.getLogger(__name__)
 
