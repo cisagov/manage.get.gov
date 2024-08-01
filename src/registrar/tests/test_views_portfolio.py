@@ -315,8 +315,9 @@ class TestPortfolio(WebTest):
             self.portfolio.organization_name = "Hotel California"
             self.portfolio.save()
             page = self.app.get(reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}))
-            # Once in the sidenav, once in the main nav, once in the form
-            self.assertContains(page, "Hotel California", count=3)
+            # Once in the sidenav, once in the main nav
+            self.assertContains(page, "Hotel California", count=2)
+            self.assertContains(page, "Non-Federal Agency")
 
     @less_console_noise_decorator
     def test_domain_org_name_address_form(self):
