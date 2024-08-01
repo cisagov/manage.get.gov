@@ -184,10 +184,16 @@ class DomainPermission(PermissionsLoginMixin):
 
         # user needs to have a role on the domain
         if not UserDomainRole.objects.filter(user=self.request.user, domain__id=pk).exists():
-            return False
+            return self.can_access_domain_via_portfolio(pk)
 
         # if we need to check more about the nature of role, do it here.
         return True
+
+    def can_access_domain_via_portfolio(self, pk):
+        """Most views should not allow permission to portfolio users.
+        If particular views allow permissions, they will need to override
+        this function."""
+        return False
 
     def in_editable_state(self, pk):
         """Is the domain in an editable state"""
