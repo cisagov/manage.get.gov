@@ -35,7 +35,7 @@
                 {% csrf_token %}
                 <h4 class="read-only-label">Federal agency</h4>
                 <p class="read-only-value">
-                    {{ portfolio }}
+                    {{ portfolio.federal_agency }}
                 </p>
                 {% input_with_errors form.address_line1 %}
                 {% input_with_errors form.address_line2 %}
@@ -54,7 +54,7 @@
         {% else %}
             <h4 class="read-only-label">Federal agency</h4>
             <p class="read-only-value">
-                {{ portfolio }}
+                {{ portfolio.federal_agency }}
             </p>
             {% if form.address_line1.value is not None %}
                 {% include "includes/input_read_only.html" with field=form.address_line1 %}
