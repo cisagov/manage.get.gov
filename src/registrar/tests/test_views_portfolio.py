@@ -179,7 +179,7 @@ class TestPortfolio(WebTest):
 
             # reducing portfolio permissions to just VIEW_PORTFOLIO, which should remove domains
             # and domain requests from nav
-            self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+            self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
             self.user.save()
             self.user.refresh_from_db()
 
@@ -195,9 +195,7 @@ class TestPortfolio(WebTest):
                 portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
             )
 
-
-class TestPortfolioOrganization(TestPortfolio):
-
+    @less_console_noise_decorator
     def test_portfolio_org_name(self):
         """Can load portfolio's org name page."""
         with override_flag("organization_feature", active=True):
@@ -215,6 +213,7 @@ class TestPortfolioOrganization(TestPortfolio):
                 page, "The name of your federal agency will be publicly listed as the domain registrant."
             )
 
+    @less_console_noise_decorator
     def test_domain_org_name_address_content(self):
         """Org name and address information appears on the page."""
         with override_flag("organization_feature", active=True):
@@ -233,6 +232,7 @@ class TestPortfolioOrganization(TestPortfolio):
             # Once in the sidenav, once in the main nav, once in the form
             self.assertContains(page, "Hotel California", count=3)
 
+    @less_console_noise_decorator
     def test_domain_org_name_address_form(self):
         """Submitting changes works on the org name address page."""
         with override_flag("organization_feature", active=True):
