@@ -112,7 +112,7 @@ class TestPortfolio(WebTest):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
             response = self.app.get(
-                reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk}), status=403
+                reverse("domains"), status=403
             )
             # Assert the response is a 403 Forbidden
             self.assertEqual(response.status_code, 403)
@@ -128,7 +128,7 @@ class TestPortfolio(WebTest):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
             response = self.app.get(
-                reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk}), status=403
+                reverse("domain-requests"), status=403
             )
             # Assert the response is a 403 Forbidden
             self.assertEqual(response.status_code, 403)
@@ -144,7 +144,7 @@ class TestPortfolio(WebTest):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
             response = self.app.get(
-                reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}), status=403
+                reverse("organization"), status=403
             )
             # Assert the response is a 403 Forbidden
             self.assertEqual(response.status_code, 403)
@@ -170,10 +170,10 @@ class TestPortfolio(WebTest):
             self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
             self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertContains(
-                portfolio_page, reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk})
+                portfolio_page, reverse("domains")
             )
             self.assertContains(
-                portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
+                portfolio_page, reverse("domain-requests")
             )
 
             # reducing portfolio permissions to just VIEW_PORTFOLIO, which should remove domains
@@ -188,10 +188,10 @@ class TestPortfolio(WebTest):
             self.assertContains(portfolio_page, "<h1>Organization</h1>")
             self.assertNotContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertNotContains(
-                portfolio_page, reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk})
+                portfolio_page, reverse("domains")
             )
             self.assertNotContains(
-                portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
+                portfolio_page, reverse("domain-requests")
             )
 
 
@@ -209,7 +209,7 @@ class TestPortfolioOrganization(TestPortfolio):
             self.user.save()
             self.user.refresh_from_db()
 
-            page = self.app.get(reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}))
+            page = self.app.get(reverse("organization"))
             self.assertContains(
                 page, "The name of your federal agency will be publicly listed as the domain registrant."
             )
@@ -228,7 +228,7 @@ class TestPortfolioOrganization(TestPortfolio):
 
             self.portfolio.organization_name = "Hotel California"
             self.portfolio.save()
-            page = self.app.get(reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}))
+            page = self.app.get(reverse("organization"))
             # Once in the sidenav, once in the main nav, once in the form
             self.assertContains(page, "Hotel California", count=3)
 
@@ -247,7 +247,7 @@ class TestPortfolioOrganization(TestPortfolio):
             self.portfolio.address_line1 = "1600 Penn Ave"
             self.portfolio.save()
             portfolio_org_name_page = self.app.get(
-                reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk})
+                reverse("organization")
             )
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
