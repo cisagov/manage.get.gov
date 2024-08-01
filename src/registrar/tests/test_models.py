@@ -20,7 +20,9 @@ from registrar.models import (
 
 import boto3_mocking
 from registrar.models.portfolio import Portfolio
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.transition_domain import TransitionDomain
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
 from registrar.utility.constants import BranchChoices
 
@@ -1071,8 +1073,8 @@ class TestDomainInformation(TestCase):
         return {k: v for k, v in dict_obj.items() if k not in bad_fields}
 
 
-class TestInvitations(TestCase):
-    """Test the retrieval of invitations."""
+class TestDomainInvitations(TestCase):
+    """Test the retrieval of domain invitations."""
 
     @less_console_noise_decorator
     def setUp(self):
@@ -1114,6 +1116,65 @@ class TestInvitations(TestCase):
         """A user's authenticate on_each_login callback retrieves their invitations."""
         self.user.on_each_login()
         self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
+
+
+class TestPortfolioInvitations(TestCase):
+    """Test the retrieval of portfolio invitations."""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        self.email = "mayor@igorville.gov"
+        self.email2 = "creator@igorville.gov"
+        self.user, _ = User.objects.get_or_create(email=self.email)
+        self.user2, _ = User.objects.get_or_create(email=self.email2, username="creator")
+        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Hotel California")
+        self.portfolio_role_base = UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+        self.portfolio_role_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
+        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS
+        self.portfolio_permission_2 = UserPortfolioPermissionChoices.EDIT_REQUESTS
+        self.invitation, _ = PortfolioInvitation.objects.get_or_create(
+            email=self.email,
+            portfolio=self.portfolio,
+            portfolio_roles=[self.portfolio_role_base, self.portfolio_role_admin],
+            portfolio_additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
+        )
+
+    def tearDown(self):
+        super().tearDown()
+        Portfolio.objects.all().delete()
+        PortfolioInvitation.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_retrieval(self):
+        self.assertFalse(self.user.portfolio)
+        self.invitation.retrieve()
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.portfolio.organization_name, "Hotel California")
+        self.assertEqual(self.user.portfolio_roles, [self.portfolio_role_base, self.portfolio_role_admin])
+        self.assertEqual(
+            self.user.portfolio_additional_permissions, [self.portfolio_permission_1, self.portfolio_permission_2]
+        )
+        self.assertEqual(self.invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+
+    @less_console_noise_decorator
+    def test_retrieve_missing_user_error(self):
+        # get rid of matching users
+        User.objects.filter(email=self.email).delete()
+        with self.assertRaises(RuntimeError):
+            self.invitation.retrieve()
+
+    @less_console_noise_decorator
+    def test_retrieve_user_already_member_error(self):
+        self.assertFalse(self.user.portfolio)
+        portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Tokyo Hotel")
+        self.user.portfolio = portfolio2
+        self.assertEqual(self.user.portfolio.organization_name, "Tokyo Hotel")
+        self.user.save()
+        self.user.check_portfolio_invitations_on_login()
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.portfolio.organization_name, "Tokyo Hotel")
+        self.assertEqual(self.invitation.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
 
 
 class TestUser(TestCase):

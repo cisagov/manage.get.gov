@@ -11,6 +11,7 @@ from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models.domain_group import DomainGroup
 from registrar.models.suborganization import Suborganization
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -131,12 +132,12 @@ class MyUserAdminForm(UserChangeForm):
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
             "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=User.UserPortfolioRoleChoices.choices
+                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
             ),
             "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
                 "portfolio_additional_permissions",
                 is_stacked=False,
-                choices=User.UserPortfolioPermissionChoices.choices,
+                choices=UserPortfolioPermissionChoices.choices,
             ),
         }
 
@@ -167,6 +168,24 @@ class MyUserAdminForm(UserChangeForm):
                 "Raw passwords are not stored, so they will not display here. "
                 f'You can change the password using <a href="{link}">this form</a>.'
             )
+
+
+class PortfolioInvitationAdminForm(UserChangeForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+
+    class Meta:
+        model = models.PortfolioInvitation
+        fields = "__all__"
+        widgets = {
+            "portfolio_roles": FilteredSelectMultipleArrayWidget(
+                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
+            ),
+            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
+                "portfolio_additional_permissions",
+                is_stacked=False,
+                choices=UserPortfolioPermissionChoices.choices,
+            ),
+        }
 
 
 class DomainInformationAdminForm(forms.ModelForm):
@@ -1295,6 +1314,56 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         if extra_context is None:
             extra_context = {}
         extra_context["tabtitle"] = "Domain invitations"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
+
+
+class PortfolioInvitationAdmin(ListHeaderAdmin):
+    """Custom portfolio invitation admin class."""
+
+    form = PortfolioInvitationAdminForm
+
+    class Meta:
+        model = models.PortfolioInvitation
+        fields = "__all__"
+
+    _meta = Meta()
+
+    # Columns
+    list_display = [
+        "email",
+        "portfolio",
+        "portfolio_roles",
+        "portfolio_additional_permissions",
+        "status",
+    ]
+
+    # Search
+    search_fields = [
+        "email",
+        "portfolio__name",
+    ]
+
+    # Filters
+    list_filter = ("status",)
+
+    search_help_text = "Search by email or portfolio."
+
+    # Mark the FSM field 'status' as readonly
+    # to allow admin users to create Domain Invitations
+    # without triggering the FSM Transition Not Allowed
+    # error.
+    readonly_fields = ["status"]
+
+    autocomplete_fields = ["portfolio"]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    # Select portfolio invitations to change -> Portfolio invitations
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Portfolio invitations"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
@@ -2900,6 +2969,7 @@ admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
+admin.site.register(models.PortfolioInvitation, PortfolioInvitationAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
