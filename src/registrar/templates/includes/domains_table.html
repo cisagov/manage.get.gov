@@ -11,8 +11,8 @@
         <!-- Embedding the portfolio value in a data attribute -->
         <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
       {% endif %}
-      <div class="mobile:grid-col-12 desktop:grid-col-6">
-        <section aria-label="Domains search component" class="flex-6 margin-y-2">
+      <div class="section--outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
+        <section aria-label="Domains search component" class="margin-top-2">
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
             <button class="usa-button usa-button--unstyled margin-right-3 domains__reset-search display-none" type="button">
@@ -39,9 +39,18 @@
           </form>
         </section>
       </div>
+      <div class="section--outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
+        <section aria-label="Domains report component" class="mobile-lg:margin-top-205">
+          <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled" role="button">
+            <svg class="usa-icon usa-icon--big margin-right-neg-4px" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+              <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+            </svg>Export as CSV
+          </a>
+        </section>
+      </div>
     </div>
     {% if portfolio %}
-    <div class="display-flex flex-align-center margin-top-1"> 
+    <div class="display-flex flex-align-center"> 
       <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
       <div class="usa-accordion usa-accordion--select margin-right-2">
         <div class="usa-accordion__heading">
