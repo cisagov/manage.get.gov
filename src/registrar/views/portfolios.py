@@ -11,7 +11,6 @@ from registrar.views.utility.permission_views import (
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
-from waffle.decorators import flag_is_active
 
 
 logger = logging.getLogger(__name__)
