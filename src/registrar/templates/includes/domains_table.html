@@ -1,11 +1,15 @@
 {% load static %}
 
 <section class="section--outlined domains{% if portfolio is not None %} margin-top-0{% endif %}" id="domains">
-    <div class="section--outlined__header margin-bottom-3 {% if portfolio is None %} section--outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
-      <!-- Use portfolio_base_permission when merging into 2366 then delete this comment -->
+    <div class="grid-row">
       {% if portfolio is None %}
-      <h2 id="domains-header" class="display-inline-block">Domains</h2>
-      <span class="display-none" id="no-portfolio-js-flag"></span>
+        <div class="mobile:grid-col-12 desktop:grid-col-6">
+          <h2 id="domains-header" class="flex-6">Domains</h2>
+        </div>
+        <span class="display-none" id="no-portfolio-js-flag"></span>
+      {% else %}
+        <!-- Embedding the portfolio value in a data attribute -->
+        <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
       {% endif %}
       <div class="section--outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
         <section aria-label="Domains search component" class="margin-top-2">
@@ -45,7 +49,6 @@
         </section>
       </div>
     </div>
-    <!-- Use portfolio_base_permission when merging into 2366 then delete this comment -->
     {% if portfolio %}
     <div class="display-flex flex-align-center"> 
       <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
@@ -149,7 +152,6 @@
             <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
             <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
             <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
-            <!-- Use portfolio_base_permission when merging into 2366 then delete this comment -->
             {% if portfolio %}
               <th data-sortable="suborganization" scope="col" role="columnheader">Suborganization</th>
             {% endif %}
