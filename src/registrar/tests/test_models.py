@@ -1196,6 +1196,7 @@ class TestUser(TestCase):
         DomainRequest.objects.all().delete()
         DraftDomain.objects.all().delete()
         TransitionDomain.objects.all().delete()
+        Portfolio.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
@@ -1359,7 +1360,7 @@ class TestUser(TestCase):
         """
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
 
-        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
         self.user.save()
         self.user.refresh_from_db()
 
