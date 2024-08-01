@@ -374,8 +374,9 @@ class DomainExport(BaseExport):
         if first_ready_on is None:
             first_ready_on = "(blank)"
 
-        domain_org_type = model.get("generic_org_type")
-        human_readable_domain_org_type = DomainRequest.OrganizationChoices.get_org_label(domain_org_type)
+        # organization_type has generic_org_type AND is_election
+        domain_org_type = model.get("organization_type")
+        human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
         domain_federal_type = model.get("federal_type")
         human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
         domain_type = human_readable_domain_org_type

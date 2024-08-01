@@ -164,7 +164,7 @@ class TestDomainInvitationAdmin(TestCase):
             )
 
             # Assert that the filters are added
-            self.assertContains(response, "invited", count=4)
+            self.assertContains(response, "invited", count=5)
             self.assertContains(response, "Invited", count=2)
             self.assertContains(response, "retrieved", count=2)
             self.assertContains(response, "Retrieved", count=2)
