@@ -1,5 +1,6 @@
 import logging
-from django.shortcuts import get_object_or_404, render
+from django.http import Http404
+from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
 from registrar.forms.portfolio import PortfolioOrgAddressForm
@@ -50,8 +51,11 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
         return context
 
     def get_object(self, queryset=None):
-        """Get the portfolio object based on the URL parameter."""
-        return get_object_or_404(Portfolio, id=self.request.user.portfolio.id)
+        """Get the portfolio object based on the request user."""
+        portfolio = self.request.user.portfolio
+        if portfolio is None:
+            raise Http404("No organization found for this user")
+        return portfolio
 
     def get_form_kwargs(self):
         """Include the instance in the form kwargs."""
