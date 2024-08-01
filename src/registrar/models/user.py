@@ -240,11 +240,6 @@ class User(AbstractUser):
     def _has_portfolio_permission(self, portfolio_permission):
         """The views should only call this function when testing for perms and not rely on roles."""
 
-        # EDIT_DOMAINS === user is a manager on a domain (has UserDomainRole)
-        # NOTE: Should we check whether the domain is in the portfolio?
-        if portfolio_permission == UserPortfolioPermissionChoices.EDIT_DOMAINS and self.domains.exists():
-            return True
-
         if not self.portfolio:
             return False
 
@@ -258,21 +253,14 @@ class User(AbstractUser):
         return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
     def has_domains_portfolio_permission(self):
-        return (
-            self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
-            or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
-            # or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_DOMAINS)
-        )
-
-    def has_edit_domains_portfolio_permission(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_DOMAINS)
+        return self._has_portfolio_permission(
+            User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
+        ) or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
     def has_domain_requests_portfolio_permission(self):
-        return (
-            self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
-            or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
-            # or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_REQUESTS)
-        )
+        return self._has_portfolio_permission(
+            User.UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+        ) or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):

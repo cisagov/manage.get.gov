@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
 
+from registrar.models.domain_information import DomainInformation
+
 logger = logging.getLogger(__name__)
 
 
@@ -14,10 +16,9 @@ def get_domains_json(request):
     """Given the current request,
     get all domains that are associated with the UserDomainRole object"""
 
-    user_domain_roles = UserDomainRole.objects.filter(user=request.user).select_related("domain_info__sub_organization")
-    domain_ids = user_domain_roles.values_list("domain_id", flat=True)
+    domain_ids = get_domain_ids_from_request(request)
 
-    objects = Domain.objects.filter(id__in=domain_ids)
+    objects = Domain.objects.filter(id__in=domain_ids).select_related("domain_info__sub_organization")
     unfiltered_total = objects.count()
 
     objects = apply_search(objects, request)
@@ -28,7 +29,7 @@ def get_domains_json(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    domains = [serialize_domain(domain) for domain in page_obj.object_list]
+    domains = [serialize_domain(domain, request.user) for domain in page_obj.object_list]
 
     return JsonResponse(
         {
@@ -41,6 +42,21 @@ def get_domains_json(request):
             "unfiltered_total": unfiltered_total,
         }
     )
+
+
+def get_domain_ids_from_request(request):
+    """Get domain ids from request.
+
+    If portfolio specified, return domain ids associated with portfolio.
+    Otherwise, return domain ids associated with request.user.
+    """
+    portfolio = request.GET.get("portfolio")
+    if portfolio:
+        domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
+        return domain_infos.values_list("domain_id", flat=True)
+    else:
+        user_domain_roles = UserDomainRole.objects.filter(user=request.user)
+        return user_domain_roles.values_list("domain_id", flat=True)
 
 
 def apply_search(queryset, request):
@@ -94,7 +110,7 @@ def apply_sorting(queryset, request):
         return queryset.order_by(sort_by)
 
 
-def serialize_domain(domain):
+def serialize_domain(domain, user):
     suborganization_name = None
     try:
         domain_info = domain.domain_info
@@ -106,6 +122,9 @@ def serialize_domain(domain):
         domain_info = None
         logger.debug(f"Issue in domains_json: We could not find domain_info for {domain}")
 
+    # Check if there is a UserDomainRole for this domain and user
+    user_domain_role_exists = UserDomainRole.objects.filter(domain_id=domain.id, user=user).exists()
+
     return {
         "id": domain.id,
         "name": domain.name,
@@ -114,7 +133,11 @@ def serialize_domain(domain):
         "state_display": domain.state_display(),
         "get_state_help_text": domain.get_state_help_text(),
         "action_url": reverse("domain", kwargs={"pk": domain.id}),
-        "action_label": ("View" if domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD] else "Manage"),
+        "action_label": (
+            "View"
+            if not user_domain_role_exists or domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD]
+            else "Manage"
+        ),
         "svg_icon": ("visibility" if domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD] else "settings"),
         "suborganization": suborganization_name,
     }
