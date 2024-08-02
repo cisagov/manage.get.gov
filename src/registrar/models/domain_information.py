@@ -322,31 +322,27 @@ class DomainInformation(TimeStampedModel):
         the is_election_board and generic_organization_type fields.
         """
 
-        # Define mappings between generic org and election org.
-        # These have to be defined here, as you'd get a cyclical import error
-        # otherwise.
+        # Instance is already in the database, fetch its current state
+        current_instance = DomainInformation.objects.get(id=self.id)
 
-        # For any given organization type, return the "_ELECTION" enum equivalent.
-        # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
-        generic_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_generic_to_org_election()
+        # Check the new and old values
+        generic_org_type_changed = self.generic_org_type != current_instance.generic_org_type
+        is_election_board_changed = self.is_election_board != current_instance.is_election_board
+        if generic_org_type_changed or is_election_board_changed:
+            generic_org_type_value = str(self.generic_org_type)
+            if self.is_election_board:
+                generic_org_type_value += "_election"
 
-        # For any given "_election" variant, return the base org type.
-        # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
-        election_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_election_to_org_generic()
+            self.organization_type = DomainRequest.OrgChoicesElectionOffice(generic_org_type_value)
+        else:
+            organization_type_value = str(self.organization_type)
+            if "_election" in organization_type_value:
+                organization_type_value = organization_type_value.split("_election")[0]
+                self.is_election_board = True
+            else:
+                self.is_election_board = False
 
-        # Manages the "organization_type" variable and keeps in sync with
-        # "is_election_office" and "generic_organization_type"
-        org_type_helper = CreateOrUpdateOrganizationTypeHelper(
-            sender=self.__class__,
-            instance=self,
-            generic_org_to_org_map=generic_org_map,
-            election_org_to_generic_org_map=election_org_map,
-        )
-
-        # Actually updates the organization_type field
-        org_type_helper.create_or_update_organization_type()
-
-        return self
+            self.generic_org_type = organization_type_value
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
