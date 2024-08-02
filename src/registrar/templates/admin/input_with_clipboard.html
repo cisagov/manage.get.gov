@@ -8,7 +8,7 @@ Template for an input field with a clipboard
 <div class="admin-icon-group">
     {{ field }}
     <button 
-    class="usa-button usa-button--unstyled padding-left-1 usa-button__icon usa-button__clipboard" 
+    class="usa-button usa-button--unstyled padding-left-1 usa-button--icon button--clipboard copy-to-clipboard" 
     type="button"
     >
         <div class="no-outline-on-click">
@@ -25,7 +25,7 @@ Template for an input field with a clipboard
 <div class="admin-icon-group admin-icon-group__clipboard-link">
     <input aria-hidden="true" class="display-none" value="{{ field.email }}" />
     <button 
-    class="usa-button usa-button--unstyled padding-right-1 usa-button__icon usa-button__clipboard text-no-underline" 
+    class="usa-button usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard text-no-underline" 
     type="button"
     >
         <svg 

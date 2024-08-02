@@ -369,9 +369,6 @@ input.admin-confirm-button {
         padding: 10px 8px;
         line-height: normal;
     }
-    .usa-icon {
-        top: 2px;
-    }
     a.button:active, a.button:focus {
         text-decoration: none;
     }
@@ -447,15 +444,12 @@ address.margin-top-neg-1__detail-list {
     }
 }
 
-td button.usa-button__clipboard-link, address.dja-address-contact-list {
+address.dja-address-contact-list {
     font-size: unset;
 }
 
 address.dja-address-contact-list {
     color: var(--body-quiet-color);
-    button.usa-button__clipboard-link {
-        font-size: unset;
-    }
 }
 
 // Mimic the normal label size
@@ -464,11 +458,18 @@ address.dja-address-contact-list {
         font-size: 0.875rem;
         color: var(--body-quiet-color);
     }
+}
 
-    address button.usa-button__clipboard-link, td button.usa-button__clipboard-link {
-        font-size: 0.875rem !important;
-    }
+// Targets the unstyled buttons in the form
+.button--clipboard {
+    color: var(--link-fg);
+}
 
+// Targets the DJA buttom with a nested icon
+button .usa-icon,
+.button .usa-icon,
+.button--clipboard .usa-icon {
+    vertical-align: middle;      
 }
 
 .errors span.select2-selection {
@@ -663,7 +664,7 @@ address.dja-address-contact-list {
     align-items: center;
     
 
-    .usa-button__icon {
+    .usa-button--icon {
         position: absolute;
         right: auto;
         left: 4px;
@@ -679,10 +680,6 @@ address.dja-address-contact-list {
         font-size: unset;
         text-decoration: none !important;
     }
-}
-
-button.usa-button__clipboard {
-    color: var(--link-fg);
 }
 
 .no-outline-on-click:focus {

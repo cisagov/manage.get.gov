@@ -810,36 +810,69 @@ class TestCleanTables(TestCase):
     @override_settings(IS_PRODUCTION=False)
     def test_command_cleans_tables(self):
         """test that the handle method functions properly to clean tables"""
-        with less_console_noise():
-            with patch("django.apps.apps.get_model") as get_model_mock:
-                model_mock = MagicMock()
-                get_model_mock.return_value = model_mock
 
-                with patch(
-                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                    return_value=True,
-                ):
-                    call_command("clean_tables")
+        with patch("django.apps.apps.get_model") as get_model_mock:
+            model_mock = MagicMock()
+            get_model_mock.return_value = model_mock
 
-                    table_names = [
-                        "DomainInformation",
-                        "DomainRequest",
-                        "PublicContact",
-                        "Domain",
-                        "User",
-                        "Contact",
-                        "Website",
-                        "DraftDomain",
-                        "HostIp",
-                        "Host",
-                    ]
+            with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                return_value=True,
+            ):
 
-                    # Check that each model's delete method was called
+                # List of pks to be returned in batches, one list for each of 11 tables
+                pk_batch = [1, 2, 3, 4, 5, 6]
+                # Create a list of batches with alternating non-empty and empty lists
+                pk_batches = [pk_batch, []] * 11
+
+                # Set the side effect of values_list to return different pk batches
+                # First time values_list is called it returns list of 6 objects to delete;
+                # Next time values_list is called it returns empty list
+                def values_list_side_effect(*args, **kwargs):
+                    if args == ("pk",) and kwargs.get("flat", False):
+                        return pk_batches.pop(0)
+                    return []
+
+                model_mock.objects.values_list.side_effect = values_list_side_effect
+                # Mock the return value of `delete()` to be (6, ...)
+                model_mock.objects.filter.return_value.delete.return_value = (6, None)
+
+                call_command("clean_tables")
+
+                table_names = [
+                    "DomainInformation",
+                    "DomainRequest",
+                    "FederalAgency",
+                    "PublicContact",
+                    "HostIp",
+                    "Host",
+                    "Domain",
+                    "User",
+                    "Contact",
+                    "Website",
+                    "DraftDomain",
+                ]
+
+                expected_filter_calls = [call(pk__in=[1, 2, 3, 4, 5, 6]) for _ in range(11)]
+
+                actual_filter_calls = [c for c in model_mock.objects.filter.call_args_list if "pk__in" in c[1]]
+
+                try:
+                    # Assert that filter(pk__in=...) was called with expected arguments
+                    self.assertEqual(actual_filter_calls, expected_filter_calls)
+
+                    # Check that delete() was called for each batch
+                    for batch in [[1, 2, 3, 4, 5, 6]]:
+                        model_mock.objects.filter(pk__in=batch).delete.assert_called()
+
                     for table_name in table_names:
                         get_model_mock.assert_any_call("registrar", table_name)
-                        model_mock.objects.all().delete.assert_called()
-
-                    self.logger_mock.info.assert_any_call("Successfully cleaned table DomainInformation")
+                        self.logger_mock.info.assert_any_call(
+                            f"Successfully cleaned table {table_name}, deleted 6 rows"
+                        )
+                except AssertionError as e:
+                    print(f"AssertionError: {e}")
+                    raise
 
     @override_settings(IS_PRODUCTION=False)
     def test_command_handles_nonexistent_model(self):
@@ -870,15 +903,33 @@ class TestCleanTables(TestCase):
             with patch("django.apps.apps.get_model") as get_model_mock:
                 model_mock = MagicMock()
                 get_model_mock.return_value = model_mock
-                model_mock.objects.all().delete.side_effect = Exception("Some error")
+
+                # Mock the values_list so that DomainInformation attempts a delete
+                pk_batches = [[1, 2, 3, 4, 5, 6], []]
+
+                def values_list_side_effect(*args, **kwargs):
+                    if args == ("pk",) and kwargs.get("flat", False):
+                        return pk_batches.pop(0)
+                    return []
+
+                model_mock.objects.values_list.side_effect = values_list_side_effect
+
+                # Mock delete to raise a generic exception
+                model_mock.objects.filter.return_value.delete.side_effect = Exception("Mocked delete exception")
 
                 with patch(
-                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
                     return_value=True,
                 ):
-                    call_command("clean_tables")
+                    with self.assertRaises(Exception) as context:
+                        # Execute the command
+                        call_command("clean_tables")
 
-                    self.logger_mock.error.assert_any_call("Error cleaning table DomainInformation: Some error")
+                        # Check the exception message
+                        self.assertEqual(str(context.exception), "Custom delete error")
+
+                        # Assert that delete was called
+                        model_mock.objects.filter.return_value.delete.assert_called()
 
 
 class TestExportTables(MockEppLib):

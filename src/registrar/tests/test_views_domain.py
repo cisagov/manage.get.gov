@@ -141,6 +141,8 @@ class TestWithDomainPermissions(TestWithUser):
             Host.objects.all().delete()
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
+            Suborganization.objects.all().delete()
+            Portfolio.objects.all().delete()
         except ValueError:  # pass if already deleted
             pass
         super().tearDown()
@@ -312,6 +314,33 @@ class TestDomainDetail(TestDomainOverview):
 
             self.assertContains(detail_page, "noinformation.gov")
             self.assertContains(detail_page, "Domain missing domain information")
+
+    @less_console_noise_decorator
+    def test_domain_readonly_on_detail_page(self):
+        """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
+        properly displays read only"""
+
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        # need to create a different user than self.user because the user needs permission assignments
+        user = get_user_model().objects.create(
+            first_name="Test",
+            last_name="User",
+            email="bogus@example.gov",
+            phone="8003111234",
+            title="test title",
+            portfolio=portfolio,
+            portfolio_roles=[User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
+        DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+        self.client.force_login(user)
+        detail_page = self.client.get(f"/domain/{domain.id}")
+        # Check that alert message displays properly
+        self.assertContains(
+            detail_page, "To manage information for this domain, you must add yourself as a domain manager."
+        )
+        # Check that user does not have option to Edit domain
+        self.assertNotContains(detail_page, "Edit")
 
 
 class TestDomainManagers(TestDomainOverview):
@@ -1122,7 +1151,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
 
         # Add a portfolio to the current domain
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        _suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
 
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = portfolio
@@ -1153,6 +1182,12 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         # Make sure that we're using the right SO value.
         self.assertNotContains(page, "Testy")
         self.assertContains(page, "Bob")
+
+        # Cleanup
+        self.domain_information.delete()
+        _suborg.delete()
+        portfolio.delete()
+        senior_official.delete()
 
     @less_console_noise_decorator
     def test_domain_edit_senior_official_in_place(self):
