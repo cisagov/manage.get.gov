@@ -4,4 +4,7 @@ Template include for read-only form fields
 
 
 <h4 class="read-only-label">{{ field.label }}</h4>
+{% if label_description %}
+    <p class="usa-hint margin-top-0 margin-bottom-05">{{ label_description }}</p>
+{% endif %}
 <p class="read-only-value">{{ field.value }}</p>

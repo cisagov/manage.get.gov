@@ -11,9 +11,12 @@
       {% if is_editable %}
 
       {% if portfolio %}
-          {% with url_name="domain-suborganization" %}
-            {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
-          {% endwith %}
+          {% comment %} Only show this menu option if the user has the perms to do so {% endcomment %}
+          {% if has_domains_portfolio_permission and request.user.has_view_suborganization %}
+            {% with url_name="domain-suborganization" %}
+              {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
+            {% endwith %}
+          {% endif %}
       {% else %}
         {% with url_name="domain-org-name-address" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Organization name and mailing address" %}

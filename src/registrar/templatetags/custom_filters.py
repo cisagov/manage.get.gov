@@ -150,3 +150,12 @@ def format_phone(value):
 @register.filter
 def in_path(url, path):
     return url in path
+
+
+@register.filter(name='and')
+def and_filter(value, arg):
+    """
+    Implements logical AND operation in templates.
+    Usage: {{ value|and:arg }}
+    """
+    return bool(value and arg)
