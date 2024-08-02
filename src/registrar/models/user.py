@@ -5,8 +5,10 @@ from django.db import models
 from django.db.models import Q
 
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 from .domain_invitation import DomainInvitation
+from .portfolio_invitation import PortfolioInvitation
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
@@ -61,31 +63,6 @@ class User(AbstractUser):
         # because those users still do get "verified" through normal means
         # after they login.
         FIXTURE_USER = "fixture_user", "Created by fixtures"
-
-    class UserPortfolioRoleChoices(models.TextChoices):
-        """
-        Roles are containers of UserPortfolioPermissionChoices
-        """
-
-        ORGANIZATION_ADMIN = "organization_admin", "Admin"
-        ORGANIZATION_ADMIN_READ_ONLY = "organization_admin_read_only", "Admin read only"
-        ORGANIZATION_MEMBER = "organization_member", "Member"
-
-    class UserPortfolioPermissionChoices(models.TextChoices):
-        """We test against permissions to manage access"""
-
-        VIEW_ALL_DOMAINS = "view_all_domains", "View all domains and domain reports"
-        VIEW_MANAGED_DOMAINS = "view_managed_domains", "View managed domains"
-
-        VIEW_MEMBER = "view_member", "View members"
-        EDIT_MEMBER = "edit_member", "Create and edit members"
-
-        VIEW_ALL_REQUESTS = "view_all_requests", "View all requests"
-        VIEW_CREATED_REQUESTS = "view_created_requests", "View created requests"
-        EDIT_REQUESTS = "edit_requests", "Create and edit requests"
-
-        VIEW_PORTFOLIO = "view_portfolio", "View organization"
-        EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
 
     PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
@@ -273,20 +250,20 @@ class User(AbstractUser):
     # the methods below are checks for individual portfolio permissions. They are defined here
     # to make them easier to call elsewhere throughout the application
     def has_base_portfolio_permission(self):
-        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
     def has_edit_org_portfolio_permission(self):
-        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
     def has_domains_portfolio_permission(self):
         return self._has_portfolio_permission(
-            User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
-        ) or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
+        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
     def has_domain_requests_portfolio_permission(self):
         return self._has_portfolio_permission(
-            User.UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
-        ) or self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
@@ -395,6 +372,24 @@ class User(AbstractUser):
                 new_domain_invitation = DomainInvitation(email=transition_domain_email.lower(), domain=new_domain)
                 new_domain_invitation.save()
 
+    def check_portfolio_invitations_on_login(self):
+        """When a user first arrives on the site, we need to retrieve any portfolio
+        invitations that match their email address."""
+        for invitation in PortfolioInvitation.objects.filter(
+            email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
+        ):
+            if self.portfolio is None:
+                try:
+                    invitation.retrieve()
+                    invitation.save()
+                except RuntimeError:
+                    # retrieving should not fail because of a missing user, but
+                    # if it does fail, log the error so a new user can continue
+                    # logging in
+                    logger.warn("Failed to retrieve invitation %s", invitation, exc_info=True)
+            else:
+                logger.warn("User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True)
+
     def on_each_login(self):
         """Callback each time the user is authenticated.
 
@@ -406,6 +401,7 @@ class User(AbstractUser):
         """
 
         self.check_domain_invitations_on_login()
+        self.check_portfolio_invitations_on_login()
 
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
