@@ -112,9 +112,7 @@ class TestPortfolio(WebTest):
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
-            response = self.app.get(
-                reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk}), status=403
-            )
+            response = self.app.get(reverse("domains"), status=403)
             # Assert the response is a 403 Forbidden
             self.assertEqual(response.status_code, 403)
 
@@ -128,9 +126,7 @@ class TestPortfolio(WebTest):
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
-            response = self.app.get(
-                reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk}), status=403
-            )
+            response = self.app.get(reverse("domain-requests"), status=403)
             # Assert the response is a 403 Forbidden
             self.assertEqual(response.status_code, 403)
 
@@ -144,9 +140,7 @@ class TestPortfolio(WebTest):
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
-            response = self.app.get(
-                reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}), status=403
-            )
+            response = self.app.get(reverse("organization"), status=403)
             # Assert the response is a 403 Forbidden
             self.assertEqual(response.status_code, 403)
 
@@ -215,12 +209,8 @@ class TestPortfolio(WebTest):
             self.assertContains(portfolio_page, self.portfolio.organization_name)
             self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
             self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-            self.assertContains(
-                portfolio_page, reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk})
-            )
-            self.assertContains(
-                portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
-            )
+            self.assertContains(portfolio_page, reverse("domains"))
+            self.assertContains(portfolio_page, reverse("domain-requests"))
 
             # removing non-basic portfolio perms, which should remove domains
             # and domain requests from nav
@@ -233,12 +223,8 @@ class TestPortfolio(WebTest):
             self.assertContains(portfolio_page, self.portfolio.organization_name)
             self.assertContains(portfolio_page, "<h1>Organization</h1>")
             self.assertNotContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-            self.assertNotContains(
-                portfolio_page, reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk})
-            )
-            self.assertNotContains(
-                portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
-            )
+            self.assertNotContains(portfolio_page, reverse("domains"))
+            self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
     @less_console_noise_decorator
     def test_navigation_links_hidden_when_user_not_have_role(self):
@@ -294,7 +280,7 @@ class TestPortfolio(WebTest):
             self.user.save()
             self.user.refresh_from_db()
 
-            page = self.app.get(reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}))
+            page = self.app.get(reverse("organization"))
             self.assertContains(
                 page, "The name of your federal agency will be publicly listed as the domain registrant."
             )
@@ -314,7 +300,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.organization_name = "Hotel California"
             self.portfolio.save()
-            page = self.app.get(reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}))
+            page = self.app.get(reverse("portfolio-organization"))
             # Once in the sidenav, once in the main nav
             self.assertContains(page, "Hotel California", count=2)
             self.assertContains(page, "Non-Federal Agency")
@@ -334,9 +320,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.address_line1 = "1600 Penn Ave"
             self.portfolio.save()
-            portfolio_org_name_page = self.app.get(
-                reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk})
-            )
+            portfolio_org_name_page = self.app.get(reverse("organization"))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
             portfolio_org_name_page.form["address_line1"] = "6 Downing st"
