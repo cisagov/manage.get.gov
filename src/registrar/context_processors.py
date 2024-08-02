@@ -47,6 +47,17 @@ def add_has_profile_feature_flag_to_context(request):
     return {"has_profile_feature_flag": flag_is_active(request, "profile_feature")}
 
 
+def org_user_status(request):
+    if request.user.is_authenticated:
+        is_org_user = request.user.is_org_user(request)
+    else:
+        is_org_user = False
+
+    return {
+        "is_org_user": is_org_user,
+    }
+
+
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
     try:
@@ -57,14 +68,12 @@ def portfolio_permissions(request):
                 "has_domain_requests_portfolio_permission": False,
                 "portfolio": None,
                 "has_organization_feature_flag": False,
-                "is_org_user": False,
             }
         return {
             "has_base_portfolio_permission": request.user.has_base_portfolio_permission(),
             "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(),
             "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(),
             "has_organization_feature_flag": flag_is_active(request, "organization_feature"),
-            "is_org_user": request.user.is_org_user(request)
         }
     except AttributeError:
         # Handles cases where request.user might not exist
