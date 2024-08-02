@@ -151,7 +151,7 @@ class TestPortfolio(WebTest):
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.portfolio.city = "Los Angeles"
-        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
         self.portfolio.save()
         self.user.save()
         self.user.refresh_from_db()
@@ -172,8 +172,8 @@ class TestPortfolio(WebTest):
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
-            User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
         ]
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
