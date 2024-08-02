@@ -43,6 +43,9 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         context["is_analyst_or_superuser"] = user.has_perm("registrar.analyst_access_permission") or user.has_perm(
             "registrar.full_access_permission"
         )
+        context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
+        context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
+        context["is_editable"] = self.is_editable()
         # Stored in a variable for the linter
         action = "analyst_action"
         action_location = "analyst_action_location"
@@ -53,6 +56,22 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
             context[action_location] = self.request.session[action_location]
 
         return context
+
+    def is_editable(self):
+        """Returns whether domain is editable in the context of the view"""
+        logger.info("checking if is_editable")
+        domain_editable = self.object.is_editable()
+        if not domain_editable:
+            return False
+
+        # if user is domain manager or analyst or admin, return True
+        if (
+            self.can_access_other_user_domains(self.object.id)
+            or UserDomainRole.objects.filter(user=self.request.user, domain=self.object).exists()
+        ):
+            return True
+
+        return False
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property

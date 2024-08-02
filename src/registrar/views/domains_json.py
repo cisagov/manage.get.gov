@@ -124,7 +124,7 @@ def serialize_domain(domain, user):
 
     # Check if there is a UserDomainRole for this domain and user
     user_domain_role_exists = UserDomainRole.objects.filter(domain_id=domain.id, user=user).exists()
-
+    view_only = not user_domain_role_exists or domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD]
     return {
         "id": domain.id,
         "name": domain.name,
@@ -133,11 +133,7 @@ def serialize_domain(domain, user):
         "state_display": domain.state_display(),
         "get_state_help_text": domain.get_state_help_text(),
         "action_url": reverse("domain", kwargs={"pk": domain.id}),
-        "action_label": (
-            "View"
-            if not user_domain_role_exists or domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD]
-            else "Manage"
-        ),
-        "svg_icon": ("visibility" if domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD] else "settings"),
+        "action_label": ("View" if view_only else "Manage"),
+        "svg_icon": ("visibility" if view_only else "settings"),
         "suborganization": suborganization_name,
     }

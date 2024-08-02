@@ -1,4 +1,5 @@
 {% load i18n admin_urls %}
+{% load i18n static %}
 
 {% comment %} Replace li with p for more semantic HTML if we have a single child {% endcomment %}
 {% block object-tools-items %}
@@ -13,8 +14,21 @@
             </li>
         </ul>
     {% else %}
-        <p class="margin-0 padding-0">
-            <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
-        </p>
+        <ul>
+            <li>
+                <a href="{% add_preserved_filters history_url %}">{% translate "History" %}</a>
+            </li>
+            {% if opts.model_name == 'domainrequest' %}
+            <li>
+                <a id="id-copy-to-clipboard-summary" class="button--clipboard" type="button" href="#">
+                    <svg class="usa-icon" >
+                        <use xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                    </svg>
+                    <span>{% translate "Copy request summary" %}</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
     {% endif %}
 {% endblock %}
+
