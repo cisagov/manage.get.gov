@@ -49,7 +49,7 @@ def get_domain_ids_from_request(request):
     Otherwise, return domain ids associated with request.user.
     """
     portfolio = request.GET.get("portfolio")
-    if portfolio and request.user.is_org_user(request):
+    if portfolio:
         domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
         return domain_infos.values_list("domain_id", flat=True)
     else:
