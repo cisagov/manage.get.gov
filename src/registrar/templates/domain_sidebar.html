@@ -8,7 +8,9 @@
         {% include "includes/domain_sidenav_item.html" with item_text="Domain overview" %}
       {% endwith %}
 
-      {% if is_org_user %}
+      {% if is_editable %}
+
+      {% if portfolio %}
         {% comment %} TODO - uncomment in #2352
           {% with url_name="domain-suborganization" %}
             {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
@@ -23,7 +25,6 @@
         {% endwith %}
       {% endif %}    
 
-      {% if is_editable %}
       <li class="usa-sidenav__item">
         {% url 'domain-dns' pk=domain.id as url %}
         <a href="{{ url }}" {% if request.path|startswith:url %}class="usa-current"{% endif %}>

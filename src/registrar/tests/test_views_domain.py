@@ -6,7 +6,6 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
-from registrar.models.portfolio import Portfolio
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -142,6 +141,7 @@ class TestWithDomainPermissions(TestWithUser):
             Host.objects.all().delete()
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
+            Suborganization.objects.all().delete()
             Portfolio.objects.all().delete()
         except ValueError:  # pass if already deleted
             pass
@@ -1151,7 +1151,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
 
         # Add a portfolio to the current domain
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        _suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
 
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = portfolio
@@ -1182,6 +1182,12 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         # Make sure that we're using the right SO value.
         self.assertNotContains(page, "Testy")
         self.assertContains(page, "Bob")
+
+        # Cleanup
+        self.domain_information.delete()
+        _suborg.delete()
+        portfolio.delete()
+        senior_official.delete()
 
     @less_console_noise_decorator
     def test_domain_edit_senior_official_in_place(self):

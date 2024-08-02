@@ -73,13 +73,6 @@ class TestWithUser(MockEppLib):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
-        # For some reason, if this is done on the test directly,
-        # we get a django.db.models.deletion.ProtectedError on "User".
-        # In either event, it doesn't hurt to have these here given their
-        # relationship.
-        Suborganization.objects.all().delete()
-        Portfolio.objects.all().delete()
-        SeniorOfficial.objects.all().delete()
 
 
 class TestEnvironmentVariablesEffects(TestCase):
