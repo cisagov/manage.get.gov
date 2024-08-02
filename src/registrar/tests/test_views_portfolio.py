@@ -155,7 +155,7 @@ class TestPortfolio(WebTest):
         self.user.save()
         self.user.refresh_from_db()
         with override_flag("organization_feature", active=True):
-            response = self.app.get(reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}))
+            response = self.app.get(reverse("organization"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
@@ -179,7 +179,7 @@ class TestPortfolio(WebTest):
         self.user.save()
         self.user.refresh_from_db()
         with override_flag("organization_feature", active=True):
-            response = self.app.get(reverse("portfolio-organization", kwargs={"portfolio_id": self.portfolio.pk}))
+            response = self.app.get(reverse("organization"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
@@ -243,10 +243,10 @@ class TestPortfolio(WebTest):
             self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
             self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertContains(
-                portfolio_page, reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk})
+                portfolio_page, reverse("domains")
             )
             self.assertContains(
-                portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
+                portfolio_page, reverse("domain-requests")
             )
 
             # removing non-basic portfolio role, which should remove domains
@@ -261,10 +261,10 @@ class TestPortfolio(WebTest):
             self.assertContains(portfolio_page, "<h1>Organization</h1>")
             self.assertNotContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertNotContains(
-                portfolio_page, reverse("portfolio-domains", kwargs={"portfolio_id": self.portfolio.pk})
+                portfolio_page, reverse("domains")
             )
             self.assertNotContains(
-                portfolio_page, reverse("portfolio-domain-requests", kwargs={"portfolio_id": self.portfolio.pk})
+                portfolio_page, reverse("domain-requests")
             )
 
     @less_console_noise_decorator
