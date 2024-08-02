@@ -16,6 +16,7 @@ on:
         options:
           - staging
           - development
+          - ad
           - ms
           - ag
           - litterbox
@@ -35,7 +36,6 @@ on:
           - ab
           - rjm
           - dk
-          - ms
 
 jobs:
   reset-db:

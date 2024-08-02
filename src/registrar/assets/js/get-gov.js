@@ -657,6 +657,34 @@ function hideDeletedForms() {
   });
 }
 
+// Checks for if we want to display Urbanization or not
+document.addEventListener('DOMContentLoaded', function() {
+  var stateTerritoryField = document.querySelector('select[name="organization_contact-state_territory"]');
+
+  if (!stateTerritoryField) {
+    return; // Exit if the field not found
+  }
+
+  setupUrbanizationToggle(stateTerritoryField);
+});
+
+function setupUrbanizationToggle(stateTerritoryField) {
+  var urbanizationField = document.getElementById('urbanization-field');
+  
+  function toggleUrbanizationField() {
+    // Checking specifically for Puerto Rico only
+    if (stateTerritoryField.value === 'PR') { 
+      urbanizationField.style.display = 'block';
+    } else {
+      urbanizationField.style.display = 'none';
+    }
+  }
+
+  toggleUrbanizationField();
+
+  stateTerritoryField.addEventListener('change', toggleUrbanizationField);
+}
+
 /**
  * An IIFE that attaches a click handler for our dynamic formsets
  *
@@ -1141,6 +1169,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusIndicator = document.querySelector('.domain__filter-indicator');
     const statusToggle = document.querySelector('.usa-button--filter');
     const noPortfolioFlag = document.getElementById('no-portfolio-js-flag');
+    const portfolioElement = document.getElementById('portfolio-js-value');
+    const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
 
     /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1150,10 +1180,15 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} order - the sort order {asc, desc}
      * @param {*} scroll - control for the scrollToElement functionality
      * @param {*} searchTerm - the search term
+     * @param {*} portfolio - the portfolio id
      */
-    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, status = currentStatus, searchTerm = currentSearchTerm) {
+    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, status = currentStatus, searchTerm = currentSearchTerm, portfolio = portfolioValue) {
       // fetch json of page of domains, given params
-      fetch(`/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}&status=${status}&search_term=${searchTerm}`)
+      let url = `/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}&status=${status}&search_term=${searchTerm}`
+      if (portfolio)
+        url += `&portfolio=${portfolio}`
+
+      fetch(url)
         .then(response => response.json())
         .then(data => {
           if (data.error) {

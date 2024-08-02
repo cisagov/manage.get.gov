@@ -3,7 +3,7 @@
 import abc  # abstract base class
 
 from django.views.generic import DetailView, DeleteView, TemplateView
-from registrar.models import Domain, DomainRequest, DomainInvitation
+from registrar.models import Domain, DomainRequest, DomainInvitation, Portfolio
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 
@@ -13,8 +13,11 @@ from .mixins import (
     DomainRequestPermissionWithdraw,
     DomainInvitationPermission,
     DomainRequestWizardPermission,
+    PortfolioDomainRequestsPermission,
+    PortfolioDomainsPermission,
     UserDeleteDomainRolePermission,
     UserProfilePermission,
+    PortfolioBasePermission,
 )
 import logging
 
@@ -40,6 +43,9 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         context["is_analyst_or_superuser"] = user.has_perm("registrar.analyst_access_permission") or user.has_perm(
             "registrar.full_access_permission"
         )
+        context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
+        context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
+        context["is_editable"] = self.is_editable()
         # Stored in a variable for the linter
         action = "analyst_action"
         action_location = "analyst_action_location"
@@ -50,6 +56,22 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
             context[action_location] = self.request.session[action_location]
 
         return context
+
+    def is_editable(self):
+        """Returns whether domain is editable in the context of the view"""
+        logger.info("checking if is_editable")
+        domain_editable = self.object.is_editable()
+        if not domain_editable:
+            return False
+
+        # if user is domain manager or analyst or admin, return True
+        if (
+            self.can_access_other_user_domains(self.object.id)
+            or UserDomainRole.objects.filter(user=self.request.user, domain=self.object).exists()
+        ):
+            return True
+
+        return False
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property
@@ -163,3 +185,38 @@ class UserProfilePermissionView(UserProfilePermission, DetailView, abc.ABC):
     @abc.abstractmethod
     def template_name(self):
         raise NotImplementedError
+
+
+class PortfolioBasePermissionView(PortfolioBasePermission, DetailView, abc.ABC):
+    """Abstract base view for portfolio views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+    # DetailView property for what model this is viewing
+    model = Portfolio
+    # variable name in template context for the model object
+    context_object_name = "portfolio"
+
+    # Abstract property enforces NotImplementedError on an attribute.
+    @property
+    @abc.abstractmethod
+    def template_name(self):
+        raise NotImplementedError
+
+
+class PortfolioDomainsPermissionView(PortfolioDomainsPermission, PortfolioBasePermissionView, abc.ABC):
+    """Abstract base view for portfolio domains views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+
+class PortfolioDomainRequestsPermissionView(PortfolioDomainRequestsPermission, PortfolioBasePermissionView, abc.ABC):
+    """Abstract base view for portfolio domain request views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
