@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
 
     template_name = "portfolio_domains.html"
+
     def get(self, request):
         context = {}
         if self.request.user.is_authenticated:
