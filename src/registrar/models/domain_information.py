@@ -2,7 +2,6 @@ from __future__ import annotations
 from django.db import transaction
 
 from registrar.models.utility.domain_helper import DomainHelper
-from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.constants import BranchChoices
 
 from .domain_request import DomainRequest
