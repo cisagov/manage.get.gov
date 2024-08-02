@@ -1,5 +1,6 @@
 import logging
-from django.shortcuts import get_object_or_404, render
+from django.http import Http404
+from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
 from registrar.forms.portfolio import PortfolioOrgAddressForm
@@ -9,7 +10,6 @@ from registrar.views.utility.permission_views import (
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
 )
-from waffle.decorators import flag_is_active
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
 
@@ -21,33 +21,18 @@ class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
 
     template_name = "portfolio_domains.html"
 
-    def get(self, request, portfolio_id):
-        context = {}
-
-        if self.request.user.is_authenticated:
-            context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
-            context["has_organization_feature_flag"] = flag_is_active(request, "organization_feature")
-            portfolio = get_object_or_404(Portfolio, id=portfolio_id)
-            context["portfolio"] = portfolio
-
-        return render(request, "portfolio_domains.html", context)
+    def get(self, request):
+        return render(request, "portfolio_domains.html")
 
 
 class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
 
     template_name = "portfolio_requests.html"
 
-    def get(self, request, portfolio_id):
-        context = {}
-
+    def get(self, request):
         if self.request.user.is_authenticated:
-            context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
-            context["has_organization_feature_flag"] = flag_is_active(request, "organization_feature")
-            portfolio = get_object_or_404(Portfolio, id=portfolio_id)
-            context["portfolio"] = portfolio
             request.session["new_request"] = True
-
-        return render(request, "portfolio_requests.html", context)
+        return render(request, "portfolio_requests.html")
 
 
 class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
@@ -63,14 +48,14 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
     def get_context_data(self, **kwargs):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
-        # no need to add portfolio to request context here
-        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
-        context["has_organization_feature_flag"] = flag_is_active(self.request, "organization_feature")
         return context
 
     def get_object(self, queryset=None):
-        """Get the portfolio object based on the URL parameter."""
-        return get_object_or_404(Portfolio, id=self.kwargs.get("portfolio_id"))
+        """Get the portfolio object based on the request user."""
+        portfolio = self.request.user.portfolio
+        if portfolio is None:
+            raise Http404("No organization found for this user")
+        return portfolio
 
     def get_form_kwargs(self):
         """Include the instance in the form kwargs."""
@@ -107,4 +92,4 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
 
     def get_success_url(self):
         """Redirect to the overview page for the portfolio."""
-        return reverse("portfolio-organization", kwargs={"portfolio_id": self.object.pk})
+        return reverse("organization")

@@ -181,7 +181,8 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             # Check svg_icon
             svg_icon_expected = (
                 "visibility"
-                if expected_domains[i].state
+                if not user_domain_role_exists
+                or expected_domains[i].state
                 in [
                     Domain.State.DELETED,
                     Domain.State.ON_HOLD,

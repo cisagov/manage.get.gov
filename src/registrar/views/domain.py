@@ -170,6 +170,17 @@ class DomainView(DomainBaseView):
         context["security_email"] = security_email
         return context
 
+    def can_access_domain_via_portfolio(self, pk):
+        """Most views should not allow permission to portfolio users.
+        If particular views allow permissions, they will need to override
+        this function."""
+        if self.request.user.has_domains_portfolio_permission():
+            if Domain.objects.filter(id=pk).exists():
+                domain = Domain.objects.get(id=pk)
+                if domain.domain_info.portfolio == self.request.user.portfolio:
+                    return True
+        return False
+
     def in_editable_state(self, pk):
         """Override in_editable_state from DomainPermission
         Allow detail page to be viewable"""

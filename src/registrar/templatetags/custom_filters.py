@@ -145,3 +145,8 @@ def format_phone(value):
             phone_number = PhoneNumber.from_string(value)
         return phone_number.as_national
     return value
+
+
+@register.filter
+def in_path(url, path):
+    return url in path
