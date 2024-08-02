@@ -23,42 +23,53 @@
 
         <p>The name of your federal agency will be publicly listed as the domain registrant.</p>
 
-        <p>
-            The federal agency for your organization can’t be updated here.
-            To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
-        </p>
-
-        {% include "includes/form_errors.html" with form=form %}
-
-        {% include "includes/required_fields.html" %}
-
-        <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
-            {% csrf_token %}
-
+        {% if has_edit_org_portfolio_permission %}
             <p>
-                <strong class="text-primary display-block margin-bottom-1">Federal agency</strong>
-                {{ portfolio }}
+                The federal agency for your organization can’t be updated here.
+                To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
             </p>
 
-            {% input_with_errors form.address_line1 %}
+            {% include "includes/form_errors.html" with form=form %}
+            {% include "includes/required_fields.html" %}
+            <form class="usa-form usa-form--large" method="post" novalidate>
+                {% csrf_token %}
+                <h4 class="read-only-label">Federal agency</h4>
+                <p class="read-only-value">
+                    {{ portfolio.federal_agency }}
+                </p>
+                {% input_with_errors form.address_line1 %}
+                {% input_with_errors form.address_line2 %}
+                {% input_with_errors form.city %}
+                {% input_with_errors form.state_territory %}
+                {% with add_class="usa-input--small" %}
+                    {% input_with_errors form.zipcode %}
+                {% endwith %}
+                <button type="submit" class="usa-button">
+                Save
+                </button>
+            </form>
+        {% else %}
+            <h4 class="read-only-label">Federal agency</h4>
+            <p class="read-only-value">
+                {{ portfolio.federal_agency }}
+            </p>
+            {% if form.address_line1.value is not None %}
+                {% include "includes/input_read_only.html" with field=form.address_line1 %}
+            {% endif %}
+            {% if form.address_line2.value is not None %}
+                {% include "includes/input_read_only.html" with field=form.address_line2 %}
+            {% endif %}
+            {% if form.city.value is not None %}
+                {% include "includes/input_read_only.html" with field=form.city %}
+            {% endif %}
+            {% if form.state_territory.value is not None %}
+                {% include "includes/input_read_only.html" with field=form.state_territory %}
+            {% endif %}
+            {% if form.zipcode.value is not None %}
+                {% include "includes/input_read_only.html" with field=form.zipcode %}
+            {% endif %}
+        {% endif %}
 
-            {% input_with_errors form.address_line2 %}
-
-            {% input_with_errors form.city %}
-
-            {% input_with_errors form.state_territory %}
-
-            {% with add_class="usa-input--small" %}
-            {% input_with_errors form.zipcode %}
-            {% endwith %}
-
-            <button
-            type="submit"
-            class="usa-button"
-            >
-            Save
-            </button>
-        </form>
     </div>
 </div>
 {% endblock %}
