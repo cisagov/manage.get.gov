@@ -217,8 +217,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
             self.storage["domain_request_id"] = kwargs["id"]
-            self.storage["step_history"] = self.db_check_for_unlocking_steps()
-
+        
+        # refresh step_history to ensure we don't erroneously unlock unfinished
+        # steps just because we visited it
+        self.storage["step_history"] = self.db_check_for_unlocking_steps()
+        
         # if accessing this class directly, redirect to either to an acknowledgement
         # page or to the first step in the processes (if an edit rather than a new request);
         # subclasseswill NOT be redirected. The purpose of this is to allow code to
@@ -341,10 +344,21 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         """Helper for get_context_data
 
         Queries the DB for a domain request and returns a list of unlocked steps."""
+
+        # The way this works is as follows:
+        # Each step is assigned a true/false value to determine if it is
+        # "unlocked" or not.  This dictionary of values is looped through
+        # at the end of this function and any step with a "true" value is 
+        # added to a simple array that is returned at the end of this function.
+        # This array is eventually passed to the frontend context (eg. domain_request_sidebar.html),
+        # and is used to determine how steps appear in the side nav.
+        # It is worth noting that any step assigned "false" here will be EXCLUDED
+        # from the list of "unlocked" steps. 
+
         history_dict = {
             "generic_org_type": self.domain_request.generic_org_type is not None,
             "tribal_government": self.domain_request.tribe_name is not None,
-            "organization_federal": self.domain_request.federal_type is not None,
+            "organization_federal": True,
             "organization_election": self.domain_request.is_election_board is not None,
             "organization_contact": (
                 self.domain_request.federal_agency is not None
@@ -355,7 +369,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 or self.domain_request.zipcode is not None
                 or self.domain_request.urbanization is not None
             ),
-            "about_your_organization": self.domain_request.about_your_organization is not None,
+            "about_your_organization": True,
             "senior_official": self.domain_request.senior_official is not None,
             "current_sites": (
                 self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
@@ -368,8 +382,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 or self.domain_request.no_other_contacts_rationale is not None
             ),
             "additional_details": (
-                (self.domain_request.anything_else is not None and self.domain_request.has_cisa_representative)
-                or self.domain_request.is_policy_acknowledged is not None
+                (self.domain_request.has_anything_else_text and self.domain_request.has_cisa_representative)
             ),
             "requirements": self.domain_request.is_policy_acknowledged is not None,
             "review": self.domain_request.is_policy_acknowledged is not None,
@@ -626,8 +639,8 @@ class AdditionalDetails(DomainRequestWizard):
     forms = [
         forms.CisaRepresentativeYesNoForm,
         forms.CisaRepresentativeForm,
-        forms.AdditionalDetailsYesNoForm,
-        forms.AdditionalDetailsForm,
+        forms.AnythingElseYesNoForm,
+        forms.AnythingElseForm,
     ]
 
     def is_valid(self, forms: list) -> bool:
