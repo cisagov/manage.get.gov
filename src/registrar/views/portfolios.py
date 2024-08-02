@@ -25,7 +25,7 @@ class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
         context = {}
         if self.request.user.is_authenticated:
             context["user_domain_count"] = self.request.user.get_user_domain_ids().count()
-        return render(request, "portfolio_domains.html")
+        return render(request, "portfolio_domains.html", context)
 
 
 class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
