@@ -15,14 +15,15 @@
         If you believe there is an error please contact <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
     </p>
 
-    {% if suborganization_is_editable %}
-        {% include "includes/required_fields.html" %}
+    {% if has_edit_org_portfolio_permission %}
+    {% include "includes/required_fields.html" %}
+        <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+            {% csrf_token %}
+            {% input_with_errors form.sub_organization %}
+            <button type="submit" class="usa-button">Save</button>
+        </form>
+    {% else %}
+        <p>Readonly content here</p>
     {% endif %}
-
-    <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
-        {% csrf_token %}
-        {% input_with_errors form.sub_organization %}
-        <button type="submit" class="usa-button">Save</button>
-    </form>
 
 {% endblock %}

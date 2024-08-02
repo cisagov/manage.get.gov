@@ -261,15 +261,6 @@ class DomainSubOrganizationView(DomainFormBaseView):
         # superclass has the redirect
         return super().form_valid(form)
 
-    def get_context_data(self, **kwargs):
-        """Adds custom context."""
-        context = super().get_context_data(**kwargs)
-
-        # TODO: Switch to True #2352
-        suborganization_is_editable = False
-        context["suborganization_is_editable"] = suborganization_is_editable
-        return context
-
 
 class DomainSeniorOfficialView(DomainFormBaseView):
     """Domain senior official editing view."""

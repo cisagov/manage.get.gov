@@ -275,6 +275,9 @@ class User(AbstractUser):
     def has_base_portfolio_permission(self):
         return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
+    def has_edit_org_portfolio_permission(self):
+        return self._has_portfolio_permission(User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
+
     def has_domains_portfolio_permission(self):
         return self._has_portfolio_permission(
             User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
