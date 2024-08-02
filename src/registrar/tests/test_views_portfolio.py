@@ -300,7 +300,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.organization_name = "Hotel California"
             self.portfolio.save()
-            page = self.app.get(reverse("portfolio-organization"))
+            page = self.app.get(reverse("organization"))
             # Once in the sidenav, once in the main nav
             self.assertContains(page, "Hotel California", count=2)
             self.assertContains(page, "Non-Federal Agency")
