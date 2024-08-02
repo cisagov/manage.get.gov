@@ -2,7 +2,7 @@
 
 <section class="section--outlined domains{% if portfolio is not None %} margin-top-0{% endif %}" id="domains">
   <div class="section--outlined__header margin-bottom-3 {% if portfolio is None %} section--outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
-      {% if portfolio is None %}
+      {% if not portfolio %}
         <h2 id="domains-header" class="display-inline-block">Domains</h2>
         <span class="display-none" id="no-portfolio-js-flag"></span>
       {% else %}

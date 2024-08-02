@@ -1,12 +1,10 @@
 import logging
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-from registrar.models import Domain
+from registrar.models import UserDomainRole, Domain, DomainInformation
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
-
-from registrar.models import DomainInformation, UserDomainRole
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +12,7 @@ logger = logging.getLogger(__name__)
 @login_required
 def get_domains_json(request):
     """Given the current request,
-    get all domains that are associated with the User object"""
+    get all domains that are associated with the UserDomainRole object"""
 
     domain_ids = get_domain_ids_from_request(request)
 
@@ -51,7 +49,7 @@ def get_domain_ids_from_request(request):
     Otherwise, return domain ids associated with request.user.
     """
     portfolio = request.GET.get("portfolio")
-    if portfolio:
+    if portfolio and request.user.is_org_user(request):
         domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
         return domain_infos.values_list("domain_id", flat=True)
     else:

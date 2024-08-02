@@ -580,7 +580,7 @@ class DomainDataTypeUser(DomainDataType):
             return Q(id__in=[])
         else:
             # Get all domains the user is associated with
-            return Q(domain__id__in=request.user.get_user_domain_ids())
+            return Q(domain__id__in=request.user.get_user_domain_ids(request))
 
 
 class DomainDataFull(DomainExport):
