@@ -29,6 +29,7 @@ on:
           - hotgov
           - litterbox
           - ms
+          - ad
       # GitHub Actions has no "good" way yet to dynamically input branches
       branch:
         description: 'Branch to deploy'
