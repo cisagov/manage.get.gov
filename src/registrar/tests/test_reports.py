@@ -314,7 +314,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
-    @override_flag("profile_feature", active=True)
+    @override_flag("organization_feature", active=True)
     def test_domain_data_type_user_with_portfolio(self):
         """Tests DomainDataTypeUser export with portfolio permissions"""
 
