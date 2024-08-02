@@ -14,7 +14,6 @@ from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.views.domain import DomainNameserversView
-from registrar.models import SeniorOfficial, Suborganization
 from .common import MockEppLib, create_test_user, less_console_noise  # type: ignore
 from unittest.mock import patch
 from django.urls import reverse
