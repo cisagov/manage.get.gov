@@ -10,6 +10,7 @@ from registrar.models import (
     UserDomainRole,
     User,
 )
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from .common import create_test_user
 from waffle.testutils import override_flag
 
@@ -55,7 +56,7 @@ class TestPortfolio(WebTest):
     def test_middleware_does_not_redirect_if_no_portfolio(self):
         """Test that user with no assigned portfolio is not redirected when attempting to access home"""
         self.app.set_user(self.user.username)
-        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
         self.user.save()
         self.user.refresh_from_db()
         with override_flag("organization_feature", active=True):
@@ -70,7 +71,7 @@ class TestPortfolio(WebTest):
         """Test that user with VIEW_PORTFOLIO is redirected to portfolio organization page"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
-        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
         self.user.save()
         self.user.refresh_from_db()
         with override_flag("organization_feature", active=True):
@@ -87,8 +88,8 @@ class TestPortfolio(WebTest):
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
-            User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
         ]
         self.user.save()
         self.user.refresh_from_db()
@@ -149,9 +150,9 @@ class TestPortfolio(WebTest):
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
-            User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            User.UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            User.UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
         ]
         self.user.save()
         self.user.refresh_from_db()
@@ -168,7 +169,7 @@ class TestPortfolio(WebTest):
 
             # reducing portfolio permissions to just VIEW_PORTFOLIO, which should remove domains
             # and domain requests from nav
-            self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+            self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
             self.user.save()
             self.user.refresh_from_db()
 
@@ -180,17 +181,15 @@ class TestPortfolio(WebTest):
             self.assertNotContains(portfolio_page, reverse("domains"))
             self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
-
-class TestPortfolioOrganization(TestPortfolio):
-
+    @less_console_noise_decorator
     def test_portfolio_org_name(self):
         """Can load portfolio's org name page."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
             self.user.portfolio = self.portfolio
             self.user.portfolio_additional_permissions = [
-                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ]
             self.user.save()
             self.user.refresh_from_db()
@@ -200,14 +199,15 @@ class TestPortfolioOrganization(TestPortfolio):
                 page, "The name of your federal agency will be publicly listed as the domain registrant."
             )
 
+    @less_console_noise_decorator
     def test_domain_org_name_address_content(self):
         """Org name and address information appears on the page."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
             self.user.portfolio = self.portfolio
             self.user.portfolio_additional_permissions = [
-                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ]
             self.user.save()
             self.user.refresh_from_db()
@@ -218,14 +218,15 @@ class TestPortfolioOrganization(TestPortfolio):
             # Once in the sidenav, once in the main nav, once in the form
             self.assertContains(page, "Hotel California", count=3)
 
+    @less_console_noise_decorator
     def test_domain_org_name_address_form(self):
         """Submitting changes works on the org name address page."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
             self.user.portfolio = self.portfolio
             self.user.portfolio_additional_permissions = [
-                User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                User.UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ]
             self.user.save()
             self.user.refresh_from_db()
