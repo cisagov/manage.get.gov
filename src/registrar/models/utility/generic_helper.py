@@ -4,7 +4,6 @@ import time
 import logging
 from urllib.parse import urlparse, urlunparse, urlencode
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -82,9 +81,13 @@ class CreateOrUpdateOrganizationTypeHelper:
 
     def _handle_new_instance(self):
         # == Check for invalid conditions before proceeding == #
-        should_proceed = self._validate_new_instance()
-        if not should_proceed:
+        try:
+            should_proceed = self._validate_new_instance()
+            if not should_proceed:
+                return None
+        except ValueError:
             return None
+        
         # == Program flow will halt here if there is no reason to update == #
 
         # == Update the linked values == #
@@ -104,6 +107,7 @@ class CreateOrUpdateOrganizationTypeHelper:
     def _handle_existing_instance(self, force_update_when_no_changes_are_found=False):
         # == Init variables == #
         try:
+
             # Instance is already in the database, fetch its current state
             current_instance = self.sender.objects.get(id=self.instance.id)
 
@@ -174,8 +178,8 @@ class CreateOrUpdateOrganizationTypeHelper:
             self.instance.organization_type = generic_org_type
         else:
             # This can only happen with manual data tinkering, which causes these to be out of sync.
-            if self.instance.is_election_board is None:
-                self.instance.is_election_board = False
+            # if self.instance.is_election_board is None:
+            #     self.instance.is_election_board = False
 
             if self.instance.is_election_board:
                 self.instance.organization_type = self.generic_org_to_org_map[generic_org_type]
@@ -219,12 +223,15 @@ class CreateOrUpdateOrganizationTypeHelper:
             self.instance.is_election_board = None
             self.instance.generic_org_type = None
 
-    def _validate_new_instance(self):
+    def _validate_new_instance(self) -> bool:
         """
         Validates whether a new instance of DomainRequest or DomainInformation can proceed with the update
         based on the consistency between organization_type, generic_org_type, and is_election_board.
 
         Returns a boolean determining if execution should proceed or not.
+
+        Raises: 
+            ValueError if there is a mismatch between organization_type, generic_org_type, and is_election_board 
         """
 
         # We conditionally accept both of these values to exist simultaneously, as long as
@@ -249,6 +256,7 @@ class CreateOrUpdateOrganizationTypeHelper:
                     "Cannot add organization_type and generic_org_type simultaneously "
                     "when generic_org_type, is_election_board, and organization_type values do not match."
                 )
+                logger.error("_validate_new_instance: %s", message)
                 raise ValueError(message)
 
             return True

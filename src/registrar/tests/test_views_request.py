@@ -2979,7 +2979,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         expected_dict = []
         self.assertEqual(unlocked_steps, expected_dict)
 
-    @less_console_noise_decorator
+    # @less_console_noise_decorator
     def test_unlocked_steps_full_domain_request(self):
         """Test when all fields in the domain request are filled."""
 

@@ -1495,13 +1495,6 @@ class TestDomainRequestCustomSave(TestCase):
         self.assertEqual(domain_request.is_election_board, False)
         self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
 
-        # Try reverting setting an invalid value for election board (should revert to False)
-        domain_request.is_election_board = None
-        domain_request.save()
-
-        self.assertEqual(domain_request.is_election_board, False)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-
     @less_console_noise_decorator
     def test_create_or_update_organization_type_existing_instance_updates_generic_org_type(self):
         """Test create_or_update_organization_type when modifying generic_org_type on an existing instance."""
@@ -1650,13 +1643,6 @@ class TestDomainInformationCustomSave(TestCase):
         domain_information.is_election_board = False
         domain_information.save()
         domain_information.refresh_from_db()
-
-        self.assertEqual(domain_information.is_election_board, False)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-
-        # Try reverting setting an invalid value for election board (should revert to False)
-        domain_information.is_election_board = None
-        domain_information.save()
 
         self.assertEqual(domain_information.is_election_board, False)
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
@@ -1858,8 +1844,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.assertTrue(self.domain_request._is_state_or_territory_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
-        self.assertTrue(self.domain_request._is_state_or_territory_complete())
+        self.assertFalse(self.domain_request._is_state_or_territory_complete())
 
     @less_console_noise_decorator
     def test_is_tribal_complete(self):
@@ -1882,8 +1867,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.assertTrue(self.domain_request._is_county_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
-        self.assertTrue(self.domain_request._is_county_complete())
+        self.assertFalse(self.domain_request._is_county_complete())
 
     @less_console_noise_decorator
     def test_is_city_complete(self):
@@ -1893,8 +1877,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.assertTrue(self.domain_request._is_city_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        # is_election_board will overwrite to False bc of _update_org_type_from_generic_org_and_election
-        self.assertTrue(self.domain_request._is_city_complete())
+        self.assertFalse(self.domain_request._is_city_complete())
 
     @less_console_noise_decorator
     def test_is_special_district_complete(self):
