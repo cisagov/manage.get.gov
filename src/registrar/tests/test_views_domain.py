@@ -1161,7 +1161,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
 
         # Add portfolio perms to the user object
         self.user.portfolio = portfolio
-        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         self.user.save()
         self.user.refresh_from_db()
 
