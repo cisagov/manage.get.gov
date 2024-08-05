@@ -84,7 +84,6 @@ class CreateOrUpdateOrganizationTypeHelper:
         should_proceed = self._validate_new_instance()
         if not should_proceed:
             return None
-        
         # == Program flow will halt here if there is no reason to update == #
 
         # == Update the linked values == #
@@ -104,7 +103,6 @@ class CreateOrUpdateOrganizationTypeHelper:
     def _handle_existing_instance(self, force_update_when_no_changes_are_found=False):
         # == Init variables == #
         try:
-
             # Instance is already in the database, fetch its current state
             current_instance = self.sender.objects.get(id=self.instance.id)
 
