@@ -191,6 +191,10 @@ class DomainSuborganizationForm(forms.ModelForm):
 
         # Use the combobox rather than the regular select widget
         self.fields["sub_organization"].widget.template_name = "django/forms/widgets/combobox.html"
+    
+    def get_suborganization_name(self):
+        """Returns the suborganization name for the readonly view"""
+        return self.instance.sub_organization if self.instance else None
 
 
 class BaseNameserverFormset(forms.BaseFormSet):

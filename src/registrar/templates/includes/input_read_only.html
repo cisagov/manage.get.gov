@@ -7,4 +7,8 @@ Template include for read-only form fields
 {% if label_description %}
     <p class="usa-hint margin-top-0 margin-bottom-05">{{ label_description }}</p>
 {% endif %}
-<p class="read-only-value">{{ field.value }}</p>
+{% comment %} 
+This allows us to customize the displayed value. 
+For instance, Select fields will display the id by default. 
+{% endcomment %}
+<p class="read-only-value">{{ value|default:field.value }}</p>
