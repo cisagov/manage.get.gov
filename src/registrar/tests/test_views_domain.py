@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -1160,7 +1161,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
 
         # Add portfolio perms to the user object
         self.user.portfolio = portfolio
-        self.user.portfolio_additional_permissions = [User.UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
         self.user.save()
         self.user.refresh_from_db()
 
@@ -1571,6 +1572,52 @@ class TestDomainOrganization(TestDomainOverview):
         )
         self.assertEqual(self.domain_information.federal_agency, old_federal_agency_value)
         self.assertNotEqual(self.domain_information.federal_agency, new_value)
+
+
+class TestDomainSuborganization(TestDomainOverview):
+    """Tests the Suborganization page for portfolio users"""
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_has_suborganization_field_on_overview_with_flag(self):
+        """Ensures that the suborganization field is visible
+        and displays correctly on the domain overview page"""
+
+        # Create a portfolio
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        _suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+
+        # Add the portfolio to the domain_information object
+        self.domain_information.portfolio = portfolio
+
+        # Add a organization_name to test if the old value still displays
+        self.domain_information.organization_name = "Broccoli"
+        self.domain_information.save()
+        self.domain_information.refresh_from_db()
+
+        # Add portfolio perms to the user object
+        self.user.portfolio = portfolio
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        # Navigate to the domain overview page
+        page = self.app.get(reverse("domain", kwargs={"pk": self.domain.id}))
+
+        # Test for the title change
+        self.assertContains(page, "Suborganization")
+        self.assertNotContains(page, "Organization name")
+
+        # Test for the good value
+        self.assertContains(page, "Ice Cream")
+
+        # Test for the bad value
+        self.assertNotContains(page, "Broccoli")
+
+        # Cleanup
+        self.domain_information.delete()
+        _suborg.delete()
+        portfolio.delete()
 
 
 class TestDomainContactInformation(TestDomainOverview):
