@@ -4,7 +4,7 @@
   <nav aria-label="Domain sections">
     <ul class="usa-sidenav">
       <li class="usa-sidenav__item">
-        {% url 'portfolio-organization' portfolio_id=portfolio.id as url %} 
+        {% url 'organization' as url %} 
         <a href="{{ url }}" 
           {% if request.path == url %}class="usa-current"{% endif %}
         >

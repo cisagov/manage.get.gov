@@ -50,10 +50,6 @@ def org_user_status(request):
     }
 
 
-def add_portfolio_to_context(request):
-    return {"portfolio": getattr(request, "portfolio", None)}
-
-
 def add_path_to_context(request):
     return {"path": getattr(request, "path", None)}
 
@@ -65,16 +61,20 @@ def add_has_profile_feature_flag_to_context(request):
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
     try:
-        if not request.user or not request.user.is_authenticated:
+        if not request.user or not request.user.is_authenticated or not flag_is_active(request, "organization_feature"):
             return {
                 "has_base_portfolio_permission": False,
                 "has_domains_portfolio_permission": False,
                 "has_domain_requests_portfolio_permission": False,
+                "portfolio": None,
+                "has_organization_feature_flag": False,
             }
         return {
             "has_base_portfolio_permission": request.user.has_base_portfolio_permission(),
             "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(),
             "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(),
+            "portfolio": request.user.portfolio,
+            "has_organization_feature_flag": True,
         }
     except AttributeError:
         # Handles cases where request.user might not exist
@@ -82,4 +82,6 @@ def portfolio_permissions(request):
             "has_base_portfolio_permission": False,
             "has_domains_portfolio_permission": False,
             "has_domain_requests_portfolio_permission": False,
+            "portfolio": None,
+            "has_organization_feature_flag": False,
         }
