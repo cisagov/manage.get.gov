@@ -23,6 +23,11 @@ class UserFixture:
 
     ADMINS = [
         {
+            "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
+            "first_name": "Aditi",
+            "last_name": "Green",
+        },
+        {
             "username": "be17c826-e200-4999-9389-2ded48c43691",
             "first_name": "Matthew",
             "last_name": "Spence",
@@ -120,6 +125,11 @@ class UserFixture:
     ]
 
     STAFF = [
+        {
+            "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
+            "first_name": "Aditi-Analyst",
+            "last_name": "Green-Analyst",
+        },
         {
             "username": "d6bf296b-fac5-47ff-9c12-f88ccc5c1b99",
             "first_name": "Matthew-Analyst",

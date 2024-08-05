@@ -1,4 +1,4 @@
-from auditlog.registry import auditlog  # type: ignore
+from auditlog.registry import auditlog
 from .contact import Contact
 from .domain_request import DomainRequest
 from .domain_information import DomainInformation
@@ -16,6 +16,7 @@ from .website import Website
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .waffle_flag import WaffleFlag
+from .portfolio_invitation import PortfolioInvitation
 from .portfolio import Portfolio
 from .domain_group import DomainGroup
 from .suborganization import Suborganization
@@ -40,6 +41,7 @@ __all__ = [
     "TransitionDomain",
     "VerifiedByStaff",
     "WaffleFlag",
+    "PortfolioInvitation",
     "Portfolio",
     "DomainGroup",
     "Suborganization",
@@ -63,6 +65,7 @@ auditlog.register(Website)
 auditlog.register(TransitionDomain)
 auditlog.register(VerifiedByStaff)
 auditlog.register(WaffleFlag)
+auditlog.register(PortfolioInvitation)
 auditlog.register(Portfolio)
 auditlog.register(DomainGroup)
 auditlog.register(Suborganization)

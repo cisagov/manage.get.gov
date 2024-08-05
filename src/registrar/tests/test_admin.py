@@ -13,6 +13,7 @@ from registrar.admin import (
     ContactAdmin,
     DomainInformationAdmin,
     MyHostAdmin,
+    PortfolioInvitationAdmin,
     UserDomainRoleAdmin,
     VerifiedByStaffAdmin,
     FsmModelResource,
@@ -38,6 +39,7 @@ from registrar.models import (
     UserGroup,
     TransitionDomain,
 )
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.verified_by_staff import VerifiedByStaff
@@ -159,6 +161,77 @@ class TestDomainInvitationAdmin(TestCase):
 
             response = self.client.get(
                 "/admin/registrar/domaininvitation/",
+                {},
+                follow=True,
+            )
+
+            # Assert that the filters are added
+            self.assertContains(response, "invited", count=5)
+            self.assertContains(response, "Invited", count=2)
+            self.assertContains(response, "retrieved", count=2)
+            self.assertContains(response, "Retrieved", count=2)
+
+            # Check for the HTML context specificially
+            invited_html = '<a href="?status__exact=invited">Invited</a>'
+            retrieved_html = '<a href="?status__exact=retrieved">Retrieved</a>'
+
+            self.assertContains(response, invited_html, count=1)
+            self.assertContains(response, retrieved_html, count=1)
+
+
+class TestPortfolioInvitationAdmin(TestCase):
+    """Tests for the PortfolioInvitationAdmin class as super user
+
+    Notes:
+      all tests share superuser; do not change this model in tests
+      tests have available superuser, client, and admin
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.factory = RequestFactory()
+        cls.admin = ListHeaderAdmin(model=PortfolioInvitationAdmin, admin_site=AdminSite())
+        cls.superuser = create_superuser()
+
+    def setUp(self):
+        """Create a client object"""
+        self.client = Client(HTTP_HOST="localhost:8080")
+
+    def tearDown(self):
+        """Delete all DomainInvitation objects"""
+        PortfolioInvitation.objects.all().delete()
+        Contact.objects.all().delete()
+
+    @classmethod
+    def tearDownClass(self):
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_has_model_description(self):
+        """Tests if this model has a model description on the table view"""
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            "/admin/registrar/portfolioinvitation/",
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(
+            response,
+            "Portfolio invitations contain all individuals who have been invited to become members of an organization.",
+        )
+        self.assertContains(response, "Show more")
+
+    def test_get_filters(self):
+        """Ensures that our filters are displaying correctly"""
+        with less_console_noise():
+            self.client.force_login(self.superuser)
+
+            response = self.client.get(
+                "/admin/registrar/portfolioinvitation/",
                 {},
                 follow=True,
             )
@@ -584,7 +657,7 @@ class TestDomainInformationAdmin(TestCase):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "usa-button__clipboard", count=4)
+        self.assertContains(response, "button--clipboard", count=4)
 
         # cleanup this test
         domain_info.delete()
