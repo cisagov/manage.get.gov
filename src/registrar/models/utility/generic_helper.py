@@ -245,7 +245,8 @@ class CreateOrUpdateOrganizationTypeHelper:
             if election_board_mismatch or org_type_mismatch:
                 message = (
                     "Cannot add organization_type and generic_org_type simultaneously "
-                    "when generic_org_type, is_election_board, and organization_type values do not match."
+                    "when generic_org_type ({}), is_election_board ({}), and organization_type ({}) values do not match."
+                    .format(generic_org_type, self.instance.is_election_board, organization_type)
                 )
                 logger.error("_validate_new_instance: %s", message)
                 raise ValueError(message)
