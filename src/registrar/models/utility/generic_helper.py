@@ -81,11 +81,8 @@ class CreateOrUpdateOrganizationTypeHelper:
 
     def _handle_new_instance(self):
         # == Check for invalid conditions before proceeding == #
-        try:
-            should_proceed = self._validate_new_instance()
-            if not should_proceed:
-                return None
-        except ValueError:
+        should_proceed = self._validate_new_instance()
+        if not should_proceed:
             return None
         
         # == Program flow will halt here if there is no reason to update == #
@@ -177,10 +174,6 @@ class CreateOrUpdateOrganizationTypeHelper:
                 self.instance.is_election_board = None
             self.instance.organization_type = generic_org_type
         else:
-            # This can only happen with manual data tinkering, which causes these to be out of sync.
-            # if self.instance.is_election_board is None:
-            #     self.instance.is_election_board = False
-
             if self.instance.is_election_board:
                 self.instance.organization_type = self.generic_org_to_org_map[generic_org_type]
             else:
