@@ -174,21 +174,12 @@ class DomainSuborganizationForm(forms.ModelForm):
         self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
-        portfolio = None
-        if self.instance and self.instance.portfolio:
-            # Get suborgs under the portfolio that this is associated with first
-            portfolio = self.instance.portfolio
-        elif self.request and self.request.user and self.request.user.portfolio:
-            # Question: If no portfolio is associated with this record, 
-            # should we default to the user one?
-            # portfolio = self.request.user.portfolio
-            logger.warning(f"No portfolio was found for {self.instance} on user {self.request.user}.")
-        
+        portfolio = self.instance.portfolio if self.instance else None
         self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=portfolio)
 
         # Set initial value
         if self.instance and self.instance.sub_organization:
-            self.fields['sub_organization'].initial = self.instance.sub_organization
+            self.fields["sub_organization"].initial = self.instance.sub_organization
 
         # Set custom form label
         self.fields["sub_organization"].label = "Suborganization name"
@@ -197,12 +188,12 @@ class DomainSuborganizationForm(forms.ModelForm):
         self.fields["sub_organization"].widget.template_name = "django/forms/widgets/combobox.html"
 
         # Set data-default-value attribute
-        self.fields['sub_organization'].widget.attrs['data-default-value'] = self.instance.sub_organization.pk if self.instance and self.instance.sub_organization else ''
+        if self.instance and self.instance.sub_organization:
+            self.fields["sub_organization"].widget.attrs["data-default-value"] = self.instance.sub_organization.pk
 
-    
     def get_suborganization_name(self):
         """Returns the suborganization name for the readonly view"""
-        return self.instance.sub_organization if self.instance else None
+        return self.instance.sub_organization.name if self.instance else None
 
 
 class BaseNameserverFormset(forms.BaseFormSet):
