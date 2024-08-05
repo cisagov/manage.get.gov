@@ -273,7 +273,7 @@ class User(AbstractUser):
     # Field specific permission checks
     def has_view_suborganization(self):
         return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
-    
+
     def has_edit_suborganization(self):
         return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 

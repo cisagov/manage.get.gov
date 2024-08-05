@@ -152,7 +152,7 @@ def in_path(url, path):
     return url in path
 
 
-@register.filter(name='and')
+@register.filter(name="and")
 def and_filter(value, arg):
     """
     Implements logical AND operation in templates.

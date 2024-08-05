@@ -1643,7 +1643,7 @@ class TestDomainSuborganization(TestDomainOverview):
         # Create a portfolio and two suborgs
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
         suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-        suborg_2 = Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
+        Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
 
         # Create an unrelated portfolio
         unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
@@ -1676,8 +1676,7 @@ class TestDomainSuborganization(TestDomainOverview):
         self.assertNotContains(page, "Save")
 
         self.assertContains(
-            page, 
-            "The suborganization for this domain can only be updated by a organization administrator."
+            page, "The suborganization for this domain can only be updated by a organization administrator."
         )
 
     @less_console_noise_decorator
