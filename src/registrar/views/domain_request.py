@@ -358,7 +358,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         history_dict = {
             "generic_org_type": self.domain_request.generic_org_type is not None,
             "tribal_government": self.domain_request.tribe_name is not None,
-            "organization_federal": True,
+            "organization_federal": self.domain_request.federal_type is not None,
             "organization_election": self.domain_request.is_election_board is not None,
             "organization_contact": (
                 self.domain_request.federal_agency is not None
