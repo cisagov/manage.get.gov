@@ -186,11 +186,19 @@ class DomainSuborganizationForm(forms.ModelForm):
         
         self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=portfolio)
 
+        # Set initial value
+        if self.instance and self.instance.sub_organization:
+            self.fields['sub_organization'].initial = self.instance.sub_organization
+
         # Set custom form label
         self.fields["sub_organization"].label = "Suborganization name"
 
         # Use the combobox rather than the regular select widget
         self.fields["sub_organization"].widget.template_name = "django/forms/widgets/combobox.html"
+
+        # Set data-default-value attribute
+        self.fields['sub_organization'].widget.attrs['data-default-value'] = self.instance.sub_organization.pk if self.instance and self.instance.sub_organization else ''
+
     
     def get_suborganization_name(self):
         """Returns the suborganization name for the readonly view"""

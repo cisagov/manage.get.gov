@@ -1579,6 +1579,52 @@ class TestDomainSuborganization(TestDomainOverview):
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
+    def test_edit_suborganization_field(self):
+        
+        # Create a portfolio and two suborgs
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        suborg_2 = Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
+
+        # Create an unrelated portfolio
+        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
+        unrelated_suborg = Suborganization.objects.create(portfolio=portfolio, name="Apple")
+
+        # Add the portfolio to the domain_information object
+        self.domain_information.portfolio = portfolio
+
+        # Add a organization_name to test if the old value still displays
+        self.domain_information.organization_name = "Broccoli"
+        self.domain_information.save()
+        self.domain_information.refresh_from_db()
+
+        # Add portfolio perms to the user object
+        self.user.portfolio = portfolio
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        # Navigate to the suborganization page
+        page = self.app.get(reverse("domain-suborganization", kwargs={"pk": self.domain.id}))
+
+        print(page)
+        # The page should contain the choices Vanilla and Chocolate
+        self.assertContains(page, "Vanilla")
+        self.assertContains("Chocolate")
+        self.assertNotContains("Apple")
+
+        # Try changing the suborg
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        page.form["suborganization"] = suborg_2
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        page.form.submit()
+
+        self.assertContains(page, "The suborganization name for this domain has been updated.")
+        self.assertNotContains(page, "Vanilla")
+        self.assertContains("Chocolate")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_has_suborganization_field_on_overview_with_flag(self):
         """Ensures that the suborganization field is visible
         and displays correctly on the domain overview page"""

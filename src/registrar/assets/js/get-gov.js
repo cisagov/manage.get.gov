@@ -1985,35 +1985,3 @@ document.addEventListener('DOMContentLoaded', function() {
   showInputOnErrorFields();
 
 })();
-
-
-
-/**
- * An IIFE that adds the default selection on comboboxes to the input field.
- * This is because this action doesn't get fired by the time the page loads
- */
-(function loadInitialValuesForComboBoxes() {
-  document.addEventListener('DOMContentLoaded', (event) => {
-    const comboBoxElements = document.querySelectorAll('.usa-combo-box');
-    comboBoxElements.forEach(comboBox => {
-      const select = comboBox.querySelector('select');
-      const input = comboBox.querySelector('input');
-
-      // Find the selected option
-      const selectedOption = select.querySelector('option[selected]');
-
-      // If there's a selected option, set its text as the input value.
-      // If the default name is "------", then this indicates that the field is blank.
-      // Don't populate in this case.
-      if (selectedOption) {
-        // Check to make sure the value isn't just a line of dashes.
-        // Caveat: we can't have any suborgs named "------". This is OK.
-        const isEmptyValue = /^-+$/.test(selectedOption.textContent);
-        if (!isEmptyValue) {
-          input.value = selectedOption.textContent;
-          comboBox.classList.add('usa-combo-box--pristine');
-        }
-      }
-    });
-  });
-})();

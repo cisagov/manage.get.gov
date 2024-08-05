@@ -1,3 +1,7 @@
-<div class="usa-combo-box">
+<div class="usa-combo-box"     
+{% for name, value in widget.attrs.items %}
+    {{ name }}="{{ value }}"
+{% endfor %}
+>
     {% include "django/forms/widgets/select.html" %}
 </div>
