@@ -4,18 +4,6 @@
 #     cf run-task getgov-ENVIRONMENT --command 'python manage.py flush' --name flush
 #     cf run-task getgov-ENVIRONMENT --command 'python manage.py load' --name loaddata
 
-# IMPORTANT NOTE:
-# When running this workflow, it is important to use the right source branch
-# for your target sandbox.  For example,  if you just recently pushed new migrations
-# from SOURCE_BRANCH to TARGET_SANDBOX, you must use that same SOURCE_BRANCH when
-# running this workflow (NOT main) or else your sandbox will generate an error
-# due to a db mismatch.
-#
-# This means in the Github workflow settings you would select the following inputs:
-#
-# "Use workflow from": SOURCE_BRANCH
-# "Which environment should we flush and re-load data for?"": TARGET_SANDBOX
-
 name: Reset database
 run-name: Reset database for ${{ github.event.inputs.environment }}
 
