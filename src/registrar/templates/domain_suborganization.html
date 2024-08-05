@@ -16,7 +16,6 @@
     </p>
 
     {% if has_domains_portfolio_permission and request.user.has_edit_suborganization %}
-    {% include "includes/required_fields.html" %}
         <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
             {% csrf_token %}
             {% input_with_errors form.sub_organization %}

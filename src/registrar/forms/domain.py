@@ -159,7 +159,7 @@ class DomainSuborganizationForm(forms.ModelForm):
 
     sub_organization = forms.ModelChoiceField(
         queryset=Suborganization.objects.none(),
-        required=True,
+        required=False,
         widget=forms.Select(),
     )
 
