@@ -1580,7 +1580,7 @@ class TestDomainSuborganization(TestDomainOverview):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     def test_edit_suborganization_field(self):
-        
+
         # Create a portfolio and two suborgs
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
         suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
@@ -1588,10 +1588,11 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Create an unrelated portfolio
         unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
-        unrelated_suborg = Suborganization.objects.create(portfolio=portfolio, name="Apple")
+        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
 
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = portfolio
+        self.domain_information.sub_organization = suborg
 
         # Add a organization_name to test if the old value still displays
         self.domain_information.organization_name = "Broccoli"
@@ -1604,24 +1605,35 @@ class TestDomainSuborganization(TestDomainOverview):
         self.user.save()
         self.user.refresh_from_db()
 
+        self.assertEqual(self.domain_information.sub_organization, suborg)
+
         # Navigate to the suborganization page
         page = self.app.get(reverse("domain-suborganization", kwargs={"pk": self.domain.id}))
 
-        print(page)
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")
-        self.assertContains("Chocolate")
-        self.assertNotContains("Apple")
+        self.assertContains(page, "Chocolate")
+        self.assertNotContains(page, unrelated_suborg.name)
+
+        # Assert that the right option is selected. This component uses data-default-value.
+        self.assertContains(page, f'data-default-value="{suborg.id}"')
 
         # Try changing the suborg
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        page.form["suborganization"] = suborg_2
+        page.form["sub_organization"] = suborg_2.id
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        page.form.submit()
+        page = page.form.submit().follow()
 
-        self.assertContains(page, "The suborganization name for this domain has been updated.")
-        self.assertNotContains(page, "Vanilla")
-        self.assertContains("Chocolate")
+        # The page should contain the choices Vanilla and Chocolate
+        self.assertContains(page, "Vanilla")
+        self.assertContains(page, "Chocolate")
+        self.assertNotContains(page, unrelated_suborg.name)
+
+        # Assert that the right option is selected
+        self.assertContains(page, f'data-default-value="{suborg_2.id}"')
+
+        self.domain_information.refresh_from_db()
+        self.assertEqual(self.domain_information.sub_organization, suborg_2)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
