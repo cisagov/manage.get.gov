@@ -247,10 +247,13 @@ class User(AbstractUser):
 
         return portfolio_permission in portfolio_permissions
 
-    # the methods below are checks for individual portfolio permissions.  they are defined here
+    # the methods below are checks for individual portfolio permissions. They are defined here
     # to make them easier to call elsewhere throughout the application
     def has_base_portfolio_permission(self):
         return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
+
+    def has_edit_org_portfolio_permission(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
     def has_domains_portfolio_permission(self):
         return self._has_portfolio_permission(

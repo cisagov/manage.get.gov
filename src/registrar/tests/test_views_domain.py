@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -330,7 +330,7 @@ class TestDomainDetail(TestDomainOverview):
             phone="8003111234",
             title="test title",
             portfolio=portfolio,
-            portfolio_roles=[User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            portfolio_roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
         domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
         DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
