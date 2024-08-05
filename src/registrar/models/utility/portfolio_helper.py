@@ -27,7 +27,6 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     VIEW_PORTFOLIO = "view_portfolio", "View organization"
     EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
 
-    # TODO - think of other solutions
     # Domain: field specific permissions
     VIEW_SUBORGANIZATION = "view_suborganization", "View suborganization"
     EDIT_SUBORGANIZATION = "edit_suborganization", "Edit suborganization"

@@ -245,7 +245,6 @@ class DomainSubOrganizationView(DomainFormBaseView):
         """Add domain_info.organization_name instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
         form_kwargs["instance"] = self.object.domain_info
-        form_kwargs["request"] = self.request
         return form_kwargs
 
     def get_success_url(self):
@@ -273,9 +272,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.senior_official instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        org_user = self.request.user.is_org_user(self.request)
-
-        if org_user:
+        if self.request.user.is_org_user(self.request):
             portfolio = Portfolio.objects.filter(information_portfolio=self.object.domain_info).first()
             senior_official = portfolio.senior_official if portfolio else None
         else:

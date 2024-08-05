@@ -30,10 +30,8 @@ class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
     template_name = "portfolio_requests.html"
 
     def get(self, request):
-
         if self.request.user.is_authenticated:
             request.session["new_request"] = True
-
         return render(request, "portfolio_requests.html")
 
 

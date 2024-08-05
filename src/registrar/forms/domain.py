@@ -170,8 +170,6 @@ class DomainSuborganizationForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        # Get the incoming request object
-        self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
         portfolio = self.instance.portfolio if self.instance else None
