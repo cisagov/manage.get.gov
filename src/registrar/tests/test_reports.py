@@ -7,6 +7,7 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models import Portfolio, User
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.csv_export import (
     DomainDataFull,
     DomainDataType,
@@ -335,7 +336,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.domain_3.domain_info.save()
 
         # Set up user permissions
-        self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         self.user.save()
         self.user.refresh_from_db()
 
@@ -353,7 +354,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Test the output for readonly admin
-        self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
         self.user.save()
 
         self.assertIn(self.domain_1.name, csv_content)
@@ -361,7 +362,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Get the csv content
-        self.user.portfolio_roles = [User.UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         self.user.save()
 
         csv_content = self._run_domain_data_type_user_export(request)
