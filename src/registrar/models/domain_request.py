@@ -472,16 +472,16 @@ class DomainRequest(TimeStampedModel):
         help_text="Other domain names the creator provided for consideration",
     )
 
-    # This is the contact information provided by the domain requestor. The
-    # user who created the domain request is in the `creator` field.
-    submitter = models.ForeignKey(
-        "registrar.Contact",
-        null=True,
-        blank=True,
-        related_name="submitted_domain_requests",
-        on_delete=models.PROTECT,
-        help_text='Person listed under "your contact information" in the request form; will receive email updates',
-    )
+    # # This is the contact information provided by the domain requestor. The
+    # # user who created the domain request is in the `creator` field.
+    # submitter = models.ForeignKey(
+    #     "registrar.Contact",
+    #     null=True,
+    #     blank=True,
+    #     related_name="submitted_domain_requests",
+    #     on_delete=models.PROTECT,
+    #     help_text='Person listed under "your contact information" in the request form; will receive email updates',
+    # )
 
     purpose = models.TextField(
         null=True,
@@ -699,7 +699,8 @@ class DomainRequest(TimeStampedModel):
         paragraph exceeds our desired max length (for prettier display).
         """
 
-        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
+        recipient = self.creator
+        # recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
         if recipient is None or recipient.email is None:
             logger.warning(
                 f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
@@ -1146,8 +1147,8 @@ class DomainRequest(TimeStampedModel):
     def _is_purpose_complete(self):
         return self.purpose is not None
 
-    def _is_submitter_complete(self):
-        return self.submitter is not None
+    # def _is_submitter_complete(self):
+    #     return self.submitter is not None
 
     def _has_other_contacts_and_filled(self):
         # Other Contacts Radio button is Yes and if all required fields are filled
@@ -1197,14 +1198,14 @@ class DomainRequest(TimeStampedModel):
         return self.is_policy_acknowledged is not None
 
     def _is_general_form_complete(self, request):
-        has_profile_feature_flag = flag_is_active(request, "profile_feature")
+        # has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
             self._is_organization_name_and_address_complete()
             and self._is_senior_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
-            # NOTE: This flag leaves submitter as empty (request wont submit) hence set to True
-            and (self._is_submitter_complete() if not has_profile_feature_flag else True)
+            # # NOTE: This flag leaves submitter as empty (request wont submit) hence set to True
+            # and (self._is_submitter_complete() if not has_profile_feature_flag else True)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()
             and self._is_policy_acknowledgement_complete()
