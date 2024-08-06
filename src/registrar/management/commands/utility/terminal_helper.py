@@ -386,7 +386,7 @@ class TerminalHelper:
         """
 
         if isinstance(log_level, str) and hasattr(logger, log_level.lower()):
-            log_method = getattr(logger, log_level.lower(), logger.info)
+            log_method = getattr(logger, log_level.lower())
         else:
             log_method = log_level
 
