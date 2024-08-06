@@ -1496,13 +1496,15 @@ class TestDomainRequestCustomSave(TestCase):
         self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
 
     @less_console_noise_decorator
-    def test_create_or_update_organization_type_existing_instance_updates_election_board_to_none(self):
-        """Test create_or_update_organization_type for an existing instance."""
+    def test_existing_instance_updates_election_board_to_none(self):
+        """Test create_or_update_organization_type for an existing instance, first to True and then to None.
+        Start our with is_election_board as none to simulate a situation where the request was started, but
+        only completed to the point of filling out the generic_org_type."""
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
+            is_election_board=None,
         )
         domain_request.is_election_board = True
         domain_request.save()
@@ -1510,7 +1512,7 @@ class TestDomainRequestCustomSave(TestCase):
         self.assertEqual(domain_request.is_election_board, True)
         self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
 
-        # Try reverting the election board value
+        # Try reverting the election board value.
         domain_request.is_election_board = None
         domain_request.save()
 
@@ -1670,13 +1672,15 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
 
     @less_console_noise_decorator
-    def test_create_or_update_organization_type_existing_instance_updates_election_board_to_none(self):
-        """Test create_or_update_organization_type for an existing instance."""
+    def test_existing_instance_update_election_board_to_none(self):
+        """Test create_or_update_organization_type for an existing instance, first to True and then to None.
+        Start our with is_election_board as none to simulate a situation where the request was started, but
+        only completed to the point of filling out the generic_org_type."""
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
+            is_election_board=None,
         )
         domain_information = DomainInformation.create_from_da(domain_request)
         domain_information.is_election_board = True
