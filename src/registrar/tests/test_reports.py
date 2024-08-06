@@ -6,7 +6,7 @@ from registrar.models import (
     Domain,
     UserDomainRole,
 )
-from registrar.models import Portfolio, User
+from registrar.models import Portfolio
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.csv_export import (
     DomainDataFull,
