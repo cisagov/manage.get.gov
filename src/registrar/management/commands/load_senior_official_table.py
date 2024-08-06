@@ -3,7 +3,7 @@ import csv
 import logging
 import os
 from django.core.management import BaseCommand
-from registrar.management.commands.utility.terminal_helper import TerminalHelper
+from registrar.management.commands.utility.terminal_helper import TerminalHelper, TerminalColors
 from registrar.models import SeniorOfficial, FederalAgency
 
 
@@ -50,7 +50,9 @@ class Command(BaseCommand):
         self.skipped_rows = []
         with open(federal_cio_csv_path, "r") as requested_file:
             for row in csv.DictReader(requested_file):
-                # Note: the csv doesn't have a phone field, but we can try to pull one anyway.
+                # Note: the csv files we have received do not currently have a phone field.
+                # However, we will include it in our kwargs because that is the data we are mapping to
+                # and it seems best to check for the data even if it ends up not being there.
                 so_kwargs = {
                     "first_name": row.get("First Name"),
                     "last_name": row.get("Last Name"),
@@ -77,18 +79,18 @@ class Command(BaseCommand):
                 else:
                     self.skipped_rows.append(row)
                     message = f"Skipping row (no data was found): {row}"
-                    TerminalHelper.colorful_logger("WARNING", "YELLOW", message)
+                    TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
 
         # Bulk create the SO fields
         if len(self.added_senior_officials) > 0:
             SeniorOfficial.objects.bulk_create(self.added_senior_officials)
 
             added_message = f"Added {len(self.added_senior_officials)} records"
-            TerminalHelper.colorful_logger("INFO", "OKGREEN", added_message)
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, added_message)
 
         if len(self.skipped_rows) > 0:
             skipped_message = f"Skipped {len(self.skipped_rows)} records"
-            TerminalHelper.colorful_logger("WARNING", "MAGENTA", skipped_message)
+            TerminalHelper.colorful_logger(logger.warning, TerminalColors.MAGENTA, skipped_message)
 
     def create_senior_official(self, so_kwargs):
         """Creates a senior official object from kwargs but does not add it to the DB"""
@@ -113,9 +115,9 @@ class Command(BaseCommand):
         if not duplicate_field:
             self.added_senior_officials.append(new_so)
             message = f"Creating record: {record_display}"
-            TerminalHelper.colorful_logger("INFO", "OKCYAN", message)
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, message)
         else:
             # if this field is a duplicate, don't do anything
             self.skipped_rows.append(new_so)
             message = f"Skipping add on duplicate record: {record_display}"
-            TerminalHelper.colorful_logger("WARNING", "YELLOW", message)
+            TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)

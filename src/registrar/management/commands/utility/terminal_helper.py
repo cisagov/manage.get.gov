@@ -317,6 +317,7 @@ class TerminalHelper:
                 case _:
                     logger.info(print_statement)
 
+    # TODO - "info_to_inspect" should be refactored to "prompt_message"
     @staticmethod
     def prompt_for_execution(system_exit_on_terminate: bool, info_to_inspect: str, prompt_title: str) -> bool:
         """Create to reduce code complexity.
@@ -379,14 +380,18 @@ class TerminalHelper:
         """Adds some color to your log output.
 
         Args:
-            log_level: str -> Desired log level. ex: "INFO", "WARNING", "ERROR"
+            log_level: str | Logger.method -> Desired log level. ex: logger.info or "INFO"
             color: str | TerminalColors -> Output color. ex: TerminalColors.YELLOW or "YELLOW"
             message: str -> Message to display.
         """
-        log_method = getattr(logger, log_level.lower(), logger.info)
 
-        if isinstance(color, str):
-            terminal_color = getattr(TerminalColors, color.upper(), TerminalColors.OKBLUE)
+        if isinstance(log_level, str) and hasattr(logger, log_level.lower()):
+            log_method = getattr(logger, log_level.lower(), logger.info)
+        else:
+            log_method = log_level
+
+        if isinstance(color, str) and hasattr(TerminalColors, color.upper()):
+            terminal_color = getattr(TerminalColors, color.upper())
         else:
             terminal_color = color
 

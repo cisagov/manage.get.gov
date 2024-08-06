@@ -3,7 +3,7 @@ import csv
 import logging
 import os
 from django.core.management import BaseCommand
-from registrar.management.commands.utility.terminal_helper import TerminalHelper, PopulateScriptTemplate
+from registrar.management.commands.utility.terminal_helper import TerminalHelper, PopulateScriptTemplate, TerminalColors
 from registrar.models import FederalAgency
 
 
@@ -49,7 +49,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
             record.is_fceb = False
 
         message = f"Updating {record} => initials: {initials} | is_fceb: {record.is_fceb}"
-        TerminalHelper.colorful_logger("INFO", "OKCYAN", message)
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, message)
 
     def should_skip_record(self, record) -> bool:
         """Skip record update if there is no data for that particular agency"""
