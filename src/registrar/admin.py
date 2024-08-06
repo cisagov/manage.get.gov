@@ -1471,13 +1471,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "submitter",
+        "creator"
+        # "submitter",
         "investigator",
     ]
 
     orderable_fk_fields = [
         ("requested_domain", "name"),
-        ("submitter", ["first_name", "last_name"]),
+        ("creator", ["first_name", "last_name"]),
+        # ("submitter", ["first_name", "last_name"]),
         ("investigator", ["first_name", "last_name"]),
     ]
 
@@ -1500,11 +1502,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Search
     search_fields = [
         "requested_domain__name",
-        "submitter__email",
-        "submitter__first_name",
-        "submitter__last_name",
+        "creator__email",
+        "creator__first_name",
+        "creator__last_name",
+        # "submitter__email",
+        # "submitter__first_name",
+        # "submitter__last_name",
     ]
-    search_help_text = "Search by domain or submitter."
+    search_help_text = "Search by domain or creator."
+
+    # search_help_text = "Search by domain or submitter."
 
     fieldsets = [
         (
@@ -1518,7 +1525,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "action_needed_reason",
                     "investigator",
                     "creator",
-                    "submitter",
+                    # "submitter",
                     "approved_domain",
                     "notes",
                 ]
@@ -1605,7 +1612,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "approved_domain",
         "alternative_domains",
         "purpose",
-        "submitter",
+        # "submitter",
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
@@ -1616,7 +1623,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
-        "submitter",
+        # "submitter",
         "creator",
         "senior_official",
         "investigator",
