@@ -30,6 +30,8 @@
         {% include "django/admin/includes/descriptions/verified_by_staff_description.html" %}
     {% elif opts.model_name == 'website' %}
         {% include "django/admin/includes/descriptions/website_description.html" %}
+    {% elif opts.model_name == 'portfolioinvitation' %}
+        {% include "django/admin/includes/descriptions/portfolio_invitation_description.html" %}
     {% else %}
         <p>This table does not have a description yet.</p>
     {% endif %}
