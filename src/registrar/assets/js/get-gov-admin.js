@@ -207,14 +207,10 @@ function addOrRemoveSessionBoolean(name, add){
     
 
 })();
+
 /** An IIFE for pages in DjangoAdmin that use a clipboard button
 */
 (function (){
-
-    function copyInnerTextToClipboard(elem) {
-        let text = elem.innerText
-        navigator.clipboard.writeText(text)
-    }
 
     function copyToClipboardAndChangeIcon(button) {
         // Assuming the input is the previous sibling of the button
@@ -224,7 +220,7 @@ function addOrRemoveSessionBoolean(name, add){
         if (input) {
             navigator.clipboard.writeText(input.value).then(function() {
                 // Change the icon to a checkmark on successful copy
-                let buttonIcon = button.querySelector('.usa-button__clipboard use');
+                let buttonIcon = button.querySelector('.copy-to-clipboard use');
                 if (buttonIcon) {
                     let currentHref = buttonIcon.getAttribute('xlink:href');
                     let baseHref = currentHref.split('#')[0];
@@ -233,21 +229,17 @@ function addOrRemoveSessionBoolean(name, add){
                     buttonIcon.setAttribute('xlink:href', baseHref + '#check');
 
                     // Change the button text
-                    nearestSpan = button.querySelector("span")
+                    let nearestSpan = button.querySelector("span")
+                    let original_text = nearestSpan.innerText
                     nearestSpan.innerText = "Copied to clipboard"
 
                     setTimeout(function() {
                         // Change back to the copy icon
                         buttonIcon.setAttribute('xlink:href', currentHref); 
-                        if (button.classList.contains('usa-button__small-text')) {
-                            nearestSpan.innerText = "Copy email";
-                        } else {
-                            nearestSpan.innerText = "Copy";
-                        }
+                        nearestSpan.innerText = original_text;
                     }, 2000);
 
                 }
-
             }).catch(function(error) {
                 console.error('Clipboard copy failed', error);
             });
@@ -255,7 +247,7 @@ function addOrRemoveSessionBoolean(name, add){
     }
     
     function handleClipboardButtons() {
-        clipboardButtons = document.querySelectorAll(".usa-button__clipboard")
+        clipboardButtons = document.querySelectorAll(".copy-to-clipboard")
         clipboardButtons.forEach((button) => {
 
             // Handle copying the text to your clipboard,
@@ -278,20 +270,7 @@ function addOrRemoveSessionBoolean(name, add){
         });
     }
 
-    function handleClipboardLinks() {
-        let emailButtons = document.querySelectorAll(".usa-button__clipboard-link");
-        if (emailButtons){
-            emailButtons.forEach((button) => {
-                button.addEventListener("click", ()=>{
-                    copyInnerTextToClipboard(button);
-                })
-            });
-        }
-    }
-
     handleClipboardButtons();
-    handleClipboardLinks();
-
 })();
 
 
@@ -603,5 +582,171 @@ function initializeWidgetOnList(list, parentId) {
             hideElement(actionNeededEmail.parentElement)
             showElement(readonlyView)
         }
+    }
+})();
+
+
+/** An IIFE for copy summary button (appears in DomainRegistry models)
+*/
+(function (){
+    const copyButton = document.getElementById('id-copy-to-clipboard-summary');
+
+    if (copyButton) {
+        copyButton.addEventListener('click', function() {
+            /// Generate a rich HTML summary text and copy to clipboard
+
+            //------ Organization Type
+            const organizationTypeElement = document.getElementById('id_organization_type');
+            const organizationType = organizationTypeElement.options[organizationTypeElement.selectedIndex].text;
+
+            //------ Alternative Domains
+            const alternativeDomainsDiv = document.querySelector('.form-row.field-alternative_domains .readonly');
+            const alternativeDomainslinks = alternativeDomainsDiv.querySelectorAll('a');
+            const alternativeDomains = Array.from(alternativeDomainslinks).map(link => link.textContent);
+
+            //------ Existing Websites
+            const existingWebsitesDiv = document.querySelector('.form-row.field-current_websites .readonly');
+            const existingWebsiteslinks = existingWebsitesDiv.querySelectorAll('a');
+            const existingWebsites = Array.from(existingWebsiteslinks).map(link => link.textContent);
+
+            //------ Additional Contacts
+            // 1 - Create a hyperlinks map so we can display contact details and also link to the contact
+            const otherContactsDiv = document.querySelector('.form-row.field-other_contacts .readonly');
+            let otherContactLinks = [];
+            const nameToUrlMap = {};
+            if (otherContactsDiv) {
+                otherContactLinks = otherContactsDiv.querySelectorAll('a');
+                otherContactLinks.forEach(link => {
+                const name = link.textContent.trim();
+                const url = link.href;
+                nameToUrlMap[name] = url;
+                });
+            }
+        
+            // 2 - Iterate through contact details and assemble html for summary
+            let otherContactsSummary = ""
+            const bulletList = document.createElement('ul');
+
+            // CASE 1 - Contacts are not in a table (this happens if there is only one or two other contacts)
+            const contacts = document.querySelectorAll('.field-other_contacts .dja-detail-list dd');
+            if (contacts) {
+                contacts.forEach(contact => {
+                    // Check if the <dl> element is not empty
+                    const name = contact.querySelector('a#contact_info_name')?.innerText;
+                    const title = contact.querySelector('span#contact_info_title')?.innerText;
+                    const email = contact.querySelector('span#contact_info_email')?.innerText;
+                    const phone = contact.querySelector('span#contact_info_phone')?.innerText;
+                    const url = nameToUrlMap[name] || '#';
+                    // Format the contact information
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
+                    bulletList.appendChild(listItem);
+                });
+
+            }
+
+            // CASE 2 - Contacts are in a table (this happens if there is more than 2 contacts)
+            const otherContactsTable = document.querySelector('.form-row.field-other_contacts table tbody');
+            if (otherContactsTable) {
+                const otherContactsRows = otherContactsTable.querySelectorAll('tr');
+                otherContactsRows.forEach(contactRow => {
+                // Extract the contact details
+                const name = contactRow.querySelector('th').textContent.trim();
+                const title = contactRow.querySelectorAll('td')[0].textContent.trim();
+                const email = contactRow.querySelectorAll('td')[1].textContent.trim();
+                const phone = contactRow.querySelectorAll('td')[2].textContent.trim();
+                const url = nameToUrlMap[name] || '#';
+                // Format the contact information
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `<a href="${url}">${name}</a>, ${title}, ${email}, ${phone}`;
+                bulletList.appendChild(listItem);
+                });
+            }
+            otherContactsSummary += bulletList.outerHTML
+
+
+            //------ Requested Domains
+            const requestedDomainElement = document.getElementById('id_requested_domain');
+            const requestedDomain = requestedDomainElement.options[requestedDomainElement.selectedIndex].text;
+
+            //------ Submitter
+            // Function to extract text by ID and handle missing elements
+            function extractTextById(id, divElement) {
+                if (divElement) {
+                    const element = divElement.querySelector(`#${id}`);
+                    return element ? ", " + element.textContent.trim() : '';
+                }
+                return '';
+            }
+            // Extract the submitter name, title, email, and phone number
+            const submitterDiv = document.querySelector('.form-row.field-submitter');
+            const submitterNameElement = document.getElementById('id_submitter');
+            const submitterName = submitterNameElement.options[submitterNameElement.selectedIndex].text;
+            const submitterTitle = extractTextById('contact_info_title', submitterDiv);
+            const submitterEmail = extractTextById('contact_info_email', submitterDiv);
+            const submitterPhone = extractTextById('contact_info_phone', submitterDiv);
+            let submitterInfo = `${submitterName}${submitterTitle}${submitterEmail}${submitterPhone}`;
+
+
+            //------ Senior Official
+            const seniorOfficialDiv = document.querySelector('.form-row.field-senior_official');
+            const seniorOfficialElement = document.getElementById('id_senior_official');
+            const seniorOfficialName = seniorOfficialElement.options[seniorOfficialElement.selectedIndex].text;
+            const seniorOfficialTitle = extractTextById('contact_info_title', seniorOfficialDiv);
+            const seniorOfficialEmail = extractTextById('contact_info_email', seniorOfficialDiv);
+            const seniorOfficialPhone = extractTextById('contact_info_phone', seniorOfficialDiv);
+            let seniorOfficialInfo = `${seniorOfficialName}${seniorOfficialTitle}${seniorOfficialEmail}${seniorOfficialPhone}`;
+
+            const html_summary = `<strong>Recommendation:</strong></br>` +
+                            `<strong>Organization Type:</strong> ${organizationType}</br>` +
+                            `<strong>Requested Domain:</strong> ${requestedDomain}</br>` +
+                            `<strong>Current Websites:</strong> ${existingWebsites.join(', ')}</br>` +
+                            `<strong>Rationale:</strong></br>` +
+                            `<strong>Alternative Domains:</strong> ${alternativeDomains.join(', ')}</br>` +
+                            `<strong>Submitter:</strong> ${submitterInfo}</br>` +
+                            `<strong>Senior Official:</strong> ${seniorOfficialInfo}</br>` +
+                            `<strong>Other Employees:</strong> ${otherContactsSummary}</br>`;
+            
+            //Replace </br> with \n, then strip out all remaining html tags (replace <...> with '')
+            const plain_summary = html_summary.replace(/<\/br>|<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, '');
+
+            // Create Blobs with the summary content
+            const html_blob = new Blob([html_summary], { type: 'text/html' });
+            const plain_blob = new Blob([plain_summary], { type: 'text/plain' });
+
+            // Create a ClipboardItem with the Blobs
+            const clipboardItem = new ClipboardItem({
+                'text/html': html_blob,
+                'text/plain': plain_blob
+            });
+
+            // Write the ClipboardItem to the clipboard
+            navigator.clipboard.write([clipboardItem]).then(() => {
+                // Change the icon to a checkmark on successful copy
+                let buttonIcon = copyButton.querySelector('use');
+                if (buttonIcon) {
+                    let currentHref = buttonIcon.getAttribute('xlink:href');
+                    let baseHref = currentHref.split('#')[0];
+
+                    // Append the new icon reference
+                    buttonIcon.setAttribute('xlink:href', baseHref + '#check');
+
+                    // Change the button text
+                    nearestSpan = copyButton.querySelector("span")
+                    original_text = nearestSpan.innerText
+                    nearestSpan.innerText = "Copied to clipboard"
+
+                    setTimeout(function() {
+                        // Change back to the copy icon
+                        buttonIcon.setAttribute('xlink:href', currentHref); 
+                        nearestSpan.innerText = original_text
+                    }, 2000);
+
+                }
+                console.log('Summary copied to clipboard successfully!');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        });
     }
 })();

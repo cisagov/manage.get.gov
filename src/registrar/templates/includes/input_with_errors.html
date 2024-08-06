@@ -27,8 +27,8 @@ error messages, if necessary.
 {% endif %}
 
   {% if not field.widget_type == "checkbox" %}
-    {% if show_edit_button %}
-      {% include "includes/label_with_edit_button.html" with bold_label=True %}
+    {% if toggleable_label %}
+      {% include "includes/toggleable_label.html" with bold_label=True %}
     {% else %}
       {% include "django/forms/label.html" %}
     {% endif %}
@@ -63,8 +63,8 @@ error messages, if necessary.
     <div class="display-flex flex-align-center">
   {% endif %}
 
-  {% if show_readonly %}
-    {% include "includes/readonly_input.html" %}
+  {% if toggleable_input %}
+    {% include "includes/toggleable_input.html" %}
   {% endif %}
 
   {# this is the input field, itself #}
