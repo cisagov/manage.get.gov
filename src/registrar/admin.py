@@ -9,6 +9,9 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
+from registrar.models.domain_group import DomainGroup
+from registrar.models.suborganization import Suborganization
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -129,12 +132,12 @@ class MyUserAdminForm(UserChangeForm):
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
             "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=User.UserPortfolioRoleChoices.choices
+                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
             ),
             "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
                 "portfolio_additional_permissions",
                 is_stacked=False,
-                choices=User.UserPortfolioPermissionChoices.choices,
+                choices=UserPortfolioPermissionChoices.choices,
             ),
         }
 
@@ -165,6 +168,24 @@ class MyUserAdminForm(UserChangeForm):
                 "Raw passwords are not stored, so they will not display here. "
                 f'You can change the password using <a href="{link}">this form</a>.'
             )
+
+
+class PortfolioInvitationAdminForm(UserChangeForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+
+    class Meta:
+        model = models.PortfolioInvitation
+        fields = "__all__"
+        widgets = {
+            "portfolio_roles": FilteredSelectMultipleArrayWidget(
+                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
+            ),
+            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
+                "portfolio_additional_permissions",
+                is_stacked=False,
+                choices=UserPortfolioPermissionChoices.choices,
+            ),
+        }
 
 
 class DomainInformationAdminForm(forms.ModelForm):
@@ -1109,10 +1130,9 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 class SeniorOfficialAdmin(ListHeaderAdmin):
     """Custom Senior Official Admin class."""
 
-    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
     search_fields = ["first_name", "last_name", "email"]
     search_help_text = "Search by first name, last name or email."
-    list_display = ["first_name", "last_name", "email"]
+    list_display = ["first_name", "last_name", "email", "federal_agency"]
 
     # this ordering effects the ordering of results
     # in autocomplete_fields for Senior Official
@@ -1293,6 +1313,56 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         if extra_context is None:
             extra_context = {}
         extra_context["tabtitle"] = "Domain invitations"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
+
+
+class PortfolioInvitationAdmin(ListHeaderAdmin):
+    """Custom portfolio invitation admin class."""
+
+    form = PortfolioInvitationAdminForm
+
+    class Meta:
+        model = models.PortfolioInvitation
+        fields = "__all__"
+
+    _meta = Meta()
+
+    # Columns
+    list_display = [
+        "email",
+        "portfolio",
+        "portfolio_roles",
+        "portfolio_additional_permissions",
+        "status",
+    ]
+
+    # Search
+    search_fields = [
+        "email",
+        "portfolio__name",
+    ]
+
+    # Filters
+    list_filter = ("status",)
+
+    search_help_text = "Search by email or portfolio."
+
+    # Mark the FSM field 'status' as readonly
+    # to allow admin users to create Domain Invitations
+    # without triggering the FSM Transition Not Allowed
+    # error.
+    readonly_fields = ["status"]
+
+    autocomplete_fields = ["portfolio"]
+
+    change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    # Select portfolio invitations to change -> Portfolio invitations
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Portfolio invitations"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
@@ -2765,6 +2835,8 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 class PortfolioAdmin(ListHeaderAdmin):
 
+    change_form_template = "django/admin/portfolio_change_form.html"
+
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
@@ -2775,13 +2847,25 @@ class PortfolioAdmin(ListHeaderAdmin):
         "federal_agency",
     ]
 
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Add related suborganizations and domain groups"""
+        obj = self.get_object(request, object_id)
+
+        # ---- Domain Groups
+        domain_groups = DomainGroup.objects.filter(portfolio=obj)
+
+        # ---- Suborganizations
+        suborganizations = Suborganization.objects.filter(portfolio=obj)
+
+        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
+        return super().change_view(request, object_id, form_url, extra_context)
+
     def save_model(self, request, obj, form, change):
 
         if obj.creator is not None:
             # ---- update creator ----
             # Set the creator field to the current admin user
             obj.creator = request.user if request.user.is_authenticated else None
-
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
@@ -2790,7 +2874,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
-
         super().save_model(request, obj, form, change)
 
 
@@ -2885,6 +2968,7 @@ admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
+admin.site.register(models.PortfolioInvitation, PortfolioInvitationAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)

@@ -6,11 +6,6 @@ from registrar.models.federal_agency import FederalAgency
 from .utility.time_stamped_model import TimeStampedModel
 
 
-# def get_default_federal_agency():
-#     """returns non-federal agency"""
-#     return FederalAgency.objects.filter(agency="Non-Federal Agency").first()
-
-
 class Portfolio(TimeStampedModel):
     """
     Portfolio is used for organizing domains/domain-requests into

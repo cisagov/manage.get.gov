@@ -45,6 +45,8 @@ When deploying to your personal sandbox, you should make sure all of the USWDS a
 
 For ease of use, you can run the `deploy.sh <sandbox name>` script in the `/src` directory to build the assets and deploy to your sandbox. Similarly, you could run `build.sh <sandbox name>` script to just compile and collect the assets without deploying.
 
+You may also manually deploy to a sandbox using our [manual deploy workflow](https://github.com/cisagov/manage.get.gov/actions/workflows/deploy-manual.yaml) on GitHub Actions. Select Run workflow and enter the branch you want to deploy to your sandbox of choice.
+
 Your sandbox space should've been setup as part of the onboarding process. If this was not the case, please have an admin follow the instructions below.
 
 ## Creating a sandbox or new environment

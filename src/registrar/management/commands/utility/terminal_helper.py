@@ -317,6 +317,7 @@ class TerminalHelper:
                 case _:
                     logger.info(print_statement)
 
+    # TODO - "info_to_inspect" should be refactored to "prompt_message"
     @staticmethod
     def prompt_for_execution(system_exit_on_terminate: bool, info_to_inspect: str, prompt_title: str) -> bool:
         """Create to reduce code complexity.
@@ -373,3 +374,26 @@ class TerminalHelper:
             logger.info(f"{TerminalColors.MAGENTA}Writing to file " f" {filepath}..." f"{TerminalColors.ENDC}")
             with open(f"{filepath}", "w+") as f:
                 f.write(file_contents)
+
+    @staticmethod
+    def colorful_logger(log_level, color, message):
+        """Adds some color to your log output.
+
+        Args:
+            log_level: str | Logger.method -> Desired log level. ex: logger.info or "INFO"
+            color: str | TerminalColors -> Output color. ex: TerminalColors.YELLOW or "YELLOW"
+            message: str -> Message to display.
+        """
+
+        if isinstance(log_level, str) and hasattr(logger, log_level.lower()):
+            log_method = getattr(logger, log_level.lower())
+        else:
+            log_method = log_level
+
+        if isinstance(color, str) and hasattr(TerminalColors, color.upper()):
+            terminal_color = getattr(TerminalColors, color.upper())
+        else:
+            terminal_color = color
+
+        colored_message = f"{terminal_color}{message}{TerminalColors.ENDC}"
+        log_method(colored_message)

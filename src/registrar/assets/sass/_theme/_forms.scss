@@ -82,3 +82,13 @@ legend.float-left-tablet + button.float-right-tablet {
     color: var(--close-button-hover-bg);
   }
 }
+
+.read-only-label {
+  font-size: size('body', 'sm');
+  color: color('primary');
+  margin-bottom: units(0.5);
+}
+
+.read-only-value {
+  margin-top: units(0);
+}
