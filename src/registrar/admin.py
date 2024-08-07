@@ -2840,6 +2840,9 @@ class PortfolioAdmin(ListHeaderAdmin):
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
+    readonly_fields = [
+        "creator",
+    ]
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
@@ -2862,7 +2865,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def save_model(self, request, obj, form, change):
 
-        if obj.creator is not None:
+        if hasattr(obj, "creator") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
             obj.creator = request.user if request.user.is_authenticated else None
