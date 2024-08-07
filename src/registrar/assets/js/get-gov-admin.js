@@ -750,3 +750,84 @@ function initializeWidgetOnList(list, parentId) {
         });
     }
 })();
+
+
+/** An IIFE for copy summary button (appears in DomainRegistry models)
+*/
+(function dynamicPortfolioFields(){
+
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        let isPortfolioPage = document.querySelector("#portfolio_form");
+        if (!isPortfolioPage) {
+            return;
+        }
+        
+        // $ symbolically denotes that this is using jQuery
+        let $federalAgency = django.jQuery("#id_federal_agency");
+        let organizationType = document.querySelector("#id_organization_type");
+        if ($federalAgency && organizationType) {
+            // Execute this function once on load
+            handleFederalAgencyChange($federalAgency, organizationType);
+
+            // Attach the change event listener
+            $federalAgency.on("change", function() {
+                handleFederalAgencyChange($federalAgency, organizationType);
+            });
+        }
+        
+        // Handle dynamically hiding the urbanization field
+        let urbanizationField = document.querySelector(".field-urbanization");
+        let stateTerritory = document.querySelector("#id_state_territory");
+        if (urbanizationField && stateTerritory) {
+            // Execute this function once on load
+            handleStateTerritoryChange(stateTerritory, urbanizationField);
+
+            // Attach the change event listener for state/territory
+            stateTerritory.addEventListener("change", function() {
+                handleStateTerritoryChange(stateTerritory, urbanizationField);
+            });
+        }
+    });
+
+    function handleFederalAgencyChange(federalAgency, organizationType) {
+
+        // Set the org type to federal if an agency is selected
+        let selectedText = federalAgency.find("option:selected").text();
+        if (selectedText !== "Non-Federal Agency" && selectedText) {
+            organizationType.value = "federal";
+        }else {
+            if (organizationType.value === "federal") {
+                organizationType.value = "";
+            }
+        }
+
+        // Automatically set the SO field.
+        // How do we do this without an API??????????
+        // let seniorOfficialId = assignSelfButton.getAttribute("data-user-id");
+        // let seniorOfficialName = assignSelfButton.getAttribute("data-user-name");
+        // if (!currentUserId || !currentUserName){
+        //     console.error("Could not assign current user: no values found.")
+        //     return;
+        // }
+
+        // if (selector.find(`option[value='${currentUserId}']`).length) {
+        //     // Select the value that is associated with the current user.
+        //     selector.val(currentUserId).trigger("change");
+        // } else { 
+        //     // Create a DOM Option that matches the desired user. Then append it and select it.
+        //     let userOption = new Option(currentUserName, currentUserId, true, true);
+        //     selector.append(userOption).trigger("change");
+        // }
+
+    }
+
+    function handleStateTerritoryChange(stateTerritory, urbanizationField) {
+        let selectedValue = stateTerritory.value;
+        if (selectedValue === "PR") {
+            showElement(urbanizationField)
+        } else {
+            hideElement(urbanizationField)
+        }
+    }
+})();
