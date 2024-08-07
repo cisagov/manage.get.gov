@@ -23,7 +23,6 @@ from registrar.models import (
     DomainInvitation,
     User,
     UserDomainRole,
-    Portfolio,
     PublicContact,
 )
 from registrar.utility.enums import DefaultEmail
@@ -231,7 +230,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
-    
+
     def has_permission(self):
         """Override for the has_permission class to exclude portfolio users"""
 
@@ -285,8 +284,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
-    
-        
+
     def has_permission(self):
         """Override for the has_permission class to exclude portfolio users"""
 

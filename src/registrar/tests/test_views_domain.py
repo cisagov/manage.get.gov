@@ -36,7 +36,6 @@ from registrar.models import (
     FederalAgency,
     Portfolio,
     Suborganization,
-    SeniorOfficial,
 )
 from datetime import date, datetime, timedelta
 from django.utils import timezone
