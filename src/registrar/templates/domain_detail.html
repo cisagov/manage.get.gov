@@ -71,10 +71,11 @@
     {% else %}
       {% url 'domain-org-name-address' pk=domain.id as url %}
       {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=is_editable %}
+
+      {% url 'domain-senior-official' pk=domain.id as url %}
+      {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=is_editable %}
     {% endif %}
 
-    {% url 'domain-senior-official' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=is_editable %}
 
     {# Conditionally display profile #}
     {% if not has_profile_feature_flag %}

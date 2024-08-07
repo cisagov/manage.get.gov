@@ -10,14 +10,7 @@
 
       {% if is_editable %}
 
-      {% if portfolio %}
-          {% comment %} Only show this menu option if the user has the perms to do so {% endcomment %}
-          {% if has_domains_portfolio_permission and request.user.has_view_suborganization %}
-            {% with url_name="domain-suborganization" %}
-              {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
-            {% endwith %}
-          {% endif %}
-      {% else %}
+      {% if not portfolio %}
         {% with url_name="domain-org-name-address" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Organization name and mailing address" %}
         {% endwith %}
@@ -65,9 +58,19 @@
         {% endif %}
       </li>
 
-      {% with url_name="domain-senior-official" %}
-        {% include "includes/domain_sidenav_item.html" with item_text="Senior official" %}
-      {% endwith %}
+      
+      {% if portfolio %}
+          {% comment %} Only show this menu option if the user has the perms to do so {% endcomment %}
+          {% if has_domains_portfolio_permission and request.user.has_view_suborganization %}
+            {% with url_name="domain-suborganization" %}
+              {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
+            {% endwith %}
+          {% endif %}
+      {% else %}
+        {% with url_name="domain-senior-official" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Senior official" %}
+        {% endwith %}
+      {% endif %}
 
       {% if not has_profile_feature_flag %}
       {# Conditionally display profile link in main nav #}
