@@ -231,6 +231,16 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
+    
+    def has_permission(self):
+        """Override for the has_permission class to exclude portfolio users"""
+
+        # Org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return False
+        else:
+            return super().has_permission()
 
 
 class DomainSeniorOfficialView(DomainFormBaseView):
@@ -244,19 +254,11 @@ class DomainSeniorOfficialView(DomainFormBaseView):
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.senior_official instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        org_user = self.request.user.is_org_user(self.request)
-
-        if org_user:
-            portfolio = Portfolio.objects.filter(information_portfolio=self.object.domain_info).first()
-            senior_official = portfolio.senior_official if portfolio else None
-        else:
-            senior_official = self.object.domain_info.senior_official
-        form_kwargs["instance"] = senior_official
+        form_kwargs["instance"] = self.object.domain_info.senior_official
 
         domain_info = self.get_domain_info_from_domain()
         invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]
         is_federal_or_tribal = domain_info and (domain_info.generic_org_type in invalid_fields)
-
         form_kwargs["disable_fields"] = is_federal_or_tribal
         return form_kwargs
 
@@ -283,6 +285,17 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
+    
+        
+    def has_permission(self):
+        """Override for the has_permission class to exclude portfolio users"""
+
+        # Org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return False
+        else:
+            return super().has_permission()
 
 
 class DomainDNSView(DomainBaseView):

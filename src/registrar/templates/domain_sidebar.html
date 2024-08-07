@@ -10,16 +10,7 @@
 
       {% if is_editable %}
 
-      {% if portfolio %}
-        {% comment %} TODO - uncomment in #2352
-          {% with url_name="domain-suborganization" %}
-            {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
-          {% endwith %}
-        {% endcomment %}
-        {% with url="#" %}
-          {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
-        {% endwith %}
-      {% else %}
+      {% if not portfolio %}
         {% with url_name="domain-org-name-address" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Organization name and mailing address" %}
         {% endwith %}
@@ -67,9 +58,16 @@
         {% endif %}
       </li>
 
-      {% with url_name="domain-senior-official" %}
-        {% include "includes/domain_sidenav_item.html" with item_text="Senior official" %}
-      {% endwith %}
+      
+      {% if portfolio %}
+        {% with url="#" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
+        {% endwith %} 
+      {% else %}
+        {% with url_name="domain-senior-official" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Senior official" %}
+        {% endwith %}
+      {% endif %}
 
       {% if not has_profile_feature_flag %}
       {# Conditionally display profile link in main nav #}
