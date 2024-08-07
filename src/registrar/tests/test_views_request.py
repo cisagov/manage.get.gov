@@ -2226,141 +2226,142 @@ class DomainRequestTests(TestWithUser, WebTest):
         senior_official = domain_request.senior_official
         self.assertEquals("Testy2", senior_official.first_name)
 
-    def test_edit_submitter_in_place(self):
-        """When you:
-            1. edit a submitter (your contact) which is not joined to another model,
-            2. then submit,
-        the domain request is linked to the existing submitter, and the submitter updated."""
+    # def test_edit_submitter_in_place(self):
+    #     """When you:
+    #         1. edit a submitter (your contact) which is not joined to another model,
+    #         2. then submit,
+    #     the domain request is linked to the existing submitter, and the submitter updated."""
 
-        # Populate the database with a domain request that
-        # has a submitter
-        # We'll do it from scratch
-        you, _ = Contact.objects.get_or_create(
-            first_name="Testy",
-            last_name="Tester",
-            title="Chief Tester",
-            email="testy@town.com",
-            phone="(201) 555 5555",
-        )
-        domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
-            purpose="Purpose of the site",
-            anything_else="No",
-            is_policy_acknowledged=True,
-            organization_name="Testorg",
-            address_line1="address 1",
-            state_territory="NY",
-            zipcode="10002",
-            submitter=you,
-            creator=self.user,
-            status="started",
-        )
+    #     # Populate the database with a domain request that
+    #     # has a submitter
+    #     # We'll do it from scratch
+    #     you, _ = Contact.objects.get_or_create(
+    #         first_name="Testy",
+    #         last_name="Tester",
+    #         title="Chief Tester",
+    #         email="testy@town.com",
+    #         phone="(201) 555 5555",
+    #     )
+    #     domain_request, _ = DomainRequest.objects.get_or_create(
+    #         generic_org_type="federal",
+    #         federal_type="executive",
+    #         purpose="Purpose of the site",
+    #         anything_else="No",
+    #         is_policy_acknowledged=True,
+    #         organization_name="Testorg",
+    #         address_line1="address 1",
+    #         state_territory="NY",
+    #         zipcode="10002",
+    #         submitter=you,
+    #         creator=self.user,
+    #         status="started",
+    #     )
 
-        # submitter_pk is the initial pk of the submitter. set it before update
-        # to be able to verify after update that the same contact object is in place
-        submitter_pk = you.id
+    #     # submitter_pk is the initial pk of the submitter. set it before update
+    #     # to be able to verify after update that the same contact object is in place
+    #     submitter_pk = you.id
 
-        # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
-        # django-webtest does not handle cookie-based sessions well because it keeps
-        # resetting the session key on each new request, thus destroying the concept
-        # of a "session". We are going to do it manually, saving the session ID here
-        # and then setting the cookie on each request.
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+    #     # prime the form by visiting /edit
+    #     self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+    #     # django-webtest does not handle cookie-based sessions well because it keeps
+    #     # resetting the session key on each new request, thus destroying the concept
+    #     # of a "session". We are going to do it manually, saving the session ID here
+    #     # and then setting the cookie on each request.
+    #     session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+    #     self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        your_contact_page = self.app.get(reverse("domain-request:your_contact"))
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+    #     your_contact_page = self.app.get(reverse("domain-request:your_contact"))
+    #     self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        your_contact_form = your_contact_page.forms[0]
+    #     your_contact_form = your_contact_page.forms[0]
 
-        # Minimal check to ensure the form is loaded
-        self.assertEqual(your_contact_form["your_contact-first_name"].value, "Testy")
+    #     # Minimal check to ensure the form is loaded
+    #     self.assertEqual(your_contact_form["your_contact-first_name"].value, "Testy")
 
-        # update the first name of the contact
-        your_contact_form["your_contact-first_name"] = "Testy2"
+    #     # update the first name of the contact
+    #     your_contact_form["your_contact-first_name"] = "Testy2"
 
-        # Submit the updated form
-        your_contact_form.submit()
+    #     # Submit the updated form
+    #     your_contact_form.submit()
 
-        domain_request.refresh_from_db()
+    #     domain_request.refresh_from_db()
 
-        updated_submitter = domain_request.submitter
-        self.assertEquals(submitter_pk, updated_submitter.id)
-        self.assertEquals("Testy2", updated_submitter.first_name)
+    #     updated_submitter = domain_request.submitter
+    #     self.assertEquals(submitter_pk, updated_submitter.id)
+    #     self.assertEquals("Testy2", updated_submitter.first_name)
 
-    def test_edit_submitter_creates_new(self):
-        """When you:
-            1. edit an existing your contact which IS joined to another model,
-            2. then submit,
-        the domain request is linked to a new Contact, and the new Contact is updated."""
+    # NOTE: We should have one similar to this just for Contact
+    # def test_edit_submitter_creates_new(self):
+    #     """When you:
+    #         1. edit an existing your contact which IS joined to another model,
+    #         2. then submit,
+    #     the domain request is linked to a new Contact, and the new Contact is updated."""
 
-        # Populate the database with a domain request that
-        # has submitter assigned to it, the submitter is also
-        # an other contact initially
-        # We'll do it from scratch
-        submitter, _ = Contact.objects.get_or_create(
-            first_name="Testy",
-            last_name="Tester",
-            title="Chief Tester",
-            email="testy@town.com",
-            phone="(201) 555 5555",
-        )
-        domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
-            purpose="Purpose of the site",
-            anything_else="No",
-            is_policy_acknowledged=True,
-            organization_name="Testorg",
-            address_line1="address 1",
-            state_territory="NY",
-            zipcode="10002",
-            submitter=submitter,
-            creator=self.user,
-            status="started",
-        )
-        domain_request.other_contacts.add(submitter)
+    #     # Populate the database with a domain request that
+    #     # has submitter assigned to it, the submitter is also
+    #     # an other contact initially
+    #     # We'll do it from scratch
+    #     submitter, _ = Contact.objects.get_or_create(
+    #         first_name="Testy",
+    #         last_name="Tester",
+    #         title="Chief Tester",
+    #         email="testy@town.com",
+    #         phone="(201) 555 5555",
+    #     )
+    #     domain_request, _ = DomainRequest.objects.get_or_create(
+    #         generic_org_type="federal",
+    #         federal_type="executive",
+    #         purpose="Purpose of the site",
+    #         anything_else="No",
+    #         is_policy_acknowledged=True,
+    #         organization_name="Testorg",
+    #         address_line1="address 1",
+    #         state_territory="NY",
+    #         zipcode="10002",
+    #         submitter=submitter,
+    #         creator=self.user,
+    #         status="started",
+    #     )
+    #     domain_request.other_contacts.add(submitter)
 
-        # submitter_pk is the initial pk of the your contact. set it before update
-        # to be able to verify after update that the other contact is still in place
-        # and not updated, and that the new submitter has a new id
-        submitter_pk = submitter.id
+    #     # submitter_pk is the initial pk of the your contact. set it before update
+    #     # to be able to verify after update that the other contact is still in place
+    #     # and not updated, and that the new submitter has a new id
+    #     submitter_pk = submitter.id
 
-        # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
-        # django-webtest does not handle cookie-based sessions well because it keeps
-        # resetting the session key on each new request, thus destroying the concept
-        # of a "session". We are going to do it manually, saving the session ID here
-        # and then setting the cookie on each request.
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+    #     # prime the form by visiting /edit
+    #     self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+    #     # django-webtest does not handle cookie-based sessions well because it keeps
+    #     # resetting the session key on each new request, thus destroying the concept
+    #     # of a "session". We are going to do it manually, saving the session ID here
+    #     # and then setting the cookie on each request.
+    #     session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+    #     self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        your_contact_page = self.app.get(reverse("domain-request:your_contact"))
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+    #     your_contact_page = self.app.get(reverse("domain-request:your_contact"))
+    #     self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        your_contact_form = your_contact_page.forms[0]
+    #     your_contact_form = your_contact_page.forms[0]
 
-        # Minimal check to ensure the form is loaded
-        self.assertEqual(your_contact_form["your_contact-first_name"].value, "Testy")
+    #     # Minimal check to ensure the form is loaded
+    #     self.assertEqual(your_contact_form["your_contact-first_name"].value, "Testy")
 
-        # update the first name of the contact
-        your_contact_form["your_contact-first_name"] = "Testy2"
+    #     # update the first name of the contact
+    #     your_contact_form["your_contact-first_name"] = "Testy2"
 
-        # Submit the updated form
-        your_contact_form.submit()
+    #     # Submit the updated form
+    #     your_contact_form.submit()
 
-        domain_request.refresh_from_db()
+    #     domain_request.refresh_from_db()
 
-        # assert that the other contact is not updated
-        other_contacts = domain_request.other_contacts.all()
-        other_contact = other_contacts[0]
-        self.assertEquals(submitter_pk, other_contact.id)
-        self.assertEquals("Testy", other_contact.first_name)
-        # assert that the submitter is updated
-        submitter = domain_request.submitter
-        self.assertEquals("Testy2", submitter.first_name)
+    #     # assert that the other contact is not updated
+    #     other_contacts = domain_request.other_contacts.all()
+    #     other_contact = other_contacts[0]
+    #     self.assertEquals(submitter_pk, other_contact.id)
+    #     self.assertEquals("Testy", other_contact.first_name)
+    #     # assert that the submitter is updated
+    #     submitter = domain_request.submitter
+    #     self.assertEquals("Testy2", submitter.first_name)
 
     def test_domain_request_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
@@ -2982,7 +2983,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
-            submitter=contact_user,
+            creator=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
 
@@ -3008,7 +3009,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             # Now 'detail_page' contains the response after following the redirect
             self.assertEqual(detail_page.status_code, 200)
 
-            # 5 unlocked steps (so, domain, submitter, other contacts, and current sites
+            # 5 unlocked steps (so, domain, creator, other contacts, and current sites
             # which unlocks if domain exists), one active step, the review step is locked
             self.assertContains(detail_page, "#check_circle", count=5)
             # Type of organization

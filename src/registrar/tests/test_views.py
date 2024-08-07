@@ -872,7 +872,7 @@ class UserProfileTests(TestWithUser, WebTest):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             senior_official=contact_user,
-            submitter=contact_user,
+            creator=contact_user,
         )
         with override_flag("profile_feature", active=True):
             response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
@@ -891,7 +891,7 @@ class UserProfileTests(TestWithUser, WebTest):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             senior_official=contact_user,
-            submitter=contact_user,
+            creator=contact_user,
         )
         with override_flag("profile_feature", active=False):
             response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)

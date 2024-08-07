@@ -700,7 +700,6 @@ class DomainRequest(TimeStampedModel):
         """
 
         recipient = self.creator
-        # recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
         if recipient is None or recipient.email is None:
             logger.warning(
                 f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
@@ -1147,9 +1146,6 @@ class DomainRequest(TimeStampedModel):
     def _is_purpose_complete(self):
         return self.purpose is not None
 
-    # def _is_submitter_complete(self):
-    #     return self.submitter is not None
-
     def _has_other_contacts_and_filled(self):
         # Other Contacts Radio button is Yes and if all required fields are filled
         return (
@@ -1204,8 +1200,6 @@ class DomainRequest(TimeStampedModel):
             and self._is_senior_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
-            # # NOTE: This flag leaves submitter as empty (request wont submit) hence set to True
-            # and (self._is_submitter_complete() if not has_profile_feature_flag else True)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()
             and self._is_policy_acknowledgement_complete()

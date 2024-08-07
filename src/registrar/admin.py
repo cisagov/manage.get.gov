@@ -1215,12 +1215,11 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain",
         "generic_org_type",
         "created_at",
-        "submitter",
     ]
 
     orderable_fk_fields = [
         ("domain", "name"),
-        ("submitter", ["first_name", "last_name"]),
+        ("creator", ["first_name", "last_name"]),
     ]
 
     # Filters
@@ -1233,7 +1232,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "sub_organization", "creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "sub_organization", "creator", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1296,7 +1295,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "more_organization_information",
         "domain",
         "domain_request",
-        "submitter",
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
@@ -1311,7 +1309,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain_request",
         "senior_official",
         "domain",
-        "submitter",
         "portfolio",
         "sub_organization",
     ]
@@ -1471,15 +1468,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "creator"
-        # "submitter",
+        "creator",
         "investigator",
     ]
 
     orderable_fk_fields = [
         ("requested_domain", "name"),
         ("creator", ["first_name", "last_name"]),
-        # ("submitter", ["first_name", "last_name"]),
         ("investigator", ["first_name", "last_name"]),
     ]
 
