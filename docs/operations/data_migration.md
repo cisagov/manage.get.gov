@@ -752,3 +752,67 @@ Example: `cf ssh getgov-za`
 |   | Parameter                  | Description                                                                        |
 |:-:|:-------------------------- |:-----------------------------------------------------------------------------------|
 | 1 | **emailTo**                | Specifies where the email will be emailed. Defaults to help@get.gov on production. |
+
+## Populate federal agency initials and FCEB
+This script adds to the "is_fceb" and "initials" fields on the FederalAgency model. This script expects a CSV of federal CIOs to pull from, which can be sourced from [here](https://docs.google.com/spreadsheets/d/14oXHFpKyUXS5_mDWARPusghGdHCrP67jCleOknaSx38/edit?gid=479328070#gid=479328070). 
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Upload your csv to the desired sandbox
+[Follow these steps](#use-scp-to-transfer-data-to-sandboxes) to upload the federal_cio csv to a sandbox of your choice.
+
+#### Step 5: Running the script
+```./manage.py populate_federal_agency_initials_and_fceb {path_to_CIO_csv}```
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py populate_federal_agency_initials_and_fceb {path_to_CIO_csv}```
+
+##### Parameters
+|   | Parameter                  | Description                                                                        |
+|:-:|:-------------------------- |:-----------------------------------------------------------------------------------|
+| 1 | **federal_cio_csv_path**   | Specifies where the federal CIO csv is                                             |
+
+## Load senior official table
+This script adds SeniorOfficial records to the related table based off of a CSV. This script expects a CSV of federal CIOs to pull from, which can be sourced from [here](https://docs.google.com/spreadsheets/d/14oXHFpKyUXS5_mDWARPusghGdHCrP67jCleOknaSx38/edit?gid=479328070#gid=479328070). 
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Upload your csv to the desired sandbox
+[Follow these steps](#use-scp-to-transfer-data-to-sandboxes) to upload the federal_cio csv to a sandbox of your choice.
+
+#### Step 5: Running the script
+```./manage.py load_senior_official_table {path_to_CIO_csv}```
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py load_senior_official_table {path_to_CIO_csv}```
+
+##### Parameters
+|   | Parameter                  | Description                                                                        |
+|:-:|:-------------------------- |:-----------------------------------------------------------------------------------|
+| 1 | **federal_cio_csv_path**   | Specifies where the federal CIO csv is                                             |
