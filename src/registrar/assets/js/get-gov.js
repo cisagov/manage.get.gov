@@ -1985,3 +1985,65 @@ document.addEventListener('DOMContentLoaded', function() {
   showInputOnErrorFields();
 
 })();
+
+
+/**
+ * An IIFE that changes the default clear behavior on comboboxes to the input field.
+ * We want the search bar to act soley as a search bar.
+ */
+(function loadInitialValuesForComboBoxes() {
+  document.addEventListener('DOMContentLoaded', (event) => {
+    // The file location for the #undo svg
+    const undoIcon = document.querySelector("#uswds-undo-icon-url");
+    const undoIconUrl = undoIcon ? undoIcon.getAttribute("data-undo-icon-url") : null;
+    if (undoIconUrl) {
+      handleAllComboBoxElements(undoIconUrl);
+    }
+  });
+
+  function handleAllComboBoxElements(undoIconUrl) {
+    const comboBoxElements = document.querySelectorAll(".usa-combo-box");
+    comboBoxElements.forEach(comboBox => {
+      const input = comboBox.querySelector('input');
+      if (!input || !undoIconUrl) {
+        console.warn("No input element found");
+        return;
+      }
+
+      let clearInputButton = comboBox.querySelector(".usa-combo-box__clear-input");
+      if (!clearInputButton) {
+        console.warn("No clear element found");
+        return;
+      }
+
+      let resetSearchButton = clearInputButton.cloneNode(true);
+      resetSearchButton.classList.add('usa-combo-box__reset-search');
+      resetSearchButton.style.display = 'none';
+      // Change the icon to the "undo" icon. Due to the nature of how this element is styled, we have to do this as so.
+      resetSearchButton.style.backgroundImage = `url("${undoIconUrl}"), linear-gradient(transparent, transparent)`;
+      clearInputButton.insertAdjacentElement('afterend', resetSearchButton);
+
+      // Show the reset search button when typing
+      input.addEventListener('input', () => {
+        resetSearchButton.style.display = 'inline-block';
+      });
+
+      // Hide the reset search button when input loses focus
+      input.addEventListener('blur', () => {
+        resetSearchButton.style.display = 'none';
+      });
+
+      handleMouseDownOnButton(resetSearchButton, input)
+    });
+  }
+
+  function handleMouseDownOnButton(button, inputToTarget) {
+    // Reset the input value when the reset search button is clicked
+    button.addEventListener('mousedown', (event) => {
+      // Simulate focus and blur to trigger the built in "resetSelection" and "hideList" functions
+      inputToTarget.focus();
+      inputToTarget.blur();
+      button.style.display = 'none';
+    });
+  }
+})();
