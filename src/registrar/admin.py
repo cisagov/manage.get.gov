@@ -2865,8 +2865,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
-    
-        if hasattr(obj, 'creator') is False:
+
+        if hasattr(obj, "creator") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
             obj.creator = request.user if request.user.is_authenticated else None
