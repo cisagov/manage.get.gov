@@ -325,3 +325,51 @@ class TestPortfolio(WebTest):
 
             self.assertContains(success_result_page, "6 Downing st")
             self.assertContains(success_result_page, "London")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_org_member_can_only_see_domains_with_appropriate_permissions(self):
+        """A user with the role organization_member should not have access to the domains page
+        if they do not have the right permissions.
+        """
+
+        # A default organization member should not be able to see any domains
+        self.app.set_user(self.user.username)
+        self.user.portfolio = self.portfolio
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertFalse(self.user.has_domains_portfolio_permission())
+
+        response = self.app.get(reverse("no-portfolio-domains"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "You aren’t managing any domains.")
+
+        # Test the domains page - this user should not have access
+        response = self.app.get(reverse("domains"), expect_errors=True)
+        self.assertEqual(response.status_code, 403)
+
+        # Ensure that this user can see domains with the right permissions
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertTrue(self.user.has_domains_portfolio_permission())
+
+        # Test the domains page - this user should have access
+        response = self.app.get(reverse("domains"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Domain name")
+
+        # Test the managed domains permission
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertTrue(self.user.has_domains_portfolio_permission())
+
+        # Test the domains page - this user should have access
+        response = self.app.get(reverse("domains"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Domain name")
