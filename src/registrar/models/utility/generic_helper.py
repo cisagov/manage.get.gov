@@ -240,7 +240,7 @@ class CreateOrUpdateOrganizationTypeHelper:
             is_election_type = "_election" in organization_type
             can_have_election_board = organization_type in self.generic_org_to_org_map
 
-            election_board_mismatch = (is_election_type and (not self.instance.is_election_board or self.instance.is_election_board == None)) and can_have_election_board
+            election_board_mismatch = is_election_type and not self.instance.is_election_board and can_have_election_board
             org_type_mismatch = mapped_org_type is not None and (generic_org_type != mapped_org_type)
             if election_board_mismatch or org_type_mismatch:
                 message = (
