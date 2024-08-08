@@ -124,6 +124,11 @@ urlpatterns = [
         AnalyticsView.as_view(),
         name="analytics",
     ),
+    path(
+        "admin/api/get-senior-official-from-federal-agency-json/", 
+        get_senior_official_from_federal_agency_json, 
+        name="get-senior-official-from-federal-agency-json"
+    ),
     path("admin/", admin.site.urls),
     path(
         "reports/export_data_type_user/",
@@ -156,12 +161,6 @@ urlpatterns = [
     path("api/v1/available/", available, name="available"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),
     path("api/v1/get-report/current-full", get_current_full, name="get-current-full"),
-    # TODO convert to admin view
-    path(
-        "api/v1/get-senior-official-from-federal-agency-json/", 
-        get_senior_official_from_federal_agency_json, 
-        name="get-senior-official-from-federal-agency-json"
-    ),
     path(
         "todo",
         lambda r: always_404(r, "We forgot to include this link, sorry."),

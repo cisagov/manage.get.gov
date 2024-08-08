@@ -14,12 +14,11 @@ logger = logging.getLogger(__name__)
 def get_senior_official_from_federal_agency_json(request):
     """Returns federal_agency information as a JSON"""
 
-    # This API is only accessible to admins
+    # This API is only accessible to admins and analysts
     superuser_perm = request.user.has_perm("registrar.full_access_permission")
     analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
     if not request.user.is_authenticated or not analyst_perm or not superuser_perm:
-        # We intentionally don't return anything here
-        return {}
+        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
 
     agency_name = request.GET.get("agency_name")
     agency = FederalAgency.objects.filter(agency=agency_name).first()
@@ -29,4 +28,4 @@ def get_senior_official_from_federal_agency_json(request):
         so_dict = model_to_dict(senior_official)
         return JsonResponse(so_dict)
     else:
-        return JsonResponse({"error": "Senior Official not found"})
+        return JsonResponse({"error": "Senior Official not found"}, status=404)
