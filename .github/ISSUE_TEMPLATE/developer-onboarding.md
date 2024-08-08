@@ -35,7 +35,7 @@ The following tools are optional  but recommended. For DHS devices, these can be
 - [ ] Putty*
 - [ ] Windows Subsystem for Linux*
 
-* Must be requested through DHS IT portal on DHS devices
+\* Must be requested through DHS IT portal on DHS devices
 
 ** Downloadable via DHS Software Center
 
