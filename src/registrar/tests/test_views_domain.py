@@ -1636,7 +1636,7 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Create a portfolio
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        _suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
 
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = portfolio
@@ -1667,7 +1667,7 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Cleanup
         self.domain_information.delete()
-        _suborg.delete()
+        suborg.delete()
         portfolio.delete()
 
 

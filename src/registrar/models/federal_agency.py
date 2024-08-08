@@ -25,6 +25,20 @@ class FederalAgency(TimeStampedModel):
         help_text="Federal agency type (executive, judicial, legislative, etc.)",
     )
 
+    initials = models.CharField(
+        max_length=10,
+        null=True,
+        blank=True,
+        help_text="Agency initials",
+    )
+
+    is_fceb = models.BooleanField(
+        null=True,
+        blank=True,
+        verbose_name="FCEB",
+        help_text="Determines if this agency is FCEB",
+    )
+
     def __str__(self) -> str:
         return f"{self.agency}"
 
