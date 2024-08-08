@@ -76,7 +76,7 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 
 ## Setting up commit signing with GPG
 
-Follow GitHub's instructions to [generate a new GPG key]((https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key)) (default configurations are okay) and add it to your GPG keys on Github.
+Follow GitHub's instructions to [generate a new GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key) (default configurations are okay) and add it to your GPG keys on Github.
 
 Configure your key locally:
 
