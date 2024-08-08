@@ -20,7 +20,7 @@ There are several tools we use locally that you will need to have.
   - If you are using Windows the cli will be under `cf8` or `cf7` depending on which version you install.
   - If you are using Windows, installation information can be found [here](https://github.com/cloudfoundry/cli/wiki/V8-CLI-Installation-Guide#installers-and-compressed-binaries)
   - Alternatively, for Windows, [consider using chocolately](https://community.chocolatey.org/packages/cloudfoundry-cli/7.2.0)
-- [ ] [GPG](https://gnupg.org/download/)
+- [ ] [GPG](https://gnupg.org/download/) if you are using GPG to sign commits.
   - Make sure you have `gpg` >2.1.7. Run `gpg --version` to check. If not, [install gnupg](https://formulae.brew.sh/formula/gnupg)
   - This may not work on DHS devices. Alternatively, you can [use ssh keys](#setting-up-commit-signing-with-ssh) instead.
 - [ ] Docker Community Edition*
