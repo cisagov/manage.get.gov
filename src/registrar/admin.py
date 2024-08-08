@@ -9,10 +9,6 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models.domain_group import DomainGroup
-from registrar.models.suborganization import Suborganization
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
@@ -22,7 +18,7 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
-from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -38,7 +34,6 @@ from django_admin_multiple_choice_list_filter.list_filters import MultipleChoice
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from django.utils.translation import gettext_lazy as _
 
@@ -94,31 +89,6 @@ class UserResource(resources.ModelResource):
         model = models.User
 
 
-class FilteredSelectMultipleArrayWidget(FilteredSelectMultiple):
-    """Custom widget to allow for editing an ArrayField in a widget similar to filter_horizontal widget"""
-
-    def __init__(self, verbose_name, is_stacked=False, choices=(), **kwargs):
-        super().__init__(verbose_name, is_stacked, **kwargs)
-        self.choices = choices
-
-    def value_from_datadict(self, data, files, name):
-        values = super().value_from_datadict(data, files, name)
-        return values or []
-
-    def get_context(self, name, value, attrs):
-        if value is None:
-            value = []
-        elif isinstance(value, str):
-            value = value.split(",")
-        # alter self.choices to be a list of selected and unselected choices, based on value;
-        # order such that selected choices come before unselected choices
-        self.choices = [(choice, label) for choice, label in self.choices if choice in value] + [
-            (choice, label) for choice, label in self.choices if choice not in value
-        ]
-        context = super().get_context(name, value, attrs)
-        return context
-
-
 class MyUserAdminForm(UserChangeForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs.
 
@@ -131,14 +101,6 @@ class MyUserAdminForm(UserChangeForm):
         widgets = {
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
-            "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
-            ),
-            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
-                "portfolio_additional_permissions",
-                is_stacked=False,
-                choices=UserPortfolioPermissionChoices.choices,
-            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -168,24 +130,6 @@ class MyUserAdminForm(UserChangeForm):
                 "Raw passwords are not stored, so they will not display here. "
                 f'You can change the password using <a href="{link}">this form</a>.'
             )
-
-
-class PortfolioInvitationAdminForm(UserChangeForm):
-    """This form utilizes the custom widget for its class's ManyToMany UIs."""
-
-    class Meta:
-        model = models.PortfolioInvitation
-        fields = "__all__"
-        widgets = {
-            "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
-            ),
-            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
-                "portfolio_additional_permissions",
-                is_stacked=False,
-                choices=UserPortfolioPermissionChoices.choices,
-            ),
-        }
 
 
 class DomainInformationAdminForm(forms.ModelForm):
@@ -221,9 +165,6 @@ class DomainRequestAdminForm(forms.ModelForm):
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
-        }
-        labels = {
-            "action_needed_reason_email": "Auto-generated email",
         }
 
     def __init__(self, *args, **kwargs):
@@ -503,9 +444,8 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "submitter": (Contact, _name_sort),
-        # == Senior Official == #
-        "senior_official": (SeniorOfficial, _name_sort),
+        "senior_official": (Contact, _name_sort),
+        # "submitter": (Contact, _name_sort),
         # == User == #
         "creator": (User, _name_sort),
         "user": (User, _name_sort),
@@ -653,6 +593,12 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
         return filters
 
 
+class UserContactInline(admin.StackedInline):
+    """Edit a user's profile on the user page."""
+
+    model = models.Contact
+
+
 class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     """Custom user admin class to use our inlines."""
 
@@ -668,6 +614,8 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         fields = "__all__"
 
     _meta = Meta()
+
+    inlines = [UserContactInline]
 
     list_display = (
         "username",
@@ -697,7 +645,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             None,
             {"fields": ("username", "password", "status", "verification_type")},
         ),
-        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("Personal info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -707,21 +655,17 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "is_superuser",
                     "groups",
                     "user_permissions",
-                    "portfolio",
-                    "portfolio_roles",
-                    "portfolio_additional_permissions",
                 )
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
-    autocomplete_fields = [
-        "portfolio",
-    ]
-
     readonly_fields = ("verification_type",)
 
+    # Hide Username (uuid), Groups and Permissions
+    # Q: Now that we're using Groups and Permissions,
+    # do we expose those to analysts to view?
     analyst_fieldsets = (
         (
             None,
@@ -732,34 +676,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 )
             },
         ),
-        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
-        (
-            "Permissions",
-            {
-                "fields": (
-                    "is_active",
-                    "groups",
-                    "portfolio",
-                    "portfolio_roles",
-                    "portfolio_additional_permissions",
-                )
-            },
-        ),
-        ("Important dates", {"fields": ("last_login", "date_joined")}),
-    )
-
-    # TODO: delete after we merge organization feature
-    analyst_fieldsets_no_portfolio = (
-        (
-            None,
-            {
-                "fields": (
-                    "status",
-                    "verification_type",
-                )
-            },
-        ),
-        ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+        ("Personal Info", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
         (
             "Permissions",
             {
@@ -783,33 +700,12 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
-        "User profile",
+        "Personal Info",
         "first_name",
         "middle_name",
         "last_name",
         "title",
         "email",
-        "phone",
-        "Permissions",
-        "is_active",
-        "groups",
-        "Important dates",
-        "last_login",
-        "date_joined",
-        "portfolio",
-        "portfolio_roles",
-        "portfolio_additional_permissions",
-    ]
-
-    # TODO: delete after we merge organization feature
-    analyst_readonly_fields_no_portfolio = [
-        "User profile",
-        "first_name",
-        "middle_name",
-        "last_name",
-        "title",
-        "email",
-        "phone",
         "Permissions",
         "is_active",
         "groups",
@@ -890,12 +786,8 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             # Show all fields for all access users
             return super().get_fieldsets(request, obj)
         elif request.user.has_perm("registrar.analyst_access_permission"):
-            if flag_is_active(request, "organization_feature"):
-                # show analyst_fieldsets for analysts
-                return self.analyst_fieldsets
-            else:
-                # TODO: delete after we merge organization feature
-                return self.analyst_fieldsets_no_portfolio
+            # show analyst_fieldsets for analysts
+            return self.analyst_fieldsets
         else:
             # any admin user should belong to either full_access_group
             # or cisa_analyst_group
@@ -909,11 +801,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         else:
             # Return restrictive Read-only fields for analysts and
             # users who might not belong to groups
-            if flag_is_active(request, "organization_feature"):
-                return self.analyst_readonly_fields
-            else:
-                # TODO: delete after we merge organization feature
-                return self.analyst_readonly_fields_no_portfolio
+            return self.analyst_readonly_fields
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add user's related domains and requests to context"""
@@ -1006,19 +894,29 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = [
         "name",
         "email",
+        "user_exists",
     ]
     # this ordering effects the ordering of results
-    # in autocomplete_fields
+    # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
     fieldsets = [
         (
             None,
-            {"fields": ["first_name", "middle_name", "last_name", "title", "email", "phone"]},
+            {"fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]},
         )
     ]
 
+    autocomplete_fields = ["user"]
+
     change_form_template = "django/admin/email_clipboard_change_form.html"
+
+    def user_exists(self, obj):
+        """Check if the Contact has a related User"""
+        return "Yes" if obj.user is not None else "No"
+
+    user_exists.short_description = "Is user"  # type: ignore
+    user_exists.admin_order_field = "user"  # type: ignore
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -1037,7 +935,9 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     name.admin_order_field = "first_name"  # type: ignore
 
     # Read only that we'll leverage for CISA Analysts
-    analyst_readonly_fields: list[str] = ["email"]
+    analyst_readonly_fields = [
+        "user",
+    ]
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -1115,28 +1015,6 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context["tabtitle"] = "Contacts"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
-
-    def save_model(self, request, obj, form, change):
-        # Clear warning messages before saving
-        storage = messages.get_messages(request)
-        storage.used = False
-        for message in storage:
-            if message.level == messages.WARNING:
-                storage.used = True
-
-        return super().save_model(request, obj, form, change)
-
-
-class SeniorOfficialAdmin(ListHeaderAdmin):
-    """Custom Senior Official Admin class."""
-
-    search_fields = ["first_name", "last_name", "email"]
-    search_help_text = "Search by first name, last name or email."
-    list_display = ["first_name", "last_name", "email", "federal_agency"]
-
-    # this ordering effects the ordering of results
-    # in autocomplete_fields for Senior Official
-    ordering = ["first_name", "last_name"]
 
 
 class WebsiteResource(resources.ModelResource):
@@ -1317,56 +1195,6 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
 
-class PortfolioInvitationAdmin(ListHeaderAdmin):
-    """Custom portfolio invitation admin class."""
-
-    form = PortfolioInvitationAdminForm
-
-    class Meta:
-        model = models.PortfolioInvitation
-        fields = "__all__"
-
-    _meta = Meta()
-
-    # Columns
-    list_display = [
-        "email",
-        "portfolio",
-        "portfolio_roles",
-        "portfolio_additional_permissions",
-        "status",
-    ]
-
-    # Search
-    search_fields = [
-        "email",
-        "portfolio__name",
-    ]
-
-    # Filters
-    list_filter = ("status",)
-
-    search_help_text = "Search by email or portfolio."
-
-    # Mark the FSM field 'status' as readonly
-    # to allow admin users to create Domain Invitations
-    # without triggering the FSM Transition Not Allowed
-    # error.
-    readonly_fields = ["status"]
-
-    autocomplete_fields = ["portfolio"]
-
-    change_form_template = "django/admin/email_clipboard_change_form.html"
-
-    # Select portfolio invitations to change -> Portfolio invitations
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Portfolio invitations"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
-
-
 class DomainInformationResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
     import/export file"""
@@ -1458,11 +1286,10 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "is_election_board")
+    readonly_fields = ("other_contacts", "is_election_board", "federal_agency")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
-        "federal_agency",
         "creator",
         "type_of_work",
         "more_organization_information",
@@ -1514,7 +1341,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             for name, data in fieldsets:
                 fields = data.get("fields", [])
                 fields = tuple(field for field in fields if field not in DomainInformationAdmin.superuser_only_fields)
-                modified_fieldsets.append((name, {**data, "fields": fields}))
+                modified_fieldsets.append((name, {"fields": fields}))
             return modified_fieldsets
         return fieldsets
 
@@ -1657,13 +1484,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
-    # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
-    # This is not a field that exists on the model.
-    def status_history(self, obj):
-        return "No changelog to display."
-
-    status_history.short_description = "Status History"  # type: ignore
-
     # Filters
     list_filter = (
         StatusListFilter,
@@ -1695,11 +1515,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
-                    "status_history",
                     "status",
                     "rejection_reason",
                     "action_needed_reason",
-                    "action_needed_reason_email",
                     "investigator",
                     "creator",
                     # "submitter",
@@ -1778,12 +1596,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "current_websites",
         "alternative_domains",
         "is_election_board",
-        "status_history",
+        "federal_agency",
     )
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
-        "federal_agency",
         "creator",
         "about_your_organization",
         "requested_domain",
@@ -1833,7 +1650,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             for name, data in fieldsets:
                 fields = data.get("fields", [])
                 fields = tuple(field for field in fields if field not in self.superuser_only_fields)
-                modified_fieldsets.append((name, {**data, "fields": fields}))
+                modified_fieldsets.append((name, {"fields": fields}))
             return modified_fieldsets
         return fieldsets
 
@@ -1880,39 +1697,29 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if not change:
             return super().save_model(request, obj, form, change)
 
+        # == Handle non-status changes == #
+        # Change this in #1901. Add a check on "not self.action_needed_reason_email"
+        if obj.action_needed_reason:
+            self._handle_action_needed_reason_email(obj)
+            should_save = True
+
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
-
-        # == Handle action_needed_reason == #
-
-        reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
-        if reason_changed:
-            # Track the fact that we sent out an email
-            request.session["action_needed_email_sent"] = True
-
-            # Set the action_needed_reason_email to the default if nothing exists.
-            # Since this check occurs after save, if the user enters a value then we won't update.
-
-            default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
-            if obj.action_needed_reason_email:
-                emails = self.get_all_action_needed_reason_emails(obj)
-                is_custom_email = obj.action_needed_reason_email not in emails.values()
-                if not is_custom_email:
-                    obj.action_needed_reason_email = default_email
-            else:
-                obj.action_needed_reason_email = default_email
-
-        # == Handle status == #
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
             return super().save_model(request, obj, form, change)
-        else:
-            # Run some checks on the current object for invalid status changes
-            obj, should_save = self._handle_status_change(request, obj, original_obj)
 
-            # We should only save if we don't display any errors in the steps above.
-            if should_save:
-                return super().save_model(request, obj, form, change)
+        # == Handle status changes == #
+        # Run some checks on the current object for invalid status changes
+        obj, should_save = self._handle_status_change(request, obj, original_obj)
+
+        # We should only save if we don't display any errors in the steps above.
+        if should_save:
+            return super().save_model(request, obj, form, change)
+
+    def _handle_action_needed_reason_email(self, obj):
+        text = self._get_action_needed_reason_default_email_text(obj, obj.action_needed_reason)
+        obj.action_needed_reason_email = text.get("email_body_text")
 
     def _handle_status_change(self, request, obj, original_obj):
         """
@@ -2107,54 +1914,44 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
-        emails = self.get_all_action_needed_reason_emails(obj)
-        extra_context["action_needed_reason_emails"] = json.dumps(emails)
-        extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
-
-        # Denote if an action needed email was sent or not
-        email_sent = request.session.get("action_needed_email_sent", False)
-        extra_context["action_needed_email_sent"] = email_sent
-        if email_sent:
-            request.session["action_needed_email_sent"] = False
+        extra_context["action_needed_reason_emails"] = self.get_all_action_needed_reason_emails_as_json(obj)
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
 
-    def get_all_action_needed_reason_emails(self, domain_request):
+    def get_all_action_needed_reason_emails_as_json(self, domain_request):
         """Returns a json dictionary of every action needed reason and its associated email
         for this particular domain request."""
-
         emails = {}
         for action_needed_reason in domain_request.ActionNeededReasons:
-            # Map the action_needed_reason to its default email
-            emails[action_needed_reason.value] = self._get_action_needed_reason_default_email(
-                domain_request, action_needed_reason.value
-            )
+            enum_value = action_needed_reason.value
+            # Change this in #1901. Just add a check for the current value.
+            emails[enum_value] = self._get_action_needed_reason_default_email_text(domain_request, enum_value)
+        return json.dumps(emails)
 
-        return emails
-
-    def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason):
+    def _get_action_needed_reason_default_email_text(self, domain_request, action_needed_reason: str):
         """Returns the default email associated with the given action needed reason"""
-        if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
-            return None
-
-        if flag_is_active(None, "profile_feature"):  # type: ignore
-            recipient = domain_request.creator
-        else:
-            recipient = domain_request.submitter
-
-        # Return the context of the rendered views
-        context = {"domain_request": domain_request, "recipient": recipient}
+        if action_needed_reason is None or action_needed_reason == domain_request.ActionNeededReasons.OTHER:
+            return {
+                "subject_text": None,
+                "email_body_text": None,
+            }
 
         # Get the email body
         template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
+        template = get_template(template_path)
 
-        email_body_text = get_template(template_path).render(context=context)
-        email_body_text_cleaned = None
-        if email_body_text:
-            email_body_text_cleaned = email_body_text.strip().lstrip("\n")
+        # Get the email subject
+        template_subject_path = f"emails/action_needed_reasons/{action_needed_reason}_subject.txt"
+        subject_template = get_template(template_subject_path)
 
-        return email_body_text_cleaned
+        # Return the content of the rendered views
+        context = {"domain_request": domain_request}
+
+        return {
+            "subject_text": subject_template.render(context=context),
+            "email_body_text": template.render(context=context),
+        }
 
     def process_log_entry(self, log_entry):
         """Process a log entry and return filtered entry dictionary if applicable."""
@@ -2836,41 +2633,26 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 
 class PortfolioAdmin(ListHeaderAdmin):
-
-    change_form_template = "django/admin/portfolio_change_form.html"
-
+    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
-    readonly_fields = [
-        "creator",
-    ]
-
+    # readonly_fields = [
+    #     "requestor",
+    # ]
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
         "creator",
         "federal_agency",
     ]
 
-    def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Add related suborganizations and domain groups"""
-        obj = self.get_object(request, object_id)
-
-        # ---- Domain Groups
-        domain_groups = DomainGroup.objects.filter(portfolio=obj)
-
-        # ---- Suborganizations
-        suborganizations = Suborganization.objects.filter(portfolio=obj)
-
-        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
-        return super().change_view(request, object_id, form_url, extra_context)
-
     def save_model(self, request, obj, form, change):
 
-        if hasattr(obj, "creator") is False:
+        if obj.creator is not None:
             # ---- update creator ----
             # Set the creator field to the current admin user
             obj.creator = request.user if request.user.is_authenticated else None
+
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
@@ -2879,6 +2661,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
+
         super().save_model(request, obj, form, change)
 
 
@@ -2973,11 +2756,9 @@ admin.site.register(models.PublicContact, PublicContactAdmin)
 admin.site.register(models.DomainRequest, DomainRequestAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
 admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
-admin.site.register(models.PortfolioInvitation, PortfolioInvitationAdmin)
 admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
-admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
