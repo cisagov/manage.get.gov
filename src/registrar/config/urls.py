@@ -75,6 +75,11 @@ urlpatterns = [
         name="organization",
     ),
     path(
+        "senior-official/",
+        views.PortfolioSeniorOfficialView.as_view(),
+        name="senior-official",
+    ),
+    path(
         "admin/logout/",
         RedirectView.as_view(pattern_name="logout", permanent=False),
     ),

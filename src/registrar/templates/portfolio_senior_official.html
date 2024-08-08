@@ -1,0 +1,56 @@
+{% extends 'portfolio_base.html' %}
+{% load static field_helpers%}
+
+{% block title %}Senior Official | {{ portfolio.name }} | {% endblock %}
+
+{% load static %}
+
+{% block portfolio_content %}
+<div class="grid-row grid-gap">
+    <div class="tablet:grid-col-3">
+        <p class="font-body-md margin-top-0 margin-bottom-2
+                    text-primary-darker text-semibold"
+        >
+            <span class="usa-sr-only"> Portfolio name:</span> {{ portfolio }}
+        </p>
+
+        {% include 'portfolio_organization_sidebar.html' %}
+    </div>
+
+    <div class="tablet:grid-col-9">
+
+        <h1>Senior Official</h1>
+
+        <p>Your senior official is a person within your organization who can authorize domain requests.</p>
+
+        <p>The senior official for your organization can’t be updated here. To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a></p>
+
+        {% if has_edit_org_portfolio_permission %}
+            {% include "includes/form_errors.html" with form=form %}
+            {% include "includes/required_fields.html" %}
+            <form class="usa-form usa-form--large" method="post" novalidate>
+                {% csrf_token %}
+                {% input_with_errors form.first_name %}
+                {% input_with_errors form.last_name %}
+                {% input_with_errors form.title %}
+                {% input_with_errors form.email %}
+                <button type="submit" class="usa-button">
+                Save
+                </button>
+            </form>
+        {% else %}
+            <h4 class="read-only-label">Full name</h4>
+            <p class="read-only-value">
+                {{ portfolio.senior_official.get_formatted_name }}
+            </p>
+            {% if form.city.value is not None %}
+                {% include "includes/input_read_only.html" with field=form.title %}
+            {% endif %}
+            {% if form.state_territory.value is not None %}
+                {% include "includes/input_read_only.html" with field=form.email %}
+            {% endif %}
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

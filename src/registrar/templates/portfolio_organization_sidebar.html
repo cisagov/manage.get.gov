@@ -13,7 +13,9 @@
       </li>
 
       <li class="usa-sidenav__item">
-        <a href="#"
+        {% url 'senior-official' as url %} 
+        <a href="{{ url }}"
+        {% if request.path == url %}class="usa-current"{% endif %}
         >
             Senior official
         </a>

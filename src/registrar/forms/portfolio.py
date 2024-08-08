@@ -4,7 +4,7 @@ import logging
 from django import forms
 from django.core.validators import RegexValidator
 
-from ..models import DomainInformation, Portfolio
+from ..models import DomainInformation, Portfolio, SeniorOfficial
 
 logger = logging.getLogger(__name__)
 
@@ -67,3 +67,47 @@ class PortfolioOrgAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
+
+
+class PortfolioSeniorOfficialForm(forms.ModelForm):
+    """Form for updating the portfolio senior official."""
+
+    JOIN = "senior_official"
+
+    class Meta:
+        model = SeniorOfficial
+        # TODO - add full name
+        fields = [
+            "first_name",
+            "last_name",
+            "title",
+            "email",
+        ]
+
+        # error_messages = {
+        #     "address_line1": {"required": "Enter the street address of your organization."},
+        #     "city": {"required": "Enter the city where your organization is located."},
+        #     "state_territory": {
+        #         "required": "Select the state, territory, or military post where your organization is located."
+        #     },
+        # }
+        widgets = {
+            # We need to set the required attributed for State/territory
+            # because for this fields we are creating an individual
+            # instance of the Select. For the other fields we use the for loop to set
+            # the class's required attribute to true.
+            "first_name": forms.TextInput,
+            "last_name": forms.TextInput,
+            "title": forms.TextInput,
+            "email": forms.TextInput,
+        }
+
+    # the database fields have blank=True so ModelForm doesn't create
+    # required fields by default. Use this list in __init__ to mark each
+    # of these fields as required
+    required = ["first_name", "last_name", "title", "email"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in self.required:
+            self.fields[field_name].required = True
