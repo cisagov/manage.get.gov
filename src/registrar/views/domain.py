@@ -23,8 +23,8 @@ from registrar.models import (
     DomainInvitation,
     User,
     UserDomainRole,
+    PublicContact,
 )
-from registrar.models.public_contact import PublicContact
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
@@ -231,6 +231,16 @@ class DomainOrgNameAddressView(DomainFormBaseView):
         # superclass has the redirect
         return super().form_valid(form)
 
+    def has_permission(self):
+        """Override for the has_permission class to exclude portfolio users"""
+
+        # Org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return False
+        else:
+            return super().has_permission()
+
 
 class DomainSeniorOfficialView(DomainFormBaseView):
     """Domain senior official editing view."""
@@ -248,7 +258,6 @@ class DomainSeniorOfficialView(DomainFormBaseView):
         domain_info = self.get_domain_info_from_domain()
         invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]
         is_federal_or_tribal = domain_info and (domain_info.generic_org_type in invalid_fields)
-
         form_kwargs["disable_fields"] = is_federal_or_tribal
         return form_kwargs
 
@@ -275,6 +284,16 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
+
+    def has_permission(self):
+        """Override for the has_permission class to exclude portfolio users"""
+
+        # Org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return False
+        else:
+            return super().has_permission()
 
 
 class DomainDNSView(DomainBaseView):
