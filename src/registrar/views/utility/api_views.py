@@ -2,22 +2,21 @@ import logging
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
 from registrar.models import FederalAgency, SeniorOfficial
-from django.utils.dateformat import format
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
-from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
 
 @login_required
+@staff_member_required
 def get_senior_official_from_federal_agency_json(request):
     """Returns federal_agency information as a JSON"""
 
     # This API is only accessible to admins and analysts
     superuser_perm = request.user.has_perm("registrar.full_access_permission")
     analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-    if not request.user.is_authenticated or not analyst_perm or not superuser_perm:
+    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
         return JsonResponse({"error": "You do not have access to this resource"}, status=403)
 
     agency_name = request.GET.get("agency_name")
