@@ -17,7 +17,7 @@ assignees: abroddrick
 There are several tools we use locally that you will need to have. 
 
 - [ ] [Cloudfoundry CLI](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac) 
-  - If you are on Windows the cli will be under `cf8` or `cf7` depending on which version you install.
+  - If you are using Windows the cli will be under `cf8` or `cf7` depending on which version you install.
   - If you are using Windows, installation information can be found [here](https://github.com/cloudfoundry/cli/wiki/V8-CLI-Installation-Guide#installers-and-compressed-binaries)
   - Alternatively, for Windows, [consider using chocolately](https://community.chocolatey.org/packages/cloudfoundry-cli/7.2.0)
 - [ ] [GPG](https://gnupg.org/download/)
