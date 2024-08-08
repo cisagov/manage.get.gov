@@ -29,52 +29,14 @@ body {
 
 #wrapper.dashboard {
   background-color: color('primary-lightest');
-  padding-top: units(5);
-}
- 
-.usa-logo {
-  @include at-media(desktop) {
-    margin-top: units(2);
-  }
-}
- 
-.usa-logo__text {
-  @include typeset('sans', 'xl', 2);
-  color: color('primary-darker');
+  padding-top: units(5)!important;
 }
 
-.usa-nav__primary {
-  margin-top:units(1);
+#wrapper.dashboard--portfolio {
+  background-color: color('gray-1');
+  padding-top: units(4)!important;
 }
 
-.usa-nav__primary-username {
-  display: inline-block;
-  padding: units(1) units(2);
-  max-width: 208px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  @include at-media(desktop) {
-    padding: units(2);
-    max-width: 500px;
-  }
-}
-
-@include at-media(desktop) {
-  .usa-nav__primary-item:not(:first-child) {
-    position: relative;
-  }
-
-  .usa-nav__primary-item:not(:first-child)::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 0; /* No width since it's a border */
-    height: 40%;
-    border-left: solid 1px color('base-light');
-    transform: translateY(-50%);
-  }
-}
 
 .section--outlined {
   background-color: color('white');
@@ -82,6 +44,10 @@ body {
   border-radius: 4px;
   padding: 0 units(2) units(3);
   margin-top: units(3);
+
+  &.margin-top-0 {
+    margin-top: 0;
+  }
 
   h2 {
     color: color('primary-dark');
@@ -96,8 +62,35 @@ body {
   @include at-media(mobile-lg) {
     margin-top: units(5);
 
+    &.margin-top-0 {
+      margin-top: 0;
+    }
+
     h2 {
       margin-bottom: 0;
+    }
+  }
+}
+
+.section--outlined__header--no-portfolio {
+  .section--outlined__search,
+  .section--outlined__utility-button {
+    margin-top: units(2);
+  }
+
+  @include at-media(tablet) {
+    display: flex;
+    column-gap: units(3);
+
+    .section--outlined__search,
+    .section--outlined__utility-button {
+      margin-top: 0;
+    }
+    .section--outlined__search {
+      flex-grow: 4;
+      // Align right
+      max-width: 383px;
+      margin-left: auto;
     }
   }
 }
@@ -126,10 +119,6 @@ footer {
 
 .usa-footer__secondary-section a {
   color: color('primary');
-}
-
-.usa-identifier__logo {
-  height: units(7);
 }
 
 abbr[title] {
@@ -171,43 +160,35 @@ abbr[title] {
   cursor: pointer;
 }
 
-.input-with-edit-button {
-  svg.usa-icon {
-    width: 1.5em !important;
-    height: 1.5em !important;
-    color: #{$dhs-green};
-    position: absolute;
-  }
-  &.input-with-edit-button__error {
-    svg.usa-icon {
-      color: #{$dhs-red};
-    }
-    div.readonly-field {
-      color: #{$dhs-red};
-    }
-  }
+.padding--8-8-9 {
+  padding: 8px 8px 9px !important;
 }
 
-// We need to deviate from some default USWDS styles here
-// in this particular case, so we have to override this.
-.usa-form .usa-button.readonly-edit-button {
-  margin-top: 0px !important;
-  padding-top: 0px !important;
-  svg {
-    width: 1.25em !important;
-    height: 1.25em !important;
+.ellipsis {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ellipsis--23 {
+  max-width: 23ch;
+}
+
+.ellipsis--30 {
+  max-width: 30ch;
+}
+
+.ellipsis--50 {
+  max-width: 50ch;
+}
+
+.vertical-align-middle {
+  vertical-align: middle;
+}
+
+@include at-media(desktop) {
+  .ellipsis--desktop-50 {
+    max-width: 50ch;
   }
-}
-
-// Define some styles for the .gov header/logo
-.usa-logo button {
-  color: #{$dhs-dark-gray-85};
-  font-weight: 700;
-  font-family: family('sans');
-  font-size: 1.6rem;
-  line-height: 1.1;
-}
-
-.usa-logo button.usa-button--unstyled.disabled-button:hover{
-  color: #{$dhs-dark-gray-85};
 }

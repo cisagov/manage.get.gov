@@ -40,39 +40,50 @@
 
     {% include "includes/domain_dates.html" %}
 
+    {% if is_portfolio_user and not is_domain_manager %}
+    <div class="usa-alert usa-alert--info usa-alert--slim">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text ">
+          To manage information for this domain, you must add yourself as a domain manager.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+
     {% url 'domain-dns-nameservers' pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
-      {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=domain.is_editable %}
+      {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable %}
     {% else %}
-      {% if domain.is_editable %}
+      {% if is_editable %}
       <h2 class="margin-top-3"> DNS name servers </h2>
       <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
       <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
       {% else %}
-        {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=domain.is_editable %}
+        {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=is_editable %}
       {% endif %}
     {% endif %}
 
     {% url 'domain-org-name-address' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=domain.is_editable %}
+    {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=is_editable %}
 
     {% url 'domain-senior-official' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=domain.is_editable %}
+    {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=is_editable %}
 
     {# Conditionally display profile #}
     {% if not has_profile_feature_flag %}
     {% url 'domain-your-contact-information' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url editable=domain.is_editable %}
+    {% include "includes/summary_item.html" with title='Your contact information' value=request.user contact='true' edit_link=url editable=is_editable %}
     {% endif %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
     {% if security_email is not None and security_email not in hidden_security_emails%}
-      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=domain.is_editable %}
+      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=is_editable %}
     {% else %}
-      {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=domain.is_editable %}
+      {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=is_editable %}
     {% endif %}
     {% url 'domain-users' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Domain managers' users='true' list=True value=domain.permissions.all edit_link=url editable=domain.is_editable %}
+    {% include "includes/summary_item.html" with title='Domain managers' users='true' list=True value=domain.permissions.all edit_link=url editable=is_editable %}
 
   </div>
 {% endblock %}  {# domain_content #}

@@ -6,11 +6,6 @@ from registrar.models.federal_agency import FederalAgency
 from .utility.time_stamped_model import TimeStampedModel
 
 
-# def get_default_federal_agency():
-#     """returns non-federal agency"""
-#     return FederalAgency.objects.filter(agency="Non-Federal Agency").first()
-
-
 class Portfolio(TimeStampedModel):
     """
     Portfolio is used for organizing domains/domain-requests into
@@ -23,7 +18,13 @@ class Portfolio(TimeStampedModel):
 
     # Stores who created this model. If no creator is specified in DJA,
     # then the creator will default to the current request user"""
-    creator = models.ForeignKey("registrar.User", on_delete=models.PROTECT, help_text="Associated user", unique=False)
+    creator = models.ForeignKey(
+        "registrar.User",
+        on_delete=models.PROTECT,
+        help_text="Associated user",
+        related_name="created_portfolios",
+        unique=False,
+    )
 
     notes = models.TextField(
         null=True,
@@ -36,6 +37,15 @@ class Portfolio(TimeStampedModel):
         help_text="Associated federal agency",
         unique=False,
         default=FederalAgency.get_non_federal_agency,
+    )
+
+    senior_official = models.ForeignKey(
+        "registrar.SeniorOfficial",
+        on_delete=models.PROTECT,
+        help_text="Associated senior official",
+        unique=False,
+        null=True,
+        blank=True,
     )
 
     organization_type = models.CharField(

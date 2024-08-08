@@ -2,6 +2,7 @@ import copy
 from datetime import date, datetime, time
 from django.core.management import call_command
 from django.test import TestCase, override_settings
+from registrar.models.senior_official import SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from django.utils import timezone
 from django.utils.module_loading import import_string
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 class TestPopulateVerificationType(MockEppLib):
     """Tests for the populate_organization_type script"""
 
+    @less_console_noise_decorator
     def setUp(self):
         """Creates a fake domain object"""
         super().setUp()
@@ -133,6 +135,7 @@ class TestPopulateVerificationType(MockEppLib):
 class TestPopulateOrganizationType(MockEppLib):
     """Tests for the populate_organization_type script"""
 
+    @less_console_noise_decorator
     def setUp(self):
         """Creates a fake domain object"""
         super().setUp()
@@ -205,6 +208,7 @@ class TestPopulateOrganizationType(MockEppLib):
         ):
             call_command("populate_organization_type", "registrar/tests/data/fake_election_domains.csv")
 
+    @less_console_noise_decorator
     def assert_expected_org_values_on_request_and_info(
         self,
         domain_request: DomainRequest,
@@ -247,6 +251,7 @@ class TestPopulateOrganizationType(MockEppLib):
         """Does nothing for mocking purposes"""
         pass
 
+    @less_console_noise_decorator
     def test_request_and_info_city_not_in_csv(self):
         """
         Tests what happens to a city domain that is not defined in the CSV.
@@ -282,6 +287,7 @@ class TestPopulateOrganizationType(MockEppLib):
         # All values should be the same
         self.assert_expected_org_values_on_request_and_info(city_request, city_info, expected_values)
 
+    @less_console_noise_decorator
     def test_request_and_info_federal(self):
         """
         Tests what happens to a federal domain after the script is run (should be unchanged).
@@ -316,6 +322,7 @@ class TestPopulateOrganizationType(MockEppLib):
         # All values should be the same
         self.assert_expected_org_values_on_request_and_info(federal_request, federal_info, expected_values)
 
+    @less_console_noise_decorator
     def test_request_and_info_tribal_add_election_office(self):
         """
         Tests if a tribal domain in the election csv changes organization_type to TRIBAL - ELECTION
@@ -356,6 +363,7 @@ class TestPopulateOrganizationType(MockEppLib):
 
         self.assert_expected_org_values_on_request_and_info(tribal_request, tribal_info, expected_values)
 
+    @less_console_noise_decorator
     def test_request_and_info_tribal_doesnt_remove_election_office(self):
         """
         Tests if a tribal domain in the election csv changes organization_type to TRIBAL_ELECTION
@@ -409,6 +417,7 @@ class TestPopulateOrganizationType(MockEppLib):
 class TestPopulateFirstReady(TestCase):
     """Tests for the populate_first_ready script"""
 
+    @less_console_noise_decorator
     def setUp(self):
         """Creates a fake domain object"""
         super().setUp()
@@ -537,6 +546,7 @@ class TestPopulateFirstReady(TestCase):
 
 
 class TestPatchAgencyInfo(TestCase):
+    @less_console_noise_decorator
     def setUp(self):
         self.user, _ = User.objects.get_or_create(username="testuser")
         self.domain, _ = Domain.objects.get_or_create(name="testdomain.gov")
@@ -560,6 +570,7 @@ class TestPatchAgencyInfo(TestCase):
 
 
 class TestExtendExpirationDates(MockEppLib):
+    @less_console_noise_decorator
     def setUp(self):
         """Defines the file name of migration_json and the folder its contained in"""
         super().setUp()
@@ -800,36 +811,69 @@ class TestCleanTables(TestCase):
     @override_settings(IS_PRODUCTION=False)
     def test_command_cleans_tables(self):
         """test that the handle method functions properly to clean tables"""
-        with less_console_noise():
-            with patch("django.apps.apps.get_model") as get_model_mock:
-                model_mock = MagicMock()
-                get_model_mock.return_value = model_mock
 
-                with patch(
-                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                    return_value=True,
-                ):
-                    call_command("clean_tables")
+        with patch("django.apps.apps.get_model") as get_model_mock:
+            model_mock = MagicMock()
+            get_model_mock.return_value = model_mock
 
-                    table_names = [
-                        "DomainInformation",
-                        "DomainRequest",
-                        "PublicContact",
-                        "Domain",
-                        "User",
-                        "Contact",
-                        "Website",
-                        "DraftDomain",
-                        "HostIp",
-                        "Host",
-                    ]
+            with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                return_value=True,
+            ):
 
-                    # Check that each model's delete method was called
+                # List of pks to be returned in batches, one list for each of 11 tables
+                pk_batch = [1, 2, 3, 4, 5, 6]
+                # Create a list of batches with alternating non-empty and empty lists
+                pk_batches = [pk_batch, []] * 11
+
+                # Set the side effect of values_list to return different pk batches
+                # First time values_list is called it returns list of 6 objects to delete;
+                # Next time values_list is called it returns empty list
+                def values_list_side_effect(*args, **kwargs):
+                    if args == ("pk",) and kwargs.get("flat", False):
+                        return pk_batches.pop(0)
+                    return []
+
+                model_mock.objects.values_list.side_effect = values_list_side_effect
+                # Mock the return value of `delete()` to be (6, ...)
+                model_mock.objects.filter.return_value.delete.return_value = (6, None)
+
+                call_command("clean_tables")
+
+                table_names = [
+                    "DomainInformation",
+                    "DomainRequest",
+                    "FederalAgency",
+                    "PublicContact",
+                    "HostIp",
+                    "Host",
+                    "Domain",
+                    "User",
+                    "Contact",
+                    "Website",
+                    "DraftDomain",
+                ]
+
+                expected_filter_calls = [call(pk__in=[1, 2, 3, 4, 5, 6]) for _ in range(11)]
+
+                actual_filter_calls = [c for c in model_mock.objects.filter.call_args_list if "pk__in" in c[1]]
+
+                try:
+                    # Assert that filter(pk__in=...) was called with expected arguments
+                    self.assertEqual(actual_filter_calls, expected_filter_calls)
+
+                    # Check that delete() was called for each batch
+                    for batch in [[1, 2, 3, 4, 5, 6]]:
+                        model_mock.objects.filter(pk__in=batch).delete.assert_called()
+
                     for table_name in table_names:
                         get_model_mock.assert_any_call("registrar", table_name)
-                        model_mock.objects.all().delete.assert_called()
-
-                    self.logger_mock.info.assert_any_call("Successfully cleaned table DomainInformation")
+                        self.logger_mock.info.assert_any_call(
+                            f"Successfully cleaned table {table_name}, deleted 6 rows"
+                        )
+                except AssertionError as e:
+                    print(f"AssertionError: {e}")
+                    raise
 
     @override_settings(IS_PRODUCTION=False)
     def test_command_handles_nonexistent_model(self):
@@ -860,15 +904,33 @@ class TestCleanTables(TestCase):
             with patch("django.apps.apps.get_model") as get_model_mock:
                 model_mock = MagicMock()
                 get_model_mock.return_value = model_mock
-                model_mock.objects.all().delete.side_effect = Exception("Some error")
+
+                # Mock the values_list so that DomainInformation attempts a delete
+                pk_batches = [[1, 2, 3, 4, 5, 6], []]
+
+                def values_list_side_effect(*args, **kwargs):
+                    if args == ("pk",) and kwargs.get("flat", False):
+                        return pk_batches.pop(0)
+                    return []
+
+                model_mock.objects.values_list.side_effect = values_list_side_effect
+
+                # Mock delete to raise a generic exception
+                model_mock.objects.filter.return_value.delete.side_effect = Exception("Mocked delete exception")
 
                 with patch(
-                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
                     return_value=True,
                 ):
-                    call_command("clean_tables")
+                    with self.assertRaises(Exception) as context:
+                        # Execute the command
+                        call_command("clean_tables")
 
-                    self.logger_mock.error.assert_any_call("Error cleaning table DomainInformation: Some error")
+                        # Check the exception message
+                        self.assertEqual(str(context.exception), "Custom delete error")
+
+                        # Assert that delete was called
+                        model_mock.objects.filter.return_value.delete.assert_called()
 
 
 class TestExportTables(MockEppLib):
@@ -882,6 +944,7 @@ class TestExportTables(MockEppLib):
     def tearDown(self):
         self.logger_patcher.stop()
 
+    @less_console_noise_decorator
     @patch("os.makedirs")
     @patch("os.path.exists")
     @patch("os.remove")
@@ -1077,11 +1140,6 @@ class TestImportTables(TestCase):
                 for table_name in table_names:
                     mock_path_exists.assert_any_call(f"{table_name}_1.csv")
 
-                # Check that clean_tables is called for Contact
-                mock_get_model.assert_any_call("registrar", "Contact")
-                model_mock = mock_get_model.return_value
-                model_mock.objects.all().delete.assert_called()
-
                 # Check that logger.info was called for each successful import
                 for table_name in table_names:
                     mock_logger.info.assert_any_call(f"Successfully imported {table_name}_1.csv into {table_name}")
@@ -1118,6 +1176,7 @@ class TestImportTables(TestCase):
 class TestTransferFederalAgencyType(TestCase):
     """Tests for the transfer_federal_agency_type script"""
 
+    @less_console_noise_decorator
     def setUp(self):
         """Creates a fake domain object"""
         super().setUp()
@@ -1177,7 +1236,9 @@ class TestTransferFederalAgencyType(TestCase):
         User.objects.all().delete()
         Contact.objects.all().delete()
         Website.objects.all().delete()
-        FederalAgency.objects.all().delete()
+        FederalAgency.objects.filter(
+            id__in=[self.amtrak.id, self.legislative_branch.id, self.library_of_congress.id, self.gov_admin.id]
+        ).delete()
 
     def run_transfer_federal_agency_type(self):
         """
@@ -1225,3 +1286,125 @@ class TestTransferFederalAgencyType(TestCase):
 
         # We don't expect this field to be updated (as it has duplicate data)
         self.assertEqual(self.gov_admin.federal_type, None)
+
+
+class TestLoadSeniorOfficialTable(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.csv_path = "registrar/tests/data/fake_federal_cio.csv"
+
+    def tearDown(self):
+        super().tearDown()
+        SeniorOfficial.objects.all().delete()
+        FederalAgency.objects.all().delete()
+
+    @less_console_noise_decorator
+    def run_load_senior_official_table(self):
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            return_value=True,
+        ):
+            call_command("load_senior_official_table", self.csv_path)
+
+    @less_console_noise_decorator
+    def test_load_senior_official_table(self):
+        """Ensures that running the senior official script creates the data we expect"""
+        # Get test FederalAgency objects
+        abmc, _ = FederalAgency.objects.get_or_create(agency="American Battle Monuments Commission")
+        achp, _ = FederalAgency.objects.get_or_create(agency="Advisory Council on Historic Preservation")
+
+        # run the script
+        self.run_load_senior_official_table()
+
+        # Check the data returned by the script
+        jan_uary = SeniorOfficial.objects.get(first_name="Jan", last_name="Uary")
+        self.assertEqual(jan_uary.title, "CIO")
+        self.assertEqual(jan_uary.email, "fakemrfake@igorville.gov")
+        self.assertEqual(jan_uary.federal_agency, abmc)
+
+        reggie_ronald = SeniorOfficial.objects.get(first_name="Reggie", last_name="Ronald")
+        self.assertEqual(reggie_ronald.title, "CIO")
+        self.assertEqual(reggie_ronald.email, "reggie.ronald@igorville.gov")
+        self.assertEqual(reggie_ronald.federal_agency, achp)
+
+        # Two should be created in total
+        self.assertEqual(SeniorOfficial.objects.count(), 2)
+
+    @less_console_noise_decorator
+    def test_load_senior_official_table_duplicate_entry(self):
+        """Ensures that duplicate data won't be created"""
+        # Create a SeniorOfficial that matches one in the CSV
+        abmc, _ = FederalAgency.objects.get_or_create(agency="American Battle Monuments Commission")
+        SeniorOfficial.objects.create(
+            first_name="Jan", last_name="Uary", title="CIO", email="fakemrfake@igorville.gov", federal_agency=abmc
+        )
+
+        self.assertEqual(SeniorOfficial.objects.count(), 1)
+
+        # run the script
+        self.run_load_senior_official_table()
+
+        # Check if only one new SeniorOfficial object was created
+        self.assertEqual(SeniorOfficial.objects.count(), 2)
+
+
+class TestPopulateFederalAgencyInitialsAndFceb(TestCase):
+    def setUp(self):
+        self.csv_path = "registrar/tests/data/fake_federal_cio.csv"
+
+        # Create test FederalAgency objects
+        self.agency1, _ = FederalAgency.objects.get_or_create(agency="American Battle Monuments Commission")
+        self.agency2, _ = FederalAgency.objects.get_or_create(agency="Advisory Council on Historic Preservation")
+        self.agency3, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+        self.agency4, _ = FederalAgency.objects.get_or_create(agency="John F. Kennedy Center for Performing Arts")
+
+    def tearDown(self):
+        SeniorOfficial.objects.all().delete()
+        FederalAgency.objects.all().delete()
+
+    @less_console_noise_decorator
+    def run_populate_federal_agency_initials_and_fceb(self):
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            return_value=True,
+        ):
+            call_command("populate_federal_agency_initials_and_fceb", self.csv_path)
+
+    @less_console_noise_decorator
+    def test_populate_federal_agency_initials_and_fceb(self):
+        """Ensures that the script generates the data we want"""
+        self.run_populate_federal_agency_initials_and_fceb()
+
+        # Refresh the objects from the database
+        self.agency1.refresh_from_db()
+        self.agency2.refresh_from_db()
+        self.agency3.refresh_from_db()
+        self.agency4.refresh_from_db()
+
+        # Check if FederalAgency objects were updated correctly
+        self.assertEqual(self.agency1.initials, "ABMC")
+        self.assertTrue(self.agency1.is_fceb)
+
+        self.assertEqual(self.agency2.initials, "ACHP")
+        self.assertTrue(self.agency2.is_fceb)
+
+        # We expect that this field doesn't have any data,
+        # as none is specified in the CSV
+        self.assertIsNone(self.agency3.initials)
+        self.assertIsNone(self.agency3.is_fceb)
+
+        self.assertEqual(self.agency4.initials, "KC")
+        self.assertFalse(self.agency4.is_fceb)
+
+    @less_console_noise_decorator
+    def test_populate_federal_agency_initials_and_fceb_missing_agency(self):
+        """A test to ensure that the script doesn't modify unrelated fields"""
+        # Add a FederalAgency that's not in the CSV
+        missing_agency = FederalAgency.objects.create(agency="Missing Agency")
+
+        self.run_populate_federal_agency_initials_and_fceb()
+
+        # Verify that the missing agency was not updated
+        missing_agency.refresh_from_db()
+        self.assertIsNone(missing_agency.initials)
+        self.assertIsNone(missing_agency.is_fceb)

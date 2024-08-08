@@ -429,6 +429,10 @@ class ViewsTest(TestCase):
             # Create a mock request
             request = self.factory.get("/some-url")
             request.session = {"acr_value": ""}
+            # Mock user and its attributes
+            mock_user = MagicMock()
+            mock_user.is_authenticated = True
+            request.user = mock_user
             # Ensure that the CLIENT instance used in login_callback is the mock
             # patch _requires_step_up_auth to return False
             with patch("djangooidc.views._requires_step_up_auth", return_value=False), patch(

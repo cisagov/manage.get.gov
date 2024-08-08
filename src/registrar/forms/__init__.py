@@ -4,9 +4,12 @@ from .domain import (
     NameserverFormset,
     DomainSecurityEmailForm,
     DomainOrgNameAddressForm,
-    ContactForm,
+    UserForm,
     SeniorOfficialContactForm,
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
+)
+from .portfolio import (
+    PortfolioOrgAddressForm,
 )

@@ -35,7 +35,7 @@
 
         <input type="hidden" name="redirect" value="{{ form.initial.redirect }}">
 
-        {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable usa-form-editable--no-border padding-top-2" %}
+        {% with toggleable_input=True toggleable_label=True group_classes="usa-form-editable usa-form-editable--no-border padding-top-2" %}
             {% input_with_errors form.full_name %}
         {% endwith %}
         
@@ -53,8 +53,12 @@
             {% endwith %}
         </div>
 
+        {% with toggleable_input=True toggleable_label=True group_classes="usa-form-editable padding-top-2" %}
+            {% input_with_errors form.title %}
+        {% endwith %}
+        
         {% public_site_url "help/account-management/#get-help-with-login.gov" as login_help_url %}
-        {% with show_readonly=True add_class="display-none" group_classes="usa-form-editable usa-form-editable padding-top-2 bold-usa-label" %}
+        {% with toggleable_input=True add_class="display-none" group_classes="usa-form-editable usa-form-editable padding-top-2 bold-usa-label" %}
             {% with link_href=login_help_url %}
                 {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with your Login.gov account." %}
                     {% with link_text="Get help with your Login.gov account" target_blank=True do_not_show_max_chars=True %}
@@ -64,11 +68,7 @@
             {% endwith %}
         {% endwith %}
 
-        {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable padding-top-2" %}
-            {% input_with_errors form.title %}
-        {% endwith %}
-
-        {% with show_edit_button=True show_readonly=True group_classes="usa-form-editable padding-top-2" %}
+        {% with toggleable_input=True toggleable_label=True group_classes="usa-form-editable padding-top-2" %}
             {% with add_class="usa-input--medium" %}
                 {% input_with_errors form.phone %}
             {% endwith %}
@@ -77,11 +77,11 @@
     </fieldset>
     <div>
 
-        <button type="submit" name="contact_setup_save_button" class="usa-button ">
+        <button type="submit" name="user_setup_save_button" class="usa-button ">
             Save
         </button>
         {% if user_finished_setup and going_to_specific_page %}
-            <button type="submit" name="contact_setup_submit_button" class="usa-button usa-button--outline">
+            <button type="submit" name="user_setup_submit_button" class="usa-button usa-button--outline">
                 {{redirect_button_text }}
             </button>
         {% endif %}

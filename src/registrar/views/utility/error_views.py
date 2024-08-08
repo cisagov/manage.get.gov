@@ -14,14 +14,12 @@ Rather than dealing with that, we keep everything centralized in one location.
 """
 
 from django.shortcuts import render
-from waffle.decorators import flag_is_active
 
 
 def custom_500_error_view(request, context=None):
     """Used to redirect 500 errors to a custom view"""
     if context is None:
         context = {}
-    context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
     return render(request, "500.html", context=context, status=500)
 
 
@@ -29,7 +27,6 @@ def custom_401_error_view(request, context=None):
     """Used to redirect 401 errors to a custom view"""
     if context is None:
         context = {}
-    context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
     return render(request, "401.html", context=context, status=401)
 
 
@@ -37,5 +34,4 @@ def custom_403_error_view(request, exception=None, context=None):
     """Used to redirect 403 errors to a custom view"""
     if context is None:
         context = {}
-    context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
     return render(request, "403.html", context=context, status=403)

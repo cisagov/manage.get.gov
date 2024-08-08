@@ -40,7 +40,7 @@ from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
-    ContactForm,
+    UserForm,
     SeniorOfficialContactForm,
     DomainOrgNameAddressForm,
     DomainAddUserForm,
@@ -59,7 +59,7 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
-from waffle.decorators import flag_is_active, waffle_flag
+from waffle.decorators import waffle_flag
 
 logger = logging.getLogger(__name__)
 
@@ -101,13 +101,6 @@ class DomainBaseView(DomainPermissionView):
         """
         domain_pk = "domain:" + str(self.kwargs.get("pk"))
         self.session[domain_pk] = self.object
-
-    def get_context_data(self, **kwargs):
-        """Extend get_context_data to add has_profile_feature_flag to context"""
-        context = super().get_context_data(**kwargs)
-        # This is a django waffle flag which toggles features based off of the "flag" table
-        context["has_profile_feature_flag"] = flag_is_active(self.request, "profile_feature")
-        return context
 
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
@@ -176,6 +169,17 @@ class DomainView(DomainBaseView):
             return context
         context["security_email"] = security_email
         return context
+
+    def can_access_domain_via_portfolio(self, pk):
+        """Most views should not allow permission to portfolio users.
+        If particular views allow permissions, they will need to override
+        this function."""
+        if self.request.user.has_domains_portfolio_permission():
+            if Domain.objects.filter(id=pk).exists():
+                domain = Domain.objects.get(id=pk)
+                if domain.domain_info.portfolio == self.request.user.portfolio:
+                    return True
+        return False
 
     def in_editable_state(self, pk):
         """Override in_editable_state from DomainPermission
@@ -573,7 +577,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
     """Domain your contact information editing view."""
 
     template_name = "domain_your_contact_information.html"
-    form_class = ContactForm
+    form_class = UserForm
 
     @waffle_flag("!profile_feature")  # type: ignore
     def dispatch(self, request, *args, **kwargs):  # type: ignore
@@ -582,7 +586,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.request.user.contact
+        form_kwargs["instance"] = self.request.user
         return form_kwargs
 
     def get_success_url(self):

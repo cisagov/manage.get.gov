@@ -41,6 +41,8 @@ from registrar.models.user_domain_role import UserDomainRole
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
+from api.tests.common import less_console_noise_decorator
+
 logger = logging.getLogger(__name__)
 
 
@@ -525,230 +527,230 @@ class AuditedAdminMockData:
 
 
 class MockDb(TestCase):
-    """Hardcoded mocks make test case assertions straightforward."""
 
-    def setUp(self):
-        super().setUp()
+    @classmethod
+    @less_console_noise_decorator
+    def sharedSetUp(cls):
         username = "test_user"
         first_name = "First"
         last_name = "Last"
         email = "info@example.com"
-        self.user = get_user_model().objects.create(
+        cls.user = get_user_model().objects.create(
             username=username, first_name=first_name, last_name=last_name, email=email
         )
 
         current_date = get_time_aware_date(datetime(2024, 4, 2))
         # Create start and end dates using timedelta
 
-        self.end_date = current_date + timedelta(days=2)
-        self.start_date = current_date - timedelta(days=2)
+        cls.end_date = current_date + timedelta(days=2)
+        cls.start_date = current_date - timedelta(days=2)
 
-        self.federal_agency_1, _ = FederalAgency.objects.get_or_create(agency="World War I Centennial Commission")
-        self.federal_agency_2, _ = FederalAgency.objects.get_or_create(agency="Armed Forces Retirement Home")
+        cls.federal_agency_1, _ = FederalAgency.objects.get_or_create(agency="World War I Centennial Commission")
+        cls.federal_agency_2, _ = FederalAgency.objects.get_or_create(agency="Armed Forces Retirement Home")
 
-        self.domain_1, _ = Domain.objects.get_or_create(
+        cls.domain_1, _ = Domain.objects.get_or_create(
             name="cdomain1.gov", state=Domain.State.READY, first_ready=get_time_aware_date(datetime(2024, 4, 2))
         )
-        self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
-        self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
-        self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
-        self.domain_5, _ = Domain.objects.get_or_create(
+        cls.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
+        cls.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
+        cls.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
+        cls.domain_5, _ = Domain.objects.get_or_create(
             name="bdomain5.gov", state=Domain.State.DELETED, deleted=get_time_aware_date(datetime(2023, 11, 1))
         )
-        self.domain_6, _ = Domain.objects.get_or_create(
+        cls.domain_6, _ = Domain.objects.get_or_create(
             name="bdomain6.gov", state=Domain.State.DELETED, deleted=get_time_aware_date(datetime(1980, 10, 16))
         )
-        self.domain_7, _ = Domain.objects.get_or_create(
+        cls.domain_7, _ = Domain.objects.get_or_create(
             name="xdomain7.gov", state=Domain.State.DELETED, deleted=get_time_aware_date(datetime(2024, 4, 2))
         )
-        self.domain_8, _ = Domain.objects.get_or_create(
+        cls.domain_8, _ = Domain.objects.get_or_create(
             name="sdomain8.gov", state=Domain.State.DELETED, deleted=get_time_aware_date(datetime(2024, 4, 2))
         )
         # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today())
         # and a specific time (using datetime.min.time()).
         # Deleted yesterday
-        self.domain_9, _ = Domain.objects.get_or_create(
+        cls.domain_9, _ = Domain.objects.get_or_create(
             name="zdomain9.gov",
             state=Domain.State.DELETED,
             deleted=get_time_aware_date(datetime(2024, 4, 1)),
         )
         # ready tomorrow
-        self.domain_10, _ = Domain.objects.get_or_create(
+        cls.domain_10, _ = Domain.objects.get_or_create(
             name="adomain10.gov",
             state=Domain.State.READY,
             first_ready=get_time_aware_date(datetime(2024, 4, 3)),
         )
-        self.domain_11, _ = Domain.objects.get_or_create(
+        cls.domain_11, _ = Domain.objects.get_or_create(
             name="cdomain11.gov", state=Domain.State.READY, first_ready=get_time_aware_date(datetime(2024, 4, 2))
         )
-        self.domain_12, _ = Domain.objects.get_or_create(
+        cls.domain_12, _ = Domain.objects.get_or_create(
             name="zdomain12.gov", state=Domain.State.READY, first_ready=get_time_aware_date(datetime(2024, 4, 2))
         )
 
-        self.domain_information_1, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_1,
+        cls.domain_information_1, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_1,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_1,
+            federal_agency=cls.federal_agency_1,
             federal_type="executive",
             is_election_board=False,
         )
-        self.domain_information_2, _ = DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain_2, generic_org_type="interstate", is_election_board=True
+        cls.domain_information_2, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user, domain=cls.domain_2, generic_org_type="interstate", is_election_board=True
         )
-        self.domain_information_3, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_3,
+        cls.domain_information_3, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_3,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_2,
+            federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
-        self.domain_information_4, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_4,
+        cls.domain_information_4, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_4,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_2,
+            federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
-        self.domain_information_5, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_5,
+        cls.domain_information_5, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_5,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_2,
+            federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
-        self.domain_information_6, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_6,
+        cls.domain_information_6, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_6,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_2,
+            federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
-        self.domain_information_7, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_7,
+        cls.domain_information_7, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_7,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_2,
+            federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
-        self.domain_information_8, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_8,
+        cls.domain_information_8, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_8,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_2,
+            federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
-        self.domain_information_9, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_9,
+        cls.domain_information_9, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_9,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_2,
+            federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
-        self.domain_information_10, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_10,
+        cls.domain_information_10, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_10,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_2,
+            federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
-        self.domain_information_11, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_11,
+        cls.domain_information_11, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_11,
             generic_org_type="federal",
-            federal_agency=self.federal_agency_1,
+            federal_agency=cls.federal_agency_1,
             federal_type="executive",
             is_election_board=False,
         )
-        self.domain_information_12, _ = DomainInformation.objects.get_or_create(
-            creator=self.user,
-            domain=self.domain_12,
+        cls.domain_information_12, _ = DomainInformation.objects.get_or_create(
+            creator=cls.user,
+            domain=cls.domain_12,
             generic_org_type="interstate",
             is_election_board=False,
         )
 
-        self.meoward_user = get_user_model().objects.create(
+        cls.meoward_user = get_user_model().objects.create(
             username="meoward_username", first_name="first_meoward", last_name="last_meoward", email="meoward@rocks.com"
         )
 
-        lebowski_user = get_user_model().objects.create(
+        cls.lebowski_user = get_user_model().objects.create(
             username="big_lebowski", first_name="big", last_name="lebowski", email="big_lebowski@dude.co"
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=self.meoward_user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
+            user=cls.meoward_user, domain=cls.domain_1, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
+            user=cls.user, domain=cls.domain_1, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=lebowski_user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
+            user=cls.lebowski_user, domain=cls.domain_1, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=self.meoward_user, domain=self.domain_2, role=UserDomainRole.Roles.MANAGER
+            user=cls.meoward_user, domain=cls.domain_2, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=self.meoward_user, domain=self.domain_11, role=UserDomainRole.Roles.MANAGER
+            user=cls.meoward_user, domain=cls.domain_11, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = UserDomainRole.objects.get_or_create(
-            user=self.meoward_user, domain=self.domain_12, role=UserDomainRole.Roles.MANAGER
+            user=cls.meoward_user, domain=cls.domain_12, role=UserDomainRole.Roles.MANAGER
         )
 
         _, created = DomainInvitation.objects.get_or_create(
-            email=self.meoward_user.email,
-            domain=self.domain_1,
+            email=cls.meoward_user.email,
+            domain=cls.domain_1,
             status=DomainInvitation.DomainInvitationStatus.RETRIEVED,
         )
 
         _, created = DomainInvitation.objects.get_or_create(
             email="woofwardthethird@rocks.com",
-            domain=self.domain_1,
+            domain=cls.domain_1,
             status=DomainInvitation.DomainInvitationStatus.INVITED,
         )
 
         _, created = DomainInvitation.objects.get_or_create(
-            email="squeaker@rocks.com", domain=self.domain_2, status=DomainInvitation.DomainInvitationStatus.INVITED
+            email="squeaker@rocks.com", domain=cls.domain_2, status=DomainInvitation.DomainInvitationStatus.INVITED
         )
 
         _, created = DomainInvitation.objects.get_or_create(
-            email="squeaker@rocks.com", domain=self.domain_10, status=DomainInvitation.DomainInvitationStatus.INVITED
+            email="squeaker@rocks.com", domain=cls.domain_10, status=DomainInvitation.DomainInvitationStatus.INVITED
         )
 
         with less_console_noise():
-            self.domain_request_1 = completed_domain_request(
+            cls.domain_request_1 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 name="city1.gov",
             )
-            self.domain_request_2 = completed_domain_request(
+            cls.domain_request_2 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
                 name="city2.gov",
             )
-            self.domain_request_3 = completed_domain_request(
+            cls.domain_request_3 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 name="city3.gov",
             )
-            self.domain_request_4 = completed_domain_request(
+            cls.domain_request_4 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 name="city4.gov",
                 is_election_board=True,
                 generic_org_type="city",
             )
-            self.domain_request_5 = completed_domain_request(
+            cls.domain_request_5 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.APPROVED,
                 name="city5.gov",
             )
-            self.domain_request_6 = completed_domain_request(
+            cls.domain_request_6 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 name="city6.gov",
             )
-            self.domain_request_3.submit()
-            self.domain_request_4.submit()
-            self.domain_request_6.submit()
+            cls.domain_request_3.submit()
+            cls.domain_request_4.submit()
+            cls.domain_request_6.submit()
 
             other, _ = Contact.objects.get_or_create(
                 first_name="Testy1232",
@@ -769,29 +771,56 @@ class MockDb(TestCase):
             website_3, _ = Website.objects.get_or_create(website="https://www.example.com")
             website_4, _ = Website.objects.get_or_create(website="https://www.example2.com")
 
-            self.domain_request_3.other_contacts.add(other, other_2)
-            self.domain_request_3.alternative_domains.add(website, website_2)
-            self.domain_request_3.current_websites.add(website_3, website_4)
-            self.domain_request_3.cisa_representative_email = "test@igorville.com"
-            self.domain_request_3.submission_date = get_time_aware_date(datetime(2024, 4, 2))
-            self.domain_request_3.save()
+            cls.domain_request_3.other_contacts.add(other, other_2)
+            cls.domain_request_3.alternative_domains.add(website, website_2)
+            cls.domain_request_3.current_websites.add(website_3, website_4)
+            cls.domain_request_3.cisa_representative_email = "test@igorville.com"
+            cls.domain_request_3.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_3.save()
 
-            self.domain_request_4.submission_date = get_time_aware_date(datetime(2024, 4, 2))
-            self.domain_request_4.save()
+            cls.domain_request_4.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_4.save()
 
-            self.domain_request_6.submission_date = get_time_aware_date(datetime(2024, 4, 2))
-            self.domain_request_6.save()
+            cls.domain_request_6.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_6.save()
 
-    def tearDown(self):
-        super().tearDown()
+    @classmethod
+    def sharedTearDown(cls):
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
-        User.objects.all().delete()
         UserDomainRole.objects.all().delete()
+        User.objects.all().delete()
         DomainInvitation.objects.all().delete()
-        FederalAgency.objects.all().delete()
+        cls.federal_agency_1.delete()
+        cls.federal_agency_2.delete()
+
+
+class MockDbForSharedTests(MockDb):
+    """Set up and tear down test data that is shared across all tests in a class"""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.sharedSetUp()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls.sharedTearDown()
+
+
+class MockDbForIndividualTests(MockDb):
+    """Set up and tear down test data for each test in a class"""
+
+    def setUp(self):
+        super().setUp()
+        self.sharedSetUp()
+
+    def tearDown(self):
+        super().tearDown()
+        self.sharedTearDown()
 
 
 def mock_user():
@@ -810,6 +839,8 @@ def create_superuser():
     user = User.objects.create_user(
         username="superuser",
         email="admin@example.com",
+        first_name="first",
+        last_name="last",
         is_staff=True,
         password=p,
     )
@@ -826,6 +857,8 @@ def create_user():
     user = User.objects.create_user(
         username="staffuser",
         email="staff@example.com",
+        first_name="first",
+        last_name="last",
         is_staff=True,
         password=p,
     )
@@ -833,6 +866,19 @@ def create_user():
     group, _ = UserGroup.objects.get_or_create(name="cisa_analysts_group")
     # Add the user to the group
     user.groups.set([group])
+    return user
+
+
+def create_test_user():
+    username = "test_user"
+    first_name = "First"
+    last_name = "Last"
+    email = "info@example.com"
+    phone = "8003111234"
+    title = "test title"
+    user = get_user_model().objects.create(
+        username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, title=title
+    )
     return user
 
 
