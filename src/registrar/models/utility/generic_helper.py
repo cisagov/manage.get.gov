@@ -221,8 +221,8 @@ class CreateOrUpdateOrganizationTypeHelper:
 
         Returns a boolean determining if execution should proceed or not.
 
-        Raises: 
-            ValueError if there is a mismatch between organization_type, generic_org_type, and is_election_board 
+        Raises:
+            ValueError if there is a mismatch between organization_type, generic_org_type, and is_election_board
         """
 
         # We conditionally accept both of these values to exist simultaneously, as long as
@@ -240,13 +240,16 @@ class CreateOrUpdateOrganizationTypeHelper:
             is_election_type = "_election" in organization_type
             can_have_election_board = organization_type in self.generic_org_to_org_map
 
-            election_board_mismatch = is_election_type and not self.instance.is_election_board and can_have_election_board
+            election_board_mismatch = (
+                is_election_type and not self.instance.is_election_board and can_have_election_board
+            )
             org_type_mismatch = mapped_org_type is not None and (generic_org_type != mapped_org_type)
             if election_board_mismatch or org_type_mismatch:
                 message = (
-                    "Cannot add organization_type and generic_org_type simultaneously "
-                    "when generic_org_type ({}), is_election_board ({}), and organization_type ({}) values do not match."
-                    .format(generic_org_type, self.instance.is_election_board, organization_type)
+                    "Cannot add organization_type and generic_org_type simultaneously when"
+                    "generic_org_type ({}), is_election_board ({}), and organization_type ({}) don't match.".format(
+                        generic_org_type, self.instance.is_election_board, organization_type
+                    )
                 )
                 message = "Mismatch on election board, {}".format(message) if election_board_mismatch else message
                 message = "Mistmatch on org type, {}".format(message) if org_type_mismatch else message
