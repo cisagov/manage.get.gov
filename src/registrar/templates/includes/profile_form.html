@@ -30,11 +30,11 @@
 
     {% input_with_errors form.title %}
 
-    {% public_site_url "help/account-management/#update-your-contact-information" as login_help_url %}
+    {% public_site_url "help/account-management/#email-address" as login_help_url %}
 
     {% with link_href=login_help_url %}
-      {% with sublabel_text="We recommend using your work email for your .gov account. If the wrong email is displayed below, you’ll need to update your Login.gov account and log back in. Get help with updating your contact information." %}
-        {% with link_text="Get help with updating your contact information" %}
+      {% with sublabel_text="We recommend using a Login.gov account that's only connected to your work email address. If you need to change your email, you'll need to make a change to your Login.gov account. Get help with updating your email address." %}
+        {% with link_text="Get help with updating your email address" %}
           {% with target_blank=True %}
             {% with do_not_show_max_chars=True %}
               {% input_with_errors form.email %}
