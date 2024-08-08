@@ -123,6 +123,7 @@ class DomainRequestFixture:
             else:
                 da.senior_official = Contact.objects.create(**cls.fake_contact())
 
+        # FIX HERE
         if not da.submitter:
             if "submitter" in app and app["submitter"] is not None:
                 da.submitter, _ = Contact.objects.get_or_create(**app["submitter"])
