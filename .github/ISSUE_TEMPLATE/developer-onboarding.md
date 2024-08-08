@@ -94,23 +94,7 @@ when setting up your key in Github.
 
 Now test commit signing is working by checking out a branch (`yourname/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your GPG credential) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
 
-## Setting up commit signing with SSH
-
-Follow the instructions [here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key) to generate a new SSH key and [add it to your SSH keys on Github](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account). Note that you need to add the key as a signing key.
-
-Configure your key locally:
-
-```bash
-git config --global gpg.format ssh
-git config --global commit.gpgsign true
-git config --global user.signingkey <YOUR KEY>
-```
-
-Where `<YOUR KEY>` is the path to the private key you generated when running `ssh-keygen`. Usually this is located in ~\.ssh\.
-
-Now test commit signing is working by checking out a branch (`yourinitials/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your key passphrase) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
-
-### MacOS
+### Troubleshooting GPG on MacOS
 **Note:** if you are on a mac and not able to successfully create a signed commit, getting the following error:
 ```zsh
 error: gpg failed to sign the data
@@ -131,7 +115,7 @@ or
 source ~/.zshrc
 ```
 
-### Windows
+### Troubleshooting GPG on Windows
 If GPG doesn't work out of the box with git for you:
 - You can [download the GPG binary directly](https://gnupg.org/download/). 
 - It may be helpful to use [gpg4win](https://www.gpg4win.org/get-gpg4win.html). 
@@ -139,6 +123,22 @@ If GPG doesn't work out of the box with git for you:
 From there, you should be able to access gpg through the terminal. 
 
 Additionally, consider a gpg key manager like Kleopatra if you run into issues with environment variables or with the gpg service not running on startup. 
+
+## Setting up commit signing with SSH
+
+Follow the instructions [here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key) to generate a new SSH key and [add it to your SSH keys on Github](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account). Note that you need to add the key as a signing key.
+
+Configure your key locally:
+
+```bash
+git config --global gpg.format ssh
+git config --global commit.gpgsign true
+git config --global user.signingkey <YOUR KEY>
+```
+
+Where `<YOUR KEY>` is the path to the private key you generated when running `ssh-keygen`. Usually this is located in ~\.ssh\.
+
+Now test commit signing is working by checking out a branch (`yourinitials/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your key passphrase) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
 
 ## Setting up developer sandbox
 
