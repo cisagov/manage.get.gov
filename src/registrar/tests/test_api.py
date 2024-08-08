@@ -8,7 +8,8 @@ from registrar.tests.common import create_superuser, create_user
 class GetSeniorOfficialJsonTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = get_user_model().objects.create_user(username="testuser", password="password")
+        p = "password"
+        self.user = get_user_model().objects.create_user(username="testuser", password=p)
 
         self.superuser = create_superuser()
         self.analyst_user = create_user()
