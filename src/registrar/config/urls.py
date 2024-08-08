@@ -125,9 +125,9 @@ urlpatterns = [
         name="analytics",
     ),
     path(
-        "admin/api/get-senior-official-from-federal-agency-json/", 
-        get_senior_official_from_federal_agency_json, 
-        name="get-senior-official-from-federal-agency-json"
+        "admin/api/get-senior-official-from-federal-agency-json/",
+        get_senior_official_from_federal_agency_json,
+        name="get-senior-official-from-federal-agency-json",
     ),
     path("admin/", admin.site.urls),
     path(
