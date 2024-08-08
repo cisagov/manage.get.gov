@@ -75,7 +75,7 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 
 ## Setting up commit signing with GPG
 
-Follow the instructions [here](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key) to generate a new GPG key (default configurations are okay) and add it to your GPG keys on Github.
+Follow GitHub's instructions to [generate a new GPG key]((https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key)) (default configurations are okay) and add it to your GPG keys on Github.
 
 Configure your key locally:
 
@@ -126,17 +126,17 @@ Additionally, consider a gpg key manager like Kleopatra if you run into issues w
 
 ## Setting up commit signing with SSH
 
-Follow the instructions [here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key) to generate a new SSH key and [add it to your SSH keys on Github](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account). Note that you need to add the key as a signing key.
+[Generate a new SSH key]((https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key)) and [add it to your GitHub SSH keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) as a *signing key.*
 
 Configure your key locally:
 
 ```bash
 git config --global gpg.format ssh
 git config --global commit.gpgsign true
-git config --global user.signingkey <YOUR KEY>
+git config --global user.signingkey <YOUR_KEY_PATH>
 ```
 
-Where `<YOUR KEY>` is the path to the private key you generated when running `ssh-keygen`. Usually this is located in ~\.ssh\.
+Where `<YOUR_KEY_PATH>` is the path of your public key file. GitHub defaults this to `~/.ssh/id_ed25519.pub`. If you named SSH public key a different name from the default, you may need to replace `id_ed25519.pub` with the name you gave your key.
 
 Now test commit signing is working by checking out a branch (`yourinitials/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your key passphrase) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
 
