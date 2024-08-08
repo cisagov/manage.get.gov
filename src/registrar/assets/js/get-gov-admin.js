@@ -511,11 +511,21 @@ function initializeWidgetOnList(list, parentId) {
     var actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     var actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
     var readonlyView = document.querySelector("#action-needed-reason-email-readonly");
+    if(!actionNeededEmail || !actionNeededReasonDropdown) {
+        return;
+    }
 
     let emailWasSent = document.getElementById("action-needed-email-sent");
-    let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
-    let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
+    if (!emailWasSent) {
+        return;
+    }
 
+    let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
+    if(!actionNeededEmailData) {
+        return;
+    }
+
+    let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
     const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
     const emailSentSessionVariableName = `actionNeededEmailSent-${domainRequestId}`;
     const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
@@ -791,35 +801,58 @@ function initializeWidgetOnList(list, parentId) {
     });
 
     function handleFederalAgencyChange(federalAgency, organizationType) {
-
         // Set the org type to federal if an agency is selected
         let selectedText = federalAgency.find("option:selected").text();
         if (selectedText !== "Non-Federal Agency" && selectedText) {
-            organizationType.value = "federal";
-        }else {
-            if (organizationType.value === "federal") {
-                organizationType.value = "";
+            if (organizationType.value !== "federal") {
+                organizationType.value = "federal";
             }
+            // Set the SO field
+        }else if (selectedText === "Non-Federal Agency" && organizationType.value === "federal") {
+            organizationType.value = "";
+            // Set the SO field
+        }
+        
+        // There isn't a senior official associated with null records and non federal agencies
+        if (!selectedText || selectedText === "Non-Federal Agency") {
+            return;
         }
 
-        // Automatically set the SO field.
-        // How do we do this without an API??????????
-        // let seniorOfficialId = assignSelfButton.getAttribute("data-user-id");
-        // let seniorOfficialName = assignSelfButton.getAttribute("data-user-name");
-        // if (!currentUserId || !currentUserName){
-        //     console.error("Could not assign current user: no values found.")
-        //     return;
-        // }
+        // Get the associated senior official with this federal agency
+        let $seniorOfficial = django.jQuery("#id_senior_official");
+        if (!$seniorOfficial) {
+            console.log("Could not find the senior official field");
+            return;
+        }
 
-        // if (selector.find(`option[value='${currentUserId}']`).length) {
-        //     // Select the value that is associated with the current user.
-        //     selector.val(currentUserId).trigger("change");
-        // } else { 
-        //     // Create a DOM Option that matches the desired user. Then append it and select it.
-        //     let userOption = new Option(currentUserName, currentUserId, true, true);
-        //     selector.append(userOption).trigger("change");
-        // }
+        let seniorOfficialApi = document.querySelector("#senior_official_from_agency_json_url").value;
+        fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error in AJAX call: ' + data.error);
+                return;
+            }
 
+            let seniorOfficialId = data.id;
+            let seniorOfficialName = [data.first_name, data.last_name].join(" ");
+            if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
+                console.error("Could not assign current Senior Official: no values found.")
+                return;
+            }
+
+            // Add the senior official to the dropdown.
+            // This format supports select2 - if we decide to convert this field in the future.
+            if ($seniorOfficial.find(`option[value='${seniorOfficialId}']`).length) {
+                // Select the value that is associated with the current Senior Official.
+                $seniorOfficial.val(seniorOfficialId).trigger("change");
+            } else { 
+                // Create a DOM Option that matches the desired Senior Official. Then append it and select it.
+                let userOption = new Option(seniorOfficialName, seniorOfficialId, true, true);
+                $seniorOfficial.append(userOption).trigger("change");
+            }
+        })
+        .catch(error => console.error('Error fetching senior official:', error));
     }
 
     function handleStateTerritoryChange(stateTerritory, urbanizationField) {
