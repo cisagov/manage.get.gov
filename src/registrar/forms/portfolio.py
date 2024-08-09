@@ -106,6 +106,6 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field_name in self.required:
             self.fields[field_name].required = True
-        
+
         if self.instance:
             self.fields["full_name"].initial = self.instance.get_formatted_name()
