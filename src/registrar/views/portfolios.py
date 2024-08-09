@@ -99,6 +99,7 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
 class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
     """
     View to handle displaying and updating the portfolio's senior official details.
+    For now, this view is readonly.
     """
 
     model = Portfolio
@@ -130,31 +131,3 @@ class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
         self.object = self.get_object()
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
-
-    # These functions are included for future compatibility, but for now
-    # we do not offer an edit mode for senior officials.
-    def post(self, request, *args, **kwargs):
-        """Handle POST requests to process form submission."""
-        self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
-
-    def form_valid(self, form):
-        """Handle the case when the form is valid."""
-        senior_official = form.save()
-        portfolio = self.get_object()
-        portfolio.senior_official = senior_official
-        portfolio.save()
-        messages.success(self.request, "The Senior Official for this portfolio has been updated.")
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        """Handle the case when the form is invalid."""
-        return self.render_to_response(self.get_context_data(form=form))
-
-    def get_success_url(self):
-        """Redirect to the overview page for the portfolio."""
-        return reverse("senior-official")

@@ -98,14 +98,8 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
             "full_name": forms.TextInput(attrs={"readonly": "readonly"})
         }
 
-    # the database fields have blank=True so ModelForm doesn't create
-    # required fields by default. Use this list in __init__ to mark each
-    # of these fields as required
-    required = ["first_name", "last_name", "title", "email"]
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in self.required:
-            self.fields[field_name].required = True
 
         if self.instance:
             self.fields["full_name"].initial = self.instance.get_formatted_name()
