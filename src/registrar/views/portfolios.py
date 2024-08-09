@@ -24,7 +24,10 @@ class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
     template_name = "portfolio_domains.html"
 
     def get(self, request):
-        return render(request, "portfolio_domains.html")
+        context = {}
+        if self.request and self.request.user and self.request.user.is_authenticated:
+            context["user_domain_count"] = self.request.user.get_user_domain_ids(request).count()
+        return render(request, "portfolio_domains.html", context)
 
 
 class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
