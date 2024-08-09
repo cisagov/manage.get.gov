@@ -76,30 +76,15 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
     """
 
     JOIN = "senior_official"
-    full_name = forms.CharField(label="Full name", required=False)
-
+    full_name = forms.CharField(label="Full name")
     class Meta:
         model = SeniorOfficial
         fields = [
-            "first_name",
-            "last_name",
             "title",
             "email",
         ]
-        widgets = {
-            # We need to set the required attributed for State/territory
-            # because for this fields we are creating an individual
-            # instance of the Select. For the other fields we use the for loop to set
-            # the class's required attribute to true.
-            "first_name": forms.TextInput,
-            "last_name": forms.TextInput,
-            "title": forms.TextInput,
-            "email": forms.TextInput,
-            "full_name": forms.TextInput(attrs={"readonly": "readonly"})
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         if self.instance:
             self.fields["full_name"].initial = self.instance.get_formatted_name()
