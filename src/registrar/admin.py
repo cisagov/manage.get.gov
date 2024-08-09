@@ -22,7 +22,7 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
-from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
+from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR

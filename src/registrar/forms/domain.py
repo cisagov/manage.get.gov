@@ -322,9 +322,10 @@ class SeniorOfficialContactForm(ContactForm):
 
     JOIN = "senior_official"
     full_name = forms.CharField(label="Full name", required=False)
+
     def __init__(self, disable_fields=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         if self.instance:
             self.fields["full_name"].initial = self.instance.get_formatted_name()
 
