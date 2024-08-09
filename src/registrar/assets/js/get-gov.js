@@ -1992,6 +1992,9 @@ document.addEventListener('DOMContentLoaded', function() {
  * We want the search bar to act soley as a search bar.
  */
 (function loadInitialValuesForComboBoxes() {
+  var overrideDefaultClearButton = true;
+  var isTyping = false;
+
   document.addEventListener('DOMContentLoaded', (event) => {
     // The file location for the #undo svg
     const undoIcon = document.querySelector("#uswds-undo-icon-url");
@@ -2005,10 +2008,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const comboBoxElements = document.querySelectorAll(".usa-combo-box");
     comboBoxElements.forEach(comboBox => {
       const input = comboBox.querySelector('input');
-      if (!input || !undoIconUrl) {
-        console.warn("No input element found");
+      const select = comboBox.querySelector("select");
+      if (!input || !undoIconUrl || !select) {
+        console.warn("No combobox element found");
         return;
       }
+      // Set the initial value of the combobox
+      let initialValue = select.getAttribute("data-default-value");
 
       let clearInputButton = comboBox.querySelector(".usa-combo-box__clear-input");
       if (!clearInputButton) {
@@ -2016,34 +2022,76 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      let resetSearchButton = clearInputButton.cloneNode(true);
-      resetSearchButton.classList.add('usa-combo-box__reset-search');
-      resetSearchButton.style.display = 'none';
-      // Change the icon to the "undo" icon. Due to the nature of how this element is styled, we have to do this as so.
-      resetSearchButton.style.backgroundImage = `url("${undoIconUrl}"), linear-gradient(transparent, transparent)`;
-      clearInputButton.insertAdjacentElement('afterend', resetSearchButton);
+      // Override the default clear button behavior such that it no longer clears the input,
+      // it just resets to the data-initial-value.
 
-      // Show the reset search button when typing
+      // Due to the nature of how uswds works, this is slightly hacky.
+
+      // Use a MutationObserver to watch for changes in the dropdown list
+      const dropdownList = document.querySelector(`#${input.id}--list`);
+      const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+              if (mutation.type === "childList") {
+                  addBlankOption(clearInputButton, dropdownList, initialValue);
+              }
+          });
+      });
+
+      // Configure the observer to watch for changes in the dropdown list
+      const config = { childList: true, subtree: true };
+      observer.observe(dropdownList, config);
+
+      // Add input event listener to detect typing
       input.addEventListener('input', () => {
-        resetSearchButton.style.display = 'inline-block';
+        isTyping = true;
       });
 
-      // Hide the reset search button when input loses focus
+      // Add blur event listener to reset typing state
       input.addEventListener('blur', () => {
-        resetSearchButton.style.display = 'none';
+        isTyping = false;
       });
 
-      handleMouseDownOnButton(resetSearchButton, input)
+      // Change the default input behaviour - have it reset to the data default instead
+      clearInputButton.addEventListener("click", (e) => {
+        if (overrideDefaultClearButton && initialValue) {
+          e.preventDefault();
+          e.stopPropagation();
+          input.click();
+          // Find the dropdown option with the desired value
+          const dropdownOptions = document.querySelectorAll(".usa-combo-box__list-option");
+          if (dropdownOptions) {
+            dropdownOptions.forEach(option => {
+                if (option.getAttribute("data-value") === initialValue) {
+                    // Simulate a click event on the dropdown option
+                    option.click();
+                }
+            });
+          }
+        }
+      });
     });
   }
 
-  function handleMouseDownOnButton(button, inputToTarget) {
-    // Reset the input value when the reset search button is clicked
-    button.addEventListener('mousedown', (event) => {
-      // Simulate focus and blur to trigger the built in "resetSelection" and "hideList" functions
-      inputToTarget.focus();
-      inputToTarget.blur();
-      button.style.display = 'none';
-    });
+  function addBlankOption(clearInputButton, dropdownList, initialValue) {
+    if (dropdownList && !dropdownList.querySelector('[data-value=""]') && !isTyping) {
+        const blankOption = document.createElement("li");
+        blankOption.setAttribute("role", "option");
+        blankOption.setAttribute("data-value", "");
+        blankOption.classList.add("usa-combo-box__list-option");
+        if (!initialValue){
+          blankOption.classList.add("usa-combo-box__list-option--selected")
+        }
+        blankOption.textContent = "---------";
+
+        dropdownList.insertBefore(blankOption, dropdownList.firstChild);
+        blankOption.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          overrideDefaultClearButton = false;
+          // Trigger the default clear behavior
+          clearInputButton.click();
+          overrideDefaultClearButton = true;
+        });
+    }
   }
 })();
