@@ -64,6 +64,13 @@
       {% endif %}
     {% endif %}
 
+    {% url 'domain-dns-dnssec' pk=domain.id as url %}
+    {% if domain.dnssecdata is not None %}
+      {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='DNSSEC' value='Disabled' edit_link=url editable=is_editable %}
+    {% endif %}
+
     {% if portfolio %}
       {% comment %} TODO - uncomment in #2352 and add to edit_link
       {% url 'domain-suborganization' pk=domain.id as url %}
