@@ -1,0 +1,47 @@
+{% load static field_helpers url_helpers %}
+
+{% if can_edit %}
+    {% include "includes/form_errors.html" with form=form %}
+{% endif %}
+
+<h1>Senior Official</h1>
+
+<p>
+    Your senior official is a person within your organization who can authorize domain requests. 
+    This person must be in a role of significant, executive responsibility within the organization. 
+    Read more about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/eligibility/#you-must-have-approval-from-a-senior-official-within-your-organization' %}">who can serve as a senior official</a>.
+</p>
+
+{% if can_edit %}
+    {% include "includes/required_fields.html" %}
+{% else %}
+    <p>
+        The senior official for your organization can’t be updated here. 
+        To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>
+    </p>
+{% endif %}
+
+{% if can_edit %}
+    <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+        {% csrf_token %}
+        {% input_with_errors form.first_name %}
+        {% input_with_errors form.last_name %}
+        {% input_with_errors form.title %}
+        {% input_with_errors form.email %}
+        <button type="submit" class="usa-button">Save</button>
+    </form>
+{% elif not form.full_name.value and not form.title.value and not form.email.value %}
+    <h4>No senior official was found.</h4>
+{% else %}
+    {% if form.full_name.value is not None %}
+        {% include "includes/input_read_only.html" with field=form.full_name %}
+    {% endif %}
+
+    {% if form.title.value is not None %}
+        {% include "includes/input_read_only.html" with field=form.title %}
+    {% endif %}
+
+    {% if form.email.value is not None %}
+        {% include "includes/input_read_only.html" with field=form.email %}
+    {% endif %}
+{% endif %}

@@ -4,35 +4,9 @@
 {% block title %}Senior official | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
-  {# this is right after the messages block in the parent template #}
-  {% include "includes/form_errors.html" with form=form %}
-
-  <h1>Senior official</h1>
-
-  <p>Your senior official is a person within your organization who can
-  authorize domain requests. This person must be in a role of significant, executive responsibility within the organization. Read more about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/eligibility/#you-must-have-approval-from-a-senior-official-within-your-organization' %}">who can serve as a senior official</a>.</p>
-  
   {% if generic_org_type == "federal" or generic_org_type == "tribal" %}
-    <p>
-      The senior official for your organization can’t be updated here.
-      To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
-    </p>
+    {% include "includes/senior_official.html" with can_edit=False %}
   {% else %}
-  {% include "includes/required_fields.html" %}
+    {% include "includes/senior_official.html" with can_edit=True %}
   {% endif %}
-  
-
-  <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
-    {% csrf_token %}
-
-    {% if generic_org_type == "federal" or generic_org_type == "tribal" %}
-      {% include "includes/readonly_senior_official.html" with form=form senior_official=senior_officialn%}
-    {% else %}
-      {% input_with_errors form.first_name %}
-      {% input_with_errors form.last_name %}
-      {% input_with_errors form.title %}
-      {% input_with_errors form.email %}
-      <button type="submit" class="usa-button">Save</button>
-    {% endif %}
-  </form>
-{% endblock %}  {# domain_content #}
+{% endblock %}

@@ -110,12 +110,6 @@ class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
     form_class = PortfolioSeniorOfficialForm
     context_object_name = "portfolio"
 
-    def get_context_data(self, **kwargs):
-        """Add additional context data to the template."""
-        context = super().get_context_data(**kwargs)
-        context["senior_official"] = self.get_object().senior_official
-        return context
-
     def get_object(self, queryset=None):
         """Get the portfolio object based on the request user."""
         portfolio = self.request.user.portfolio
