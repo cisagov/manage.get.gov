@@ -58,7 +58,6 @@ class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
                 portfolio=portfolio,
                 portfolio_roles__overlap=[
                     UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-                    UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY,
                 ],
             )
         return context
