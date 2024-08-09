@@ -13,19 +13,22 @@
             <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
         </button>
         <ul class="usa-nav__primary usa-accordion">
-            {% if has_domains_portfolio_permission %}
-                <li class="usa-nav__primary-item">
+            <li class="usa-nav__primary-item">
+                {% if has_domains_portfolio_permission %}
                     {% url 'domains' as url %}
-                    <a href="{{ url }}" class="usa-nav-link{% if 'domain'|in_path:request.path %} usa-current{% endif %}"> 
-                    Domains
-                    </a>
-                </li>
-            {% endif %}
+                {%else %}
+                    {% url 'no-portfolio-domains' as url %}
+                {% endif %}
+                <a href="{{ url }}" class="usa-nav-link{% if 'domain'|in_path:request.path %} usa-current{% endif %}"> 
+                Domains
+                </a>
+            </li>
             <li class="usa-nav__primary-item">
                 <a href="#" class="usa-nav-link">
                     Domain groups
                 </a>
             </li>
+
             {% if has_domain_requests_portfolio_permission %}
                 <li class="usa-nav__primary-item">
                     {% url 'domain-requests' as url %}
