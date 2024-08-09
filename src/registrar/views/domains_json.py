@@ -1,12 +1,10 @@
 import logging
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-from registrar.models import UserDomainRole, Domain
+from registrar.models import UserDomainRole, Domain, DomainInformation
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
-
-from registrar.models.domain_information import DomainInformation
 
 logger = logging.getLogger(__name__)
 
