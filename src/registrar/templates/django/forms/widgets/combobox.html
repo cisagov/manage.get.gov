@@ -1,0 +1,14 @@
+{% comment %} 
+This is a custom widget for USWDS's comboboxes. 
+USWDS comboboxes are basically just selects with a "usa-combo-box" div wrapper.
+We can further customize these by applying attributes to this parent element, 
+for now we just carry the attribute to both the parent element and the select.
+{% endcomment %}
+
+<div class="usa-combo-box"     
+{% for name, value in widget.attrs.items %}
+    {{ name }}="{{ value }}"
+{% endfor %}
+>
+    {% include "django/forms/widgets/select.html" %}
+</div>

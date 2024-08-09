@@ -150,7 +150,7 @@
             <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
             <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
             <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
-            {% if has_domains_portfolio_permission %}
+            {% if has_domains_portfolio_permission and request.user.has_view_suborganization %}
               <th data-sortable="suborganization" scope="col" role="columnheader">Suborganization</th>
             {% endif %}
             <th 
