@@ -321,9 +321,12 @@ class SeniorOfficialContactForm(ContactForm):
     """Form for updating senior official contacts."""
 
     JOIN = "senior_official"
-
+    full_name = forms.CharField(label="Full name", required=False)
     def __init__(self, disable_fields=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        if self.instance:
+            self.fields["full_name"].initial = self.instance.get_formatted_name()
 
         # Overriding bc phone not required in this form
         self.fields["phone"] = forms.IntegerField(required=False)

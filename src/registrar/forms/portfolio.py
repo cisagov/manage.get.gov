@@ -76,7 +76,7 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
     """
 
     JOIN = "senior_official"
-    full_name = forms.CharField(label="Full name")
+    full_name = forms.CharField(label="Full name", required=False)
     class Meta:
         model = SeniorOfficial
         fields = [
