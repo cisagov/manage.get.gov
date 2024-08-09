@@ -28,15 +28,7 @@
         {% if not senior_official %}
             <h4>No senior official was found for this portfolio.</h4>
         {% else %}
-            {% if form.full_name.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.full_name %}
-            {% endif %}
-            {% if form.title.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.title %}
-            {% endif %}
-            {% if form.email.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.email %}
-            {% endif %}
+            {% include "includes/readonly_senior_official.html" with form=form %}
         {% endif %}
 
     </div>
