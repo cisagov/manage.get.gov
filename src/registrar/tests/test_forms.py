@@ -15,7 +15,7 @@ from registrar.forms.domain_request_wizard import (
     RequirementsForm,
     TribalGovernmentForm,
     PurposeForm,
-    AdditionalDetailsForm,
+    AnythingElseForm,
     AboutYourOrganizationForm,
 )
 from registrar.forms.domain import ContactForm
@@ -274,7 +274,7 @@ class TestFormValidation(MockEppLib):
 
     def test_anything_else_form_about_your_organization_character_count_invalid(self):
         """Response must be less than 2000 characters."""
-        form = AdditionalDetailsForm(
+        form = AnythingElseForm(
             data={
                 "anything_else": "Bacon ipsum dolor amet fatback strip steak pastrami"
                 "shankle, drumstick doner chicken landjaeger turkey andouille."
