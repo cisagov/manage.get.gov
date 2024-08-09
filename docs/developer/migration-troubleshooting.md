@@ -30,7 +30,19 @@ You should end up with `40_some_migration_from_main`, `41_local_migration`
 
 Alternatively, assuming that the conflicting migrations are not dependent on each other, you can manually edit the migration file such that your new migration is incremented by one (file name, and definition inside the file) but this approach is not recommended.
 
-### Scenario 2: Conflicting migrations on sandbox
+### Scenario 2: Conflicting migrations on sandbox (can be fixed with GH workflow)
+A 500 error on a sanbox after a fresh push usually indicates a migration issue.
+Most of the time, these migration issues can easily be fixed by simply running the
+"reset-db" workflow in Github.
+
+For the workflow, select the following inputs before running it;
+"Use workflow from": Branch-main
+"Which environment should we flush and re-load data for?" <YOUR_TARGET_SANDBOX>
+
+This is not a cure-all since it simply flushes and re-runs migrations against your sandbox.
+If running this workflow does not solve your issue, proceed examining the scenarios below.
+
+### Scenario 3: Conflicting migrations on sandbox (cannot be fixed with GH workflow)
 
 This occurs when the logs return the following:
 >Conflicting migrations detected; multiple leaf nodes in the migration graph: (0040_example, 0041_example in base).
