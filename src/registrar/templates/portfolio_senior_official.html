@@ -23,9 +23,7 @@
 
         <p>Your senior official is a person within your organization who can authorize domain requests.</p>
 
-        <p>The senior official for your organization can’t be updated here. To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a></p>
-
-        {% if has_edit_org_portfolio_permission %}
+        {% if santa_exists %}
             {% include "includes/form_errors.html" with form=form %}
             {% include "includes/required_fields.html" %}
             <form class="usa-form usa-form--large" method="post" novalidate>
@@ -39,15 +37,20 @@
                 </button>
             </form>
         {% else %}
-            <h4 class="read-only-label">Full name</h4>
-            <p class="read-only-value">
-                {{ portfolio.senior_official.get_formatted_name }}
-            </p>
-            {% if form.city.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.title %}
-            {% endif %}
-            {% if form.state_territory.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.email %}
+            <p>The senior official for your organization can’t be updated here. To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a></p>
+            
+            {% if not senior_official %}
+                <h4>No senior official was found for this portfolio.</h4>
+            {% else %}
+                {% if form.full_name.value is not None %}
+                    {% include "includes/input_read_only.html" with field=form.full_name %}
+                {% endif %}
+                {% if form.title.value is not None %}
+                    {% include "includes/input_read_only.html" with field=form.title %}
+                {% endif %}
+                {% if form.email.value is not None %}
+                    {% include "includes/input_read_only.html" with field=form.email %}
+                {% endif %}
             {% endif %}
         {% endif %}
 

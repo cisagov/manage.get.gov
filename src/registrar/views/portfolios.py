@@ -48,7 +48,7 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
     def get_context_data(self, **kwargs):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
-        context["has_edit_org_portfolio_permission"] = self.request.user.has_edit_org_portfolio_permission()
+        # context["has_edit_org_portfolio_permission"]
         return context
 
     def get_object(self, queryset=None):
@@ -109,7 +109,7 @@ class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
     def get_context_data(self, **kwargs):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
-        context["has_edit_org_portfolio_permission"] = self.request.user.has_edit_org_portfolio_permission()
+        context["senior_official"] = self.get_object().senior_official
         return context
 
     def get_object(self, queryset=None):
@@ -131,6 +131,8 @@ class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
 
+    # These functions are included for future compatibility, but for now
+    # we do not offer an edit mode for senior officials.
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
         self.object = self.get_object()

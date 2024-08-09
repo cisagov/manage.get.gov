@@ -70,27 +70,22 @@ class PortfolioOrgAddressForm(forms.ModelForm):
 
 
 class PortfolioSeniorOfficialForm(forms.ModelForm):
-    """Form for updating the portfolio senior official."""
+    """
+    Form for updating the portfolio senior official.
+    This form is readonly for now.
+    """
 
     JOIN = "senior_official"
+    full_name = forms.CharField(label="Full name", required=False)
 
     class Meta:
         model = SeniorOfficial
-        # TODO - add full name
         fields = [
             "first_name",
             "last_name",
             "title",
             "email",
         ]
-
-        # error_messages = {
-        #     "address_line1": {"required": "Enter the street address of your organization."},
-        #     "city": {"required": "Enter the city where your organization is located."},
-        #     "state_territory": {
-        #         "required": "Select the state, territory, or military post where your organization is located."
-        #     },
-        # }
         widgets = {
             # We need to set the required attributed for State/territory
             # because for this fields we are creating an individual
@@ -100,14 +95,17 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
             "last_name": forms.TextInput,
             "title": forms.TextInput,
             "email": forms.TextInput,
+            "full_name": forms.TextInput(attrs={"readonly": "readonly"})
         }
 
     # the database fields have blank=True so ModelForm doesn't create
     # required fields by default. Use this list in __init__ to mark each
     # of these fields as required
     required = ["first_name", "last_name", "title", "email"]
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name in self.required:
             self.fields[field_name].required = True
+        
+        if self.instance:
+            self.fields["full_name"].initial = self.instance.get_formatted_name()
