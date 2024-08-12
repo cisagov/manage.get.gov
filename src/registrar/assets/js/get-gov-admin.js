@@ -810,8 +810,8 @@ function initializeWidgetOnList(list, parentId) {
         }else if (selectedText === "Non-Federal Agency" && organizationType.value === "federal") {
             organizationType.value = "";
         }
-        
-        // There isn't a senior official associated with null records and non federal agencies
+
+        // There isn't a federal senior official associated with null records and non federal agencies
         if (!selectedText || selectedText === "Non-Federal Agency") {
             return;
         }
@@ -825,11 +825,16 @@ function initializeWidgetOnList(list, parentId) {
 
         let seniorOfficialApi = document.querySelector("#senior_official_from_agency_json_url").value;
         fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
-        .then(response => response.json())
-        .then(data => {
+        .then(response => {
+            const statusCode = response.status;
+            return response.json().then(data => ({ statusCode, data }));
+        })
+        .then(({ statusCode, data }) => {
             if (data.error) {
-                // Clear the field if the SO doesn't exist
-                $seniorOfficial.val("").trigger("change");
+                // Clear the field if the SO doesn't exist.
+                if (statusCode === 404) {
+                    $seniorOfficial.val("").trigger("change");
+                }
                 console.error("Error in AJAX call: " + data.error);
                 return;
             }

@@ -114,7 +114,7 @@ class Portfolio(TimeStampedModel):
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
 
-        # We can't have urbanization if the state isn't puerto rico
+        # The urbanization field is only intended for the state_territory puerto rico
         if self.state_territory != self.StateTerritoryChoices.PUERTO_RICO and self.urbanization:
             self.urbanization = None
 
