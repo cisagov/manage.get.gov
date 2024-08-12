@@ -1418,7 +1418,6 @@ class TestUser(TestCase):
         self.assertEqual(
             cm.exception.message, "When portfolio is assigned, portfolio roles or additional permissions are required."
         )
-        self.user.refresh_from_db()
         Portfolio.objects.all().delete()
 
     @less_console_noise_decorator
@@ -1434,8 +1433,6 @@ class TestUser(TestCase):
         self.assertEqual(
             cm.exception.message, "When portfolio roles or additional permissions are assigned, portfolio is required."
         )
-        self.user.refresh_from_db()
-        Portfolio.objects.all().delete()
 
 
 class TestContact(TestCase):
