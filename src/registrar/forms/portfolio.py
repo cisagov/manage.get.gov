@@ -89,3 +89,9 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.id:
             self.fields["full_name"].initial = self.instance.get_formatted_name()
+    
+    def clean(self):
+        """Clean override to remove unused fields"""
+        cleaned_data = super().clean()
+        cleaned_data.pop("full_name", None)
+        return cleaned_data

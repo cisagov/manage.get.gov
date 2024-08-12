@@ -1128,7 +1128,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
         page = self.client.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Senior official", count=14)
+        self.assertContains(page, "Senior official", count=3)
 
     @less_console_noise_decorator
     def test_domain_senior_official_content(self):
@@ -1207,16 +1207,13 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.save()
 
         so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
         self.assertContains(so_page, "Apple Tester")
         self.assertContains(so_page, "CIO")
         self.assertContains(so_page, "nobody@igorville.gov")
         self.assertNotContains(so_page, "Save")
 
     @less_console_noise_decorator
-    def test_domain_edit_senior_official_tribal(self):
+    def test_domain_cannot_edit_senior_official_tribal(self):
         """Tests that no edit can occur when the underlying domain is tribal"""
 
         # Set the org type to federal
@@ -1231,46 +1228,10 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.save()
 
         so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # Test if the form is populating data correctly
-        so_form = so_page.forms[0]
-
-        test_cases = [
-            ("first_name", "Apple"),
-            ("last_name", "Tester"),
-            ("title", "CIO"),
-            ("email", "nobody@igorville.gov"),
-        ]
-        self.assert_all_form_fields_have_expected_values(so_form, test_cases, test_for_disabled=True)
-
-        # Attempt to change data on each field. Because this domain is federal,
-        # this should not succeed.
-        so_form["first_name"] = "Orange"
-        so_form["last_name"] = "Smoothie"
-        so_form["title"] = "Cat"
-        so_form["email"] = "somebody@igorville.gov"
-
-        submission = so_form.submit()
-
-        # A 302 indicates this page underwent a redirect.
-        self.assertEqual(submission.status_code, 302)
-
-        followed_submission = submission.follow()
-
-        # Test the returned form for data accuracy. These values should be unchanged.
-        new_form = followed_submission.forms[0]
-        self.assert_all_form_fields_have_expected_values(new_form, test_cases, test_for_disabled=True)
-
-        # refresh domain information. Test these values in the DB.
-        self.domain_information.refresh_from_db()
-
-        # All values should be unchanged. These are defined manually for code clarity.
-        self.assertEqual("Apple", self.domain_information.senior_official.first_name)
-        self.assertEqual("Tester", self.domain_information.senior_official.last_name)
-        self.assertEqual("CIO", self.domain_information.senior_official.title)
-        self.assertEqual("nobody@igorville.gov", self.domain_information.senior_official.email)
+        self.assertContains(so_page, "Apple Tester")
+        self.assertContains(so_page, "CIO")
+        self.assertContains(so_page, "nobody@igorville.gov")
+        self.assertNotContains(so_page, "Save")
 
     @less_console_noise_decorator
     def test_domain_edit_senior_official_creates_new(self):

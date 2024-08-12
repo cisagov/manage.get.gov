@@ -351,6 +351,12 @@ class SeniorOfficialContactForm(ContactForm):
         if disable_fields:
             DomainHelper.mass_disable_fields(fields=self.fields, disable_required=True, disable_maxlength=True)
 
+    def clean(self):
+        """Clean override to remove unused fields"""
+        cleaned_data = super().clean()
+        cleaned_data.pop("full_name", None)
+        return cleaned_data
+
     def save(self, commit=True):
         """
         Override the save() method of the BaseModelForm.
