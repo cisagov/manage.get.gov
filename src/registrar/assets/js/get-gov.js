@@ -2045,6 +2045,13 @@ document.addEventListener('DOMContentLoaded', function() {
         isTyping = false;
       });
 
+      // Hide the reset button when there is nothing to reset.
+      // Do this once on init, then everytime a change occurs.
+      updateClearButtonVisibility(select, initialValue, clearInputButton)
+      select.addEventListener("change", () => {
+        updateClearButtonVisibility(select, initialValue, clearInputButton)
+      });
+
       // Change the default input behaviour - have it reset to the data default instead
       clearInputButton.addEventListener("click", (e) => {
         if (overrideDefaultClearButton && initialValue) {
@@ -2064,6 +2071,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
     });
+  }
+
+  function updateClearButtonVisibility(select, initialValue, clearInputButton) {
+    if (select.value === initialValue) {
+      hideElement(clearInputButton);
+    }else {
+      showElement(clearInputButton)
+    }
   }
 
   function addBlankOption(clearInputButton, dropdownList, initialValue) {
