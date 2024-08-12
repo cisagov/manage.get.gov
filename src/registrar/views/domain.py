@@ -250,6 +250,16 @@ class DomainSubOrganizationView(DomainFormBaseView):
     context_object_name = "domain"
     form_class = DomainSuborganizationForm
 
+    def has_permission(self):
+        """Override for the has_permission class to exclude non-portfolio users"""
+
+        # non-org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return super().has_permission()
+        else:
+            return False
+
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)

@@ -1996,26 +1996,20 @@ document.addEventListener('DOMContentLoaded', function() {
   var isTyping = false;
 
   document.addEventListener('DOMContentLoaded', (event) => {
-    // The file location for the #undo svg
-    const undoIcon = document.querySelector("#uswds-undo-icon-url");
-    const undoIconUrl = undoIcon ? undoIcon.getAttribute("data-undo-icon-url") : null;
-    if (undoIconUrl) {
-      handleAllComboBoxElements(undoIconUrl);
-    }
+    handleAllComboBoxElements();
   });
 
-  function handleAllComboBoxElements(undoIconUrl) {
+  function handleAllComboBoxElements() {
     const comboBoxElements = document.querySelectorAll(".usa-combo-box");
     comboBoxElements.forEach(comboBox => {
-      const input = comboBox.querySelector('input');
+      const input = comboBox.querySelector("input");
       const select = comboBox.querySelector("select");
-      if (!input || !undoIconUrl || !select) {
+      if (!input || !select) {
         console.warn("No combobox element found");
         return;
       }
       // Set the initial value of the combobox
       let initialValue = select.getAttribute("data-default-value");
-
       let clearInputButton = comboBox.querySelector(".usa-combo-box__clear-input");
       if (!clearInputButton) {
         console.warn("No clear element found");
@@ -2041,13 +2035,13 @@ document.addEventListener('DOMContentLoaded', function() {
       const config = { childList: true, subtree: true };
       observer.observe(dropdownList, config);
 
-      // Add input event listener to detect typing
-      input.addEventListener('input', () => {
+      // Input event listener to detect typing
+      input.addEventListener("input", () => {
         isTyping = true;
       });
 
-      // Add blur event listener to reset typing state
-      input.addEventListener('blur', () => {
+      // Blur event listener to reset typing state
+      input.addEventListener("blur", () => {
         isTyping = false;
       });
 

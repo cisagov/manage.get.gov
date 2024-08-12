@@ -16,8 +16,6 @@
     </p>
 
     {% if has_domains_portfolio_permission and request.user.has_edit_suborganization %}
-        {% comment %} Store the undo icon for reference in js - since this is dynamic {% endcomment %}
-        <div id="uswds-undo-icon-url" class="display-none" data-undo-icon-url="{% static 'img/usa-icons/undo.svg' %}"></div>
         <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
             {% csrf_token %}
             {% input_with_errors form.sub_organization %}
