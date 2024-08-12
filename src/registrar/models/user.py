@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
+from django.forms import ValidationError
 
 from registrar.models.domain_information import DomainInformation
 from registrar.models.user_domain_role import UserDomainRole
@@ -228,6 +229,15 @@ class User(AbstractUser):
 
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
+
+    def clean(self):
+        super().clean()
+
+        if self.portfolio is None and self._get_portfolio_permissions():
+            raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
+
+        if self.portfolio is not None and not self._get_portfolio_permissions():
+            raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
 
     def _get_portfolio_permissions(self):
         """
