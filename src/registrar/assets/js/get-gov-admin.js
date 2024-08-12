@@ -807,10 +807,8 @@ function initializeWidgetOnList(list, parentId) {
             if (organizationType.value !== "federal") {
                 organizationType.value = "federal";
             }
-            // Set the SO field
         }else if (selectedText === "Non-Federal Agency" && organizationType.value === "federal") {
             organizationType.value = "";
-            // Set the SO field
         }
         
         // There isn't a senior official associated with null records and non federal agencies
@@ -830,6 +828,8 @@ function initializeWidgetOnList(list, parentId) {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
+                // Clear the field if the SO doesn't exist
+                $seniorOfficial.val("").trigger("change");
                 console.error('Error in AJAX call: ' + data.error);
                 return;
             }
@@ -837,7 +837,8 @@ function initializeWidgetOnList(list, parentId) {
             let seniorOfficialId = data.id;
             let seniorOfficialName = [data.first_name, data.last_name].join(" ");
             if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
-                console.error("Could not assign current Senior Official: no values found.")
+                // Clear the field if the SO doesn't exist
+                $seniorOfficial.val("").trigger("change");
                 return;
             }
 
