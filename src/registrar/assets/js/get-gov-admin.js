@@ -830,7 +830,7 @@ function initializeWidgetOnList(list, parentId) {
             if (data.error) {
                 // Clear the field if the SO doesn't exist
                 $seniorOfficial.val("").trigger("change");
-                console.error('Error in AJAX call: ' + data.error);
+                console.error("Error in AJAX call: " + data.error);
                 return;
             }
 
@@ -853,7 +853,7 @@ function initializeWidgetOnList(list, parentId) {
                 $seniorOfficial.append(userOption).trigger("change");
             }
         })
-        .catch(error => console.error('Error fetching senior official:', error));
+        .catch(error => console.error("Error fetching senior official: ", error));
     }
 
     function handleStateTerritoryChange(stateTerritory, urbanizationField) {

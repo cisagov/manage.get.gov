@@ -26,7 +26,7 @@ def get_senior_official_from_federal_agency_json(request):
         # Convert the agency object to a dictionary
         so_dict = model_to_dict(senior_official)
 
-        # The phone number field isn't json serializable, so we 
+        # The phone number field isn't json serializable, so we
         # convert this to a string first if it exists.
         if "phone" in so_dict and so_dict.get("phone"):
             so_dict["phone"] = str(so_dict["phone"])
