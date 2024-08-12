@@ -2876,6 +2876,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     autocomplete_fields = [
         "creator",
         "federal_agency",
+        "senior_official",
     ]
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
