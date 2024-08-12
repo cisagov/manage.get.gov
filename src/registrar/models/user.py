@@ -231,6 +231,7 @@ class User(AbstractUser):
         return bool(self.title or self.email or self.phone)
 
     def clean(self):
+        """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
 
         if self.portfolio is None and self._get_portfolio_permissions():
