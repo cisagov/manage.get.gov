@@ -2,7 +2,7 @@
 {% load i18n static %}
 
 {% block content %}
-    {% comment %} Stores the json endpoint in a url for easlier access {% endcomment %}
+    {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
     {% url 'get-senior-official-from-federal-agency-json' as url %}
     <input id="senior_official_from_agency_json_url" class="display-none" value="{{url}}" />
     {{ block.super }}
