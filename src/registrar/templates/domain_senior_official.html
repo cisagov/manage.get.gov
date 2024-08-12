@@ -5,8 +5,8 @@
 
 {% block domain_content %}
   {% if generic_org_type == "federal" or generic_org_type == "tribal" %}
-    {% include "includes/senior_official.html" with can_edit=False %}
+    {% include "includes/senior_official.html" with can_edit=False include_read_more_text=True %}
   {% else %}
-    {% include "includes/senior_official.html" with can_edit=True %}
+    {% include "includes/senior_official.html" with can_edit=True include_read_more_text=True %}
   {% endif %}
 {% endblock %}
