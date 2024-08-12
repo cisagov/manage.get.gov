@@ -1618,8 +1618,10 @@ class TestDomainSuborganization(TestDomainOverview):
         # Navigate to the suborganization page
         page = self.app.get(reverse("domain-suborganization", kwargs={"pk": self.domain.id}))
 
+        # The page should display the readonly option
+        self.assertContains(page, "Vanilla")
+
         # The page shouldn't contain these choices
-        self.assertNotContains(page, "Vanilla")
         self.assertNotContains(page, "Chocolate")
         self.assertNotContains(page, unrelated_suborg.name)
         self.assertNotContains(page, "Save")
