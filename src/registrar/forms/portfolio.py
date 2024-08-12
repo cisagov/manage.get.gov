@@ -87,5 +87,5 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance:
+        if self.instance and self.instance.id:
             self.fields["full_name"].initial = self.instance.get_formatted_name()

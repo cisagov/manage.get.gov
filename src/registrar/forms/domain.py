@@ -326,7 +326,7 @@ class SeniorOfficialContactForm(ContactForm):
     def __init__(self, disable_fields=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if self.instance:
+        if self.instance and self.instance.id:
             self.fields["full_name"].initial = self.instance.get_formatted_name()
 
         # Overriding bc phone not required in this form

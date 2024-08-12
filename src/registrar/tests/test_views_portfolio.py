@@ -41,7 +41,7 @@ class TestPortfolio(WebTest):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     def test_portfolio_senior_official(self):
-        """Tests the senior official page on portfolio"""
+        """Tests that the senior official page on portfolio contains the content we expect"""
         self.app.set_user(self.user.username)
 
         so = SeniorOfficial.objects.create(
@@ -63,6 +63,7 @@ class TestPortfolio(WebTest):
         self.assertContains(so_portfolio_page, "Saturn Enceladus")
         self.assertContains(so_portfolio_page, "Planet/Moon")
         self.assertContains(so_portfolio_page, "spacedivision@igorville.com")
+        self.assertNotContains(so_portfolio_page, "Save")
 
         self.portfolio.delete()
         so.delete()
