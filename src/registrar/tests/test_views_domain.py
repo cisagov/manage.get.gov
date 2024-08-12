@@ -1528,6 +1528,110 @@ class TestDomainSuborganization(TestDomainOverview):
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
+    def test_edit_suborganization_field(self):
+        """Ensure that org admins can edit the suborganization field"""
+        # Create a portfolio and two suborgs
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        suborg_2 = Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
+
+        # Create an unrelated portfolio
+        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
+        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
+
+        # Add the portfolio to the domain_information object
+        self.domain_information.portfolio = portfolio
+        self.domain_information.sub_organization = suborg
+
+        # Add a organization_name to test if the old value still displays
+        self.domain_information.organization_name = "Broccoli"
+        self.domain_information.save()
+        self.domain_information.refresh_from_db()
+
+        # Add portfolio perms to the user object
+        self.user.portfolio = portfolio
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertEqual(self.domain_information.sub_organization, suborg)
+
+        # Navigate to the suborganization page
+        page = self.app.get(reverse("domain-suborganization", kwargs={"pk": self.domain.id}))
+
+        # The page should contain the choices Vanilla and Chocolate
+        self.assertContains(page, "Vanilla")
+        self.assertContains(page, "Chocolate")
+        self.assertNotContains(page, unrelated_suborg.name)
+
+        # Assert that the right option is selected. This component uses data-default-value.
+        self.assertContains(page, f'data-default-value="{suborg.id}"')
+
+        # Try changing the suborg
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        page.form["sub_organization"] = suborg_2.id
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        page = page.form.submit().follow()
+
+        # The page should contain the choices Vanilla and Chocolate
+        self.assertContains(page, "Vanilla")
+        self.assertContains(page, "Chocolate")
+        self.assertNotContains(page, unrelated_suborg.name)
+
+        # Assert that the right option is selected
+        self.assertContains(page, f'data-default-value="{suborg_2.id}"')
+
+        self.domain_information.refresh_from_db()
+        self.assertEqual(self.domain_information.sub_organization, suborg_2)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_view_suborganization_field(self):
+        """Only org admins can edit the suborg field, ensure that others cannot"""
+
+        # Create a portfolio and two suborgs
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
+
+        # Create an unrelated portfolio
+        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
+        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
+
+        # Add the portfolio to the domain_information object
+        self.domain_information.portfolio = portfolio
+        self.domain_information.sub_organization = suborg
+
+        # Add a organization_name to test if the old value still displays
+        self.domain_information.organization_name = "Broccoli"
+        self.domain_information.save()
+        self.domain_information.refresh_from_db()
+
+        # Add portfolio perms to the user object
+        self.user.portfolio = portfolio
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertEqual(self.domain_information.sub_organization, suborg)
+
+        # Navigate to the suborganization page
+        page = self.app.get(reverse("domain-suborganization", kwargs={"pk": self.domain.id}))
+
+        # The page should display the readonly option
+        self.assertContains(page, "Vanilla")
+
+        # The page shouldn't contain these choices
+        self.assertNotContains(page, "Chocolate")
+        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, "Save")
+
+        self.assertContains(
+            page, "The suborganization for this domain can only be updated by a organization administrator."
+        )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_has_suborganization_field_on_overview_with_flag(self):
         """Ensures that the suborganization field is visible
         and displays correctly on the domain overview page"""

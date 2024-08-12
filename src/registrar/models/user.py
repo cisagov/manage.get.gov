@@ -74,12 +74,17 @@ class User(AbstractUser):
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            # Domain: field specific permissions
+            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
+            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_MEMBER,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            # Domain: field specific permissions
+            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
@@ -269,6 +274,13 @@ class User(AbstractUser):
     def has_view_all_domains_permission(self):
         """Determines if the current user can view all available domains in a given portfolio"""
         return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    # Field specific permission checks
+    def has_view_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+
+    def has_edit_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
