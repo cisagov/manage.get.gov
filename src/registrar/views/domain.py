@@ -15,7 +15,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 from django.conf import settings
-
+from registrar.forms.domain import DomainSuborganizationForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -23,8 +23,8 @@ from registrar.models import (
     DomainInvitation,
     User,
     UserDomainRole,
+    PublicContact,
 )
-from registrar.models.public_contact import PublicContact
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
@@ -231,6 +231,61 @@ class DomainOrgNameAddressView(DomainFormBaseView):
         # superclass has the redirect
         return super().form_valid(form)
 
+    def has_permission(self):
+        """Override for the has_permission class to exclude portfolio users"""
+
+        # Org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return False
+        else:
+            return super().has_permission()
+
+
+class DomainSubOrganizationView(DomainFormBaseView):
+    """Suborganization view"""
+
+    model = Domain
+    template_name = "domain_suborganization.html"
+    context_object_name = "domain"
+    form_class = DomainSuborganizationForm
+
+    def has_permission(self):
+        """Override for the has_permission class to exclude non-portfolio users"""
+
+        # non-org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return super().has_permission()
+        else:
+            return False
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        if self.object and self.object.domain_info and self.object.domain_info.sub_organization:
+            context["suborganization_name"] = self.object.domain_info.sub_organization.name
+        return context
+
+    def get_form_kwargs(self, *args, **kwargs):
+        """Add domain_info.organization_name instance to make a bound form."""
+        form_kwargs = super().get_form_kwargs(*args, **kwargs)
+        form_kwargs["instance"] = self.object.domain_info
+        return form_kwargs
+
+    def get_success_url(self):
+        """Redirect to the overview page for the domain."""
+        return reverse("domain-suborganization", kwargs={"pk": self.object.pk})
+
+    def form_valid(self, form):
+        """The form is valid, save the organization name and mailing address."""
+        form.save()
+
+        messages.success(self.request, "The suborganization name for this domain has been updated.")
+
+        # superclass has the redirect
+        return super().form_valid(form)
+
 
 class DomainSeniorOfficialView(DomainFormBaseView):
     """Domain senior official editing view."""
@@ -248,7 +303,6 @@ class DomainSeniorOfficialView(DomainFormBaseView):
         domain_info = self.get_domain_info_from_domain()
         invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]
         is_federal_or_tribal = domain_info and (domain_info.generic_org_type in invalid_fields)
-
         form_kwargs["disable_fields"] = is_federal_or_tribal
         return form_kwargs
 
@@ -275,6 +329,16 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # superclass has the redirect
         return super().form_valid(form)
+
+    def has_permission(self):
+        """Override for the has_permission class to exclude portfolio users"""
+
+        # Org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return False
+        else:
+            return super().has_permission()
 
 
 class DomainDNSView(DomainBaseView):

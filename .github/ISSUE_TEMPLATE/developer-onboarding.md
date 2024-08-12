@@ -16,10 +16,11 @@ assignees: abroddrick
 
 There are several tools we use locally that you will need to have. 
 
-- [ ] [Cloudfoundry CLI](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac) Note: If you are on Windows the cli will be under `cf8` or `cf7` depending on which version you install.
+- [ ] [Cloudfoundry CLI](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac) 
+  - If you are using Windows the cli will be under `cf8` or `cf7` depending on which version you install.
   - If you are using Windows, installation information can be found [here](https://github.com/cloudfoundry/cli/wiki/V8-CLI-Installation-Guide#installers-and-compressed-binaries)
   - Alternatively, for Windows, [consider using chocolately](https://community.chocolatey.org/packages/cloudfoundry-cli/7.2.0)
-- [ ] [GPG](https://gnupg.org/download/)
+- [ ] [GPG](https://gnupg.org/download/) if you are using GPG to sign commits.
   - Make sure you have `gpg` >2.1.7. Run `gpg --version` to check. If not, [install gnupg](https://formulae.brew.sh/formula/gnupg)
   - This may not work on DHS devices. Alternatively, you can [use ssh keys](#setting-up-commit-signing-with-ssh) instead.
 - [ ] Docker Community Edition*
@@ -34,7 +35,7 @@ The following tools are optional  but recommended. For DHS devices, these can be
 - [ ] Putty*
 - [ ] Windows Subsystem for Linux*
 
-* Must be requested through DHS IT portal on DHS devices
+\* Must be requested through DHS IT portal on DHS devices
 
 ** Downloadable via DHS Software Center
 
@@ -75,7 +76,7 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 
 ## Setting up commit signing with GPG
 
-Follow the instructions [here](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key) to generate a new GPG key (default configurations are okay) and add it to your GPG keys on Github.
+Follow GitHub's instructions to [generate a new GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key) (default configurations are okay) and [add it to your GitHub GPG keys](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account).
 
 Configure your key locally:
 
@@ -94,23 +95,7 @@ when setting up your key in Github.
 
 Now test commit signing is working by checking out a branch (`yourname/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your GPG credential) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
 
-## Setting up commit signing with SSH
-
-Follow the instructions [here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key) to generate a new SSH key and [add it to your SSH keys on Github](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account). Note that you need to add the key as a signing key.
-
-Configure your key locally:
-
-```bash
-git config --global gpg.format ssh
-git config --global commit.gpgsign true
-git config --global user.signingkey <YOUR KEY>
-```
-
-Where `<YOUR KEY>` is the path to the private key you generated when running `ssh-keygen`. Usually this is located in ~\.ssh\.
-
-Now test commit signing is working by checking out a branch (`yourinitials/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your key passphrase) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
-
-### MacOS
+### Troubleshooting GPG on MacOS
 **Note:** if you are on a mac and not able to successfully create a signed commit, getting the following error:
 ```zsh
 error: gpg failed to sign the data
@@ -131,7 +116,7 @@ or
 source ~/.zshrc
 ```
 
-### Windows
+### Troubleshooting GPG on Windows
 If GPG doesn't work out of the box with git for you:
 - You can [download the GPG binary directly](https://gnupg.org/download/). 
 - It may be helpful to use [gpg4win](https://www.gpg4win.org/get-gpg4win.html). 
@@ -139,6 +124,22 @@ If GPG doesn't work out of the box with git for you:
 From there, you should be able to access gpg through the terminal. 
 
 Additionally, consider a gpg key manager like Kleopatra if you run into issues with environment variables or with the gpg service not running on startup. 
+
+## Setting up commit signing with SSH
+
+Follow GitHub's instructions to [generate a new SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key) and [add it to your GitHub SSH keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) as a **signing key.**
+
+Configure your key locally:
+
+```bash
+git config --global gpg.format ssh
+git config --global commit.gpgsign true
+git config --global user.signingkey <YOUR_KEY_PATH>
+```
+
+Where `<YOUR_KEY_PATH>` is the path of your public key file. GitHub defaults this to `~/.ssh/id_ed25519.pub`. If you named SSH public key a different name from the default, you may need to replace `id_ed25519.pub` with the name you gave your key.
+
+Now test commit signing is working by checking out a branch (`yourinitials/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your key passphrase) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
 
 ## Setting up developer sandbox
 

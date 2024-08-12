@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
+from registrar.models.domain_information import DomainInformation
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
@@ -73,12 +74,17 @@ class User(AbstractUser):
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            # Domain: field specific permissions
+            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
+            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_MEMBER,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            # Domain: field specific permissions
+            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
@@ -265,6 +271,17 @@ class User(AbstractUser):
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
 
+    def has_view_all_domains_permission(self):
+        """Determines if the current user can view all available domains in a given portfolio"""
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    # Field specific permission checks
+    def has_view_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+
+    def has_edit_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
+
     @classmethod
     def needs_identity_verification(cls, email, uuid):
         """A method used by our oidc classes to test whether a user needs email/uuid verification
@@ -406,3 +423,10 @@ class User(AbstractUser):
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
         return has_organization_feature_flag and self.has_base_portfolio_permission()
+
+    def get_user_domain_ids(self, request):
+        """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
+        if self.is_org_user(request) and self.has_view_all_domains_permission():
+            return DomainInformation.objects.filter(portfolio=self.portfolio).values_list("domain_id", flat=True)
+        else:
+            return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)

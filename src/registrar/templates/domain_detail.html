@@ -1,5 +1,6 @@
 {% extends "domain_base.html" %}
 {% load static url_helpers %}
+{% load custom_filters %}
 
 {% block domain_content %}
   {{ block.super }}
@@ -64,11 +65,17 @@
       {% endif %}
     {% endif %}
 
-    {% url 'domain-org-name-address' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=is_editable %}
+    {% if portfolio and has_domains_portfolio_permission and request.user.has_view_suborganization %}
+      {% url 'domain-suborganization' pk=domain.id as url %}
+      {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:request.user.has_edit_suborganization %}
+    {% else %}
+      {% url 'domain-org-name-address' pk=domain.id as url %}
+      {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=is_editable %}
 
-    {% url 'domain-senior-official' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=is_editable %}
+      {% url 'domain-senior-official' pk=domain.id as url %}
+      {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=is_editable %}
+    {% endif %}
+
 
     {# Conditionally display profile #}
     {% if not has_profile_feature_flag %}

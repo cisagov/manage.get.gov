@@ -9,6 +9,7 @@ from .domain import (
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
+    DomainSuborganizationForm,
 )
 from .portfolio import (
     PortfolioOrgAddressForm,

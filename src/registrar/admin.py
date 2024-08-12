@@ -1130,10 +1130,9 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 class SeniorOfficialAdmin(ListHeaderAdmin):
     """Custom Senior Official Admin class."""
 
-    # NOTE: these are just placeholders.  Not part of ACs (haven't been defined yet).  Update in future tickets.
     search_fields = ["first_name", "last_name", "email"]
     search_help_text = "Search by first name, last name or email."
-    list_display = ["first_name", "last_name", "email"]
+    list_display = ["first_name", "last_name", "email", "federal_agency"]
 
     # this ordering effects the ordering of results
     # in autocomplete_fields for Senior Official
@@ -2841,6 +2840,9 @@ class PortfolioAdmin(ListHeaderAdmin):
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
+    readonly_fields = [
+        "creator",
+    ]
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
@@ -2863,7 +2865,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def save_model(self, request, obj, form, change):
 
-        if obj.creator is not None:
+        if hasattr(obj, "creator") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
             obj.creator = request.user if request.user.is_authenticated else None
