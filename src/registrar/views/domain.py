@@ -250,6 +250,13 @@ class DomainSubOrganizationView(DomainFormBaseView):
     context_object_name = "domain"
     form_class = DomainSuborganizationForm
 
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        if self.object and self.object.domain_info and self.object.domain_info.sub_organization:
+            context["suborganization_name"] = self.object.domain_info.sub_organization.name
+        return context
+
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.organization_name instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)

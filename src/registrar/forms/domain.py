@@ -189,10 +189,6 @@ class DomainSuborganizationForm(forms.ModelForm):
         if self.instance and self.instance.sub_organization:
             self.fields["sub_organization"].widget.attrs["data-default-value"] = self.instance.sub_organization.pk
 
-    def get_suborganization_name(self):
-        """Returns the suborganization name for the readonly view"""
-        return self.instance.sub_organization.name if self.instance else None
-
 
 class BaseNameserverFormset(forms.BaseFormSet):
     def clean(self):
