@@ -7,9 +7,9 @@
 <h1>Senior Official</h1>
 
 <p>
-    Your senior official is a person within your organization who can authorize domain requests. 
+    Your senior official is a person within your organization who can authorize domain requests.
+    {% if include_read_more_text %} 
     This person must be in a role of significant, executive responsibility within the organization.
-    {% if include_read_more_text %}
     Read more about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/eligibility/#you-must-have-approval-from-a-senior-official-within-your-organization' %}">who can serve as a senior official</a>.
     {% endif %}
 </p>
