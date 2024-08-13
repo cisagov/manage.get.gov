@@ -358,9 +358,13 @@ class SeniorOfficialContactForm(ContactForm):
     """Form for updating senior official contacts."""
 
     JOIN = "senior_official"
+    full_name = forms.CharField(label="Full name", required=False)
 
     def __init__(self, disable_fields=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.id:
+            self.fields["full_name"].initial = self.instance.get_formatted_name()
 
         # Overriding bc phone not required in this form
         self.fields["phone"] = forms.IntegerField(required=False)
@@ -383,6 +387,12 @@ class SeniorOfficialContactForm(ContactForm):
         # All fields should be disabled if the domain is federal or tribal
         if disable_fields:
             DomainHelper.mass_disable_fields(fields=self.fields, disable_required=True, disable_maxlength=True)
+
+    def clean(self):
+        """Clean override to remove unused fields"""
+        cleaned_data = super().clean()
+        cleaned_data.pop("full_name", None)
+        return cleaned_data
 
     def save(self, commit=True):
         """

@@ -1,0 +1,24 @@
+{% extends 'portfolio_base.html' %}
+{% load static field_helpers%}
+
+{% block title %}Senior Official | {{ portfolio.name }} | {% endblock %}
+
+{% load static %}
+
+{% block portfolio_content %}
+<div class="grid-row grid-gap">
+    <div class="tablet:grid-col-3">
+        <p class="font-body-md margin-top-0 margin-bottom-2
+                    text-primary-darker text-semibold"
+        >
+            <span class="usa-sr-only"> Portfolio name:</span> {{ portfolio }}
+        </p>
+
+        {% include 'portfolio_organization_sidebar.html' %}
+    </div>
+
+    <div class="tablet:grid-col-9">
+        {% include "includes/senior_official.html" with can_edit=False %}
+    </div>
+</div>
+{% endblock %}
