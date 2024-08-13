@@ -6,12 +6,10 @@ from django.template.loader import get_template
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
-from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models.domain_group import DomainGroup
-from registrar.models.portfolio import Portfolio
 from registrar.models.suborganization import Suborganization
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
@@ -21,7 +19,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models import UserDomainRole, DomainInformation
+from registrar.models import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
@@ -2844,10 +2842,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         #     "classes": ("collapse", "closed"),
         #     "fields": ["administrators", "members"]}
         # ),
-        ("Portfolio domains", {
-            "classes": ("collapse", "closed"),
-            "fields": ["domains", "domain_requests"]}
-        ),
+        ("Portfolio domains", {"classes": ("collapse", "closed"), "fields": ["domains", "domain_requests"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -2919,13 +2914,13 @@ class PortfolioAdmin(ListHeaderAdmin):
     def get_field_links_as_csv(self, queryset, model_name, link_text_attribute=None, seperator=", "):
         """
         Generate HTML links for items in a queryset, using a specified attribute for link text.
-        
+
         Args:
             queryset: The queryset of items to generate links for.
             model_name: The model name used to construct the admin change URL.
             link_text_attribute: The attribute or method name to use for link text. If None, the item itself is used.
             separator: The separator to use between links in the resulting HTML.
-        
+
         Returns:
             A formatted HTML string with links to the admin change pages for each item.
         """
