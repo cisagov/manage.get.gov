@@ -1212,7 +1212,7 @@ class DomainRequest(TimeStampedModel):
         return self.is_policy_acknowledged is not None
 
     def _is_general_form_complete(self, request):
-        has_profile_feature_flag = flag_is_active(request, "profile_feature")
+        # has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
             self._is_organization_name_and_address_complete()
             and self._is_senior_official_complete()
