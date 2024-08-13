@@ -2846,7 +2846,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     fieldsets = [
         # TODO - this will need to be reworked
         #(None, {"fields": ["organization_name", "federal_agency", "creator", "created_at", "notes"]}),
-        (None, {"fields": ["organization_name", "creator", "created_at", "notes"]}),
+        (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_at", "notes"]}),
         ("Portfolio members", {"fields": ["administrators", "members"]}),
         ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
@@ -2862,28 +2862,41 @@ class PortfolioAdmin(ListHeaderAdmin):
     search_help_text = "Search by organization name."
     readonly_fields = [
         "created_at",
-
-        # Custom fields such as these must be defined as readonly, even if they are not.
+        # Custom fields such as these must be defined as readonly.
         "administrators", 
         "members",
         "domains",
         "domain_requests",
-        "suborganizations"
+        "suborganizations",
+        "federal_type",
+        "portfolio_type",
     ]
+
+    def portfolio_type(self, obj: models.Portfolio):
+        org_choices = DomainRequest.OrganizationChoices
+        org_type = org_choices.get_org_label(obj.organization_type)
+        if obj.organization_type == org_choices.FEDERAL and obj.federal_agency:
+            return " - ".join([org_type, obj.federal_agency.agency])
+        else:
+            return org_type
+    portfolio_type.short_description = "Portfolio type"
 
     def suborganizations(self, obj: models.Portfolio):
         queryset = obj.get_suborganizations()
-        return self.get_links_csv(queryset, "suborganization")
+        sep = '<div class="display-block margin-top-1"></div>'
+        return self.get_links_csv(queryset, "suborganization", seperator=sep)
     suborganizations.short_description = "Suborganizations"
 
     def domains(self, obj: models.Portfolio):
         queryset = obj.get_domains()
-        return self.get_links_csv(queryset, "domaininformation")
+        sep = '<div class="display-block margin-top-1"></div>'
+        return self.get_links_csv(queryset, "domaininformation", seperator=sep)
     domains.short_description = "Domains"
     
     def domain_requests(self, obj: models.Portfolio):
         queryset = obj.get_domain_requests()
-        return self.get_links_csv(queryset, "domainrequest")
+        sep = '<div class="display-block margin-top-1"></div>'
+        return self.get_links_csv(queryset, "domainrequest", seperator=sep)
     domain_requests.short_description = "Domain requests"
 
     def administrators(self, obj: models.Portfolio):
@@ -2902,8 +2915,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         "federal_agency",
     ]
 
-    # TODO change these names
-    def get_links_csv(self, queryset, model_name, link_text_attribute=None):
+    # Q for reviewers: What should this be called?
+    def get_links_csv(self, queryset, model_name, link_text_attribute=None, seperator=", "):
         links = []
         for item in queryset:
             if link_text_attribute:
@@ -2914,26 +2927,14 @@ class PortfolioAdmin(ListHeaderAdmin):
                 item_display_value = item
 
             if item_display_value:
-                link = self.get_html_change_link(model_name=model_name, object_id=item.pk, text_content=item_display_value)
-                links.append(link)
-        return format_html(", ".join(links))
-
-    def get_html_change_link(self, model_name, object_id, text_content):
-        change_url = reverse(f"admin:registrar_{model_name}_change", args=[object_id])
-        return f'<a href="{change_url}">{escape(text_content)}</a>'
-
+                change_url = reverse(f"admin:registrar_{model_name}_change", args=[item.pk])
+                links.append(f'<a href="{change_url}">{escape(item_display_value)}</a>')
+        return format_html(seperator.join(links))
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups"""
         obj = self.get_object(request, object_id)
-
-        # ---- Domain Groups
-        domain_groups = DomainGroup.objects.filter(portfolio=obj)
-
-        # ---- Suborganizations
-        suborganizations = Suborganization.objects.filter(portfolio=obj)
-
-        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
+        extra_context = {"administrators": obj.get_administrators(), "members": obj.get_members()}
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
