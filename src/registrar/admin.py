@@ -2835,25 +2835,35 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
-
 class PortfolioAdmin(ListHeaderAdmin):
-    class SuborganizationInline(admin.StackedInline):
-        """"""
-        model = models.Suborganization
-
     change_form_template = "django/admin/portfolio_change_form.html"
-    #inlines = [SuborganizationInline, UserInline]
     fieldsets = [
-        # TODO - this will need to be reworked
-        #(None, {"fields": ["organization_name", "federal_agency", "creator", "created_at", "notes"]}),
         (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_at", "notes"]}),
-        ("Portfolio members", {"fields": ["administrators", "members"]}),
-        ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
+        ("Portfolio members", {
+            "classes": ("collapse", "closed"),
+            "fields": ["administrators", "members"]}
+        ),
+        ("Portfolio domains", {
+            "classes": ("collapse", "closed"),
+            "fields": ["domains", "domain_requests"]}
+        ),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
-        ("Organization name and mailing address", {"fields": ["federal_agency", "state_territory", "address_line1", "address_line2", "city", "zipcode", "urbanization"]}),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "federal_agency",
+                    "state_territory",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "zipcode",
+                    "urbanization",
+                ]
+            },
+        ),
         ("Suborganizations", {"fields": ["suborganizations"]}),
         ("Senior official", {"fields": ["senior_official"]}),
-        ("Other", {"fields": ["security_contact_email"]}),
     ]
 
     # NOTE: use add_fieldsets to modify that page
@@ -2863,7 +2873,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     readonly_fields = [
         "created_at",
         # Custom fields such as these must be defined as readonly.
-        "administrators", 
+        "administrators",
         "members",
         "domains",
         "domain_requests",
@@ -2872,41 +2882,55 @@ class PortfolioAdmin(ListHeaderAdmin):
         "portfolio_type",
     ]
 
+    # TODO - this returns None when empty rather than - for some reason
     def portfolio_type(self, obj: models.Portfolio):
+        """Returns a concat of organization type and federal agency,
+        seperated by a dash (-)"""
         org_choices = DomainRequest.OrganizationChoices
         org_type = org_choices.get_org_label(obj.organization_type)
         if obj.organization_type == org_choices.FEDERAL and obj.federal_agency:
             return " - ".join([org_type, obj.federal_agency.agency])
         else:
             return org_type
+
     portfolio_type.short_description = "Portfolio type"
 
     def suborganizations(self, obj: models.Portfolio):
+        """Returns a comma seperated list of links for each related suborg"""
         queryset = obj.get_suborganizations()
         sep = '<div class="display-block margin-top-1"></div>'
         return self.get_links_csv(queryset, "suborganization", seperator=sep)
+
     suborganizations.short_description = "Suborganizations"
 
     def domains(self, obj: models.Portfolio):
+        """Returns a comma seperated list of links for each related domain"""
         queryset = obj.get_domains()
         sep = '<div class="display-block margin-top-1"></div>'
         return self.get_links_csv(queryset, "domaininformation", seperator=sep)
+
     domains.short_description = "Domains"
-    
+
     def domain_requests(self, obj: models.Portfolio):
+        """Returns a comma seperated list of links for each related domain request"""
         queryset = obj.get_domain_requests()
         sep = '<div class="display-block margin-top-1"></div>'
         return self.get_links_csv(queryset, "domainrequest", seperator=sep)
+
     domain_requests.short_description = "Domain requests"
 
     def administrators(self, obj: models.Portfolio):
+        """Returns a comma seperated list of links for each related administrator"""
         queryset = obj.get_administrators()
         return self.get_links_csv(queryset, "user", "get_full_name")
+
     administrators.short_description = "Administrators"
 
     def members(self, obj: models.Portfolio):
+        """Returns a comma seperated list of links for each related member"""
         queryset = obj.get_members()
         return self.get_links_csv(queryset, "user", "get_full_name")
+
     members.short_description = "Members"
 
     # Creates select2 fields (with search bars)

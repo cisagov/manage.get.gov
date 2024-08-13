@@ -23,9 +23,24 @@ class Portfolio(TimeStampedModel):
     creator = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
-        help_text="Associated user",
+        verbose_name="Portfolio creator",
         related_name="created_portfolios",
         unique=False,
+    )
+
+    # Q for reviewers: shouldn't this be a required field?
+    organization_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="Portfolio organization",
+    )
+
+    organization_type = models.CharField(
+        max_length=255,
+        choices=OrganizationChoices.choices,
+        null=True,
+        blank=True,
+        help_text="Type of organization",
     )
 
     notes = models.TextField(
@@ -51,21 +66,7 @@ class Portfolio(TimeStampedModel):
     senior_official = models.ForeignKey(
         "registrar.SeniorOfficial",
         on_delete=models.PROTECT,
-        help_text="Associated senior official",
         unique=False,
-        null=True,
-        blank=True,
-    )
-
-    organization_type = models.CharField(
-        max_length=255,
-        choices=OrganizationChoices.choices,
-        null=True,
-        blank=True,
-        help_text="Type of organization",
-    )
-
-    organization_name = models.CharField(
         null=True,
         blank=True,
     )
@@ -118,7 +119,7 @@ class Portfolio(TimeStampedModel):
     )
 
     def __str__(self) -> str:
-        return f"{self.organization_name}"
+        return str(self.organization_name)
 
     # == Getters for domains == #
     def get_domains(self):
