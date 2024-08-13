@@ -615,7 +615,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
 
     _meta = Meta()
 
-    inlines = [UserContactInline]
+    # inlines = [UserContactInline]
 
     list_display = (
         "username",
@@ -906,8 +906,6 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {"fields": ["user", "first_name", "middle_name", "last_name", "title", "email", "phone"]},
         )
     ]
-
-    autocomplete_fields = ["user"]
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
 

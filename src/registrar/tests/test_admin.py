@@ -68,7 +68,6 @@ class TestFsmModelResource(TestCase):
     def setUp(self):
         self.resource = FsmModelResource()
 
-
     def test_init_instance(self):
         """Test initializing an instance of a class with a FSM field"""
 
@@ -2508,7 +2507,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 list(queryset),
                 list(expected_order),
             )
-            
+
     @less_console_noise_decorator
     def test_init_instance(self):
         """Test initializing an instance of a class with a FSM field"""
