@@ -161,8 +161,15 @@ class CheckPortfolioMiddleware:
 
 
 class ANDIMiddleware(MiddlewareMixin):
-    def process_response(self, request, response):
-        # Check if the response content type is HTML
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        return response
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        response = self.get_response(request)
         if "text/html" in response.get("Content-Type", ""):
             andi_script = """
             <script src="https://www.ssa.gov/accessibility/andi/andi.js"></script>
@@ -171,4 +178,4 @@ class ANDIMiddleware(MiddlewareMixin):
             content = response.content.decode("utf-8")
             content = content.replace("</body>", f"{andi_script}</body>")
             response.content = content.encode("utf-8")
-        return response
+        return None
