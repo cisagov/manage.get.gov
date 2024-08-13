@@ -121,6 +121,14 @@ class Portfolio(TimeStampedModel):
     def __str__(self) -> str:
         return str(self.organization_name)
 
+    @property
+    def portfolio_type(self):
+        org_type = self.OrganizationChoices.get_org_label(self.organization_type)
+        if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
+            return " - ".join([org_type, self.federal_agency.agency])
+        else:
+            return org_type
+
     # == Getters for domains == #
     def get_domains(self):
         """Returns all DomainInformations associated with this portfolio"""

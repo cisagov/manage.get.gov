@@ -2839,10 +2839,11 @@ class PortfolioAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
         (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_at", "notes"]}),
-        ("Portfolio members", {
-            "classes": ("collapse", "closed"),
-            "fields": ["administrators", "members"]}
-        ),
+        # TODO - uncomment in #2521
+        # ("Portfolio members", {
+        #     "classes": ("collapse", "closed"),
+        #     "fields": ["administrators", "members"]}
+        # ),
         ("Portfolio domains", {
             "classes": ("collapse", "closed"),
             "fields": ["domains", "domain_requests"]}
@@ -2882,16 +2883,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         "portfolio_type",
     ]
 
-    # TODO - this returns None when empty rather than - for some reason
     def portfolio_type(self, obj: models.Portfolio):
-        """Returns a concat of organization type and federal agency,
-        seperated by a dash (-)"""
-        org_choices = DomainRequest.OrganizationChoices
-        org_type = org_choices.get_org_label(obj.organization_type)
-        if obj.organization_type == org_choices.FEDERAL and obj.federal_agency:
-            return " - ".join([org_type, obj.federal_agency.agency])
-        else:
-            return org_type
+        return obj.portfolio_type if obj.portfolio_type else "-"
 
     portfolio_type.short_description = "Portfolio type"
 
@@ -2953,7 +2946,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             if item_display_value:
                 change_url = reverse(f"admin:registrar_{model_name}_change", args=[item.pk])
                 links.append(f'<a href="{change_url}">{escape(item_display_value)}</a>')
-        return format_html(seperator.join(links))
+        return format_html(seperator.join(links)) if links else "-"
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups"""
