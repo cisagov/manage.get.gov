@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.forms import formset_factory
 from registrar.models import DomainRequest
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
+from registrar.models.suborganization import Suborganization
 from registrar.models.utility.domain_helper import DomainHelper
 from registrar.utility.errors import (
     NameserverError,
@@ -151,6 +152,42 @@ class DomainNameserverForm(forms.Form):
                 )
             else:
                 self.add_error("ip", str(e))
+
+
+class DomainSuborganizationForm(forms.ModelForm):
+    """Form for updating the suborganization"""
+
+    sub_organization = forms.ModelChoiceField(
+        queryset=Suborganization.objects.none(),
+        required=False,
+        widget=forms.Select(),
+    )
+
+    class Meta:
+        model = DomainInformation
+        fields = [
+            "sub_organization",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        portfolio = self.instance.portfolio if self.instance else None
+        self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=portfolio)
+
+        # Set initial value
+        if self.instance and self.instance.sub_organization:
+            self.fields["sub_organization"].initial = self.instance.sub_organization
+
+        # Set custom form label
+        self.fields["sub_organization"].label = "Suborganization name"
+
+        # Use the combobox rather than the regular select widget
+        self.fields["sub_organization"].widget.template_name = "django/forms/widgets/combobox.html"
+
+        # Set data-default-value attribute
+        if self.instance and self.instance.sub_organization:
+            self.fields["sub_organization"].widget.attrs["data-default-value"] = self.instance.sub_organization.pk
 
 
 class BaseNameserverFormset(forms.BaseFormSet):

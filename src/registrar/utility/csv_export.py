@@ -578,10 +578,9 @@ class DomainDataTypeUser(DomainDataType):
         if request is None or not hasattr(request, "user") or not request.user:
             # Return nothing
             return Q(id__in=[])
-
-        user_domain_roles = UserDomainRole.objects.filter(user=request.user)
-        domain_ids = user_domain_roles.values_list("domain_id", flat=True)
-        return Q(domain__id__in=domain_ids)
+        else:
+            # Get all domains the user is associated with
+            return Q(domain__id__in=request.user.get_user_domain_ids(request))
 
 
 class DomainDataFull(DomainExport):
