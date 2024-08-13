@@ -2867,19 +2867,16 @@ class PortfolioAdmin(ListHeaderAdmin):
         ("Senior official", {"fields": ["senior_official"]}),
     ]
 
-    # NOTE: use add_fieldsets to modify that page
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
     readonly_fields = [
         "created_at",
+        "federal_type",
         # Custom fields such as these must be defined as readonly.
-        "administrators",
-        "members",
         "domains",
         "domain_requests",
         "suborganizations",
-        "federal_type",
         "portfolio_type",
     ]
 
@@ -2951,7 +2948,14 @@ class PortfolioAdmin(ListHeaderAdmin):
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups"""
         obj = self.get_object(request, object_id)
-        extra_context = {"administrators": obj.get_administrators(), "members": obj.get_members()}
+
+        # ---- Domain Groups
+        domain_groups = DomainGroup.objects.filter(portfolio=obj)
+
+        # ---- Suborganizations
+        suborganizations = Suborganization.objects.filter(portfolio=obj)
+
+        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
