@@ -1017,20 +1017,27 @@ class DomainRequestTests(TestWithUser, WebTest):
         type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
+        # fill out the organization type section then submit
         type_form = type_page.forms[0]
         type_form["generic_org_type-generic_org_type"] = "federal"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
 
-        # follow first redirect
+        # follow first redirect to the next section
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         federal_page = type_result.follow()
 
-        # Now on federal type page, click back to the organization type
+        # we need to fill out the federal section so it stays unlocked
+        fed_branch_form = federal_page.forms[0]
+        fed_branch_form["organization_federal-federal_type"] = "executive"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        fed_branch_form.submit()
+
+        # Now click back to the organization type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         new_page = federal_page.click(str(self.TITLES["generic_org_type"]), index=0)
 
-        # Should be a link to the organization_federal page
+        # Should be a link to the organization_federal page since it is now unlocked
         self.assertGreater(
             len(new_page.html.find_all("a", href="/request/organization_federal/")),
             0,
