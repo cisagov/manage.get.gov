@@ -6,10 +6,12 @@ from django.template.loader import get_template
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
+from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models.domain_group import DomainGroup
+from registrar.models.portfolio import Portfolio
 from registrar.models.suborganization import Suborganization
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
@@ -19,7 +21,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models.user_domain_role import UserDomainRole
+from registrar.models import UserDomainRole, DomainInformation
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
@@ -39,7 +41,7 @@ from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.admin.widgets import FilteredSelectMultiple
-
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
@@ -2833,22 +2835,93 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         super().save_model(request, obj, form, change)
 
 
+
 class PortfolioAdmin(ListHeaderAdmin):
+    class SuborganizationInline(admin.StackedInline):
+        """"""
+        model = models.Suborganization
 
     change_form_template = "django/admin/portfolio_change_form.html"
+    #inlines = [SuborganizationInline, UserInline]
+    fieldsets = [
+        # TODO - this will need to be reworked
+        #(None, {"fields": ["organization_name", "federal_agency", "creator", "created_at", "notes"]}),
+        (None, {"fields": ["organization_name", "creator", "created_at", "notes"]}),
+        ("Portfolio members", {"fields": ["administrators", "members"]}),
+        ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
+        ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
+        ("Organization name and mailing address", {"fields": ["federal_agency", "state_territory", "address_line1", "address_line2", "city", "zipcode", "urbanization"]}),
+        ("Suborganizations", {"fields": ["suborganizations"]}),
+        ("Senior official", {"fields": ["senior_official"]}),
+        ("Other", {"fields": ["security_contact_email"]}),
+    ]
 
+    # NOTE: use add_fieldsets to modify that page
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
     readonly_fields = [
-        "creator",
+        "created_at",
+
+        # Custom fields such as these must be defined as readonly, even if they are not.
+        "administrators", 
+        "members",
+        "domains",
+        "domain_requests",
+        "suborganizations"
     ]
+
+    def suborganizations(self, obj: models.Portfolio):
+        queryset = obj.get_suborganizations()
+        return self.get_links_csv(queryset, "suborganization")
+    suborganizations.short_description = "Suborganizations"
+
+    def domains(self, obj: models.Portfolio):
+        queryset = obj.get_domains()
+        return self.get_links_csv(queryset, "domaininformation")
+    domains.short_description = "Domains"
+    
+    def domain_requests(self, obj: models.Portfolio):
+        queryset = obj.get_domain_requests()
+        return self.get_links_csv(queryset, "domainrequest")
+    domain_requests.short_description = "Domain requests"
+
+    def administrators(self, obj: models.Portfolio):
+        queryset = obj.get_administrators()
+        return self.get_links_csv(queryset, "user", "get_full_name")
+    administrators.short_description = "Administrators"
+
+    def members(self, obj: models.Portfolio):
+        queryset = obj.get_members()
+        return self.get_links_csv(queryset, "user", "get_full_name")
+    members.short_description = "Members"
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
         "creator",
         "federal_agency",
     ]
+
+    # TODO change these names
+    def get_links_csv(self, queryset, model_name, link_text_attribute=None):
+        links = []
+        for item in queryset:
+            if link_text_attribute:
+                item_display_value = getattr(item, link_text_attribute)
+                if callable(item_display_value):
+                    item_display_value = item_display_value()
+            else:
+                item_display_value = item
+
+            if item_display_value:
+                link = self.get_html_change_link(model_name=model_name, object_id=item.pk, text_content=item_display_value)
+                links.append(link)
+        return format_html(", ".join(links))
+
+    def get_html_change_link(self, model_name, object_id, text_content):
+        change_url = reverse(f"admin:registrar_{model_name}_change", args=[object_id])
+        return f'<a href="{change_url}">{escape(text_content)}</a>'
+
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups"""

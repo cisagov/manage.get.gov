@@ -2,6 +2,8 @@ from django.db import models
 
 from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.utility.constants import BranchChoices
 
 from .utility.time_stamped_model import TimeStampedModel
 
@@ -37,6 +39,13 @@ class Portfolio(TimeStampedModel):
         help_text="Associated federal agency",
         unique=False,
         default=FederalAgency.get_non_federal_agency,
+    )
+
+    federal_type = models.CharField(
+        max_length=50,
+        choices=BranchChoices.choices,
+        null=True,
+        blank=True,
     )
 
     senior_official = models.ForeignKey(
@@ -110,3 +119,46 @@ class Portfolio(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.organization_name}"
+
+    # == Getters for domains == #
+    def get_domains(self):
+        """Returns all DomainInformations associated with this portfolio"""
+        return self.information_portfolio.all()
+
+    def get_domain_requests(self):
+        """Returns all DomainRequests associated with this portfolio"""
+        return self.DomainRequest_portfolio.all()
+
+    # == Getters for suborganization == #
+    def get_suborganizations(self):
+        """Returns all suborganizations associated with this portfolio"""
+        return self.portfolio_suborganizations.all()
+
+    # == Getters for users == #
+    def get_users(self):
+        """Returns all users associated with this portfolio"""
+        return self.portfolio_users.all()
+
+    def get_administrators(self):
+        """Returns all administrators associated with this portfolio"""
+        return self.portfolio_users.filter(
+            portfolio_roles__overlap=[
+                UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            ]
+        )
+    
+    def get_readonly_administrators(self):
+        """Returns all readonly_administrators associated with this portfolio"""
+        return self.portfolio_users.filter(
+            portfolio_roles__overlap=[
+                UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY,
+            ]
+        )
+
+    def get_members(self):
+        """Returns all members associated with this portfolio"""
+        return self.portfolio_users.filter(
+            portfolio_roles__overlap=[
+                UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            ]
+        )
