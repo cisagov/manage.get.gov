@@ -493,7 +493,7 @@ class CustomLogEntryAdmin(LogEntryAdmin):
     #     return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
-# TODO - this should be refactored. This is shared among every class that inherits this,
+# TODO #2571 - this should be refactored. This is shared among every class that inherits this,
 # and it breaks the senior_official field because it exists both as model "Contact" and "SeniorOfficial".
 class AdminSortFields:
     _name_sort = ["first_name", "last_name", "email"]
@@ -1550,6 +1550,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Customize the behavior of formfields with foreign key relationships. This will customize
         the behavior of selects. Customized behavior includes sorting of objects in list."""
+        # TODO #2571
         # Remove this check on senior_official if this underlying model changes from
         # "Contact" to "SeniorOfficial" or if we refactor AdminSortFields.
         # Removing this will cause the list on django admin to return SeniorOffical
@@ -2227,6 +2228,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Customize the behavior of formfields with foreign key relationships. This will customize
         the behavior of selects. Customized behavior includes sorting of objects in list."""
+        # TODO #2571
         # Remove this check on senior_official if this underlying model changes from
         # "Contact" to "SeniorOfficial" or if we refactor AdminSortFields.
         # Removing this will cause the list on django admin to return SeniorOffical
