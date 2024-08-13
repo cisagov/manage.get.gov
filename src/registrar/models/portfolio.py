@@ -142,32 +142,3 @@ class Portfolio(TimeStampedModel):
     def get_suborganizations(self):
         """Returns all suborganizations associated with this portfolio"""
         return self.portfolio_suborganizations.all()
-
-    # == Getters for users == #
-    def get_users(self):
-        """Returns all users associated with this portfolio"""
-        return self.portfolio_users.all()
-
-    def get_administrators(self):
-        """Returns all administrators associated with this portfolio"""
-        return self.portfolio_users.filter(
-            portfolio_roles__overlap=[
-                UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-            ]
-        )
-    
-    def get_readonly_administrators(self):
-        """Returns all readonly_administrators associated with this portfolio"""
-        return self.portfolio_users.filter(
-            portfolio_roles__overlap=[
-                UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY,
-            ]
-        )
-
-    def get_members(self):
-        """Returns all members associated with this portfolio"""
-        return self.portfolio_users.filter(
-            portfolio_roles__overlap=[
-                UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
-            ]
-        )

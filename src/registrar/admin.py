@@ -2892,7 +2892,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         """Returns a comma seperated list of links for each related suborg"""
         queryset = obj.get_suborganizations()
         sep = '<div class="display-block margin-top-1"></div>'
-        return self.get_links_csv(queryset, "suborganization", seperator=sep)
+        return self.get_field_links_as_csv(queryset, "suborganization", seperator=sep)
 
     suborganizations.short_description = "Suborganizations"
 
@@ -2900,7 +2900,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         """Returns a comma seperated list of links for each related domain"""
         queryset = obj.get_domains()
         sep = '<div class="display-block margin-top-1"></div>'
-        return self.get_links_csv(queryset, "domaininformation", seperator=sep)
+        return self.get_field_links_as_csv(queryset, "domaininformation", seperator=sep)
 
     domains.short_description = "Domains"
 
@@ -2908,23 +2908,9 @@ class PortfolioAdmin(ListHeaderAdmin):
         """Returns a comma seperated list of links for each related domain request"""
         queryset = obj.get_domain_requests()
         sep = '<div class="display-block margin-top-1"></div>'
-        return self.get_links_csv(queryset, "domainrequest", seperator=sep)
+        return self.get_field_links_as_csv(queryset, "domainrequest", seperator=sep)
 
     domain_requests.short_description = "Domain requests"
-
-    def administrators(self, obj: models.Portfolio):
-        """Returns a comma seperated list of links for each related administrator"""
-        queryset = obj.get_administrators()
-        return self.get_links_csv(queryset, "user", "get_full_name")
-
-    administrators.short_description = "Administrators"
-
-    def members(self, obj: models.Portfolio):
-        """Returns a comma seperated list of links for each related member"""
-        queryset = obj.get_members()
-        return self.get_links_csv(queryset, "user", "get_full_name")
-
-    members.short_description = "Members"
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
@@ -2933,9 +2919,23 @@ class PortfolioAdmin(ListHeaderAdmin):
     ]
 
     # Q for reviewers: What should this be called?
-    def get_links_csv(self, queryset, model_name, link_text_attribute=None, seperator=", "):
+    def get_field_links_as_csv(self, queryset, model_name, link_text_attribute=None, seperator=", "):
+        """
+        Generate HTML links for items in a queryset, using a specified attribute for link text.
+        
+        Args:
+            queryset: The queryset of items to generate links for.
+            model_name: The model name used to construct the admin change URL.
+            link_text_attribute: The attribute or method name to use for link text. If None, the item itself is used.
+            separator: The separator to use between links in the resulting HTML.
+        
+        Returns:
+            A formatted HTML string with links to the admin change pages for each item.
+        """
         links = []
         for item in queryset:
+
+            # This allows you to pass in link_text_attribute="get_full_name" for instance.
             if link_text_attribute:
                 item_display_value = getattr(item, link_text_attribute)
                 if callable(item_display_value):

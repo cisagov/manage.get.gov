@@ -12,6 +12,6 @@
 
         original_object is just a variable name for "DomainInformation" or "DomainRequest"
         {% endcomment %}
-        {% include "django/admin/includes/portfolio_fieldset.html" with original_object=original %}
+        {% include "django/admin/includes/detail_table_fieldset.html" with original_object=original %}
     {% endfor %}
 {% endblock %}
