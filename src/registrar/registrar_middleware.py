@@ -168,7 +168,7 @@ class ANDIMiddleware(MiddlewareMixin):
         response = self.get_response(request)
         return response
 
-    def process_view(self, request, view_func, view_args, view_kwargs):
+    def process_template_view(self, request, view_func, view_args, view_kwargs):
         response = self.get_response(request)
         if "text/html" in response.get("Content-Type", ""):
             andi_script = """
