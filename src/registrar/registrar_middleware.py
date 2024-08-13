@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from registrar.models.user import User
 from waffle.decorators import flag_is_active
+from django.utils.deprecation import MiddlewareMixin
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
 
@@ -157,3 +158,17 @@ class CheckPortfolioMiddleware:
                 return HttpResponseRedirect(portfolio_redirect)
 
         return None
+
+
+class ANDIMiddleware(MiddlewareMixin):
+    def process_response(self, request, response):
+        # Check if the response content type is HTML
+        if "text/html" in response.get("Content-Type", ""):
+            andi_script = """
+            <script src="https://www.ssa.gov/accessibility/andi/andi.js"></script>
+            """
+            # Inject the ANDI script before the closing </body> tag
+            content = response.content.decode("utf-8")
+            content = content.replace("</body>", f"{andi_script}</body>")
+            response.content = content.encode("utf-8")
+        return response
