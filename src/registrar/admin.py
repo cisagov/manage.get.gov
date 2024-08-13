@@ -19,7 +19,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models import UserDomainRole
+from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
