@@ -2,7 +2,6 @@ from django.db import models
 
 from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.constants import BranchChoices
 
 from .utility.time_stamped_model import TimeStampedModel
@@ -123,6 +122,8 @@ class Portfolio(TimeStampedModel):
 
     @property
     def portfolio_type(self):
+        """Returns a combination of organization_type and federal_agency, 
+        seperated by ' - '. If no federal_agency is found, we just return the org type."""
         org_type = self.OrganizationChoices.get_org_label(self.organization_type)
         if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
             return " - ".join([org_type, self.federal_agency.agency])

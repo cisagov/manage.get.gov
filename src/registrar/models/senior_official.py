@@ -55,6 +55,7 @@ class SeniorOfficial(TimeStampedModel):
         return " ".join(names) if names else "Unknown"
 
     def has_contact_info(self):
+        """Determines if this user has contact information, such as an email or phone number."""
         return bool(self.title or self.email or self.phone)
 
     def __str__(self):

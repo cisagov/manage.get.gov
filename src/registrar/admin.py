@@ -2876,6 +2876,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     ]
 
     def portfolio_type(self, obj: models.Portfolio):
+        """Returns the portfolio type, or "-" if the result is empty"""
         return obj.portfolio_type if obj.portfolio_type else "-"
 
     portfolio_type.short_description = "Portfolio type"
