@@ -1,5 +1,8 @@
 {% load static %}
 
+{% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
+{% url 'get_domain_requests_json' as url %}
+<input id="get_domain_requests_json_url" class="display-none" value="{{url}}" />
 <section class="section--outlined domain-requests" id="domain-requests">
     <div class="grid-row">
       {% if not has_domain_requests_portfolio_permission %}

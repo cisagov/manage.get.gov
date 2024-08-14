@@ -1183,8 +1183,19 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} portfolio - the portfolio id
      */
     function loadDomains(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, status = currentStatus, searchTerm = currentSearchTerm, portfolio = portfolioValue) {
+      // fetch json of page of domais, given params
+      let baseUrl = document.getElementById("get_domains_json_url");
+      if (!baseUrl) {
+        return;
+      }
+
+      let baseUrlValue = baseUrl.value;
+      if (!baseUrlValue) {
+        return;
+      }
+
       // fetch json of page of domains, given params
-      let url = `/get-domains-json/?page=${page}&sort_by=${sortBy}&order=${order}&status=${status}&search_term=${searchTerm}`
+      let url = `${baseUrlValue}?page=${page}&sort_by=${sortBy}&order=${order}&status=${status}&search_term=${searchTerm}`
       if (portfolio)
         url += `&portfolio=${portfolio}`
 
@@ -1524,7 +1535,17 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, searchTerm = currentSearchTerm) {
       // fetch json of page of domain requests, given params
-      fetch(`/get-domain-requests-json/?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
+      let baseUrl = document.getElementById("get_domain_requests_json_url");
+      if (!baseUrl) {
+        return;
+      }
+
+      let baseUrlValue = baseUrl.value;
+      if (!baseUrlValue) {
+        return;
+      }
+
+      fetch(`${baseUrlValue}?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
