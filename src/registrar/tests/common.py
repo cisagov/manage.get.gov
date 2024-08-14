@@ -906,6 +906,7 @@ def completed_domain_request(  # noqa
     federal_agency=None,
     federal_type=None,
     action_needed_reason=None,
+    portfolio=None,
 ):
     """A completed domain request."""
     if not user:
@@ -975,6 +976,9 @@ def completed_domain_request(  # noqa
 
     if action_needed_reason:
         domain_request_kwargs["action_needed_reason"] = action_needed_reason
+
+    if portfolio:
+        domain_request_kwargs["portfolio"] = portfolio
 
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 

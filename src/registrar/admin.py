@@ -2938,7 +2938,9 @@ class PortfolioAdmin(ListHeaderAdmin):
         """Returns a comma seperated list of links for each related domain request"""
         queryset = obj.get_domain_requests()
         sep = '<div class="display-block margin-top-1"></div>'
-        return self.get_field_links_as_csv(queryset, "domainrequest", link_info_attribute="get_status_display", seperator=sep)
+        return self.get_field_links_as_csv(
+            queryset, "domainrequest", link_info_attribute="get_status_display", seperator=sep
+        )
 
     domain_requests.short_description = "Domain requests"
 
