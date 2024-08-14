@@ -13,6 +13,10 @@ class Portfolio(TimeStampedModel):
     manageable groups.
     """
 
+    # Addresses the UnorderedObjectListWarning
+    class Meta:
+        ordering = ["organization_name"]
+
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices

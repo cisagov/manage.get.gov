@@ -116,7 +116,7 @@ class User(AbstractUser):
         "registrar.Portfolio",
         null=True,
         blank=True,
-        related_name="portfolio_users",
+        related_name="user",
         on_delete=models.SET_NULL,
     )
 
