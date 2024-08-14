@@ -1128,7 +1128,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
         page = self.client.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Senior official", count=14)
+        self.assertContains(page, "Senior official", count=3)
 
     @less_console_noise_decorator
     def test_domain_senior_official_content(self):
@@ -1192,14 +1192,14 @@ class TestDomainSeniorOfficial(TestDomainOverview):
                     self.assertTrue("disabled" in form[field_name].attrs)
 
     @less_console_noise_decorator
-    def test_domain_edit_senior_official_federal(self):
+    def test_domain_cannot_edit_senior_official_when_federal(self):
         """Tests that no edit can occur when the underlying domain is federal"""
 
         # Set the org type to federal
         self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.FEDERAL
         self.domain_information.save()
 
-        # Add an SO. We can do this at the model level, just not the form level.
+        # Add an SO
         self.domain_information.senior_official = Contact(
             first_name="Apple", last_name="Tester", title="CIO", email="nobody@igorville.gov"
         )
@@ -1207,49 +1207,13 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.save()
 
         so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # Test if the form is populating data correctly
-        so_form = so_page.forms[0]
-
-        test_cases = [
-            ("first_name", "Apple"),
-            ("last_name", "Tester"),
-            ("title", "CIO"),
-            ("email", "nobody@igorville.gov"),
-        ]
-        self.assert_all_form_fields_have_expected_values(so_form, test_cases, test_for_disabled=True)
-
-        # Attempt to change data on each field. Because this domain is federal,
-        # this should not succeed.
-        so_form["first_name"] = "Orange"
-        so_form["last_name"] = "Smoothie"
-        so_form["title"] = "Cat"
-        so_form["email"] = "somebody@igorville.gov"
-
-        submission = so_form.submit()
-
-        # A 302 indicates this page underwent a redirect.
-        self.assertEqual(submission.status_code, 302)
-
-        followed_submission = submission.follow()
-
-        # Test the returned form for data accuracy. These values should be unchanged.
-        new_form = followed_submission.forms[0]
-        self.assert_all_form_fields_have_expected_values(new_form, test_cases, test_for_disabled=True)
-
-        # refresh domain information. Test these values in the DB.
-        self.domain_information.refresh_from_db()
-
-        # All values should be unchanged. These are defined manually for code clarity.
-        self.assertEqual("Apple", self.domain_information.senior_official.first_name)
-        self.assertEqual("Tester", self.domain_information.senior_official.last_name)
-        self.assertEqual("CIO", self.domain_information.senior_official.title)
-        self.assertEqual("nobody@igorville.gov", self.domain_information.senior_official.email)
+        self.assertContains(so_page, "Apple Tester")
+        self.assertContains(so_page, "CIO")
+        self.assertContains(so_page, "nobody@igorville.gov")
+        self.assertNotContains(so_page, "Save")
 
     @less_console_noise_decorator
-    def test_domain_edit_senior_official_tribal(self):
+    def test_domain_cannot_edit_senior_official_tribal(self):
         """Tests that no edit can occur when the underlying domain is tribal"""
 
         # Set the org type to federal
@@ -1264,46 +1228,10 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.save()
 
         so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # Test if the form is populating data correctly
-        so_form = so_page.forms[0]
-
-        test_cases = [
-            ("first_name", "Apple"),
-            ("last_name", "Tester"),
-            ("title", "CIO"),
-            ("email", "nobody@igorville.gov"),
-        ]
-        self.assert_all_form_fields_have_expected_values(so_form, test_cases, test_for_disabled=True)
-
-        # Attempt to change data on each field. Because this domain is federal,
-        # this should not succeed.
-        so_form["first_name"] = "Orange"
-        so_form["last_name"] = "Smoothie"
-        so_form["title"] = "Cat"
-        so_form["email"] = "somebody@igorville.gov"
-
-        submission = so_form.submit()
-
-        # A 302 indicates this page underwent a redirect.
-        self.assertEqual(submission.status_code, 302)
-
-        followed_submission = submission.follow()
-
-        # Test the returned form for data accuracy. These values should be unchanged.
-        new_form = followed_submission.forms[0]
-        self.assert_all_form_fields_have_expected_values(new_form, test_cases, test_for_disabled=True)
-
-        # refresh domain information. Test these values in the DB.
-        self.domain_information.refresh_from_db()
-
-        # All values should be unchanged. These are defined manually for code clarity.
-        self.assertEqual("Apple", self.domain_information.senior_official.first_name)
-        self.assertEqual("Tester", self.domain_information.senior_official.last_name)
-        self.assertEqual("CIO", self.domain_information.senior_official.title)
-        self.assertEqual("nobody@igorville.gov", self.domain_information.senior_official.email)
+        self.assertContains(so_page, "Apple Tester")
+        self.assertContains(so_page, "CIO")
+        self.assertContains(so_page, "nobody@igorville.gov")
+        self.assertNotContains(so_page, "Save")
 
     @less_console_noise_decorator
     def test_domain_edit_senior_official_creates_new(self):
@@ -1525,6 +1453,110 @@ class TestDomainOrganization(TestDomainOverview):
 
 class TestDomainSuborganization(TestDomainOverview):
     """Tests the Suborganization page for portfolio users"""
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_edit_suborganization_field(self):
+        """Ensure that org admins can edit the suborganization field"""
+        # Create a portfolio and two suborgs
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        suborg_2 = Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
+
+        # Create an unrelated portfolio
+        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
+        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
+
+        # Add the portfolio to the domain_information object
+        self.domain_information.portfolio = portfolio
+        self.domain_information.sub_organization = suborg
+
+        # Add a organization_name to test if the old value still displays
+        self.domain_information.organization_name = "Broccoli"
+        self.domain_information.save()
+        self.domain_information.refresh_from_db()
+
+        # Add portfolio perms to the user object
+        self.user.portfolio = portfolio
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertEqual(self.domain_information.sub_organization, suborg)
+
+        # Navigate to the suborganization page
+        page = self.app.get(reverse("domain-suborganization", kwargs={"pk": self.domain.id}))
+
+        # The page should contain the choices Vanilla and Chocolate
+        self.assertContains(page, "Vanilla")
+        self.assertContains(page, "Chocolate")
+        self.assertNotContains(page, unrelated_suborg.name)
+
+        # Assert that the right option is selected. This component uses data-default-value.
+        self.assertContains(page, f'data-default-value="{suborg.id}"')
+
+        # Try changing the suborg
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        page.form["sub_organization"] = suborg_2.id
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        page = page.form.submit().follow()
+
+        # The page should contain the choices Vanilla and Chocolate
+        self.assertContains(page, "Vanilla")
+        self.assertContains(page, "Chocolate")
+        self.assertNotContains(page, unrelated_suborg.name)
+
+        # Assert that the right option is selected
+        self.assertContains(page, f'data-default-value="{suborg_2.id}"')
+
+        self.domain_information.refresh_from_db()
+        self.assertEqual(self.domain_information.sub_organization, suborg_2)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_view_suborganization_field(self):
+        """Only org admins can edit the suborg field, ensure that others cannot"""
+
+        # Create a portfolio and two suborgs
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
+        Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
+
+        # Create an unrelated portfolio
+        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
+        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
+
+        # Add the portfolio to the domain_information object
+        self.domain_information.portfolio = portfolio
+        self.domain_information.sub_organization = suborg
+
+        # Add a organization_name to test if the old value still displays
+        self.domain_information.organization_name = "Broccoli"
+        self.domain_information.save()
+        self.domain_information.refresh_from_db()
+
+        # Add portfolio perms to the user object
+        self.user.portfolio = portfolio
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertEqual(self.domain_information.sub_organization, suborg)
+
+        # Navigate to the suborganization page
+        page = self.app.get(reverse("domain-suborganization", kwargs={"pk": self.domain.id}))
+
+        # The page should display the readonly option
+        self.assertContains(page, "Vanilla")
+
+        # The page shouldn't contain these choices
+        self.assertNotContains(page, "Chocolate")
+        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, "Save")
+
+        self.assertContains(
+            page, "The suborganization for this domain can only be updated by a organization administrator."
+        )
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)

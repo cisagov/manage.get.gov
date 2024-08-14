@@ -80,6 +80,11 @@ urlpatterns = [
         name="organization",
     ),
     path(
+        "senior-official/",
+        views.PortfolioSeniorOfficialView.as_view(),
+        name="senior-official",
+    ),
+    path(
         "admin/logout/",
         RedirectView.as_view(pattern_name="logout", permanent=False),
     ),
@@ -196,6 +201,11 @@ urlpatterns = [
         "domain/<int:pk>/org-name-address",
         views.DomainOrgNameAddressView.as_view(),
         name="domain-org-name-address",
+    ),
+    path(
+        "domain/<int:pk>/suborganization",
+        views.DomainSubOrganizationView.as_view(),
+        name="domain-suborganization",
     ),
     path(
         "domain/<int:pk>/senior-official",

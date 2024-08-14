@@ -1,0 +1,29 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers%}
+
+{% block title %}Suborganization{% endblock %}
+
+{% block domain_content %}
+    {# this is right after the messages block in the parent template #}
+    {% include "includes/form_errors.html" with form=form %}
+
+    <h1>Suborganization</h1>
+
+    <p>
+        The name of your suborganization will be publicly listed as the domain registrant. 
+        This list of suborganizations has been populated the .gov program. 
+        If you believe there is an error please contact <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+    </p>
+
+    {% if has_domains_portfolio_permission and request.user.has_edit_suborganization %}
+        <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+            {% csrf_token %}
+            {% input_with_errors form.sub_organization %}
+            <button type="submit" class="usa-button">Save</button>
+        </form>
+    {% else %}
+        {% with description="The suborganization for this domain can only be updated by a organization administrator."%}
+            {% include "includes/input_read_only.html" with field=form.sub_organization value=suborganization_name label_description=description%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}

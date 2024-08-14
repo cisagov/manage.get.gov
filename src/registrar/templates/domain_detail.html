@@ -1,10 +1,11 @@
 {% extends "domain_base.html" %}
 {% load static url_helpers %}
+{% load custom_filters %}
 
 {% block domain_content %}
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
-
+    <h2 class="text-bold text-primary-dark">{{ domain.name }}</h2>
     <div
         class="usa-summary-box dotgov-status-box padding-bottom-0 margin-top-3 padding-left-2{% if not domain.is_expired %}{% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %} dotgov-status-box--action-need{% endif %}{% endif %}"
         role="region"
@@ -56,19 +57,24 @@
       {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable %}
     {% else %}
       {% if is_editable %}
-      <h2 class="margin-top-3"> DNS name servers </h2>
+      <h3 class="margin-top-3"> DNS name servers </h3>
       <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
       <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
       {% else %}
         {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=is_editable %}
       {% endif %}
     {% endif %}
+    
+    {% url 'domain-dns-dnssec' pk=domain.id as url %}
+    {% if domain.dnssecdata is not None %}
+      {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='DNSSEC' value='Not Enabled' edit_link=url editable=is_editable %}
+    {% endif %}
 
-    {% if portfolio %}
-      {% comment %} TODO - uncomment in #2352 and add to edit_link
+    {% if portfolio and has_domains_portfolio_permission and request.user.has_view_suborganization %}
       {% url 'domain-suborganization' pk=domain.id as url %}
-      {% endcomment %}
-      {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link="#" editable=is_editable %} 
+      {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:request.user.has_edit_suborganization %}
     {% else %}
       {% url 'domain-org-name-address' pk=domain.id as url %}
       {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=is_editable %}

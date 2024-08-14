@@ -35,7 +35,6 @@ class Command(BaseCommand):
 
             Note: 
                 - If the row is missing SO data - it will not be added.
-                - Given we can add the row, any blank first_name will be replaced with "-".
             """,  # noqa: W291
             prompt_title="Do you wish to load records into the SeniorOfficial table?",
         )
@@ -64,7 +63,11 @@ class Command(BaseCommand):
                 # Clean the returned data
                 for key, value in so_kwargs.items():
                     if isinstance(value, str):
-                        so_kwargs[key] = value.strip()
+                        clean_string = value.strip()
+                        if clean_string:
+                            so_kwargs[key] = clean_string
+                        else:
+                            so_kwargs[key] = None
 
                 # Handle the federal_agency record seperately (db call)
                 agency_name = row.get("Agency").strip() if row.get("Agency") else None
@@ -95,17 +98,11 @@ class Command(BaseCommand):
     def create_senior_official(self, so_kwargs):
         """Creates a senior official object from kwargs but does not add it to the DB"""
 
-        # WORKAROUND: Placeholder value for first name,
-        # as not having these makes it impossible to access through DJA.
-        old_first_name = so_kwargs["first_name"]
-        if not so_kwargs["first_name"]:
-            so_kwargs["first_name"] = "-"
-
         # Create a new SeniorOfficial object
         new_so = SeniorOfficial(**so_kwargs)
 
         # Store a variable for the console logger
-        if all([old_first_name, new_so.last_name]):
+        if all([new_so.first_name, new_so.last_name]):
             record_display = new_so
         else:
             record_display = so_kwargs

@@ -1,7 +1,7 @@
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.config import settings
-from registrar.models.portfolio import Portfolio
+from registrar.models import Portfolio, SeniorOfficial
 from django_webtest import WebTest  # type: ignore
 from registrar.models import (
     DomainRequest,
@@ -37,6 +37,36 @@ class TestPortfolio(WebTest):
         Domain.objects.all().delete()
         User.objects.all().delete()
         super().tearDown()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_portfolio_senior_official(self):
+        """Tests that the senior official page on portfolio contains the content we expect"""
+        self.app.set_user(self.user.username)
+
+        so = SeniorOfficial.objects.create(
+            first_name="Saturn", last_name="Enceladus", title="Planet/Moon", email="spacedivision@igorville.com"
+        )
+
+        self.portfolio.senior_official = so
+        self.portfolio.save()
+        self.portfolio.refresh_from_db()
+
+        self.user.portfolio = self.portfolio
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        so_portfolio_page = self.app.get(reverse("senior-official"))
+        # Assert that we're on the right page
+        self.assertContains(so_portfolio_page, "Senior official")
+        self.assertContains(so_portfolio_page, "Saturn Enceladus")
+        self.assertContains(so_portfolio_page, "Planet/Moon")
+        self.assertContains(so_portfolio_page, "spacedivision@igorville.com")
+        self.assertNotContains(so_portfolio_page, "Save")
+
+        self.portfolio.delete()
+        so.delete()
 
     @less_console_noise_decorator
     def test_middleware_does_not_redirect_if_no_permission(self):

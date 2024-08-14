@@ -3,7 +3,7 @@ from django.http import Http404
 from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
-from registrar.forms.portfolio import PortfolioOrgAddressForm
+from registrar.forms.portfolio import PortfolioOrgAddressForm, PortfolioSeniorOfficialForm
 from registrar.models import Portfolio, User
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.views.utility.permission_views import (
@@ -125,3 +125,34 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
     def get_success_url(self):
         """Redirect to the overview page for the portfolio."""
         return reverse("organization")
+
+
+class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
+    """
+    View to handle displaying and updating the portfolio's senior official details.
+    For now, this view is readonly.
+    """
+
+    model = Portfolio
+    template_name = "portfolio_senior_official.html"
+    form_class = PortfolioSeniorOfficialForm
+    context_object_name = "portfolio"
+
+    def get_object(self, queryset=None):
+        """Get the portfolio object based on the request user."""
+        portfolio = self.request.user.portfolio
+        if portfolio is None:
+            raise Http404("No organization found for this user")
+        return portfolio
+
+    def get_form_kwargs(self):
+        """Include the instance in the form kwargs."""
+        kwargs = super().get_form_kwargs()
+        kwargs["instance"] = self.get_object().senior_official
+        return kwargs
+
+    def get(self, request, *args, **kwargs):
+        """Handle GET requests to display the form."""
+        self.object = self.get_object()
+        form = self.get_form()
+        return self.render_to_response(self.get_context_data(form=form))

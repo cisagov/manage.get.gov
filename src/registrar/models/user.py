@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
+from django.forms import ValidationError
 
 from registrar.models.domain_information import DomainInformation
 from registrar.models.user_domain_role import UserDomainRole
@@ -74,12 +75,17 @@ class User(AbstractUser):
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            # Domain: field specific permissions
+            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
+            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_MEMBER,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            # Domain: field specific permissions
+            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
@@ -224,6 +230,16 @@ class User(AbstractUser):
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
 
+    def clean(self):
+        """Extends clean method to perform additional validation, which can raise errors in django admin."""
+        super().clean()
+
+        if self.portfolio is None and self._get_portfolio_permissions():
+            raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
+
+        if self.portfolio is not None and not self._get_portfolio_permissions():
+            raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
+
     def _get_portfolio_permissions(self):
         """
         Retrieve the permissions for the user's portfolio roles.
@@ -269,6 +285,13 @@ class User(AbstractUser):
     def has_view_all_domains_permission(self):
         """Determines if the current user can view all available domains in a given portfolio"""
         return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    # Field specific permission checks
+    def has_view_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+
+    def has_edit_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
