@@ -2836,7 +2836,8 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 class PortfolioAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
-        (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_at", "notes"]}),
+        # created_on is the created_at field, and portfolio_type is f"{organization_type} - {federal_type}"
+        (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_on", "notes"]}),
         # TODO - uncomment in #2521
         # ("Portfolio members", {
         #     "classes": ("collapse", "closed"),
@@ -2862,18 +2863,52 @@ class PortfolioAdmin(ListHeaderAdmin):
         ("Senior official", {"fields": ["senior_official"]}),
     ]
 
+    # This is the fieldset display when adding a new model
+    add_fieldsets = [
+        (None, {"fields": ["organization_name", "creator", "notes"]}),
+        ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "federal_agency",
+                    "state_territory",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "zipcode",
+                    "urbanization",
+                ]
+            },
+        ),
+        ("Senior official", {"fields": ["senior_official"]}),
+    ]
+
+    # NOT all fields are readonly for admin, otherwise we would have
+    # set this at the permissions level. The exception is 'status'
+    analyst_readonly_fields = [
+        "federal_type",
+    ]
+
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
     readonly_fields = [
-        "created_at",
-        "federal_type",
+        # This is the created_at field
+        "created_on",
         # Custom fields such as these must be defined as readonly.
         "domains",
         "domain_requests",
         "suborganizations",
         "portfolio_type",
     ]
+
+    def created_on(self, obj: models.Portfolio):
+        """Returns the created_at field, with a different short description"""
+        # Format: Dec 12, 2024
+        return obj.created_at.strftime("%b %d, %Y") if obj.created_at else "-"
+
+    created_on.short_description = "Created on"
 
     def portfolio_type(self, obj: models.Portfolio):
         """Returns the portfolio type, or "-" if the result is empty"""
@@ -2893,7 +2928,9 @@ class PortfolioAdmin(ListHeaderAdmin):
         """Returns a comma seperated list of links for each related domain"""
         queryset = obj.get_domains()
         sep = '<div class="display-block margin-top-1"></div>'
-        return self.get_field_links_as_csv(queryset, "domaininformation", seperator=sep)
+        return self.get_field_links_as_csv(
+            queryset, "domaininformation", link_info_attribute="get_state_display_of_domain", seperator=sep
+        )
 
     domains.short_description = "Domains"
 
@@ -2901,7 +2938,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         """Returns a comma seperated list of links for each related domain request"""
         queryset = obj.get_domain_requests()
         sep = '<div class="display-block margin-top-1"></div>'
-        return self.get_field_links_as_csv(queryset, "domainrequest", seperator=sep)
+        return self.get_field_links_as_csv(queryset, "domainrequest", link_info_attribute="get_status_display", seperator=sep)
 
     domain_requests.short_description = "Domain requests"
 
@@ -2912,14 +2949,17 @@ class PortfolioAdmin(ListHeaderAdmin):
     ]
 
     # Q for reviewers: What should this be called?
-    def get_field_links_as_csv(self, queryset, model_name, link_text_attribute=None, seperator=", "):
+    def get_field_links_as_csv(
+        self, queryset, model_name, attribute_name=None, link_info_attribute=None, seperator=", "
+    ):
         """
         Generate HTML links for items in a queryset, using a specified attribute for link text.
 
         Args:
             queryset: The queryset of items to generate links for.
             model_name: The model name used to construct the admin change URL.
-            link_text_attribute: The attribute or method name to use for link text. If None, the item itself is used.
+            attribute_name: The attribute or method name to use for link text. If None, the item itself is used.
+            link_info_attribute: Appends f"({value_of_attribute})" to the end of the link.
             separator: The separator to use between links in the resulting HTML.
 
         Returns:
@@ -2928,18 +2968,58 @@ class PortfolioAdmin(ListHeaderAdmin):
         links = []
         for item in queryset:
 
-            # This allows you to pass in link_text_attribute="get_full_name" for instance.
-            if link_text_attribute:
-                item_display_value = getattr(item, link_text_attribute)
-                if callable(item_display_value):
-                    item_display_value = item_display_value()
+            # This allows you to pass in attribute_name="get_full_name" for instance.
+            if attribute_name:
+                item_display_value = self.value_of_attribute(item, attribute_name)
             else:
                 item_display_value = item
 
             if item_display_value:
                 change_url = reverse(f"admin:registrar_{model_name}_change", args=[item.pk])
-                links.append(f'<a href="{change_url}">{escape(item_display_value)}</a>')
+
+                link = f'<a href="{change_url}">{escape(item_display_value)}</a>'
+                if link_info_attribute:
+                    link += f" ({self.value_of_attribute(item, link_info_attribute)})"
+
+                links.append(link)
         return format_html(seperator.join(links)) if links else "-"
+
+    def value_of_attribute(self, obj, attribute_name: str):
+        """Returns the value of getattr if the attribute isn't callable.
+        If it is, execute the underlying function and return that result instead."""
+        value = getattr(obj, attribute_name)
+        if callable(value):
+            value = value()
+        return value
+
+    def get_fieldsets(self, request, obj=None):
+        """Override of the default get_fieldsets definition to add an add_fieldsets view"""
+        # This is the add view if no obj exists
+        if not obj:
+            return self.add_fieldsets
+        return super().get_fieldsets(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 2 conditions that determine which fields are read-only:
+        admin user permissions and the creator's status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+        readonly_fields = list(self.readonly_fields)
+
+        # Check if the creator is restricted
+        if obj and obj.creator.status == models.User.RESTRICTED:
+            # For fields like CharField, IntegerField, etc., the widget used is
+            # straightforward and the readonly_fields list can control their behavior
+            readonly_fields.extend([field.name for field in self.model._meta.fields])
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups"""
