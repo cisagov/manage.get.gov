@@ -2908,13 +2908,13 @@ class PortfolioAdmin(ListHeaderAdmin):
         # Format: Dec 12, 2024
         return obj.created_at.strftime("%b %d, %Y") if obj.created_at else "-"
 
-    created_on.short_description = "Created on"
+    created_on.short_description = "Created on"  # type: ignore
 
     def portfolio_type(self, obj: models.Portfolio):
         """Returns the portfolio type, or "-" if the result is empty"""
         return obj.portfolio_type if obj.portfolio_type else "-"
 
-    portfolio_type.short_description = "Portfolio type"
+    portfolio_type.short_description = "Portfolio type"  # type: ignore
 
     def suborganizations(self, obj: models.Portfolio):
         """Returns a comma seperated list of links for each related suborg"""
@@ -2922,7 +2922,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         sep = '<div class="display-block margin-top-1"></div>'
         return self.get_field_links_as_csv(queryset, "suborganization", seperator=sep)
 
-    suborganizations.short_description = "Suborganizations"
+    suborganizations.short_description = "Suborganizations"  # type: ignore
 
     def domains(self, obj: models.Portfolio):
         """Returns a comma seperated list of links for each related domain"""
@@ -2932,7 +2932,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             queryset, "domaininformation", link_info_attribute="get_state_display_of_domain", seperator=sep
         )
 
-    domains.short_description = "Domains"
+    domains.short_description = "Domains"  # type: ignore
 
     def domain_requests(self, obj: models.Portfolio):
         """Returns a comma seperated list of links for each related domain request"""
@@ -2942,7 +2942,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             queryset, "domainrequest", link_info_attribute="get_status_display", seperator=sep
         )
 
-    domain_requests.short_description = "Domain requests"
+    domain_requests.short_description = "Domain requests"  # type: ignore
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
