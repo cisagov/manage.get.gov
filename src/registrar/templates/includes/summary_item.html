@@ -7,7 +7,7 @@
     {% if heading_level %}
       <{{ heading_level }}
     {% else %} 
-      <h2
+      <h3
     {% endif %} 
       class="summary-item__title
              font-sans-md
@@ -19,10 +19,10 @@
     {% if heading_level %}
       </{{ heading_level }}>
     {% else %} 
-      </h2>
+      </h3>
     {% endif %}
       {% if sub_header_text %}
-        <h3 class="register-form-review-header">{{ sub_header_text }}</h3>
+        <h4 class="register-form-review-header">{{ sub_header_text }}</h4>
       {% endif %}
       {% if address %}
         {% include "includes/organization_address.html" with organization=value %}

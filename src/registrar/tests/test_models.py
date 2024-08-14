@@ -1,3 +1,4 @@
+from django.forms import ValidationError
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from django.db import transaction
@@ -1348,6 +1349,7 @@ class TestUser(TestCase):
         self.user.phone = None
         self.assertFalse(self.user.has_contact_info())
 
+    @less_console_noise_decorator
     def test_has_portfolio_permission(self):
         """
         0. Returns False when user does not have a permission
@@ -1400,6 +1402,37 @@ class TestUser(TestCase):
         self.assertTrue(user_can_view_all_requests)
 
         Portfolio.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_user_with_portfolio_but_no_roles(self):
+        # Create an instance of User with a portfolio but no roles or additional permissions
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+
+        self.user.portfolio = portfolio
+        self.user.portfolio_roles = []
+
+        # Test if the ValidationError is raised with the correct message
+        with self.assertRaises(ValidationError) as cm:
+            self.user.clean()
+
+        self.assertEqual(
+            cm.exception.message, "When portfolio is assigned, portfolio roles or additional permissions are required."
+        )
+        Portfolio.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_user_with_portfolio_roles_but_no_portfolio(self):
+        # Create an instance of User with a portfolio role but no portfolio
+        self.user.portfolio = None
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        # Test if the ValidationError is raised with the correct message
+        with self.assertRaises(ValidationError) as cm:
+            self.user.clean()
+
+        self.assertEqual(
+            cm.exception.message, "When portfolio roles or additional permissions are assigned, portfolio is required."
+        )
 
 
 class TestContact(TestCase):
