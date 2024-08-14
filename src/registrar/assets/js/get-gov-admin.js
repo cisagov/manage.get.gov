@@ -353,7 +353,7 @@ function initializeWidgetOnList(list, parentId) {
     let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
     // This is the "action needed reason" field
     let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
-    // This is the "auto-generated email" field
+    // This is the "Email" field
     let actionNeededReasonEmailFormGroup = document.querySelector('.field-action_needed_reason_email')
 
     if (rejectionReasonFormGroup && actionNeededReasonFormGroup && actionNeededReasonEmailFormGroup) {
@@ -510,7 +510,10 @@ function initializeWidgetOnList(list, parentId) {
     // Since this is an iife, these vars will be removed from memory afterwards
     var actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     var actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
-    var readonlyView = document.querySelector("#action-needed-reason-email-readonly");
+    var helptext = document.querySelector("#action-needed-reason-email-placeholder-text")
+    var actionNeededEmailReadonly = document.querySelector("#action-needed-reason-email-readonly");
+    var actionNeededEmailReadonlyTextarea = document.querySelector("#action-needed-reason-email-readonly-textarea")
+    var editEmailButton = document.querySelector("#action-needed-reason-email-edit-button")
 
     let emailWasSent = document.getElementById("action-needed-email-sent");
     let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
@@ -536,6 +539,21 @@ function initializeWidgetOnList(list, parentId) {
             updateActionNeededEmailDisplay(reason)
         });
 
+        editEmailButton.addEventListener("click", function() {
+            let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
+
+            if (emailHasBeenSentBefore) {
+                // Show warning Modal
+
+            }
+            else {
+                // Show editable view
+                showElement(actionNeededEmail.parentElement)
+                hideElement(actionNeededEmailReadonly)
+                hideElement(helptext)
+            }
+        });
+
         // Add a change listener to the action needed reason dropdown
         actionNeededReasonDropdown.addEventListener("change", function() {
             let reason = actionNeededReasonDropdown.value;
@@ -543,6 +561,7 @@ function initializeWidgetOnList(list, parentId) {
             if (reason && emailBody) {
                 // Replace the email content
                 actionNeededEmail.value = emailBody;
+                actionNeededEmailReadonlyTextarea.value = emailBody;
 
                 // Reset the session object on change since change refreshes the email content.
                 if (oldDropdownValue !== actionNeededReasonDropdown.value || oldEmailValue !== actionNeededEmail.value) {
@@ -562,27 +581,30 @@ function initializeWidgetOnList(list, parentId) {
     // If the email doesn't exist or if we're of reason "other", display that no email was sent.
     // Likewise, if we've sent this email before, we should just display the content.
     function updateActionNeededEmailDisplay(reason) {
-        let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
-        let collapseableDiv = readonlyView.querySelector(".collapse--dgsimple");
-        let showMoreButton = document.querySelector("#action_needed_reason_email__show_details");
-        if ((reason && reason != "other") && !emailHasBeenSentBefore) {
-            showElement(actionNeededEmail.parentElement)
-            hideElement(readonlyView)
-            hideElement(showMoreButton)
-        } else {
-            if (!reason || reason === "other") {
-                collapseableDiv.innerHTML = reason ? "No email will be sent." : "-";
-                hideElement(showMoreButton)
-                if (collapseableDiv.classList.contains("collapsed")) {
-                    showMoreButton.click()
-                }
-            }else {
-                showElement(showMoreButton)
+
+        console.info("REASON: "+reason)
+
+        if (reason) {
+            if (reason === "other") {
+                helptext.innerHTML = "No email will be sent.";
+                hideElement(actionNeededEmail.parentElement)
+                hideElement(actionNeededEmailReadonly)
+                showElement(helptext)
             }
+            else {
+                // Always show readonly view to start
+                hideElement(actionNeededEmail.parentElement)
+                showElement(actionNeededEmailReadonly)
+                hideElement(helptext)
+            }
+        } else {
+            helptext.innerHTML = "Select an action needed reason to see email";
             hideElement(actionNeededEmail.parentElement)
-            showElement(readonlyView)
+            hideElement(actionNeededEmailReadonly)
+            showElement(helptext)
         }
     }
+
 })();
 
 

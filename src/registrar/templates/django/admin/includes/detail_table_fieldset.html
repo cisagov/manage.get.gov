@@ -145,16 +145,29 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block field_other %}
     {% if field.field.name == "action_needed_reason_email" %}
-    <div id="action-needed-reason-email-readonly" class="readonly margin-top-0 padding-top-0 display-none">
-        <div class="margin-top-05 collapse--dgsimple collapsed">
+    <div id="action-needed-reason-email-placeholder-text" class="margin-top-05">
         {{ field.field.value|linebreaks }}
+    </div>
+    <div id="action-needed-reason-email-readonly" class="display-none">
+
+        <div
+            class="usa-modal"
+            id="toggle-email-already-sent-alert"
+            aria-labelledby="Are you sure you want to edit this email?"
+            aria-describedby="The creator of this request already received an email"
+        >
+            {% include 'includes/modal.html' with modal_heading="Are you sure you want to edit this email?" modal_button=modal_button|safe %}
         </div>
-        <button id="action_needed_reason_email__show_details" type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-0 margin-bottom-1 margin-left-1">
-            <span>Show details</span>
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                <use xlink:href="/public/img/sprite.svg#expand_more"></use>
-            </svg>
-        </button>
+
+        <div class="flex-container">
+            <label><b>Auto-generated email that will be sent to the creator</b></label> | 
+            <button id="action-needed-reason-email-edit-button" 
+                type="button" 
+                class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-top-2 margin-bottom-1 margin-left-1">
+                    <span>Edit email</span>
+            </button>
+        </div>
+        <textarea cols="40" rows="10" class="vLargeTextField" id="action-needed-reason-email-readonly-textarea" readonly></textarea>
     </div>
     <div>
         {{ field.field }}
