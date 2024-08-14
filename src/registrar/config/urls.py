@@ -24,6 +24,7 @@ from registrar.views.report_views import (
 
 from registrar.views.domain_request import Step
 from registrar.views.domain_requests_json import get_domain_requests_json
+from registrar.views.utility.api_views import get_senior_official_from_federal_agency_json
 from registrar.views.domains_json import get_domains_json
 from registrar.views.utility import always_404
 from api.views import available, get_current_federal, get_current_full
@@ -127,6 +128,11 @@ urlpatterns = [
         "admin/analytics/",
         AnalyticsView.as_view(),
         name="analytics",
+    ),
+    path(
+        "admin/api/get-senior-official-from-federal-agency-json/",
+        get_senior_official_from_federal_agency_json,
+        name="get-senior-official-from-federal-agency-json",
     ),
     path("admin/", admin.site.urls),
     path(
