@@ -218,10 +218,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             del self.storage
             self.storage["domain_request_id"] = kwargs["id"]
 
-        # refresh step_history to ensure we don't erroneously unlock unfinished
-        # steps just because we visited it
-        self.storage["step_history"] = self.db_check_for_unlocking_steps()
-
         # if accessing this class directly, redirect to either to an acknowledgement
         # page or to the first step in the processes (if an edit rather than a new request);
         # subclasseswill NOT be redirected. The purpose of this is to allow code to
@@ -236,6 +232,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             else:
                 return self.goto(self.steps.first)
 
+        # refresh step_history to ensure we don't erroneously unlock unfinished
+        # steps just because we visited it
+        self.storage["step_history"] = self.db_check_for_unlocking_steps()
         context = self.get_context_data()
         self.steps.current = current_url
         context["forms"] = self.get_forms()
