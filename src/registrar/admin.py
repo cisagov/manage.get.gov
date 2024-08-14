@@ -2965,9 +2965,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     def domain_requests(self, obj: models.Portfolio):
         """Returns a list of links for each related domain request"""
         queryset = obj.get_domain_requests()
-        return self.get_field_links_as_list(
-            queryset, "domainrequest", link_info_attribute="get_status_display"
-        )
+        return self.get_field_links_as_list(queryset, "domainrequest", link_info_attribute="get_status_display")
 
     domain_requests.short_description = "Domain requests"  # type: ignore
 
@@ -3014,7 +3012,7 @@ class PortfolioAdmin(ListHeaderAdmin):
                 if seperator:
                     links.append(link)
                 else:
-                    links.append(f'<li>{link}</li>')
+                    links.append(f"<li>{link}</li>")
 
         # If no seperator is specified, just return an unordered list.
         if seperator:
