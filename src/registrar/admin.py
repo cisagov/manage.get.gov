@@ -2947,29 +2947,26 @@ class PortfolioAdmin(ListHeaderAdmin):
     portfolio_type.short_description = "Portfolio type"  # type: ignore
 
     def suborganizations(self, obj: models.Portfolio):
-        """Returns a comma seperated list of links for each related suborg"""
+        """Returns a list of links for each related suborg"""
         queryset = obj.get_suborganizations()
-        sep = '<div class="display-block margin-top-1"></div>'
-        return self.get_field_links_as_csv(queryset, "suborganization", seperator=sep)
+        return self.get_field_links_as_list(queryset, "suborganization")
 
     suborganizations.short_description = "Suborganizations"  # type: ignore
 
     def domains(self, obj: models.Portfolio):
-        """Returns a comma seperated list of links for each related domain"""
+        """Returns a list of links for each related domain"""
         queryset = obj.get_domains()
-        sep = '<div class="display-block margin-top-1"></div>'
-        return self.get_field_links_as_csv(
-            queryset, "domaininformation", link_info_attribute="get_state_display_of_domain", seperator=sep
+        return self.get_field_links_as_list(
+            queryset, "domaininformation", link_info_attribute="get_state_display_of_domain"
         )
 
     domains.short_description = "Domains"  # type: ignore
 
     def domain_requests(self, obj: models.Portfolio):
-        """Returns a comma seperated list of links for each related domain request"""
+        """Returns a list of links for each related domain request"""
         queryset = obj.get_domain_requests()
-        sep = '<div class="display-block margin-top-1"></div>'
-        return self.get_field_links_as_csv(
-            queryset, "domainrequest", link_info_attribute="get_status_display", seperator=sep
+        return self.get_field_links_as_list(
+            queryset, "domainrequest", link_info_attribute="get_status_display"
         )
 
     domain_requests.short_description = "Domain requests"  # type: ignore
@@ -2981,9 +2978,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         "senior_official",
     ]
 
-    # Q for reviewers: What should this be called?
-    def get_field_links_as_csv(
-        self, queryset, model_name, attribute_name=None, link_info_attribute=None, seperator=", "
+    def get_field_links_as_list(
+        self, queryset, model_name, attribute_name=None, link_info_attribute=None, seperator=None
     ):
         """
         Generate HTML links for items in a queryset, using a specified attribute for link text.
@@ -2994,6 +2990,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             attribute_name: The attribute or method name to use for link text. If None, the item itself is used.
             link_info_attribute: Appends f"({value_of_attribute})" to the end of the link.
             separator: The separator to use between links in the resulting HTML.
+            If none, an unordered list is returned.
 
         Returns:
             A formatted HTML string with links to the admin change pages for each item.
@@ -3014,8 +3011,17 @@ class PortfolioAdmin(ListHeaderAdmin):
                 if link_info_attribute:
                     link += f" ({self.value_of_attribute(item, link_info_attribute)})"
 
-                links.append(link)
-        return format_html(seperator.join(links)) if links else "-"
+                if seperator:
+                    links.append(link)
+                else:
+                    links.append(f'<li>{link}</li>')
+
+        # If no seperator is specified, just return an unordered list.
+        if seperator:
+            return format_html(seperator.join(links)) if links else "-"
+        else:
+            links = "".join(links)
+            return format_html(f'<ul class="unstyled-list-elements">{links}</ul>') if links else "-"
 
     def value_of_attribute(self, obj, attribute_name: str):
         """Returns the value of getattr if the attribute isn't callable.

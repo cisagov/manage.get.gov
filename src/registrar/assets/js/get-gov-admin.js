@@ -776,9 +776,6 @@ function initializeWidgetOnList(list, parentId) {
         let $federalAgency = django.jQuery("#id_federal_agency");
         let organizationType = document.getElementById("id_organization_type");
         if ($federalAgency && organizationType) {
-            // Execute this function once on load
-            handleFederalAgencyChange($federalAgency, organizationType);
-
             // Attach the change event listener
             $federalAgency.on("change", function() {
                 handleFederalAgencyChange($federalAgency, organizationType);

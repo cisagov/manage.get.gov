@@ -31,7 +31,6 @@ class Portfolio(TimeStampedModel):
         unique=False,
     )
 
-    # Q for reviewers: shouldn't this be a required field?
     organization_name = models.CharField(
         null=True,
         blank=True,
