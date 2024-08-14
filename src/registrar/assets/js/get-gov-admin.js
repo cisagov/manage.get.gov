@@ -511,16 +511,15 @@ function initializeWidgetOnList(list, parentId) {
     var actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     var actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
     var readonlyView = document.querySelector("#action-needed-reason-email-readonly");
-    if(!actionNeededEmail || !actionNeededReasonDropdown) {
-        return;
-    }
 
     let emailWasSent = document.getElementById("action-needed-email-sent");
-    if (!emailWasSent) {
+
+    let emailData = document.getElementById('action-needed-emails-data');
+    if (!emailData) {
         return;
     }
 
-    let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
+    let actionNeededEmailData = emailData.textContent;
     if(!actionNeededEmailData) {
         return;
     }
@@ -762,20 +761,20 @@ function initializeWidgetOnList(list, parentId) {
 })();
 
 
-/** An IIFE for copy summary button (appears in DomainRegistry models)
+/** An IIFE for dynamically changing some fields on the portfolio admin model
 */
 (function dynamicPortfolioFields(){
 
     document.addEventListener('DOMContentLoaded', function() {
         
-        let isPortfolioPage = document.querySelector("#portfolio_form");
+        let isPortfolioPage = document.getElementById("portfolio_form");
         if (!isPortfolioPage) {
             return;
         }
         
         // $ symbolically denotes that this is using jQuery
         let $federalAgency = django.jQuery("#id_federal_agency");
-        let organizationType = document.querySelector("#id_organization_type");
+        let organizationType = document.getElementById("id_organization_type");
         if ($federalAgency && organizationType) {
             // Execute this function once on load
             handleFederalAgencyChange($federalAgency, organizationType);
@@ -788,7 +787,7 @@ function initializeWidgetOnList(list, parentId) {
         
         // Handle dynamically hiding the urbanization field
         let urbanizationField = document.querySelector(".field-urbanization");
-        let stateTerritory = document.querySelector("#id_state_territory");
+        let stateTerritory = document.getElementById("id_state_territory");
         if (urbanizationField && stateTerritory) {
             // Execute this function once on load
             handleStateTerritoryChange(stateTerritory, urbanizationField);
@@ -803,17 +802,20 @@ function initializeWidgetOnList(list, parentId) {
     function handleFederalAgencyChange(federalAgency, organizationType) {
         // Set the org type to federal if an agency is selected
         let selectedText = federalAgency.find("option:selected").text();
-        if (selectedText !== "Non-Federal Agency" && selectedText) {
+
+        // There isn't a federal senior official associated with null records
+        if (!selectedText) {
+            return;
+        }
+
+        if (selectedText !== "Non-Federal Agency") {
             if (organizationType.value !== "federal") {
                 organizationType.value = "federal";
             }
-        }else if (selectedText === "Non-Federal Agency" && organizationType.value === "federal") {
-            organizationType.value = "";
-        }
-
-        // There isn't a federal senior official associated with null records and non federal agencies
-        if (!selectedText || selectedText === "Non-Federal Agency") {
-            return;
+        }else {
+            if (organizationType.value === "federal") {
+                organizationType.value = "";
+            }
         }
 
         // Get the associated senior official with this federal agency
@@ -823,7 +825,7 @@ function initializeWidgetOnList(list, parentId) {
             return;
         }
 
-        let seniorOfficialApi = document.querySelector("#senior_official_from_agency_json_url").value;
+        let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
         fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
         .then(response => {
             const statusCode = response.status;
@@ -834,8 +836,10 @@ function initializeWidgetOnList(list, parentId) {
                 // Clear the field if the SO doesn't exist.
                 if (statusCode === 404) {
                     $seniorOfficial.val("").trigger("change");
+                    console.warn("Record not found: " + data.error);
+                }else {
+                    console.error("Error in AJAX call: " + data.error);
                 }
-                console.error("Error in AJAX call: " + data.error);
                 return;
             }
 
