@@ -4,7 +4,7 @@
 
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_domains_json' as url %}
-<input id="get_domains_json_url" class="display-none" value="{{url}}" />
+<span id="get_domains_json_url" class="display-none">{{url}}</span>
 <section class="section--outlined domains{% if not has_domains_portfolio_permission %} margin-top-0{% endif %}" id="domains">
   <div class="section--outlined__header margin-bottom-3 {% if not has_domains_portfolio_permission %} section--outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
       {% if not has_domains_portfolio_permission %}

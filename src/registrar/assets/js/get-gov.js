@@ -1189,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      let baseUrlValue = baseUrl.value;
+      let baseUrlValue = baseUrl.innerHTML;
       if (!baseUrlValue) {
         return;
       }
@@ -1540,7 +1540,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      let baseUrlValue = baseUrl.value;
+      let baseUrlValue = baseUrl.innerHTML;
       if (!baseUrlValue) {
         return;
       }
