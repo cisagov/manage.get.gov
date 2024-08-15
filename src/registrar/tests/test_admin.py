@@ -2083,7 +2083,7 @@ class TestPortfolioAdmin(TestCase):
         suborganizations = self.admin.suborganizations(self.portfolio)
         self.assertIn("Sub1", suborganizations)
         self.assertIn("Sub2", suborganizations)
-        self.assertIn('<ul class="unstyled-list-elements">', suborganizations)
+        self.assertIn('<ul class="add-list-reset">', suborganizations)
 
     @less_console_noise_decorator
     def test_domains_display(self):
@@ -2109,7 +2109,7 @@ class TestPortfolioAdmin(TestCase):
         domains = self.admin.domains(self.portfolio)
         self.assertIn("domain1.gov", domains)
         self.assertIn("domain2.gov", domains)
-        self.assertIn('<ul class="unstyled-list-elements">', domains)
+        self.assertIn('<ul class="add-list-reset">', domains)
 
     @less_console_noise_decorator
     def test_domain_requests_display(self):
@@ -2120,4 +2120,4 @@ class TestPortfolioAdmin(TestCase):
         domain_requests = self.admin.domain_requests(self.portfolio)
         self.assertIn("request1.gov", domain_requests)
         self.assertIn("request2.gov", domain_requests)
-        self.assertIn('<ul class="unstyled-list-elements">', domain_requests)
+        self.assertIn('<ul class="add-list-reset">', domain_requests)

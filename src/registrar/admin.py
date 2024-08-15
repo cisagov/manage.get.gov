@@ -3019,7 +3019,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             return format_html(seperator.join(links)) if links else "-"
         else:
             links = "".join(links)
-            return format_html(f'<ul class="unstyled-list-elements">{links}</ul>') if links else "-"
+            return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else "-"
 
     def value_of_attribute(self, obj, attribute_name: str):
         """Returns the value of getattr if the attribute isn't callable.
