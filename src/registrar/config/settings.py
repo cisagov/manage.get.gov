@@ -365,7 +365,7 @@ CSP_SCRIPT_SRC_ELEM = [
     "https://www.ssa.gov",
     "https://ajax.googleapis.com",
 ]
-CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/", "https://www.ssa.gov"]
+CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/", "https://www.ssa.gov/accessibility/andi/andi.js"]
 CSP_INCLUDE_NONCE_IN = ["script-src-elem", "style-src"]
 CSP_IMG_SRC = ["'self'", "https://www.ssa.gov"]
 
