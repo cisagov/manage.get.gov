@@ -2266,3 +2266,57 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.generic_org_type = None
         self.domain_request.save()
         self.assertFalse(self.domain_request._form_complete(request))
+
+
+class TestPortfolio(TestCase):
+    def setUp(self):
+        self.user, _ = User.objects.get_or_create(
+            username="intern@igorville.com", email="intern@igorville.com", first_name="Lava", last_name="World"
+        )
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    def test_urbanization_field_resets_when_not_puetro_rico(self):
+        """The urbanization field should only be populated when the state is puetro rico.
+        Otherwise, this field should be empty."""
+        # Start out as PR, then change the field
+        portfolio = Portfolio.objects.create(
+            creator=self.user,
+            organization_name="Test Portfolio",
+            state_territory=DomainRequest.StateTerritoryChoices.PUERTO_RICO,
+            urbanization="test",
+        )
+
+        self.assertEqual(portfolio.urbanization, "test")
+        self.assertEqual(portfolio.state_territory, DomainRequest.StateTerritoryChoices.PUERTO_RICO)
+
+        portfolio.state_territory = DomainRequest.StateTerritoryChoices.ALABAMA
+        portfolio.save()
+
+        self.assertEqual(portfolio.urbanization, None)
+        self.assertEqual(portfolio.state_territory, DomainRequest.StateTerritoryChoices.ALABAMA)
+
+    def test_can_add_urbanization_field(self):
+        """Ensures that you can populate the urbanization field when conditions are right"""
+        # Create a portfolio that cannot have this field
+        portfolio = Portfolio.objects.create(
+            creator=self.user,
+            organization_name="Test Portfolio",
+            state_territory=DomainRequest.StateTerritoryChoices.ALABAMA,
+            urbanization="test",
+        )
+
+        # Implicitly check if this gets cleared on create. It should.
+        self.assertEqual(portfolio.urbanization, None)
+        self.assertEqual(portfolio.state_territory, DomainRequest.StateTerritoryChoices.ALABAMA)
+
+        portfolio.state_territory = DomainRequest.StateTerritoryChoices.PUERTO_RICO
+        portfolio.urbanization = "test123"
+        portfolio.save()
+
+        self.assertEqual(portfolio.urbanization, "test123")
+        self.assertEqual(portfolio.state_territory, DomainRequest.StateTerritoryChoices.PUERTO_RICO)

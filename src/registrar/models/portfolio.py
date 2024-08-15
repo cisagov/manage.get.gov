@@ -110,3 +110,12 @@ class Portfolio(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.organization_name}"
+
+    def save(self, *args, **kwargs):
+        """Save override for custom properties"""
+
+        # The urbanization field is only intended for the state_territory puerto rico
+        if self.state_territory != self.StateTerritoryChoices.PUERTO_RICO and self.urbanization:
+            self.urbanization = None
+
+        super().save(*args, **kwargs)
