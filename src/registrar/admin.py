@@ -23,6 +23,7 @@ from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
+from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -2896,7 +2897,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     # This is the fieldset display when adding a new model
     add_fieldsets = [
         (None, {"fields": ["organization_name", "creator", "notes"]}),
-        ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
+        ("Type of organization", {"fields": ["organization_type"]}),
         (
             "Organization name and mailing address",
             {
@@ -2914,12 +2915,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         ("Senior official", {"fields": ["senior_official"]}),
     ]
 
-    # NOT all fields are readonly for admin, otherwise we would have
-    # set this at the permissions level. The exception is 'status'
-    analyst_readonly_fields = [
-        "federal_type",
-    ]
-
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
@@ -2927,11 +2922,18 @@ class PortfolioAdmin(ListHeaderAdmin):
         # This is the created_at field
         "created_on",
         # Custom fields such as these must be defined as readonly.
+        "federal_type",
         "domains",
         "domain_requests",
         "suborganizations",
         "portfolio_type",
     ]
+
+    def federal_type(self, obj: models.portfolio):
+        """Returns the federal_type field"""
+        return BranchChoices.get_branch_label(obj.federal_type) if obj.federal_type else "-"
+    
+    federal_type.short_description = "Federal type"
 
     def created_on(self, obj: models.Portfolio):
         """Returns the created_at field, with a different short description"""

@@ -58,13 +58,6 @@ class Portfolio(TimeStampedModel):
         default=FederalAgency.get_non_federal_agency,
     )
 
-    federal_type = models.CharField(
-        max_length=50,
-        choices=BranchChoices.choices,
-        null=True,
-        blank=True,
-    )
-
     senior_official = models.ForeignKey(
         "registrar.SeniorOfficial",
         on_delete=models.PROTECT,
@@ -136,12 +129,19 @@ class Portfolio(TimeStampedModel):
     def portfolio_type(self):
         """
         Returns a combination of organization_type / federal_type, seperated by ' - '.
-        If no federal_type is found, we just return the org type."""
-        org_type = self.OrganizationChoices.get_org_label(self.organization_type)
-        if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_type:
-            return " - ".join([org_type, self.federal_type])
+        If no federal_type is found, we just return the org type.
+        """
+        org_type_label = self.OrganizationChoices.get_org_label(self.organization_type)
+        agency_type_label = BranchChoices.get_branch_label(self.federal_type)
+        if self.organization_type == self.OrganizationChoices.FEDERAL and agency_type_label:
+            return " - ".join([org_type_label, agency_type_label])
         else:
-            return org_type
+            return org_type_label
+    
+    @property
+    def federal_type(self):
+        """Returns the federal_type value on the underlying federal_agency field"""
+        return self.federal_agency.federal_type if self.federal_agency else None
 
     # == Getters for domains == #
     def get_domains(self):

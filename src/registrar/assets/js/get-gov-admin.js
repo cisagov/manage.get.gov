@@ -881,22 +881,6 @@ function initializeWidgetOnList(list, parentId) {
         .catch(error => console.error("Error fetching senior official: ", error));
     }
 
-    function updateContactInfo(data) {
-        if (!contactList) return;
-    
-        const titleSpan = contactList.querySelector("#contact_info_title");
-        const emailSpan = contactList.querySelector("#contact_info_email");
-        const phoneSpan = contactList.querySelector("#contact_info_phone");
-    
-        if (titleSpan) titleSpan.textContent = data.title || "";
-        if (emailSpan) {
-            emailSpan.textContent = data.email || "";
-            const clipboardInput = contactList.querySelector(".admin-icon-group input");
-            if (clipboardInput) clipboardInput.value = data.email || "";
-        }
-        if (phoneSpan) phoneSpan.textContent = data.phone || "";
-    }
-
     function handleStateTerritoryChange(stateTerritory, urbanizationField) {
         let selectedValue = stateTerritory.value;
         if (selectedValue === "PR") {
@@ -904,5 +888,30 @@ function initializeWidgetOnList(list, parentId) {
         } else {
             hideElement(urbanizationField)
         }
+    }
+
+    function updateContactInfo(data) {
+        if (!contactList) return;
+    
+        const titleSpan = contactList.querySelector("#contact_info_title");
+        const emailSpan = contactList.querySelector("#contact_info_email");
+        const phoneSpan = contactList.querySelector("#contact_info_phone");
+    
+        if (titleSpan) { 
+            titleSpan.textContent = data.title || "";
+        };
+
+        // Update the email field and the content for the clipboard
+        if (emailSpan) {
+            emailSpan.textContent = data.email || "";
+            const clipboardInput = contactList.querySelector(".admin-icon-group input");
+            if (clipboardInput) {
+                clipboardInput.value = data.email || "";
+            };
+        }
+
+        if (phoneSpan) {
+            phoneSpan.textContent = data.phone || "";
+        };
     }
 })();
