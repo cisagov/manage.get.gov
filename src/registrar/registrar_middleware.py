@@ -8,7 +8,6 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from registrar.models.user import User
 from waffle.decorators import flag_is_active
-from django.utils.deprecation import MiddlewareMixin
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
 
