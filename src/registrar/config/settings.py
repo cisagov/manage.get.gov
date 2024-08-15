@@ -190,7 +190,7 @@ MIDDLEWARE = [
     "waffle.middleware.WaffleMiddleware",
     "registrar.registrar_middleware.CheckUserProfileMiddleware",
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
-    "registrar.registrar_middleware.ANDIMiddleware",
+    # "registrar.registrar_middleware.ANDIMiddleware",
 ]
 
 # application object used by Django’s built-in servers (e.g. `runserver`)
@@ -360,7 +360,7 @@ CSP_FORM_ACTION = allowed_sources
 CSP_DEFAULT_SRC = (
     "'self'",
 )
-CSP_STYLE_SRC = ["'self'", "https://www.ssa.gov", "'unsafe-inline'"]
+CSP_STYLE_SRC = ["'self'", "https://www.ssa.gov"]
 CSP_SCRIPT_SRC_ELEM = [
     "'self'",
     "https://www.googletagmanager.com/",
