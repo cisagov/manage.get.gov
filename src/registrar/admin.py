@@ -2927,11 +2927,11 @@ class PortfolioAdmin(ListHeaderAdmin):
         "portfolio_type",
     ]
 
-    def federal_type(self, obj: models.portfolio):
+    def federal_type(self, obj: models.Portfolio):
         """Returns the federal_type field"""
         return BranchChoices.get_branch_label(obj.federal_type) if obj.federal_type else "-"
 
-    federal_type.short_description = "Federal type"
+    federal_type.short_description = "Federal type"  # type: ignore
 
     def created_on(self, obj: models.Portfolio):
         """Returns the created_at field, with a different short description"""
