@@ -2535,9 +2535,22 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         election_page = type_result.follow()
 
-        # Go back to SO page and test the dynamic text changed
+        # Navigate to the org page as that is the step right before senior_official
+        org_page = election_page.click(str(self.TITLES["organization_contact"]), index=0)
+        org_contact_form = org_page.forms[0]
+        org_contact_form["organization_contact-organization_name"] = "Testorg"
+        org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-address_line2"] = "address 2"
+        org_contact_form["organization_contact-city"] = "NYC"
+        org_contact_form["organization_contact-state_territory"] = "NY"
+        org_contact_form["organization_contact-zipcode"] = "10002"
+        org_contact_form["organization_contact-urbanization"] = "URB Royal Oaks"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        so_page = election_page.click(str(self.TITLES["senior_official"]), index=0)
+        org_contact_result = org_contact_form.submit()
+
+        # Navigate back to the so page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        so_page = org_contact_result.follow()
         self.assertContains(so_page, "Domain requests from cities")
 
     @less_console_noise_decorator
@@ -2635,9 +2648,15 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         election_page = type_result.follow()
 
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_websites = election_page.click(str(self.TITLES["current_sites"]), index=0)
+        current_sites_form = current_websites.forms[0]
+        current_sites_form["current_sites-0-website"] = "www.city.com"
+        current_sites_result = current_sites_form.submit().follow()
+
         # Go back to dotgov domain page to test the dynamic text changed
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        dotgov_page = election_page.click(str(self.TITLES["dotgov_domain"]), index=0)
+        dotgov_page = current_sites_result.click(str(self.TITLES["dotgov_domain"]), index=0)
         self.assertContains(dotgov_page, "CityofEudoraKS.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
 
@@ -2991,6 +3010,9 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         """Test when all fields in the domain request are filled."""
 
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        domain_request.anything_else = False
+        domain_request.has_anything_else_text = False
+        domain_request.save()
 
         response = self.app.get(f"/domain-request/{domain_request.id}/edit/")
         # django-webtest does not handle cookie-based sessions well because it keeps
