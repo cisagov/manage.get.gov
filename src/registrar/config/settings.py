@@ -357,9 +357,7 @@ CSP_FORM_ACTION = allowed_sources
 # strict CSP by allowing scripts to run from their domain
 # and inline with a nonce, as well as allowing connections back to their domain.
 # Note: If needed, we can embed chart.js instead of using the CDN
-CSP_DEFAULT_SRC = (
-    "'self'",
-)
+CSP_DEFAULT_SRC = ("'self'",)
 CSP_STYLE_SRC = ["'self'", "https://www.ssa.gov"]
 CSP_SCRIPT_SRC_ELEM = [
     "'self'",
