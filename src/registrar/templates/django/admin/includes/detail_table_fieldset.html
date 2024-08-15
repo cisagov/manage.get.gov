@@ -151,16 +151,75 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     <div id="action-needed-reason-email-readonly" class="display-none">
 
         <div
-            class="usa-modal"
-            id="toggle-email-already-sent-alert"
-            aria-labelledby="Are you sure you want to edit this email?"
-            aria-describedby="The creator of this request already received an email"
+        class="usa-modal"
+        id="email-already-sent-modal"
+        aria-labelledby="Are you sure you want to edit this email?"
+        aria-describedby="The creator of this request already received an email"
         >
-            {% include 'includes/modal.html' with modal_heading="Are you sure you want to edit this email?" modal_button=modal_button|safe %}
+            <div class="usa-modal__content">
+                <div class="usa-modal__main">
+                    <h2 class="usa-modal__heading" id="modal-1-heading">
+                        Are you sure you want to edit this email?
+                    </h2>
+                    <div class="usa-prose">
+                        <p>
+                            The creator of this request already received an email for this status/reason: 
+                        </p>
+                        <ul>
+                            <li class="font-body-sm">Status: <b>Action needed</b></li>
+                            <li class="font-body-sm">Reason: <b>{{ field.field.value|linebreaks }}</b></li>
+                        </ul>
+                        <p>
+                            If you edit this email's text, <b>the system will send another email</b> to
+                            the creator after you "save" your changes.  If you do not want to send another email, click "cancel" below.
+                        </p>
+                    </div>
+
+                    <div class="usa-modal__footer">
+                        <ul class="usa-button-group">
+                            <li class="usa-button-group__item">
+                                <button
+                                type="submit" 
+                                class="usa-button" 
+                                id="email-already-sent-modal_continue-editing-button"
+                                data-close-modal
+                                >
+                                    Yes, continue editing
+                                </button>
+                            </li>
+                            <li class="usa-button-group__item">
+                                <button
+                                type="button"
+                                class="usa-button usa-button--unstyled padding-105 text-center"
+                                name="_cancel_edit_email"
+                                data-close-modal
+                                >
+                                    Cancel
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <button
+                type="button"
+                class="usa-button usa-modal__close"
+                aria-label="Close this window"
+                data-close-modal
+                >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                        <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <div class="flex-container">
-            <label><b>Auto-generated email that will be sent to the creator</b></label> | 
+            <p id="action-needed-email-header"><b>Auto-generated email that will be sent to the creator</b></p>
+            <p class="display-none" id="action-needed-email-header-email-sent">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
+                </svg>
+                <b>Email sent to the creator</b></p>
             <button id="action-needed-reason-email-edit-button" 
                 type="button" 
                 class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-top-2 margin-bottom-1 margin-left-1">
@@ -171,6 +230,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     </div>
     <div>
         {{ field.field }}
+        <div id="action-needed-email-footer">This email will be sent to the creator of this request after saving</div>
         <input id="action-needed-email-sent" class="display-none" value="{{action_needed_email_sent}}">
     </div>
     {% else %}

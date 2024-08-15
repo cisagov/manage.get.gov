@@ -510,10 +510,17 @@ function initializeWidgetOnList(list, parentId) {
     // Since this is an iife, these vars will be removed from memory afterwards
     var actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
     var actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
-    var helptext = document.querySelector("#action-needed-reason-email-placeholder-text")
+    var placeholderText = document.querySelector("#action-needed-reason-email-placeholder-text")
     var actionNeededEmailReadonly = document.querySelector("#action-needed-reason-email-readonly");
     var actionNeededEmailReadonlyTextarea = document.querySelector("#action-needed-reason-email-readonly-textarea")
     var editEmailButton = document.querySelector("#action-needed-reason-email-edit-button")
+
+    var actionNeededEmailAlreadySentModal = document.querySelector("#email-already-sent-modal")
+    var confirmEditEmailButton = document.querySelector("#email-already-sent-modal_continue-editing-button")
+
+    var actionNeededEmailHeader = document.querySelector("#action-needed-email-header")
+    var actionNeededEmailHeaderOnSave = document.querySelector("#action-needed-email-header-email-sent")
+    var actionNeededEmailFooter = document.querySelector("#action-needed-email-footer")
 
     let emailWasSent = document.getElementById("action-needed-email-sent");
     let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
@@ -542,15 +549,30 @@ function initializeWidgetOnList(list, parentId) {
         editEmailButton.addEventListener("click", function() {
             let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
 
-            if (emailHasBeenSentBefore) {
+            if (true) { //emailHasBeenSentBefore
                 // Show warning Modal
-
+                setModalVisibility(actionNeededEmailAlreadySentModal, true)
             }
             else {
                 // Show editable view
                 showElement(actionNeededEmail.parentElement)
                 hideElement(actionNeededEmailReadonly)
-                hideElement(helptext)
+                hideElement(placeholderText)
+            }
+        });
+
+        confirmEditEmailButton.addEventListener("click", function() {
+            // Show editable view
+            showElement(actionNeededEmail.parentElement)
+            hideElement(actionNeededEmailReadonly)
+            hideElement(placeholderText)
+        });
+
+        // Event delegation for data-close-modal buttons 
+        // (since manually opening the modal interferes with how this normally works)
+        document.addEventListener('click', function(event) {
+            if (event.target.matches('[data-close-modal]')) {
+                setModalVisibility(actionNeededEmailAlreadySentModal, false)
             }
         });
 
@@ -575,6 +597,27 @@ function initializeWidgetOnList(list, parentId) {
             // Show an editable email field or a readonly one
             updateActionNeededEmailDisplay(reason)
         });
+
+        const saveButton = document.querySelector('input[name=_save]');
+        // The button does not exist if no fields are editable.
+        if (saveButton) {
+            saveButton.addEventListener('click', function(event) {
+                // Update appearance of action needed e-mail header
+                hideElement(actionNeededEmailHeader)
+                showElement(actionNeededEmailHeaderOnSave)
+                actionNeededEmailFooter.innerHTML = "This email has been sent to the creator of this request";
+            });
+        }
+    }
+
+    function setModalVisibility(modalToToggle, isVisible) {
+        if (!isVisible) {
+            modalToToggle.classList.remove('is-visible');
+            modalToToggle.setAttribute('aria-hidden', 'true');
+        } else {
+            modalToToggle.classList.add('is-visible');
+            modalToToggle.setAttribute('aria-hidden', 'false');
+        }
     }
 
     // Shows an editable email field or a readonly one.
@@ -584,26 +627,29 @@ function initializeWidgetOnList(list, parentId) {
 
         console.info("REASON: "+reason)
 
+        // showElement(actionNeededEmailHeader)
+        // hideElement(actionNeededEmailHeaderOnSave)
+        actionNeededEmailFooter.innerHTML = "This email will be sent to the creator of this request after saving";
+        hideElement(actionNeededEmail.parentElement)
+
         if (reason) {
             if (reason === "other") {
-                helptext.innerHTML = "No email will be sent.";
-                hideElement(actionNeededEmail.parentElement)
+                placeholderText.innerHTML = "No email will be sent.";
                 hideElement(actionNeededEmailReadonly)
-                showElement(helptext)
+                showElement(placeholderText)
             }
             else {
                 // Always show readonly view to start
-                hideElement(actionNeededEmail.parentElement)
                 showElement(actionNeededEmailReadonly)
-                hideElement(helptext)
+                hideElement(placeholderText)
             }
         } else {
-            helptext.innerHTML = "Select an action needed reason to see email";
-            hideElement(actionNeededEmail.parentElement)
+            placeholderText.innerHTML = "Select an action needed reason to see email";
             hideElement(actionNeededEmailReadonly)
-            showElement(helptext)
+            showElement(placeholderText)
         }
     }
+
 
 })();
 
