@@ -4,7 +4,7 @@ import logging
 from django import forms
 from django.core.validators import RegexValidator
 
-from ..models import DomainInformation, Portfolio
+from ..models import DomainInformation, Portfolio, SeniorOfficial
 
 logger = logging.getLogger(__name__)
 
@@ -67,3 +67,31 @@ class PortfolioOrgAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
+
+
+class PortfolioSeniorOfficialForm(forms.ModelForm):
+    """
+    Form for updating the portfolio senior official.
+    This form is readonly for now.
+    """
+
+    JOIN = "senior_official"
+    full_name = forms.CharField(label="Full name", required=False)
+
+    class Meta:
+        model = SeniorOfficial
+        fields = [
+            "title",
+            "email",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.id:
+            self.fields["full_name"].initial = self.instance.get_formatted_name()
+
+    def clean(self):
+        """Clean override to remove unused fields"""
+        cleaned_data = super().clean()
+        cleaned_data.pop("full_name", None)
+        return cleaned_data
