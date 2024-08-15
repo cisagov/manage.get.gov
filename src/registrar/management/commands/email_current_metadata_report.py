@@ -58,17 +58,17 @@ class Command(BaseCommand):
         reports = {
             "Domain report": {
                 "report_filename": f"domain-metadata-{self.current_date}.csv",
-                "report_function": csv_export.export_data_type_to_csv,
+                "report_function": csv_export.DomainDataType.export_data_to_csv,
             },
             "Domain request report": {
                 "report_filename": f"domain-request-metadata-{self.current_date}.csv",
-                "report_function": csv_export.DomainRequestExport.export_full_domain_request_report,
+                "report_function": csv_export.DomainRequestDataFull.export_data_to_csv,
             },
         }
 
         # Set the password equal to our content in SECRET_ENCRYPT_METADATA.
         # For local development, this will be "devpwd" unless otherwise set.
-        # Uncomment these lines if you want to use this:
+        # Uncomment these lines (and comment out the line after) if you want to use this:
         # override = settings.SECRET_ENCRYPT_METADATA is None and not settings.IS_PRODUCTION
         # password = "devpwd" if override else settings.SECRET_ENCRYPT_METADATA
         password = settings.SECRET_ENCRYPT_METADATA
