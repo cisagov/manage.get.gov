@@ -11,6 +11,7 @@
             <h2 id="domains-header" class="display-inline-block">You aren’t managing any domains.</h2>
             <p>If you believe you should have access to a domain, reach out to your organization’s administrators.</p>
             
+            {% if portfolio_administrators %}
             <p>Your organizations administrators:</p>
             <ul class="margin-top-0">
                 {% for administrator in portfolio_administrators %}
@@ -21,6 +22,10 @@
                     {% endif %}
                 {% endfor %}
             </ul>
+            {% else %}
+            <p><strong>No administrators were found on your organization.</strong></p>
+            <p>To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.</p>
+            {% endif %}
         </div>
     </section>
 {% endblock %}
