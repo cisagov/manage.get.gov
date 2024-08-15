@@ -137,7 +137,7 @@ class Portfolio(TimeStampedModel):
             return " - ".join([org_type_label, agency_type_label])
         else:
             return org_type_label
-    
+
     @property
     def federal_type(self):
         """Returns the federal_type value on the underlying federal_agency field"""

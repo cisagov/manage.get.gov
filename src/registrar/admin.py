@@ -9,8 +9,6 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models.domain_group import DomainGroup
-from registrar.models.suborganization import Suborganization
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
@@ -2932,7 +2930,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     def federal_type(self, obj: models.portfolio):
         """Returns the federal_type field"""
         return BranchChoices.get_branch_label(obj.federal_type) if obj.federal_type else "-"
-    
+
     federal_type.short_description = "Federal type"
 
     def created_on(self, obj: models.Portfolio):

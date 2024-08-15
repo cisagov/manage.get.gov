@@ -160,6 +160,7 @@ def and_filter(value, arg):
     """
     return bool(value and arg)
 
+
 @register.filter(name="has_contact_info")
 def has_contact_info(user):
     """Checks if the given object has the attributes: title, email, phone
