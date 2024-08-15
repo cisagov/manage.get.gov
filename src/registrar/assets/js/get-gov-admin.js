@@ -898,20 +898,26 @@ function initializeWidgetOnList(list, parentId) {
         const phoneSpan = contactList.querySelector("#contact_info_phone");
     
         if (titleSpan) { 
-            titleSpan.textContent = data.title || "";
+            titleSpan.textContent = data.title || "None";
         };
 
         // Update the email field and the content for the clipboard
         if (emailSpan) {
-            emailSpan.textContent = data.email || "";
-            const clipboardInput = contactList.querySelector(".admin-icon-group input");
-            if (clipboardInput) {
-                clipboardInput.value = data.email || "";
-            };
+            let copyButton = contactList.querySelector(".admin-icon-group");
+            emailSpan.textContent = data.email || "None";
+            if (data.email) {
+                const clipboardInput = contactList.querySelector(".admin-icon-group input");
+                if (clipboardInput) {
+                    clipboardInput.value = data.email;
+                };
+                showElement(copyButton);
+            }else {
+                hideElement(copyButton);
+            }
         }
 
         if (phoneSpan) {
-            phoneSpan.textContent = data.phone || "";
+            phoneSpan.textContent = data.phone || "None";
         };
     }
 })();

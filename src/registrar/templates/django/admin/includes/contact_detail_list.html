@@ -1,7 +1,7 @@
 {% load i18n static %}
 {% load custom_filters %}
 
-<address class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} {% if user.has_contact_info %}margin-bottom-1{% endif %} dja-address-contact-list">
+<address class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} {% if user|has_contact_info %}margin-bottom-1{% endif %} dja-address-contact-list">
 
 
     {% if show_formatted_name %}
