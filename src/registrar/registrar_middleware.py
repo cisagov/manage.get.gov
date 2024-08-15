@@ -158,24 +158,3 @@ class CheckPortfolioMiddleware:
                 return HttpResponseRedirect(portfolio_redirect)
 
         return None
-
-
-class ANDIMiddleware(MiddlewareMixin):
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        response = self.get_response(request)
-        return response
-
-    def process_template_view(self, request, view_func, view_args, view_kwargs):
-        response = self.get_response(request)
-        if "text/html" in response.get("Content-Type", ""):
-            andi_script = """
-            <script src="https://www.ssa.gov/accessibility/andi/andi.js"></script>
-            """
-            # Inject the ANDI script before the closing </body> tag
-            content = response.content.decode("utf-8")
-            content = content.replace("</body>", f"{andi_script}</body>")
-            response.content = content.encode("utf-8")
-        return None
