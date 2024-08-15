@@ -1,4 +1,5 @@
 {% load i18n static %}
+{% load custom_filters %}
 
 <address class="{% if no_title_top_padding %}margin-top-neg-1__detail-list{% endif %} {% if user.has_contact_info %}margin-bottom-1{% endif %} dja-address-contact-list">
 
@@ -12,7 +13,7 @@
         </br>
     {% endif %}
 
-    {% if user.has_contact_info %}
+    {% if user|has_contact_info %}
         {# Title #}
         {% if user.title %}
             <span id="contact_info_title">{{ user.title }}</span>
@@ -42,7 +43,7 @@
         No additional contact information found.<br>
     {% endif %}
 
-    {% if user_verification_type %}
+    {% if user_verification_type and not skip_additional_contact_info %}
         <span id="contact_info_phone">{{ user_verification_type }}</span>
     {% endif %}
 </address>

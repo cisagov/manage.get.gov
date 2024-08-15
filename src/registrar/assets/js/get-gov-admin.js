@@ -765,13 +765,18 @@ function initializeWidgetOnList(list, parentId) {
 */
 (function dynamicPortfolioFields(){
 
+    // the federal agency change listener fires on page load, which we don't want.
+    var isInitialPageLoad = true
+
+    // This is the additional information that exists beneath the SO element.
+    var contactList = document.querySelector(".field-senior_official .dja-address-contact-list");
     document.addEventListener('DOMContentLoaded', function() {
-        
+
         let isPortfolioPage = document.getElementById("portfolio_form");
         if (!isPortfolioPage) {
             return;
         }
-        
+
         // $ symbolically denotes that this is using jQuery
         let $federalAgency = django.jQuery("#id_federal_agency");
         let organizationType = document.getElementById("id_organization_type");
@@ -797,6 +802,12 @@ function initializeWidgetOnList(list, parentId) {
     });
 
     function handleFederalAgencyChange(federalAgency, organizationType) {
+        // Don't do anything on page load
+        if (isInitialPageLoad) {
+            isInitialPageLoad = false;
+            return;
+        }
+
         // Set the org type to federal if an agency is selected
         let selectedText = federalAgency.find("option:selected").text();
 
@@ -822,6 +833,10 @@ function initializeWidgetOnList(list, parentId) {
             return;
         }
 
+        // Hide the contactList initially. 
+        // If we can update the contact information, it'll be shown again.
+        hideElement(contactList.parentElement);
+
         let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
         fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
         .then(response => {
@@ -839,6 +854,10 @@ function initializeWidgetOnList(list, parentId) {
                 }
                 return;
             }
+
+            // Update the "contact details" blurb beneath senior official
+            updateContactInfo(data);
+            showElement(contactList.parentElement);
 
             let seniorOfficialId = data.id;
             let seniorOfficialName = [data.first_name, data.last_name].join(" ");
@@ -860,6 +879,22 @@ function initializeWidgetOnList(list, parentId) {
             }
         })
         .catch(error => console.error("Error fetching senior official: ", error));
+    }
+
+    function updateContactInfo(data) {
+        if (!contactList) return;
+    
+        const titleSpan = contactList.querySelector("#contact_info_title");
+        const emailSpan = contactList.querySelector("#contact_info_email");
+        const phoneSpan = contactList.querySelector("#contact_info_phone");
+    
+        if (titleSpan) titleSpan.textContent = data.title || "";
+        if (emailSpan) {
+            emailSpan.textContent = data.email || "";
+            const clipboardInput = contactList.querySelector(".admin-icon-group input");
+            if (clipboardInput) clipboardInput.value = data.email || "";
+        }
+        if (phoneSpan) phoneSpan.textContent = data.phone || "";
     }
 
     function handleStateTerritoryChange(stateTerritory, urbanizationField) {

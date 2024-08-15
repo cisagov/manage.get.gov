@@ -3060,15 +3060,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups"""
-        obj = self.get_object(request, object_id)
-
-        # ---- Domain Groups
-        domain_groups = DomainGroup.objects.filter(portfolio=obj)
-
-        # ---- Suborganizations
-        suborganizations = Suborganization.objects.filter(portfolio=obj)
-
-        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
+        extra_context = {"skip_additional_contact_info": True}
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):

@@ -159,3 +159,12 @@ def and_filter(value, arg):
     Usage: {{ value|and:arg }}
     """
     return bool(value and arg)
+
+@register.filter(name="has_contact_info")
+def has_contact_info(user):
+    """Checks if the given object has the attributes: title, email, phone
+    and checks if at least one of those is not null."""
+    if not hasattr(user, "title") or not hasattr(user, "email") or not hasattr(user, "phone"):
+        return False
+    else:
+        return bool(user.title or user.email or user.phone)
