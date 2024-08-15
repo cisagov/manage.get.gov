@@ -26,7 +26,7 @@ class UserFixture:
             "username": "43a7fa8d-0550-4494-a6fe-81500324d590",
             "first_name": "Jyoti",
             "last_name": "Bock",
-            "email": "jyotibock@truss.works"
+            "email": "jyotibock@truss.works",
         },
         {
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
@@ -135,7 +135,7 @@ class UserFixture:
             "username": "a5906815-dd80-4c64-aebe-2da6a4c9d7a4",
             "first_name": "Jyoti-Analyst",
             "last_name": "Bock-Analyst",
-            "email": "jyotibock+1@truss.works"
+            "email": "jyotibock+1@truss.works",
         },
         {
             "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
