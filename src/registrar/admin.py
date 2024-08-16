@@ -3151,6 +3151,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_fields = ["name"]
 
     change_form_template = "django/admin/suborg_change_form.html"
+
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add suborg's related domains and requests to context"""
         obj = self.get_object(request, object_id)
