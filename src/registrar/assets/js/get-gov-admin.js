@@ -597,7 +597,7 @@ function initializeWidgetOnList(list, parentId) {
                 }
             }
 
-            // Show an editable email field or a readonly one
+            // Show either a preview of the email or some text describing no email will be sent
             updateActionNeededEmailDisplay(reason, emailBody)
         });
 
@@ -605,10 +605,8 @@ function initializeWidgetOnList(list, parentId) {
         // The button does not exist if no fields are editable.
         if (saveButton) {
             saveButton.addEventListener('click', function(event) {
-                // Update appearance of action needed e-mail header
-                hideElement(actionNeededEmailHeader)
-                showElement(actionNeededEmailHeaderOnSave)
-                actionNeededEmailFooter.innerHTML = "This email has been sent to the creator of this request";
+                // Show readonly view with messaging to indicate email was sent
+                showEmailAlreadySentView()
             });
         }
     }
@@ -623,9 +621,8 @@ function initializeWidgetOnList(list, parentId) {
         }
     }
 
-    // Shows an editable email field or a readonly one.
+    // Shows either a preview of the email or some text describing no email will be sent.
     // If the email doesn't exist or if we're of reason "other", display that no email was sent.
-    // Likewise, if we've sent this email before, we should just display the content.
     function updateActionNeededEmailDisplay(reason, emailBody) {
 
         if (reason && emailBody) {
@@ -634,24 +631,34 @@ function initializeWidgetOnList(list, parentId) {
             actionNeededEmailReadonlyTextarea.value = emailBody;
         }
 
-        // showElement(actionNeededEmailHeader)
-        // hideElement(actionNeededEmailHeaderOnSave)
         actionNeededEmailFooter.innerHTML = "This email will be sent to the creator of this request after saving";
         hideElement(actionNeededEmail.parentElement)
 
         if (reason) {
             if (reason === "other") {
+                // Hide email preview and show this text instead
                 showPlaceholderText("No email will be sent");
             }
             else {
-                // Always show readonly view to start
+                // Always show readonly view of email to start
                 showEmail(false)
             }
         } else {
+            // Hide email preview and show this text instead
             showPlaceholderText("Select an action needed reason to see email");
         }
     }
 
+    // Shows a readonly preview of the email with updated messaging to indicate this email was sent
+    function showEmailAlreadySentView()
+    {
+        showEmail(false)
+        hideElement(actionNeededEmailHeader)
+        showElement(actionNeededEmailHeaderOnSave)
+        actionNeededEmailFooter.innerHTML = "This email has been sent to the creator of this request";
+    }
+
+    // Shows either a readonly view (canEdit=false) or editable view (canEdit=true) of the action needed email
     function showEmail(canEdit)
     {
         if(!canEdit)
@@ -668,6 +675,7 @@ function initializeWidgetOnList(list, parentId) {
         hideElement(placeholderText)
     }
 
+    // Hides preview of action needed email and instead displays the given text (innerHTML)
     function showPlaceholderText(innerHTML)
     {
         hideElement(actionNeededEmail.parentElement)
