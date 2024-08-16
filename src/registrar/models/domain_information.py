@@ -424,3 +424,10 @@ class DomainInformation(TimeStampedModel):
     def _get_many_to_many_fields():
         """Returns a set of each field.name that has the many to many relation"""
         return {field.name for field in DomainInformation._meta.many_to_many}  # type: ignore
+
+    def get_state_display_of_domain(self):
+        """Returns the state display of the underlying domain record"""
+        if self.domain:
+            return self.domain.get_state_display()
+        else:
+            return None

@@ -16,6 +16,7 @@ class Suborganization(TimeStampedModel):
     portfolio = models.ForeignKey(
         "registrar.Portfolio",
         on_delete=models.PROTECT,
+        related_name="portfolio_suborganizations",
     )
 
     def __str__(self) -> str:
