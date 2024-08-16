@@ -3156,9 +3156,6 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         obj = self.get_object(request, object_id)
 
         # ---- Domain Requests
-        # domain_requests = DomainRequest.objects.filter(sub_organization=obj).exclude(
-        #     Q(status=DomainRequest.DomainRequestStatus.STARTED) | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
-        # )
         domain_requests = DomainRequest.objects.filter(sub_organization=obj)
         sort_by = request.GET.get("sort_by", "requested_domain__name")
         domain_requests = domain_requests.order_by(sort_by)
