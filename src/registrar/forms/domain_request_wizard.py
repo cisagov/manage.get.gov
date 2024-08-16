@@ -679,7 +679,7 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
     field_name = "has_cisa_representative"
 
 
-class AdditionalDetailsForm(BaseDeletableRegistrarForm):
+class AnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=True,
         label="Anything else?",
@@ -698,7 +698,7 @@ class AdditionalDetailsForm(BaseDeletableRegistrarForm):
     )
 
 
-class AdditionalDetailsYesNoForm(BaseYesNoForm):
+class AnythingElseYesNoForm(BaseYesNoForm):
     """Yes/no toggle for the anything else question on additional details"""
 
     # Note that these can be set as functions/init if you need more fine-grained control.
