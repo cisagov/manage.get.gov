@@ -568,7 +568,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         default=None,
-        verbose_name="submitted at",
+        verbose_name="first submitted on",
         help_text="Date initially submitted",
     )
 
@@ -577,7 +577,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         default=None,
-        verbose_name="submitted at",
+        verbose_name="last submitted on",
         help_text="Date last submitted",
     )
 
@@ -586,7 +586,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         default=None,
-        verbose_name="last updated at",
+        verbose_name="last updated on",
         help_text="Date of last status updated",
     )
     notes = models.TextField(
@@ -816,7 +816,8 @@ class DomainRequest(TimeStampedModel):
         DraftDomain = apps.get_model("registrar.DraftDomain")
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
-        
+
+        # if the domain has not been submitted before this  must be the first time  
         if not self.first_submitted_date:
             self.first_submitted_date = timezone.now().date()
 
