@@ -143,10 +143,10 @@ class CheckPortfolioMiddleware:
         if current_path == self.home and request.user.is_authenticated and request.user.is_org_user(request):
 
             if request.user.has_base_portfolio_permission():
-                portfolio = request.user.portfolio
+                portfolio = request.user.last_selected_portfolio
 
                 # Add the portfolio to the request object
-                request.portfolio = portfolio
+                request.last_selected_portfolio = portfolio
 
                 if request.user.has_domains_portfolio_permission():
                     portfolio_redirect = reverse("domains")

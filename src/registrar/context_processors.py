@@ -73,7 +73,7 @@ def portfolio_permissions(request):
             "has_base_portfolio_permission": request.user.has_base_portfolio_permission(),
             "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(),
             "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(),
-            "portfolio": request.user.portfolio,
+            "portfolio": request.user.last_selected_portfolio,
             "has_organization_feature_flag": True,
         }
     except AttributeError:

@@ -56,7 +56,7 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
 
     def get_object(self, queryset=None):
         """Get the portfolio object based on the request user."""
-        portfolio = self.request.user.portfolio
+        portfolio = self.request.user.last_selected_portfolio
         if portfolio is None:
             raise Http404("No organization found for this user")
         return portfolio
@@ -112,7 +112,7 @@ class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
 
     def get_object(self, queryset=None):
         """Get the portfolio object based on the request user."""
-        portfolio = self.request.user.portfolio
+        portfolio = self.request.user.last_selected_portfolio
         if portfolio is None:
             raise Http404("No organization found for this user")
         return portfolio

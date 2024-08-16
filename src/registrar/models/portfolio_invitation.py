@@ -87,9 +87,10 @@ class PortfolioInvitation(TimeStampedModel):
             raise RuntimeError("Cannot find the user to retrieve this portfolio invitation.")
 
         # and create a role for that user on this portfolio
-        user.portfolio = self.portfolio
+        user_portfolio = user.last_selected_portfolio
+        user_portfolio = self.portfolio
         if self.portfolio_roles and len(self.portfolio_roles) > 0:
-            user.portfolio_roles = self.portfolio_roles
+            user_portfolio.portfolio_roles = self.portfolio_roles
         if self.portfolio_additional_permissions and len(self.portfolio_additional_permissions) > 0:
-            user.portfolio_additional_permissions = self.portfolio_additional_permissions
-        user.save()
+            user_portfolio.portfolio_additional_permissions = self.portfolio_additional_permissions
+        user_portfolio.save()
