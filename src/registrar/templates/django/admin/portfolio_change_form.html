@@ -1,6 +1,13 @@
 {% extends 'django/admin/email_clipboard_change_form.html' %}
 {% load i18n static %}
 
+{% block content %}
+    {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
+    {% url 'get-senior-official-from-federal-agency-json' as url %}
+    <input id="senior_official_from_agency_json_url" class="display-none" value="{{url}}" />
+    {{ block.super }}
+{% endblock content %}
+
 {% block after_related_objects %}
     <div class="module aligned padding-3">
         <h2>Associated groups and suborganizations</h2>
