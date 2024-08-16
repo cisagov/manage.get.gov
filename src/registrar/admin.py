@@ -9,6 +9,7 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
+from registrar.models.domain_information import DomainInformation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
@@ -3142,11 +3143,33 @@ class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 
 class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+
     list_display = ["name", "portfolio"]
     autocomplete_fields = [
         "portfolio",
     ]
     search_fields = ["name"]
+
+    change_form_template = "django/admin/suborg_change_form.html"
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Add suborg's related domains and requests to context"""
+        obj = self.get_object(request, object_id)
+
+        # ---- Domain Requests
+        # domain_requests = DomainRequest.objects.filter(sub_organization=obj).exclude(
+        #     Q(status=DomainRequest.DomainRequestStatus.STARTED) | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
+        # )
+        domain_requests = DomainRequest.objects.filter(sub_organization=obj)
+        sort_by = request.GET.get("sort_by", "requested_domain__name")
+        domain_requests = domain_requests.order_by(sort_by)
+
+        # ---- Domains
+        domain_infos = DomainInformation.objects.filter(sub_organization=obj)
+        domain_ids = domain_infos.values_list("domain", flat=True)
+        domains = Domain.objects.filter(id__in=domain_ids).exclude(state=Domain.State.DELETED)
+
+        extra_context = {"domain_requests": domain_requests, "domains": domains}
+        return super().change_view(request, object_id, form_url, extra_context)
 
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
