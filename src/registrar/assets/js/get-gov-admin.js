@@ -544,6 +544,7 @@ function initializeWidgetOnList(list, parentId) {
         // Add a change listener to dom load
         document.addEventListener('DOMContentLoaded', function() {
             let reason = actionNeededReasonDropdown.value;
+            let emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
 
             // Handle the session boolean (to enable/disable editing)
             if (emailWasSent && emailWasSent.value === "True") {
@@ -552,29 +553,25 @@ function initializeWidgetOnList(list, parentId) {
             }
 
             // Show an editable email field or a readonly one
-            updateActionNeededEmailDisplay(reason)
+            updateActionNeededEmailDisplay(reason, emailBody)
         });
 
         editEmailButton.addEventListener("click", function() {
             let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
 
-            if (true) { //emailHasBeenSentBefore
+            if (emailHasBeenSentBefore) {
                 // Show warning Modal
                 setModalVisibility(actionNeededEmailAlreadySentModal, true)
             }
             else {
                 // Show editable view
-                showElement(actionNeededEmail.parentElement)
-                hideElement(actionNeededEmailReadonly)
-                hideElement(placeholderText)
+                showEmail(true)
             }
         });
 
         confirmEditEmailButton.addEventListener("click", function() {
             // Show editable view
-            showElement(actionNeededEmail.parentElement)
-            hideElement(actionNeededEmailReadonly)
-            hideElement(placeholderText)
+            showEmail(true)
         });
 
         // Event delegation for data-close-modal buttons 
@@ -589,11 +586,8 @@ function initializeWidgetOnList(list, parentId) {
         actionNeededReasonDropdown.addEventListener("change", function() {
             let reason = actionNeededReasonDropdown.value;
             let emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
+            
             if (reason && emailBody) {
-                // Replace the email content
-                actionNeededEmail.value = emailBody;
-                actionNeededEmailReadonlyTextarea.value = emailBody;
-
                 // Reset the session object on change since change refreshes the email content.
                 if (oldDropdownValue !== actionNeededReasonDropdown.value || oldEmailValue !== actionNeededEmail.value) {
                     let emailSent = sessionStorage.getItem(emailSentSessionVariableName)
@@ -604,7 +598,7 @@ function initializeWidgetOnList(list, parentId) {
             }
 
             // Show an editable email field or a readonly one
-            updateActionNeededEmailDisplay(reason)
+            updateActionNeededEmailDisplay(reason, emailBody)
         });
 
         const saveButton = document.querySelector('input[name=_save]');
@@ -632,9 +626,13 @@ function initializeWidgetOnList(list, parentId) {
     // Shows an editable email field or a readonly one.
     // If the email doesn't exist or if we're of reason "other", display that no email was sent.
     // Likewise, if we've sent this email before, we should just display the content.
-    function updateActionNeededEmailDisplay(reason) {
+    function updateActionNeededEmailDisplay(reason, emailBody) {
 
-        console.info("REASON: "+reason)
+        if (reason && emailBody) {
+            // Replace the email content
+            actionNeededEmail.value = emailBody;
+            actionNeededEmailReadonlyTextarea.value = emailBody;
+        }
 
         // showElement(actionNeededEmailHeader)
         // hideElement(actionNeededEmailHeaderOnSave)
@@ -643,23 +641,42 @@ function initializeWidgetOnList(list, parentId) {
 
         if (reason) {
             if (reason === "other") {
-                placeholderText.innerHTML = "No email will be sent.";
-                hideElement(actionNeededEmailReadonly)
-                showElement(placeholderText)
+                showPlaceholderText("No email will be sent");
             }
             else {
                 // Always show readonly view to start
-                showElement(actionNeededEmailReadonly)
-                hideElement(placeholderText)
+                showEmail(false)
             }
         } else {
-            placeholderText.innerHTML = "Select an action needed reason to see email";
-            hideElement(actionNeededEmailReadonly)
-            showElement(placeholderText)
+            showPlaceholderText("Select an action needed reason to see email");
         }
     }
 
+    function showEmail(canEdit)
+    {
+        if(!canEdit)
+        {
+            showElement(actionNeededEmailReadonly)
+            hideElement(actionNeededEmail.parentElement)
+        }
+        else
+        {
+            hideElement(actionNeededEmailReadonly)
+            showElement(actionNeededEmail.parentElement)
+        }
+        showElement(actionNeededEmailFooter) // this is the same for both views, so it was separated out
+        hideElement(placeholderText)
+    }
 
+    function showPlaceholderText(innerHTML)
+    {
+        hideElement(actionNeededEmail.parentElement)
+        hideElement(actionNeededEmailReadonly)
+        hideElement(actionNeededEmailFooter)
+
+        placeholderText.innerHTML = innerHTML;
+        showElement(placeholderText)
+    }
 })();
 
 

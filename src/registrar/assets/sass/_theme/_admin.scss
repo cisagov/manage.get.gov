@@ -847,3 +847,22 @@ div.dja__model-description{
         }
     }
 }
+
+.vertical-separator {
+    min-height: 20px;
+    height: 100%;
+    width: 1px;
+    background-color: #d1d2d2;
+    vertical-align: middle
+}
+
+.usa-summary-box_admin {
+    border-color: #d1d2d2;
+    background-color: #f1f1f1;
+    max-width: fit-content !important;
+    padding: .5rem;
+}
+
+.text-faded {
+    color: #{$dhs-gray-60};
+}
