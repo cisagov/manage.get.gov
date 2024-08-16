@@ -23,6 +23,7 @@ from registrar.admin import (
     PublicContactAdmin,
     TransitionDomainAdmin,
     UserGroupAdmin,
+    PortfolioAdmin,
 )
 from registrar.models import (
     Domain,
@@ -38,6 +39,8 @@ from registrar.models import (
     FederalAgency,
     UserGroup,
     TransitionDomain,
+    Portfolio,
+    Suborganization,
 )
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
@@ -2042,3 +2045,79 @@ class TestUserGroup(TestCase):
             response, "Groups are a way to bundle admin permissions so they can be easily assigned to multiple users."
         )
         self.assertContains(response, "Show more")
+
+
+class TestPortfolioAdmin(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.superuser = create_superuser()
+        cls.admin = PortfolioAdmin(model=Portfolio, admin_site=cls.site)
+        cls.factory = RequestFactory()
+
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+
+    def tearDown(self):
+        Suborganization.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Domain.objects.all().delete()
+        Portfolio.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_created_on_display(self):
+        """Tests the custom created on which is a reskin of the created_at field"""
+        created_on = self.admin.created_on(self.portfolio)
+        expected_date = self.portfolio.created_at.strftime("%b %d, %Y")
+        self.assertEqual(created_on, expected_date)
+
+    @less_console_noise_decorator
+    def test_suborganizations_display(self):
+        """Tests the custom suborg field which displays all related suborgs"""
+        Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
+        Suborganization.objects.create(name="Sub2", portfolio=self.portfolio)
+
+        suborganizations = self.admin.suborganizations(self.portfolio)
+        self.assertIn("Sub1", suborganizations)
+        self.assertIn("Sub2", suborganizations)
+        self.assertIn('<ul class="add-list-reset">', suborganizations)
+
+    @less_console_noise_decorator
+    def test_domains_display(self):
+        """Tests the custom domains field which displays all related domains"""
+        request_1 = completed_domain_request(
+            name="request1.gov", portfolio=self.portfolio, status=DomainRequest.DomainRequestStatus.IN_REVIEW
+        )
+        request_2 = completed_domain_request(
+            name="request2.gov", portfolio=self.portfolio, status=DomainRequest.DomainRequestStatus.IN_REVIEW
+        )
+
+        # Create some domain objects
+        request_1.approve()
+        request_2.approve()
+
+        domain_1 = DomainInformation.objects.get(domain_request=request_1).domain
+        domain_1.name = "domain1.gov"
+        domain_1.save()
+        domain_2 = DomainInformation.objects.get(domain_request=request_2).domain
+        domain_2.name = "domain2.gov"
+        domain_2.save()
+
+        domains = self.admin.domains(self.portfolio)
+        self.assertIn("domain1.gov", domains)
+        self.assertIn("domain2.gov", domains)
+        self.assertIn('<ul class="add-list-reset">', domains)
+
+    @less_console_noise_decorator
+    def test_domain_requests_display(self):
+        """Tests the custom domains requests field which displays all related requests"""
+        completed_domain_request(name="request1.gov", portfolio=self.portfolio)
+        completed_domain_request(name="request2.gov", portfolio=self.portfolio)
+
+        domain_requests = self.admin.domain_requests(self.portfolio)
+        self.assertIn("request1.gov", domain_requests)
+        self.assertIn("request2.gov", domain_requests)
+        self.assertIn('<ul class="add-list-reset">', domain_requests)
