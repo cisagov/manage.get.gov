@@ -5,8 +5,7 @@ from django.db import models
 from django.db.models import Q
 from django.forms import ValidationError
 
-from registrar.models.domain_information import DomainInformation
-from registrar.models.user_domain_role import UserDomainRole
+from registrar.models import DomainInformation, UserDomainRole
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 from .domain_invitation import DomainInvitation
@@ -112,32 +111,12 @@ class User(AbstractUser):
         related_name="users",
     )
 
-    portfolio = models.ForeignKey(
+    last_selected_portfolio = models.ForeignKey(
         "registrar.Portfolio",
         null=True,
         blank=True,
-        related_name="user",
+        related_name="portfolio_selected_by_users",
         on_delete=models.SET_NULL,
-    )
-
-    portfolio_roles = ArrayField(
-        models.CharField(
-            max_length=50,
-            choices=UserPortfolioRoleChoices.choices,
-        ),
-        null=True,
-        blank=True,
-        help_text="Select one or more roles.",
-    )
-
-    portfolio_additional_permissions = ArrayField(
-        models.CharField(
-            max_length=50,
-            choices=UserPortfolioPermissionChoices.choices,
-        ),
-        null=True,
-        blank=True,
-        help_text="Select one or more additional permissions.",
     )
 
     phone = PhoneNumberField(
@@ -234,64 +213,17 @@ class User(AbstractUser):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
 
-        if self.portfolio is None and self._get_portfolio_permissions():
+        portfolio_perms = self.portfolio_permissions.filter(portfolio=self.last_selected_portfolio).first()
+        if self.last_selected_portfolio is None and portfolio_perms._get_portfolio_permissions():
             raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 
-        if self.portfolio is not None and not self._get_portfolio_permissions():
+        if self.last_selected_portfolio is not None and not portfolio_perms._get_portfolio_permissions():
             raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
 
-    def _get_portfolio_permissions(self):
-        """
-        Retrieve the permissions for the user's portfolio roles.
-        """
-        portfolio_permissions = set()  # Use a set to avoid duplicate permissions
-
-        if self.portfolio_roles:
-            for role in self.portfolio_roles:
-                if role in self.PORTFOLIO_ROLE_PERMISSIONS:
-                    portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS[role])
-        if self.portfolio_additional_permissions:
-            portfolio_permissions.update(self.portfolio_additional_permissions)
-        return list(portfolio_permissions)  # Convert back to list if necessary
-
-    def _has_portfolio_permission(self, portfolio_permission):
-        """The views should only call this function when testing for perms and not rely on roles."""
-
-        if not self.portfolio:
-            return False
-
-        portfolio_permissions = self._get_portfolio_permissions()
-
-        return portfolio_permission in portfolio_permissions
-
-    # the methods below are checks for individual portfolio permissions. They are defined here
-    # to make them easier to call elsewhere throughout the application
-    def has_base_portfolio_permission(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
-
-    def has_edit_org_portfolio_permission(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
-
-    def has_domains_portfolio_permission(self):
-        return self._has_portfolio_permission(
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
-        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
-
-    def has_domain_requests_portfolio_permission(self):
-        return self._has_portfolio_permission(
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
-        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
-
-    def has_view_all_domains_permission(self):
-        """Determines if the current user can view all available domains in a given portfolio"""
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
-
-    # Field specific permission checks
-    def has_view_suborganization(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
-
-    def has_edit_suborganization(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
+    def set_default_last_selected_portfolio(self):
+        permission = self.portfolio_permissions.first()
+        if permission:
+            self.last_selected_portfolio = permission.portfolio
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
@@ -434,6 +366,46 @@ class User(AbstractUser):
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
         return has_organization_feature_flag and self.has_base_portfolio_permission()
+    
+    def _has_portfolio_permission(self, portfolio_permission):
+        """The views should only call this function when testing for perms and not rely on roles."""
+
+        if not self.last_selected_portfolio:
+            return False
+
+        portfolio_perms = self.portfolio_permissions.filter(portfolio=self.last_selected_portfolio).first()
+        if not portfolio_perms:
+            return False
+
+        portfolio_permissions = portfolio_perms._get_portfolio_permissions()
+        return portfolio_permission in portfolio_permissions
+
+    def has_base_portfolio_permission(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
+
+    def has_edit_org_portfolio_permission(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
+
+    def has_domains_portfolio_permission(self):
+        return self._has_portfolio_permission(
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
+        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
+
+    def has_domain_requests_portfolio_permission(self):
+        return self._has_portfolio_permission(
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
+
+    def has_view_all_domains_permission(self):
+        """Determines if the current user can view all available domains in a given portfolio"""
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    # Field specific permission checks
+    def has_view_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+
+    def has_edit_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""

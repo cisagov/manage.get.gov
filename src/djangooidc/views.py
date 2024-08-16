@@ -111,6 +111,10 @@ def login_callback(request):
             if not user.verification_type or is_fixture_user:
                 user.set_user_verification_type()
                 user.save()
+            
+            if not user.last_selected_portfolio:
+                user.set_default_last_selected_portfolio()
+                user.save()
 
             login(request, user)
             logger.info("Successfully logged in user %s" % user)
