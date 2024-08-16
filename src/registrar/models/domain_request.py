@@ -563,15 +563,32 @@ class DomainRequest(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
-    # submission date records when domain request is submitted
-    submission_date = models.DateField(
+    # initial submission date records when domain request was first submitted
+    first_submitted_date = models.DateField(
         null=True,
         blank=True,
         default=None,
         verbose_name="submitted at",
-        help_text="Date submitted",
+        help_text="Date initially submitted",
     )
 
+    # last submission date records when domain request was last submitted
+    last_submitted_date = models.DateField(
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name="submitted at",
+        help_text="Date last submitted",
+    )
+
+    # last status update records when domain request status was last updated by an admin or analyst
+    last_status_update = models.DateField(
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name="last updated at",
+        help_text="Date of last status updated",
+    )
     notes = models.TextField(
         null=True,
         blank=True,
@@ -620,6 +637,9 @@ class DomainRequest(TimeStampedModel):
         """Save override for custom properties"""
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
+
+        if self._cached_status != self.status:
+            self.last_status_update = timezone.now().date()
 
         super().save(*args, **kwargs)
 
@@ -796,9 +816,12 @@ class DomainRequest(TimeStampedModel):
         DraftDomain = apps.get_model("registrar.DraftDomain")
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
+        
+        if not self.first_submitted_date:
+            self.first_submitted_date = timezone.now().date()
 
-        # Update submission_date to today
-        self.submission_date = timezone.now().date()
+        # Update last_submission_date to today
+        self.last_submitted_date = timezone.now().date()
         self.save()
 
         # Limit email notifications to transitions from Started and Withdrawn
