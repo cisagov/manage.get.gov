@@ -645,23 +645,29 @@ class DomainRequest(TimeStampedModel):
         """Some yes/no forms use a db field to track whether it was checked or not.
         We handle that here for def save().
         """
+        # Check if the firstname or lastname of cisa representative has any data.
+        # Then set the has_cisa_representative flag accordingly (so that it isn't
+        # "none", which indicates an incomplete form).
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
             self.has_cisa_representative = (
                 self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
             )
 
-        # This check is required to ensure that the form doesn't start out checked
+        # Check for blank data and update has_cisa_representative accordingly (if it isn't None)
         if self.has_cisa_representative is not None:
             self.has_cisa_representative = (
                 self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
             ) and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
 
+        # Check if anything_else has any data.
+        # Then set the has_anything_else_text flag accordingly (so that it isn't
+        # "none", which indicates an incomplete form).
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.anything_else is not None:
             self.has_anything_else_text = self.anything_else != ""
 
-        # This check is required to ensure that the form doesn't start out checked.
+        # Check for blank data and update has_anything_else_text accordingly (if it isn't None)
         if self.has_anything_else_text is not None:
             self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 

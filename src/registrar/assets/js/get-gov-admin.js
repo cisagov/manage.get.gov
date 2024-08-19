@@ -513,9 +513,18 @@ function initializeWidgetOnList(list, parentId) {
     var readonlyView = document.querySelector("#action-needed-reason-email-readonly");
 
     let emailWasSent = document.getElementById("action-needed-email-sent");
-    let actionNeededEmailData = document.getElementById('action-needed-emails-data').textContent;
-    let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
 
+    let emailData = document.getElementById('action-needed-emails-data');
+    if (!emailData) {
+        return;
+    }
+
+    let actionNeededEmailData = emailData.textContent;
+    if(!actionNeededEmailData) {
+        return;
+    }
+
+    let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
     const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
     const emailSentSessionVariableName = `actionNeededEmailSent-${domainRequestId}`;
     const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
@@ -748,5 +757,167 @@ function initializeWidgetOnList(list, parentId) {
                 console.error('Failed to copy text: ', err);
             });
         });
+    }
+})();
+
+
+/** An IIFE for dynamically changing some fields on the portfolio admin model
+*/
+(function dynamicPortfolioFields(){
+
+    // the federal agency change listener fires on page load, which we don't want.
+    var isInitialPageLoad = true
+
+    // This is the additional information that exists beneath the SO element.
+    var contactList = document.querySelector(".field-senior_official .dja-address-contact-list");
+    document.addEventListener('DOMContentLoaded', function() {
+
+        let isPortfolioPage = document.getElementById("portfolio_form");
+        if (!isPortfolioPage) {
+            return;
+        }
+
+        // $ symbolically denotes that this is using jQuery
+        let $federalAgency = django.jQuery("#id_federal_agency");
+        let organizationType = document.getElementById("id_organization_type");
+        if ($federalAgency && organizationType) {
+            // Attach the change event listener
+            $federalAgency.on("change", function() {
+                handleFederalAgencyChange($federalAgency, organizationType);
+            });
+        }
+        
+        // Handle dynamically hiding the urbanization field
+        let urbanizationField = document.querySelector(".field-urbanization");
+        let stateTerritory = document.getElementById("id_state_territory");
+        if (urbanizationField && stateTerritory) {
+            // Execute this function once on load
+            handleStateTerritoryChange(stateTerritory, urbanizationField);
+
+            // Attach the change event listener for state/territory
+            stateTerritory.addEventListener("change", function() {
+                handleStateTerritoryChange(stateTerritory, urbanizationField);
+            });
+        }
+    });
+
+    function handleFederalAgencyChange(federalAgency, organizationType) {
+        // Don't do anything on page load
+        if (isInitialPageLoad) {
+            isInitialPageLoad = false;
+            return;
+        }
+
+        // Set the org type to federal if an agency is selected
+        let selectedText = federalAgency.find("option:selected").text();
+
+        // There isn't a federal senior official associated with null records
+        if (!selectedText) {
+            return;
+        }
+
+        if (selectedText !== "Non-Federal Agency") {
+            if (organizationType.value !== "federal") {
+                organizationType.value = "federal";
+            }
+        }else {
+            if (organizationType.value === "federal") {
+                organizationType.value = "";
+            }
+        }
+
+        // Get the associated senior official with this federal agency
+        let $seniorOfficial = django.jQuery("#id_senior_official");
+        if (!$seniorOfficial) {
+            console.log("Could not find the senior official field");
+            return;
+        }
+
+        // Hide the contactList initially. 
+        // If we can update the contact information, it'll be shown again.
+        hideElement(contactList.parentElement);
+
+        let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
+        fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
+        .then(response => {
+            const statusCode = response.status;
+            return response.json().then(data => ({ statusCode, data }));
+        })
+        .then(({ statusCode, data }) => {
+            if (data.error) {
+                // Clear the field if the SO doesn't exist.
+                if (statusCode === 404) {
+                    $seniorOfficial.val("").trigger("change");
+                    console.warn("Record not found: " + data.error);
+                }else {
+                    console.error("Error in AJAX call: " + data.error);
+                }
+                return;
+            }
+
+            // Update the "contact details" blurb beneath senior official
+            updateContactInfo(data);
+            showElement(contactList.parentElement);
+
+            let seniorOfficialId = data.id;
+            let seniorOfficialName = [data.first_name, data.last_name].join(" ");
+            if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
+                // Clear the field if the SO doesn't exist
+                $seniorOfficial.val("").trigger("change");
+                return;
+            }
+
+            // Add the senior official to the dropdown.
+            // This format supports select2 - if we decide to convert this field in the future.
+            if ($seniorOfficial.find(`option[value='${seniorOfficialId}']`).length) {
+                // Select the value that is associated with the current Senior Official.
+                $seniorOfficial.val(seniorOfficialId).trigger("change");
+            } else { 
+                // Create a DOM Option that matches the desired Senior Official. Then append it and select it.
+                let userOption = new Option(seniorOfficialName, seniorOfficialId, true, true);
+                $seniorOfficial.append(userOption).trigger("change");
+            }
+        })
+        .catch(error => console.error("Error fetching senior official: ", error));
+    }
+
+    function handleStateTerritoryChange(stateTerritory, urbanizationField) {
+        let selectedValue = stateTerritory.value;
+        if (selectedValue === "PR") {
+            showElement(urbanizationField)
+        } else {
+            hideElement(urbanizationField)
+        }
+    }
+
+    function updateContactInfo(data) {
+        if (!contactList) return;
+    
+        const titleSpan = contactList.querySelector("#contact_info_title");
+        const emailSpan = contactList.querySelector("#contact_info_email");
+        const phoneSpan = contactList.querySelector("#contact_info_phone");
+    
+        if (titleSpan) { 
+            titleSpan.textContent = data.title || "None";
+        };
+
+        // Update the email field and the content for the clipboard
+        if (emailSpan) {
+            let copyButton = contactList.querySelector(".admin-icon-group");
+            emailSpan.textContent = data.email || "None";
+            if (data.email) {
+                const clipboardInput = contactList.querySelector(".admin-icon-group input");
+                if (clipboardInput) {
+                    clipboardInput.value = data.email;
+                };
+                showElement(copyButton);
+            }else {
+                hideElement(copyButton);
+            }
+        }
+
+        if (phoneSpan) {
+            phoneSpan.textContent = data.phone || "None";
+        };
     }
 })();

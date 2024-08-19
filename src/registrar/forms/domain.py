@@ -539,8 +539,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             elif self.is_tribal and not self._field_unchanged("organization_name"):
                 raise ValueError("organization_name cannot be modified when the generic_org_type is tribal")
 
-        else:
-            super().save()
+        super().save()
 
     def _field_unchanged(self, field_name) -> bool:
         """
@@ -552,6 +551,21 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         """
         old_value = self.initial.get(field_name, None)
         new_value = self.cleaned_data.get(field_name, None)
+
+        field = self.fields[field_name]
+
+        # Check if the field has a queryset attribute before accessing it
+        if hasattr(field, "queryset") and isinstance(new_value, str):
+            try:
+                # Convert the string to the corresponding ID
+                new_value = field.queryset.get(name=new_value).id
+            except field.queryset.model.DoesNotExist:
+                pass  # Handle the case where the object does not exist
+
+        elif hasattr(new_value, "id"):
+            # If new_value is a model instance, compare by ID.
+            new_value = new_value.id
+
         return old_value == new_value
 
 

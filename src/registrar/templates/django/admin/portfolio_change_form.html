@@ -1,34 +1,23 @@
 {% extends 'django/admin/email_clipboard_change_form.html' %}
 {% load i18n static %}
 
-{% block after_related_objects %}
-    <div class="module aligned padding-3">
-        <h2>Associated groups and suborganizations</h2>
-        <div class="grid-row grid-gap mobile:padding-x-1 desktop:padding-x-4">
-            <div class="mobile:grid-col-12 tablet:grid-col-6 desktop:grid-col-4">
-                <h3>Domain groups</h3>
-                <ul class="margin-0 padding-0">
-                {% for domain_group in domain_groups %}
-                    <li>
-                        <a href="{% url 'admin:registrar_domaingroup_change' domain_group.pk %}">
-                            {{ domain_group.name }}
-                        </a>
-                    </li>
-                {% endfor %}
-                </ul>
-            </div>    
-            <div class="mobile:grid-col-12 tablet:grid-col-6 desktop:grid-col-4">
-                <h3>Suborganizations</h3>
-                <ul class="margin-0 padding-0">
-                {% for suborg in suborganizations %}
-                    <li>
-                        <a href="{% url 'admin:registrar_suborganization_change' suborg.pk %}">
-                            {{ suborg.name }}
-                        </a>
-                    </li>
-                {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </div>
+{% block content %}
+    {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
+    {% url 'get-senior-official-from-federal-agency-json' as url %}
+    <input id="senior_official_from_agency_json_url" class="display-none" value="{{url}}" />
+    {{ block.super }}
+{% endblock content %}
+
+{% block field_sets %}
+    {% for fieldset in adminform %}
+        {% comment %}
+        This is a placeholder for now.
+
+        Disclaimer:
+        When extending the fieldset view - *make a new one* that extends from detail_table_fieldset.
+        For instance, "portfolio_fieldset.html".
+        detail_table_fieldset is used on multiple admin pages, so a change there can have unintended consequences.
+        {% endcomment %}
+        {% include "django/admin/includes/detail_table_fieldset.html" with original_object=original %}
+    {% endfor %}
 {% endblock %}
