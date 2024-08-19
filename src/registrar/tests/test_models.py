@@ -17,6 +17,7 @@ from registrar.models import (
     DomainInvitation,
     UserDomainRole,
     FederalAgency,
+    UserPortfolioPermission,
 )
 
 import boto3_mocking
@@ -1151,10 +1152,11 @@ class TestPortfolioInvitations(TestCase):
         self.assertFalse(self.user.portfolio)
         self.invitation.retrieve()
         self.user.refresh_from_db()
-        self.assertEqual(self.user.portfolio.organization_name, "Hotel California")
-        self.assertEqual(self.user.portfolio_roles, [self.portfolio_role_base, self.portfolio_role_admin])
+        self.assertEqual(self.user.last_selected_portfolio.organization_name, "Hotel California")
+        portfolio_role, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio)
+        self.assertEqual(portfolio_role.roles, [self.portfolio_role_base, self.portfolio_role_admin])
         self.assertEqual(
-            self.user.portfolio_additional_permissions, [self.portfolio_permission_1, self.portfolio_permission_2]
+            portfolio_role.additional_permissions, [self.portfolio_permission_1, self.portfolio_permission_2]
         )
         self.assertEqual(self.invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
 
@@ -1167,10 +1169,11 @@ class TestPortfolioInvitations(TestCase):
 
     @less_console_noise_decorator
     def test_retrieve_user_already_member_error(self):
-        self.assertFalse(self.user.portfolio)
+        self.assertFalse(self.user.last_selected_portfolio)
         portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Tokyo Hotel")
-        self.user.portfolio = portfolio2
-        self.assertEqual(self.user.portfolio.organization_name, "Tokyo Hotel")
+        portfolio_role, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=portfolio2)
+        self.assertEqual(self.user.last_selected_portfolio.organization_name, "Tokyo Hotel")
+        self.assertEqual(portfolio_role.portfolio, portfolio2)
         self.user.save()
         self.user.check_portfolio_invitations_on_login()
         self.user.refresh_from_db()
@@ -1197,6 +1200,7 @@ class TestUser(TestCase):
         DomainRequest.objects.all().delete()
         DraftDomain.objects.all().delete()
         TransitionDomain.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
@@ -1360,8 +1364,7 @@ class TestUser(TestCase):
         Note: This tests _get_portfolio_permissions as a side effect
         """
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
-
-        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+        self.user.last_selected_portfolio = portfolio
         self.user.save()
         self.user.refresh_from_db()
 
@@ -1371,8 +1374,10 @@ class TestUser(TestCase):
         self.assertFalse(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
 
-        self.user.portfolio = portfolio
-        self.user.save()
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
+        portfolio_permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
         self.user.refresh_from_db()
 
         user_can_view_all_domains = self.user.has_domains_portfolio_permission()
@@ -1381,8 +1386,10 @@ class TestUser(TestCase):
         self.assertTrue(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
 
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        self.user.save()
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
         self.user.refresh_from_db()
 
         user_can_view_all_domains = self.user.has_domains_portfolio_permission()
@@ -1407,13 +1414,15 @@ class TestUser(TestCase):
     def test_user_with_portfolio_but_no_roles(self):
         # Create an instance of User with a portfolio but no roles or additional permissions
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
-        self.user.portfolio = portfolio
-        self.user.portfolio_roles = []
+        # Try to remove the role
+        portfolio_permission.portfolio = portfolio
+        portfolio_permission.roles = []
 
         # Test if the ValidationError is raised with the correct message
         with self.assertRaises(ValidationError) as cm:
-            self.user.clean()
+            portfolio_permission.clean()
 
         self.assertEqual(
             cm.exception.message, "When portfolio is assigned, portfolio roles or additional permissions are required."
@@ -1426,9 +1435,16 @@ class TestUser(TestCase):
         self.user.portfolio = None
         self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
 
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
+
+        # Try to remove the portfolio
+        portfolio_permission.portfolio = None
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
         # Test if the ValidationError is raised with the correct message
         with self.assertRaises(ValidationError) as cm:
-            self.user.clean()
+            portfolio_permission.clean()
 
         self.assertEqual(
             cm.exception.message, "When portfolio roles or additional permissions are assigned, portfolio is required."

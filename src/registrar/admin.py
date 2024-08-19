@@ -166,11 +166,11 @@ class UserPortfolioPermissionsForm(forms.ModelForm):
         model = models.UserPortfolioPermission
         fields = "__all__"
         widgets = {
-            "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
+            "roles": FilteredSelectMultipleArrayWidget(
+                "roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
             ),
-            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
-                "portfolio_additional_permissions",
+            "additional_permissions": FilteredSelectMultipleArrayWidget(
+                "additional_permissions",
                 is_stacked=False,
                 choices=UserPortfolioPermissionChoices.choices,
             ),

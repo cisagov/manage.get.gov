@@ -54,7 +54,7 @@ class UserPortfolioPermission(TimeStampedModel):
         related_name="portfolio_users",
     )
 
-    portfolio_roles = ArrayField(
+    roles = ArrayField(
         models.CharField(
             max_length=50,
             choices=UserPortfolioRoleChoices.choices,
@@ -64,7 +64,7 @@ class UserPortfolioPermission(TimeStampedModel):
         help_text="Select one or more roles.",
     )
 
-    portfolio_additional_permissions = ArrayField(
+    additional_permissions = ArrayField(
         models.CharField(
             max_length=50,
             choices=UserPortfolioPermissionChoices.choices,
@@ -76,8 +76,8 @@ class UserPortfolioPermission(TimeStampedModel):
 
     def __str__(self):
         return (
-            f"User '{self.user}' on Portfolio '{self.portfolio}' " f"<Roles: {self.portfolio_roles}>"
-            if self.portfolio_roles
+            f"User '{self.user}' on Portfolio '{self.portfolio}' " f"<Roles: {self.roles}>"
+            if self.roles
             else ""
         )
 
@@ -88,12 +88,12 @@ class UserPortfolioPermission(TimeStampedModel):
         # Use a set to avoid duplicate permissions
         portfolio_permissions = set()
 
-        if self.portfolio_roles:
-            for role in self.portfolio_roles:
+        if self.roles:
+            for role in self.roles:
                 portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
 
-        if self.portfolio_additional_permissions:
-            portfolio_permissions.update(self.portfolio_additional_permissions)
+        if self.additional_permissions:
+            portfolio_permissions.update(self.additional_permissions)
 
         return list(portfolio_permissions)
 
@@ -107,3 +107,9 @@ class UserPortfolioPermission(TimeStampedModel):
                 raise ValidationError(
                     "Only one portfolio permission is allowed per user when multiple portfolios are disabled."
                 )
+        
+        if self.portfolio is None and self._get_portfolio_permissions():
+            raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
+
+        if self.portfolio is not None and not self._get_portfolio_permissions():
+            raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")

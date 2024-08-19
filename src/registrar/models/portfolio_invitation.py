@@ -89,7 +89,7 @@ class PortfolioInvitation(TimeStampedModel):
             portfolio=self.portfolio, user=user
         )
         if self.portfolio_roles and len(self.portfolio_roles) > 0:
-            user_portfolio_permission.portfolio_roles = self.portfolio_roles
+            user_portfolio_permission.roles = self.portfolio_roles
         if self.portfolio_additional_permissions and len(self.portfolio_additional_permissions) > 0:
-            user_portfolio_permission.portfolio_additional_permissions = self.portfolio_additional_permissions
+            user_portfolio_permission.additional_permissions = self.portfolio_additional_permissions
         user_portfolio_permission.save()

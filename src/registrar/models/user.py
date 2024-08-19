@@ -208,17 +208,6 @@ class User(AbstractUser):
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
 
-    def clean(self):
-        """Extends clean method to perform additional validation, which can raise errors in django admin."""
-        super().clean()
-
-        portfolio_perm = self.portfolio_permissions.filter(portfolio=self.last_selected_portfolio, user=self).first()
-        if self.last_selected_portfolio is None and portfolio_perm._get_portfolio_permissions():
-            raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
-
-        if self.last_selected_portfolio is not None and not portfolio_perm._get_portfolio_permissions():
-            raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
-
     def _has_portfolio_permission(self, portfolio_permission):
         """The views should only call this function when testing for perms and not rely on roles."""
 

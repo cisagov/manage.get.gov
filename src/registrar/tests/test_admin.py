@@ -1209,6 +1209,7 @@ class TestMyUserAdmin(MockDbForSharedTests):
         domain_deleted.delete()
         role.delete()
 
+    # TODO - should refactor
     def test_analyst_cannot_see_selects_for_portfolio_role_and_permissions_in_user_form(self):
         """Can only test for the presence of a base element. The multiselects and the h2->h3 conversion are all
         dynamically generated."""

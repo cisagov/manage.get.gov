@@ -7,6 +7,7 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models import Portfolio
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.csv_export import (
     DomainDataFull,
@@ -321,8 +322,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
         # Create a portfolio and assign it to the user
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
-        self.user.portfolio = portfolio
-        self.user.save()
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
         UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_1).delete()
@@ -336,8 +336,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.domain_3.domain_info.save()
 
         # Set up user permissions
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        self.user.save()
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
         self.user.refresh_from_db()
 
         # Create a request object
@@ -354,16 +355,16 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Test the output for readonly admin
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
-        self.user.save()
+        portfolio_permission.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
+        portfolio_permission.save()
 
         self.assertIn(self.domain_1.name, csv_content)
         self.assertIn(self.domain_3.name, csv_content)
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Get the csv content
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
-        self.user.save()
+        portfolio_permission.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        portfolio_permission.save()
 
         csv_content = self._run_domain_data_type_user_export(request)
 
