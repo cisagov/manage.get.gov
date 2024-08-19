@@ -221,8 +221,8 @@ class TestPortfolio(WebTest):
             self.assertContains(response, 'for="id_city"')
 
     @less_console_noise_decorator
-    def test_navigation_links_hidden_when_user_not_have_permission(self):
-        """Test that navigation links are hidden when user does not have portfolio permissions"""
+    def test_accessible_pages_when_user_does_not_have_permission(self):
+        """Tests which pages are accessible when user does not have portfolio permissions"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
@@ -249,16 +249,29 @@ class TestPortfolio(WebTest):
             self.user.save()
             self.user.refresh_from_db()
 
+            # Members should be redirected to the readonly domains page
             portfolio_page = self.app.get(reverse("home")).follow()
 
             self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertNotContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertContains(portfolio_page, "You aren’t managing any domains")
             self.assertNotContains(portfolio_page, reverse("domains"))
             self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
+            # The organization page should still be accessible
+            org_page = self.app.get(reverse("organization"))
+            self.assertContains(org_page, self.portfolio.organization_name)
+            self.assertContains(org_page, "<h1>Organization</h1>")
+
+            # Both domain pages should not be accessible
+            domain_page = self.app.get(reverse("domains"), expect_errors=True)
+            self.assertEquals(domain_page.status_code, 403)
+            domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
+            self.assertEquals(domain_request_page.status_code, 403)
+
     @less_console_noise_decorator
-    def test_navigation_links_hidden_when_user_not_have_role(self):
+    def test_accessible_pages_when_user_does_not_have_role(self):
         """Test that admin / memmber roles are associated with the right access"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
@@ -282,13 +295,26 @@ class TestPortfolio(WebTest):
             self.user.save()
             self.user.refresh_from_db()
 
+            # Members should be redirected to the readonly domains page
             portfolio_page = self.app.get(reverse("home")).follow()
 
             self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertNotContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertContains(portfolio_page, "You aren’t managing any domains")
             self.assertNotContains(portfolio_page, reverse("domains"))
             self.assertNotContains(portfolio_page, reverse("domain-requests"))
+
+            # The organization page should still be accessible
+            org_page = self.app.get(reverse("organization"))
+            self.assertContains(org_page, self.portfolio.organization_name)
+            self.assertContains(org_page, "<h1>Organization</h1>")
+
+            # Both domain pages should not be accessible
+            domain_page = self.app.get(reverse("domains"), expect_errors=True)
+            self.assertEquals(domain_page.status_code, 403)
+            domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
+            self.assertEquals(domain_request_page.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_org_name(self):
