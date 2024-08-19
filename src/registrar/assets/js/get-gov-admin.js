@@ -565,13 +565,13 @@ function initializeWidgetOnList(list, parentId) {
             }
             else {
                 // Show editable view
-                showEmail(true)
+                showEmail(canEdit=true)
             }
         });
 
         confirmEditEmailButton.addEventListener("click", function() {
             // Show editable view
-            showEmail(true)
+            showEmail(canEdit=true)
         });
 
         // Event delegation for data-close-modal buttons 
@@ -641,7 +641,7 @@ function initializeWidgetOnList(list, parentId) {
             }
             else {
                 // Always show readonly view of email to start
-                showEmail(false)
+                showEmail(canEdit=false)
             }
         } else {
             // Hide email preview and show this text instead
@@ -652,7 +652,7 @@ function initializeWidgetOnList(list, parentId) {
     // Shows a readonly preview of the email with updated messaging to indicate this email was sent
     function showEmailAlreadySentView()
     {
-        showEmail(false)
+        showEmail(canEdit=false)
         hideElement(actionNeededEmailHeader)
         showElement(actionNeededEmailHeaderOnSave)
         actionNeededEmailFooter.innerHTML = "This email has been sent to the creator of this request";
