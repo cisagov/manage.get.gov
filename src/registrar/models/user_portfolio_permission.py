@@ -1,4 +1,6 @@
 from django.db import models
+from django.forms import ValidationError
+from waffle import flag_is_active
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
@@ -93,3 +95,12 @@ class UserPortfolioPermission(TimeStampedModel):
             portfolio_permissions.update(self.portfolio_additional_permissions)
 
         return list(portfolio_permissions)
+    
+    def clean(self):
+        """Extends clean method to perform additional validation, which can raise errors in django admin."""
+        super().clean()
+
+        if not flag_is_active(None, "multiple_portfolios") and self.pk is None:
+            existing_permissions = UserPortfolioPermission.objects.filter(user=self.user)
+            if existing_permissions.exists():
+                raise ValidationError("Only one portfolio permission is allowed per user when multiple portfolios are disabled.")

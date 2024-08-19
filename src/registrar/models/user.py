@@ -212,11 +212,11 @@ class User(AbstractUser):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
 
-        portfolio_perms = self.portfolio_permissions.filter(portfolio=self.last_selected_portfolio).first()
-        if self.last_selected_portfolio is None and portfolio_perms._get_portfolio_permissions():
+        portfolio_perm = self.portfolio_permissions.filter(portfolio=self.last_selected_portfolio, user=self).first()
+        if self.last_selected_portfolio is None and portfolio_perm._get_portfolio_permissions():
             raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 
-        if self.last_selected_portfolio is not None and not portfolio_perms._get_portfolio_permissions():
+        if self.last_selected_portfolio is not None and not portfolio_perm._get_portfolio_permissions():
             raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
 
     def _has_portfolio_permission(self, portfolio_permission):
@@ -225,7 +225,7 @@ class User(AbstractUser):
         if not self.last_selected_portfolio:
             return False
 
-        portfolio_perms = self.portfolio_permissions.filter(portfolio=self.last_selected_portfolio).first()
+        portfolio_perms = self.portfolio_permissions.filter(portfolio=self.last_selected_portfolio, user=self).first()
         if not portfolio_perms:
             return False
 
