@@ -61,56 +61,96 @@ class ScriptDataHelper:
 
 class PopulateScriptTemplate(ABC):
     """
-    Contains an ABC for generic populate scripts
+    Contains an ABC for generic populate scripts.
+
+    This template provides reusable logging and bulk updating functions for
+    mass-updating fields.
     """
 
-    def mass_populate_field(self, sender, filter_conditions, fields_to_update):
-        """Loops through each valid "sender" object - specified by filter_conditions - and
-        updates fields defined by fields_to_update using populate_function.
+    # Optional script-global config variables. For the most part, you can leave these untouched.
+    # Defines what prompt_for_execution displays as its header when you first start the script
+    prompt_title: str = "Do you wish to proceed?"
 
-        You must define populate_field before you can use this function.
+    # The header when printing the script run summary (after the script finishes)
+    run_summary_header = None
+
+    @abstractmethod
+    def update_record(self, record):
+        """Defines how we update each field. Must be defined before using mass_update_records."""
+        raise NotImplementedError
+
+    def mass_update_records(self, object_class, filter_conditions, fields_to_update, debug=True):
+        """Loops through each valid "object_class" object - specified by filter_conditions - and
+        updates fields defined by fields_to_update using update_record.
+
+        You must define update_record before you can use this function.
         """
 
-        objects = sender.objects.filter(**filter_conditions)
+        records = object_class.objects.filter(**filter_conditions)
+        readable_class_name = self.get_class_name(object_class)
 
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
             info_to_inspect=f"""
             ==Proposed Changes==
-            Number of {sender} objects to change: {len(objects)}
+            Number of {readable_class_name} objects to change: {len(records)}
             These fields will be updated on each record: {fields_to_update}
             """,
-            prompt_title="Do you wish to patch this data?",
+            prompt_title=self.prompt_title,
         )
         logger.info("Updating...")
 
-        to_update: List[sender] = []
-        failed_to_update: List[sender] = []
-        for updated_object in objects:
+        to_update: List[object_class] = []
+        to_skip: List[object_class] = []
+        failed_to_update: List[object_class] = []
+        for record in records:
             try:
-                self.populate_field(updated_object)
-                to_update.append(updated_object)
+                if not self.should_skip_record(record):
+                    self.update_record(record)
+                    to_update.append(record)
+                else:
+                    to_skip.append(record)
             except Exception as err:
-                failed_to_update.append(updated_object)
+                fail_message = self.get_failure_message(record)
+                failed_to_update.append(record)
                 logger.error(err)
-                logger.error(f"{TerminalColors.FAIL}" f"Failed to update {updated_object}" f"{TerminalColors.ENDC}")
+                logger.error(fail_message)
 
-        # Do a bulk update on the first_ready field
-        ScriptDataHelper.bulk_update_fields(sender, to_update, fields_to_update)
+        # Do a bulk update on the desired field
+        ScriptDataHelper.bulk_update_fields(object_class, to_update, fields_to_update)
 
         # Log what happened
-        TerminalHelper.log_script_run_summary(to_update, failed_to_update, skipped=[], debug=True)
+        TerminalHelper.log_script_run_summary(
+            to_update,
+            failed_to_update,
+            to_skip,
+            debug=debug,
+            log_header=self.run_summary_header,
+            display_as_str=True,
+        )
 
-    @abstractmethod
-    def populate_field(self, field_to_update):
-        """Defines how we update each field. Must be defined before using mass_populate_field."""
-        raise NotImplementedError
+    def get_class_name(self, sender) -> str:
+        """Returns the class name that we want to display for the terminal prompt.
+        Example: DomainRequest => "Domain Request"
+        """
+        return sender._meta.verbose_name if getattr(sender, "_meta") else sender
+
+    def get_failure_message(self, record) -> str:
+        """Returns the message that we will display if a record fails to update"""
+        return f"{TerminalColors.FAIL}" f"Failed to update {record}" f"{TerminalColors.ENDC}"
+
+    def should_skip_record(self, record) -> bool:  # noqa
+        """Defines the condition in which we should skip updating a record. Override as needed."""
+        # By default - don't skip
+        return False
 
 
 class TerminalHelper:
     @staticmethod
-    def log_script_run_summary(to_update, failed_to_update, skipped, debug: bool, log_header=None):
+    def log_script_run_summary(
+        to_update, failed_to_update, skipped, debug: bool, log_header=None, display_as_str=False
+    ):
         """Prints success, failed, and skipped counts, as well as
         all affected objects."""
         update_success_count = len(to_update)
@@ -121,20 +161,24 @@ class TerminalHelper:
             log_header = "============= FINISHED ==============="
 
         # Prepare debug messages
-        debug_messages = {
-            "success": (f"{TerminalColors.OKCYAN}Updated: {to_update}{TerminalColors.ENDC}\n"),
-            "skipped": (f"{TerminalColors.YELLOW}Skipped: {skipped}{TerminalColors.ENDC}\n"),
-            "failed": (f"{TerminalColors.FAIL}Failed: {failed_to_update}{TerminalColors.ENDC}\n"),
-        }
+        if debug:
+            updated_display = [str(u) for u in to_update] if display_as_str else to_update
+            skipped_display = [str(s) for s in skipped] if display_as_str else skipped
+            failed_display = [str(f) for f in failed_to_update] if display_as_str else failed_to_update
+            debug_messages = {
+                "success": (f"{TerminalColors.OKCYAN}Updated: {updated_display}{TerminalColors.ENDC}\n"),
+                "skipped": (f"{TerminalColors.YELLOW}Skipped: {skipped_display}{TerminalColors.ENDC}\n"),
+                "failed": (f"{TerminalColors.FAIL}Failed: {failed_display}{TerminalColors.ENDC}\n"),
+            }
 
-        # Print out a list of everything that was changed, if we have any changes to log.
-        # Otherwise, don't print anything.
-        TerminalHelper.print_conditional(
-            debug,
-            f"{debug_messages.get('success') if update_success_count > 0 else ''}"
-            f"{debug_messages.get('skipped') if update_skipped_count > 0 else ''}"
-            f"{debug_messages.get('failed') if update_failed_count > 0 else ''}",
-        )
+            # Print out a list of everything that was changed, if we have any changes to log.
+            # Otherwise, don't print anything.
+            TerminalHelper.print_conditional(
+                debug,
+                f"{debug_messages.get('success') if update_success_count > 0 else ''}"
+                f"{debug_messages.get('skipped') if update_skipped_count > 0 else ''}"
+                f"{debug_messages.get('failed') if update_failed_count > 0 else ''}",
+            )
 
         if update_failed_count == 0 and update_skipped_count == 0:
             logger.info(
@@ -273,6 +317,7 @@ class TerminalHelper:
                 case _:
                     logger.info(print_statement)
 
+    # TODO - "info_to_inspect" should be refactored to "prompt_message"
     @staticmethod
     def prompt_for_execution(system_exit_on_terminate: bool, info_to_inspect: str, prompt_title: str) -> bool:
         """Create to reduce code complexity.
@@ -329,3 +374,26 @@ class TerminalHelper:
             logger.info(f"{TerminalColors.MAGENTA}Writing to file " f" {filepath}..." f"{TerminalColors.ENDC}")
             with open(f"{filepath}", "w+") as f:
                 f.write(file_contents)
+
+    @staticmethod
+    def colorful_logger(log_level, color, message):
+        """Adds some color to your log output.
+
+        Args:
+            log_level: str | Logger.method -> Desired log level. ex: logger.info or "INFO"
+            color: str | TerminalColors -> Output color. ex: TerminalColors.YELLOW or "YELLOW"
+            message: str -> Message to display.
+        """
+
+        if isinstance(log_level, str) and hasattr(logger, log_level.lower()):
+            log_method = getattr(logger, log_level.lower())
+        else:
+            log_method = log_level
+
+        if isinstance(color, str) and hasattr(TerminalColors, color.upper()):
+            terminal_color = getattr(TerminalColors, color.upper())
+        else:
+            terminal_color = color
+
+        colored_message = f"{terminal_color}{message}{TerminalColors.ENDC}"
+        log_method(colored_message)

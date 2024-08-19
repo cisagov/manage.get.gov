@@ -45,6 +45,8 @@
   {% block css %}
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <script src="{% static 'js/uswds-init.min.js' %}" defer></script>
+  <!-- We override with our own copy to make some classes accessible in our JS -->
+  <script src="{% static 'js/uswds-edited.js' %}" defer></script>
   <script src="{% static 'js/get-gov.js' %}" defer></script>
   {% endblock %}
 
@@ -67,7 +69,6 @@
 </head>
 
 <body id="{% block body_id %}default{% endblock %}" class="{% block body_class %}section_front{% endblock %}">
-  <script src="{% static 'js/uswds.min.js' %}" defer></script>
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
 
   {% if not IS_PRODUCTION %}
@@ -81,7 +82,7 @@
           <div class="grid-col-auto">
             <img class="usa-banner__header-flag" src="{% static 'img/us_flag_small.png' %}" alt="U.S. flag" />
           </div>
-          <div class="grid-col-fill tablet:grid-col-auto">
+          <div class="grid-col-fill tablet:grid-col-auto" aria-hidden="true">
             <p class="usa-banner__header-text">
               An official website of the United States government
             </p>
@@ -132,45 +133,10 @@
   </section>
 
 
-  {% block usa_overlay %}<div class="usa-overlay"></div>{% endblock %}
-  {% block banner %}
-  <header class="usa-header usa-header-basic">
-    <div class="usa-nav-container">
-      <div class="usa-navbar">
-          {% block logo %}
-            <div class="usa-logo display-inline-block" id="extended-logo">
-              <strong class="usa-logo__text" >
-                <a href="{% url 'home' %}">.gov Registrar </a>
-              </strong>    
-            </div>
-          {% endblock %}
-        <button type="button" class="usa-menu-btn">Menu</button>
-      </div>
-      {% block usa_nav %}
-      <nav class="usa-nav" aria-label="Primary navigation,">
-        <button type="button" class="usa-nav__close">
-          <img src="/public/img/usa-icons/close.svg" role="img" alt="Close" />
-        </button>
-        <ul class="usa-nav__primary usa-accordion display-flex flex-align-center">
-          <li class="usa-nav__primary-item">
-            {% if user.is_authenticated %}
-            <span>{{ user.email }}</span>
-          </li>
-          <li class="usa-nav__primary-item display-flex flex-align-center margin-left-2">
-            <span class="text-base"> | </span>
-            <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>
-          </li>
-            {% else %}
-            <a href="{% url 'login' %}"><span>Sign in</span></a>
-            {% endif %}
-          </li>
-        </ul>
-      </nav>
-      {% block usa_nav_secondary %}{% endblock %}
-      {% endblock %}
-    </div>
-  </header>
-  {% endblock banner %}
+  <div class="usa-overlay"></div>
+  {% block header %}
+    {% include "includes/header_selector.html" with logo_clickable=True %}
+  {% endblock header %}
 
   {% block wrapper %}
   <div id="wrapper">
@@ -199,7 +165,9 @@
   </div>
   {% endblock wrapper%}
 
-  {% include "includes/footer.html" %}
+  {% block footer %}
+    {% include "includes/footer.html" with show_manage_your_domains=True %}
+  {% endblock footer %}
   </div> <!-- /#wrapper -->
 
   {% block init_js %}{% endblock %}{# useful for vars and other initializations #}

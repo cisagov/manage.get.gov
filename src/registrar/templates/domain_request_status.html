@@ -42,10 +42,13 @@
     </div>
     <br>
     <p><b class="review__step__name">Last updated:</b> {{DomainRequest.updated_at|date:"F j, Y"}}</p>
+  
+    {% if DomainRequest.status != 'rejected' %}
     <p>{% include "includes/domain_request.html" %}</p>
     <p><a href="{% url 'domain-request-withdraw-confirmation' pk=DomainRequest.id %}" class="usa-button usa-button--outline withdraw_outline">
       Withdraw request</a>
     </p>
+    {% endif %}
   </div>
 
   <div class="grid-col desktop:grid-offset-2 maxw-tablet">
@@ -86,8 +89,8 @@
       {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization heading_level=heading_level %}
     {% endif %}
 
-    {% if DomainRequest.authorizing_official %}
-      {% include "includes/summary_item.html" with title='Authorizing official' value=DomainRequest.authorizing_official contact='true' heading_level=heading_level %}
+    {% if DomainRequest.senior_official %}
+      {% include "includes/summary_item.html" with title='Senior official' value=DomainRequest.senior_official contact='true' heading_level=heading_level %}
     {% endif %}
 
     {% if DomainRequest.current_websites.all %}
@@ -106,7 +109,7 @@
       {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level %}
     {% endif %}
 
-    {% if DomainRequest.submitter %}
+    {% if DomainRequest.submitter and not has_profile_feature_flag %}
       {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.submitter contact='true' heading_level=heading_level %}
     {% endif %}
 
@@ -118,7 +121,15 @@
 
     {# We always show this field even if None #}
     {% if DomainRequest %}
-      {% include "includes/summary_item.html" with title='Additional details' sub_header_text='CISA regional representative' value=DomainRequest.cisa_representative_email custom_text_for_value_none='No' heading_level=heading_level %}
+      <h3 class="register-form-review-header">CISA Regional Representative</h3>
+      <ul class="usa-list usa-list--unstyled margin-top-0">
+        {% if domain_request.cisa_representative_first_name %}
+          {{domain_request.cisa_representative_first_name}} {{domain_request.cisa_representative_last_name}}
+        {% else %}
+          No
+        {% endif %}
+      </ul>
+
       <h3 class="register-form-review-header">Anything else</h3>
       <ul class="usa-list usa-list--unstyled margin-top-0">
         {% if DomainRequest.anything_else %}
@@ -128,7 +139,6 @@
         {% endif %}
       </ul>
     {% endif %}
-
   {% endwith %}
   </div>
 

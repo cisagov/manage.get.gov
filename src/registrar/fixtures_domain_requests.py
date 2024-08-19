@@ -3,13 +3,7 @@ import random
 from faker import Faker
 from django.db import transaction
 
-from registrar.models import (
-    User,
-    DomainRequest,
-    DraftDomain,
-    Contact,
-    Website,
-)
+from registrar.models import User, DomainRequest, DraftDomain, Contact, Website, FederalAgency
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -42,7 +36,7 @@ class DomainRequestFixture:
     #     "purpose": None,
     #     "anything_else": None,
     #     "is_policy_acknowledged": None,
-    #     "authorizing_official": None,
+    #     "senior_official": None,
     #     "submitter": None,
     #     "other_contacts": [],
     #     "current_websites": [],
@@ -101,12 +95,6 @@ class DomainRequestFixture:
 
         # TODO for a future ticket: Allow for more than just "federal" here
         da.generic_org_type = app["generic_org_type"] if "generic_org_type" in app else "federal"
-        da.federal_agency = (
-            app["federal_agency"]
-            if "federal_agency" in app
-            # Random choice of agency for selects, used as placeholders for testing.
-            else random.choice(DomainRequest.AGENCIES)  # nosec
-        )
         da.submission_date = fake.date()
         da.federal_type = (
             app["federal_type"]
@@ -129,11 +117,11 @@ class DomainRequestFixture:
         if not da.investigator:
             da.investigator = User.objects.get(username=user.username) if "investigator" in app else None
 
-        if not da.authorizing_official:
-            if "authorizing_official" in app and app["authorizing_official"] is not None:
-                da.authorizing_official, _ = Contact.objects.get_or_create(**app["authorizing_official"])
+        if not da.senior_official:
+            if "senior_official" in app and app["senior_official"] is not None:
+                da.senior_official, _ = Contact.objects.get_or_create(**app["senior_official"])
             else:
-                da.authorizing_official = Contact.objects.create(**cls.fake_contact())
+                da.senior_official = Contact.objects.create(**cls.fake_contact())
 
         if not da.submitter:
             if "submitter" in app and app["submitter"] is not None:
@@ -146,6 +134,13 @@ class DomainRequestFixture:
                 da.requested_domain, _ = DraftDomain.objects.get_or_create(name=app["requested_domain"])
             else:
                 da.requested_domain = DraftDomain.objects.create(name=cls.fake_dot_gov())
+        if not da.federal_agency:
+            if "federal_agency" in app and app["federal_agency"] is not None:
+                da.federal_agency, _ = FederalAgency.objects.get_or_create(name=app["federal_agency"])
+            else:
+                federal_agencies = FederalAgency.objects.all()
+                # Random choice of agency for selects, used as placeholders for testing.
+                da.federal_agency = random.choice(federal_agencies)  # nosec
 
     @classmethod
     def _set_many_to_many_relations(cls, da: DomainRequest, app: dict):

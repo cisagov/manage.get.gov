@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from registrar.tests.common import create_superuser
+from api.tests.common import less_console_noise_decorator
 
 
 class TestAdminViews(TestCase):
@@ -8,6 +9,7 @@ class TestAdminViews(TestCase):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
 
+    @less_console_noise_decorator
     def test_export_data_view(self):
         self.client.force_login(self.superuser)
 

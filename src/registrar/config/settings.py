@@ -22,7 +22,6 @@ from base64 import b64decode
 from cfenv import AppEnv  # type: ignore
 from pathlib import Path
 from typing import Final
-
 from botocore.config import Config
 
 # # #                          ###
@@ -148,6 +147,10 @@ INSTALLED_APPS = [
     "corsheaders",
     # library for multiple choice filters in django admin
     "django_admin_multiple_choice_list_filter",
+    # library for export and import of data
+    "import_export",
+    # Waffle feature flags
+    "waffle",
 ]
 
 # Middleware are routines for processing web requests.
@@ -159,7 +162,7 @@ MIDDLEWARE = [
     # django-cors-headers: listen to cors responses
     "corsheaders.middleware.CorsMiddleware",
     # custom middleware to stop caching from CloudFront
-    "registrar.no_cache_middleware.NoCacheMiddleware",
+    "registrar.registrar_middleware.NoCacheMiddleware",
     # serve static assets in production
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
@@ -183,6 +186,10 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     # django-auditlog: obtain the request User for use in logging
     "auditlog.middleware.AuditlogMiddleware",
+    # Used for waffle feature flags
+    "waffle.middleware.WaffleMiddleware",
+    "registrar.registrar_middleware.CheckUserProfileMiddleware",
+    "registrar.registrar_middleware.CheckPortfolioMiddleware",
 ]
 
 # application object used by Django’s built-in servers (e.g. `runserver`)
@@ -233,6 +240,10 @@ TEMPLATES = [
                 "registrar.context_processors.canonical_path",
                 "registrar.context_processors.is_demo_site",
                 "registrar.context_processors.is_production",
+                "registrar.context_processors.org_user_status",
+                "registrar.context_processors.add_path_to_context",
+                "registrar.context_processors.add_has_profile_feature_flag_to_context",
+                "registrar.context_processors.portfolio_permissions",
             ],
         },
     },
@@ -319,6 +330,17 @@ EMAIL_TIMEOUT = 30
 SERVER_EMAIL = "root@get.gov"
 
 # endregion
+
+# region: Waffle feature flags-----------------------------------------------------------###
+# If Waffle encounters a reference to a flag that is not in the database, create the flag automagically.
+WAFFLE_CREATE_MISSING_FLAGS = True
+
+# The model that will be used to keep track of flags. Extends AbstractUserFlag.
+# Used to replace the default flag class (for customization purposes).
+WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
+
+# endregion
+
 # region: Headers-----------------------------------------------------------###
 
 # Content-Security-Policy configuration
@@ -642,6 +664,12 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-ad.app.cloud.gov",
+    "getgov-ms.app.cloud.gov",
+    "getgov-ag.app.cloud.gov",
+    "getgov-litterbox.app.cloud.gov",
+    "getgov-hotgov.app.cloud.gov",
+    "getgov-cb.app.cloud.gov",
     "getgov-bob.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
@@ -785,6 +813,6 @@ if DEBUG:
 # Run:
 # cf run-task getgov-<> --wait --command 'python manage.py auditlogmigratejson --traceback' --name auditlogmigratejson
 # on our staging and stable, then remove these 2 variables or set to False
-AUDITLOG_TWO_STEP_MIGRATION = True
+AUDITLOG_TWO_STEP_MIGRATION = False
 
-AUDITLOG_USE_TEXT_CHANGES_IF_JSON_IS_NOT_PRESENT = True
+AUDITLOG_USE_TEXT_CHANGES_IF_JSON_IS_NOT_PRESENT = False

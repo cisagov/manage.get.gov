@@ -1,4 +1,5 @@
 @use "uswds-core" as *;
+@use "cisa_colors" as *;
 
 /* Styles for making visible to screen reader / AT users only. */
 .sr-only {
@@ -28,23 +29,14 @@ body {
 
 #wrapper.dashboard {
   background-color: color('primary-lightest');
-  padding-top: units(5);
-}
- 
-.usa-logo {
-  @include at-media(desktop) {
-    margin-top: units(2);
-  }
-}
- 
-.usa-logo__text {
-  @include typeset('sans', 'xl', 2);
-  color: color('primary-darker');
+  padding-top: units(5)!important;
 }
 
-.usa-nav__primary {
-  margin-top:units(1);
+#wrapper.dashboard--portfolio {
+  background-color: color('gray-1');
+  padding-top: units(4)!important;
 }
+
 
 .section--outlined {
   background-color: color('white');
@@ -52,6 +44,10 @@ body {
   border-radius: 4px;
   padding: 0 units(2) units(3);
   margin-top: units(3);
+
+  &.margin-top-0 {
+    margin-top: 0;
+  }
 
   h2 {
     color: color('primary-dark');
@@ -66,8 +62,35 @@ body {
   @include at-media(mobile-lg) {
     margin-top: units(5);
 
+    &.margin-top-0 {
+      margin-top: 0;
+    }
+
     h2 {
       margin-bottom: 0;
+    }
+  }
+}
+
+.section--outlined__header--no-portfolio {
+  .section--outlined__search,
+  .section--outlined__utility-button {
+    margin-top: units(2);
+  }
+
+  @include at-media(tablet) {
+    display: flex;
+    column-gap: units(3);
+
+    .section--outlined__search,
+    .section--outlined__utility-button {
+      margin-top: 0;
+    }
+    .section--outlined__search {
+      flex-grow: 4;
+      // Align right
+      max-width: 383px;
+      margin-left: auto;
     }
   }
 }
@@ -96,10 +119,6 @@ footer {
 
 .usa-footer__secondary-section a {
   color: color('primary');
-}
-
-.usa-identifier__logo {
-  height: units(7);
 }
 
 abbr[title] {
@@ -139,4 +158,37 @@ abbr[title] {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.padding--8-8-9 {
+  padding: 8px 8px 9px !important;
+}
+
+.ellipsis {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ellipsis--23 {
+  max-width: 23ch;
+}
+
+.ellipsis--30 {
+  max-width: 30ch;
+}
+
+.ellipsis--50 {
+  max-width: 50ch;
+}
+
+.vertical-align-middle {
+  vertical-align: middle;
+}
+
+@include at-media(desktop) {
+  .ellipsis--desktop-50 {
+    max-width: 50ch;
+  }
 }

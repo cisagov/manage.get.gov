@@ -1,0 +1,35 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi, {{ recipient.first_name }}.
+
+We've identified an action that you’ll need to complete before we continue reviewing your .gov domain request.
+
+DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
+REQUEST RECEIVED ON: {{ domain_request.submission_date|date }}
+STATUS: Action needed
+
+----------------------------------------------------------------
+
+ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS
+We've reviewed your domain request, but we need more information about the organization you represent:
+- {{ domain_request.organization_name }}
+
+.Gov domains are only available to official US-based government organizations, not simply those that provide a public benefit. We lack clear documentation that demonstrates your organization is eligible for a .gov domain. 
+
+
+ACTION NEEDED
+Reply to this email with links to (or copies of) your authorizing legislation, your founding charter or bylaws, recent election results, or other similar documentation. Without this, we can’t continue our review and your request will likely be rejected.
+
+If you have questions or comments, include those in your reply.
+
+
+THANK YOU
+.Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
+{% endautoescape %}

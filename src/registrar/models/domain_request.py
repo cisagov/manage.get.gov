@@ -1,16 +1,17 @@
 from __future__ import annotations
 from typing import Union
-
 import logging
-
 from django.apps import apps
 from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
+from waffle import flag_is_active
 from registrar.models.domain import Domain
+from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.constants import BranchChoices
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -22,16 +23,33 @@ logger = logging.getLogger(__name__)
 class DomainRequest(TimeStampedModel):
     """A registrant's domain request for a new domain."""
 
+    class Meta:
+        """Contains meta information about this class"""
+
+        indexes = [
+            models.Index(fields=["requested_domain"]),
+            models.Index(fields=["approved_domain"]),
+            models.Index(fields=["status"]),
+        ]
+
+    # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history
+    # history = AuditlogHistoryField()
+
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
-        STARTED = "started", "Started"
-        SUBMITTED = "submitted", "Submitted"
         IN_REVIEW = "in review", "In review"
         ACTION_NEEDED = "action needed", "Action needed"
         APPROVED = "approved", "Approved"
-        WITHDRAWN = "withdrawn", "Withdrawn"
         REJECTED = "rejected", "Rejected"
         INELIGIBLE = "ineligible", "Ineligible"
+        SUBMITTED = "submitted", "Submitted"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+        STARTED = "started", "Started"
+
+        @classmethod
+        def get_status_label(cls, status_name: str):
+            """Returns the associated label for a given status name"""
+            return cls(status_name).label if status_name else None
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
@@ -114,6 +132,21 @@ class DomainRequest(TimeStampedModel):
         SPECIAL_DISTRICT = "special_district", "Special district"
         SCHOOL_DISTRICT = "school_district", "School district"
 
+        @classmethod
+        def get_org_label(cls, org_name: str):
+            """Returns the associated label for a given org name"""
+            # This is an edgecase on domains with no org.
+            # This unlikely to happen but
+            # a break will occur in certain edge cases without this.
+            # (more specifically, csv exports).
+            if not org_name:
+                return None
+
+            org_names = org_name.split("_election")
+            if len(org_names) > 0:
+                org_name = org_names[0]
+            return cls(org_name).label if org_name else None
+
     class OrgChoicesElectionOffice(models.TextChoices):
         """
         Primary organization choices for Django admin:
@@ -182,6 +215,11 @@ class DomainRequest(TimeStampedModel):
             }
             return org_election_map
 
+        @classmethod
+        def get_org_label(cls, org_name: str):
+            # Translating the key that is given to the direct readable value
+            return cls(org_name).label if org_name else None
+
     class OrganizationChoicesVerbose(models.TextChoices):
         """
         Tertiary organization choices
@@ -215,212 +253,6 @@ class DomainRequest(TimeStampedModel):
             "School district: a school district that is not part of a local government",
         )
 
-    class BranchChoices(models.TextChoices):
-        EXECUTIVE = "executive", "Executive"
-        JUDICIAL = "judicial", "Judicial"
-        LEGISLATIVE = "legislative", "Legislative"
-
-    AGENCIES = [
-        "Administrative Conference of the United States",
-        "Advisory Council on Historic Preservation",
-        "American Battle Monuments Commission",
-        "AMTRAK",
-        "Appalachian Regional Commission",
-        ("Appraisal Subcommittee of the Federal Financial " "Institutions Examination Council"),
-        "Appraisal Subcommittee",
-        "Architect of the Capitol",
-        "Armed Forces Retirement Home",
-        "Barry Goldwater Scholarship and Excellence in Education Foundation",
-        "Barry Goldwater Scholarship and Excellence in Education Program",
-        "Central Intelligence Agency",
-        "Chemical Safety Board",
-        "Christopher Columbus Fellowship Foundation",
-        "Civil Rights Cold Case Records Review Board",
-        "Commission for the Preservation of America's Heritage Abroad",
-        "Commission of Fine Arts",
-        "Committee for Purchase From People Who Are Blind or Severely Disabled",
-        "Commodity Futures Trading Commission",
-        "Congressional Budget Office",
-        "Consumer Financial Protection Bureau",
-        "Consumer Product Safety Commission",
-        "Corporation for National & Community Service",
-        "Corporation for National and Community Service",
-        "Council of Inspectors General on Integrity and Efficiency",
-        "Court Services and Offender Supervision",
-        "Cyberspace Solarium Commission",
-        "DC Court Services and Offender Supervision Agency",
-        "DC Pre-trial Services",
-        "Defense Nuclear Facilities Safety Board",
-        "Delta Regional Authority",
-        "Denali Commission",
-        "Department of Agriculture",
-        "Department of Commerce",
-        "Department of Defense",
-        "Department of Education",
-        "Department of Energy",
-        "Department of Health and Human Services",
-        "Department of Homeland Security",
-        "Department of Housing and Urban Development",
-        "Department of Justice",
-        "Department of Labor",
-        "Department of State",
-        "Department of the Interior",
-        "Department of the Treasury",
-        "Department of Transportation",
-        "Department of Veterans Affairs",
-        "Director of National Intelligence",
-        "Dwight D. Eisenhower Memorial Commission",
-        "Election Assistance Commission",
-        "Environmental Protection Agency",
-        "Equal Employment Opportunity Commission",
-        "Executive Office of the President",
-        "Export-Import Bank of the United States",
-        "Export/Import Bank of the U.S.",
-        "Farm Credit Administration",
-        "Farm Credit System Insurance Corporation",
-        "Federal Communications Commission",
-        "Federal Deposit Insurance Corporation",
-        "Federal Election Commission",
-        "Federal Energy Regulatory Commission",
-        "Federal Financial Institutions Examination Council",
-        "Federal Housing Finance Agency",
-        "Federal Judiciary",
-        "Federal Labor Relations Authority",
-        "Federal Maritime Commission",
-        "Federal Mediation and Conciliation Service",
-        "Federal Mine Safety and Health Review Commission",
-        "Federal Permitting Improvement Steering Council",
-        "Federal Reserve Board of Governors",
-        "Federal Reserve System",
-        "Federal Trade Commission",
-        "General Services Administration",
-        "gov Administration",
-        "Government Accountability Office",
-        "Government Publishing Office",
-        "Gulf Coast Ecosystem Restoration Council",
-        "Harry S Truman Scholarship Foundation",
-        "Harry S. Truman Scholarship Foundation",
-        "Institute of Museum and Library Services",
-        "Institute of Peace",
-        "Inter-American Foundation",
-        "International Boundary and Water Commission: United States and Mexico",
-        "International Boundary Commission: United States and Canada",
-        "International Joint Commission: United States and Canada",
-        "James Madison Memorial Fellowship Foundation",
-        "Japan-United States Friendship Commission",
-        "Japan-US Friendship Commission",
-        "John F. Kennedy Center for Performing Arts",
-        "John F. Kennedy Center for the Performing Arts",
-        "Legal Services Corporation",
-        "Legislative Branch",
-        "Library of Congress",
-        "Marine Mammal Commission",
-        "Medicaid and CHIP Payment and Access Commission",
-        "Medical Payment Advisory Commission",
-        "Medicare Payment Advisory Commission",
-        "Merit Systems Protection Board",
-        "Millennium Challenge Corporation",
-        "Morris K. Udall and Stewart L. Udall Foundation",
-        "National Aeronautics and Space Administration",
-        "National Archives and Records Administration",
-        "National Capital Planning Commission",
-        "National Council on Disability",
-        "National Credit Union Administration",
-        "National Endowment for the Arts",
-        "National Endowment for the Humanities",
-        "National Foundation on the Arts and the Humanities",
-        "National Gallery of Art",
-        "National Indian Gaming Commission",
-        "National Labor Relations Board",
-        "National Mediation Board",
-        "National Science Foundation",
-        "National Security Commission on Artificial Intelligence",
-        "National Transportation Safety Board",
-        "Networking Information Technology Research and Development",
-        "Non-Federal Agency",
-        "Northern Border Regional Commission",
-        "Nuclear Regulatory Commission",
-        "Nuclear Safety Oversight Committee",
-        "Nuclear Waste Technical Review Board",
-        "Occupational Safety & Health Review Commission",
-        "Occupational Safety and Health Review Commission",
-        "Office of Compliance",
-        "Office of Congressional Workplace Rights",
-        "Office of Government Ethics",
-        "Office of Navajo and Hopi Indian Relocation",
-        "Office of Personnel Management",
-        "Open World Leadership Center",
-        "Overseas Private Investment Corporation",
-        "Peace Corps",
-        "Pension Benefit Guaranty Corporation",
-        "Postal Regulatory Commission",
-        "Presidio Trust",
-        "Privacy and Civil Liberties Oversight Board",
-        "Public Buildings Reform Board",
-        "Public Defender Service for the District of Columbia",
-        "Railroad Retirement Board",
-        "Securities and Exchange Commission",
-        "Selective Service System",
-        "Small Business Administration",
-        "Smithsonian Institution",
-        "Social Security Administration",
-        "Social Security Advisory Board",
-        "Southeast Crescent Regional Commission",
-        "Southwest Border Regional Commission",
-        "State Justice Institute",
-        "State, Local, and Tribal Government",
-        "Stennis Center for Public Service",
-        "Surface Transportation Board",
-        "Tennessee Valley Authority",
-        "The Executive Office of the President",
-        "The Intelligence Community",
-        "The Legislative Branch",
-        "The Supreme Court",
-        "The United States World War One Centennial Commission",
-        "U.S. Access Board",
-        "U.S. Agency for Global Media",
-        "U.S. Agency for International Development",
-        "U.S. Capitol Police",
-        "U.S. Chemical Safety Board",
-        "U.S. China Economic and Security Review Commission",
-        "U.S. Commission for the Preservation of Americas Heritage Abroad",
-        "U.S. Commission of Fine Arts",
-        "U.S. Commission on Civil Rights",
-        "U.S. Commission on International Religious Freedom",
-        "U.S. Courts",
-        "U.S. Department of Agriculture",
-        "U.S. Interagency Council on Homelessness",
-        "U.S. International Trade Commission",
-        "U.S. Nuclear Waste Technical Review Board",
-        "U.S. Office of Special Counsel",
-        "U.S. Peace Corps",
-        "U.S. Postal Service",
-        "U.S. Semiquincentennial Commission",
-        "U.S. Trade and Development Agency",
-        "U.S.-China Economic and Security Review Commission",
-        "Udall Foundation",
-        "United States AbilityOne",
-        "United States Access Board",
-        "United States African Development Foundation",
-        "United States Agency for Global Media",
-        "United States Arctic Research Commission",
-        "United States Global Change Research Program",
-        "United States Holocaust Memorial Museum",
-        "United States Institute of Peace",
-        "United States Interagency Council on Homelessness",
-        "United States International Development Finance Corporation",
-        "United States International Trade Commission",
-        "United States Postal Service",
-        "United States Senate",
-        "United States Trade and Development Agency",
-        "Utah Reclamation Mitigation and Conservation Commission",
-        "Vietnam Education Foundation",
-        "Western Hemisphere Drug Policy Commission",
-        "Woodrow Wilson International Center for Scholars",
-        "World War I Centennial Commission",
-    ]
-    AGENCY_CHOICES = [(v, v) for v in AGENCIES]
-
     class RejectionReasons(models.TextChoices):
         DOMAIN_PURPOSE = "purpose_not_met", "Purpose requirements not met"
         REQUESTOR = "requestor_not_eligible", "Requestor not eligible to make request"
@@ -436,6 +268,25 @@ class DomainRequest(TimeStampedModel):
         NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
 
+        @classmethod
+        def get_rejection_reason_label(cls, rejection_reason: str):
+            """Returns the associated label for a given rejection reason"""
+            return cls(rejection_reason).label if rejection_reason else None
+
+    class ActionNeededReasons(models.TextChoices):
+        """Defines common action needed reasons for domain requests"""
+
+        ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
+        QUESTIONABLE_SENIOR_OFFICIAL = ("questionable_senior_official", "Questionable senior official")
+        ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
+        BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
+        OTHER = ("other", "Other (no auto-email sent)")
+
+        @classmethod
+        def get_action_needed_reason_label(cls, action_needed_reason: str):
+            """Returns the associated label for a given action needed reason"""
+            return cls(action_needed_reason).label if action_needed_reason else None
+
     # #### Internal fields about the domain request #####
     status = FSMField(
         choices=DomainRequestStatus.choices,  # possible states as an array of constants
@@ -449,13 +300,43 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    updated_federal_agency = models.ForeignKey(
+    action_needed_reason = models.TextField(
+        choices=ActionNeededReasons.choices,
+        null=True,
+        blank=True,
+    )
+
+    action_needed_reason_email = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
         help_text="Associated federal agency",
         unique=False,
         blank=True,
         null=True,
+    )
+
+    # portfolio
+    portfolio = models.ForeignKey(
+        "registrar.Portfolio",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="DomainRequest_portfolio",
+        help_text="Portfolio associated with this domain request",
+    )
+
+    sub_organization = models.ForeignKey(
+        "registrar.Suborganization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="request_sub_organization",
+        help_text="The suborganization that this domain request is included under",
     )
 
     # This is the domain request user who created this domain request. The contact
@@ -512,12 +393,6 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    federal_agency = models.CharField(
-        choices=AGENCY_CHOICES,
-        null=True,
-        blank=True,
-    )
-
     federal_type = models.CharField(
         max_length=50,
         choices=BranchChoices.choices,
@@ -528,7 +403,6 @@ class DomainRequest(TimeStampedModel):
     organization_name = models.CharField(
         null=True,
         blank=True,
-        db_index=True,
     )
 
     address_line1 = models.CharField(
@@ -557,7 +431,6 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name="zip code",
-        db_index=True,
     )
     urbanization = models.CharField(
         null=True,
@@ -570,11 +443,11 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    authorizing_official = models.ForeignKey(
+    senior_official = models.ForeignKey(
         "registrar.Contact",
         null=True,
         blank=True,
-        related_name="authorizing_official",
+        related_name="senior_official",
         on_delete=models.PROTECT,
     )
 
@@ -591,7 +464,7 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Domain associated with this request; will be blank until request is approved",
-        related_name="domain_request",
+        related_name="domain_request_approved_domain",
         on_delete=models.SET_NULL,
     )
 
@@ -599,7 +472,7 @@ class DomainRequest(TimeStampedModel):
         "DraftDomain",
         null=True,
         blank=True,
-        related_name="domain_request",
+        related_name="domain_request_requested_domain",
         on_delete=models.PROTECT,
     )
 
@@ -657,8 +530,22 @@ class DomainRequest(TimeStampedModel):
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        verbose_name="CISA regional representative",
+        verbose_name="CISA regional representative email",
         max_length=320,
+    )
+
+    cisa_representative_first_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative first name",
+        db_index=True,
+    )
+
+    cisa_representative_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative last name",
+        db_index=True,
     )
 
     # This is a drop-in replacement for an has_cisa_representative() function.
@@ -719,6 +606,16 @@ class DomainRequest(TimeStampedModel):
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
 
+    def _cache_status_and_action_needed_reason(self):
+        """Maintains a cache of properties so we can avoid a DB call"""
+        self._cached_action_needed_reason = self.action_needed_reason
+        self._cached_status = self.status
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Store original values for caching purposes. Used to compare them on save.
+        self._cache_status_and_action_needed_reason()
+
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_organization_type()
@@ -726,20 +623,39 @@ class DomainRequest(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
+        # Handle the action needed email.
+        # An email is sent out when action_needed_reason is changed or added.
+        if self.action_needed_reason and self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.sync_action_needed_reason()
+
+        # Update the cached values after saving
+        self._cache_status_and_action_needed_reason()
+
+    def sync_action_needed_reason(self):
+        """Checks if we need to send another action needed email"""
+        was_already_action_needed = self._cached_status == self.DomainRequestStatus.ACTION_NEEDED
+        reason_exists = self._cached_action_needed_reason is not None and self.action_needed_reason is not None
+        reason_changed = self._cached_action_needed_reason != self.action_needed_reason
+        if was_already_action_needed and reason_exists and reason_changed:
+            # We don't send emails out in state "other"
+            if self.action_needed_reason != self.ActionNeededReasons.OTHER:
+                self._send_action_needed_reason_email(email_content=self.action_needed_reason_email)
+
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
         We handle that here for def save().
         """
-
         # This ensures that if we have prefilled data, the form is prepopulated
-        if self.cisa_representative_email is not None:
-            self.has_cisa_representative = self.cisa_representative_email != ""
+        if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
+            )
 
         # This check is required to ensure that the form doesn't start out checked
         if self.has_cisa_representative is not None:
             self.has_cisa_representative = (
-                self.cisa_representative_email != "" and self.cisa_representative_email is not None
-            )
+                self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
+            ) and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
 
         # This ensures that if we have prefilled data, the form is prepopulated
         if self.anything_else is not None:
@@ -777,35 +693,73 @@ class DomainRequest(TimeStampedModel):
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
     def _send_status_update_email(
-        self, new_status, email_template, email_template_subject, send_email=True, bcc_address=""
+        self,
+        new_status,
+        email_template,
+        email_template_subject,
+        bcc_address="",
+        context=None,
+        send_email=True,
+        wrap_email=False,
+        custom_email_content=None,
     ):
-        """Send a status update email to the submitter.
+        """Send a status update email to the creator.
 
-        The email goes to the email address that the submitter gave as their
-        contact information. If there is not submitter information, then do
+        The email goes to the email address that the creator gave as their
+        contact information. If there is not creator information, then do
         nothing.
+
+        If the waffle flag "profile_feature" is active, then this email will be sent to the
+        domain request creator rather than the submitter
+
+        Optional args:
+        bcc_address: str -> the address to bcc to
+
+        context: dict -> The context sent to the template
 
         send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
+
+        wrap_email: bool -> Wraps emails using `wrap_text_and_preserve_paragraphs` if any given
+        paragraph exceeds our desired max length (for prettier display).
+
+        custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
 
-        if self.submitter is None or self.submitter.email is None:
-            logger.warning(f"Cannot send {new_status} email, no submitter email address.")
+        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
+        if recipient is None or recipient.email is None:
+            logger.warning(
+                f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
+                f" Name: {self.requested_domain.name}"
+                if self.requested_domain
+                else ""
+            )
             return None
 
         if not send_email:
-            logger.info(f"Email was not sent. Would send {new_status} email: {self.submitter.email}")
+            logger.info(f"Email was not sent. Would send {new_status} email to: {recipient.email}")
             return None
 
         try:
+            if not context:
+                context = {
+                    "domain_request": self,
+                    # This is the user that we refer to in the email
+                    "recipient": recipient,
+                }
+
+            if custom_email_content:
+                context["custom_email_content"] = custom_email_content
+
             send_templated_email(
                 email_template,
                 email_template_subject,
-                self.submitter.email,
-                context={"domain_request": self},
+                recipient.email,
+                context=context,
                 bcc_address=bcc_address,
+                wrap_email=wrap_email,
             )
-            logger.info(f"The {new_status} email sent to: {self.submitter.email}")
+            logger.info(f"The {new_status} email sent to: {recipient.email}")
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
@@ -859,8 +813,8 @@ class DomainRequest(TimeStampedModel):
                 "submission confirmation",
                 "emails/submission_confirmation.txt",
                 "emails/submission_confirmation_subject.txt",
-                True,
-                bcc_address,
+                send_email=True,
+                bcc_address=bcc_address,
             )
 
     @transition(
@@ -887,9 +841,10 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("in_review")
-
-        if self.status == self.DomainRequestStatus.REJECTED:
+        elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
+        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.action_needed_reason = None
 
         literal = DomainRequest.DomainRequestStatus.IN_REVIEW
         # Check if the tuple exists, then grab its value
@@ -907,7 +862,7 @@ class DomainRequest(TimeStampedModel):
         target=DomainRequestStatus.ACTION_NEEDED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
-    def action_needed(self):
+    def action_needed(self, send_email=True):
         """Send back an domain request that is under investigation or rejected.
 
         This action is logged.
@@ -919,14 +874,38 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
-
-        if self.status == self.DomainRequestStatus.REJECTED:
+        elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
         literal = DomainRequest.DomainRequestStatus.ACTION_NEEDED
         # Check if the tuple is setup correctly, then grab its value
         action_needed = literal if literal is not None else "Action Needed"
         logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
+
+        # Send out an email if an action needed reason exists
+        if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
+            email_content = self.action_needed_reason_email
+            self._send_action_needed_reason_email(send_email, email_content)
+
+    def _send_action_needed_reason_email(self, send_email=True, email_content=None):
+        """Sends out an automatic email for each valid action needed reason provided"""
+
+        email_template_name = "custom_email.txt"
+        email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
+
+        bcc_address = ""
+        if settings.IS_PRODUCTION:
+            bcc_address = settings.DEFAULT_FROM_EMAIL
+
+        self._send_status_update_email(
+            new_status="action needed",
+            email_template=f"emails/action_needed_reasons/{email_template_name}",
+            email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
+            send_email=send_email,
+            bcc_address=bcc_address,
+            custom_email_content=email_content,
+            wrap_email=True,
+        )
 
     @transition(
         field="status",
@@ -948,6 +927,10 @@ class DomainRequest(TimeStampedModel):
         object for the approved Domain and makes the user who created the
         domain request into an admin on that domain. It also triggers an email
         notification."""
+
+        if self.federal_agency is None:
+            self.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+            self.save()
 
         # create the domain
         Domain = apps.get_model("registrar.Domain")
@@ -972,13 +955,15 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
+        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.action_needed_reason = None
 
         # == Send out an email == #
         self._send_status_update_email(
             "domain request approved",
             "emails/status_change_approved.txt",
             "emails/status_change_approved_subject.txt",
-            send_email,
+            send_email=send_email,
         )
 
     @transition(
@@ -1090,11 +1075,12 @@ class DomainRequest(TimeStampedModel):
     def has_additional_details(self) -> bool:
         """Combines the has_anything_else_text and has_cisa_representative fields,
         then returns if this domain request has either of them."""
-        # Split out for linter
-        has_details = False
-        if self.has_anything_else_text or self.has_cisa_representative:
-            has_details = True
 
+        # Split out for linter
+        has_details = True
+
+        if self.has_anything_else_text is None or self.has_cisa_representative is None:
+            has_details = False
         return has_details
 
     def is_federal(self) -> Union[bool, None]:
@@ -1131,3 +1117,138 @@ class DomainRequest(TimeStampedModel):
         for field in opts.many_to_many:
             data[field.name] = field.value_from_object(self)
         return data
+
+    def _is_federal_complete(self):
+        # Federal -> "Federal government branch" page can't be empty + Federal Agency selection can't be None
+        return not (self.federal_type is None or self.federal_agency is None)
+
+    def _is_interstate_complete(self):
+        # Interstate -> "About your organization" page can't be empty
+        return self.about_your_organization is not None
+
+    def _is_state_or_territory_complete(self):
+        # State -> ""Election office" page can't be empty
+        return self.is_election_board is not None
+
+    def _is_tribal_complete(self):
+        # Tribal -> "Tribal name" and "Election office" page can't be empty
+        return self.tribe_name is not None and self.is_election_board is not None
+
+    def _is_county_complete(self):
+        # County -> "Election office" page can't be empty
+        return self.is_election_board is not None
+
+    def _is_city_complete(self):
+        # City -> "Election office" page can't be empty
+        return self.is_election_board is not None
+
+    def _is_special_district_complete(self):
+        # Special District -> "Election office" and "About your organization" page can't be empty
+        return self.is_election_board is not None and self.about_your_organization is not None
+
+    def _is_organization_name_and_address_complete(self):
+        return not (
+            self.organization_name is None
+            and self.address_line1 is None
+            and self.city is None
+            and self.state_territory is None
+            and self.zipcode is None
+        )
+
+    def _is_senior_official_complete(self):
+        return self.senior_official is not None
+
+    def _is_requested_domain_complete(self):
+        return self.requested_domain is not None
+
+    def _is_purpose_complete(self):
+        return self.purpose is not None
+
+    def _is_submitter_complete(self):
+        return self.submitter is not None
+
+    def _has_other_contacts_and_filled(self):
+        # Other Contacts Radio button is Yes and if all required fields are filled
+        return (
+            self.has_other_contacts()
+            and self.other_contacts.filter(
+                first_name__isnull=False,
+                last_name__isnull=False,
+                title__isnull=False,
+                email__isnull=False,
+                phone__isnull=False,
+            ).exists()
+        )
+
+    def _has_no_other_contacts_gives_rationale(self):
+        # Other Contacts Radio button is No and a rationale is provided
+        return self.has_other_contacts() is False and self.no_other_contacts_rationale is not None
+
+    def _is_other_contacts_complete(self):
+        if self._has_other_contacts_and_filled() or self._has_no_other_contacts_gives_rationale():
+            return True
+        return False
+
+    def _cisa_rep_check(self):
+        # Either does not have a CISA rep, OR has a CISA rep + both first name
+        # and last name are NOT empty and are NOT an empty string
+        to_return = (
+            self.has_cisa_representative is True
+            and self.cisa_representative_first_name is not None
+            and self.cisa_representative_first_name != ""
+            and self.cisa_representative_last_name is not None
+            and self.cisa_representative_last_name != ""
+        ) or self.has_cisa_representative is False
+
+        return to_return
+
+    def _anything_else_radio_button_and_text_field_check(self):
+        # Anything else boolean is True + filled text field and it's not an empty string OR the boolean is No
+        return (
+            self.has_anything_else_text is True and self.anything_else is not None and self.anything_else != ""
+        ) or self.has_anything_else_text is False
+
+    def _is_additional_details_complete(self):
+        return self._cisa_rep_check() and self._anything_else_radio_button_and_text_field_check()
+
+    def _is_policy_acknowledgement_complete(self):
+        return self.is_policy_acknowledged is not None
+
+    def _is_general_form_complete(self, request):
+        has_profile_feature_flag = flag_is_active(request, "profile_feature")
+        return (
+            self._is_organization_name_and_address_complete()
+            and self._is_senior_official_complete()
+            and self._is_requested_domain_complete()
+            and self._is_purpose_complete()
+            # NOTE: This flag leaves submitter as empty (request wont submit) hence set to True
+            and (self._is_submitter_complete() if not has_profile_feature_flag else True)
+            and self._is_other_contacts_complete()
+            and self._is_additional_details_complete()
+            and self._is_policy_acknowledgement_complete()
+        )
+
+    def _form_complete(self, request):
+        match self.generic_org_type:
+            case DomainRequest.OrganizationChoices.FEDERAL:
+                is_complete = self._is_federal_complete()
+            case DomainRequest.OrganizationChoices.INTERSTATE:
+                is_complete = self._is_interstate_complete()
+            case DomainRequest.OrganizationChoices.STATE_OR_TERRITORY:
+                is_complete = self._is_state_or_territory_complete()
+            case DomainRequest.OrganizationChoices.TRIBAL:
+                is_complete = self._is_tribal_complete()
+            case DomainRequest.OrganizationChoices.COUNTY:
+                is_complete = self._is_county_complete()
+            case DomainRequest.OrganizationChoices.CITY:
+                is_complete = self._is_city_complete()
+            case DomainRequest.OrganizationChoices.SPECIAL_DISTRICT:
+                is_complete = self._is_special_district_complete()
+            case DomainRequest.OrganizationChoices.SCHOOL_DISTRICT:
+                is_complete = True
+            case _:
+                # NOTE: Shouldn't happen, this is only if somehow they didn't choose an org type
+                is_complete = False
+        if not is_complete or not self._is_general_form_complete(request):
+            return False
+        return True

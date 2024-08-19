@@ -1,0 +1,51 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi, {{ recipient.first_name }}.
+
+We've identified an action that you’ll need to complete before we continue reviewing your .gov domain request.
+
+DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
+REQUEST RECEIVED ON: {{ domain_request.submission_date|date }}
+STATUS: Action needed
+
+----------------------------------------------------------------
+
+ORGANIZATION ALREADY HAS A .GOV DOMAIN
+We've reviewed your domain request, but your organization already has at least one other .gov domain. We need more information about your rationale for registering another .gov domain. 
+In general, there are two reasons we will approve an additional domain:
+- You determine a current .gov domain name will be replaced
+- We determine an additional domain name is appropriate
+
+
+WE LIMIT ADDITIONAL DOMAIN NAMES 
+Our practice is to only approve one domain per online service per government organization, evaluating additional requests on a case-by-case basis. 
+There are two core reasons we limit additional domains:
+- We want to minimize your operational and security load, which increases with each additional domain.
+- Fewer domains allow us to take protective, namespace-wide security actions faster and without undue dependencies.  
+
+If you’re attempting to claim an additional domain to prevent others from obtaining it, that’s not necessary. .Gov domains are only available to U.S.-based government organizations, and we don’t operate on a first come, first served basis. We'll only assign a domain to the organization whose real name or services actually correspond to the domain name.
+
+
+CONSIDER USING A SUBDOMAIN
+Using a subdomain of an existing domain (e.g., service.domain.gov) is a common approach to logically divide your namespace while still maintaining an association with your existing domain name. Subdomains can also be delegated to allow an affiliated entity to manage their own DNS settings.
+
+
+ACTION NEEDED
+FOR A REPLACEMENT DOMAIN: If you’re requesting a new domain that will replace your current domain name, we can allow for a transition period where both are registered to your organization. Afterwards, we will reclaim and retire the legacy name. 
+
+Reply to this email. Tell us how many months your organization needs to maintain your current .gov domain and conduct a transition to a new one. Detail why that period of time is needed.
+
+FOR AN ADDITIONAL DOMAIN: If you’re requesting an additional domain and not replacing your existing one, we’ll need more information to support that request. 
+
+Reply to this email. Detail why you believe another domain is necessary for your organization, and why a subdomain won’t meet your needs. 
+
+
+If you have questions or comments, include those in your reply.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
+{% endautoescape %}

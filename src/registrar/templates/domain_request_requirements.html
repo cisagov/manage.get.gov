@@ -1,5 +1,6 @@
 {% extends 'domain_request_form.html' %}
 {% load field_helpers %}
+{% load url_helpers %}
 
 {% block form_instructions %}
   <p>Please read this page. Check the box at the bottom to show that you agree to the requirements for operating a .gov domain.</p>
@@ -10,7 +11,7 @@
 
   <h3>Commercial purposes</h3>
 
-  <p>A .gov domain must not be used for commercial purposes, such as advertising that benefits private individuals or entities.</p>
+  <p>A .gov domain must not be used for <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'help/faq#commercial-purposes' %}">commercial purposes</a>, such as advertising that benefits private individuals or entities.</p>
 
   <h3>Political campaigns</h3>
 
@@ -39,7 +40,7 @@
   <p>We may need to suspend or terminate a domain registration for violations of these requirements. When we discover a violation, we’ll make reasonable efforts to contact a registrant, including emails or phone calls to:
     <ul class="usa-list"> 
       <li>Domain contacts</li>
-      <li>The authorizing official</li>
+      <li>The senior official</li>
       <li>The government organization, a parent organization, or affiliated entities</li>
     </ul>
   </p>

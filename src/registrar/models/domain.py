@@ -40,6 +40,8 @@ from .utility.time_stamped_model import TimeStampedModel
 
 from .public_contact import PublicContact
 
+from .user_domain_role import UserDomainRole
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +66,14 @@ class Domain(TimeStampedModel, DomainHelper):
     G) Activation is controlled by the registry. It will happen automatically when the
        domain meets the required checks.
     """
+
+    class Meta:
+        """Contains meta information about this class"""
+
+        indexes = [
+            models.Index(fields=["name"]),
+            models.Index(fields=["state"]),
+        ]
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
@@ -140,6 +150,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # previously existed but has been deleted from the registry
         DELETED = "deleted", "Deleted"
+
+        @classmethod
+        def get_state_label(cls, state: str):
+            """Returns the associated label for a given state value"""
+            return cls(state).label if state else None
 
         @classmethod
         def get_help_text(cls, state) -> str:
@@ -664,11 +679,29 @@ class Domain(TimeStampedModel, DomainHelper):
         remRequest = commands.UpdateDomain(name=self.name)
         remExtension = commands.UpdateDomainDNSSECExtension(**remParams)
         remRequest.add_extension(remExtension)
+        dsdata_change_log = ""
+
+        # Get the user's email
+        user_domain_role = UserDomainRole.objects.filter(domain=self).first()
+        user_email = user_domain_role.user.email if user_domain_role else "unknown user"
+
         try:
-            if "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None:
+            added_record = "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None
+            deleted_record = "dsData" in _remDnssecdata and _remDnssecdata["dsData"] is not None
+
+            if added_record:
                 registry.send(addRequest, cleaned=True)
-            if "dsData" in _remDnssecdata and _remDnssecdata["dsData"] is not None:
+                dsdata_change_log = f"{user_email} added a DS data record"
+            if deleted_record:
                 registry.send(remRequest, cleaned=True)
+                if dsdata_change_log != "":  # if they add and remove a record at same time
+                    dsdata_change_log = f"{user_email} added and deleted a DS data record"
+                else:
+                    dsdata_change_log = f"{user_email} deleted a DS data record"
+            if dsdata_change_log != "":
+                self.dsdata_last_change = dsdata_change_log
+                self.save()  # audit log will now record this as a change
+
         except RegistryError as e:
             logger.error("Error updating DNSSEC, code was %s error was %s" % (e.code, e))
             raise e
@@ -769,10 +802,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
         logger.info("making admin contact")
-        if contact.contact_type != contact.ContactTypeChoices.ADMINISTRATIVE:
-            raise ValueError("Cannot set a registrant contact with a different contact type")
-        self._make_contact_in_registry(contact=contact)
-        self._update_domain_with_contact(contact, rem=False)
+        self._set_singleton_contact(contact=contact, expectedType=contact.ContactTypeChoices.ADMINISTRATIVE)
 
     def _update_epp_contact(self, contact: PublicContact):
         """Sends UpdateContact to update the actual contact object,
@@ -849,11 +879,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # get publicContact objects that have the matching
         # domain and type but a different id
-        # like in highlander we there can only be one
-        hasOtherContact = (
-            PublicContact.objects.exclude(registry_id=contact.registry_id)
-            .filter(domain=self, contact_type=contact.contact_type)
-            .exists()
+        # like in highlander where there can only be one
+        duplicate_contacts = PublicContact.objects.exclude(registry_id=contact.registry_id).filter(
+            domain=self, contact_type=contact.contact_type
         )
 
         # if no record exists with this contact type
@@ -871,14 +899,10 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("_set_singleton_contact()-> contact has been added to the registry")
 
         # if has conflicting contacts in our db remove them
-        if hasOtherContact:
+        if duplicate_contacts.exists():
             logger.info("_set_singleton_contact()-> updating domain, removing old contact")
 
-            existing_contact = (
-                PublicContact.objects.exclude(registry_id=contact.registry_id)
-                .filter(domain=self, contact_type=contact.contact_type)
-                .get()
-            )
+            existing_contact = duplicate_contacts.get()
 
             if isRegistrant:
                 # send update domain only for registant contacts
@@ -1058,6 +1082,12 @@ class Domain(TimeStampedModel, DomainHelper):
         verbose_name="first ready on",
     )
 
+    dsdata_last_change = TextField(
+        null=True,
+        blank=True,
+        help_text="Record of the last change event for ds data",
+    )
+
     def isActive(self):
         return self.state == Domain.State.CREATED
 
@@ -1070,6 +1100,15 @@ class Domain(TimeStampedModel, DomainHelper):
             return True
         now = timezone.now().date()
         return self.expiration_date < now
+
+    def state_display(self):
+        """Return the display status of the domain."""
+        if self.is_expired() and self.state != self.State.UNKNOWN:
+            return "Expired"
+        elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
+            return "DNS needed"
+        else:
+            return self.state.capitalize()
 
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.
@@ -1216,24 +1255,28 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def get_default_security_contact(self):
         """Gets the default security contact."""
+        logger.info("get_default_security_contact() -> Adding default security contact")
         contact = PublicContact.get_default_security()
         contact.domain = self
         return contact
 
     def get_default_administrative_contact(self):
         """Gets the default administrative contact."""
+        logger.info("get_default_security_contact() -> Adding administrative security contact")
         contact = PublicContact.get_default_administrative()
         contact.domain = self
         return contact
 
     def get_default_technical_contact(self):
         """Gets the default technical contact."""
+        logger.info("get_default_security_contact() -> Adding technical security contact")
         contact = PublicContact.get_default_technical()
         contact.domain = self
         return contact
 
     def get_default_registrant_contact(self):
         """Gets the default registrant contact."""
+        logger.info("get_default_security_contact() -> Adding default registrant contact")
         contact = PublicContact.get_default_registrant()
         contact.domain = self
         return contact
@@ -1247,6 +1290,7 @@ class Domain(TimeStampedModel, DomainHelper):
         Returns:
             PublicContact | None
         """
+        logger.info(f"get_contact_in_keys() -> Grabbing a {contact_type} contact from cache")
         # Registrant doesn't exist as an array, and is of
         # a special data type, so we need to handle that.
         if contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
@@ -1309,6 +1353,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e.code)
                     raise e
                 if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state == Domain.State.UNKNOWN:
+                    logger.info("_get_or_create_domain() -> Switching to dns_needed from unknown")
                     # avoid infinite loop
                     already_tried_to_create = True
                     self.dns_needed_from_unknown()
@@ -1319,6 +1364,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     raise e
 
     def addRegistrant(self):
+        """Adds a default registrant contact"""
         registrant = PublicContact.get_default_registrant()
         registrant.domain = self
         registrant.save()  # calls the registrant_contact.setter
@@ -1346,6 +1392,8 @@ class Domain(TimeStampedModel, DomainHelper):
         self.addAllDefaults()
 
     def addAllDefaults(self):
+        """Adds default security, technical, and administrative contacts"""
+        logger.info("addAllDefaults() -> Adding default security, technical, and administrative contacts")
         security_contact = self.get_default_security_contact()
         security_contact.save()
 
@@ -1360,7 +1408,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """place a clienthold on a domain (no longer should resolve)
         ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
         """
-        # TODO - ensure all requirements for client hold are made here
+
         # (check prohibited statuses)
         logger.info("clientHold()-> inside clientHold")
 
@@ -1368,7 +1416,6 @@ class Domain(TimeStampedModel, DomainHelper):
         # include this ignoreEPP flag
         if not ignoreEPP:
             self._place_client_hold()
-        # TODO -on the client hold ticket any additional error handling here
 
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.READY)
     def revert_client_hold(self, ignoreEPP=False):
@@ -1570,6 +1617,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
+        logger.info("_get_or_create_contact() -> Fetching contact info")
         try:
             return self._request_contact_info(contact)
         except RegistryError as e:
@@ -1962,10 +2010,23 @@ class Domain(TimeStampedModel, DomainHelper):
             domain=self,
         )
 
-        # Raise an error if we find duplicates.
-        # This should not occur
+        # If we find duplicates, log it and delete the oldest ones.
         if db_contact.count() > 1:
-            raise Exception(f"Multiple contacts found for {public_contact.contact_type}")
+            logger.warning("_get_or_create_public_contact() -> Duplicate contacts found. Deleting duplicate.")
+
+            newest_duplicate = db_contact.order_by("-created_at").first()
+
+            duplicates_to_delete = db_contact.exclude(id=newest_duplicate.id)  # type: ignore
+
+            # Delete all duplicates
+            duplicates_to_delete.delete()
+
+            # Do a second filter to grab the latest content
+            db_contact = PublicContact.objects.filter(
+                registry_id=public_contact.registry_id,
+                contact_type=public_contact.contact_type,
+                domain=self,
+            )
 
         # Save to DB if it doesn't exist already.
         if db_contact.count() == 0:
@@ -1977,16 +2038,14 @@ class Domain(TimeStampedModel, DomainHelper):
 
         existing_contact = db_contact.get()
 
-        # Does the item we're grabbing match
-        # what we have in our DB?
+        # Does the item we're grabbing match what we have in our DB?
         if existing_contact.email != public_contact.email or existing_contact.registry_id != public_contact.registry_id:
             existing_contact.delete()
             public_contact.save()
             logger.warning("Requested PublicContact is out of sync " "with DB.")
             return public_contact
-        # If it already exists, we can
-        # assume that the DB instance was updated
-        # during set, so we should just use that.
+
+        # If it already exists, we can assume that the DB instance was updated during set, so we should just use that.
         return existing_contact
 
     def _registrant_to_public_contact(self, registry_id: str):

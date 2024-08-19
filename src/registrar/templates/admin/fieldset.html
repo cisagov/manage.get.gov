@@ -8,7 +8,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
 <fieldset class="module aligned {{ fieldset.classes }}">
     {% if fieldset.name %}
         {# Customize the markup for the collapse toggle #}
-        {% if 'collapse--dotgov' in fieldset.classes %}
+        {% if 'collapse--dgfieldset' in fieldset.classes %}
             <button type="button">
                 <span>{{ fieldset.name }}</span>
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
@@ -22,7 +22,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
     {% endif %}
 
     {# Customize the markup for the collapse toggle: Do not show a description for the collapse fieldsets, instead we're using the description as a screen reader only legend #}
-    {% if fieldset.description and 'collapse--dotgov' not in fieldset.classes %}
+    {% if fieldset.description and 'collapse--dgfieldset' not in fieldset.classes %}
         <div class="description">{{ fieldset.description|safe }}</div>
     {% endif %}
 
@@ -32,7 +32,9 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
             {% for field in line %}
                 <div>
                     {% if not line.fields|length == 1 and not field.is_readonly %}{{ field.errors }}{% endif %}
+                        {% block flex_container_start %}
                         <div class="flex-container{% if not line.fields|length == 1 %} fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}{% if field.field.is_hidden %} hidden{% endif %}{% elif field.is_checkbox %} checkbox-row{% endif %}">
+                        {% endblock flex_container_start %}
                             {% if field.is_checkbox %}
                                 {# .gov override #}
                                 {% block field_checkbox %}
@@ -52,7 +54,9 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
                                     {% endblock field_other%}
                                 {% endif %}
                             {% endif %}
+                        {% block flex_container_end %}
                         </div>
+                        {% endblock flex_container_end %}
 
                     {% if field.field.help_text %}
                         {# .gov override #}

@@ -16,6 +16,12 @@ on:
           - stable
           - staging
           - development
+          - ad
+          - ms
+          - ag
+          - litterbox
+          - hotgov
+          - cb
           - bob
           - meoward
           - backup

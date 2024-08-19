@@ -8,7 +8,7 @@ from registrar.forms.domain_request_wizard import (
     AlternativeDomainForm,
     CurrentSitesForm,
     DotGovDomainForm,
-    AuthorizingOfficialForm,
+    SeniorOfficialForm,
     OrganizationContactForm,
     YourContactForm,
     OtherContactsForm,
@@ -217,9 +217,9 @@ class TestFormValidation(MockEppLib):
             ["Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens)."],
         )
 
-    def test_authorizing_official_email_invalid(self):
+    def test_senior_official_email_invalid(self):
         """must be a valid email address."""
-        form = AuthorizingOfficialForm(data={"email": "boss@boss"})
+        form = SeniorOfficialForm(data={"email": "boss@boss"})
         self.assertEqual(
             form.errors["email"],
             ["Enter an email address in the required format, like name@example.com."],

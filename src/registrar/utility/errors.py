@@ -79,6 +79,7 @@ class FSMErrorCodes(IntEnum):
         - 3 INVESTIGATOR_NOT_STAFF Investigator is a non-staff user
         - 4 INVESTIGATOR_NOT_SUBMITTER The form submitter is not the investigator
         - 5 NO_REJECTION_REASON No rejection reason is specified
+        - 6 NO_ACTION_NEEDED_REASON No action needed reason is specified
     """
 
     APPROVE_DOMAIN_IN_USE = 1
@@ -86,6 +87,7 @@ class FSMErrorCodes(IntEnum):
     INVESTIGATOR_NOT_STAFF = 3
     INVESTIGATOR_NOT_SUBMITTER = 4
     NO_REJECTION_REASON = 5
+    NO_ACTION_NEEDED_REASON = 6
 
 
 class FSMDomainRequestError(Exception):
@@ -99,7 +101,8 @@ class FSMDomainRequestError(Exception):
         FSMErrorCodes.NO_INVESTIGATOR: ("Investigator is required for this status."),
         FSMErrorCodes.INVESTIGATOR_NOT_STAFF: ("Investigator is not a staff user."),
         FSMErrorCodes.INVESTIGATOR_NOT_SUBMITTER: ("Only the assigned investigator can make this change."),
-        FSMErrorCodes.NO_REJECTION_REASON: ("A rejection reason is required."),
+        FSMErrorCodes.NO_REJECTION_REASON: ("A reason is required for this status."),
+        FSMErrorCodes.NO_ACTION_NEEDED_REASON: ("A reason is required for this status."),
     }
 
     def __init__(self, *args, code=None, **kwargs):

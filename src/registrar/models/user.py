@@ -3,14 +3,20 @@ import logging
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
+from django.forms import ValidationError
 
+from registrar.models.domain_information import DomainInformation
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 from .domain_invitation import DomainInvitation
+from .portfolio_invitation import PortfolioInvitation
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 from .domain_request import DomainRequest
+from django.contrib.postgres.fields import ArrayField
+from waffle.decorators import flag_is_active
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -22,7 +28,21 @@ class User(AbstractUser):
     """
     A custom user model that performs identically to the default user model
     but can be customized later.
+
+    If the `user` object already exists, said user object
+    will be updated if any updates are made to it through Login.gov.
     """
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["username"]),
+            models.Index(fields=["email"]),
+        ]
+
+        permissions = [
+            ("analyst_access_permission", "Analyst Access Permission"),
+            ("full_access_permission", "Full Access Permission"),
+        ]
 
     class VerificationTypeChoices(models.TextChoices):
         """
@@ -46,6 +66,32 @@ class User(AbstractUser):
         # after they login.
         FIXTURE_USER = "fixture_user", "Created by fixtures"
 
+    PORTFOLIO_ROLE_PERMISSIONS = {
+        UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            UserPortfolioPermissionChoices.VIEW_MEMBER,
+            UserPortfolioPermissionChoices.EDIT_MEMBER,
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            # Domain: field specific permissions
+            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
+            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
+        ],
+        UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            UserPortfolioPermissionChoices.VIEW_MEMBER,
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            # Domain: field specific permissions
+            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
+        ],
+        UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+        ],
+    }
+
     # #### Constants for choice fields ####
     RESTRICTED = "restricted"
     STATUS_CHOICES = ((RESTRICTED, RESTRICTED),)
@@ -66,11 +112,48 @@ class User(AbstractUser):
         related_name="users",
     )
 
+    portfolio = models.ForeignKey(
+        "registrar.Portfolio",
+        null=True,
+        blank=True,
+        related_name="user",
+        on_delete=models.SET_NULL,
+    )
+
+    portfolio_roles = ArrayField(
+        models.CharField(
+            max_length=50,
+            choices=UserPortfolioRoleChoices.choices,
+        ),
+        null=True,
+        blank=True,
+        help_text="Select one or more roles.",
+    )
+
+    portfolio_additional_permissions = ArrayField(
+        models.CharField(
+            max_length=50,
+            choices=UserPortfolioPermissionChoices.choices,
+        ),
+        null=True,
+        blank=True,
+        help_text="Select one or more additional permissions.",
+    )
+
     phone = PhoneNumberField(
         null=True,
         blank=True,
-        help_text="Phone",
-        db_index=True,
+    )
+
+    middle_name = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    title = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="title / role",
     )
 
     verification_type = models.CharField(
@@ -79,6 +162,21 @@ class User(AbstractUser):
         blank=True,
         help_text="The means through which this user was verified",
     )
+
+    @property
+    def finished_setup(self):
+        """
+        Tracks if the user finished their profile setup or not. This is so
+        we can globally enforce that new users provide additional account information before proceeding.
+        """
+        user_values = [
+            self.first_name,
+            self.last_name,
+            self.title,
+            self.phone,
+        ]
+
+        return None not in user_values and "" not in user_values
 
     def __str__(self):
         # this info is pulled from Login.gov
@@ -124,8 +222,76 @@ class User(AbstractUser):
         """Return count of ineligible requests"""
         return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.INELIGIBLE).count()
 
+    def get_formatted_name(self):
+        """Returns the contact's name in Western order."""
+        names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
+        return " ".join(names) if names else "Unknown"
+
     def has_contact_info(self):
-        return bool(self.contact.title or self.contact.email or self.contact.phone)
+        return bool(self.title or self.email or self.phone)
+
+    def clean(self):
+        """Extends clean method to perform additional validation, which can raise errors in django admin."""
+        super().clean()
+
+        if self.portfolio is None and self._get_portfolio_permissions():
+            raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
+
+        if self.portfolio is not None and not self._get_portfolio_permissions():
+            raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
+
+    def _get_portfolio_permissions(self):
+        """
+        Retrieve the permissions for the user's portfolio roles.
+        """
+        portfolio_permissions = set()  # Use a set to avoid duplicate permissions
+
+        if self.portfolio_roles:
+            for role in self.portfolio_roles:
+                if role in self.PORTFOLIO_ROLE_PERMISSIONS:
+                    portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS[role])
+        if self.portfolio_additional_permissions:
+            portfolio_permissions.update(self.portfolio_additional_permissions)
+        return list(portfolio_permissions)  # Convert back to list if necessary
+
+    def _has_portfolio_permission(self, portfolio_permission):
+        """The views should only call this function when testing for perms and not rely on roles."""
+
+        if not self.portfolio:
+            return False
+
+        portfolio_permissions = self._get_portfolio_permissions()
+
+        return portfolio_permission in portfolio_permissions
+
+    # the methods below are checks for individual portfolio permissions. They are defined here
+    # to make them easier to call elsewhere throughout the application
+    def has_base_portfolio_permission(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
+
+    def has_edit_org_portfolio_permission(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
+
+    def has_domains_portfolio_permission(self):
+        return self._has_portfolio_permission(
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
+        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
+
+    def has_domain_requests_portfolio_permission(self):
+        return self._has_portfolio_permission(
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
+
+    def has_view_all_domains_permission(self):
+        """Determines if the current user can view all available domains in a given portfolio"""
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    # Field specific permission checks
+    def has_view_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+
+    def has_edit_suborganization(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
@@ -234,6 +400,24 @@ class User(AbstractUser):
                 new_domain_invitation = DomainInvitation(email=transition_domain_email.lower(), domain=new_domain)
                 new_domain_invitation.save()
 
+    def check_portfolio_invitations_on_login(self):
+        """When a user first arrives on the site, we need to retrieve any portfolio
+        invitations that match their email address."""
+        for invitation in PortfolioInvitation.objects.filter(
+            email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
+        ):
+            if self.portfolio is None:
+                try:
+                    invitation.retrieve()
+                    invitation.save()
+                except RuntimeError:
+                    # retrieving should not fail because of a missing user, but
+                    # if it does fail, log the error so a new user can continue
+                    # logging in
+                    logger.warn("Failed to retrieve invitation %s", invitation, exc_info=True)
+            else:
+                logger.warn("User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True)
+
     def on_each_login(self):
         """Callback each time the user is authenticated.
 
@@ -245,9 +429,15 @@ class User(AbstractUser):
         """
 
         self.check_domain_invitations_on_login()
+        self.check_portfolio_invitations_on_login()
 
-    class Meta:
-        permissions = [
-            ("analyst_access_permission", "Analyst Access Permission"),
-            ("full_access_permission", "Full Access Permission"),
-        ]
+    def is_org_user(self, request):
+        has_organization_feature_flag = flag_is_active(request, "organization_feature")
+        return has_organization_feature_flag and self.has_base_portfolio_permission()
+
+    def get_user_domain_ids(self, request):
+        """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
+        if self.is_org_user(request) and self.has_view_all_domains_permission():
+            return DomainInformation.objects.filter(portfolio=self.portfolio).values_list("domain_id", flat=True)
+        else:
+            return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)

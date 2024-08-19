@@ -2,7 +2,7 @@
 
 import time
 import logging
-
+from urllib.parse import urlparse, urlunparse, urlencode
 
 logger = logging.getLogger(__name__)
 
@@ -100,36 +100,41 @@ class CreateOrUpdateOrganizationTypeHelper:
         # Update the field
         self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
 
-    def _handle_existing_instance(self, force_update_when_no_are_changes_found=False):
+    def _handle_existing_instance(self, force_update_when_no_changes_are_found=False):
         # == Init variables == #
-        # Instance is already in the database, fetch its current state
-        current_instance = self.sender.objects.get(id=self.instance.id)
+        try:
+            # Instance is already in the database, fetch its current state
+            current_instance = self.sender.objects.get(id=self.instance.id)
 
-        # Check the new and old values
-        generic_org_type_changed = self.instance.generic_org_type != current_instance.generic_org_type
-        is_election_board_changed = self.instance.is_election_board != current_instance.is_election_board
-        organization_type_changed = self.instance.organization_type != current_instance.organization_type
+            # Check the new and old values
+            generic_org_type_changed = self.instance.generic_org_type != current_instance.generic_org_type
+            is_election_board_changed = self.instance.is_election_board != current_instance.is_election_board
+            organization_type_changed = self.instance.organization_type != current_instance.organization_type
 
-        # == Check for invalid conditions before proceeding == #
-        if organization_type_changed and (generic_org_type_changed or is_election_board_changed):
-            # Since organization type is linked with generic_org_type and election board,
-            # we have to update one or the other, not both.
-            # This will not happen in normal flow as it is not possible otherwise.
-            raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
-        elif not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
-            # No changes found
-            if force_update_when_no_are_changes_found:
-                # If we want to force an update anyway, we can treat this record like
-                # its a new one in that we check for "None" values rather than changes.
-                self._handle_new_instance()
-        else:
-            # == Update the linked values == #
-            # Find out which field needs updating
-            organization_type_needs_update = generic_org_type_changed or is_election_board_changed
-            generic_org_type_needs_update = organization_type_changed
+            # == Check for invalid conditions before proceeding == #
+            if organization_type_changed and (generic_org_type_changed or is_election_board_changed):
+                # Since organization type is linked with generic_org_type and election board,
+                # we have to update one or the other, not both.
+                # This will not happen in normal flow as it is not possible otherwise.
+                raise ValueError("Cannot update organization_type and generic_org_type simultaneously.")
+            elif not organization_type_changed and (not generic_org_type_changed and not is_election_board_changed):
+                # No changes found
+                if force_update_when_no_changes_are_found:
+                    # If we want to force an update anyway, we can treat this record like
+                    # its a new one in that we check for "None" values rather than changes.
+                    self._handle_new_instance()
+            else:
+                # == Update the linked values == #
+                # Find out which field needs updating
+                organization_type_needs_update = generic_org_type_changed or is_election_board_changed
+                generic_org_type_needs_update = organization_type_changed
 
-            # Update the field
-            self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
+                # Update the field
+                self._update_fields(organization_type_needs_update, generic_org_type_needs_update)
+        except self.sender.DoesNotExist:
+            # this exception should only be raised when import_export utility attempts to import
+            # a new row and already has an id
+            pass
 
     def _update_fields(self, organization_type_needs_update, generic_org_type_needs_update):
         """
@@ -164,20 +169,9 @@ class CreateOrUpdateOrganizationTypeHelper:
                 # There is no avenue for this to occur in the UI,
                 # as such - this can only occur if the object is initialized in this way.
                 # Or if there are pre-existing data.
-                logger.debug(
-                    "create_or_update_organization_type() -> is_election_board "
-                    f"cannot exist for {generic_org_type}. Setting to None."
-                )
                 self.instance.is_election_board = None
             self.instance.organization_type = generic_org_type
         else:
-            # This can only happen with manual data tinkering, which causes these to be out of sync.
-            if self.instance.is_election_board is None:
-                logger.warning(
-                    "create_or_update_organization_type() -> is_election_board is out of sync. Updating value."
-                )
-                self.instance.is_election_board = False
-
             if self.instance.is_election_board:
                 self.instance.organization_type = self.generic_org_to_org_map[generic_org_type]
             else:
@@ -212,10 +206,6 @@ class CreateOrUpdateOrganizationTypeHelper:
                 # There is no avenue for this to occur in the UI,
                 # as such - this can only occur if the object is initialized in this way.
                 # Or if there are pre-existing data.
-                logger.warning(
-                    "create_or_update_organization_type() -> is_election_board "
-                    f"cannot exist for {current_org_type}. Setting to None."
-                )
                 self.instance.is_election_board = None
         else:
             # if self.instance.organization_type is set to None, then this means
@@ -224,12 +214,15 @@ class CreateOrUpdateOrganizationTypeHelper:
             self.instance.is_election_board = None
             self.instance.generic_org_type = None
 
-    def _validate_new_instance(self):
+    def _validate_new_instance(self) -> bool:
         """
         Validates whether a new instance of DomainRequest or DomainInformation can proceed with the update
         based on the consistency between organization_type, generic_org_type, and is_election_board.
 
         Returns a boolean determining if execution should proceed or not.
+
+        Raises:
+            ValueError if there is a mismatch between organization_type, generic_org_type, and is_election_board
         """
 
         # We conditionally accept both of these values to exist simultaneously, as long as
@@ -247,13 +240,20 @@ class CreateOrUpdateOrganizationTypeHelper:
             is_election_type = "_election" in organization_type
             can_have_election_board = organization_type in self.generic_org_to_org_map
 
-            election_board_mismatch = (is_election_type != self.instance.is_election_board) and can_have_election_board
+            election_board_mismatch = (
+                is_election_type and not self.instance.is_election_board and can_have_election_board
+            )
             org_type_mismatch = mapped_org_type is not None and (generic_org_type != mapped_org_type)
             if election_board_mismatch or org_type_mismatch:
                 message = (
-                    "Cannot add organization_type and generic_org_type simultaneously "
-                    "when generic_org_type, is_election_board, and organization_type values do not match."
+                    "Cannot add organization_type and generic_org_type simultaneously when"
+                    "generic_org_type ({}), is_election_board ({}), and organization_type ({}) don't match.".format(
+                        generic_org_type, self.instance.is_election_board, organization_type
+                    )
                 )
+                message = "Mismatch on election board, {}".format(message) if election_board_mismatch else message
+                message = "Mistmatch on org type, {}".format(message) if org_type_mismatch else message
+                logger.error("_validate_new_instance: %s", message)
                 raise ValueError(message)
 
             return True
@@ -261,3 +261,57 @@ class CreateOrUpdateOrganizationTypeHelper:
             return False
         else:
             return True
+
+
+def replace_url_queryparams(url_to_modify: str, query_params, convert_list_to_csv=False):
+    """
+    Replaces the query parameters of a given URL.
+    Because this replaces them, this can be used to either add, delete, or modify.
+    Args:
+        url_to_modify (str): The URL whose query parameters need to be modified.
+        query_params (dict): Dictionary of query parameters to use.
+        convert_list_to_csv (bool): If the queryparam contains a list of items,
+        convert it to a csv representation instead.
+    Returns:
+        str: The modified URL with the updated query parameters.
+    """
+
+    # Ensure each key in query_params maps to a single value, not a list
+    if convert_list_to_csv:
+        for key, value in query_params.items():
+            if isinstance(value, list):
+                query_params[key] = ",".join(value)
+
+    # Split the URL into parts
+    url_parts = list(urlparse(url_to_modify))
+
+    # Modify the query param bit
+    url_parts[4] = urlencode(query_params)
+
+    # Reassemble the URL
+    new_url = urlunparse(url_parts)
+
+    return new_url
+
+
+def convert_queryset_to_dict(queryset, is_model=True, key="id"):
+    """
+    Transforms a queryset into a dictionary keyed by a specified key (like "id").
+
+    Parameters:
+        requests (QuerySet or list of dicts): Input data.
+        is_model (bool): Indicates if each item in 'queryset' are model instances (True) or dictionaries (False).
+        key (str): Key or attribute to use for the resulting dictionary's keys.
+
+    Returns:
+        dict: Dictionary with keys derived from 'key' and values corresponding to items in 'queryset'.
+    """
+
+    if is_model:
+        request_dict = {getattr(value, key): value for value in queryset}
+    else:
+        # Querysets sometimes contain sets of dictionaries.
+        # Calling .values is an example of this.
+        request_dict = {value[key]: value for value in queryset}
+
+    return request_dict

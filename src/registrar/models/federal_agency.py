@@ -1,6 +1,7 @@
 from .utility.time_stamped_model import TimeStampedModel
 from django.db import models
 import logging
+from registrar.utility.constants import BranchChoices
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,28 @@ class FederalAgency(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Federal agency",
+    )
+
+    federal_type = models.CharField(
+        max_length=20,
+        choices=BranchChoices.choices,
+        null=True,
+        blank=True,
+        help_text="Federal agency type (executive, judicial, legislative, etc.)",
+    )
+
+    initials = models.CharField(
+        max_length=10,
+        null=True,
+        blank=True,
+        help_text="Agency initials",
+    )
+
+    is_fceb = models.BooleanField(
+        null=True,
+        blank=True,
+        verbose_name="FCEB",
+        help_text="Determines if this agency is FCEB",
     )
 
     def __str__(self) -> str:
@@ -221,3 +244,8 @@ class FederalAgency(TimeStampedModel):
             FederalAgency.objects.bulk_create(agencies)
         except Exception as e:
             logger.error(f"Error creating federal agencies: {e}")
+
+    @classmethod
+    def get_non_federal_agency(cls):
+        """Returns the non-federal agency."""
+        return FederalAgency.objects.filter(agency="Non-Federal Agency").first()

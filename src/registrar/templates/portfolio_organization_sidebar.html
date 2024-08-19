@@ -1,0 +1,25 @@
+{% load static url_helpers %}
+
+<div class="margin-bottom-4 tablet:margin-bottom-0">
+  <nav aria-label="Domain sections">
+    <ul class="usa-sidenav">
+      <li class="usa-sidenav__item">
+        {% url 'organization' as url %} 
+        <a href="{{ url }}" 
+          {% if request.path == url %}class="usa-current"{% endif %}
+        >
+          Organization
+        </a>
+      </li>
+
+      <li class="usa-sidenav__item">
+        {% url 'senior-official' as url %} 
+        <a href="{{ url }}"
+        {% if request.path == url %}class="usa-current"{% endif %}
+        >
+            Senior official
+        </a>
+      </li>
+    </ul>
+  </nav>
+</div>

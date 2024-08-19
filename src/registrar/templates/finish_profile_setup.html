@@ -1,0 +1,20 @@
+{% extends "profile.html" %}
+
+{% load static form_helpers url_helpers field_helpers %}
+{% block title %} Finish setting up your profile | {% endblock %}
+
+{# Disable the redirect  #}
+{% block header %}
+    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup %}
+{% endblock %}
+
+{# Add the new form #}
+{% block content_bottom %}
+    {% include "includes/finish_profile_form.html" with form=form %}
+    </div>
+</main>
+{% endblock content_bottom %}
+
+{% block footer %}
+    {% include "includes/footer.html" with show_manage_your_domains=user_finished_setup %}
+{% endblock footer %}

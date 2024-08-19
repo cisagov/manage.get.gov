@@ -9,7 +9,7 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar import views
-from registrar.views.admin_views import (
+from registrar.views.report_views import (
     ExportDataDomainsGrowth,
     ExportDataFederal,
     ExportDataFull,
@@ -18,9 +18,13 @@ from registrar.views.admin_views import (
     ExportDataType,
     ExportDataUnmanagedDomains,
     AnalyticsView,
+    ExportDomainRequestDataFull,
+    ExportDataTypeUser,
 )
 
 from registrar.views.domain_request import Step
+from registrar.views.domain_requests_json import get_domain_requests_json
+from registrar.views.domains_json import get_domains_json
 from registrar.views.utility import always_404
 from api.views import available, get_current_federal, get_current_full
 
@@ -40,7 +44,7 @@ for step, view in [
     (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
     (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
     (Step.ABOUT_YOUR_ORGANIZATION, views.AboutYourOrganization),
-    (Step.AUTHORIZING_OFFICIAL, views.AuthorizingOfficial),
+    (Step.SENIOR_OFFICIAL, views.SeniorOfficial),
     (Step.CURRENT_SITES, views.CurrentSites),
     (Step.DOTGOV_DOMAIN, views.DotgovDomain),
     (Step.PURPOSE, views.Purpose),
@@ -56,6 +60,26 @@ for step, view in [
 urlpatterns = [
     path("", views.index, name="home"),
     path(
+        "domains/",
+        views.PortfolioDomainsView.as_view(),
+        name="domains",
+    ),
+    path(
+        "requests/",
+        views.PortfolioDomainRequestsView.as_view(),
+        name="domain-requests",
+    ),
+    path(
+        "organization/",
+        views.PortfolioOrganizationView.as_view(),
+        name="organization",
+    ),
+    path(
+        "senior-official/",
+        views.PortfolioSeniorOfficialView.as_view(),
+        name="senior-official",
+    ),
+    path(
         "admin/logout/",
         RedirectView.as_view(pattern_name="logout", permanent=False),
     ),
@@ -63,6 +87,11 @@ urlpatterns = [
         "admin/analytics/export_data_type/",
         ExportDataType.as_view(),
         name="export_data_type",
+    ),
+    path(
+        "admin/analytics/export_data_domain_requests_full/",
+        ExportDomainRequestDataFull.as_view(),
+        name="export_data_domain_requests_full",
     ),
     path(
         "admin/analytics/export_data_full/",
@@ -100,6 +129,11 @@ urlpatterns = [
         name="analytics",
     ),
     path("admin/", admin.site.urls),
+    path(
+        "reports/export_data_type_user/",
+        ExportDataTypeUser.as_view(),
+        name="export_data_type_user",
+    ),
     path(
         "domain-request/<id>/edit/",
         views.DomainRequestWizard.as_view(),
@@ -164,9 +198,14 @@ urlpatterns = [
         name="domain-org-name-address",
     ),
     path(
-        "domain/<int:pk>/authorizing-official",
-        views.DomainAuthorizingOfficialView.as_view(),
-        name="domain-authorizing-official",
+        "domain/<int:pk>/suborganization",
+        views.DomainSubOrganizationView.as_view(),
+        name="domain-suborganization",
+    ),
+    path(
+        "domain/<int:pk>/senior-official",
+        views.DomainSeniorOfficialView.as_view(),
+        name="domain-senior-official",
     ),
     path(
         "domain/<int:pk>/security-email",
@@ -177,6 +216,16 @@ urlpatterns = [
         "domain/<int:pk>/users/add",
         views.DomainAddUserView.as_view(),
         name="domain-users-add",
+    ),
+    path(
+        "finish-profile-setup",
+        views.FinishProfileSetupView.as_view(),
+        name="finish-user-profile-setup",
+    ),
+    path(
+        "user-profile",
+        views.UserProfileView.as_view(),
+        name="user-profile",
     ),
     path(
         "invitation/<int:pk>/delete",
@@ -193,6 +242,8 @@ urlpatterns = [
         views.DomainDeleteUserView.as_view(http_method_names=["post"]),
         name="domain-user-delete",
     ),
+    path("get-domains-json/", get_domains_json, name="get_domains_json"),
+    path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error
@@ -206,6 +257,7 @@ urlpatterns = [
 # Rather than dealing with that, we keep everything centralized in one location.
 # This way, we can share a view for djangooidc, and other pages as we see fit.
 handler500 = "registrar.views.utility.error_views.custom_500_error_view"
+handler403 = "registrar.views.utility.error_views.custom_403_error_view"
 
 # we normally would guard these with `if settings.DEBUG` but tests run with
 # DEBUG = False even when these apps have been loaded because settings.DEBUG

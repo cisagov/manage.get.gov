@@ -2,6 +2,7 @@ import logging
 from django import template
 import re
 from registrar.models.domain_request import DomainRequest
+from phonenumber_field.phonenumber import PhoneNumber
 
 register = template.Library()
 logger = logging.getLogger(__name__)
@@ -67,3 +68,94 @@ def get_organization_long_name(generic_org_type):
 @register.filter(name="has_permission")
 def has_permission(user, permission):
     return user.has_perm(permission)
+
+
+@register.filter
+def get_region(state):
+    if state and isinstance(state, str):
+        regions = {
+            "CT": 1,
+            "ME": 1,
+            "MA": 1,
+            "NH": 1,
+            "RI": 1,
+            "VT": 1,
+            "NJ": 2,
+            "NY": 2,
+            "PR": 2,
+            "VI": 2,
+            "DE": 3,
+            "DC": 3,
+            "MD": 3,
+            "PA": 3,
+            "VA": 3,
+            "WV": 3,
+            "AL": 4,
+            "FL": 4,
+            "GA": 4,
+            "KY": 4,
+            "MS": 4,
+            "NC": 4,
+            "SC": 4,
+            "TN": 4,
+            "IL": 5,
+            "IN": 5,
+            "MI": 5,
+            "MN": 5,
+            "OH": 5,
+            "WI": 5,
+            "AR": 6,
+            "LA": 6,
+            "NM": 6,
+            "OK": 6,
+            "TX": 6,
+            "IA": 7,
+            "KS": 7,
+            "MO": 7,
+            "NE": 7,
+            "CO": 8,
+            "MT": 8,
+            "ND": 8,
+            "SD": 8,
+            "UT": 8,
+            "WY": 8,
+            "AZ": 9,
+            "CA": 9,
+            "HI": 9,
+            "NV": 9,
+            "GU": 9,
+            "AS": 9,
+            "MP": 9,
+            "AK": 10,
+            "ID": 10,
+            "OR": 10,
+            "WA": 10,
+        }
+        return regions.get(state.upper(), "N/A")
+    else:
+        return None
+
+
+@register.filter
+def format_phone(value):
+    """Converts a phonenumber to a national format"""
+    if value:
+        phone_number = value
+        if isinstance(value, str):
+            phone_number = PhoneNumber.from_string(value)
+        return phone_number.as_national
+    return value
+
+
+@register.filter
+def in_path(url, path):
+    return url in path
+
+
+@register.filter(name="and")
+def and_filter(value, arg):
+    """
+    Implements logical AND operation in templates.
+    Usage: {{ value|and:arg }}
+    """
+    return bool(value and arg)

@@ -1,4 +1,5 @@
 @use "uswds-core" as *;
+@use "cisa_colors" as *;
 
 .usa-form .usa-button {
   margin-top: units(3);
@@ -23,6 +24,34 @@
 .usa-textarea {
   @include at-media('tablet') {
     height: units('mobile');
+  }
+}
+
+.usa-form-editable {
+  border-top: 2px #{$dhs-dark-gray-15} solid;
+
+  .bold-usa-label label.usa-label{
+    font-weight: bold;
+  }
+
+  &.bold-usa-label label.usa-label{
+    font-weight: bold;
+  }
+
+  &.usa-form-editable--no-border {
+    border-top: None;
+    margin-top: 0px !important;
+  }
+
+}
+
+.usa-form-editable > .usa-form-group:first-of-type {
+  margin-top: unset;
+}
+
+@media (min-width: 35em) {
+  .usa-form--largest {
+      max-width: 35rem;
   }
 }
 
@@ -52,4 +81,14 @@ legend.float-left-tablet + button.float-right-tablet {
     background-color: var(--body-fg);
     color: var(--close-button-hover-bg);
   }
+}
+
+.read-only-label {
+  font-size: size('body', 'sm');
+  color: color('primary');
+  margin-bottom: units(0.5);
+}
+
+.read-only-value {
+  margin-top: units(0);
 }

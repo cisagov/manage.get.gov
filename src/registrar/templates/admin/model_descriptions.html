@@ -1,0 +1,39 @@
+
+<div class="dja__model-description text-normal">
+    {% if opts.model_name == 'domainrequest' %}
+        {% include "django/admin/includes/descriptions/domain_request_description.html" %}
+    {% elif opts.model_name == 'domaininformation' %}
+        {% include "django/admin/includes/descriptions/domain_information_description.html" %}
+    {% elif opts.model_name == 'domaininvitation' %}
+        {% include "django/admin/includes/descriptions/domain_invitation_description.html" %}
+    {% elif opts.model_name == 'contact' %}
+        {% include "django/admin/includes/descriptions/contact_description.html" %}
+    {% elif opts.model_name == 'logentry' %}
+        {% include "django/admin/includes/descriptions/logentry_description.html" %}
+    {% elif opts.model_name == 'domain'%}
+        {% include "django/admin/includes/descriptions/domain_description.html" %}
+    {% elif opts.model_name == 'draftdomain' %}
+        {% include "django/admin/includes/descriptions/draft_domain_description.html" %}
+    {% elif opts.model_name == 'host' %}
+        {% include "django/admin/includes/descriptions/host_description.html" %}
+    {% elif opts.model_name == 'publiccontact' %}
+        {% include "django/admin/includes/descriptions/public_contact_description.html" %}
+    {% elif opts.model_name == 'transitiondomain' %}
+        {% include "django/admin/includes/descriptions/transition_domain_description.html" %}
+    {% elif opts.model_name == 'userdomainrole' %}
+        {% include "django/admin/includes/descriptions/user_domain_role_description.html" %}
+    {% elif opts.model_name == 'usergroup' %}
+        {% include "django/admin/includes/descriptions/user_group_description.html" %}
+    {% elif opts.model_name == 'user' %}
+        {% include "django/admin/includes/descriptions/user_description.html" %}
+    {% elif opts.model_name == 'verifiedbystaff' %}
+        {% include "django/admin/includes/descriptions/verified_by_staff_description.html" %}
+    {% elif opts.model_name == 'website' %}
+        {% include "django/admin/includes/descriptions/website_description.html" %}
+    {% elif opts.model_name == 'portfolioinvitation' %}
+        {% include "django/admin/includes/descriptions/portfolio_invitation_description.html" %}
+    {% else %}
+        <p>This table does not have a description yet.</p>
+    {% endif %}
+</div>
+<button id="dja-show-more-model-description" class="usa-button usa-button--unstyled text-no-underline margin-top-1" type="button">Show more</button>

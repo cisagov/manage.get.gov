@@ -26,10 +26,12 @@
           >
             <address class="usa-footer__address">
               <div class="usa-footer__contact-info grid-row grid-gap-md">
+                {% if show_manage_your_domains %}
                 <div class="grid-col-auto">
                   <a class="usa-link" rel="noopener noreferrer" href="{% url 'home' %}">Manage your domains</a>
                 </div>
                 <span class=""> | </span>
+                {% endif %}
                 <div class="grid-col-auto">
                    <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'help/' %}">Help </a>
                 </div>
@@ -93,7 +95,7 @@
           </li>
           <li class="usa-identifier__required-links-item">
             <a rel="noopener noreferrer" target="_blank" href="https://www.dhs.gov/accessibility" class="usa-identifier__required-link usa-link usa-link--external"
-              >Accessibility</a
+              >Accessibility statement</a
             >
           </li>
           <li class="usa-identifier__required-links-item">

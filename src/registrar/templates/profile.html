@@ -3,25 +3,101 @@
 {% block title %}
 Edit your User Profile |
 {% endblock title %}
+{% load static url_helpers %}
+
+{# Disable the redirect  #}
+{% block header %}
+    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup %}
+{% endblock %}
 
 {% block content %}
 <main id="main-content" class="grid-container">
-  <form class="usa-form usa-form--large" method="post" enctype="multipart/form-data">
-    <fieldset class="usa-fieldset">
-      <legend class="usa-legend usa-legend--large">Your profile</legend>
-      <p>
-      Required fields are marked with an asterisk (<abbr
-        title="required"
-        class="usa-hint usa-hint--required"
-        >*</abbr>).
-      </p>
-      {% for field in profile_form %}
-      <label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
-      {{ field }}
-      {% endfor %}
-  </fieldset>
-    <button type="submit" class="usa-button usa-button--big">Save Changes</button>
-  </form>
-</main>
+  <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+        <div class="usa-alert__body">
+        {{ message }}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% include "includes/form_errors.html" with form=form %}
+
+    {% if show_back_button %}
+      <a href="{% url form.initial.redirect %}" class="breadcrumb__back">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+        <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+        </svg>
+        <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+          {{ profile_back_button_text }}
+        </p>
+      </a>
+    {% endif %}
+    
+    {% if show_confirmation_modal %}
+        <a
+            href="#toggle-confirmation-modal"
+            class="usa-button display-none show-confirmation-modal"
+            aria-controls="toggle-confirmation-modal"
+            data-open-modal
+            >Open confirmation modal</a>
+        <div
+            class="usa-modal usa-modal--lg is-visible"
+            id="toggle-confirmation-modal"
+            aria-labelledby="Add contact information"
+            aria-describedby="Add contact information"
+            data-force-action
+        >
+            <div class="usa-modal__content">
+                <div class="usa-modal__main">
+                    <h2 class="usa-modal__heading" id="modal-1-heading">
+                        Add contact information
+                    </h2>
+                    <div class="usa-prose">
+                        <p id="modal-1-description">
+                            .Gov domain registrants must maintain accurate contact information in the .gov registrar.
+                            Before you can manage your domain, we need you to add your contact information.
+                        </p>
+                    </div>
+                    <div class="usa-modal__footer">
+                        <ul class="usa-button-group">
+                            <li class="usa-button-group__item">
+                                <button
+                                    type="button"
+                                    class="usa-button padding-105 text-center"
+                                    data-close-modal
+                                >
+                                Add contact information
+                                </button>
+                            </li>     
+                        </ul>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    class="usa-button usa-modal__close"
+                    aria-label="Close this window"
+                    data-close-modal
+                >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                        <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    {% endif %}
+
+   
+
 {% endblock content %}
 
+{% block content_bottom %}
+  {% include "includes/profile_form.html" with form=form %}
+  </div>
+</main>
+{% endblock content_bottom %}
+
+{% block footer %}
+    {% include "includes/footer.html" with show_manage_your_domains=user_finished_setup %}
+{% endblock footer %}

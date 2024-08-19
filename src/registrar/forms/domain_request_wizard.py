@@ -13,9 +13,10 @@ from registrar.forms.utility.wizard_form_helper import (
     BaseYesNoForm,
     BaseDeletableRegistrarForm,
 )
-from registrar.models import Contact, DomainRequest, DraftDomain, Domain
+from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
+from registrar.utility.constants import BranchChoices
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,7 @@ class TribalGovernmentForm(RegistrarForm):
 
 class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
-        choices=DomainRequest.BranchChoices.choices,
+        choices=BranchChoices.choices,
         widget=forms.RadioSelect,
         error_messages={"required": ("Select the part of the federal government your organization is in.")},
     )
@@ -97,13 +98,16 @@ class OrganizationElectionForm(RegistrarForm):
 
 class OrganizationContactForm(RegistrarForm):
     # for federal agencies we also want to know the top-level agency.
-    federal_agency = forms.ChoiceField(
+    excluded_agencies = ["gov Administration", "Non-Federal Agency"]
+    federal_agency = forms.ModelChoiceField(
         label="Federal agency",
         # not required because this field won't be filled out unless
         # it is a federal agency. Use clean to check programatically
         # if it has been filled in when required.
+        # uncomment to see if modelChoiceField can be an arg later
         required=False,
-        choices=[("", "--Select--")] + DomainRequest.AGENCY_CHOICES,
+        queryset=FederalAgency.objects.exclude(agency__in=excluded_agencies),
+        empty_label="--Select--",
     )
     organization_name = forms.CharField(
         label="Organization name",
@@ -179,14 +183,14 @@ class AboutYourOrganizationForm(RegistrarForm):
     )
 
 
-class AuthorizingOfficialForm(RegistrarForm):
-    JOIN = "authorizing_official"
+class SeniorOfficialForm(RegistrarForm):
+    JOIN = "senior_official"
 
     def to_database(self, obj):
         if not self.is_valid():
             return
-        contact = getattr(obj, "authorizing_official", None)
-        if contact is not None and not contact.has_more_than_one_join("authorizing_official"):
+        contact = getattr(obj, "senior_official", None)
+        if contact is not None and not contact.has_more_than_one_join("senior_official"):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
         else:
@@ -194,27 +198,27 @@ class AuthorizingOfficialForm(RegistrarForm):
             # in either case, create a new contact and update it
             contact = Contact()
             super().to_database(contact)
-            obj.authorizing_official = contact
+            obj.senior_official = contact
             obj.save()
 
     @classmethod
     def from_database(cls, obj):
-        contact = getattr(obj, "authorizing_official", None)
+        contact = getattr(obj, "senior_official", None)
         return super().from_database(contact)
 
     first_name = forms.CharField(
         label="First name / given name",
-        error_messages={"required": ("Enter the first name / given name of your authorizing official.")},
+        error_messages={"required": ("Enter the first name / given name of your senior official.")},
     )
     last_name = forms.CharField(
         label="Last name / family name",
-        error_messages={"required": ("Enter the last name / family name of your authorizing official.")},
+        error_messages={"required": ("Enter the last name / family name of your senior official.")},
     )
     title = forms.CharField(
         label="Title or role in your organization",
         error_messages={
             "required": (
-                "Enter the title or role your authorizing official has in your"
+                "Enter the title or role your senior official has in your"
                 " organization (e.g., Chief Information Officer)."
             )
         },
@@ -644,20 +648,27 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
 
 
 class CisaRepresentativeForm(BaseDeletableRegistrarForm):
+    cisa_representative_first_name = forms.CharField(
+        label="First name / given name",
+        error_messages={"required": "Enter the first name / given name of the CISA regional representative."},
+    )
+    cisa_representative_last_name = forms.CharField(
+        label="Last name / family name",
+        error_messages={"required": "Enter the last name / family name of the CISA regional representative."},
+    )
     cisa_representative_email = forms.EmailField(
-        required=True,
+        label="Your representative’s email (optional)",
         max_length=None,
-        label="Your representative’s email",
+        required=False,
+        error_messages={
+            "invalid": ("Enter your representative’s email address in the required format, like name@example.com."),
+        },
         validators=[
             MaxLengthValidator(
                 320,
                 message="Response must be less than 320 characters.",
             )
         ],
-        error_messages={
-            "invalid": ("Enter your email address in the required format, like name@example.com."),
-            "required": ("Enter the email address of your CISA regional representative."),
-        },
     )
 
 

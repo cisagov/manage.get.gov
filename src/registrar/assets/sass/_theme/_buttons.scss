@@ -1,4 +1,5 @@
 @use "uswds-core" as *;
+@use "cisa_colors" as *;
 
 /* Make "placeholder" links visually obvious */
 a[href$="todo"]::after {
@@ -7,11 +8,16 @@ a[href$="todo"]::after {
   content: " [link TBD]";
   font-style: italic;
 }
-  
+
+a.usa-link.usa-link--always-blue {
+  color: #{$dhs-blue};
+}
+
 a.breadcrumb__back {
   display:flex;
   align-items: center;
   margin-bottom: units(2.5);
+  color: #{$dhs-blue};
   &:visited {
     color: color('primary');
   }
@@ -154,4 +160,57 @@ a.usa-button--unstyled:visited {
   @include at-media('tablet') {
     margin-left: units(2);
   }
+}
+
+.input-with-edit-button {
+  svg.usa-icon {
+    width: 1.5em !important;
+    height: 1.5em !important;
+    color: #{$dhs-green};
+    position: absolute;
+  }
+  &.input-with-edit-button__error {
+    svg.usa-icon {
+      color: #{$dhs-red};
+    }
+    div.readonly-field {
+      color: #{$dhs-red};
+    }
+  }
+}
+
+// We need to deviate from some default USWDS styles here
+// in this particular case, so we have to override this.
+.usa-form .usa-button.readonly-edit-button {
+  margin-top: 0px !important;
+  padding-top: 0px !important;
+  svg {
+    width: 1.25em !important;
+    height: 1.25em !important;
+  }
+}
+
+.usa-button--filter {
+  width: auto;
+  // For mobile stacking
+  margin-bottom: units(1);
+  border: solid 1px color('base-light') !important;
+  padding: units(1);
+  color: color('primary-darker') !important;
+  font-weight: font-weight('normal');
+  font-size: size('ui', 'xs');
+  box-shadow: none;
+  &:hover {
+    box-shadow: none;
+  }
+}
+
+.usa-icon.usa-icon--big {
+  margin: 0;
+  height: 1.5em;
+  width: 1.5em;
+}
+
+.margin-right-neg-4px {
+  margin-right: -4px;
 }

@@ -2,12 +2,14 @@
 
 import boto3
 import logging
+import textwrap
 from datetime import datetime
 from django.conf import settings
 from django.template.loader import get_template
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from waffle import flag_is_active
 
 
 logger = logging.getLogger(__name__)
@@ -26,16 +28,27 @@ def send_templated_email(
     bcc_address="",
     context={},
     attachment_file: str = None,
+    wrap_email=False,
 ):
     """Send an email built from a template to one email address.
 
     template_name and subject_template_name are relative to the same template
     context as Django's HTML templates. context gives additional information
     that the template may use.
+
+    Raises EmailSendingError if SES client could not be accessed
     """
-    logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
+
+    if flag_is_active(None, "disable_email_sending") and not settings.IS_PRODUCTION:  # type: ignore
+        message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
+        raise EmailSendingError(message)
+
     template = get_template(template_name)
     email_body = template.render(context=context)
+
+    # Do cleanup on the email body. For emails with custom content.
+    if email_body:
+        email_body.strip().lstrip("\n")
 
     subject_template = get_template(subject_template_name)
     subject = subject_template.render(context=context)
@@ -48,7 +61,9 @@ def send_templated_email(
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             config=settings.BOTO_CONFIG,
         )
+        logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
     except Exception as exc:
+        logger.debug("E-mail unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
 
     destination = {"ToAddresses": [to_address]}
@@ -57,6 +72,11 @@ def send_templated_email(
 
     try:
         if attachment_file is None:
+            # Wrap the email body to a maximum width of 80 characters per line.
+            # Not all email clients support CSS to do this, and our .txt files require parsing.
+            if wrap_email:
+                email_body = wrap_text_and_preserve_paragraphs(email_body, width=80)
+
             ses_client.send_email(
                 FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
                 Destination=destination,
@@ -80,6 +100,26 @@ def send_templated_email(
             )
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
+
+
+def wrap_text_and_preserve_paragraphs(text, width):
+    """
+    Wraps text to `width` preserving newlines; splits on '\n', wraps segments, rejoins with '\n'.
+    Args:
+        text (str): Text to wrap.
+        width (int): Max width per line, default 80.
+
+    Returns:
+        str: Wrapped text with preserved paragraph structure.
+    """
+    # Split text into paragraphs by newlines
+    paragraphs = text.split("\n")
+
+    # Add \n to any line that exceeds our max length
+    wrapped_paragraphs = [textwrap.fill(paragraph, width=width) for paragraph in paragraphs]
+
+    # Join paragraphs with double newlines
+    return "\n".join(wrapped_paragraphs)
 
 
 def send_email_with_attachment(sender, recipient, subject, body, attachment_file, ses_client):

@@ -1,0 +1,92 @@
+{% extends 'includes/profile_form.html' %}
+
+{% load static url_helpers %}
+{% load field_helpers %}
+
+{% block profile_header %}
+<h1>Finish setting up your profile</h1>
+{% endblock profile_header %}
+
+{% block profile_blurb %}
+<p>
+    We <a class="usa-link usa-link--always-blue" href="{% public_site_url 'domains/requirements/#keep-your-contact-information-updated' %}"  target="_blank">require</a> 
+    that you maintain accurate contact information.
+    The details you provide will only be used to support the administration of .gov and won’t be made public. 
+</p>
+
+<h2>What contact information should we use to reach you?</h2>
+<p>
+    Review the details below and update any required information. 
+    Note that editing this information won’t affect your Login.gov account information.
+</p>
+
+{# We use a var called 'remove_margin_top' rather than 'add_margin_top' because this is more useful as a default #}
+{% include "includes/required_fields.html" with remove_margin_top=True %}
+
+{% endblock profile_blurb %}
+
+{% block profile_form %}
+<form id="finish-profile-setup-form" class="usa-form usa-form--largest" method="post" novalidate>
+    {% csrf_token %}
+    <fieldset class="usa-fieldset">
+        <legend class="usa-sr-only">
+            Your contact information
+        </legend>
+
+        <input type="hidden" name="redirect" value="{{ form.initial.redirect }}">
+
+        {% with toggleable_input=True toggleable_label=True group_classes="usa-form-editable usa-form-editable--no-border padding-top-2" %}
+            {% input_with_errors form.full_name %}
+        {% endwith %}
+        
+        <div id="profile-name-group" class="display-none" role="group">
+            {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-2" %}
+                {% input_with_errors form.first_name %}
+            {% endwith %}
+            
+            {% with group_classes="usa-form-editable padding-top-2" %}
+                {% input_with_errors form.middle_name %}
+            {% endwith %}
+            
+            {% with group_classes="usa-form-editable padding-top-2" %}
+                {% input_with_errors form.last_name %}
+            {% endwith %}
+        </div>
+
+        {% with toggleable_input=True toggleable_label=True group_classes="usa-form-editable padding-top-2" %}
+            {% input_with_errors form.title %}
+        {% endwith %}
+
+        {% public_site_url "help/account-management/#email-address" as login_help_url %}
+        {% with toggleable_input=True add_class="display-none" group_classes="usa-form-editable usa-form-editable padding-top-2 bold-usa-label" %}
+
+            {% with link_href=login_help_url %}
+                {% with sublabel_text="We recommend using a Login.gov account that's only connected to your work email address. If you need to change your email, you'll need to make a change to your Login.gov account. Get help with updating your email address." %}
+                    {% with link_text="Get help with updating your email address" target_blank=True do_not_show_max_chars=True %}
+                        {% input_with_errors form.email %}
+                    {% endwith %}
+                {% endwith %}
+            {% endwith %}
+        {% endwith %}
+
+        {% with toggleable_input=True toggleable_label=True group_classes="usa-form-editable padding-top-2" %}
+            {% with add_class="usa-input--medium" %}
+                {% input_with_errors form.phone %}
+            {% endwith %}
+        {% endwith %}
+
+    </fieldset>
+    <div>
+
+        <button type="submit" name="user_setup_save_button" class="usa-button ">
+            Save
+        </button>
+        {% if user_finished_setup and going_to_specific_page %}
+            <button type="submit" name="user_setup_submit_button" class="usa-button usa-button--outline">
+                {{redirect_button_text }}
+            </button>
+        {% endif %}
+    </div>
+</form>
+
+{% endblock profile_form %}

@@ -1,0 +1,25 @@
+{% load static field_helpers %}
+
+{% block domain_content %} 
+
+<div
+  class="usa-summary-box"
+  role="region"
+  aria-labelledby="summary-box-key-information"
+>
+  <div class="usa-summary-box__body">
+    <h3 class="usa-summary-box__heading" id="summary-box-key-information">
+      Your contact information
+    </h3>
+    <div class="usa-summary-box__text">
+      <ul>
+        <li>Full name: <b>{{ user.get_formatted_name }}</b></li>
+        <li>Organization email: <b>{{ user.email }}</b></li>
+        <li>Title or role in your organization: <b>{{ user.title }}</b></li>
+        <li>Phone: <b>{{ user.phone.as_national }}</b></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% endblock %} 

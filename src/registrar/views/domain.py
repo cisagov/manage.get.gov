@@ -15,7 +15,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 from django.conf import settings
-
+from registrar.forms.domain import DomainSuborganizationForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -23,8 +23,8 @@ from registrar.models import (
     DomainInvitation,
     User,
     UserDomainRole,
+    PublicContact,
 )
-from registrar.models.public_contact import PublicContact
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
@@ -40,8 +40,8 @@ from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
-    ContactForm,
-    AuthorizingOfficialContactForm,
+    UserForm,
+    SeniorOfficialContactForm,
     DomainOrgNameAddressForm,
     DomainAddUserForm,
     DomainSecurityEmailForm,
@@ -59,7 +59,7 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
-
+from waffle.decorators import waffle_flag
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +170,17 @@ class DomainView(DomainBaseView):
         context["security_email"] = security_email
         return context
 
+    def can_access_domain_via_portfolio(self, pk):
+        """Most views should not allow permission to portfolio users.
+        If particular views allow permissions, they will need to override
+        this function."""
+        if self.request.user.has_domains_portfolio_permission():
+            if Domain.objects.filter(id=pk).exists():
+                domain = Domain.objects.get(id=pk)
+                if domain.domain_info.portfolio == self.request.user.portfolio:
+                    return True
+        return False
+
     def in_editable_state(self, pk):
         """Override in_editable_state from DomainPermission
         Allow detail page to be viewable"""
@@ -220,24 +231,78 @@ class DomainOrgNameAddressView(DomainFormBaseView):
         # superclass has the redirect
         return super().form_valid(form)
 
+    def has_permission(self):
+        """Override for the has_permission class to exclude portfolio users"""
 
-class DomainAuthorizingOfficialView(DomainFormBaseView):
-    """Domain authorizing official editing view."""
+        # Org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return False
+        else:
+            return super().has_permission()
+
+
+class DomainSubOrganizationView(DomainFormBaseView):
+    """Suborganization view"""
 
     model = Domain
-    template_name = "domain_authorizing_official.html"
+    template_name = "domain_suborganization.html"
     context_object_name = "domain"
-    form_class = AuthorizingOfficialContactForm
+    form_class = DomainSuborganizationForm
+
+    def has_permission(self):
+        """Override for the has_permission class to exclude non-portfolio users"""
+
+        # non-org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return super().has_permission()
+        else:
+            return False
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        if self.object and self.object.domain_info and self.object.domain_info.sub_organization:
+            context["suborganization_name"] = self.object.domain_info.sub_organization.name
+        return context
 
     def get_form_kwargs(self, *args, **kwargs):
-        """Add domain_info.authorizing_official instance to make a bound form."""
+        """Add domain_info.organization_name instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.object.domain_info.authorizing_official
+        form_kwargs["instance"] = self.object.domain_info
+        return form_kwargs
+
+    def get_success_url(self):
+        """Redirect to the overview page for the domain."""
+        return reverse("domain-suborganization", kwargs={"pk": self.object.pk})
+
+    def form_valid(self, form):
+        """The form is valid, save the organization name and mailing address."""
+        form.save()
+
+        messages.success(self.request, "The suborganization name for this domain has been updated.")
+
+        # superclass has the redirect
+        return super().form_valid(form)
+
+
+class DomainSeniorOfficialView(DomainFormBaseView):
+    """Domain senior official editing view."""
+
+    model = Domain
+    template_name = "domain_senior_official.html"
+    context_object_name = "domain"
+    form_class = SeniorOfficialContactForm
+
+    def get_form_kwargs(self, *args, **kwargs):
+        """Add domain_info.senior_official instance to make a bound form."""
+        form_kwargs = super().get_form_kwargs(*args, **kwargs)
+        form_kwargs["instance"] = self.object.domain_info.senior_official
 
         domain_info = self.get_domain_info_from_domain()
         invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]
         is_federal_or_tribal = domain_info and (domain_info.generic_org_type in invalid_fields)
-
         form_kwargs["disable_fields"] = is_federal_or_tribal
         return form_kwargs
 
@@ -249,10 +314,10 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
-        return reverse("domain-authorizing-official", kwargs={"pk": self.object.pk})
+        return reverse("domain-senior-official", kwargs={"pk": self.object.pk})
 
     def form_valid(self, form):
-        """The form is valid, save the authorizing official."""
+        """The form is valid, save the senior official."""
 
         # Set the domain information in the form so that it can be accessible
         # to associate a new Contact, if a new Contact is needed
@@ -260,10 +325,20 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
         form.set_domain_info(self.object.domain_info)
         form.save()
 
-        messages.success(self.request, "The authorizing official for this domain has been updated.")
+        messages.success(self.request, "The senior official for this domain has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
+
+    def has_permission(self):
+        """Override for the has_permission class to exclude portfolio users"""
+
+        # Org users shouldn't have access to this page
+        is_org_user = self.request.user.is_org_user(self.request)
+        if self.request.user.portfolio and is_org_user:
+            return False
+        else:
+            return super().has_permission()
 
 
 class DomainDNSView(DomainBaseView):
@@ -566,12 +641,16 @@ class DomainYourContactInformationView(DomainFormBaseView):
     """Domain your contact information editing view."""
 
     template_name = "domain_your_contact_information.html"
-    form_class = ContactForm
+    form_class = UserForm
+
+    @waffle_flag("!profile_feature")  # type: ignore
+    def dispatch(self, request, *args, **kwargs):  # type: ignore
+        return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.request.user.contact
+        form_kwargs["instance"] = self.request.user
         return form_kwargs
 
     def get_success_url(self):
@@ -734,7 +813,10 @@ class DomainAddUserView(DomainFormBaseView):
         does not make a domain information object
         email: string- email to send to
         add_success: bool- default True indicates:
-          adding a success message to the view if the email sending succeeds"""
+        adding a success message to the view if the email sending succeeds
+
+        raises EmailSendingError
+        """
 
         # Set a default email address to send to for staff
         requestor_email = settings.DEFAULT_FROM_EMAIL
@@ -762,33 +844,43 @@ class DomainAddUserView(DomainFormBaseView):
                     "requestor_email": requestor_email,
                 },
             )
-        except EmailSendingError:
-            messages.warning(self.request, "Could not send email invitation.")
+        except EmailSendingError as exc:
             logger.warn(
                 "Could not sent email invitation to %s for domain %s",
                 email,
                 self.object,
                 exc_info=True,
             )
+            raise EmailSendingError("Could not send email invitation.") from exc
         else:
             if add_success:
                 messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
-        invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
-        if not created:
+        # Check to see if an invite has already been sent (NOTE: we do not want to create an invite just yet.)
+        try:
+            invite = DomainInvitation.objects.get(email=email_address, domain=self.object)
             # that invitation already existed
-            messages.warning(
-                self.request,
-                f"{email_address} has already been invited to this domain.",
-            )
-        else:
-            self._send_domain_invitation_email(email=email_address, requestor=requestor)
+            if invite is not None:
+                messages.warning(
+                    self.request,
+                    f"{email_address} has already been invited to this domain.",
+                )
+        except DomainInvitation.DoesNotExist:
+            # Try to send the invitation.  If it succeeds, add it to the DomainInvitation table.
+            try:
+                self._send_domain_invitation_email(email=email_address, requestor=requestor)
+            except EmailSendingError:
+                messages.warning(self.request, "Could not send email invitation.")
+            else:
+                # (NOTE: only create a domainInvitation if the e-mail sends correctly)
+                DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
-        """Add the specified user on this domain."""
+        """Add the specified user on this domain.
+        Throws EmailSendingError."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
         # look up a user with that email
@@ -799,7 +891,22 @@ class DomainAddUserView(DomainFormBaseView):
             return self._make_invitation(requested_email, requestor)
         else:
             # if user already exists then just send an email
-            self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+            try:
+                self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+            except EmailSendingError:
+                logger.warn(
+                    "Could not send email invitation (EmailSendingError)",
+                    self.object,
+                    exc_info=True,
+                )
+                messages.warning(self.request, "Could not send email invitation.")
+            except Exception:
+                logger.warn(
+                    "Could not send email invitation (Other Exception)",
+                    self.object,
+                    exc_info=True,
+                )
+                messages.warning(self.request, "Could not send email invitation.")
 
         try:
             UserDomainRole.objects.create(

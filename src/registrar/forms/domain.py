@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.forms import formset_factory
 from registrar.models import DomainRequest
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
+from registrar.models.suborganization import Suborganization
 from registrar.models.utility.domain_helper import DomainHelper
 from registrar.utility.errors import (
     NameserverError,
@@ -16,7 +17,7 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 
-from ..models import Contact, DomainInformation, Domain
+from ..models import Contact, DomainInformation, Domain, User
 from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
@@ -153,6 +154,42 @@ class DomainNameserverForm(forms.Form):
                 self.add_error("ip", str(e))
 
 
+class DomainSuborganizationForm(forms.ModelForm):
+    """Form for updating the suborganization"""
+
+    sub_organization = forms.ModelChoiceField(
+        queryset=Suborganization.objects.none(),
+        required=False,
+        widget=forms.Select(),
+    )
+
+    class Meta:
+        model = DomainInformation
+        fields = [
+            "sub_organization",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        portfolio = self.instance.portfolio if self.instance else None
+        self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=portfolio)
+
+        # Set initial value
+        if self.instance and self.instance.sub_organization:
+            self.fields["sub_organization"].initial = self.instance.sub_organization
+
+        # Set custom form label
+        self.fields["sub_organization"].label = "Suborganization name"
+
+        # Use the combobox rather than the regular select widget
+        self.fields["sub_organization"].widget.template_name = "django/forms/widgets/combobox.html"
+
+        # Set data-default-value attribute
+        if self.instance and self.instance.sub_organization:
+            self.fields["sub_organization"].widget.attrs["data-default-value"] = self.instance.sub_organization.pk
+
+
 class BaseNameserverFormset(forms.BaseFormSet):
     def clean(self):
         """
@@ -201,6 +238,63 @@ NameserverFormset = formset_factory(
     max_num=13,
     validate_max=True,
 )
+
+
+class UserForm(forms.ModelForm):
+    """Form for updating users."""
+
+    email = forms.EmailField(max_length=None)
+
+    class Meta:
+        model = User
+        fields = ["first_name", "middle_name", "last_name", "title", "email", "phone"]
+        widgets = {
+            "first_name": forms.TextInput,
+            "middle_name": forms.TextInput,
+            "last_name": forms.TextInput,
+            "title": forms.TextInput,
+            "email": forms.EmailInput,
+            "phone": RegionalPhoneNumberWidget,
+        }
+
+    # the database fields have blank=True so ModelForm doesn't create
+    # required fields by default. Use this list in __init__ to mark each
+    # of these fields as required
+    required = ["first_name", "last_name", "title", "email", "phone"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # take off maxlength attribute for the phone number field
+        # which interferes with out input_with_errors template tag
+        self.fields["phone"].widget.attrs.pop("maxlength", None)
+
+        # Define a custom validator for the email field with a custom error message
+        email_max_length_validator = MaxLengthValidator(320, message="Response must be less than 320 characters.")
+        self.fields["email"].validators.append(email_max_length_validator)
+
+        for field_name in self.required:
+            self.fields[field_name].required = True
+
+        # Set custom form label
+        self.fields["middle_name"].label = "Middle name (optional)"
+
+        # Set custom error messages
+        self.fields["first_name"].error_messages = {"required": "Enter your first name / given name."}
+        self.fields["last_name"].error_messages = {"required": "Enter your last name / family name."}
+        self.fields["title"].error_messages = {
+            "required": "Enter your title or role in your organization (e.g., Chief Information Officer)"
+        }
+        self.fields["email"].error_messages = {
+            "required": "Enter your email address in the required format, like name@example.com."
+        }
+        self.fields["phone"].error_messages["required"] = "Enter your phone number."
+        self.domainInfo = None
+
+    def set_domain_info(self, domainInfo):
+        """Set the domain information for the form.
+        The form instance is associated with the contact itself. In order to access the associated
+        domain information object, this needs to be set in the form by the view."""
+        self.domainInfo = domainInfo
 
 
 class ContactForm(forms.ModelForm):
@@ -260,26 +354,30 @@ class ContactForm(forms.ModelForm):
         self.domainInfo = domainInfo
 
 
-class AuthorizingOfficialContactForm(ContactForm):
-    """Form for updating authorizing official contacts."""
+class SeniorOfficialContactForm(ContactForm):
+    """Form for updating senior official contacts."""
 
-    JOIN = "authorizing_official"
+    JOIN = "senior_official"
+    full_name = forms.CharField(label="Full name", required=False)
 
     def __init__(self, disable_fields=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.id:
+            self.fields["full_name"].initial = self.instance.get_formatted_name()
 
         # Overriding bc phone not required in this form
         self.fields["phone"] = forms.IntegerField(required=False)
 
         # Set custom error messages
         self.fields["first_name"].error_messages = {
-            "required": "Enter the first name / given name of your authorizing official."
+            "required": "Enter the first name / given name of your senior official."
         }
         self.fields["last_name"].error_messages = {
-            "required": "Enter the last name / family name of your authorizing official."
+            "required": "Enter the last name / family name of your senior official."
         }
         self.fields["title"].error_messages = {
-            "required": "Enter the title or role your authorizing official has in your \
+            "required": "Enter the title or role your senior official has in your \
             organization (e.g., Chief Information Officer)."
         }
         self.fields["email"].error_messages = {
@@ -289,6 +387,12 @@ class AuthorizingOfficialContactForm(ContactForm):
         # All fields should be disabled if the domain is federal or tribal
         if disable_fields:
             DomainHelper.mass_disable_fields(fields=self.fields, disable_required=True, disable_maxlength=True)
+
+    def clean(self):
+        """Clean override to remove unused fields"""
+        cleaned_data = super().clean()
+        cleaned_data.pop("full_name", None)
+        return cleaned_data
 
     def save(self, commit=True):
         """
@@ -306,21 +410,21 @@ class AuthorizingOfficialContactForm(ContactForm):
         is_federal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
         is_tribal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
 
-        # Get the Contact object from the db for the Authorizing Official
-        db_ao = Contact.objects.get(id=self.instance.id)
+        # Get the Contact object from the db for the Senior Official
+        db_so = Contact.objects.get(id=self.instance.id)
 
         if (is_federal or is_tribal) and self.has_changed():
             # This action should be blocked by the UI, as the text fields are readonly.
             # If they get past this point, we forbid it this way.
             # This could be malicious, so lets reserve information for the backend only.
-            raise ValueError("Authorizing Official cannot be modified for federal or tribal domains.")
-        elif db_ao.has_more_than_one_join("information_authorizing_official"):
-            # Handle the case where the domain information object is available and the AO Contact
+            raise ValueError("Senior Official cannot be modified for federal or tribal domains.")
+        elif db_so.has_more_than_one_join("information_senior_official"):
+            # Handle the case where the domain information object is available and the SO Contact
             # has more than one joined object.
             # In this case, create a new Contact, and update the new Contact with form data.
-            # Then associate with domain information object as the authorizing_official
+            # Then associate with domain information object as the senior_official
             data = dict(self.cleaned_data.items())
-            self.domainInfo.authorizing_official = Contact.objects.create(**data)
+            self.domainInfo.senior_official = Contact.objects.create(**data)
             self.domainInfo.save()
         else:
             # If all checks pass, just save normally
@@ -385,7 +489,6 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             # because for this fields we are creating an individual
             # instance of the Select. For the other fields we use the for loop to set
             # the class's required attribute to true.
-            "federal_agency": forms.TextInput,
             "organization_name": forms.TextInput,
             "address_line1": forms.TextInput,
             "address_line2": forms.TextInput,
@@ -402,7 +505,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
     # the database fields have blank=True so ModelForm doesn't create
     # required fields by default. Use this list in __init__ to mark each
     # of these fields as required
-    required = ["organization_name", "address_line1", "city", "zipcode"]
+    required = ["organization_name", "address_line1", "city", "state_territory", "zipcode"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

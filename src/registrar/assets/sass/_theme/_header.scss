@@ -1,0 +1,121 @@
+@use "uswds-core" as *;
+@use "cisa_colors" as *;
+
+// Define some styles for the .gov header/logo
+.usa-logo button {
+    color: #{$dhs-dark-gray-85};
+    font-weight: 700;
+    font-family: family('sans');
+    font-size: 1.6rem;
+    line-height: 1.1;
+}
+
+.usa-logo button:hover{
+    color: #{$dhs-dark-gray-85};
+}
+
+.usa-header {
+    .usa-logo {
+        @include at-media(desktop) {
+            margin-top: units(2);
+        }
+    }
+    .usa-logo__text {
+        @include typeset('sans', 'xl', 2);
+    }
+    .usa-nav__username {
+        max-width: 208px;
+        min-height: units(2);
+        @include at-media(desktop) {
+            max-width: 500px;
+        }
+    }
+    .padding-y-0 {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+}
+
+.usa-header--basic {
+    .usa-logo__text {
+        color: color('primary-darker');
+    }
+    .usa-nav__username {
+        padding: units(1) units(2);
+        @include at-media(desktop) {
+            padding: units(2);
+        }
+    }
+    .usa-nav__primary {
+        margin-top:units(1);
+    }
+    @include at-media(desktop) {
+        .usa-nav__primary-item:not(:first-child) {
+            position: relative;
+        }
+        .usa-nav__primary-item:not(:first-child)::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 0; /* No width since it's a border */
+            height: 40%;
+            border-left: solid 1px color('base-light');
+            transform: translateY(-50%);
+        }
+    }
+}
+
+.usa-header--extended {
+    @include at-media(desktop) {
+        background-color: color('primary-darker');
+        border-top: solid 1px color('base-light');
+        border-bottom: solid 1px color('base-lighter');
+
+        .usa-logo__text a,
+        .usa-logo__text button,
+        .usa-logo__text button:hover {
+            color: color('white');
+        }
+        .usa-nav {
+            background-color: color('primary-lightest');
+        }
+        .usa-nav__primary-item:last-child {
+            margin-left: auto;
+            .usa-nav-link {
+                margin-right: units(-2);
+            }
+        }
+        .usa-nav__primary {
+            .usa-nav-link,
+            .usa-nav-link:hover,
+            .usa-nav-link:active  {
+                color: color('primary');
+                font-weight: font-weight('normal');
+                font-size: 16px;
+            }
+            .usa-current,
+            .usa-current:hover,
+            .usa-current:active  {
+                font-weight: font-weight('bold');
+            }
+        }
+        .usa-nav__secondary {
+            // I don't know why USWDS has this at 2 rem, which puts it out of alignment
+            right: 3rem;
+            color: color('white');
+            bottom: 4.3rem;
+            .usa-nav-link,
+            .usa-nav-link:hover,
+            .usa-nav-link:active {
+                font-weight: font-weight('bold');
+                color: color('primary-lighter');
+                font-size: 16px;
+            }
+        }
+        > .usa-navbar {
+            // This is a dangerous override to USWDS, necessary because we have a tooltip on the logo
+            overflow: visible;
+        }
+    }
+}

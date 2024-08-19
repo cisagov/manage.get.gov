@@ -23,6 +23,16 @@ class UserFixture:
 
     ADMINS = [
         {
+            "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
+            "first_name": "Aditi",
+            "last_name": "Green",
+        },
+        {
+            "username": "be17c826-e200-4999-9389-2ded48c43691",
+            "first_name": "Matthew",
+            "last_name": "Spence",
+        },
+        {
             "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
             "first_name": "Rachid",
             "last_name": "Mrad",
@@ -106,9 +116,25 @@ class UserFixture:
             "last_name": "Orr",
             "email": "riley+320@truss.works",
         },
+        {
+            "username": "76612d84-66b0-4ae9-9870-81e98b9858b6",
+            "first_name": "Anna",
+            "last_name": "Gingle",
+            "email": "annagingle@truss.works",
+        },
     ]
 
     STAFF = [
+        {
+            "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
+            "first_name": "Aditi-Analyst",
+            "last_name": "Green-Analyst",
+        },
+        {
+            "username": "d6bf296b-fac5-47ff-9c12-f88ccc5c1b99",
+            "first_name": "Matthew-Analyst",
+            "last_name": "Spence-Analyst",
+        },
         {
             "username": "319c490d-453b-43d9-bc4d-7d6cd8ff6844",
             "first_name": "Rachid-Analyst",
@@ -194,14 +220,20 @@ class UserFixture:
             "last_name": "Orr-Analyst",
             "email": "riley+321@truss.works",
         },
+        {
+            "username": "e1e350b1-cfc1-4753-a6cb-3ae6d912f99c",
+            "first_name": "Anna-Analyst",
+            "last_name": "Gingle-Analyst",
+            "email": "annagingle+analyst@truss.works",
+        },
     ]
 
-    def load_users(cls, users, group_name):
+    def load_users(cls, users, group_name, are_superusers=False):
         logger.info(f"Going to load {len(users)} users in group {group_name}")
         for user_data in users:
             try:
                 user, _ = User.objects.get_or_create(username=user_data["username"])
-                user.is_superuser = False
+                user.is_superuser = are_superusers
                 user.first_name = user_data["first_name"]
                 user.last_name = user_data["last_name"]
                 if "email" in user_data:
@@ -229,5 +261,5 @@ class UserFixture:
         # steps now do not need to close/reopen a db connection,
         # instead they share one.
         with transaction.atomic():
-            cls.load_users(cls, cls.ADMINS, "full_access_group")
+            cls.load_users(cls, cls.ADMINS, "full_access_group", are_superusers=True)
             cls.load_users(cls, cls.STAFF, "cisa_analysts_group")

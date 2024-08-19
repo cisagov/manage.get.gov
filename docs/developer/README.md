@@ -291,13 +291,13 @@ We use the [CSS Block Element Modifier (BEM)](https://getbem.com/naming/) naming
 
 ### Upgrading USWDS and other JavaScript packages
 
-Version numbers can be manually controlled in `package.json`. Edit that, if desired.
-
-Now run `docker-compose run node npm update`.
-
-Then run `docker-compose up` to recompile and recopy the assets.
-
-Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
+1. Version numbers can be manually controlled in `package.json`. Edit that, if desired.
+2. Now run `docker-compose run node npm update`.
+3. Then run `docker-compose up` to recompile and recopy the assets, or run `docker-compose updateUswds` if your docker is already up.
+4. Make note of the dotgov changes in uswds-edited.js.
+5. Copy over the newly compiled code from uswds.js into uswds-edited.js.
+6. Put back the dotgov changes you made note of into uswds-edited.js.
+7. Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
 
 ## Finite State Machines
 
@@ -319,33 +319,6 @@ it may help to resync your laptop with time.nist.gov:
 ```
 sudo sntp -sS time.nist.gov
 ```
-
-## Connection pool
-To handle our connection to the registry, we utilize a connection pool to keep a socket open to increase responsiveness. In order to accomplish this, we are utilizing a heavily modified version of the [geventconnpool](https://github.com/rasky/geventconnpool) library.
-
-### Settings
-The config for the connection pool exists inside the `settings.py` file.
-| Name                     | Purpose                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------- |
-| EPP_CONNECTION_POOL_SIZE | Determines the number of concurrent sockets that should exist in the pool.                        |
-| POOL_KEEP_ALIVE          | Determines the interval in which we ping open connections in seconds. Calculated as POOL_KEEP_ALIVE / EPP_CONNECTION_POOL_SIZE |
-| POOL_TIMEOUT             | Determines how long we try to keep a pool alive for, before restarting it.                        |
-
-Consider updating the `POOL_TIMEOUT` or `POOL_KEEP_ALIVE` periods if the pool often restarts. If the pool only restarts after a period of inactivity, update `POOL_KEEP_ALIVE`. If it restarts during the EPP call itself, then `POOL_TIMEOUT` needs to be updated.
-
-### Test if the connection pool is running
-Our connection pool has a built-in `pool_status` object which you can call at anytime to assess the current connection status of the pool. Follow these steps to access it.
-
-1. `cf ssh getgov-{env-name} -i {instance-index}`
-* env-name -> Which environment to target, e.g. `staging`
-* instance-index -> Which instance to target. For instance, `cf ssh getgov-staging -i 0`
-2. `/tmp/lifecycle/shell`
-3. `./manage.py shell`
-4. `from epplibwrapper import CLIENT as registry, commands`
-5. `print(registry.pool_status.connection_success)`
-* Should return true
-
-If you have multiple instances (staging for example), then repeat commands 1-5 for each instance you want to test. 
 
 ## Adding a S3 instance to your sandbox
 This can either be done through the CLI, or through the cloud.gov dashboard. Generally, it is better to do it through the dashboard as it handles app binding for you. 
@@ -379,3 +352,13 @@ cf env getgov-{app name}
 ```
 
 Then, copy the variables under the section labled `s3`.
+
+## Disable email sending (toggling the disable_email_sending flag)
+1. On the app, navigate to `\admin`.
+2. Under models, click `Waffle flags`.
+3. Click the `disable_email_sending` record. This should exist by default, if not - create one with that name.
+4. (Important) Set the field `everyone` to `Yes`. This field overrides all other settings 
+
+## Request Flow FSM Diagram
+
+The [.gov Domain Request & Domain Status Digram](https://miro.com/app/board/uXjVMuqbLOk=/?moveToWidget=3458764594819017396&cot=14) visualizes the domain request flow and resulting domain objects.

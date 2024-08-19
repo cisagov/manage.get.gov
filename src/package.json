@@ -3,11 +3,6 @@
   "version": "1.0.0",
   "description": "========================",
   "main": "index.js",
-  "engines": {
-    "node": "21.7.3",
-    "npm": "10.5.0"
-  },
-  "engineStrict": true,
   "scripts": {
     "pa11y-ci": "pa11y-ci",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -15,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@uswds/uswds": "^3.3.0",
+    "@uswds/uswds": "^3.8.1",
     "pa11y-ci": "^3.0.1",
     "sass": "^1.54.8"
   },

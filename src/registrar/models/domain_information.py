@@ -3,6 +3,8 @@ from django.db import transaction
 
 from registrar.models.utility.domain_helper import DomainHelper
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
+from registrar.utility.constants import BranchChoices
+
 from .domain_request import DomainRequest
 from .utility.time_stamped_model import TimeStampedModel
 
@@ -22,17 +24,22 @@ class DomainInformation(TimeStampedModel):
     the domain request once approved, so copying them that way we can make changes
     after its approved. Most fields here are copied from DomainRequest."""
 
+    class Meta:
+        """Contains meta information about this class"""
+
+        indexes = [
+            models.Index(fields=["domain"]),
+            models.Index(fields=["domain_request"]),
+        ]
+
+        verbose_name_plural = "Domain information"
+
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
 
-    BranchChoices = DomainRequest.BranchChoices
-
-    # TODO for #1975: Delete this after we run the new migration
-    AGENCY_CHOICES = DomainRequest.AGENCY_CHOICES
-
-    updated_federal_agency = models.ForeignKey(
+    federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
         help_text="Associated federal agency",
@@ -48,6 +55,25 @@ class DomainInformation(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="information_created",
         help_text="Person who submitted the domain request",
+    )
+
+    # portfolio
+    portfolio = models.ForeignKey(
+        "registrar.Portfolio",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="information_portfolio",
+        help_text="Portfolio associated with this domain",
+    )
+
+    sub_organization = models.ForeignKey(
+        "registrar.Suborganization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="information_sub_organization",
+        help_text="The suborganization that this domain is included under",
     )
 
     domain_request = models.OneToOneField(
@@ -98,12 +124,6 @@ class DomainInformation(TimeStampedModel):
         blank=True,
     )
 
-    federal_agency = models.CharField(
-        choices=AGENCY_CHOICES,
-        null=True,
-        blank=True,
-    )
-
     federal_type = models.CharField(
         max_length=50,
         choices=BranchChoices.choices,
@@ -120,7 +140,6 @@ class DomainInformation(TimeStampedModel):
     organization_name = models.CharField(
         null=True,
         blank=True,
-        db_index=True,
     )
     address_line1 = models.CharField(
         null=True,
@@ -147,7 +166,6 @@ class DomainInformation(TimeStampedModel):
         max_length=10,
         null=True,
         blank=True,
-        db_index=True,
         verbose_name="zip code",
     )
     urbanization = models.CharField(
@@ -162,11 +180,11 @@ class DomainInformation(TimeStampedModel):
         blank=True,
     )
 
-    authorizing_official = models.ForeignKey(
+    senior_official = models.ForeignKey(
         "registrar.Contact",
         null=True,
         blank=True,
-        related_name="information_authorizing_official",
+        related_name="information_senior_official",
         on_delete=models.PROTECT,
     )
 
@@ -215,11 +233,43 @@ class DomainInformation(TimeStampedModel):
         verbose_name="Additional details",
     )
 
+    # This is a drop-in replacement for a has_anything_else_text() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_anything_else_text = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a anything_else or not",
+    )
+
     cisa_representative_email = models.EmailField(
         null=True,
         blank=True,
-        verbose_name="CISA regional representative",
+        verbose_name="CISA regional representative email",
         max_length=320,
+    )
+
+    cisa_representative_first_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative first name",
+        db_index=True,
+    )
+
+    cisa_representative_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="CISA regional representative last name",
+        db_index=True,
+    )
+
+    # This is a drop-in replacement for an has_cisa_representative() function.
+    # In order to track if the user has clicked the yes/no field (while keeping a none default), we need
+    # a tertiary state. We should not display this in /admin.
+    has_cisa_representative = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Determines if the user has a representative email or not",
     )
 
     is_policy_acknowledged = models.BooleanField(
@@ -241,6 +291,30 @@ class DomainInformation(TimeStampedModel):
                 return f"domain info set up and created by {self.creator}"
         except Exception:
             return ""
+
+    def sync_yes_no_form_fields(self):
+        """Some yes/no forms use a db field to track whether it was checked or not.
+        We handle that here for def save().
+        """
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.cisa_representative_first_name is not None or self.cisa_representative_last_name is not None:
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_last_name != ""
+            )
+
+        # This check is required to ensure that the form doesn't start out checked
+        if self.has_cisa_representative is not None:
+            self.has_cisa_representative = (
+                self.cisa_representative_first_name != "" and self.cisa_representative_first_name is not None
+            ) and (self.cisa_representative_last_name != "" and self.cisa_representative_last_name is not None)
+
+        # This ensures that if we have prefilled data, the form is prepopulated
+        if self.anything_else is not None:
+            self.has_anything_else_text = self.anything_else != ""
+
+        # This check is required to ensure that the form doesn't start out checked.
+        if self.has_anything_else_text is not None:
+            self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 
     def sync_organization_type(self):
         """
@@ -276,6 +350,7 @@ class DomainInformation(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
+        self.sync_yes_no_form_fields()
         self.sync_organization_type()
         super().save(*args, **kwargs)
 
@@ -295,6 +370,10 @@ class DomainInformation(TimeStampedModel):
         # domain_request, if so short circuit the create
         existing_domain_info = cls.objects.filter(domain_request__id=domain_request.id).first()
         if existing_domain_info:
+            logger.info(
+                f"create_from_da() -> Shortcircuting create on {existing_domain_info}. "
+                "This record already exists. No values updated!"
+            )
             return existing_domain_info
 
         # Get the fields that exist on both DomainRequest and DomainInformation
@@ -345,6 +424,3 @@ class DomainInformation(TimeStampedModel):
     def _get_many_to_many_fields():
         """Returns a set of each field.name that has the many to many relation"""
         return {field.name for field in DomainInformation._meta.many_to_many}  # type: ignore
-
-    class Meta:
-        verbose_name_plural = "Domain information"

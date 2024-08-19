@@ -1,0 +1,8 @@
+{% load i18n %}
+{% load admin_urls %}
+
+{% if has_import_permission %}
+  {% if not IS_PRODUCTION %}
+<li><a href='{% url opts|admin_urlname:"import" %}' class="import_link">{% trans "Import" %}</a></li>
+  {% endif %}
+{% endif %}

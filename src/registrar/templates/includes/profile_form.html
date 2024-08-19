@@ -1,0 +1,53 @@
+{% load static url_helpers %}
+{% load field_helpers %}
+
+{% block profile_header %}
+<h1>Your profile</h1>
+{% endblock profile_header %}
+
+{% block profile_blurb %}
+<p>We <a class="usa-link usa-link--always-blue" href="{% public_site_url 'domains/requirements/#keep-your-contact-information-updated' %}" target="_blank">require</a> that you maintain accurate contact information. The details you provide will only be used to support the administration of .gov and won’t be made public.</p>
+
+<h2>Contact information</h2>
+<p>Review the details below and update any required information. Note that editing this information won’t affect your Login.gov account information.</p>
+{% include "includes/required_fields.html" %}
+{% endblock profile_blurb %}
+
+
+{% block profile_form %}
+
+<form class="usa-form usa-form--large" method="post" novalidate>
+    {% csrf_token %}
+
+    {# Include the hidden 'redirect' field #}
+    <input type="hidden" name="redirect" value="{{ form.initial.redirect }}">
+    
+    {% input_with_errors form.first_name %}
+
+    {% input_with_errors form.middle_name %}
+
+    {% input_with_errors form.last_name %}
+
+    {% input_with_errors form.title %}
+
+    {% public_site_url "help/account-management/#email-address" as login_help_url %}
+
+    {% with link_href=login_help_url %}
+      {% with sublabel_text="We recommend using a Login.gov account that's only connected to your work email address. If you need to change your email, you'll need to make a change to your Login.gov account. Get help with updating your email address." %}
+        {% with link_text="Get help with updating your email address" %}
+          {% with target_blank=True %}
+            {% with do_not_show_max_chars=True %}
+              {% input_with_errors form.email %}
+            {% endwith %}
+          {% endwith %}
+        {% endwith %}
+      {% endwith %}
+    {% endwith %}
+
+    {% with add_class="usa-input--medium" %}
+      {% input_with_errors form.phone %}
+    {% endwith %}
+
+    <button type="submit" class="usa-button">Save</button>
+</form>
+{% endblock profile_form %}

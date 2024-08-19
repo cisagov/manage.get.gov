@@ -1,0 +1,16 @@
+<p>
+Domain invitations contain all individuals who have been invited to manage a .gov domain. 
+Invitations are sent via email, and the recipient must log in to the registrar to officially 
+accept and become a domain manager. 
+</p>
+
+<p>
+An “invited” status indicates that the recipient has not logged in to the registrar since the invitation was sent. Deleting an invitation with an "invited" status will prevent the user from signing in.
+A “received” status indicates that the recipient has logged in. Deleting an invitation with a "received" status will not revoke that user's access from the domain. To remove a user who has already signed in, go to <a class="text-underline" href="{% url 'admin:registrar_userdomainrole_changelist' %}">User domain roles</a> and delete the role for the correct  domain/manager combination.
+</p>
+
+<p>
+If an invitation is created in this table, an email will not be sent. 
+To have an email sent, go to the domain in <a class="text-underline" href="{% url 'admin:registrar_domain_changelist' %}">Domains</a>, 
+click the “Manage domain” button, and add a domain manager. 
+</p>

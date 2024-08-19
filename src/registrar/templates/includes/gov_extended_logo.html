@@ -1,0 +1,17 @@
+{# Q: For reviewers -- What should this file be called? #}
+
+<div class="usa-logo display-inline-block" id="extended-logo">
+    <strong class="usa-logo__text" >
+        {% if logo_clickable %}
+            <a href="{% url 'home' %}">.gov Registrar</a>
+        {% else %}
+            <button
+            class="usa-button--unstyled disabled-button usa-tooltip" 
+            data-position="bottom"
+            title="Before you can manage your domains, we need you to add contact information."
+            data-tooltip="true"
+            role="button"
+            >.gov Registrar</button>
+        {% endif %}
+    </strong>    
+</div>

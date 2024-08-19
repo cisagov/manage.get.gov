@@ -22,6 +22,8 @@ from .utility import (
     DomainRequestWizardPermissionView,
 )
 
+from waffle.decorators import flag_is_active, waffle_flag
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +41,7 @@ class Step(StrEnum):
     ORGANIZATION_ELECTION = "organization_election"
     ORGANIZATION_CONTACT = "organization_contact"
     ABOUT_YOUR_ORGANIZATION = "about_your_organization"
-    AUTHORIZING_OFFICIAL = "authorizing_official"
+    SENIOR_OFFICIAL = "senior_official"
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
     PURPOSE = "purpose"
@@ -85,7 +87,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.ORGANIZATION_ELECTION: _("Election office"),
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
         Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
-        Step.AUTHORIZING_OFFICIAL: _("Authorizing official"),
+        Step.SENIOR_OFFICIAL: _("Senior official"),
         Step.CURRENT_SITES: _("Current websites"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
         Step.PURPOSE: _("Purpose of your domain"),
@@ -217,22 +219,22 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             self.storage["domain_request_id"] = kwargs["id"]
             self.storage["step_history"] = self.db_check_for_unlocking_steps()
 
-        # if accessing this class directly, redirect to the first step
-        #     in other words, if `DomainRequestWizard` is called as view
-        #     directly by some redirect or url handler, we'll send users
-        #     either to an acknowledgement page or to the first step in
-        #     the processes (if an edit rather than a new request); subclasses
-        #     will NOT be redirected. The purpose of this is to allow code to
-        #     send users "to the domain request wizard" without needing to
-        #     know which view is first in the list of steps.
+        # if accessing this class directly, redirect to either to an acknowledgement
+        # page or to the first step in the processes (if an edit rather than a new request);
+        # subclasseswill NOT be redirected. The purpose of this is to allow code to
+        # send users "to the domain request wizard" without needing to know which view
+        # is first in the list of steps.
         if self.__class__ == DomainRequestWizard:
             if request.path_info == self.NEW_URL_NAME:
-                return render(request, "domain_request_intro.html")
+                # Clear context so the prop getter won't create a request here.
+                # Creating a request will be handled in the post method for the
+                # intro page.
+                return render(request, "domain_request_intro.html", {})
             else:
                 return self.goto(self.steps.first)
 
-        self.steps.current = current_url
         context = self.get_context_data()
+        self.steps.current = current_url
         context["forms"] = self.get_forms()
 
         # if pending requests exist and user does not have approved domains,
@@ -354,7 +356,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 or self.domain_request.urbanization is not None
             ),
             "about_your_organization": self.domain_request.about_your_organization is not None,
-            "authorizing_official": self.domain_request.authorizing_official is not None,
+            "senior_official": self.domain_request.senior_official is not None,
             "current_sites": (
                 self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
             ),
@@ -366,7 +368,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 or self.domain_request.no_other_contacts_rationale is not None
             ),
             "additional_details": (
-                (self.domain_request.anything_else is not None and self.domain_request.cisa_representative_email)
+                (self.domain_request.anything_else is not None and self.domain_request.has_cisa_representative)
                 or self.domain_request.is_policy_acknowledged is not None
             ),
             "requirements": self.domain_request.is_policy_acknowledged is not None,
@@ -376,23 +378,40 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
-        # Build the submit button that we'll pass to the modal.
-        modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
-        # Concatenate the modal header that we'll pass to the modal.
-        if self.domain_request.requested_domain:
-            modal_heading = "You are about to submit a domain request for " + str(self.domain_request.requested_domain)
-        else:
-            modal_heading = "You are about to submit an incomplete request"
 
-        return {
-            "form_titles": self.TITLES,
-            "steps": self.steps,
-            # Add information about which steps should be unlocked
-            "visited": self.storage.get("step_history", []),
-            "is_federal": self.domain_request.is_federal(),
-            "modal_button": modal_button,
-            "modal_heading": modal_heading,
-        }
+        context_stuff = {}
+        if DomainRequest._form_complete(self.domain_request, self.request):
+            modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
+            context_stuff = {
+                "not_form": False,
+                "form_titles": self.TITLES,
+                "steps": self.steps,
+                "visited": self.storage.get("step_history", []),
+                "is_federal": self.domain_request.is_federal(),
+                "modal_button": modal_button,
+                "modal_heading": "You are about to submit a domain request for "
+                + str(self.domain_request.requested_domain),
+                "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
+                You’ll only be able to withdraw your request.",
+                "review_form_is_complete": True,
+                "user": self.request.user,
+            }
+        else:  # form is not complete
+            modal_button = '<button type="button" class="usa-button" data-close-modal>Return to request</button>'
+            context_stuff = {
+                "not_form": True,
+                "form_titles": self.TITLES,
+                "steps": self.steps,
+                "visited": self.storage.get("step_history", []),
+                "is_federal": self.domain_request.is_federal(),
+                "modal_button": modal_button,
+                "modal_heading": "Your request form is incomplete",
+                "modal_description": 'This request cannot be submitted yet.\
+                Return to the request and visit the steps that are marked as "incomplete."',
+                "review_form_is_complete": False,
+                "user": self.request.user,
+            }
+        return context_stuff
 
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
@@ -403,9 +422,17 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 condition = condition(self)
             if condition:
                 step_list.append(step)
+
+        if flag_is_active(self.request, "profile_feature"):
+            step_list.remove(Step.YOUR_CONTACT)
+
         return step_list
 
     def goto(self, step):
+        if step == "generic_org_type":
+            # We need to avoid creating a new domain request if the user
+            # clicks the back button
+            self.request.session["new_request"] = False
         self.steps.current = step
         return redirect(reverse(f"{self.URL_NAMESPACE}:{step}"))
 
@@ -428,11 +455,17 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
-
+        # If a user hits the new request url directly
+        if "new_request" not in request.session:
+            request.session["new_request"] = True
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
             if request.path_info == self.NEW_URL_NAME:
-                del self.storage
+
+                if self.request.session["new_request"] is True:
+                    # This will trigger the domain_request getter into creating a new DomainRequest
+                    del self.storage
+
             return self.goto(self.steps.first)
 
         # if accessing this class directly, redirect to the first step
@@ -501,9 +534,9 @@ class AboutYourOrganization(DomainRequestWizard):
     forms = [forms.AboutYourOrganizationForm]
 
 
-class AuthorizingOfficial(DomainRequestWizard):
-    template_name = "domain_request_authorizing_official.html"
-    forms = [forms.AuthorizingOfficialForm]
+class SeniorOfficial(DomainRequestWizard):
+    template_name = "domain_request_senior_official.html"
+    forms = [forms.SeniorOfficialForm]
 
     def get_context_data(self):
         context = super().get_context_data()
@@ -536,6 +569,10 @@ class Purpose(DomainRequestWizard):
 class YourContact(DomainRequestWizard):
     template_name = "domain_request_your_contact.html"
     forms = [forms.YourContactForm]
+
+    @waffle_flag("!profile_feature")  # type: ignore
+    def dispatch(self, request, *args, **kwargs):  # type: ignore
+        return super().dispatch(request, *args, **kwargs)
 
 
 class OtherContacts(DomainRequestWizard):
@@ -652,6 +689,8 @@ class Review(DomainRequestWizard):
     forms = []  # type: ignore
 
     def get_context_data(self):
+        if DomainRequest._form_complete(self.domain_request, self.request) is False:
+            logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()
         context["Step"] = Step.__members__
         context["domain_request"] = self.domain_request
@@ -750,26 +789,28 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         contacts_to_delete, duplicates = self._get_orphaned_contacts(domain_request)
 
         # Delete the DomainRequest
-        response = super().post(request, *args, **kwargs)
+        self.object = self.get_object()
+        self.object.delete()
 
-        # Delete orphaned contacts - but only for if they are not associated with a user
-        Contact.objects.filter(id__in=contacts_to_delete, user=None).delete()
+        # Delete orphaned contacts
+        Contact.objects.filter(id__in=contacts_to_delete).delete()
 
         # After a delete occurs, do a second sweep on any returned duplicates.
         # This determines if any of these three fields share a contact, which is used for
-        # the edge case where the same user may be an AO, and a submitter, for example.
+        # the edge case where the same user may be an SO, and a submitter, for example.
         if len(duplicates) > 0:
             duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
-            Contact.objects.filter(id__in=duplicates_to_delete, user=None).delete()
+            Contact.objects.filter(id__in=duplicates_to_delete).delete()
 
-        return response
+        # Return a 200 response with an empty body
+        return HttpResponse(status=200)
 
     def _get_orphaned_contacts(self, domain_request: DomainRequest, check_db=False):
         """
         Collects all orphaned contacts associated with a given DomainRequest object.
 
         An orphaned contact is defined as a contact that is associated with the domain request,
-        but not with any other domain_request. This includes the authorizing official, the submitter,
+        but not with any other domain_request. This includes the senior official, the submitter,
         and any other contacts linked to the domain_request.
 
         Parameters:
@@ -784,19 +825,19 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         contacts_to_delete = []
 
         # Get each contact object on the DomainRequest object
-        ao = domain_request.authorizing_official
+        so = domain_request.senior_official
         submitter = domain_request.submitter
         other_contacts = list(domain_request.other_contacts.all())
         other_contact_ids = domain_request.other_contacts.all().values_list("id", flat=True)
 
         # Check if the desired item still exists in the DB
         if check_db:
-            ao = self._get_contacts_by_id([ao.id]).first() if ao is not None else None
+            so = self._get_contacts_by_id([so.id]).first() if so is not None else None
             submitter = self._get_contacts_by_id([submitter.id]).first() if submitter is not None else None
             other_contacts = self._get_contacts_by_id(other_contact_ids)
 
         # Pair each contact with its db related name for use in checking if it has joins
-        checked_contacts = [(ao, "authorizing_official"), (submitter, "submitted_domain_requests")]
+        checked_contacts = [(so, "senior_official"), (submitter, "submitted_domain_requests")]
         checked_contacts.extend((contact, "contact_domain_requests") for contact in other_contacts)
 
         for contact, related_name in checked_contacts:
