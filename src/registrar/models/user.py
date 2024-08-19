@@ -377,7 +377,9 @@ class User(AbstractUser):
         for invitation in PortfolioInvitation.objects.filter(
             email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
         ):
-            only_single_portfolio = not flag_is_active(None, "multiple_portfolios") and self.last_selected_portfolio is None
+            only_single_portfolio = (
+                not flag_is_active(None, "multiple_portfolios") and self.last_selected_portfolio is None
+            )
             if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
                 try:
                     invitation.retrieve()
@@ -410,6 +412,8 @@ class User(AbstractUser):
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
         if self.is_org_user(request) and self.has_view_all_domains_permission():
-            return DomainInformation.objects.filter(portfolio=self.last_selected_portfolio).values_list("domain_id", flat=True)
+            return DomainInformation.objects.filter(portfolio=self.last_selected_portfolio).values_list(
+                "domain_id", flat=True
+            )
         else:
             return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)

@@ -76,8 +76,9 @@ class UserPortfolioPermission(TimeStampedModel):
 
     def __str__(self):
         return (
-            f"User '{self.user}' on Portfolio '{self.portfolio}' " 
-            f"<Roles: {self.portfolio_roles}>"
+            f"User '{self.user}' on Portfolio '{self.portfolio}' " f"<Roles: {self.portfolio_roles}>"
+            if self.portfolio_roles
+            else ""
         )
 
     def _get_portfolio_permissions(self):
@@ -95,7 +96,7 @@ class UserPortfolioPermission(TimeStampedModel):
             portfolio_permissions.update(self.portfolio_additional_permissions)
 
         return list(portfolio_permissions)
-    
+
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
@@ -103,4 +104,6 @@ class UserPortfolioPermission(TimeStampedModel):
         if not flag_is_active(None, "multiple_portfolios") and self.pk is None:
             existing_permissions = UserPortfolioPermission.objects.filter(user=self.user)
             if existing_permissions.exists():
-                raise ValidationError("Only one portfolio permission is allowed per user when multiple portfolios are disabled.")
+                raise ValidationError(
+                    "Only one portfolio permission is allowed per user when multiple portfolios are disabled."
+                )

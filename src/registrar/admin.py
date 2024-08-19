@@ -118,23 +118,6 @@ class FilteredSelectMultipleArrayWidget(FilteredSelectMultiple):
         return context
 
 
-class UserPortfolioPermissionsForm(forms.ModelForm):
-    class Meta:
-        model = models.UserPortfolioPermission
-        fields = "__all__"
-        field_classes = {"username": UsernameField}
-        widgets = {
-            "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
-            ),
-            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
-                "portfolio_additional_permissions",
-                is_stacked=False,
-                choices=UserPortfolioPermissionChoices.choices,
-            ),
-        }
-
-
 class MyUserAdminForm(UserChangeForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs.
 
@@ -176,6 +159,22 @@ class MyUserAdminForm(UserChangeForm):
                 "Raw passwords are not stored, so they will not display here. "
                 f'You can change the password using <a href="{link}">this form</a>.'
             )
+
+
+class UserPortfolioPermissionsForm(forms.ModelForm):
+    class Meta:
+        model = models.UserPortfolioPermission
+        fields = "__all__"
+        widgets = {
+            "portfolio_roles": FilteredSelectMultipleArrayWidget(
+                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
+            ),
+            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
+                "portfolio_additional_permissions",
+                is_stacked=False,
+                choices=UserPortfolioPermissionChoices.choices,
+            ),
+        }
 
 
 class PortfolioInvitationAdminForm(UserChangeForm):
@@ -1211,8 +1210,10 @@ class UserDomainRoleResource(resources.ModelResource):
     class Meta:
         model = models.UserDomainRole
 
+
 class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     form = UserPortfolioPermissionsForm
+
     class Meta:
         """Contains meta information about this class"""
 
@@ -1227,10 +1228,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         "portfolio",
     ]
 
-    autocomplete_fields = [
-        "user",
-        "portfolio"
-    ]
+    autocomplete_fields = ["user", "portfolio"]
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):

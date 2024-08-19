@@ -1,16 +1,11 @@
 """People are invited by email to administer domains."""
 
 import logging
-
 from django.contrib.auth import get_user_model
 from django.db import models
-
 from django_fsm import FSMField, transition
-from waffle import flag_is_active
-
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices  # type: ignore
-
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 
@@ -90,7 +85,9 @@ class PortfolioInvitation(TimeStampedModel):
             raise RuntimeError("Cannot find the user to retrieve this portfolio invitation.")
 
         # and create a role for that user on this portfolio
-        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=self.portfolio, user=user)
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=self.portfolio, user=user
+        )
         if self.portfolio_roles and len(self.portfolio_roles) > 0:
             user_portfolio_permission.portfolio_roles = self.portfolio_roles
         if self.portfolio_additional_permissions and len(self.portfolio_additional_permissions) > 0:
