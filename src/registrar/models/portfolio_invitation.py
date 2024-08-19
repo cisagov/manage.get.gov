@@ -96,12 +96,3 @@ class PortfolioInvitation(TimeStampedModel):
         if self.portfolio_additional_permissions and len(self.portfolio_additional_permissions) > 0:
             user_portfolio_permission.portfolio_additional_permissions = self.portfolio_additional_permissions
         user_portfolio_permission.save()
-
-        # The multiple_portfolios flag ensures that many portfolios can exist per user.
-        # This is (or will be) exposed as a multiselect, which they can choose from.
-        # Without it, we should just add the user on invitation as they'd have no way to select it.
-        # For now, the caller should ensure that this only occurs when no portfolio is selected.
-        # NOTE: Model enforcement of this occurs elsewhere.
-        if not flag_is_active(None, "multiple_portfolios"):
-            user.last_selected_portfolio = user_portfolio_permission.portfolio
-            user.save()
