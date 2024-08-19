@@ -14,7 +14,6 @@ from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 from .domain_request import DomainRequest
-from django.contrib.postgres.fields import ArrayField
 from waffle.decorators import flag_is_active
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
@@ -378,7 +377,8 @@ class User(AbstractUser):
         for invitation in PortfolioInvitation.objects.filter(
             email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
         ):
-            if self.last_selected_portfolio is None:
+            only_single_portfolio = not flag_is_active(None, "multiple_portfolios") and self.last_selected_portfolio is None
+            if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
                 try:
                     invitation.retrieve()
                     invitation.save()
