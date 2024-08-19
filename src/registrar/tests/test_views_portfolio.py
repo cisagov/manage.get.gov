@@ -97,8 +97,8 @@ class TestPortfolio(WebTest):
             self.assertNotContains(portfolio_page, self.portfolio.organization_name)
 
     @less_console_noise_decorator
-    def test_middleware_redirects_to_portfolio_organization_page(self):
-        """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to portfolio organization page"""
+    def test_middleware_redirects_to_portfolio_no_domains_page(self):
+        """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to the no domains page"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
@@ -110,7 +110,8 @@ class TestPortfolio(WebTest):
             portfolio_page = self.app.get(reverse("home")).follow()
             # Assert that we're on the right page
             self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertContains(portfolio_page, "You aren’t managing any domains")
 
     @less_console_noise_decorator
     def test_middleware_redirects_to_portfolio_domains_page(self):
