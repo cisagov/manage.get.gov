@@ -6,6 +6,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 
 from django_fsm import FSMField, transition
+
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
@@ -87,10 +89,9 @@ class PortfolioInvitation(TimeStampedModel):
             raise RuntimeError("Cannot find the user to retrieve this portfolio invitation.")
 
         # and create a role for that user on this portfolio
-        user_portfolio = user.last_selected_portfolio
-        user_portfolio = self.portfolio
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=self.portfolio, user=user)
         if self.portfolio_roles and len(self.portfolio_roles) > 0:
-            user_portfolio.portfolio_roles = self.portfolio_roles
+            user_portfolio_permission.portfolio_roles = self.portfolio_roles
         if self.portfolio_additional_permissions and len(self.portfolio_additional_permissions) > 0:
-            user_portfolio.portfolio_additional_permissions = self.portfolio_additional_permissions
-        user_portfolio.save()
+            user_portfolio_permission.portfolio_additional_permissions = self.portfolio_additional_permissions
+        user_portfolio_permission.save()
