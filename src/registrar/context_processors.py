@@ -66,7 +66,9 @@ def portfolio_permissions(request):
             return {
                 "has_base_portfolio_permission": request.user.has_base_portfolio_permission(portfolio),
                 "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(portfolio),
-                "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(portfolio),
+                "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(
+                    portfolio
+                ),
                 "has_view_suborganization": request.user.has_view_suborganization(portfolio),
                 "has_edit_suborganization": request.user.has_edit_suborganization(portfolio),
                 "portfolio": portfolio,
@@ -81,7 +83,7 @@ def portfolio_permissions(request):
             "portfolio": None,
             "has_organization_feature_flag": False,
         }
-        
+
     except AttributeError:
         # Handles cases where request.user might not exist
         return {

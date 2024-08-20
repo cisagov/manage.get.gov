@@ -1412,9 +1412,7 @@ class TestUser(TestCase):
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
 
-        UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
         # Create a dummy request
         request = self.factory.get("/")
@@ -1451,7 +1449,9 @@ class TestUser(TestCase):
     @less_console_noise_decorator
     def test_user_with_portfolio_roles_but_no_portfolio(self):
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
 
         # Try to remove the portfolio
         portfolio_permission.portfolio = None

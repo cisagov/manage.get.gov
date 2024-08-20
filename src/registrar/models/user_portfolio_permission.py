@@ -75,11 +75,7 @@ class UserPortfolioPermission(TimeStampedModel):
     )
 
     def __str__(self):
-        return (
-            f"User '{self.user}' on Portfolio '{self.portfolio}' " f"<Roles: {self.roles}>"
-            if self.roles
-            else ""
-        )
+        return f"User '{self.user}' on Portfolio '{self.portfolio}' " f"<Roles: {self.roles}>" if self.roles else ""
 
     def _get_portfolio_permissions(self):
         """
@@ -107,7 +103,7 @@ class UserPortfolioPermission(TimeStampedModel):
                 raise ValidationError(
                     "Only one portfolio permission is allowed per user when multiple portfolios are disabled."
                 )
-        
+
         if self.portfolio is None and self._get_portfolio_permissions():
             raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 

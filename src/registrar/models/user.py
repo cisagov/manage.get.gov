@@ -217,13 +217,13 @@ class User(AbstractUser):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
     def has_domains_portfolio_permission(self, portfolio):
-        return self._has_portfolio_permission(portfolio,
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
+        return self._has_portfolio_permission(
+            portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
     def has_domain_requests_portfolio_permission(self, portfolio):
-        return self._has_portfolio_permission(portfolio,
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+        return self._has_portfolio_permission(
+            portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
 
     def has_view_all_domains_permission(self, portfolio):

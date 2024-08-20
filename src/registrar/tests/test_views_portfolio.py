@@ -54,7 +54,11 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         self.portfolio.refresh_from_db()
 
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO])
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
+        )
 
         so_portfolio_page = self.app.get(reverse("senior-official"))
         # Assert that we're on the right page
@@ -71,7 +75,9 @@ class TestPortfolio(WebTest):
     def test_middleware_does_not_redirect_if_no_permission(self):
         """Test that user with no portfolio permission is not redirected when attempting to access home"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[])
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=[]
+        )
         self.user.portfolio = self.portfolio
         self.user.save()
         self.user.refresh_from_db()
@@ -97,7 +103,11 @@ class TestPortfolio(WebTest):
     def test_middleware_redirects_to_portfolio_organization_page(self):
         """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to portfolio organization page"""
         self.app.set_user(self.user.username)
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO])
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
+        )
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -111,7 +121,14 @@ class TestPortfolio(WebTest):
         """Test that user with a portfolio, VIEW_PORTFOLIO, VIEW_ALL_DOMAINS
         is redirected to portfolio domains page"""
         self.app.set_user(self.user.username)
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS])
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            ],
+        )
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -125,7 +142,9 @@ class TestPortfolio(WebTest):
     def test_portfolio_domains_page_403_when_user_not_have_permission(self):
         """Test that user without proper permission is denied access to portfolio domain view"""
         self.app.set_user(self.user.username)
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[])
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=[]
+        )
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -137,7 +156,9 @@ class TestPortfolio(WebTest):
     def test_portfolio_domain_requests_page_403_when_user_not_have_permission(self):
         """Test that user without proper permission is denied access to portfolio domain view"""
         self.app.set_user(self.user.username)
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[])
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=[]
+        )
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -149,7 +170,9 @@ class TestPortfolio(WebTest):
     def test_portfolio_organization_page_403_when_user_not_have_permission(self):
         """Test that user without proper permission is not allowed access to portfolio organization page"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[])
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=[]
+        )
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -161,7 +184,11 @@ class TestPortfolio(WebTest):
     def test_portfolio_organization_page_read_only(self):
         """Test that user with a portfolio can access the portfolio organization page, read only"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO])
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
+        )
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
         with override_flag("organization_feature", active=True):
@@ -179,7 +206,14 @@ class TestPortfolio(WebTest):
     def test_portfolio_organization_page_edit_access(self):
         """Test that user with a portfolio can access the portfolio organization page, read only"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO, UserPortfolioPermissionChoices.EDIT_PORTFOLIO])
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ],
+        )
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
         with override_flag("organization_feature", active=True):
@@ -202,7 +236,9 @@ class TestPortfolio(WebTest):
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
         ]
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+        )
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -217,7 +253,9 @@ class TestPortfolio(WebTest):
             # removing non-basic portfolio perms, which should remove domains
             # and domain requests from nav
             portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions)
+            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+            )
             self.user.save()
             self.user.refresh_from_db()
 
@@ -234,7 +272,9 @@ class TestPortfolio(WebTest):
         """Test that admin / memmber roles are associated with the right access"""
         self.app.set_user(self.user.username)
         portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=portfolio_roles
+        )
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -269,7 +309,9 @@ class TestPortfolio(WebTest):
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions)
+            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+            )
             page = self.app.get(reverse("organization"))
             self.assertContains(
                 page, "The name of your federal agency will be publicly listed as the domain registrant."
@@ -284,7 +326,9 @@ class TestPortfolio(WebTest):
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions)
+            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+            )
 
             self.portfolio.organization_name = "Hotel California"
             self.portfolio.save()
@@ -302,7 +346,9 @@ class TestPortfolio(WebTest):
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions)
+            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+            )
 
             self.portfolio.address_line1 = "1600 Penn Ave"
             self.portfolio.save()
