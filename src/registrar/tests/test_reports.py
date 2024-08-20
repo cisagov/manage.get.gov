@@ -345,6 +345,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         factory = RequestFactory()
         request = factory.get("/")
         request.user = self.user
+        request.session = {}
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)

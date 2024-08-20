@@ -329,9 +329,8 @@ class TestDomainDetail(TestDomainOverview):
             email="bogus@example.gov",
             phone="8003111234",
             title="test title",
-            last_selected_portfolio=portfolio,
         )
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        UserPortfolioPermission.objects.get_or_create(user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
         domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
         DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
         self.client.force_login(user)
@@ -1572,7 +1571,7 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.refresh_from_db()
 
         # Add portfolio perms to the user object
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.VIEW_PORTFOLIO])
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO])
 
         # Navigate to the domain overview page
         page = self.app.get(reverse("domain", kwargs={"pk": self.domain.id}))

@@ -1149,7 +1149,8 @@ class TestPortfolioInvitations(TestCase):
 
     @less_console_noise_decorator
     def test_retrieval(self):
-        self.assertFalse(self.user.portfolio)
+        portfolio_role_exists = UserPortfolioPermission.objects.filter(user=self.user).exists()
+        self.assertFalse(portfolio_role_exists)
         self.invitation.retrieve()
         self.user.refresh_from_db()
         self.assertEqual(self.user.last_selected_portfolio.organization_name, "Hotel California")
@@ -1363,13 +1364,16 @@ class TestUser(TestCase):
 
         Note: This tests _get_portfolio_permissions as a side effect
         """
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
-        self.user.last_selected_portfolio = portfolio
-        self.user.save()
-        self.user.refresh_from_db()
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+
+        # Create a dummy request
+        request = self.factory.get("/")
+        request.user = self.user
+        request.session = {}
+
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
 
         self.assertFalse(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
@@ -1380,8 +1384,13 @@ class TestUser(TestCase):
         portfolio_permission.refresh_from_db()
         self.user.refresh_from_db()
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        # Create a dummy request
+        request = self.factory.get("/")
+        request.user = self.user
+        request.session = {}
+
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
@@ -1392,18 +1401,28 @@ class TestUser(TestCase):
         portfolio_permission.refresh_from_db()
         self.user.refresh_from_db()
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        # Create a dummy request
+        request = self.factory.get("/")
+        request.user = self.user
+        request.session = {}
+
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
 
-        UserDomainRole.objects.all().get_or_create(
+        UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        # Create a dummy request
+        request = self.factory.get("/")
+        request.user = self.user
+        request.session = {}
+
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
@@ -1431,12 +1450,8 @@ class TestUser(TestCase):
 
     @less_console_noise_decorator
     def test_user_with_portfolio_roles_but_no_portfolio(self):
-        # Create an instance of User with a portfolio role but no portfolio
-        self.user.portfolio = None
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
 
         # Try to remove the portfolio
         portfolio_permission.portfolio = None

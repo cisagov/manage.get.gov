@@ -31,6 +31,7 @@ class TestPortfolio(WebTest):
         )
 
     def tearDown(self):
+        UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         UserDomainRole.objects.all().delete()
         DomainRequest.objects.all().delete()
@@ -85,7 +86,6 @@ class TestPortfolio(WebTest):
     def test_middleware_does_not_redirect_if_no_portfolio(self):
         """Test that user with no assigned portfolio is not redirected when attempting to access home"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO])
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -97,7 +97,7 @@ class TestPortfolio(WebTest):
     def test_middleware_redirects_to_portfolio_organization_page(self):
         """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to portfolio organization page"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO])
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO])
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -111,7 +111,7 @@ class TestPortfolio(WebTest):
         """Test that user with a portfolio, VIEW_PORTFOLIO, VIEW_ALL_DOMAINS
         is redirected to portfolio domains page"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS])
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS])
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -125,7 +125,7 @@ class TestPortfolio(WebTest):
     def test_portfolio_domains_page_403_when_user_not_have_permission(self):
         """Test that user without proper permission is denied access to portfolio domain view"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[])
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[])
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
@@ -137,7 +137,7 @@ class TestPortfolio(WebTest):
     def test_portfolio_domain_requests_page_403_when_user_not_have_permission(self):
         """Test that user without proper permission is denied access to portfolio domain view"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[])
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, additional_permissions=[])
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
             # Follow implicity checks if our redirect is working.
