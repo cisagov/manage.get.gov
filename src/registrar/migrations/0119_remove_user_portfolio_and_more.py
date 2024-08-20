@@ -25,17 +25,6 @@ class Migration(migrations.Migration):
             model_name="user",
             name="portfolio_roles",
         ),
-        migrations.AddField(
-            model_name="user",
-            name="last_selected_portfolio",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name="portfolio_selected_by_users",
-                to="registrar.portfolio",
-            ),
-        ),
         migrations.CreateModel(
             name="UserPortfolioPermission",
             fields=[

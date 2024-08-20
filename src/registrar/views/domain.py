@@ -177,7 +177,7 @@ class DomainView(DomainBaseView):
         if self.request.user.has_domains_portfolio_permission():
             if Domain.objects.filter(id=pk).exists():
                 domain = Domain.objects.get(id=pk)
-                if domain.domain_info.portfolio == self.request.user.last_selected_portfolio:
+                if domain.domain_info.portfolio == self.request.session["portfolio"]:
                     return True
         return False
 
@@ -236,7 +236,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        if self.request.user.last_selected_portfolio and is_org_user:
+        if self.request.session["portfolio"] and is_org_user:
             return False
         else:
             return super().has_permission()
@@ -255,7 +255,7 @@ class DomainSubOrganizationView(DomainFormBaseView):
 
         # non-org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        if self.request.user.last_selected_portfolio and is_org_user:
+        if self.request.session["portfolio"] and is_org_user:
             return super().has_permission()
         else:
             return False
@@ -335,7 +335,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        if self.request.user.last_selected_portfolio and is_org_user:
+        if self.request.session["portfolio"] and is_org_user:
             return False
         else:
             return super().has_permission()

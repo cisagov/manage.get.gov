@@ -9,8 +9,6 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from urllib.parse import parse_qs, urlencode
 
-from waffle import flag_is_active
-
 from djangooidc.oidc import Client
 from djangooidc import exceptions as o_e
 from registrar.models import User
@@ -112,13 +110,6 @@ def login_callback(request):
             # Set the verification type if it doesn't already exist or if its a fixture user
             if not user.verification_type or is_fixture_user:
                 user.set_user_verification_type()
-                user.save()
-            
-            if not flag_is_active(request, "multiple_portfolios"):
-                user.set_default_last_selected_portfolio()
-                user.save()
-            else: 
-                user.last_selected_portfolio = None
                 user.save()
 
             login(request, user)

@@ -125,8 +125,9 @@ class CheckUserProfileMiddleware:
 
 class CheckPortfolioMiddleware:
     """
-    Checks if the current user has a portfolio
-    If they do, redirect them to the portfolio homepage when they navigate to home.
+    this middleware should serve two purposes:
+      1 - set the portfolio in session if appropriate   # views will need the session portfolio
+      2 - if path is home and session portfolio is set, redirect based on permissions of user
     """
 
     def __init__(self, get_response):
@@ -140,20 +141,28 @@ class CheckPortfolioMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         current_path = request.path
 
-        if current_path == self.home and request.user.is_authenticated and request.user.is_org_user(request):
+        if not request.user.is_authenticated:
+            return None
+        
+        # set the portfolio in the session if it is not set
+        if not "portfolio" in request.session or request.session["portfolio"] is None:
+            # if user is a multiple portfolio
+            if flag_is_active(request, "multiple_portfolios"):
+                # NOTE: we will want to change later to have a workflow for selecting
+                # portfolio and another for switching portfolio; for now, select first
+                request.session["portfolio"] = request.user.get_first_portfolio()
+            elif flag_is_active(request, "organization_feature"):            
+                request.session["portfolio"] = request.user.get_first_portfolio()
+            else:
+                request.session["portfolio"] = None
 
-            if request.user.has_base_portfolio_permission():
-                portfolio = request.user.last_selected_portfolio
-
-                # Add the portfolio to the request object
-                request.last_selected_portfolio = portfolio
-
-                if request.user.has_domains_portfolio_permission():
+        if request.session["portfolio"] is not None and current_path == self.home:  
+            if request.user.has_base_portfolio_permission(request.session["portfolio"]):
+                if request.user.has_domains_portfolio_permission(request.session["portfolio"]):
                     portfolio_redirect = reverse("domains")
                 else:
                     # View organization is the lowest access
                     portfolio_redirect = reverse("organization")
-
                 return HttpResponseRedirect(portfolio_redirect)
 
         return None

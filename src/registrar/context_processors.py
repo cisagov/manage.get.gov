@@ -61,27 +61,34 @@ def add_has_profile_feature_flag_to_context(request):
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
     try:
-        if not request.user or not request.user.is_authenticated or not flag_is_active(request, "organization_feature"):
+        if request.session["portfolio"] is not None:
             return {
-                "has_base_portfolio_permission": False,
-                "has_domains_portfolio_permission": False,
-                "has_domain_requests_portfolio_permission": False,
-                "portfolio": None,
-                "has_organization_feature_flag": False,
+                "has_base_portfolio_permission": request.user.has_base_portfolio_permission(request.session["portfolio"]),
+                "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(request.session["portfolio"]),
+                "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(request.session["portfolio"]),
+                "has_view_suborganization": request.user.has_view_suborganization(request.session["portfolio"]),
+                "has_edit_suborganization": request.user.has_edit_suborganization(request.session["portfolio"]),
+                "portfolio": request.session["portfolio"],
+                "has_organization_feature_flag": True,
             }
         return {
-            "has_base_portfolio_permission": request.user.has_base_portfolio_permission(),
-            "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(),
-            "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(),
-            "portfolio": request.user.last_selected_portfolio,
-            "has_organization_feature_flag": True,
+            "has_base_portfolio_permission": False,
+            "has_domains_portfolio_permission": False,
+            "has_domain_requests_portfolio_permission": False,
+            "has_view_suborganization": False,
+            "has_edit_suborganization": False,
+            "portfolio": None,
+            "has_organization_feature_flag": False,
         }
+        
     except AttributeError:
         # Handles cases where request.user might not exist
         return {
             "has_base_portfolio_permission": False,
             "has_domains_portfolio_permission": False,
             "has_domain_requests_portfolio_permission": False,
+            "has_view_suborganization": False,
+            "has_edit_suborganization": False,
             "portfolio": None,
             "has_organization_feature_flag": False,
         }

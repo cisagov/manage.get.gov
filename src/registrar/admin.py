@@ -717,16 +717,11 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "is_superuser",
                     "groups",
                     "user_permissions",
-                    "last_selected_portfolio",
                 )
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
-
-    autocomplete_fields = [
-        "last_selected_portfolio",
-    ]
 
     readonly_fields = ("verification_type",)
 
@@ -747,7 +742,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 "fields": (
                     "is_active",
                     "groups",
-                    "last_selected_portfolio",
                 )
             },
         ),
@@ -802,7 +796,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "Important dates",
         "last_login",
         "date_joined",
-        "last_selected_portfolio",
     ]
 
     # TODO: delete after we merge organization feature

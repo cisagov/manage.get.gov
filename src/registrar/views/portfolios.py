@@ -51,15 +51,14 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
     def get_context_data(self, **kwargs):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
-        context["has_edit_org_portfolio_permission"] = self.request.user.has_edit_org_portfolio_permission()
+        context["has_edit_org_portfolio_permission"] = self.request.user.has_edit_org_portfolio_permission(self.request.session["portfolio"])
         return context
 
     def get_object(self, queryset=None):
-        """Get the portfolio object based on the request user."""
-        portfolio = self.request.user.last_selected_portfolio
-        if portfolio is None:
+        """Get the portfolio object based on the session."""
+        if self.request.session["portfolio"] is None:
             raise Http404("No organization found for this user")
-        return portfolio
+        return self.request.session["portfolio"]
 
     def get_form_kwargs(self):
         """Include the instance in the form kwargs."""
@@ -111,11 +110,10 @@ class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
     context_object_name = "portfolio"
 
     def get_object(self, queryset=None):
-        """Get the portfolio object based on the request user."""
-        portfolio = self.request.user.last_selected_portfolio
-        if portfolio is None:
+        """Get the portfolio object based on the session."""
+        if self.request.session["portfolio"] is None:
             raise Http404("No organization found for this user")
-        return portfolio
+        return self.request.session["portfolio"]
 
     def get_form_kwargs(self):
         """Include the instance in the form kwargs."""
