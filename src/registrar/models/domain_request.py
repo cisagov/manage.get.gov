@@ -821,7 +821,7 @@ class DomainRequest(TimeStampedModel):
         if not self.first_submitted_date:
             self.first_submitted_date = timezone.now().date()
 
-        # Update last_submission_date to today
+        # Update last_submitted_date to today
         self.last_submitted_date = timezone.now().date()
         self.save()
 

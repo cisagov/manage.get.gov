@@ -762,7 +762,7 @@ class HelperFunctions(MockDbForSharedTests):
         with less_console_noise():
             filter_condition = {
                 "status": DomainRequest.DomainRequestStatus.SUBMITTED,
-                "submission_date__lte": self.end_date,
+                "last_submitted_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = DomainRequestExport.get_sliced_requests(filter_condition)
             expected_content = [3, 2, 0, 0, 0, 0, 1, 0, 0, 1]

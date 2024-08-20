@@ -1235,7 +1235,7 @@ class DomainRequestExport(BaseExport):
             "State/territory": model.get("state_territory"),
             "Request purpose": model.get("purpose"),
             "CISA regional representative": model.get("cisa_representative_email"),
-            "Submitted at": model.get("submission_date"),
+            "Submitted at": model.get("last_submitted_date"),
         }
 
         row = [FIELDS.get(column, "") for column in columns]
@@ -1279,8 +1279,8 @@ class DomainRequestGrowth(DomainRequestExport):
         end_date_formatted = format_end_date(end_date)
         return Q(
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
-            submission_date__lte=end_date_formatted,
-            submission_date__gte=start_date_formatted,
+            last_submitted_date__lte=end_date_formatted,
+            last_submitted_date__gte=start_date_formatted,
         )
 
     @classmethod
