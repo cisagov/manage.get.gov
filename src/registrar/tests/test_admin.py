@@ -41,7 +41,6 @@ from registrar.models import (
     TransitionDomain,
     Portfolio,
     Suborganization,
-    UserPortfolioPermission,
 )
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial

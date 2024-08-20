@@ -3,7 +3,6 @@ import logging
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
-from django.forms import ValidationError
 
 from registrar.models import DomainInformation, UserDomainRole
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices

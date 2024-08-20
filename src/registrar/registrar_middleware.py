@@ -143,20 +143,20 @@ class CheckPortfolioMiddleware:
 
         if not request.user.is_authenticated:
             return None
-        
+
         # set the portfolio in the session if it is not set
-        if not "portfolio" in request.session or request.session["portfolio"] is None:
+        if "portfolio" not in request.session or request.session["portfolio"] is None:
             # if user is a multiple portfolio
             if flag_is_active(request, "multiple_portfolios"):
                 # NOTE: we will want to change later to have a workflow for selecting
                 # portfolio and another for switching portfolio; for now, select first
                 request.session["portfolio"] = request.user.get_first_portfolio()
-            elif flag_is_active(request, "organization_feature"):            
+            elif flag_is_active(request, "organization_feature"):
                 request.session["portfolio"] = request.user.get_first_portfolio()
             else:
                 request.session["portfolio"] = None
 
-        if request.session["portfolio"] is not None and current_path == self.home:  
+        if request.session["portfolio"] is not None and current_path == self.home:
             if request.user.has_base_portfolio_permission(request.session["portfolio"]):
                 if request.user.has_domains_portfolio_permission(request.session["portfolio"]):
                     portfolio_redirect = reverse("domains")
