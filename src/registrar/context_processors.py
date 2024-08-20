@@ -61,14 +61,15 @@ def add_has_profile_feature_flag_to_context(request):
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
     try:
-        if request.session["portfolio"] is not None:
+        portfolio = request.session["portfolio"] if "portfolio" in request.session else None
+        if portfolio:
             return {
-                "has_base_portfolio_permission": request.user.has_base_portfolio_permission(request.session["portfolio"]),
-                "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(request.session["portfolio"]),
-                "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(request.session["portfolio"]),
-                "has_view_suborganization": request.user.has_view_suborganization(request.session["portfolio"]),
-                "has_edit_suborganization": request.user.has_edit_suborganization(request.session["portfolio"]),
-                "portfolio": request.session["portfolio"],
+                "has_base_portfolio_permission": request.user.has_base_portfolio_permission(portfolio),
+                "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(portfolio),
+                "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(portfolio),
+                "has_view_suborganization": request.user.has_view_suborganization(portfolio),
+                "has_edit_suborganization": request.user.has_edit_suborganization(portfolio),
+                "portfolio": portfolio,
                 "has_organization_feature_flag": True,
             }
         return {
