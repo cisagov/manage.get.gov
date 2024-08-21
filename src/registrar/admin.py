@@ -9,8 +9,7 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models.domain_group import DomainGroup
-from registrar.models.suborganization import Suborganization
+from registrar.models.domain_information import DomainInformation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
@@ -23,6 +22,7 @@ from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
+from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -39,7 +39,7 @@ from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.admin.widgets import FilteredSelectMultiple
-
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
@@ -2864,15 +2864,111 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 
 class PortfolioAdmin(ListHeaderAdmin):
-
     change_form_template = "django/admin/portfolio_change_form.html"
+    fieldsets = [
+        # created_on is the created_at field, and portfolio_type is f"{organization_type} - {federal_type}"
+        (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_on", "notes"]}),
+        # TODO - uncomment in #2521
+        # ("Portfolio members", {
+        #     "classes": ("collapse", "closed"),
+        #     "fields": ["administrators", "members"]}
+        # ),
+        ("Portfolio domains", {"classes": ("collapse", "closed"), "fields": ["domains", "domain_requests"]}),
+        ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "federal_agency",
+                    "state_territory",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "zipcode",
+                    "urbanization",
+                ]
+            },
+        ),
+        ("Suborganizations", {"fields": ["suborganizations"]}),
+        ("Senior official", {"fields": ["senior_official"]}),
+    ]
+
+    # This is the fieldset display when adding a new model
+    add_fieldsets = [
+        (None, {"fields": ["organization_name", "creator", "notes"]}),
+        ("Type of organization", {"fields": ["organization_type"]}),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "federal_agency",
+                    "state_territory",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "zipcode",
+                    "urbanization",
+                ]
+            },
+        ),
+        ("Senior official", {"fields": ["senior_official"]}),
+    ]
 
     list_display = ("organization_name", "federal_agency", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
     readonly_fields = [
-        "creator",
+        # This is the created_at field
+        "created_on",
+        # Custom fields such as these must be defined as readonly.
+        "federal_type",
+        "domains",
+        "domain_requests",
+        "suborganizations",
+        "portfolio_type",
     ]
+
+    def federal_type(self, obj: models.Portfolio):
+        """Returns the federal_type field"""
+        return BranchChoices.get_branch_label(obj.federal_type) if obj.federal_type else "-"
+
+    federal_type.short_description = "Federal type"  # type: ignore
+
+    def created_on(self, obj: models.Portfolio):
+        """Returns the created_at field, with a different short description"""
+        # Format: Dec 12, 2024
+        return obj.created_at.strftime("%b %d, %Y") if obj.created_at else "-"
+
+    created_on.short_description = "Created on"  # type: ignore
+
+    def portfolio_type(self, obj: models.Portfolio):
+        """Returns the portfolio type, or "-" if the result is empty"""
+        return obj.portfolio_type if obj.portfolio_type else "-"
+
+    portfolio_type.short_description = "Portfolio type"  # type: ignore
+
+    def suborganizations(self, obj: models.Portfolio):
+        """Returns a list of links for each related suborg"""
+        queryset = obj.get_suborganizations()
+        return self.get_field_links_as_list(queryset, "suborganization")
+
+    suborganizations.short_description = "Suborganizations"  # type: ignore
+
+    def domains(self, obj: models.Portfolio):
+        """Returns a list of links for each related domain"""
+        queryset = obj.get_domains()
+        return self.get_field_links_as_list(
+            queryset, "domaininformation", link_info_attribute="get_state_display_of_domain"
+        )
+
+    domains.short_description = "Domains"  # type: ignore
+
+    def domain_requests(self, obj: models.Portfolio):
+        """Returns a list of links for each related domain request"""
+        queryset = obj.get_domain_requests()
+        return self.get_field_links_as_list(queryset, "domainrequest", link_info_attribute="get_status_display")
+
+    domain_requests.short_description = "Domain requests"  # type: ignore
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
@@ -2881,17 +2977,91 @@ class PortfolioAdmin(ListHeaderAdmin):
         "senior_official",
     ]
 
+    def get_field_links_as_list(
+        self, queryset, model_name, attribute_name=None, link_info_attribute=None, seperator=None
+    ):
+        """
+        Generate HTML links for items in a queryset, using a specified attribute for link text.
+
+        Args:
+            queryset: The queryset of items to generate links for.
+            model_name: The model name used to construct the admin change URL.
+            attribute_name: The attribute or method name to use for link text. If None, the item itself is used.
+            link_info_attribute: Appends f"({value_of_attribute})" to the end of the link.
+            separator: The separator to use between links in the resulting HTML.
+            If none, an unordered list is returned.
+
+        Returns:
+            A formatted HTML string with links to the admin change pages for each item.
+        """
+        links = []
+        for item in queryset:
+
+            # This allows you to pass in attribute_name="get_full_name" for instance.
+            if attribute_name:
+                item_display_value = self.value_of_attribute(item, attribute_name)
+            else:
+                item_display_value = item
+
+            if item_display_value:
+                change_url = reverse(f"admin:registrar_{model_name}_change", args=[item.pk])
+
+                link = f'<a href="{change_url}">{escape(item_display_value)}</a>'
+                if link_info_attribute:
+                    link += f" ({self.value_of_attribute(item, link_info_attribute)})"
+
+                if seperator:
+                    links.append(link)
+                else:
+                    links.append(f"<li>{link}</li>")
+
+        # If no seperator is specified, just return an unordered list.
+        if seperator:
+            return format_html(seperator.join(links)) if links else "-"
+        else:
+            links = "".join(links)
+            return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else "-"
+
+    def value_of_attribute(self, obj, attribute_name: str):
+        """Returns the value of getattr if the attribute isn't callable.
+        If it is, execute the underlying function and return that result instead."""
+        value = getattr(obj, attribute_name)
+        if callable(value):
+            value = value()
+        return value
+
+    def get_fieldsets(self, request, obj=None):
+        """Override of the default get_fieldsets definition to add an add_fieldsets view"""
+        # This is the add view if no obj exists
+        if not obj:
+            return self.add_fieldsets
+        return super().get_fieldsets(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 2 conditions that determine which fields are read-only:
+        admin user permissions and the creator's status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+        readonly_fields = list(self.readonly_fields)
+
+        # Check if the creator is restricted
+        if obj and obj.creator.status == models.User.RESTRICTED:
+            # For fields like CharField, IntegerField, etc., the widget used is
+            # straightforward and the readonly_fields list can control their behavior
+            readonly_fields.extend([field.name for field in self.model._meta.fields])
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
+
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups"""
-        obj = self.get_object(request, object_id)
-
-        # ---- Domain Groups
-        domain_groups = DomainGroup.objects.filter(portfolio=obj)
-
-        # ---- Suborganizations
-        suborganizations = Suborganization.objects.filter(portfolio=obj)
-
-        extra_context = {"domain_groups": domain_groups, "suborganizations": suborganizations}
+        extra_context = {"skip_additional_contact_info": True}
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
@@ -2973,11 +3143,31 @@ class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
 
 class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+
     list_display = ["name", "portfolio"]
     autocomplete_fields = [
         "portfolio",
     ]
     search_fields = ["name"]
+
+    change_form_template = "django/admin/suborg_change_form.html"
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Add suborg's related domains and requests to context"""
+        obj = self.get_object(request, object_id)
+
+        # ---- Domain Requests
+        domain_requests = DomainRequest.objects.filter(sub_organization=obj)
+        sort_by = request.GET.get("sort_by", "requested_domain__name")
+        domain_requests = domain_requests.order_by(sort_by)
+
+        # ---- Domains
+        domain_infos = DomainInformation.objects.filter(sub_organization=obj)
+        domain_ids = domain_infos.values_list("domain", flat=True)
+        domains = Domain.objects.filter(id__in=domain_ids).exclude(state=Domain.State.DELETED)
+
+        extra_context = {"domain_requests": domain_requests, "domains": domains}
+        return super().change_view(request, object_id, form_url, extra_context)
 
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
