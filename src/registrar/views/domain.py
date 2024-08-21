@@ -174,7 +174,7 @@ class DomainView(DomainBaseView):
         """Most views should not allow permission to portfolio users.
         If particular views allow permissions, they will need to override
         this function."""
-        portfolio = self.request.session["portfolio"] if "portfolio" in self.request.session else None
+        portfolio = self.request.session.get("portfolio")
         if self.request.user.has_domains_portfolio_permission(portfolio):
             if Domain.objects.filter(id=pk).exists():
                 domain = Domain.objects.get(id=pk)
@@ -237,7 +237,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio = self.request.session["portfolio"] if "portfolio" in self.request.session else None
+        portfolio = self.request.session.get("portfolio")
         if portfolio and is_org_user:
             return False
         else:
@@ -257,7 +257,7 @@ class DomainSubOrganizationView(DomainFormBaseView):
 
         # non-org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio = self.request.session["portfolio"] if "portfolio" in self.request.session else None
+        portfolio = self.request.session.get("portfolio")
         if portfolio and is_org_user:
             return super().has_permission()
         else:
@@ -338,7 +338,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio = self.request.session["portfolio"] if "portfolio" in self.request.session else None
+        portfolio = self.request.session.get("portfolio")
         if portfolio and is_org_user:
             return False
         else:

@@ -61,7 +61,7 @@ def add_has_profile_feature_flag_to_context(request):
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
     try:
-        portfolio = request.session["portfolio"] if "portfolio" in request.session else None
+        portfolio = request.session.get("portfolio")
         if portfolio:
             return {
                 "has_base_portfolio_permission": request.user.has_base_portfolio_permission(portfolio),
