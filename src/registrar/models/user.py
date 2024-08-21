@@ -318,12 +318,12 @@ class User(AbstractUser):
                 self.has_base_portfolio_permission()
                 and self.has_edit_requests()
                 and self.has_domains_portfolio_permission(),
-                ["Member", "Domain requestor", "Domain manager"],
+                ["Domain requestor", "Domain manager"],
             ),
-            (self.has_base_portfolio_permission() and self.has_edit_requests(), ["Member", "Domain requestor"]),
+            (self.has_base_portfolio_permission() and self.has_edit_requests(), ["Domain requestor"]),
             (
                 self.has_base_portfolio_permission() and self.has_domains_portfolio_permission(),
-                ["Member", "Domain manager"],
+                ["Domain manager"],
             ),
             (self.has_base_portfolio_permission(), ["Member"]),
         ]
