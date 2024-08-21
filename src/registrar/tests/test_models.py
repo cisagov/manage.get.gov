@@ -30,7 +30,6 @@ from registrar.utility.constants import BranchChoices
 
 from .common import (
     MockSESClient,
-    get_wsgi_request_object,
     less_console_noise,
     completed_domain_request,
     set_domain_request_investigators,
@@ -1151,7 +1150,9 @@ class TestPortfolioInvitations(TestCase):
 
     @less_console_noise_decorator
     def test_retrieval(self):
-        portfolio_role_exists = UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).exists()
+        portfolio_role_exists = UserPortfolioPermission.objects.filter(
+            user=self.user, portfolio=self.portfolio
+        ).exists()
         self.assertFalse(portfolio_role_exists)
         self.invitation.retrieve()
         self.user.refresh_from_db()
@@ -1172,7 +1173,9 @@ class TestPortfolioInvitations(TestCase):
 
     @less_console_noise_decorator
     def test_retrieve_user_already_member_error(self):
-        portfolio_role_exists = UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).exists()
+        portfolio_role_exists = UserPortfolioPermission.objects.filter(
+            user=self.user, portfolio=self.portfolio
+        ).exists()
         self.assertFalse(portfolio_role_exists)
         portfolio_role, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio)
         self.assertEqual(portfolio_role.portfolio.organization_name, "Hotel California")
@@ -1380,7 +1383,11 @@ class TestUser(TestCase):
         self.assertFalse(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
 
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user, additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS])
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio,
+            user=self.user,
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS],
+        )
 
         # TODO - uncomment this when we just pass request to these functions
         # request = get_wsgi_request_object(self.client, self.user)

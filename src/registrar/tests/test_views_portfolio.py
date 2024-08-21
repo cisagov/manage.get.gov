@@ -285,7 +285,7 @@ class TestPortfolio(WebTest):
 
             # removing non-basic portfolio role, which should remove domains
             # and domain requests from nav
-            portfolio_permission.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+            portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
             portfolio_permission.save()
             portfolio_permission.refresh_from_db()
 

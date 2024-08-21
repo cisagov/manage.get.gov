@@ -434,7 +434,7 @@ class PortfolioDomainsPermission(PortfolioBasePermission):
 
         if not self.request.user.is_authenticated:
             return False
-        
+
         return self.request.user.is_org_user(self.request)
 
 
@@ -450,5 +450,5 @@ class PortfolioDomainRequestsPermission(PortfolioBasePermission):
 
         if not self.request.user.is_authenticated:
             return False
-        
+
         return self.request.user.is_org_user(self.request)

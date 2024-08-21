@@ -34,7 +34,14 @@ import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from django.utils import timezone
 from api.tests.common import less_console_noise_decorator
-from .common import MockDbForSharedTests, MockDbForIndividualTests, MockEppLib, get_wsgi_request_object, less_console_noise, get_time_aware_date
+from .common import (
+    MockDbForSharedTests,
+    MockDbForIndividualTests,
+    MockEppLib,
+    get_wsgi_request_object,
+    less_console_noise,
+    get_time_aware_date,
+)
 from waffle.testutils import override_flag
 
 

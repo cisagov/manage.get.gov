@@ -397,8 +397,6 @@ class User(AbstractUser):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
         portfolio = request.session.get("portfolio")
         if self.is_org_user(request) and self.has_view_all_domains_permission(portfolio):
-            return DomainInformation.objects.filter(portfolio=portfolio).values_list(
-                "domain_id", flat=True
-            )
+            return DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
         else:
             return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)
