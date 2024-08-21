@@ -14,6 +14,7 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .common import create_test_user
 from waffle.testutils import override_flag
+from django.contrib.sessions.middleware import SessionMiddleware
 
 import logging
 
@@ -361,3 +362,47 @@ class TestPortfolio(WebTest):
 
             self.assertContains(success_result_page, "6 Downing st")
             self.assertContains(success_result_page, "London")
+
+    @less_console_noise_decorator
+    def test_portfolio_in_session_when_multiple_portfolios_active(self):
+        """When multiple_portfolios flag is true and user has a portfolio,
+        the portfolio should be set in session."""
+        self.client.force_login(self.user)
+        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=portfolio_roles
+        )
+        with override_flag("organization_feature", active=True), override_flag("multiple_portfolios", active=True):
+            response = self.client.get(reverse("home"))
+            # Ensure that middleware processes the session
+            session_middleware = SessionMiddleware(lambda request: None)
+            session_middleware.process_request(response.wsgi_request)
+            response.wsgi_request.session.save()
+            # Access the session via the request
+            session = response.wsgi_request.session
+            # Check if the 'portfolio' session variable exists
+            assert 'portfolio' in session, "Portfolio session variable should exist."
+            # Check the value of the 'portfolio' session variable
+            assert session['portfolio'] == self.portfolio, "Portfolio session variable has the wrong value."
+
+    @less_console_noise_decorator
+    def test_portfolio_in_session_when_organization_feature_active(self):
+        """When organization_feature flag is true and user has a portfolio,
+        the portfolio should be set in session."""
+        self.client.force_login(self.user)
+        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=portfolio_roles
+        )
+        with override_flag("organization_feature", active=True):
+            response = self.client.get(reverse("home"))
+            # Ensure that middleware processes the session
+            session_middleware = SessionMiddleware(lambda request: None)
+            session_middleware.process_request(response.wsgi_request)
+            response.wsgi_request.session.save()
+            # Access the session via the request
+            session = response.wsgi_request.session
+            # Check if the 'portfolio' session variable exists
+            assert 'portfolio' in session, "Portfolio session variable should exist."
+            # Check the value of the 'portfolio' session variable
+            assert session['portfolio'] == self.portfolio, "Portfolio session variable has the wrong value."
