@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
+from django.http import HttpRequest
 
 from registrar.models import DomainInformation, UserDomainRole
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -358,8 +359,12 @@ class User(AbstractUser):
         for invitation in PortfolioInvitation.objects.filter(
             email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
         ):
+            # need to create a bogus request and assign user to it, in order to pass request
+            # to flag_is_active
+            request = HttpRequest()
+            request.user = self
             only_single_portfolio = (
-                not flag_is_active(None, "multiple_portfolios") and self.get_first_portfolio() is None
+                not flag_is_active(request, "multiple_portfolios") and self.get_first_portfolio() is None
             )
             if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
                 try:
