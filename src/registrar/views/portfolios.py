@@ -4,11 +4,14 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
 from registrar.forms.portfolio import PortfolioOrgAddressForm, PortfolioSeniorOfficialForm
-from registrar.models.portfolio import Portfolio
+from registrar.models import Portfolio, User
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
+    NoPortfolioDomainsPermissionView,
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
@@ -36,6 +39,35 @@ class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
         if self.request.user.is_authenticated:
             request.session["new_request"] = True
         return render(request, "portfolio_requests.html")
+
+
+class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
+    """Some users have access  to the underlying portfolio, but not any domains.
+    This is a custom view which explains that to the user - and denotes who to contact.
+    """
+
+    model = Portfolio
+    template_name = "no_portfolio_domains.html"
+
+    def get(self, request):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        portfolio = self.request.session.get("portfolio")
+        if portfolio:
+            admin_ids = UserPortfolioPermission.objects.filter(
+                portfolio=portfolio,
+                roles__overlap=[
+                    UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                ]
+            ).values_list("user__id", flat=True)
+
+            admin_users = User.objects.filter(id__in=admin_ids)
+            context["portfolio_administrators"] = admin_users
+        return context
 
 
 class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):

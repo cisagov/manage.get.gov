@@ -432,10 +432,11 @@ class PortfolioDomainsPermission(PortfolioBasePermission):
         The user is in self.request.user and the portfolio can be looked
         up from the portfolio's primary key in self.kwargs["pk"]"""
 
-        if not self.request.user.is_authenticated:
+        portfolio = self.request.session.get("portfolio")
+        if not self.request.user.has_domains_portfolio_permission(portfolio):
             return False
 
-        return self.request.user.is_org_user(self.request)
+        return super().has_permission()
 
 
 class PortfolioDomainRequestsPermission(PortfolioBasePermission):
@@ -448,7 +449,8 @@ class PortfolioDomainRequestsPermission(PortfolioBasePermission):
         The user is in self.request.user and the portfolio can be looked
         up from the portfolio's primary key in self.kwargs["pk"]"""
 
-        if not self.request.user.is_authenticated:
+        portfolio = self.request.session.get("portfolio")
+        if not self.request.user.has_domain_requests_portfolio_permission(portfolio):
             return False
 
-        return self.request.user.is_org_user(self.request)
+        return super().has_permission()
