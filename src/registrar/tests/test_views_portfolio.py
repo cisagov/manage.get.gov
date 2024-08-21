@@ -500,19 +500,20 @@ class TestPortfolio(WebTest):
         if they do not have the right permissions.
         """
 
-        # A default organization member should not be able to see any domains
-        self.app.set_user(self.user.username)
         permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
 
-        response = self.app.get(reverse("no-portfolio-domains"))
-        self.assertFalse(self.user.has_domains_portfolio_permission(response.request.get("portfolio")))
+        # A default organization member should not be able to see any domains
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("home"), follow=True)
+
+        self.assertFalse(self.user.has_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "You aren’t managing any domains.")
+        self.assertContains(response, "You aren't managing any domains.")
 
         # Test the domains page - this user should not have access
-        response = self.app.get(reverse("domains"), expect_errors=True)
+        response = self.client.get(reverse("domains"))
         self.assertEqual(response.status_code, 403)
 
         # Ensure that this user can see domains with the right permissions
@@ -521,19 +522,19 @@ class TestPortfolio(WebTest):
         permission.refresh_from_db()
 
         # Test the domains page - this user should have access
-        response = self.app.get(reverse("domains"))
-        self.assertTrue(self.user.has_domains_portfolio_permission(response.request.get("portfolio")))
+        response = self.client.get(reverse("domains"))
+        self.assertTrue(self.user.has_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Domain name")
 
         # Test the managed domains permission
-        permission.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS]
+        permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS]
         permission.save()
         permission.refresh_from_db()
 
         # Test the domains page - this user should have access
-        response = self.app.get(reverse("domains"))
-        self.assertTrue(self.user.has_domains_portfolio_permission(response.request.get("portfolio")))
+        response = self.client.get(reverse("domains"))
+        self.assertTrue(self.user.has_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Domain name")
         permission.delete()
