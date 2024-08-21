@@ -137,6 +137,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             {% endfor %}
             {% endwith %}
         </div>
+    {% elif field.field.name == "display_admins" %}
+        <div class="readonly">{{ field.contents|safe }}</div>
+    {% elif field.field.name == "display_members" %}
+        <div class="readonly">{{ display_members_summary }}</div>
     {% else %}
         <div class="readonly">{{ field.contents }}</div>
     {% endif %}
@@ -240,6 +244,13 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             </details>
         {% endif %}
         {% endwith %}
+    {% elif field.field.name == "display_members" %}
+        <details class="margin-top-1 dja-detail-table" aria-role="button" open>
+            <summary class="padding-1 padding-left-0 dja-details-summary">Details</summary>
+            <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+                {{ field.contents|safe }}
+            </div>
+        </details>
     {% elif field.field.name == "state_territory" %}
         <div class="flex-container margin-top-2">
             <span>

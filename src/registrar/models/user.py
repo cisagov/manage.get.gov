@@ -293,6 +293,49 @@ class User(AbstractUser):
     def has_edit_suborganization(self):
         return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
+    def has_edit_requests(self):
+        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    @property
+    def portfolio_role_summary(self):
+        """Returns a list of roles based on the user's permissions."""
+        roles = []
+
+        # Define the conditions and their corresponding roles
+        conditions_roles = [
+            (self.has_edit_suborganization(), ["Admin"]),
+            (
+                self.has_view_all_domains_permission()
+                and self.has_domain_requests_portfolio_permission()
+                and self.has_edit_requests(),
+                ["View-only admin", "Domain requestor"],
+            ),
+            (
+                self.has_view_all_domains_permission() and self.has_domain_requests_portfolio_permission(),
+                ["View-only admin"],
+            ),
+            (
+                self.has_base_portfolio_permission()
+                and self.has_edit_requests()
+                and self.has_domains_portfolio_permission(),
+                ["Member", "Domain requestor", "Domain manager"],
+            ),
+            (self.has_base_portfolio_permission() and self.has_edit_requests(), ["Member", "Domain requestor"]),
+            (
+                self.has_base_portfolio_permission() and self.has_domains_portfolio_permission(),
+                ["Member", "Domain manager"],
+            ),
+            (self.has_base_portfolio_permission(), ["Member"]),
+        ]
+
+        # Evaluate conditions and add roles
+        for condition, role_list in conditions_roles:
+            if condition:
+                roles.extend(role_list)
+                break
+
+        return roles
+
     @classmethod
     def needs_identity_verification(cls, email, uuid):
         """A method used by our oidc classes to test whether a user needs email/uuid verification

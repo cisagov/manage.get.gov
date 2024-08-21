@@ -1201,6 +1201,61 @@ class TestUser(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
+    @patch.object(User, "has_edit_suborganization", return_value=True)
+    def test_portfolio_role_summary_admin(self, mock_edit_suborganization):
+        # Test if the user is recognized as an Admin
+        self.assertEqual(self.user.portfolio_role_summary, ["Admin"])
+
+    @patch.multiple(
+        User,
+        has_view_all_domains_permission=lambda self: True,
+        has_domain_requests_portfolio_permission=lambda self: True,
+        has_edit_requests=lambda self: True,
+    )
+    def test_portfolio_role_summary_view_only_admin_and_domain_requestor(self):
+        # Test if the user has both 'View-only admin' and 'Domain requestor' roles
+        self.assertEqual(self.user.portfolio_role_summary, ["View-only admin", "Domain requestor"])
+
+    @patch.multiple(
+        User,
+        has_view_all_domains_permission=lambda self: True,
+        has_domain_requests_portfolio_permission=lambda self: True,
+    )
+    def test_portfolio_role_summary_view_only_admin(self):
+        # Test if the user is recognized as a View-only admin
+        self.assertEqual(self.user.portfolio_role_summary, ["View-only admin"])
+
+    @patch.multiple(
+        User,
+        has_base_portfolio_permission=lambda self: True,
+        has_edit_requests=lambda self: True,
+        has_domains_portfolio_permission=lambda self: True,
+    )
+    def test_portfolio_role_summary_member_domain_requestor_domain_manager(self):
+        # Test if the user has 'Member', 'Domain requestor', and 'Domain manager' roles
+        self.assertEqual(self.user.portfolio_role_summary, ["Member", "Domain requestor", "Domain manager"])
+
+    @patch.multiple(User, has_base_portfolio_permission=lambda self: True, has_edit_requests=lambda self: True)
+    def test_portfolio_role_summary_member_domain_requestor(self):
+        # Test if the user has 'Member' and 'Domain requestor' roles
+        self.assertEqual(self.user.portfolio_role_summary, ["Member", "Domain requestor"])
+
+    @patch.multiple(
+        User, has_base_portfolio_permission=lambda self: True, has_domains_portfolio_permission=lambda self: True
+    )
+    def test_portfolio_role_summary_member_domain_manager(self):
+        # Test if the user has 'Member' and 'Domain manager' roles
+        self.assertEqual(self.user.portfolio_role_summary, ["Member", "Domain manager"])
+
+    @patch.multiple(User, has_base_portfolio_permission=lambda self: True)
+    def test_portfolio_role_summary_member(self):
+        # Test if the user is recognized as a Member
+        self.assertEqual(self.user.portfolio_role_summary, ["Member"])
+
+    def test_portfolio_role_summary_empty(self):
+        # Test if the user has no roles
+        self.assertEqual(self.user.portfolio_role_summary, [])
+
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
         """A user's on_each_login callback does not check transition domains.

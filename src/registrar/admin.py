@@ -2867,11 +2867,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     fieldsets = [
         # created_on is the created_at field, and portfolio_type is f"{organization_type} - {federal_type}"
         (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_on", "notes"]}),
-        # TODO - uncomment in #2521
-        # ("Portfolio members", {
-        #     "classes": ("collapse", "closed"),
-        #     "fields": ["administrators", "members"]}
-        # ),
+        ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
         ("Portfolio domains", {"classes": ("collapse", "closed"), "fields": ["domains", "domain_requests"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
@@ -2925,7 +2921,93 @@ class PortfolioAdmin(ListHeaderAdmin):
         "domain_requests",
         "suborganizations",
         "portfolio_type",
+        # Django admin doesn't allow methods to be directly listed in fieldsets. We can
+        # display the custom methods display_admins amd display_members in the admin form if
+        # they are readonly.
+        "display_admins",
+        "display_members",
     ]
+
+    def display_admins(self, obj):
+        """Get joined users who are Admin, unpack and return an HTML block.
+
+        'DJA readonly can't handle querysets, so we need to unpack and return html here.
+        Alternatively, we could return querysets in context but that would limit where this
+        data would display in a custom change form without extensive template customization.
+
+        Will be used in the field_readonly block"""
+        admins = [user for user in obj.user.all() if "Admin" in user.portfolio_role_summary]
+        if not admins:
+            return format_html("<p>No admins found.</p>")
+
+        admin_details = ""
+        for portfolio_admin in admins:
+            change_url = reverse("admin:registrar_user_change", args=[portfolio_admin.pk])
+            admin_details += "<address class='margin-bottom-2 dja-address-contact-list'>"
+            admin_details += f'<a href="{change_url}">{portfolio_admin}</a><br>'
+            admin_details += f"{portfolio_admin.title}<br>"
+            admin_details += f"{portfolio_admin.email}"
+            admin_details += "<div class='admin-icon-group admin-icon-group__clipboard-link'>"
+            admin_details += f"<input aria-hidden='true' class='display-none' value='{portfolio_admin.email}'>"
+            admin_details += (
+                "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon"
+                + "button--clipboard copy-to-clipboard text-no-underline' type='button'>"
+            )
+            admin_details += "<svg class='usa-icon'>"
+            admin_details += "<use aria-hidden='true' xlink:href='/public/img/sprite.svg#content_copy'></use>"
+            admin_details += "</svg>"
+            admin_details += "<span class='padding-left-05'>Copy</span>"
+            admin_details += "</button>"
+            admin_details += "</div><br>"
+            admin_details += f"{portfolio_admin.phone}"
+            admin_details += "</address>"
+        return format_html(admin_details)
+
+    display_admins.short_description = "Administrators"  # type: ignore
+
+    def display_members(self, obj):
+        """Get joined users who have roles/perms that are not Admin, unpack and return an HTML block.
+
+        DJA readonly can't handle querysets, so we need to unpack and return html here.
+        Alternatively, we could return querysets in context but that would limit where this
+        data would display in a custom change form without extensive template customization.
+
+        Will be used in the after_help_text block."""
+        members = [user for user in obj.user.all() if "Admin" not in user.portfolio_role_summary]
+        if not members:
+            return format_html("<p>No members found.</p>")
+
+        member_details = (
+            "<table><thead><tr><th>Name</th><th>Title</th><th>Email</th>"
+            + "<th>Phone</th><th>Roles</th></tr></thead><tbody>"
+        )
+        for member in members:
+            full_name = (
+                f"{member.first_name} {member.middle_name} {member.last_name}"
+                if member.middle_name
+                else f"{member.first_name} {member.last_name}"
+            )
+            member_details += "<tr>"
+            member_details += f"<td>{full_name}</td>"
+            member_details += f"<td>{member.title}</td>"
+            member_details += f"<td>{member.email}</td>"
+            member_details += f"<td>{member.phone}</td>"
+            member_details += "<td>"
+            for role in member.portfolio_role_summary:
+                member_details += f"<span class='usa-tag'>{role}</span> "
+            member_details += "</td></tr>"
+        member_details += "</tbody></table>"
+        return format_html(member_details)
+
+    display_members.short_description = "Members"  # type: ignore
+
+    def display_members_summary(self, obj):
+        """Will be passed as context and used in the field_readonly block."""
+        members = [user for user in obj.user.all() if "Admin" not in user.portfolio_role_summary]
+        if not members:
+            return {}
+
+        return self.get_field_links_as_list(members, "user", separator=", ")
 
     def federal_type(self, obj: models.Portfolio):
         """Returns the federal_type field"""
@@ -2977,7 +3059,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     ]
 
     def get_field_links_as_list(
-        self, queryset, model_name, attribute_name=None, link_info_attribute=None, seperator=None
+        self, queryset, model_name, attribute_name=None, link_info_attribute=None, separator=None
     ):
         """
         Generate HTML links for items in a queryset, using a specified attribute for link text.
@@ -3009,14 +3091,14 @@ class PortfolioAdmin(ListHeaderAdmin):
                 if link_info_attribute:
                     link += f" ({self.value_of_attribute(item, link_info_attribute)})"
 
-                if seperator:
+                if separator:
                     links.append(link)
                 else:
                     links.append(f"<li>{link}</li>")
 
-        # If no seperator is specified, just return an unordered list.
-        if seperator:
-            return format_html(seperator.join(links)) if links else "-"
+        # If no separator is specified, just return an unordered list.
+        if separator:
+            return format_html(separator.join(links)) if links else "-"
         else:
             links = "".join(links)
             return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else "-"
@@ -3059,8 +3141,12 @@ class PortfolioAdmin(ListHeaderAdmin):
         return readonly_fields
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Add related suborganizations and domain groups"""
-        extra_context = {"skip_additional_contact_info": True}
+        """Add related suborganizations and domain groups.
+        Add the summary for the portfolio members field (list of members that link to change_forms)."""
+        obj = self.get_object(request, object_id)
+        extra_context = extra_context or {}
+        extra_context["skip_additional_contact_info"] = True
+        extra_context["display_members_summary"] = self.display_members_summary(obj)
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
