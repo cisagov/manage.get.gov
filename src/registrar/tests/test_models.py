@@ -1459,15 +1459,9 @@ class TestUser(TestCase):
         portfolio_permission.portfolio = None
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
 
-        # Create a new UserPortfolioPermission instance without a portfolio
-        invalid_permission = UserPortfolioPermission(
-            user=self.user,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            portfolio=None  # This should trigger the validation error
-        )
         # Test if the ValidationError is raised with the correct message
         with self.assertRaises(ValidationError) as cm:
-            invalid_permission.clean()
+            portfolio_permission.clean()
 
         self.assertEqual(
             cm.exception.message, "When portfolio roles or additional permissions are assigned, portfolio is required."

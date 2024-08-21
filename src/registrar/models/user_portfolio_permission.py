@@ -97,15 +97,19 @@ class UserPortfolioPermission(TimeStampedModel):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
 
-        if not flag_is_active(None, "multiple_portfolios") and self.pk is None:
+        # Check if a user is set without accessing the related object.
+        has_user = bool(self.user_id)
+        if not flag_is_active(None, "multiple_portfolios") and self.pk is None and has_user:
             existing_permissions = UserPortfolioPermission.objects.filter(user=self.user)
             if existing_permissions.exists():
                 raise ValidationError(
                     "Only one portfolio permission is allowed per user when multiple portfolios are disabled."
                 )
 
-        if self.portfolio is None and self._get_portfolio_permissions():
+        # Check if portfolio is set without accessing the related object.
+        has_portfolio = bool(self.portfolio_id)
+        if not has_portfolio and self._get_portfolio_permissions():
             raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 
-        if self.portfolio is not None and not self._get_portfolio_permissions():
+        if has_portfolio and not self._get_portfolio_permissions():
             raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
