@@ -432,7 +432,7 @@ class PortfolioDomainsPermission(PortfolioBasePermission):
         The user is in self.request.user and the portfolio can be looked
         up from the portfolio's primary key in self.kwargs["pk"]"""
 
-        portfolio = self.request.get("portfolio")
+        portfolio = self.request.session.get("portfolio")
         if not self.request.user.has_domains_portfolio_permission(portfolio):
             return False
 
@@ -449,7 +449,7 @@ class PortfolioDomainRequestsPermission(PortfolioBasePermission):
         The user is in self.request.user and the portfolio can be looked
         up from the portfolio's primary key in self.kwargs["pk"]"""
 
-        portfolio = self.request.get("portfolio")
+        portfolio = self.request.session.get("portfolio")
         if not self.request.user.has_domain_requests_portfolio_permission(portfolio):
             return False
 
