@@ -1747,3 +1747,12 @@ class MockEppLib(TestCase):
 
     def tearDown(self):
         self.mockSendPatch.stop()
+
+
+def get_wsgi_request_object(client, user, url="/"):
+    """Returns client.get(url).wsgi_request for testing functions or classes
+    that need a request object directly passed to them."""
+    client.force_login(user)
+    request = client.get(url).wsgi_request
+    request.user = user
+    return request

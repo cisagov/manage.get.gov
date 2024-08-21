@@ -34,7 +34,7 @@ import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from django.utils import timezone
 from api.tests.common import less_console_noise_decorator
-from .common import MockDbForSharedTests, MockDbForIndividualTests, MockEppLib, less_console_noise, get_time_aware_date
+from .common import MockDbForSharedTests, MockDbForIndividualTests, MockEppLib, get_wsgi_request_object, less_console_noise, get_time_aware_date
 from waffle.testutils import override_flag
 
 
@@ -282,10 +282,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # Create a user and associate it with some domains
         UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
 
-        # Create a request object
-        factory = RequestFactory()
-        request = factory.get("/")
-        request.user = self.user
+        # Make a GET request using self.client to get a request object
+        request = get_wsgi_request_object(client=self.client, user=self.user)
 
         # Create a CSV file in memory
         csv_file = StringIO()
@@ -339,13 +337,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         portfolio_permission.save()
         portfolio_permission.refresh_from_db()
-        self.user.refresh_from_db()
 
-        # Create a request object
-        factory = RequestFactory()
-        request = factory.get("/")
-        request.user = self.user
-        request.session = {}
+        # Make a GET request using self.client to get a request object
+        request = get_wsgi_request_object(client=self.client, user=self.user)
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
@@ -356,19 +350,22 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Test the output for readonly admin
-        portfolio_permission.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
         portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
 
+        # Get the csv content
+        csv_content = self._run_domain_data_type_user_export(request)
         self.assertIn(self.domain_1.name, csv_content)
         self.assertIn(self.domain_3.name, csv_content)
         self.assertNotIn(self.domain_2.name, csv_content)
 
-        # Get the csv content
-        portfolio_permission.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
 
+        # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
-
         self.assertNotIn(self.domain_1.name, csv_content)
         self.assertNotIn(self.domain_3.name, csv_content)
         self.assertIn(self.domain_2.name, csv_content)
