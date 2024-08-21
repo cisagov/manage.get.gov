@@ -509,32 +509,41 @@ function initializeWidgetOnList(list, parentId) {
 (function () {
     // Since this is an iife, these vars will be removed from memory afterwards
     var actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
-    var actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
+    
+    // Placeholder text (for certain "action needed" reasons that do not involve e=mails)
     var placeholderText = document.querySelector("#action-needed-reason-email-placeholder-text")
-    var actionNeededEmailReadonly = document.querySelector("#action-needed-reason-email-readonly");
+
+    // E-mail divs and textarea components
+    var actionNeededEmail = document.querySelector("#id_action_needed_reason_email")
+    var actionNeededEmailReadonly = document.querySelector("#action-needed-reason-email-readonly")
     var actionNeededEmailReadonlyTextarea = document.querySelector("#action-needed-reason-email-readonly-textarea")
+
+    // Edit e-mail button (appears only in readonly view for e-mail text)
     var editEmailButton = document.querySelector("#action-needed-reason-email-edit-button")
 
+    // Edit e-mail modal (and its confirmation button)
     var actionNeededEmailAlreadySentModal = document.querySelector("#email-already-sent-modal")
     var confirmEditEmailButton = document.querySelector("#email-already-sent-modal_continue-editing-button")
 
+    // Headers and footers (which change depending on if the e-mail was sent or not)
     var actionNeededEmailHeader = document.querySelector("#action-needed-email-header")
     var actionNeededEmailHeaderOnSave = document.querySelector("#action-needed-email-header-email-sent")
     var actionNeededEmailFooter = document.querySelector("#action-needed-email-footer")
 
     let emailWasSent = document.getElementById("action-needed-email-sent");
+    let lastSentEmailText = document.getElementById("action-needed-email-last-sent-text");
 
+    // Get the list of e-mails associated with each action-needed dropdown value
     let emailData = document.getElementById('action-needed-emails-data');
     if (!emailData) {
         return;
     }
-
     let actionNeededEmailData = emailData.textContent;
     if(!actionNeededEmailData) {
         return;
     }
-
     let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
+
     const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
     const emailSentSessionVariableName = `actionNeededEmailSent-${domainRequestId}`;
     const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
@@ -544,22 +553,19 @@ function initializeWidgetOnList(list, parentId) {
         // Add a change listener to dom load
         document.addEventListener('DOMContentLoaded', function() {
             let reason = actionNeededReasonDropdown.value;
-            let emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
 
             // Handle the session boolean (to enable/disable editing)
             if (emailWasSent && emailWasSent.value === "True") {
                 // An email was sent out - store that information in a session variable
                 addOrRemoveSessionBoolean(emailSentSessionVariableName, add=true);
             }
-
+            
             // Show an editable email field or a readonly one
-            updateActionNeededEmailDisplay(reason, emailBody)
+            updateActionNeededEmailDisplay(reason)
         });
 
         editEmailButton.addEventListener("click", function() {
-            let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
-
-            if (emailHasBeenSentBefore) {
+            if (checkEmailAlreadySent()) {
                 // Show warning Modal
                 setModalVisibility(actionNeededEmailAlreadySentModal, true)
             }
@@ -590,25 +596,41 @@ function initializeWidgetOnList(list, parentId) {
             if (reason && emailBody) {
                 // Reset the session object on change since change refreshes the email content.
                 if (oldDropdownValue !== actionNeededReasonDropdown.value || oldEmailValue !== actionNeededEmail.value) {
-                    let emailSent = sessionStorage.getItem(emailSentSessionVariableName)
-                    if (emailSent !== null){
-                        addOrRemoveSessionBoolean(emailSentSessionVariableName, add=false)
-                    }
+                    // Replace the email content
+                    actionNeededEmail.value = emailBody;
+                    actionNeededEmailReadonlyTextarea.value = emailBody;
+                    hideEmailAlreadySentView();
                 }
             }
 
             // Show either a preview of the email or some text describing no email will be sent
-            updateActionNeededEmailDisplay(reason, emailBody)
+            updateActionNeededEmailDisplay(reason)
         });
+    }
 
-        const saveButton = document.querySelector('input[name=_save]');
-        // The button does not exist if no fields are editable.
-        if (saveButton) {
-            saveButton.addEventListener('click', function(event) {
-                // Show readonly view with messaging to indicate email was sent
-                showEmailAlreadySentView()
-            });
-        }
+    function checkEmailAlreadySent()
+    {
+        lastEmailSent = lastSentEmailText.value.replace(/\s+/g, '')
+        currentEmailInTextArea = actionNeededEmail.value.replace(/\s+/g, '')
+        console.log("old email value = " + lastEmailSent)
+        console.log("current email value = " + currentEmailInTextArea)
+        return lastEmailSent === currentEmailInTextArea
+    }
+
+    // Shows a readonly preview of the email with updated messaging to indicate this email was sent
+    function showEmailAlreadySentView()
+    {
+        hideElement(actionNeededEmailHeader)
+        showElement(actionNeededEmailHeaderOnSave)
+        actionNeededEmailFooter.innerHTML = "This email has been sent to the creator of this request";
+    }
+
+    // Shows a readonly preview of the email with updated messaging to indicate this email was sent
+    function hideEmailAlreadySentView()
+    {
+        showElement(actionNeededEmailHeader)
+        hideElement(actionNeededEmailHeaderOnSave)
+        actionNeededEmailFooter.innerHTML = "This email will be sent to the creator of this request after saving";
     }
 
     function setModalVisibility(modalToToggle, isVisible) {
@@ -623,15 +645,7 @@ function initializeWidgetOnList(list, parentId) {
 
     // Shows either a preview of the email or some text describing no email will be sent.
     // If the email doesn't exist or if we're of reason "other", display that no email was sent.
-    function updateActionNeededEmailDisplay(reason, emailBody) {
-
-        if (reason && emailBody) {
-            // Replace the email content
-            actionNeededEmail.value = emailBody;
-            actionNeededEmailReadonlyTextarea.value = emailBody;
-        }
-
-        actionNeededEmailFooter.innerHTML = "This email will be sent to the creator of this request after saving";
+    function updateActionNeededEmailDisplay(reason) {
         hideElement(actionNeededEmail.parentElement)
 
         if (reason) {
@@ -642,20 +656,15 @@ function initializeWidgetOnList(list, parentId) {
             else {
                 // Always show readonly view of email to start
                 showEmail(canEdit=false)
+                if(checkEmailAlreadySent())
+                {
+                    showEmailAlreadySentView();
+                }
             }
         } else {
             // Hide email preview and show this text instead
             showPlaceholderText("Select an action needed reason to see email");
         }
-    }
-
-    // Shows a readonly preview of the email with updated messaging to indicate this email was sent
-    function showEmailAlreadySentView()
-    {
-        showEmail(canEdit=false)
-        hideElement(actionNeededEmailHeader)
-        showElement(actionNeededEmailHeaderOnSave)
-        actionNeededEmailFooter.innerHTML = "This email has been sent to the creator of this request";
     }
 
     // Shows either a readonly view (canEdit=false) or editable view (canEdit=true) of the action needed email

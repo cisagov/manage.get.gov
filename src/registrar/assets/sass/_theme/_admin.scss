@@ -66,6 +66,9 @@ html[data-theme="light"] {
     // --object-tools-fg: var(--button-fg);
     // --object-tools-bg: var(--close-button-bg);
     // --object-tools-hover-bg: var(--close-button-hover-bg);
+
+    --summary-box-bg: #f1f1f1;
+    --summary-box-border: #d1d2d2;
 }
 
 // Fold dark theme settings into our main CSS
@@ -104,6 +107,9 @@ html[data-theme="light"] {
   
       --close-button-bg: #333333;
       --close-button-hover-bg: #666666;
+
+      --summary-box-bg:  #121212;
+      --summary-box-border: #666666;
     }
 
     // Dark mode django (bug due to scss cascade) and USWDS tables
@@ -857,10 +863,12 @@ div.dja__model-description{
 }
 
 .usa-summary-box_admin {
-    border-color: #d1d2d2;
-    background-color: #f1f1f1;
-    max-width: fit-content !important;
+    color: var(--body-fg);
+    border-color: var(--summary-box-border);
+    background-color: var(--summary-box-bg);
+    min-width: fit-content;
     padding: .5rem;
+    border-radius: .25rem;
 }
 
 .text-faded {

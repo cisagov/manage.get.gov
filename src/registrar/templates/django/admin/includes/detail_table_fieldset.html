@@ -150,7 +150,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             -
         </div>
         <div>
-            <div id="action-needed-reason-email-readonly" class="display-none usa-summary-box usa-summary-box_admin padding-top-0 margin-top-0">
+            <div id="action-needed-reason-email-readonly" class="display-none usa-summary-box_admin padding-top-0 margin-top-0">
                 <div
                 class="usa-modal"
                 id="email-already-sent-modal"
@@ -216,8 +216,8 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         
                 <div class="flex-container">
                     <div class="margin-top-05">
-                        <p id="action-needed-email-header"><b>Auto-generated email that will be sent to the creator</b></p>
-                        <p class="display-none" id="action-needed-email-header-email-sent">
+                        <p class="{% if action_needed_email_sent %}display-none{% endif %}" id="action-needed-email-header"><b>Auto-generated email that will be sent to the creator</b></p>
+                        <p class="{% if not action_needed_email_sent %}display-none{% endif %}" id="action-needed-email-header-email-sent">
                             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
                                 <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
                             </svg>
@@ -231,16 +231,22 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                             <span>Edit email</span>
                     </button>
                 </div>
-                <textarea cols="40" rows="10" class="vLargeTextField dja-readonly-textarea-container" id="action-needed-reason-email-readonly-textarea" readonly>
-                    {{ field.field.value|linebreaks }}
+                <textarea cols="40" rows="10" class="vLargeTextField" id="action-needed-reason-email-readonly-textarea" readonly>{{ field.field.value|striptags }}
                 </textarea>
             </div>
             <div>
                 {{ field.field }}
                 <input id="action-needed-email-sent" class="display-none" value="{{action_needed_email_sent}}">
+                <input id="action-needed-email-last-sent-text" class="display-none" value="{{original_object.action_needed_reason_email}}">
             </div>
         </div>
-        <div id="action-needed-email-footer" class="help margin-left-0">This email will be sent to the creator of this request after saving</div>
+        <span id="action-needed-email-footer" class="help">
+        {% if not action_needed_email_sent %}
+        This email will be sent to the creator of this request after saving
+        {% else %}
+        This email has been sent to the creator of this request
+        {% endif %}
+        </span>
     </div>
     {% else %}
         {{ field.field }}
