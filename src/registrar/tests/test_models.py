@@ -1187,6 +1187,71 @@ class TestPortfolioInvitations(TestCase):
         self.assertEqual(self.invitation.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
 
 
+class TestUserPortfolioPermission(TestCase):
+    @less_console_noise_decorator
+    def setUp(self):
+        self.user, _ = User.objects.get_or_create(email="mayor@igorville.gov")
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+    
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=True)
+    def test_clean_on_multiple_portfolios_when_flag_active(self):
+        """Ensures that a user can create multiple portfolio permission objects when the flag is enabled"""
+        # Create an instance of User with a portfolio but no roles or additional permissions
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Motel California")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        portfolio_permission_2 = UserPortfolioPermission(
+            portfolio=portfolio_2, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # Clean should pass on both of these objects
+        try:
+            portfolio_permission.clean()
+            portfolio_permission_2.clean()
+        except ValidationError as error:
+            self.fail(f"Raised ValidationError unexpectedly: {error}")
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=False)
+    def test_clean_on_creates_multiple_portfolios(self):
+        """Ensures that a user cannot create multiple portfolio permission objects when the flag is disabled"""
+        # Create an instance of User with a portfolio but no roles or additional permissions
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Motel California")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        portfolio_permission_2 = UserPortfolioPermission(
+            portfolio=portfolio_2, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        
+        # This should work as intended
+        portfolio_permission.clean()
+
+        # Test if the ValidationError is raised with the correct message
+        with self.assertRaises(ValidationError) as cm:
+            portfolio_permission_2.clean()
+        
+        portfolio_permission_2, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
+
+        self.assertEqual(
+            cm.exception.message, "Only one portfolio permission is allowed per user when multiple portfolios are disabled."
+        )
+
+
 class TestUser(TestCase):
     """Test actions that occur on user login,
     test class method that controls how users get validated."""
