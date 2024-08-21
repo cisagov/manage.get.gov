@@ -27,6 +27,8 @@ from registrar.models import (
     PublicContact,
     Domain,
     FederalAgency,
+    UserPortfolioPermission,
+    Portfolio,
 )
 from epplibwrapper import (
     commands,
@@ -791,6 +793,8 @@ class MockDb(TestCase):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         UserDomainRole.objects.all().delete()
+        Portfolio.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
         User.objects.all().delete()
         DomainInvitation.objects.all().delete()
         cls.federal_agency_1.delete()

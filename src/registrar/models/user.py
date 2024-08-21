@@ -385,12 +385,14 @@ class User(AbstractUser):
 
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
-        return has_organization_feature_flag and self.has_base_portfolio_permission(request.session["portfolio"])
+        portfolio = request.session["portfolio"] if "portfolio" in request.session else None
+        return has_organization_feature_flag and self.has_base_portfolio_permission(portfolio)
 
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
-        if self.is_org_user(request) and self.has_view_all_domains_permission(request.session["portfolio"]):
-            return DomainInformation.objects.filter(portfolio=request.session["portfolio"]).values_list(
+        portfolio = request.session["portfolio"] if "portfolio" in request.session else None
+        if self.is_org_user(request) and self.has_view_all_domains_permission(portfolio):
+            return DomainInformation.objects.filter(portfolio=portfolio).values_list(
                 "domain_id", flat=True
             )
         else:

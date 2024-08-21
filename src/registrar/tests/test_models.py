@@ -1143,21 +1143,22 @@ class TestPortfolioInvitations(TestCase):
 
     def tearDown(self):
         super().tearDown()
+        UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
         User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_retrieval(self):
-        portfolio_role_exists = UserPortfolioPermission.objects.filter(user=self.user).exists()
+        portfolio_role_exists = UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).exists()
         self.assertFalse(portfolio_role_exists)
         self.invitation.retrieve()
         self.user.refresh_from_db()
-        self.assertEqual(self.user.last_selected_portfolio.organization_name, "Hotel California")
-        portfolio_role, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio)
-        self.assertEqual(portfolio_role.roles, [self.portfolio_role_base, self.portfolio_role_admin])
+        created_role = UserPortfolioPermission.objects.get(user=self.user, portfolio=self.portfolio)
+        self.assertEqual(created_role.portfolio.organization_name, "Hotel California")
+        self.assertEqual(created_role.roles, [self.portfolio_role_base, self.portfolio_role_admin])
         self.assertEqual(
-            portfolio_role.additional_permissions, [self.portfolio_permission_1, self.portfolio_permission_2]
+            created_role.additional_permissions, [self.portfolio_permission_1, self.portfolio_permission_2]
         )
         self.assertEqual(self.invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
 
@@ -1170,15 +1171,15 @@ class TestPortfolioInvitations(TestCase):
 
     @less_console_noise_decorator
     def test_retrieve_user_already_member_error(self):
-        self.assertFalse(self.user.last_selected_portfolio)
-        portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Tokyo Hotel")
-        portfolio_role, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=portfolio2)
-        self.assertEqual(self.user.last_selected_portfolio.organization_name, "Tokyo Hotel")
-        self.assertEqual(portfolio_role.portfolio, portfolio2)
-        self.user.save()
+        portfolio_role_exists = UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).exists()
+        self.assertFalse(portfolio_role_exists)
+        portfolio_role, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio)
+        self.assertEqual(portfolio_role.portfolio.organization_name, "Hotel California")
         self.user.check_portfolio_invitations_on_login()
         self.user.refresh_from_db()
-        self.assertEqual(self.user.portfolio.organization_name, "Tokyo Hotel")
+
+        roles = UserPortfolioPermission.objects.filter(user=self.user)
+        self.assertEqual(len(roles), 1)
         self.assertEqual(self.invitation.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
 
 
@@ -1192,6 +1193,7 @@ class TestUser(TestCase):
         self.domain_name = "igorvilleInTransition.gov"
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.user, _ = User.objects.get_or_create(email=self.email)
+        self.factory = RequestFactory()
 
     def tearDown(self):
         super().tearDown()
