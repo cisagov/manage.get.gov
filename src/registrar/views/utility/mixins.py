@@ -419,8 +419,7 @@ class PortfolioBasePermission(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
-        portfolio = self.request.session.get("portfolio")
-        return self.request.user.has_base_portfolio_permission(portfolio)
+        return self.request.user.is_org_user(self.request)
 
 
 class PortfolioDomainsPermission(PortfolioBasePermission):
@@ -436,8 +435,7 @@ class PortfolioDomainsPermission(PortfolioBasePermission):
         if not self.request.user.is_authenticated:
             return False
         
-        portfolio = self.request.session.get("portfolio")
-        return self.request.user.has_domains_portfolio_permission(portfolio)
+        return self.request.user.is_org_user(self.request)
 
 
 class PortfolioDomainRequestsPermission(PortfolioBasePermission):
@@ -453,5 +451,4 @@ class PortfolioDomainRequestsPermission(PortfolioBasePermission):
         if not self.request.user.is_authenticated:
             return False
         
-        portfolio = self.request.session.get("portfolio")
-        return self.request.user.has_domain_requests_portfolio_permission(portfolio)
+        return self.request.user.is_org_user(self.request)
