@@ -1186,6 +1186,48 @@ class TestPortfolioInvitations(TestCase):
         self.assertEqual(len(roles), 1)
         self.assertEqual(self.invitation.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
 
+    @less_console_noise_decorator
+    def test_retrieve_user_multiple_invitations(self):
+        """Retrieve user portfolio invitations when there are multiple and multiple_options flag true."""
+        # create a 2nd portfolio and a 2nd portfolio invitation to self.user
+        portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Take It Easy")
+        PortfolioInvitation.objects.get_or_create(
+            email=self.email,
+            portfolio=portfolio2,
+            portfolio_roles=[self.portfolio_role_base, self.portfolio_role_admin],
+            portfolio_additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
+        )
+        with override_flag("multiple_portfolios", active=True):
+            self.user.check_portfolio_invitations_on_login()
+            self.user.refresh_from_db()
+            roles = UserPortfolioPermission.objects.filter(user=self.user)
+            self.assertEqual(len(roles), 2)
+            updated_invitation1, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=self.portfolio)
+            self.assertEqual(updated_invitation1.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+            updated_invitation2, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=portfolio2)
+            self.assertEqual(updated_invitation2.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+
+    @less_console_noise_decorator
+    def test_retrieve_user_multiple_invitations_when_multiple_portfolios_inactive(self):
+        """Attempt to retrieve user portfolio invitations when there are multiple
+        but multiple_portfolios flag set to False"""
+        # create a 2nd portfolio and a 2nd portfolio invitation to self.user
+        portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Take It Easy")
+        PortfolioInvitation.objects.get_or_create(
+            email=self.email,
+            portfolio=portfolio2,
+            portfolio_roles=[self.portfolio_role_base, self.portfolio_role_admin],
+            portfolio_additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
+        )
+        self.user.check_portfolio_invitations_on_login()
+        self.user.refresh_from_db()
+        roles = UserPortfolioPermission.objects.filter(user=self.user)
+        self.assertEqual(len(roles), 1)
+        updated_invitation1, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=self.portfolio)
+        self.assertEqual(updated_invitation1.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        updated_invitation2, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=portfolio2)
+        self.assertEqual(updated_invitation2.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+
 
 class TestUser(TestCase):
     """Test actions that occur on user login,
