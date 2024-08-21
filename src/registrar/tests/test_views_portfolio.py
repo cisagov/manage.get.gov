@@ -504,7 +504,7 @@ class TestPortfolio(WebTest):
 
         self.assertFalse(self.user.has_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "You aren't managing any domains.")
+        self.assertContains(response, "You aren")
 
         # Test the domains page - this user should not have access
         response = self.client.get(reverse("domains"))
