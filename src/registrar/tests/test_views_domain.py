@@ -317,6 +317,7 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "Domain missing domain information")
 
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_domain_readonly_on_detail_page(self):
         """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
         properly displays read only"""
@@ -330,11 +331,13 @@ class TestDomainDetail(TestDomainOverview):
             phone="8003111234",
             title="test title",
         )
+        domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
+        DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+
         UserPortfolioPermission.objects.get_or_create(
             user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
-        domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
-        DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+        user.refresh_from_db()
         self.client.force_login(user)
         detail_page = self.client.get(f"/domain/{domain.id}")
         # Check that alert message displays properly
@@ -1577,9 +1580,10 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.refresh_from_db()
 
         # Add portfolio perms to the user object
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
+        self.user.refresh_from_db()
 
         # Navigate to the domain overview page
         page = self.app.get(reverse("domain", kwargs={"pk": self.domain.id}))

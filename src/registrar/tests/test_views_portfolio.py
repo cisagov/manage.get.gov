@@ -252,12 +252,9 @@ class TestPortfolio(WebTest):
 
             # removing non-basic portfolio perms, which should remove domains
             # and domain requests from nav
-            portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
-            )
-            self.user.save()
-            self.user.refresh_from_db()
+            portfolio_permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+            portfolio_permission.save()
+            portfolio_permission.refresh_from_db()
 
             portfolio_page = self.app.get(reverse("home")).follow()
 

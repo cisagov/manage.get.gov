@@ -30,6 +30,7 @@ from registrar.utility.constants import BranchChoices
 
 from .common import (
     MockSESClient,
+    get_wsgi_request_object,
     less_console_noise,
     completed_domain_request,
     set_domain_request_investigators,
@@ -1369,60 +1370,50 @@ class TestUser(TestCase):
 
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
 
-        # Create a dummy request
-        request = self.factory.get("/")
-        request.user = self.user
-        request.session = {}
-
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
+        # TODO - uncomment this when we just pass request to these functions
+        # request = get_wsgi_request_object(self.client, self.user)
+        # user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
+        # user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
         self.assertFalse(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
 
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
-        portfolio_permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
-        portfolio_permission.save()
-        portfolio_permission.refresh_from_db()
-        self.user.refresh_from_db()
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user, additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS])
 
-        # Create a dummy request
-        request = self.factory.get("/")
-        request.user = self.user
-        request.session = {}
-
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
+        # TODO - uncomment this when we just pass request to these functions
+        # request = get_wsgi_request_object(self.client, self.user)
+        # user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
+        # user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
 
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         portfolio_permission.save()
         portfolio_permission.refresh_from_db()
-        self.user.refresh_from_db()
 
-        # Create a dummy request
-        request = self.factory.get("/")
-        request.user = self.user
-        request.session = {}
-
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
+        # TODO - uncomment this when we just pass request to these functions
+        # request = get_wsgi_request_object(self.client, self.user)
+        # user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
+        # user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
-        # Create a dummy request
-        request = self.factory.get("/")
-        request.user = self.user
-        request.session = {}
-
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
+        # TODO - uncomment this when we just pass request to these functions
+        # request = get_wsgi_request_object(self.client, self.user)
+        # user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
+        # user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
