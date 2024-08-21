@@ -1202,7 +1202,9 @@ class TestPortfolioInvitations(TestCase):
             self.user.refresh_from_db()
             roles = UserPortfolioPermission.objects.filter(user=self.user)
             self.assertEqual(len(roles), 2)
-            updated_invitation1, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=self.portfolio)
+            updated_invitation1, _ = PortfolioInvitation.objects.get_or_create(
+                email=self.email, portfolio=self.portfolio
+            )
             self.assertEqual(updated_invitation1.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
             updated_invitation2, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=portfolio2)
             self.assertEqual(updated_invitation2.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
@@ -1244,7 +1246,7 @@ class TestUserPortfolioPermission(TestCase):
         Portfolio.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
-    
+
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=True)
     def test_clean_on_multiple_portfolios_when_flag_active(self):
@@ -1279,18 +1281,19 @@ class TestUserPortfolioPermission(TestCase):
         portfolio_permission_2 = UserPortfolioPermission(
             portfolio=portfolio_2, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
-        
+
         # This should work as intended
         portfolio_permission.clean()
 
         # Test if the ValidationError is raised with the correct message
         with self.assertRaises(ValidationError) as cm:
             portfolio_permission_2.clean()
-        
+
         portfolio_permission_2, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
         self.assertEqual(
-            cm.exception.message, "Only one portfolio permission is allowed per user when multiple portfolios are disabled."
+            cm.exception.message,
+            "Only one portfolio permission is allowed per user when multiple portfolios are disabled.",
         )
 
 

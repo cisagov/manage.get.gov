@@ -62,7 +62,7 @@ class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
                 portfolio=portfolio,
                 roles__overlap=[
                     UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-                ]
+                ],
             ).values_list("user__id", flat=True)
 
             admin_users = User.objects.filter(id__in=admin_ids)

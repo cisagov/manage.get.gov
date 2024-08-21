@@ -12,7 +12,7 @@ from registrar.models import (
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import create_test_user, get_wsgi_request_object
+from .common import create_test_user
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 
@@ -396,9 +396,7 @@ class TestPortfolio(WebTest):
         the portfolio should be set in session."""
         self.client.force_login(self.user)
         portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=portfolio_roles
-        )
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
         with override_flag("organization_feature", active=True):
             response = self.client.get(reverse("home"))
             # Ensure that middleware processes the session
@@ -408,9 +406,9 @@ class TestPortfolio(WebTest):
             # Access the session via the request
             session = response.wsgi_request.session
             # Check if the 'portfolio' session variable exists
-            assert 'portfolio' in session, "Portfolio session variable should exist."
+            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
             # Check the value of the 'portfolio' session variable
-            assert session['portfolio'] == self.portfolio, "Portfolio session variable has the wrong value."
+            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_organization_feature_inactive(self):
@@ -420,9 +418,7 @@ class TestPortfolio(WebTest):
         is false and user has a portfolio, so won't add a redundant test for that."""
         self.client.force_login(self.user)
         portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=portfolio_roles
-        )
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
         response = self.client.get(reverse("home"))
         # Ensure that middleware processes the session
         session_middleware = SessionMiddleware(lambda request: None)
@@ -431,9 +427,9 @@ class TestPortfolio(WebTest):
         # Access the session via the request
         session = response.wsgi_request.session
         # Check if the 'portfolio' session variable exists
-        assert 'portfolio' in session, "Portfolio session variable should exist."
+        self.assertIn("portfolio", session, "Portfolio session variable should exist.")
         # Check the value of the 'portfolio' session variable
-        self.assertIsNone(session['portfolio'])
+        self.assertIsNone(session["portfolio"])
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_organization_feature_active_and_no_portfolio(self):
@@ -449,19 +445,17 @@ class TestPortfolio(WebTest):
             # Access the session via the request
             session = response.wsgi_request.session
             # Check if the 'portfolio' session variable exists
-            assert 'portfolio' in session, "Portfolio session variable should exist."
+            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
             # Check the value of the 'portfolio' session variable
-            self.assertIsNone(session['portfolio'])
-    
+            self.assertIsNone(session["portfolio"])
+
     @less_console_noise_decorator
     def test_portfolio_in_session_when_multiple_portfolios_active(self):
         """When multiple_portfolios flag is true and user has a portfolio,
         the portfolio should be set in session."""
         self.client.force_login(self.user)
         portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=portfolio_roles
-        )
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
         with override_flag("organization_feature", active=True), override_flag("multiple_portfolios", active=True):
             response = self.client.get(reverse("home"))
             # Ensure that middleware processes the session
@@ -471,9 +465,9 @@ class TestPortfolio(WebTest):
             # Access the session via the request
             session = response.wsgi_request.session
             # Check if the 'portfolio' session variable exists
-            assert 'portfolio' in session, "Portfolio session variable should exist."
+            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
             # Check the value of the 'portfolio' session variable
-            assert session['portfolio'] == self.portfolio, "Portfolio session variable has the wrong value."
+            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_multiple_portfolios_active_and_no_portfolio(self):
@@ -489,9 +483,9 @@ class TestPortfolio(WebTest):
             # Access the session via the request
             session = response.wsgi_request.session
             # Check if the 'portfolio' session variable exists
-            assert 'portfolio' in session, "Portfolio session variable should exist."
+            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
             # Check the value of the 'portfolio' session variable
-            self.assertIsNone(session['portfolio'])
+            self.assertIsNone(session["portfolio"])
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
