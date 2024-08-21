@@ -66,7 +66,7 @@ urlpatterns = [
         name="domains",
     ),
     path(
-        "domains/no-organization/",
+        "no-organization-domains/",
         views.PortfolioNoDomainsView.as_view(),
         name="no-portfolio-domains",
     ),
