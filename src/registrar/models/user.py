@@ -202,6 +202,9 @@ class User(AbstractUser):
     def _has_portfolio_permission(self, portfolio, portfolio_permission):
         """The views should only call this function when testing for perms and not rely on roles."""
 
+        if not portfolio:
+            return False
+
         portfolio_perms = self.portfolio_permissions.filter(portfolio=portfolio, user=self).first()
         if not portfolio_perms:
             return False
@@ -383,6 +386,8 @@ class User(AbstractUser):
         self.check_domain_invitations_on_login()
         self.check_portfolio_invitations_on_login()
 
+    # NOTE TO DAVE: I'd simply suggest that we move these functions outside of the user object,
+    # and move them to some sort of utility file. That way we aren't calling request inside here.
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
         portfolio = request.session.get("portfolio")
