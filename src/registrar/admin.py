@@ -34,6 +34,7 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
+from django.contrib.admin.views.main import ChangeList, IGNORED_PARAMS
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
@@ -43,6 +44,27 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
+
+
+class CustomChangeListForPortfolioFiltering(ChangeList):
+    """CustomChangeList so that portfolio can be passed in a url, but not appear
+    in the list of filters on the right side of the page."""
+
+    def get_filters_params(self, params=None):
+        """
+        Return all params except IGNORED_PARAMS.
+        """
+        params = params or self.params
+        lookup_params = params.copy()  # a dictionary of the query string
+        # Remove all the parameters that are globally and systematically
+        # ignored.
+        # Remove portfolio so that it does not error as an invalid
+        # filter parameter.
+        ignored_params = list(IGNORED_PARAMS) + ['portfolio']
+        for ignored in ignored_params:
+            if ignored in lookup_params:
+                del lookup_params[ignored]
+        return lookup_params
 
 
 class FsmModelResource(resources.ModelResource):
@@ -643,6 +665,19 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
                             }
                         )
                     except models.User.DoesNotExist:
+                        pass
+                elif parameter_name == "portfolio":
+                    # Retrieves the corresponding portfolio from Portfolio
+                    id_value = request.GET.get(param)
+                    try:
+                        portfolio = models.Portfolio.objects.get(id=id_value)
+                        filters.append(
+                            {
+                                "parameter_name": "portfolio",
+                                "parameter_value": portfolio.organization_name,
+                            }
+                        )
+                    except models.Portfolio.DoesNotExist:
                         pass
                 else:
                     # For other parameter names, append a dictionary with the original
@@ -2235,6 +2270,23 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # objects rather than Contact objects.
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
+    
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if a 'portfolio' parameter is passed in the request
+        portfolio_id = request.GET.get('portfolio')
+        if portfolio_id:
+            # Further filter the queryset by the portfolio
+            qs = qs.filter(DomainRequest_info__portfolio=portfolio_id)
+        return qs
+    
+    def get_changelist(self, request, **kwargs):
+        """
+        Return the ChangeList class for use on the changelist page.
+        """
+        return CustomChangeListForPortfolioFiltering
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
@@ -2688,6 +2740,23 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ):
             return True
         return super().has_change_permission(request, obj)
+    
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if a 'portfolio' parameter is passed in the request
+        portfolio_id = request.GET.get('portfolio')
+        if portfolio_id:
+            # Further filter the queryset by the portfolio
+            qs = qs.filter(domain_info__portfolio=portfolio_id)
+        return qs
+    
+    def get_changelist(self, request, **kwargs):
+        """
+        Return the ChangeList class for use on the changelist page.
+        """
+        return CustomChangeListForPortfolioFiltering
 
 
 class DraftDomainResource(resources.ModelResource):
