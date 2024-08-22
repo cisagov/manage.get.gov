@@ -100,12 +100,12 @@ class UserPortfolioPermission(TimeStampedModel):
 
         # Check if a user is set without accessing the related object.
         has_user = bool(self.user_id)
-        # Have to create a bogus request to set the user and pass to flag_is_active
-        request = HttpRequest()
-        request.user = self.user
-        if not flag_is_active(request, "multiple_portfolios") and self.pk is None and has_user:
+        if self.pk is None and has_user:
+            # Have to create a bogus request to set the user and pass to flag_is_active
+            request = HttpRequest()
+            request.user = self.user
             existing_permissions = UserPortfolioPermission.objects.filter(user=self.user)
-            if existing_permissions.exists():
+            if not flag_is_active(request, "multiple_portfolios") and existing_permissions.exists():
                 raise ValidationError(
                     "Only one portfolio permission is allowed per user when multiple portfolios are disabled."
                 )

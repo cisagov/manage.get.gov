@@ -1483,10 +1483,6 @@ class TestUser(TestCase):
 
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
 
-        # TODO - uncomment this when we just pass request to these functions
-        # request = get_wsgi_request_object(self.client, self.user)
-        # user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
-        # user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
         user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
         user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
@@ -1499,10 +1495,6 @@ class TestUser(TestCase):
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS],
         )
 
-        # TODO - uncomment this when we just pass request to these functions
-        # request = get_wsgi_request_object(self.client, self.user)
-        # user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
-        # user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
         user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
         user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
@@ -1513,10 +1505,6 @@ class TestUser(TestCase):
         portfolio_permission.save()
         portfolio_permission.refresh_from_db()
 
-        # TODO - uncomment this when we just pass request to these functions
-        # request = get_wsgi_request_object(self.client, self.user)
-        # user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
-        # user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
         user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
         user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
@@ -1525,10 +1513,6 @@ class TestUser(TestCase):
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
-        # TODO - uncomment this when we just pass request to these functions
-        # request = get_wsgi_request_object(self.client, self.user)
-        # user_can_view_all_domains = self.user.has_domains_portfolio_permission(request)
-        # user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(request)
         user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
         user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
