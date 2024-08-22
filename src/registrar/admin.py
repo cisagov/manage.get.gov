@@ -7,6 +7,7 @@ from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from django.conf import settings
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models.domain_information import DomainInformation
@@ -305,6 +306,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             self._check_for_valid_action_needed_reason(action_needed_reason)
 
         return cleaned_data
+
 
     def _check_for_valid_rejection_reason(self, rejection_reason) -> bool:
         """
@@ -1914,6 +1916,19 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             else:
                 obj.action_needed_reason_email = default_email
 
+        if obj.status in DomainRequest.get_statuses_that_send_emails():
+            if not settings.IS_PRODUCTION:
+                profile_flag = flag_is_active(None, "profile_feature")
+                if profile_flag and hasattr(obj, "creator"):
+                    recipient = obj.creator
+                elif not profile_flag and hasattr(obj, "submitter"):
+                    recipient = obj.submitter
+                else 
+                    recipient = None
+
+                if recipient and recipient.email:
+                    self._check_for_valid_email(request, recipient.email)
+
         # == Handle status == #
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
@@ -1925,6 +1940,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # We should only save if we don't display any errors in the steps above.
             if should_save:
                 return super().save_model(request, obj, form, change)
+
+    def _check_for_valid_email(self, request, email):
+        """Certain emails are whitelisted in non-production environments, 
+        so we should display that information using this function.
+        
+        """
+
+        allowed = models.AllowedEmail.is_allowed_email(email)
+        error_message = f"Could not send email. The email '{email}' does not exist within the whitelist."
+        if not allowed:
+            messages.warning(request, error_message)
 
     def _handle_status_change(self, request, obj, original_obj):
         """
