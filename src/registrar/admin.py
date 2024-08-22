@@ -60,7 +60,7 @@ class CustomChangeListForPortfolioFiltering(ChangeList):
         # ignored.
         # Remove portfolio so that it does not error as an invalid
         # filter parameter.
-        ignored_params = list(IGNORED_PARAMS) + ['portfolio']
+        ignored_params = list(IGNORED_PARAMS) + ["portfolio"]
         for ignored in ignored_params:
             if ignored in lookup_params:
                 del lookup_params[ignored]
@@ -2270,18 +2270,18 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # objects rather than Contact objects.
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
-    
+
     def get_queryset(self, request):
         """Custom get_queryset to filter by portfolio if portfolio is in the
         request params."""
         qs = super().get_queryset(request)
         # Check if a 'portfolio' parameter is passed in the request
-        portfolio_id = request.GET.get('portfolio')
+        portfolio_id = request.GET.get("portfolio")
         if portfolio_id:
             # Further filter the queryset by the portfolio
             qs = qs.filter(portfolio=portfolio_id)
         return qs
-    
+
     def get_changelist(self, request, **kwargs):
         """
         Return the ChangeList class for use on the changelist page.
@@ -2740,18 +2740,18 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ):
             return True
         return super().has_change_permission(request, obj)
-    
+
     def get_queryset(self, request):
         """Custom get_queryset to filter by portfolio if portfolio is in the
         request params."""
         qs = super().get_queryset(request)
         # Check if a 'portfolio' parameter is passed in the request
-        portfolio_id = request.GET.get('portfolio')
+        portfolio_id = request.GET.get("portfolio")
         if portfolio_id:
             # Further filter the queryset by the portfolio
             qs = qs.filter(domain_info__portfolio=portfolio_id)
         return qs
-    
+
     def get_changelist(self, request, **kwargs):
         """
         Return the ChangeList class for use on the changelist page.
@@ -3022,7 +3022,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         return self.get_field_links_as_list(queryset, "suborganization")
 
     suborganizations.short_description = "Suborganizations"  # type: ignore
-    
+
     def domains(self, obj: models.Portfolio):
         """Returns the count of domains with a link to view them in the admin."""
         domain_count = obj.get_domains().count()  # Count the related domains
@@ -3045,7 +3045,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             # Create a clickable link with the domain request count
             return format_html('<a href="{}">{} Domain Requests</a>', url, domain_request_count)
         return "No Domain Requests"
-    
+
     domain_requests.short_description = "Domain requests"  # type: ignore
 
     # Creates select2 fields (with search bars)
