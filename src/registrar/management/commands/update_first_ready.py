@@ -16,7 +16,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
     def update_record(self, record: Domain):
         """Defines how we update the first_ready field"""
         # update the first_ready value based on the creation date.
-        record.first_ready = record.created_at
+        record.first_ready = record.created_at.date()
 
         logger.info(
             f"{TerminalColors.OKCYAN}Updating {record} => first_ready: " f"{record.first_ready}{TerminalColors.OKCYAN}"
@@ -24,4 +24,4 @@ class Command(BaseCommand, PopulateScriptTemplate):
     
     # check if a transition domain object for this domain name exists, and if so whether 
     def should_update(self, record: Domain) -> bool:
-        return TransitionDomain.objects.filter(domain_name=record.name).exists() and record.first_ready != record.created_at
+        return TransitionDomain.objects.filter(domain_name=record.name).exists() and record.first_ready != record.created_at.date()
