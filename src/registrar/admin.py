@@ -3169,9 +3169,9 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context = {"domain_requests": domain_requests, "domains": domains}
         return super().change_view(request, object_id, form_url, extra_context)
 
-class AllowedEmailsAdmin(ListHeaderAdmin):
+class AllowedEmailAdmin(ListHeaderAdmin):
     class Meta:
-        model = models.AllowedEmails
+        model = models.AllowedEmail
 
     list_display = ["email"]
     search_fields = ["email"]
@@ -3205,7 +3205,7 @@ admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
 admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
-admin.site.register(models.AllowedEmails, AllowedEmailsAdmin)
+admin.site.register(models.AllowedEmail, AllowedEmailAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)

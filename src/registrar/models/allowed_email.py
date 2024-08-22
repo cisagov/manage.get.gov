@@ -3,9 +3,9 @@ from django.db import models
 from .utility.time_stamped_model import TimeStampedModel
 
 
-class AllowedEmails(TimeStampedModel):
+class AllowedEmail(TimeStampedModel):
     """
-    AllowedEmails is a whitelist for email addresses that we can send to
+    AllowedEmail is a whitelist for email addresses that we can send to
     in non-production environments.
     """
 
