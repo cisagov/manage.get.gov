@@ -6,6 +6,7 @@ from registrar.models import (
     User,
     UserGroup,
 )
+from registrar.models.allowed_email import AllowedEmail
 
 
 fake = Faker()
@@ -240,6 +241,11 @@ class UserFixture:
         },
     ]
 
+    # Additional emails to add to the AllowedEmail whitelist
+    ADDITIONAL_ALLOWED_EMAILS = [
+        "zander.adkinson@ecstech.com"
+    ]
+
     def load_users(cls, users, group_name, are_superusers=False):
         logger.info(f"Going to load {len(users)} users in group {group_name}")
         for user_data in users:
@@ -264,6 +270,34 @@ class UserFixture:
                 logger.warning(e)
         logger.info(f"All users in group {group_name} loaded.")
 
+    def load_allowed_emails(cls, users, additional_emails):
+        """Populates a whitelist of allowed emails (as defined in this list)"""
+        logger.info(f"Going to load allowed emails for {len(users)} users")
+        if additional_emails:
+            logger.info(f"Going to load {len(additional_emails)} additional allowed emails")
+
+        allowed_emails = []
+
+        # Load user emails
+        for user_data in users:
+            user_email = user_data.get("email")
+            if user_email and user_email not in allowed_emails:
+                allowed_emails.append(AllowedEmail(email=user_email))
+            else:
+                first_name = user_data.get("first_name")
+                last_name = user_data.get("last_name")
+                logger.warning(f"Could not load email for {first_name} {last_name}: No email exists.")
+        
+        # Load additional emails
+        for email in additional_emails:
+            allowed_emails.append(AllowedEmail(email=email))
+
+        if allowed_emails:
+            AllowedEmail.objects.bulk_create(allowed_emails)
+            logger.info(f"Loaded {len(allowed_emails)} allowed emails")
+        else:
+            logger.info("No allowed emails to load")
+
     @classmethod
     def load(cls):
         # Lumped under .atomic to ensure we don't make redundant DB calls.
@@ -275,3 +309,7 @@ class UserFixture:
         with transaction.atomic():
             cls.load_users(cls, cls.ADMINS, "full_access_group", are_superusers=True)
             cls.load_users(cls, cls.STAFF, "cisa_analysts_group")
+
+            # Combine ADMINS and STAFF lists
+            all_users = cls.ADMINS + cls.STAFF
+            cls.load_allowed_emails(cls, all_users, additional_emails=cls.ADDITIONAL_ALLOWED_EMAILS)

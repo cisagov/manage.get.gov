@@ -4,6 +4,7 @@ import boto3
 import logging
 import textwrap
 from datetime import datetime
+from django.apps import apps
 from django.conf import settings
 from django.template.loader import get_template
 from email.mime.application import MIMEApplication
@@ -27,7 +28,7 @@ def send_templated_email(
     to_address: str,
     bcc_address="",
     context={},
-    attachment_file: str = None,
+    attachment_file = None,
     wrap_email=False,
 ):
     """Send an email built from a template to one email address.
@@ -39,9 +40,21 @@ def send_templated_email(
     Raises EmailSendingError if SES client could not be accessed
     """
 
-    if flag_is_active(None, "disable_email_sending") and not settings.IS_PRODUCTION:  # type: ignore
-        message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
-        raise EmailSendingError(message)
+
+    
+    if not settings.IS_PRODUCTION:  # type: ignore
+        if flag_is_active(None, "disable_email_sending"):  # type: ignore
+            message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
+            raise EmailSendingError(message)
+        else:
+            # Raise an email sending error if these doesn't exist within our whitelist.
+            # If these emails don't exist, this function can handle that elsewhere.
+            AllowedEmail = apps.get_model('registrar', 'AllowedEmail')
+            message = "Could not send email. The email '{}' does not exist within the whitelist."
+            if to_address and not AllowedEmail.is_allowed_email(to_address):
+                raise EmailSendingError(message.format(to_address))
+            if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
+                raise EmailSendingError(message.format(bcc_address))
 
     template = get_template(template_name)
     email_body = template.render(context=context)
@@ -63,7 +76,7 @@ def send_templated_email(
         )
         logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
     except Exception as exc:
-        logger.debug("E-mail unable to send! Could not access the SES client.")
+        logger.debug("An email was unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
 
     destination = {"ToAddresses": [to_address]}
@@ -71,7 +84,7 @@ def send_templated_email(
         destination["BccAddresses"] = [bcc_address]
 
     try:
-        if attachment_file is None:
+        if not attachment_file:
             # Wrap the email body to a maximum width of 80 characters per line.
             # Not all email clients support CSS to do this, and our .txt files require parsing.
             if wrap_email:
