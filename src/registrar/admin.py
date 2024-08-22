@@ -2279,7 +2279,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         portfolio_id = request.GET.get('portfolio')
         if portfolio_id:
             # Further filter the queryset by the portfolio
-            qs = qs.filter(DomainRequest_info__portfolio=portfolio_id)
+            qs = qs.filter(portfolio=portfolio_id)
         return qs
     
     def get_changelist(self, request, **kwargs):
@@ -2942,7 +2942,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         #     "classes": ("collapse", "closed"),
         #     "fields": ["administrators", "members"]}
         # ),
-        ("Portfolio domains", {"classes": ("collapse", "closed"), "fields": ["domains", "domain_requests"]}),
+        ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -3022,21 +3022,30 @@ class PortfolioAdmin(ListHeaderAdmin):
         return self.get_field_links_as_list(queryset, "suborganization")
 
     suborganizations.short_description = "Suborganizations"  # type: ignore
-
+    
     def domains(self, obj: models.Portfolio):
-        """Returns a list of links for each related domain"""
-        queryset = obj.get_domains()
-        return self.get_field_links_as_list(
-            queryset, "domaininformation", link_info_attribute="get_state_display_of_domain"
-        )
+        """Returns the count of domains with a link to view them in the admin."""
+        domain_count = obj.get_domains().count()  # Count the related domains
+        if domain_count > 0:
+            # Construct the URL to the admin page, filtered by portfolio
+            url = reverse("admin:registrar_domain_changelist") + f"?portfolio={obj.id}"
+            label = "Domain" if domain_count == 1 else "Domains"
+            # Create a clickable link with the domain count
+            return format_html('<a href="{}">{} {}</a>', url, domain_count, label)
+        return "No Domains"
 
     domains.short_description = "Domains"  # type: ignore
 
     def domain_requests(self, obj: models.Portfolio):
-        """Returns a list of links for each related domain request"""
-        queryset = obj.get_domain_requests()
-        return self.get_field_links_as_list(queryset, "domainrequest", link_info_attribute="get_status_display")
-
+        """Returns the count of domain requests with a link to view them in the admin."""
+        domain_request_count = obj.get_domain_requests().count()  # Count the related domain requests
+        if domain_request_count > 0:
+            # Construct the URL to the admin page, filtered by portfolio
+            url = reverse("admin:registrar_domainrequest_changelist") + f"?portfolio={obj.id}"
+            # Create a clickable link with the domain request count
+            return format_html('<a href="{}">{} Domain Requests</a>', url, domain_request_count)
+        return "No Domain Requests"
+    
     domain_requests.short_description = "Domain requests"  # type: ignore
 
     # Creates select2 fields (with search bars)
