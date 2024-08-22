@@ -563,7 +563,7 @@ class DomainRequest(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
-    # initial submission date records when domain request was first submitted
+    # Records when the domain request was first submitted
     first_submitted_date = models.DateField(
         null=True,
         blank=True,
@@ -572,7 +572,7 @@ class DomainRequest(TimeStampedModel):
         help_text="Date initially submitted",
     )
 
-    # last submission date records when domain request was last submitted
+    # Records when domain request was last submitted
     last_submitted_date = models.DateField(
         null=True,
         blank=True,
@@ -581,13 +581,13 @@ class DomainRequest(TimeStampedModel):
         help_text="Date last submitted",
     )
 
-    # last status update records when domain request status was last updated by an admin or analyst
+    # Records when domain request status was last updated by an admin or analyst
     last_status_update = models.DateField(
         null=True,
         blank=True,
         default=None,
         verbose_name="last updated on",
-        help_text="Date of last status updated",
+        help_text="Date of the last status update",
     )
     notes = models.TextField(
         null=True,

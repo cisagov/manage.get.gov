@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
             field=models.DateField(
                 blank=True,
                 default=None,
-                help_text="Date of last status updated",
+                help_text="Date of the last status update",
                 null=True,
                 verbose_name="last updated on",
             ),
