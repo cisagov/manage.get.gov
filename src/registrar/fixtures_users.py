@@ -241,7 +241,8 @@ class UserFixture:
         },
     ]
 
-    # Additional emails to add to the AllowedEmail whitelist
+    # Additional emails to add to the AllowedEmail whitelist.
+    # The format should be as follows: ["email@igorville.gov", "email2@igorville.gov"]
     ADDITIONAL_ALLOWED_EMAILS = [
         "zander.adkinson@ecstech.com"
     ]
@@ -286,7 +287,7 @@ class UserFixture:
             else:
                 first_name = user_data.get("first_name")
                 last_name = user_data.get("last_name")
-                logger.warning(f"Could not load email for {first_name} {last_name}: No email exists.")
+                logger.warning(f"Could add email to whitelist for {first_name} {last_name}: No email exists.")
         
         # Load additional emails
         for email in additional_emails:

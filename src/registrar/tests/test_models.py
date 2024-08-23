@@ -2320,3 +2320,41 @@ class TestPortfolio(TestCase):
 
         self.assertEqual(portfolio.urbanization, "test123")
         self.assertEqual(portfolio.state_territory, DomainRequest.StateTerritoryChoices.PUERTO_RICO)
+
+
+class TestAllowedEmail(TestCase):
+    """Tests our allowed email whitelist"""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        self.email = "mayor@igorville.gov"
+        self.domain_name = "igorvilleInTransition.gov"
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.user, _ = User.objects.get_or_create(email=self.email)
+
+    def tearDown(self):
+        super().tearDown()
+        Domain.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DraftDomain.objects.all().delete()
+        TransitionDomain.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+    
+
+    # Test for a normal email defined in the whitelist
+    # Test for a normal email NOT defined in the whitelist
+
+    # Test for a +1 email defined in the whitelist
+    # Test for a +1 email NOT defined in the whitelist
+
+    # Test for a +1 email NOT defined in the whitelist, but the normal is defined
+    # Test for a +1 email defined in the whitelist, but the normal is NOT defined
+    # Test for a +1 email NOT defined in the whitelist and NOT defined in the normal
+
+    # Test for an invalid email that contains a '+'
+
+    # TODO: We need a small test for domain request admin

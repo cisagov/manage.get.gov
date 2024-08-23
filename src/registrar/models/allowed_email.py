@@ -31,7 +31,10 @@ class AllowedEmail(TimeStampedModel):
         if "+" in local:
             base_local = local.split("+")[0]
             base_email = f"{base_local}@{domain}"
-            allowed_emails = cls.objects.filter(email__iexact=base_email)
+            allowed_emails = cls.objects.filter(
+                Q(email__iexact=base_email) |
+                Q(email__iexact=email)
+            )
 
             # The string must start with the local, and the plus must be a digit
             # and occur immediately after the local. The domain should still exist in the email.

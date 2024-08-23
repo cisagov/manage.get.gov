@@ -1923,9 +1923,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     recipient = obj.creator
                 elif not profile_flag and hasattr(obj, "submitter"):
                     recipient = obj.submitter
-                else 
+                else: 
                     recipient = None
 
+                # Displays a warning in admin when an email cannot be sent,
+                # Or a success message if it was.
                 if recipient and recipient.email:
                     self._check_for_valid_email(request, recipient.email)
 
@@ -1949,8 +1951,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         allowed = models.AllowedEmail.is_allowed_email(email)
         error_message = f"Could not send email. The email '{email}' does not exist within the whitelist."
+        success_message = f"An email to '{email}' was sent!"
         if not allowed:
             messages.warning(request, error_message)
+        else:
+            messages.success(request, success_message)
 
     def _handle_status_change(self, request, obj, original_obj):
         """
