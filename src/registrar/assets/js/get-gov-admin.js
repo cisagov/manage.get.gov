@@ -837,6 +837,27 @@ function initializeWidgetOnList(list, parentId) {
         // If we can update the contact information, it'll be shown again.
         hideElement(contactList.parentElement);
 
+        let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
+        fetch(`${federalPortfolioApi}?organization_type=${organizationType.value}&agency_name=${selectedText}`)
+        .then(response => {
+            const statusCode = response.status;
+            return response.json().then(data => ({ statusCode, data }));
+        })
+        .then(({ statusCode, data }) => {
+            if (data.error) {
+                console.error("Error in AJAX call: " + data.error);
+                return;
+            }
+
+            let federal_type = data.federal_type;
+            let portfolio_type = data.portfolio_type;
+            console.log("portfolio type: " + portfolio_type);
+            console.log("federal type: " + federal_type);
+            updateFederalType(data.federal_type);
+            updatePortfolioType(data.portfolio_type);
+        })
+        .catch(error => console.error("Error fetching federal and portfolio types: ", error));
+
         let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
         fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
         .then(response => {
@@ -879,6 +900,7 @@ function initializeWidgetOnList(list, parentId) {
             }
         })
         .catch(error => console.error("Error fetching senior official: ", error));
+
     }
 
     function handleStateTerritoryChange(stateTerritory, urbanizationField) {
@@ -887,6 +909,35 @@ function initializeWidgetOnList(list, parentId) {
             showElement(urbanizationField)
         } else {
             hideElement(urbanizationField)
+        }
+    }
+
+    function updatePortfolioType(portfolioType) {
+        console.log("attempting to update portfolioType");
+        // Find the div with class 'field-portfolio_type'
+        const portfolioTypeDiv = document.querySelector('.field-portfolio_type');
+        if (portfolioTypeDiv) {
+            console.log("found portfoliotype");
+            // Find the nested div with class 'readonly' inside 'field-portfolio_type'
+            const readonlyDiv = portfolioTypeDiv.querySelector('.readonly');
+            if (readonlyDiv) {
+                console.log("found readonly div");
+                // Update the text content of the readonly div
+                readonlyDiv.textContent = portfolioType !== null ? portfolioType : '-';
+            }
+        }
+    }
+
+    function updateFederalType(federalType) {
+        // Find the div with class 'field-federal_type'
+        const federalTypeDiv = document.querySelector('.field-federal_type');
+        if (federalTypeDiv) {
+            // Find the nested div with class 'readonly' inside 'field-federal_type'
+            const readonlyDiv = federalTypeDiv.querySelector('.readonly');
+            if (readonlyDiv) {
+                // Update the text content of the readonly div
+                readonlyDiv.textContent = federalType !== null ? federalType : '-';
+            }
         }
     }
 

@@ -131,9 +131,13 @@ class Portfolio(TimeStampedModel):
         Returns a combination of organization_type / federal_type, seperated by ' - '.
         If no federal_type is found, we just return the org type.
         """
-        org_type_label = self.OrganizationChoices.get_org_label(self.organization_type)
-        agency_type_label = BranchChoices.get_branch_label(self.federal_type)
-        if self.organization_type == self.OrganizationChoices.FEDERAL and agency_type_label:
+        return self.get_portfolio_type(self.organization_type, self.federal_type)
+
+    @classmethod
+    def get_portfolio_type(cls, organization_type, federal_type):
+        org_type_label = cls.OrganizationChoices.get_org_label(organization_type)
+        agency_type_label = BranchChoices.get_branch_label(federal_type)
+        if organization_type == cls.OrganizationChoices.FEDERAL and agency_type_label:
             return " - ".join([org_type_label, agency_type_label])
         else:
             return org_type_label
@@ -141,8 +145,12 @@ class Portfolio(TimeStampedModel):
     @property
     def federal_type(self):
         """Returns the federal_type value on the underlying federal_agency field"""
-        return self.federal_agency.federal_type if self.federal_agency else None
+        return self.get_federal_type(self.federal_agency)
 
+    @classmethod
+    def get_federal_type(cls, federal_agency):
+        return federal_agency.federal_type if federal_agency else None
+    
     # == Getters for domains == #
     def get_domains(self):
         """Returns all DomainInformations associated with this portfolio"""
