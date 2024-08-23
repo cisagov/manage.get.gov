@@ -1951,11 +1951,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         allowed = models.AllowedEmail.is_allowed_email(email)
         error_message = f"Could not send email. The email '{email}' does not exist within the whitelist."
-        success_message = f"An email to '{email}' was sent!"
         if not allowed:
             messages.warning(request, error_message)
-        else:
-            messages.success(request, success_message)
 
     def _handle_status_change(self, request, obj, original_obj):
         """

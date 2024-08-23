@@ -7,6 +7,7 @@ from waffle.testutils import override_flag
 from registrar.utility import email
 from registrar.utility.email import send_templated_email
 from .common import completed_domain_request
+from registrar.models import AllowedEmail
 
 from api.tests.common import less_console_noise_decorator
 from datetime import datetime
@@ -14,9 +15,32 @@ import boto3_mocking  # type: ignore
 
 
 class TestEmails(TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        allowed_emails = [
+            AllowedEmail(email="doesnotexist@igorville.com"),
+            AllowedEmail(email="testy@town.com"),
+            AllowedEmail(email="mayor@igorville.gov"),
+            AllowedEmail(email="testy2@town.com"),
+            AllowedEmail(email="cisaRep@igorville.gov"),
+            AllowedEmail(email="sender@example.com"),
+            AllowedEmail(email="recipient@example.com"),
+        ]
+        AllowedEmail.objects.bulk_create(allowed_emails)
+    
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        AllowedEmail.objects.all().delete()
+
     def setUp(self):
         self.mock_client_class = MagicMock()
         self.mock_client = self.mock_client_class.return_value
+    
+    def tearDown(self):
+        super().tearDown()
 
     @boto3_mocking.patching
     @override_flag("disable_email_sending", active=True)

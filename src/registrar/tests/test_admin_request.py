@@ -22,6 +22,7 @@ from registrar.models import (
     Contact,
     Website,
     SeniorOfficial,
+    AllowedEmail,
 )
 from .common import (
     MockSESClient,
@@ -52,6 +53,10 @@ class TestDomainRequestAdmin(MockEppLib):
       tests have available staffuser, superuser, client, admin and test_helper
     """
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        
     @classmethod
     def setUpClass(self):
         super().setUpClass()
@@ -84,6 +89,7 @@ class TestDomainRequestAdmin(MockEppLib):
     def tearDownClass(self):
         super().tearDownClass()
         User.objects.all().delete()
+        AllowedEmail.objects.all().delete()
 
     @less_console_noise_decorator
     def test_domain_request_senior_official_is_alphabetically_sorted(self):
@@ -597,7 +603,8 @@ class TestDomainRequestAdmin(MockEppLib):
     ):
         """Helper method for the email test cases.
         email_index is the index of the email in mock_client."""
-
+        allowed_email, _ = AllowedEmail.objects.get_or_create(email=email_address)
+        allowed_bcc_email, _ = AllowedEmail.objects.get_or_create(email=bcc_email_address)
         with less_console_noise():
             # Access the arguments passed to send_email
             call_args = self.mock_client.EMAILS_SENT
@@ -624,6 +631,9 @@ class TestDomainRequestAdmin(MockEppLib):
         if bcc_email_address:
             bcc_email = kwargs["Destination"]["BccAddresses"][0]
             self.assertEqual(bcc_email, bcc_email_address)
+        
+        allowed_email.delete()
+        allowed_bcc_email.delete()
 
     @override_settings(IS_PRODUCTION=True)
     @less_console_noise_decorator
@@ -1686,6 +1696,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 # Patch Domain.is_active and django.contrib.messages.error simultaneously
                 stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
                 stack.enter_context(patch.object(messages, "error"))
+                stack.enter_context(patch.object(messages, "warning"))
+                stack.enter_context(patch.object(messages, "success"))
 
                 domain_request.status = another_state
 

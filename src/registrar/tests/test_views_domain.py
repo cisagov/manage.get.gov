@@ -27,6 +27,7 @@ from registrar.models import (
     Domain,
     DomainInformation,
     DomainInvitation,
+    AllowedEmail,
     Contact,
     PublicContact,
     Host,
@@ -460,6 +461,7 @@ class TestDomainManagers(TestDomainOverview):
         """Inviting a non-existent user sends them an email."""
         # make sure there is no user with this email
         email_address = "mayor@igorville.gov"
+        allowed_email, _ = AllowedEmail.objects.get_or_create(email=email_address)
         User.objects.filter(email=email_address).delete()
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
@@ -479,6 +481,7 @@ class TestDomainManagers(TestDomainOverview):
             Destination={"ToAddresses": [email_address]},
             Content=ANY,
         )
+        allowed_email.delete()
 
     @boto3_mocking.patching
     @less_console_noise_decorator
