@@ -15,7 +15,7 @@ import boto3_mocking  # type: ignore
 
 
 class TestEmails(TestCase):
-    
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -29,7 +29,7 @@ class TestEmails(TestCase):
             AllowedEmail(email="recipient@example.com"),
         ]
         AllowedEmail.objects.bulk_create(allowed_emails)
-    
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -38,7 +38,7 @@ class TestEmails(TestCase):
     def setUp(self):
         self.mock_client_class = MagicMock()
         self.mock_client = self.mock_client_class.return_value
-    
+
     def tearDown(self):
         super().tearDown()
 

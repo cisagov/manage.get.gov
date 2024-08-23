@@ -355,7 +355,7 @@ class TestDomainManagers(TestDomainOverview):
             AllowedEmail(email="testy2@town.com"),
         ]
         AllowedEmail.objects.bulk_create(allowed_emails)
-    
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()

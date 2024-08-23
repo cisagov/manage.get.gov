@@ -580,14 +580,8 @@ class DomainRequest(TimeStampedModel):
     @classmethod
     def get_statuses_that_send_emails(cls):
         """Returns a list of statuses that send an email to the user"""
-        excluded_statuses = [
-            cls.DomainRequestStatus.INELIGIBLE,
-            cls.DomainRequestStatus.IN_REVIEW
-        ]
-        return [
-            status for status in cls.DomainRequestStatus
-            if status not in excluded_statuses
-        ]
+        excluded_statuses = [cls.DomainRequestStatus.INELIGIBLE, cls.DomainRequestStatus.IN_REVIEW]
+        return [status for status in cls.DomainRequestStatus if status not in excluded_statuses]
 
     def sync_organization_type(self):
         """

@@ -35,21 +35,17 @@ class AllowedEmail(TimeStampedModel):
         # Check if there's a '+' in the local part
         if "+" in local:
             base_local = local.split("+")[0]
-            base_email_exists = cls.objects.filter(
-                Q(email__iexact=f"{base_local}@{domain}")
-            ).exists()
+            base_email_exists = cls.objects.filter(Q(email__iexact=f"{base_local}@{domain}")).exists()
 
             # Given an example email, such as "joe.smoe+1@igorville.com"
             # The full regex statement will be: "^joe.smoe\\+\\d+@igorville.com$"
-            pattern = f'^{re.escape(base_local)}\\+\\d+@{re.escape(domain)}$'
+            pattern = f"^{re.escape(base_local)}\\+\\d+@{re.escape(domain)}$"
             return base_email_exists and re.match(pattern, email)
         else:
             # Edge case, the +1 record exists but the base does not,
             # and the record we are checking is the base record.
-            pattern = f'^{re.escape(local)}\\+\\d+@{re.escape(domain)}$'
-            plus_email_exists = cls.objects.filter(
-                Q(email__iregex=pattern)
-            ).exists()
+            pattern = f"^{re.escape(local)}\\+\\d+@{re.escape(domain)}$"
+            plus_email_exists = cls.objects.filter(Q(email__iregex=pattern)).exists()
             return plus_email_exists
 
     def __str__(self):

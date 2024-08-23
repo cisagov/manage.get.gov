@@ -56,7 +56,8 @@ class TestDomainRequestAdmin(MockEppLib):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        
+        AllowedEmail.objects.all.delete()
+
     @classmethod
     def setUpClass(self):
         super().setUpClass()
@@ -74,6 +75,8 @@ class TestDomainRequestAdmin(MockEppLib):
             model=DomainRequest,
         )
         self.mock_client = MockSESClient()
+        allowed_emails = [AllowedEmail(email="mayor@igorville.gov"), AllowedEmail(email="help@get.gov")]
+        AllowedEmail.objects.bulk_create(allowed_emails)
 
     def tearDown(self):
         super().tearDown()
@@ -604,8 +607,8 @@ class TestDomainRequestAdmin(MockEppLib):
     ):
         """Helper method for the email test cases.
         email_index is the index of the email in mock_client."""
-        allowed_email, _ = AllowedEmail.objects.get_or_create(email=email_address)
-        allowed_bcc_email, _ = AllowedEmail.objects.get_or_create(email=bcc_email_address)
+        AllowedEmail.objects.get_or_create(email=email_address)
+        AllowedEmail.objects.get_or_create(email=bcc_email_address)
         with less_console_noise():
             # Access the arguments passed to send_email
             call_args = self.mock_client.EMAILS_SENT
@@ -632,9 +635,6 @@ class TestDomainRequestAdmin(MockEppLib):
         if bcc_email_address:
             bcc_email = kwargs["Destination"]["BccAddresses"][0]
             self.assertEqual(bcc_email, bcc_email_address)
-        
-        allowed_email.delete()
-        allowed_bcc_email.delete()
 
     @override_settings(IS_PRODUCTION=True)
     @less_console_noise_decorator

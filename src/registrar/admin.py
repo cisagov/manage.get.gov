@@ -307,7 +307,6 @@ class DomainRequestAdminForm(forms.ModelForm):
 
         return cleaned_data
 
-
     def _check_for_valid_rejection_reason(self, rejection_reason) -> bool:
         """
         Checks if the rejection_reason field is not none.
@@ -1923,7 +1922,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     recipient = obj.creator
                 elif not profile_flag and hasattr(obj, "submitter"):
                     recipient = obj.submitter
-                else: 
+                else:
                     recipient = None
 
                 # Displays a warning in admin when an email cannot be sent,
@@ -1944,9 +1943,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 return super().save_model(request, obj, form, change)
 
     def _check_for_valid_email(self, request, email):
-        """Certain emails are whitelisted in non-production environments, 
+        """Certain emails are whitelisted in non-production environments,
         so we should display that information using this function.
-        
+
         """
 
         allowed = models.AllowedEmail.is_allowed_email(email)
@@ -3197,6 +3196,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context = {"domain_requests": domain_requests, "domains": domains}
         return super().change_view(request, object_id, form_url, extra_context)
 
+
 class AllowedEmailAdmin(ListHeaderAdmin):
     class Meta:
         model = models.AllowedEmail
@@ -3205,6 +3205,7 @@ class AllowedEmailAdmin(ListHeaderAdmin):
     search_fields = ["email"]
     search_help_text = "Search by email."
     ordering = ["email"]
+
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
 

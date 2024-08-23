@@ -28,7 +28,7 @@ def send_templated_email(
     to_address: str,
     bcc_address="",
     context={},
-    attachment_file = None,
+    attachment_file=None,
     wrap_email=False,
 ):
     """Send an email built from a template to one email address.
@@ -40,8 +40,6 @@ def send_templated_email(
     Raises EmailSendingError if SES client could not be accessed
     """
 
-
-    
     if not settings.IS_PRODUCTION:  # type: ignore
         if flag_is_active(None, "disable_email_sending"):  # type: ignore
             message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
@@ -49,7 +47,7 @@ def send_templated_email(
         else:
             # Raise an email sending error if these doesn't exist within our whitelist.
             # If these emails don't exist, this function can handle that elsewhere.
-            AllowedEmail = apps.get_model('registrar', 'AllowedEmail')
+            AllowedEmail = apps.get_model("registrar", "AllowedEmail")
             message = "Could not send email. The email '{}' does not exist within the whitelist."
             if to_address and not AllowedEmail.is_allowed_email(to_address):
                 raise EmailSendingError(message.format(to_address))

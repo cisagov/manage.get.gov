@@ -2360,7 +2360,7 @@ class TestAllowedEmail(TestCase):
 
     def test_plus_email_not_in_whitelist(self):
         """Test for a +1 email not defined in the whitelist"""
-        # This email should not be allowed. 
+        # This email should not be allowed.
         # Checks that we do more than just a regex check on the record.
         plus_email_allowed = AllowedEmail.is_allowed_email(self.plus_email)
         self.assertFalse(plus_email_allowed)
@@ -2426,7 +2426,7 @@ class TestAllowedEmail(TestCase):
 
     # TODO: We need a small test for domain request admin
     # We also need a basic test in test_emails based off the mocked is_allowed_email value.
-    # This will be simpler 
+    # This will be simpler
     # def test_email_in_whitelist_in_prod(self):
     #     """Tests that the whitelist does nothing when we are in production"""
     #     allowed_email = AllowedEmail.objects.create(email=self.email)
