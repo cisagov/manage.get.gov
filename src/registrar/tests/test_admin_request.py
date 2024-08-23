@@ -576,7 +576,8 @@ class TestDomainRequestAdmin(MockEppLib):
     ):
         """Helper method for the email test cases."""
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), ExitStack() as stack:
+            stack.enter_context(patch.object(messages, "warning"))
             # Create a mock request
             request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
@@ -1155,6 +1156,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with ExitStack() as stack:
             stack.enter_context(patch.object(messages, "error"))
+            stack.enter_context(patch.object(messages, "warning"))
             domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
 
             self.admin.save_model(request, domain_request, None, True)
@@ -1183,6 +1185,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with ExitStack() as stack:
             stack.enter_context(patch.object(messages, "error"))
+            stack.enter_context(patch.object(messages, "warning"))
             domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
             domain_request.rejection_reason = DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY
 
@@ -1234,11 +1237,13 @@ class TestDomainRequestAdmin(MockEppLib):
         request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            # Modify the domain request's property
-            domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(messages, "warning"))
+                # Modify the domain request's property
+                domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
 
-            # Use the model admin's save_model method
-            self.admin.save_model(request, domain_request, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, domain_request, form=None, change=True)
 
         # Test that approved domain exists and equals requested domain
         self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)

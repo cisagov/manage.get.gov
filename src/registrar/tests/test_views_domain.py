@@ -345,6 +345,22 @@ class TestDomainDetail(TestDomainOverview):
 
 
 class TestDomainManagers(TestDomainOverview):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        allowed_emails = [
+            AllowedEmail(email=""),
+            AllowedEmail(email="testy@town.com"),
+            AllowedEmail(email="mayor@igorville.gov"),
+            AllowedEmail(email="testy2@town.com"),
+        ]
+        AllowedEmail.objects.bulk_create(allowed_emails)
+    
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        AllowedEmail.objects.all().delete()
+
     def tearDown(self):
         """Ensure that the user has its original permissions"""
         super().tearDown()
@@ -567,6 +583,7 @@ class TestDomainManagers(TestDomainOverview):
         """Inviting a user sends them an email, with email as the name."""
         # Create a fake user object
         email_address = "mayor@igorville.gov"
+        allowed_email = AllowedEmail.objects.get_or_create(email=email_address)
         User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
 
         # Make sure the user is staff
