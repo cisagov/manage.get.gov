@@ -2272,6 +2272,17 @@ class DomainInformationInline(admin.StackedInline):
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
     autocomplete_fields = DomainInformationAdmin.autocomplete_fields
 
+    # Removing specific fields from the first fieldset dynamically
+    fieldsets[0][1]["fields"] = [
+        field for field in fieldsets[0][1]["fields"] if field not in ["creator", "submitter", "domain_request", "notes"]
+    ]
+    fieldsets[2][1]["fields"] = [
+        field for field in fieldsets[2][1]["fields"] if field not in ["other_contacts", "no_other_contacts_rationale"]
+    ]
+    fieldsets[3][1]["fields"].extend(["other_contacts", "no_other_contacts_rationale"])  # type: ignore
+    fieldsets_to_move = fieldsets.pop(3)
+    fieldsets.append(fieldsets_to_move)
+
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
         analysts can edit this through this inline, but not through the model normally"""
@@ -2382,13 +2393,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     fieldsets = (
         (
-            None,
-            {"fields": ["name", "state", "expiration_date", "first_ready", "deleted"]},
+            "Domain Information",
+            {"fields": ["state", "expiration_date", "first_ready", "deleted", "dnssecdata", "nameservers"]},
         ),
     )
-
-    # this ordering effects the ordering of results in autocomplete_fields for domain
-    ordering = ["name"]
 
     def generic_org_type(self, obj):
         return obj.domain_info.get_generic_org_type_display()
@@ -2409,6 +2417,25 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return obj.domain_info.organization_name if obj.domain_info else None
 
     organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
+
+    def dnssecdata(self, obj):
+        return "Yes" if obj.dnssecdata else "No"
+
+    dnssecdata.short_description = "DNS Sec Enabled"  # type: ignore
+
+    # Custom method to display formatted nameservers
+    def nameservers(self, obj):
+        if not obj.nameservers:
+            return "No nameservers"
+
+        formatted_nameservers = []
+        for server, ip_list in obj.nameservers:
+            formatted_nameservers.append(f"{server} [{', '.join(ip_list)}]")
+
+        # Join the formatted strings with line breaks
+        return "\n".join(formatted_nameservers)
+
+    nameservers.short_description = "Nameservers"  # type: ignore
 
     def custom_election_board(self, obj):
         domain_info = getattr(obj, "domain_info", None)
@@ -2436,7 +2463,15 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    readonly_fields = ("state", "expiration_date", "first_ready", "deleted", "federal_agency")
+    readonly_fields = (
+        "state",
+        "expiration_date",
+        "first_ready",
+        "deleted",
+        "federal_agency",
+        "dnssecdata",
+        "nameservers",
+    )
 
     # Table ordering
     ordering = ["name"]
