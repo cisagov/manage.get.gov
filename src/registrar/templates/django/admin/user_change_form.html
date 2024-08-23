@@ -1,6 +1,21 @@
 {% extends 'django/admin/email_clipboard_change_form.html' %}
 {% load i18n static %}
 
+
+{% block field_sets %}
+    <div class="display-flex flex-row flex-justify submit-row">
+        <div class="desktop:flex-align-self-end">
+            <a href="{% url 'transfer_user' original.pk %}" class="button">
+                Transfer data from old account
+            </a>
+        </div>
+    </div>
+
+    {% for fieldset in adminform %}
+        {% include "django/admin/includes/domain_fieldset.html" with state_help_message=state_help_message %}
+    {% endfor %}
+{% endblock %}
+
 {% block after_related_objects %}
     <div class="module aligned padding-3">
         <h2>Associated requests and domains</h2>

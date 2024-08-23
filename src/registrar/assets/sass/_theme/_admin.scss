@@ -120,7 +120,7 @@ html[data-theme="light"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .analytics {
+    .custom-admin-template, dt {
         color: var(--body-fg);
     }
     .usa-table td {
@@ -149,7 +149,7 @@ html[data-theme="dark"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .analytics {
+    .custom-admin-template, dt {
         color: var(--body-fg);
     }
     .usa-table td {
@@ -160,7 +160,7 @@ html[data-theme="dark"] {
     // Remove when dark mode successfully applies to Django delete page.
     .delete-confirmation .content a:not(.button)  {
         color: color('primary');
-    }
+    } 
 }
 
 
@@ -364,14 +364,40 @@ input.admin-confirm-button {
         list-style-type: none;
         line-height: normal;
     }
-    .button {
-        display: inline-block;
-        padding: 10px 8px;
-        line-height: normal;
-    }
-    a.button:active, a.button:focus {
-        text-decoration: none;
-    }
+}
+
+// This block resolves some of the issues we're seeing on buttons due to css
+// conflicts between DJ and USWDS
+a.button,
+.usa-button {
+    display: inline-block;
+    padding: 10px 15px;
+    font-size: 14px;
+    line-height: 16.1px;
+    font-kerning: auto;
+    font-family: inherit;
+    font-weight: normal;
+}
+.button svg,
+.button span,
+.usa-button svg,
+.usa-button span {
+    vertical-align: middle;
+}
+.usa-button:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary) {
+    background: var(--button-bg);
+}
+.usa-button span {
+    font-size: 14px;
+}
+.usa-button:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary):hover {
+    background: var(--button-hover-bg);
+}
+a.button:active, a.button:focus {
+    text-decoration: none;
+}
+.usa-modal {
+    font-family: inherit;
 }
 
 .module--custom {
@@ -732,7 +758,7 @@ div.dja__model-description{
 
     li {
         list-style-type: disc;
-        font-family: Source Sans Pro Web,Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;
+        font-family: family('sans');
     }
 
     a, a:link, a:visited {
@@ -851,4 +877,10 @@ div.dja__model-description{
 ul.add-list-reset {
     padding: 0 !important;
     margin: 0 !important;
+}
+
+// Fix the combobox when deployed outside admin (eg user transfer)
+.submit-row .select2,
+.submit-row .select2 span {
+    margin-top: 0;
 }

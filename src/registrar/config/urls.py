@@ -24,6 +24,7 @@ from registrar.views.report_views import (
 
 from registrar.views.domain_request import Step
 from registrar.views.domain_requests_json import get_domain_requests_json
+from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility.api_views import get_senior_official_from_federal_agency_json
 from registrar.views.domains_json import get_domains_json
 from registrar.views.utility import always_404
@@ -129,6 +130,7 @@ urlpatterns = [
         AnalyticsView.as_view(),
         name="analytics",
     ),
+    path('admin/registrar/user/<int:user_id>/transfer/', TransferUserView.as_view(), name='transfer_user'),
     path(
         "admin/api/get-senior-official-from-federal-agency-json/",
         get_senior_official_from_federal_agency_json,

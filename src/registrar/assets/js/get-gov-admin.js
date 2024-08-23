@@ -172,40 +172,39 @@ function addOrRemoveSessionBoolean(name, add){
 ** To perform data operations on this - we need to use jQuery rather than vanilla js. 
 */
 (function (){
-    let selector = django.jQuery("#id_investigator")
-    let assignSelfButton = document.querySelector("#investigator__assign_self");
-    if (!selector || !assignSelfButton) {
-        return;
-    }
-
-    let currentUserId = assignSelfButton.getAttribute("data-user-id");
-    let currentUserName = assignSelfButton.getAttribute("data-user-name");
-    if (!currentUserId || !currentUserName){
-        console.error("Could not assign current user: no values found.")
-        return;
-    }
-
-    // Hook a click listener to the "Assign to me" button.
-    // Logic borrowed from here: https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
-    assignSelfButton.addEventListener("click", function() {
-        if (selector.find(`option[value='${currentUserId}']`).length) {
-            // Select the value that is associated with the current user.
-            selector.val(currentUserId).trigger("change");
-        } else { 
-            // Create a DOM Option that matches the desired user. Then append it and select it.
-            let userOption = new Option(currentUserName, currentUserId, true, true);
-            selector.append(userOption).trigger("change");
+    if (document.getElementById("id_investigator") && django && django.jQuery) {
+        let selector = django.jQuery("#id_investigator")
+        let assignSelfButton = document.querySelector("#investigator__assign_self");
+        if (!selector || !assignSelfButton) {
+            return;
         }
-    });
 
-    // Listen to any change events, and hide the parent container if investigator has a value.
-    selector.on('change', function() {
-        // The parent container has display type flex.
-        assignSelfButton.parentElement.style.display = this.value === currentUserId ? "none" : "flex";
-    });
-    
-    
+        let currentUserId = assignSelfButton.getAttribute("data-user-id");
+        let currentUserName = assignSelfButton.getAttribute("data-user-name");
+        if (!currentUserId || !currentUserName){
+            console.error("Could not assign current user: no values found.")
+            return;
+        }
 
+        // Hook a click listener to the "Assign to me" button.
+        // Logic borrowed from here: https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
+        assignSelfButton.addEventListener("click", function() {
+            if (selector.find(`option[value='${currentUserId}']`).length) {
+                // Select the value that is associated with the current user.
+                selector.val(currentUserId).trigger("change");
+            } else { 
+                // Create a DOM Option that matches the desired user. Then append it and select it.
+                let userOption = new Option(currentUserName, currentUserId, true, true);
+                selector.append(userOption).trigger("change");
+            }
+        });
+
+        // Listen to any change events, and hide the parent container if investigator has a value.
+        selector.on('change', function() {
+            // The parent container has display type flex.
+            assignSelfButton.parentElement.style.display = this.value === currentUserId ? "none" : "flex";
+        });
+    }
 })();
 
 /** An IIFE for pages in DjangoAdmin that use a clipboard button
@@ -215,7 +214,6 @@ function addOrRemoveSessionBoolean(name, add){
     function copyToClipboardAndChangeIcon(button) {
         // Assuming the input is the previous sibling of the button
         let input = button.previousElementSibling;
-        let userId = input.getAttribute("user-id")
         // Copy input value to clipboard
         if (input) {
             navigator.clipboard.writeText(input.value).then(function() {

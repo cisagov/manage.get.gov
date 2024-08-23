@@ -1,0 +1,229 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n static %}
+
+{% block content_title %}<h1>Transfer user</h1>{% endblock %}
+
+{% block extrastyle %}
+
+{{ block.super }}
+
+{% endblock %}  
+
+{% block extrahead %}
+    {{ block.super }}
+    <!-- Making the user select a combobox: -->
+    <!-- Load Django Admin's base JavaScript. This is NEEDED because select2 relies on it. -->                         
+    <script src="{% static 'admin/js/vendor/jquery/jquery.min.js' %}"></script>
+    
+    <!-- Include Select2 JavaScript. Since this view technically falls outside of admin, this is needed. -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script type="application/javascript" src="{% static 'js/get-gov-admin-extra.js' %}" defer></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+        &rsaquo; <a href="{% url 'admin:app_list' 'registrar' %}">{% trans 'Registrar' %}</a>
+        &rsaquo; <a href="{% url 'admin:registrar_user_changelist' %}">{% trans 'Users' %}</a>
+        &rsaquo; <a href="{% url 'admin:registrar_user_change' current_user.pk %}">{{ current_user.first_name }} {{ current_user.last_name }}</a>
+        &rsaquo; {% trans 'Transfer User' %}
+    </div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="custom-admin-template">
+
+    <div class="module padding-4 display-flex flex-row flex-justify submit-row">
+
+        <div class="desktop:flex-align-center">
+            <form method="GET" action="{% url 'transfer_user' current_user.pk %}">
+                <label for="selected_user" class="text-middle">Select user to transfer data from:</label>
+                <select name="selected_user" id="selected_user" class="admin-combobox margin-top-0" onchange="this.form.submit()">
+                    <option value="">Select a user</option>
+                    {% for user in other_users %}
+                        <option value="{{ user.pk }}" {% if selected_user and user.pk == selected_user.pk %}selected{% endif %}>
+                            {{ user.first_name }} {{ user.last_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="submit" value="Preview" class="usa-button">
+            </form>
+        </div>
+        <div class="desktop:flex-align-center">
+            {% if selected_user %}
+                <a class="usa-button" href="#transfer-and-delete" aria-controls="transfer-and-delete" data-open-modal>
+                    Transfer and delete old user
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid-row grid-gap-2">
+        <div class="tablet:grid-col-6 margin-top-2">
+            <div class="module height-full">
+                <h2>User to receive data</h2>
+                <div class="padding-top-2 padding-x-2">
+                    <dl>
+                        <dt>Username:</dt>
+                        <dd>{{ current_user.username }}</dd>
+                        <dt>Created at:</dt>
+                        <dd>{{ current_user.created_at }}</dd>
+                        <dt>Last login:</dt>
+                        <dd>{{ current_user.last_login }}</dd>
+                        <dt>First name:</dt>
+                        <dd>{{ current_user.first_name }}</dd>
+                        <dt>Middle name:</dt>
+                        <dd>{{ current_user.middle_name }}</dd>
+                        <dt>Last name:</dt>
+                        <dd>{{ current_user.last_name }}</dd>
+                        <dt>Title:</dt>
+                        <dd>{{ current_user.title }}</dd>
+                        <dt>Email:</dt>
+                        <dd>{{ current_user.email }}</dd>
+                        <dt>Phone:</dt>
+                        <dd>{{ current_user.phone }}</dd>
+                        <dt>Domains:</dt>
+                        <dd>
+                            {% if current_user_domains %}
+                                <ul>
+                                    {% for domain in current_user_domains %}
+                                        <li>{{ domain }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                None
+                            {% endif %}
+                        </dd>
+                        <dt>Domain requests:</dt>
+                        <dd>
+                            {% if current_user_domain_requests %}
+                                <ul>
+                                    {% for request in current_user_domain_requests %}
+                                        <li>{{ request }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                None
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="tablet:grid-col-6 margin-top-2">
+            <div class="module height-full">
+                <h2>User to lose data and be deleted</h2>
+                <div class="padding-top-2 padding-x-2">
+                    {% if selected_user %}
+                        <dl>
+                            <dt>Username:</dt>
+                            <dd>{{ selected_user.username }}</dd>
+                            <dt>Created at:</dt>
+                            <dd>{{ selected_user.created_at }}</dd>
+                            <dt>Last login:</dt>
+                            <dd>{{ selected_user.last_login }}</dd>
+                            <dt>First name:</dt>
+                            <dd>{{ selected_user.first_name }}</dd>
+                            <dt>Middle name:</dt>
+                            <dd>{{ selected_user.middle_name }}</dd>
+                            <dt>Last name:</dt>
+                            <dd>{{ selected_user.last_name }}</dd>
+                            <dt>Title:</dt>
+                            <dd>{{ selected_user.title }}</dd>
+                            <dt>Email:</dt>
+                            <dd>{{ selected_user.email }}</dd>
+                            <dt>Phone:</dt>
+                            <dd>{{ selected_user.phone }}</dd>
+                            <dt>Domains:</dt>
+                            <dd>
+                                {% if selected_user_domains %}
+                                    <ul>
+                                        {% for domain in selected_user_domains %}
+                                            <li>{{ domain }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    None
+                                {% endif %}
+                            </dd>
+                            <dt>Domain requests:</dt>
+                            <dd>
+                                {% if selected_user_domain_requests %}
+                                    <ul>
+                                        {% for request in selected_user_domain_requests %}
+                                            <li>{{ request }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    None
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    {% else %}
+                        <p>No user selected yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div
+    class="usa-modal"
+    id="transfer-and-delete"
+    aria-labelledby="This action will delete {{ selected_user }}"
+    aria-describedby="This action will delete {{ selected_user }}"
+    >
+        <div class="usa-modal__content">
+            <div class="usa-modal__main">
+                <h2 class="usa-modal__heading" id="transfer-and-delete-heading">
+                    This action will delete {{ selected_user }}
+                </h2>
+                <div class="usa-prose">
+                    {% if selected_user != logged_in_user %}
+                        <p>But you know what you're doing, right?</p>
+                    {% else %}
+                        <p>Don't do it!</p>
+                    {% endif %}
+                </div>
+
+                <div class="usa-modal__footer">
+                    <ul class="usa-button-group">
+                        {% if selected_user != logged_in_user %}
+                            <li class="usa-button-group__item">
+                                <form method="POST" action="{% url 'transfer_user' current_user.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="selected_user" value="{{ selected_user.pk }}">
+                                    <input type="submit" class="usa-button" value="Transfer and delete old user">
+                                </form>
+                            </li>
+                        {% endif %}
+                        <li class="usa-button-group__item">
+                            <button
+                            type="button"
+                            class="usa-button usa-button--unstyled padding-105 text-center"
+                            name="_cancel_domain_request_ineligible"
+                            data-close-modal
+                            >
+                                Cancel
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <button
+            type="button"
+            class="usa-button usa-modal__close"
+            aria-label="Close this window"
+            data-close-modal
+            >
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                </svg>
+            </button>
+        </div>
+</div>
+{% endblock %}
