@@ -22,6 +22,7 @@ from registrar.models import (
     Contact,
     Website,
     SeniorOfficial,
+    Portfolio,
 )
 from .common import (
     MockSESClient,
@@ -78,6 +79,7 @@ class TestDomainRequestAdmin(MockEppLib):
         Contact.objects.all().delete()
         Website.objects.all().delete()
         SeniorOfficial.objects.all().delete()
+        Portfolio.objects.all().delete()
         self.mock_client.EMAILS_SENT.clear()
 
     @classmethod
@@ -262,6 +264,29 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain_request.requested_domain.name)
         self.assertContains(response, "<span>Show details</span>")
+
+    @less_console_noise_decorator
+    def test_domain_requests_by_portfolio(self):
+        """
+        Tests that domain_requests display for a portfolio.
+        """
+
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.superuser)
+        # Create a fake domain request and domain
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, portfolio=portfolio
+        )
+
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/?portfolio={}".format(portfolio.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+        self.assertContains(response, portfolio.organization_name)
 
     @less_console_noise_decorator
     def test_analyst_can_see_and_edit_alternative_domain(self):

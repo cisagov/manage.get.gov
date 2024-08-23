@@ -367,7 +367,9 @@ class DomainRequestAdminForm(forms.ModelForm):
 class MultiFieldSortableChangeList(admin.views.main.ChangeList):
     """
     This class overrides the behavior of column sorting in django admin tables in order
-    to allow for multi field sorting on admin_order_field
+    to allow for multi field sorting on admin_order_field.  It also overrides behavior
+    of getting the filter params to allow portfolio filters to be executed without
+    displaying on the right side of the ChangeList view.
 
 
     Usage:
@@ -431,7 +433,11 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
 
     def get_filters_params(self, params=None):
         """
-        Return all params except IGNORED_PARAMS.
+        Overrides the default behavior which gets filter_params, except
+        those in IGNORED_PARAMS. The override is to also include
+        portfolio in the overrides. This allows the portfolio filter
+        not to throw an error as a valid filter while not listing the
+        portfolio filter on the right side of the Change List view.
         """
         params = params or self.params
         lookup_params = params.copy()  # a dictionary of the query string

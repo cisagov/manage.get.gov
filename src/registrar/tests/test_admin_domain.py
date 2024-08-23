@@ -14,6 +14,7 @@ from registrar.models import (
     DomainInformation,
     User,
     Host,
+    Portfolio,
 )
 from .common import (
     MockSESClient,
@@ -359,6 +360,7 @@ class TestDomainAdminWithClient(TestCase):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
+        Portfolio.objects.all().delete()
 
     @classmethod
     def tearDownClass(self):
@@ -451,6 +453,32 @@ class TestDomainAdminWithClient(TestCase):
         _domain_info.delete()
         domain_request.delete()
         _creator.delete()
+
+    @less_console_noise_decorator
+    def test_domains_by_portfolio(self):
+        """
+        Tests that domains display for a portfolio.
+        """
+
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.superuser)
+        # Create a fake domain request and domain
+        _domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, portfolio=portfolio
+        )
+        _domain_request.approve()
+
+        domain = _domain_request.approved_domain
+
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            "/admin/registrar/domain/?portfolio={}".format(portfolio.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, portfolio.organization_name)
 
     @less_console_noise_decorator
     def test_helper_text(self):
