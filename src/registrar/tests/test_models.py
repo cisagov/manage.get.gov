@@ -236,7 +236,7 @@ class TestDomainRequest(TestCase):
         self, domain_request, msg, action, expected_count, expected_content=None, expected_email="mayor@igorville.com"
     ):
         """Check if an email was sent after performing an action."""
-
+        email_allowed = AllowedEmail.objects.get_or_create(email=expected_email)
         with self.subTest(msg=msg, action=action):
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 # Perform the specified action
@@ -254,6 +254,8 @@ class TestDomainRequest(TestCase):
             if expected_content:
                 email_content = sent_emails[0]["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
                 self.assertIn(expected_content, email_content)
+
+        email_allowed.delete()
 
     @override_flag("profile_feature", active=False)
     @less_console_noise_decorator
