@@ -236,7 +236,7 @@ class TestDomainRequest(TestCase):
         self, domain_request, msg, action, expected_count, expected_content=None, expected_email="mayor@igorville.com"
     ):
         """Check if an email was sent after performing an action."""
-        email_allowed = AllowedEmail.objects.get_or_create(email=expected_email)
+        email_allowed, _ = AllowedEmail.objects.get_or_create(email=expected_email)
         with self.subTest(msg=msg, action=action):
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 # Perform the specified action
