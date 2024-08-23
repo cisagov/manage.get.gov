@@ -41,18 +41,7 @@ def send_templated_email(
     """
 
     if not settings.IS_PRODUCTION:  # type: ignore
-        if flag_is_active(None, "disable_email_sending"):  # type: ignore
-            message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
-            raise EmailSendingError(message)
-        else:
-            # Raise an email sending error if these doesn't exist within our whitelist.
-            # If these emails don't exist, this function can handle that elsewhere.
-            AllowedEmail = apps.get_model("registrar", "AllowedEmail")
-            message = "Could not send email. The email '{}' does not exist within the whitelist."
-            if to_address and not AllowedEmail.is_allowed_email(to_address):
-                raise EmailSendingError(message.format(to_address))
-            if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
-                raise EmailSendingError(message.format(bcc_address))
+        _can_send_email(to_address, bcc_address)
 
     template = get_template(template_name)
     email_body = template.render(context=context)
@@ -111,6 +100,22 @@ def send_templated_email(
             )
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
+
+
+def _can_send_email(to_address, bcc_address):
+    """Raises an error if we cannot send an error"""
+    if flag_is_active(None, "disable_email_sending"):  # type: ignore
+        message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
+        raise EmailSendingError(message)
+    else:
+        # Raise an email sending error if these doesn't exist within our whitelist.
+        # If these emails don't exist, this function can handle that elsewhere.
+        AllowedEmail = apps.get_model("registrar", "AllowedEmail")
+        message = "Could not send email. The email '{}' does not exist within the whitelist."
+        if to_address and not AllowedEmail.is_allowed_email(to_address):
+            raise EmailSendingError(message.format(to_address))
+        if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
+            raise EmailSendingError(message.format(bcc_address))
 
 
 def wrap_text_and_preserve_paragraphs(text, width):

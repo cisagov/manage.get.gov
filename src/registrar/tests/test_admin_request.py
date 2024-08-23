@@ -54,11 +54,6 @@ class TestDomainRequestAdmin(MockEppLib):
     """
 
     @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        AllowedEmail.objects.all.delete()
-
-    @classmethod
     def setUpClass(self):
         super().setUpClass()
         self.site = AdminSite()

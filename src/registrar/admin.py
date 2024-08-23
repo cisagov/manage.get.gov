@@ -1915,20 +1915,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             else:
                 obj.action_needed_reason_email = default_email
 
-        if obj.status in DomainRequest.get_statuses_that_send_emails():
-            if not settings.IS_PRODUCTION:
-                profile_flag = flag_is_active(None, "profile_feature")
-                if profile_flag and hasattr(obj, "creator"):
-                    recipient = obj.creator
-                elif not profile_flag and hasattr(obj, "submitter"):
-                    recipient = obj.submitter
-                else:
-                    recipient = None
-
-                # Displays a warning in admin when an email cannot be sent,
-                # Or a success message if it was.
-                if recipient and recipient.email:
-                    self._check_for_valid_email(request, recipient.email)
+        if obj.status in DomainRequest.get_statuses_that_send_emails() and not settings.IS_PRODUCTION:
+            self._check_for_valid_email(request, obj)
 
         # == Handle status == #
         if obj.status == original_obj.status:
@@ -1942,16 +1930,27 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if should_save:
                 return super().save_model(request, obj, form, change)
 
-    def _check_for_valid_email(self, request, email):
+    def _check_for_valid_email(self, request, obj):
         """Certain emails are whitelisted in non-production environments,
         so we should display that information using this function.
 
         """
+        profile_flag = flag_is_active(request, "profile_feature")
+        if profile_flag and hasattr(obj, "creator"):
+            recipient = obj.creator
+        elif not profile_flag and hasattr(obj, "submitter"):
+            recipient = obj.submitter
+        else:
+            recipient = None
 
-        allowed = models.AllowedEmail.is_allowed_email(email)
-        error_message = f"Could not send email. The email '{email}' does not exist within the whitelist."
-        if not allowed:
-            messages.warning(request, error_message)
+        # Displays a warning in admin when an email cannot be sent,
+        # Or a success message if it was.
+        if recipient and recipient.email:
+            email = recipient.email
+            allowed = models.AllowedEmail.is_allowed_email(email)
+            error_message = f"Could not send email. The email '{email}' does not exist within the whitelist."
+            if not allowed:
+                messages.warning(request, error_message)
 
     def _handle_status_change(self, request, obj, original_obj):
         """

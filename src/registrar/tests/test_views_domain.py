@@ -583,7 +583,7 @@ class TestDomainManagers(TestDomainOverview):
         """Inviting a user sends them an email, with email as the name."""
         # Create a fake user object
         email_address = "mayor@igorville.gov"
-        allowed_email = AllowedEmail.objects.get_or_create(email=email_address)
+        AllowedEmail.objects.get_or_create(email=email_address)
         User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
 
         # Make sure the user is staff
