@@ -48,6 +48,7 @@ class UserFixture:
             "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
             "first_name": "Alysia",
             "last_name": "Broddrick",
+            "email": "abroddrick@truss.works",
         },
         {
             "username": "8f8e7293-17f7-4716-889b-1990241cbd39",
@@ -64,6 +65,7 @@ class UserFixture:
             "username": "83c2b6dd-20a2-4cac-bb40-e22a72d2955c",
             "first_name": "Cameron",
             "last_name": "Dixon",
+            "email": "cameron.dixon@cisa.dhs.gov",
         },
         {
             "username": "0353607a-cbba-47d2-98d7-e83dcd5b90ea",
