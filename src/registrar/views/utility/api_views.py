@@ -37,7 +37,8 @@ def get_senior_official_from_federal_agency_json(request):
         return JsonResponse(so_dict)
     else:
         return JsonResponse({"error": "Senior Official not found"}, status=404)
-    
+
+
 @login_required
 @staff_member_required
 def get_federal_and_portfolio_types_from_federal_agency_json(request):
@@ -62,8 +63,8 @@ def get_federal_and_portfolio_types_from_federal_agency_json(request):
         federal_type = BranchChoices.get_branch_label(federal_type) if federal_type else "-"
 
     response_data = {
-        'portfolio_type': portfolio_type,
-        'federal_type': federal_type,
+        "portfolio_type": portfolio_type,
+        "federal_type": federal_type,
     }
-    
+
     return JsonResponse(response_data)

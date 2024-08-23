@@ -150,7 +150,7 @@ class Portfolio(TimeStampedModel):
     @classmethod
     def get_federal_type(cls, federal_agency):
         return federal_agency.federal_type if federal_agency else None
-    
+
     # == Getters for domains == #
     def get_domains(self):
         """Returns all DomainInformations associated with this portfolio"""
