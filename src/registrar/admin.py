@@ -2975,7 +2975,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         Will be used in the after_help_text block."""
         members = [user for user in obj.user.all() if "Admin" not in user.portfolio_role_summary]
         if not members:
-            return ''
+            return ""
 
         member_details = (
             "<table><thead><tr><th>Name</th><th>Title</th><th>Email</th>"
