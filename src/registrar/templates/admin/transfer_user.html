@@ -38,7 +38,7 @@
     <div class="module padding-4 display-flex flex-row flex-justify submit-row">
 
         <div class="desktop:flex-align-center">
-            <form method="GET" action="{% url 'transfer_user' current_user.pk %}">
+            <form class="transfer-user-selector" method="GET" action="{% url 'transfer_user' current_user.pk %}">
                 <label for="selected_user" class="text-middle">Select user to transfer data from:</label>
                 <select name="selected_user" id="selected_user" class="admin-combobox margin-top-0" onchange="this.form.submit()">
                     <option value="">Select a user</option>
