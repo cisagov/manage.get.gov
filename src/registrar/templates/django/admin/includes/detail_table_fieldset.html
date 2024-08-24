@@ -232,7 +232,8 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         </button>
                     </div>
                 </div>
-                <textarea name="Email" cols="40" rows="10" class="vLargeTextField" id="action-needed-reason-email-readonly-textarea" readonly>{{ field.field.value|striptags }}
+                <label class="sr-only" for="action-needed-reason-email-readonly-textarea">Email:</label>
+                <textarea cols="40" rows="10" class="vLargeTextField" id="action-needed-reason-email-readonly-textarea" readonly>{{ field.field.value|striptags }}
                 </textarea>
             </div>
             <div>
