@@ -151,12 +151,31 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         </div>
         <div>
             <div id="action-needed-reason-email-readonly" class="display-none usa-summary-box_admin padding-top-0 margin-top-0">
+                <div class="flex-container">
+                    <div class="margin-top-05">
+                        <p class="{% if action_needed_email_sent %}display-none{% endif %}" id="action-needed-email-header"><b>Auto-generated email that will be sent to the creator</b></p>
+                        <p class="{% if not action_needed_email_sent %}display-none{% endif %}" id="action-needed-email-header-email-sent">
+                            <svg class="usa-icon text-green" aria-hidden="true" focusable="false" role="img">
+                                <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
+                            </svg>
+                            <b>Email sent to the creator</b>
+                        </p>
+                    </div>
+                    <div class="vertical-separator margin-top-1 margin-bottom-1"></div>
+                    <a
+                        href="#email-already-sent-modal"
+                        class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-left-1"
+                        aria-controls="email-already-sent-modal"
+                        data-open-modal
+                        >Edit email</a
+                    >
+                </div>
                 <div
-                class="usa-modal"
-                id="email-already-sent-modal"
-                aria-labelledby="Are you sure you want to edit this email?"
-                aria-describedby="The creator of this request already received an email"
-                >
+                    class="usa-modal"
+                    id="email-already-sent-modal"
+                    aria-labelledby="Are you sure you want to edit this email?"
+                    aria-describedby="The creator of this request already received an email"
+                    >
                     <div class="usa-modal__content">
                         <div class="usa-modal__main">
                             <h2 class="usa-modal__heading" id="modal-1-heading">
@@ -172,10 +191,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                 </ul>
                                 <p>
                                     If you edit this email's text, <b>the system will send another email</b> to
-                                    the creator after you "save" your changes.  If you do not want to send another email, click "cancel" below.
+                                    the creator after you “save” your changes.  If you do not want to send another email, click “cancel” below.
                                 </p>
                             </div>
-        
+
                             <div class="usa-modal__footer">
                                 <ul class="usa-button-group">
                                     <li class="usa-button-group__item">
@@ -212,24 +231,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                             </svg>
                         </button>
                     </div>
-                </div>
-        
-                <div class="flex-container">
-                    <div class="margin-top-05">
-                        <p class="{% if action_needed_email_sent %}display-none{% endif %}" id="action-needed-email-header"><b>Auto-generated email that will be sent to the creator</b></p>
-                        <p class="{% if not action_needed_email_sent %}display-none{% endif %}" id="action-needed-email-header-email-sent">
-                            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                                <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
-                            </svg>
-                            <b>Email sent to the creator</b>
-                        </p>
-                    </div>
-                    <div class="vertical-separator margin-top-1 margin-bottom-1"></div>
-                    <button id="action-needed-reason-email-edit-button" 
-                        type="button" 
-                        class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-left-1">
-                            <span>Edit email</span>
-                    </button>
                 </div>
                 <textarea cols="40" rows="10" class="vLargeTextField" id="action-needed-reason-email-readonly-textarea" readonly>{{ field.field.value|striptags }}
                 </textarea>

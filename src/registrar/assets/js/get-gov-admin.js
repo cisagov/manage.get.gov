@@ -518,9 +518,6 @@ function initializeWidgetOnList(list, parentId) {
     var actionNeededEmailReadonly = document.querySelector("#action-needed-reason-email-readonly")
     var actionNeededEmailReadonlyTextarea = document.querySelector("#action-needed-reason-email-readonly-textarea")
 
-    // Edit e-mail button (appears only in readonly view for e-mail text)
-    var editEmailButton = document.querySelector("#action-needed-reason-email-edit-button")
-
     // Edit e-mail modal (and its confirmation button)
     var actionNeededEmailAlreadySentModal = document.querySelector("#email-already-sent-modal")
     var confirmEditEmailButton = document.querySelector("#email-already-sent-modal_continue-editing-button")
@@ -565,12 +562,7 @@ function initializeWidgetOnList(list, parentId) {
         });
 
         editEmailButton.addEventListener("click", function() {
-            if (checkEmailAlreadySent()) {
-                // Show warning Modal
-                setModalVisibility(actionNeededEmailAlreadySentModal, true)
-            }
-            else {
-                // Show editable view
+            if (!checkEmailAlreadySent()) {
                 showEmail(canEdit=true)
             }
         });
@@ -580,13 +572,6 @@ function initializeWidgetOnList(list, parentId) {
             showEmail(canEdit=true)
         });
 
-        // Event delegation for data-close-modal buttons 
-        // (since manually opening the modal interferes with how this normally works)
-        document.addEventListener('click', function(event) {
-            if (event.target.matches('[data-close-modal]')) {
-                setModalVisibility(actionNeededEmailAlreadySentModal, false)
-            }
-        });
 
         // Add a change listener to the action needed reason dropdown
         actionNeededReasonDropdown.addEventListener("change", function() {
@@ -612,8 +597,6 @@ function initializeWidgetOnList(list, parentId) {
     {
         lastEmailSent = lastSentEmailText.value.replace(/\s+/g, '')
         currentEmailInTextArea = actionNeededEmail.value.replace(/\s+/g, '')
-        console.log("old email value = " + lastEmailSent)
-        console.log("current email value = " + currentEmailInTextArea)
         return lastEmailSent === currentEmailInTextArea
     }
 
@@ -631,16 +614,6 @@ function initializeWidgetOnList(list, parentId) {
         showElement(actionNeededEmailHeader)
         hideElement(actionNeededEmailHeaderOnSave)
         actionNeededEmailFooter.innerHTML = "This email will be sent to the creator of this request after saving";
-    }
-
-    function setModalVisibility(modalToToggle, isVisible) {
-        if (!isVisible) {
-            modalToToggle.classList.remove('is-visible');
-            modalToToggle.setAttribute('aria-hidden', 'true');
-        } else {
-            modalToToggle.classList.add('is-visible');
-            modalToToggle.setAttribute('aria-hidden', 'false');
-        }
     }
 
     // Shows either a preview of the email or some text describing no email will be sent.
