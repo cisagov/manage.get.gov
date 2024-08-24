@@ -369,7 +369,7 @@ input.admin-confirm-button {
 // This block resolves some of the issues we're seeing on buttons due to css
 // conflicts between DJ and USWDS
 a.button,
-.usa-button {
+.usa-button--dja {
     display: inline-block;
     padding: 10px 15px;
     font-size: 14px;
@@ -380,17 +380,17 @@ a.button,
 }
 .button svg,
 .button span,
-.usa-button svg,
-.usa-button span {
+.usa-button--dja svg,
+.usa-button--dja span {
     vertical-align: middle;
 }
-.usa-button:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary) {
+.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary) {
     background: var(--button-bg);
 }
-.usa-button span {
+.usa-button--dja span {
     font-size: 14px;
 }
-.usa-button:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary):hover {
+.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary):hover {
     background: var(--button-hover-bg);
 }
 a.button:active, a.button:focus {
@@ -398,6 +398,12 @@ a.button:active, a.button:focus {
 }
 .usa-modal {
     font-family: inherit;
+}
+// Targets the DJA buttom with a nested icon
+button .usa-icon,
+.button .usa-icon,
+.button--clipboard .usa-icon {
+    vertical-align: middle;      
 }
 
 .module--custom {
@@ -489,13 +495,6 @@ address.dja-address-contact-list {
 // Targets the unstyled buttons in the form
 .button--clipboard {
     color: var(--link-fg);
-}
-
-// Targets the DJA buttom with a nested icon
-button .usa-icon,
-.button .usa-icon,
-.button--clipboard .usa-icon {
-    vertical-align: middle;      
 }
 
 .errors span.select2-selection {

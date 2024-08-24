@@ -29,28 +29,28 @@
         <div class="padding-top-2 padding-x-2">
           <ul class="usa-button-group wrapped-button-group">
             <li class="usa-button-group__item">
-                <a href="{% url 'export_data_type' %}" class="usa-button text-no-wrap" role="button">
+                <a href="{% url 'export_data_type' %}" class="usa-button usa-button--dja text-no-wrap" role="button">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                     <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                   </svg><span class="margin-left-05">All domain metadata</span>
                 </a>
             </li>
             <li class="usa-button-group__item">
-              <a href="{% url 'export_data_full' %}" class="usa-button text-no-wrap" role="button">
+              <a href="{% url 'export_data_full' %}" class="usa-button usa-button--dja text-no-wrap" role="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                 </svg><span class="margin-left-05">Current full</span>
               </a>
             </li>
             <li class="usa-button-group__item">
-                <a href="{% url 'export_data_federal' %}" class="usa-button text-no-wrap" role="button">
+                <a href="{% url 'export_data_federal' %}" class="usa-button usa-button--dja text-no-wrap" role="button">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                     <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                   </svg><span class="margin-left-05">Current federal</span>
                 </a>
             </li>
             <li class="usa-button-group__item">
-              <a href="{% url 'export_data_domain_requests_full' %}" class="usa-button text-no-wrap" role="button">
+              <a href="{% url 'export_data_domain_requests_full' %}" class="usa-button usa-button--dja text-no-wrap" role="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                 </svg><span class="margin-left-05">All domain requests metadata</span>
@@ -84,35 +84,35 @@
           </div>
           <ul class="usa-button-group">
             <li class="usa-button-group__item">
-              <button class="usa-button exportLink" data-export-url="{% url 'export_domains_growth' %}" type="button">
+              <button class="usa-button usa-button--dja exportLink" data-export-url="{% url 'export_domains_growth' %}" type="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                 </svg><span class="margin-left-05">Domain growth</span>
               </button>
             </li>
             <li class="usa-button-group__item">
-              <button class="usa-button exportLink" data-export-url="{% url 'export_requests_growth' %}" type="button">
+              <button class="usa-button usa-button--dja exportLink" data-export-url="{% url 'export_requests_growth' %}" type="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                 </svg><span class="margin-left-05">Request growth</span>
               </button>
             </li>
             <li class="usa-button-group__item">
-              <button class="usa-button exportLink" data-export-url="{% url 'export_managed_domains' %}" type="button">
+              <button class="usa-button usa-button--dja exportLink" data-export-url="{% url 'export_managed_domains' %}" type="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                 </svg><span class="margin-left-05">Managed domains</span>
               </button>
             </li>
             <li class="usa-button-group__item">
-              <button class="usa-button exportLink" data-export-url="{% url 'export_unmanaged_domains' %}" type="button">
+              <button class="usa-button usa-button--dja exportLink" data-export-url="{% url 'export_unmanaged_domains' %}" type="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
                 </svg><span class="margin-left-05">Unmanaged domains</span>
               </button>
             </li>
             <li class="usa-button-group__item">
-              <button class="usa-button exportLink usa-button--secondary" data-export-url="{% url 'analytics' %}" type="button">
+              <button class="usa-button usa-button--dja exportLink usa-button--secondary" data-export-url="{% url 'analytics' %}" type="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#assessment"></use>
                 </svg><span class="margin-left-05">Update charts</span>

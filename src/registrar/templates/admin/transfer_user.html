@@ -48,12 +48,12 @@
                         </option>
                     {% endfor %}
                 </select>
-                <input type="submit" value="Preview" class="usa-button">
+                <input type="submit" value="Preview" class="usa-button usa-button--dja">
             </form>
         </div>
         <div class="desktop:flex-align-center">
             {% if selected_user %}
-                <a class="usa-button" href="#transfer-and-delete" aria-controls="transfer-and-delete" data-open-modal>
+                <a class="usa-button usa-button--dja" href="#transfer-and-delete" aria-controls="transfer-and-delete" data-open-modal>
                     Transfer and delete old user
                 </a>
             {% endif %}
@@ -197,7 +197,7 @@
                                 <form method="POST" action="{% url 'transfer_user' current_user.pk %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="selected_user" value="{{ selected_user.pk }}">
-                                    <input type="submit" class="usa-button" value="Transfer and delete old user">
+                                    <input type="submit" class="usa-button usa-button--dja" value="Transfer and delete old user">
                                 </form>
                             </li>
                         {% endif %}
