@@ -130,7 +130,7 @@ urlpatterns = [
         AnalyticsView.as_view(),
         name="analytics",
     ),
-    path('admin/registrar/user/<int:user_id>/transfer/', TransferUserView.as_view(), name='transfer_user'),
+    path("admin/registrar/user/<int:user_id>/transfer/", TransferUserView.as_view(), name="transfer_user"),
     path(
         "admin/api/get-senior-official-from-federal-agency-json/",
         get_senior_official_from_federal_agency_json,
