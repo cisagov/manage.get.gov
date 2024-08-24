@@ -1233,19 +1233,19 @@ class TestUser(TestCase):
     )
     def test_portfolio_role_summary_member_domain_requestor_domain_manager(self):
         # Test if the user has 'Member', 'Domain requestor', and 'Domain manager' roles
-        self.assertEqual(self.user.portfolio_role_summary, ["Member", "Domain requestor", "Domain manager"])
+        self.assertEqual(self.user.portfolio_role_summary, ["Domain requestor", "Domain manager"])
 
     @patch.multiple(User, has_base_portfolio_permission=lambda self: True, has_edit_requests=lambda self: True)
     def test_portfolio_role_summary_member_domain_requestor(self):
         # Test if the user has 'Member' and 'Domain requestor' roles
-        self.assertEqual(self.user.portfolio_role_summary, ["Member", "Domain requestor"])
+        self.assertEqual(self.user.portfolio_role_summary, ["Domain requestor"])
 
     @patch.multiple(
         User, has_base_portfolio_permission=lambda self: True, has_domains_portfolio_permission=lambda self: True
     )
     def test_portfolio_role_summary_member_domain_manager(self):
         # Test if the user has 'Member' and 'Domain manager' roles
-        self.assertEqual(self.user.portfolio_role_summary, ["Member", "Domain manager"])
+        self.assertEqual(self.user.portfolio_role_summary, ["Domain manager"])
 
     @patch.multiple(User, has_base_portfolio_permission=lambda self: True)
     def test_portfolio_role_summary_member(self):
