@@ -387,12 +387,12 @@ class PurposeForm(RegistrarForm):
 
 
 class YourContactForm(RegistrarForm):
-    JOIN = "submitter"
+    JOIN = "creator"
 
     def to_database(self, obj):
         if not self.is_valid():
             return
-        contact = getattr(obj, "submitter", None)
+        contact = getattr(obj, "creator", None)
         if contact is not None and not contact.has_more_than_one_join("submitted_domain_requests"):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
@@ -401,12 +401,12 @@ class YourContactForm(RegistrarForm):
             # in either case, create a new contact and update it
             contact = Contact()
             super().to_database(contact)
-            obj.submitter = contact
+            obj.creator = contact
             obj.save()
 
     @classmethod
     def from_database(cls, obj):
-        contact = getattr(obj, "submitter", None)
+        contact = getattr(obj, "creator", None)
         return super().from_database(contact)
 
     first_name = forms.CharField(

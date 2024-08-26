@@ -505,7 +505,6 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "submitter": (Contact, _name_sort),
         # == Senior Official == #
         "senior_official": (SeniorOfficial, _name_sort),
         # == User == #
@@ -1390,13 +1389,9 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain",
         "generic_org_type",
         "created_at",
-        "submitter",
     ]
 
-    orderable_fk_fields = [
-        ("domain", "name"),
-        ("submitter", ["first_name", "last_name"]),
-    ]
+    orderable_fk_fields = [("domain", "name")]
 
     # Filters
     list_filter = ["generic_org_type"]
@@ -1408,7 +1403,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "sub_organization", "creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "sub_organization", "creator", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1472,7 +1467,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "more_organization_information",
         "domain",
         "domain_request",
-        "submitter",
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
@@ -1487,7 +1481,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain_request",
         "senior_official",
         "domain",
-        "submitter",
         "portfolio",
         "sub_organization",
     ]
@@ -1658,13 +1651,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "submitter",
         "investigator",
     ]
 
     orderable_fk_fields = [
         ("requested_domain", "name"),
-        ("submitter", ["first_name", "last_name"]),
         ("investigator", ["first_name", "last_name"]),
     ]
 
@@ -1694,11 +1685,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Search
     search_fields = [
         "requested_domain__name",
-        "submitter__email",
-        "submitter__first_name",
-        "submitter__last_name",
+        "creator__email",
+        "creator__first_name",
+        "creator__last_name",
     ]
-    search_help_text = "Search by domain or submitter."
+    search_help_text = "Search by domain or creator."
 
     fieldsets = [
         (
@@ -1714,7 +1705,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "action_needed_reason_email",
                     "investigator",
                     "creator",
-                    "submitter",
                     "approved_domain",
                     "notes",
                 ]
@@ -1802,7 +1792,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "approved_domain",
         "alternative_domains",
         "purpose",
-        "submitter",
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
@@ -1813,7 +1802,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
-        "submitter",
         "creator",
         "senior_official",
         "investigator",
@@ -2150,10 +2138,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
             return None
 
-        if flag_is_active(None, "profile_feature"):  # type: ignore
-            recipient = domain_request.creator
-        else:
-            recipient = domain_request.submitter
+        recipient = domain_request.creator
 
         # Return the context of the rendered views
         context = {"domain_request": domain_request, "recipient": recipient}

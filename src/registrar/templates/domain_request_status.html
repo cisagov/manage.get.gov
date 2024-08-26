@@ -109,8 +109,8 @@
       {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level %}
     {% endif %}
 
-    {% if DomainRequest.submitter and not has_profile_feature_flag %}
-      {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.submitter contact='true' heading_level=heading_level %}
+    {% if DomainRequest.creator and not has_profile_feature_flag %}
+      {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.creator contact='true' heading_level=heading_level %}
     {% endif %}
 
     {% if DomainRequest.other_contacts.all %}
