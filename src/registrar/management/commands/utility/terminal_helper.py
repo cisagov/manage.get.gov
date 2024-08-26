@@ -188,7 +188,9 @@ class PopulateScriptTemplate(ABC):
         return f"{TerminalColors.FAIL}" f"Failed to update {record}" f"{TerminalColors.ENDC}"
 
     def should_skip_record(self, record) -> bool:  # noqa
-        """Defines the condition in which we should skip updating a record. Override as needed."""
+        """Defines the condition in which we should skip updating a record. Override as needed.
+        The difference between this and Custom_filter is that records matching these conditions
+        *will* be included in the run but will be skipped (and logged as such)."""
         # By default - don't skip
         return False
 
