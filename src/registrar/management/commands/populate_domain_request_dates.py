@@ -3,7 +3,6 @@ from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors
 from registrar.models import DomainRequest
 from auditlog.models import LogEntry
-from django.core.exceptions import ObjectDoesNotExist
 
 logger = logging.getLogger(__name__)
 
@@ -12,12 +11,13 @@ class Command(BaseCommand, PopulateScriptTemplate):
     help = "Loops through each domain request object and populates the last_status_update and first_submitted_date"
 
     def handle(self, **kwargs):
-        """Loops through each DomainRequest object and populates its last_status_update and first_submitted_date values"""
+        """Loops through each DomainRequest object and populates 
+        its last_status_update and first_submitted_date values"""
         self.mass_update_records(DomainRequest, None, ["last_status_update", "first_submitted_date"])
 
     def update_record(self, record: DomainRequest):
         """Defines how we update the first_submitted_date and last_status_update fields"""
-        
+
         # Retrieve and order audit log entries by timestamp in descending order
         audit_log_entries = LogEntry.objects.filter(object_pk=record.pk).order_by("-timestamp")
 
@@ -34,7 +34,10 @@ class Command(BaseCommand, PopulateScriptTemplate):
                 break
 
         logger.info(
-            f"{TerminalColors.OKCYAN}Updating {record} => first submitted date: " f"{record.first_submitted_date}, last status update:" f"{record.last_status_update}{TerminalColors.ENDC}"
+            f"""{TerminalColors.OKCYAN}Updating {record} => 
+                first submitted date: {record.first_submitted_date}, 
+                last status update: {record.last_status_update}{TerminalColors.ENDC}
+            """
         )
 
     def should_skip_record(self, record) -> bool:

@@ -823,7 +823,7 @@ class DomainRequest(TimeStampedModel):
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
 
-        # if the domain has not been submitted before this  must be the first time  
+        # if the domain has not been submitted before this  must be the first time
         if not self.first_submitted_date:
             self.first_submitted_date = timezone.now().date()
 
