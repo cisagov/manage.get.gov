@@ -837,6 +837,8 @@ function initializeWidgetOnList(list, parentId) {
         // If we can update the contact information, it'll be shown again.
         hideElement(contactList.parentElement);
 
+        // Determine if any changes are necessary to the display of portfolio type or federal type
+        // based on changes to the Federal Agency
         let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
         fetch(`${federalPortfolioApi}?organization_type=${organizationType.value}&agency_name=${selectedText}`)
         .then(response => {
@@ -851,8 +853,6 @@ function initializeWidgetOnList(list, parentId) {
 
             let federal_type = data.federal_type;
             let portfolio_type = data.portfolio_type;
-            console.log("portfolio type: " + portfolio_type);
-            console.log("federal type: " + federal_type);
             updateFederalType(data.federal_type);
             updatePortfolioType(data.portfolio_type);
         })
@@ -912,22 +912,25 @@ function initializeWidgetOnList(list, parentId) {
         }
     }
 
+    /**
+     * Dynamically update the portfolio type text in the dom to portfolioType
+     */
     function updatePortfolioType(portfolioType) {
-        console.log("attempting to update portfolioType");
         // Find the div with class 'field-portfolio_type'
         const portfolioTypeDiv = document.querySelector('.field-portfolio_type');
         if (portfolioTypeDiv) {
-            console.log("found portfoliotype");
             // Find the nested div with class 'readonly' inside 'field-portfolio_type'
             const readonlyDiv = portfolioTypeDiv.querySelector('.readonly');
             if (readonlyDiv) {
-                console.log("found readonly div");
                 // Update the text content of the readonly div
                 readonlyDiv.textContent = portfolioType !== null ? portfolioType : '-';
             }
         }
     }
 
+    /**
+     * Dynamically update the federal type text in the dom to federalType
+     */
     function updateFederalType(federalType) {
         // Find the div with class 'field-federal_type'
         const federalTypeDiv = document.querySelector('.field-federal_type');
