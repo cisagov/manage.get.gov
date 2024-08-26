@@ -34,7 +34,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
                 break
 
         logger.info(
-            f"{TerminalColors.OKCYAN}Updating {record} => first submitted date: " f"{record.first_submitted_date}{TerminalColors.OKCYAN}, last status update:" f"{record.last_status_update}{TerminalColors.ENDC}"
+            f"{TerminalColors.OKCYAN}Updating {record} => first submitted date: " f"{record.first_submitted_date}, last status update:" f"{record.last_status_update}{TerminalColors.ENDC}"
         )
 
     def should_skip_record(self, record) -> bool:
