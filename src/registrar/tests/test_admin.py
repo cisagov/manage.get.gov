@@ -380,7 +380,7 @@ class TestDomainInformationAdmin(TestCase):
 
         contact, _ = Contact.objects.get_or_create(first_name="Henry", last_name="McFakerson")
         domain_request = completed_domain_request(
-            submitter=contact, name="city1244.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW
+            name="city1244.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW
         )
         domain_request.approve()
 
@@ -505,7 +505,6 @@ class TestDomainInformationAdmin(TestCase):
         # These should exist in the response
         expected_values = [
             ("creator", "Person who submitted the domain request"),
-            ("submitter", 'Person listed under "your contact information" in the request form'),
             ("domain_request", "Request associated with this domain"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
             ("urbanization", "Required for Puerto Rico only"),
@@ -629,16 +628,6 @@ class TestDomainInformationAdmin(TestCase):
         # Check for the field itself
         self.assertContains(response, "Meoward Jones")
 
-        # == Check for the submitter == #
-        self.assertContains(response, "mayor@igorville.gov", count=2)
-        expected_submitter_fields = [
-            # Field, expected value
-            ("title", "Admin Tester"),
-            ("phone", "(555) 555 5556"),
-        ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
-        self.assertContains(response, "Testy2 Tester2")
-
         # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
         expected_so_fields = [
@@ -684,7 +673,6 @@ class TestDomainInformationAdmin(TestCase):
                 "more_organization_information",
                 "domain",
                 "domain_request",
-                "submitter",
                 "no_other_contacts_rationale",
                 "anything_else",
                 "is_policy_acknowledged",
@@ -703,19 +691,19 @@ class TestDomainInformationAdmin(TestCase):
             # Assert that sorting in reverse works correctly
             self.test_helper.assert_table_sorted("-1", ("-domain__name",))
 
-    def test_submitter_sortable(self):
-        """Tests if DomainInformation sorts by submitter correctly"""
+    def test_creator_sortable(self):
+        """Tests if DomainInformation sorts by creator correctly"""
         with less_console_noise():
             self.client.force_login(self.superuser)
 
             # Assert that our sort works correctly
             self.test_helper.assert_table_sorted(
                 "4",
-                ("submitter__first_name", "submitter__last_name"),
+                ("creator__first_name", "creator__last_name"),
             )
 
             # Assert that sorting in reverse works correctly
-            self.test_helper.assert_table_sorted("-4", ("-submitter__first_name", "-submitter__last_name"))
+            self.test_helper.assert_table_sorted("-4", ("-creator__first_name", "-creator__last_name"))
 
 
 class TestUserDomainRoleAdmin(TestCase):
@@ -1298,7 +1286,6 @@ class AuditedAdminTest(TestCase):
                 # Senior offical is commented out for now - this is alphabetized
                 # and this test does not accurately reflect that.
                 # DomainRequest.senior_official.field,
-                DomainRequest.submitter.field,
                 # DomainRequest.investigator.field,
                 DomainRequest.creator.field,
                 DomainRequest.requested_domain.field,
@@ -1358,7 +1345,6 @@ class AuditedAdminTest(TestCase):
                 # Senior offical is commented out for now - this is alphabetized
                 # and this test does not accurately reflect that.
                 # DomainInformation.senior_official.field,
-                DomainInformation.submitter.field,
                 # DomainInformation.creator.field,
                 (DomainInformation.domain.field, ["name"]),
                 (DomainInformation.domain_request.field, ["requested_domain__name"]),
@@ -1680,10 +1666,10 @@ class TestContactAdmin(TestCase):
             )
 
             # join it to 4 domain requests.
-            domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
-            domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
-            domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
-            domain_request4 = completed_domain_request(submitter=contact, name="city4.gov")
+            domain_request1 = completed_domain_request(name="city1.gov")
+            domain_request2 = completed_domain_request(name="city2.gov")
+            domain_request3 = completed_domain_request(name="city3.gov")
+            domain_request4 = completed_domain_request(name="city4.gov")
 
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Use the test client to simulate the request
@@ -1720,12 +1706,12 @@ class TestContactAdmin(TestCase):
                 first_name="Henry",
                 last_name="McFakerson",
             )
-            domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
-            domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
-            domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
-            domain_request4 = completed_domain_request(submitter=contact, name="city4.gov")
-            domain_request5 = completed_domain_request(submitter=contact, name="city5.gov")
-            completed_domain_request(submitter=contact, name="city6.gov")
+            domain_request1 = completed_domain_request(name="city1.gov")
+            domain_request2 = completed_domain_request(name="city2.gov")
+            domain_request3 = completed_domain_request(name="city3.gov")
+            domain_request4 = completed_domain_request(name="city4.gov")
+            domain_request5 = completed_domain_request(name="city5.gov")
+            completed_domain_request(name="city6.gov")
             with patch("django.contrib.messages.warning") as mock_warning:
                 # Use the test client to simulate the request
                 response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))

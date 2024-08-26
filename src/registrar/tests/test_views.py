@@ -381,7 +381,6 @@ class HomeTests(TestWithUser):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
-            submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
 
@@ -392,7 +391,6 @@ class HomeTests(TestWithUser):
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
             senior_official=contact_2,
-            submitter=contact_shared,
         )
         domain_request_2.other_contacts.set([contact_shared])
 
@@ -455,7 +453,6 @@ class HomeTests(TestWithUser):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
-            submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
 
@@ -466,7 +463,6 @@ class HomeTests(TestWithUser):
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
             senior_official=contact_2,
-            submitter=contact_shared,
         )
         domain_request_2.other_contacts.set([contact_shared])
 
@@ -1038,7 +1034,6 @@ class UserProfileTests(TestWithUser, WebTest):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             senior_official=contact_user,
-            submitter=contact_user,
         )
         with override_flag("profile_feature", active=True):
             response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
@@ -1060,7 +1055,6 @@ class UserProfileTests(TestWithUser, WebTest):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             senior_official=contact_user,
-            submitter=contact_user,
         )
         with override_flag("profile_feature", active=False):
             response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)

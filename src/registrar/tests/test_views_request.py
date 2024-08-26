@@ -368,11 +368,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         your_contact_result = your_contact_form.submit()
         # validate that data from this step are being saved
         domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.submitter.first_name, "Testy you")
-        self.assertEqual(domain_request.submitter.last_name, "Tester you")
-        self.assertEqual(domain_request.submitter.title, "Admin Tester")
-        self.assertEqual(domain_request.submitter.email, "testy-admin@town.com")
-        self.assertEqual(domain_request.submitter.phone, "(201) 555 5556")
+        self.assertEqual(domain_request.creator.first_name, self.user.first_name)
+        self.assertEqual(domain_request.creator.last_name, self.user.last_name)
+        self.assertEqual(domain_request.creator.title, self.user.title)
+        self.assertEqual(domain_request.creator.email, self.user.email)
+        self.assertEqual(domain_request.creator.phone, self.user.phone)
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(your_contact_result.status_code, 302)
@@ -1643,7 +1643,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -1780,7 +1779,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -1855,7 +1853,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -1933,7 +1930,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -2010,7 +2006,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -2086,7 +2081,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -2297,7 +2291,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -2363,7 +2356,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            submitter=submitter,
             creator=self.user,
             status="started",
         )
@@ -2729,7 +2721,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             zipcode="10002",
             senior_official=so,
             requested_domain=domain,
-            submitter=you,
             creator=self.user,
         )
         domain_request.other_contacts.add(other)
@@ -3072,7 +3063,6 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
-            submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
 

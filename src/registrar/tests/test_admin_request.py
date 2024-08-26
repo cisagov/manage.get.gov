@@ -94,7 +94,7 @@ class TestDomainRequestAdmin(MockEppLib):
         SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
 
         contact, _ = Contact.objects.get_or_create(first_name="Henry", last_name="McFakerson")
-        domain_request = completed_domain_request(submitter=contact, name="city1.gov")
+        domain_request = completed_domain_request(name="city1.gov")
         request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
         model_admin = AuditedAdmin(DomainRequest, self.site)
 
@@ -150,10 +150,6 @@ class TestDomainRequestAdmin(MockEppLib):
         # These should exist in the response
         expected_values = [
             ("creator", "Person who submitted the domain request; will not receive email updates"),
-            (
-                "submitter",
-                'Person listed under "your contact information" in the request form; will receive email updates',
-            ),
             ("approved_domain", "Domain associated with this request; will be blank until request is approved"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
             ("alternative_domains", "Other domain names the creator provided for consideration"),
@@ -409,8 +405,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted("-1", ("-requested_domain__name",))
 
     @less_console_noise_decorator
-    def test_submitter_sortable(self):
-        """Tests if the DomainRequest sorts by submitter correctly"""
+    def test_creator_sortable(self):
+        """Tests if the DomainRequest sorts by creator correctly"""
         self.client.force_login(self.superuser)
 
         multiple_unalphabetical_domain_objects("domain_request")
@@ -424,8 +420,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted(
             "11",
             (
-                "submitter__first_name",
-                "submitter__last_name",
+                "creator__first_name",
+                "creator__last_name",
             ),
         )
 
@@ -433,8 +429,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted(
             "-11",
             (
-                "-submitter__first_name",
-                "-submitter__last_name",
+                "-creator__first_name",
+                "-creator__last_name",
             ),
         )
 
@@ -1381,16 +1377,6 @@ class TestDomainRequestAdmin(MockEppLib):
         # Check for the field itself
         self.assertContains(response, "Meoward Jones")
 
-        # == Check for the submitter == #
-        self.assertContains(response, "mayor@igorville.gov", count=2)
-        expected_submitter_fields = [
-            # Field, expected value
-            ("title", "Admin Tester"),
-            ("phone", "(555) 555 5556"),
-        ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
-        self.assertContains(response, "Testy2 Tester2")
-
         # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
         expected_so_fields = [
@@ -1546,7 +1532,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "senior_official",
             "approved_domain",
             "requested_domain",
-            "submitter",
             "purpose",
             "no_other_contacts_rationale",
             "anything_else",
@@ -1583,7 +1568,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "approved_domain",
                 "alternative_domains",
                 "purpose",
-                "submitter",
                 "no_other_contacts_rationale",
                 "anything_else",
                 "is_policy_acknowledged",
