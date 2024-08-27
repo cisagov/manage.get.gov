@@ -277,7 +277,7 @@ class TestDomainRequestAdmin(MockEppLib):
             status=DomainRequest.DomainRequestStatus.IN_REVIEW, portfolio=portfolio
         )
         domain_request2 = completed_domain_request(
-            name="testdomain2.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW            
+            name="testdomain2.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW
         )
 
         self.client.force_login(self.superuser)
