@@ -3016,10 +3016,10 @@ class PortfolioAdmin(ListHeaderAdmin):
         if domain_count > 0:
             # Construct the URL to the admin page, filtered by portfolio
             url = reverse("admin:registrar_domain_changelist") + f"?portfolio={obj.id}"
-            label = "Domain" if domain_count == 1 else "No domains"
+            label = "domain" if domain_count == 1 else "domains"
             # Create a clickable link with the domain count
             return format_html('<a href="{}">{} {}</a>', url, domain_count, label)
-        return "No Domains"
+        return "No domains"
 
     domains.short_description = "Domains"  # type: ignore
 
@@ -3030,7 +3030,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             # Construct the URL to the admin page, filtered by portfolio
             url = reverse("admin:registrar_domainrequest_changelist") + f"?portfolio={obj.id}"
             # Create a clickable link with the domain request count
-            return format_html('<a href="{}">{} Domain Requests</a>', url, domain_request_count)
+            return format_html('<a href="{}">{} domain requests</a>', url, domain_request_count)
         return "No domain requests"
 
     domain_requests.short_description = "Domain requests"  # type: ignore

@@ -2107,7 +2107,7 @@ class TestPortfolioAdmin(TestCase):
         domain_2.save()
 
         domains = self.admin.domains(self.portfolio)
-        self.assertIn("2 Domains", domains)
+        self.assertIn("2 domains", domains)
 
     @less_console_noise_decorator
     def test_domain_requests_display(self):
@@ -2116,4 +2116,4 @@ class TestPortfolioAdmin(TestCase):
         completed_domain_request(name="request2.gov", portfolio=self.portfolio)
 
         domain_requests = self.admin.domain_requests(self.portfolio)
-        self.assertIn("2 Domain Requests", domain_requests)
+        self.assertIn("2 domain requests", domain_requests)
