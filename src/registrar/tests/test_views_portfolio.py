@@ -414,7 +414,7 @@ class TestPortfolio(WebTest):
     def test_portfolio_in_session_is_none_when_organization_feature_inactive(self):
         """When organization_feature flag is false and user has a portfolio,
         the portfolio should be set to None in session.
-        This test also satisfies the conidition when multiple_portfolios flag
+        This test also satisfies the condition when multiple_portfolios flag
         is false and user has a portfolio, so won't add a redundant test for that."""
         self.client.force_login(self.user)
         portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
