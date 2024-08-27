@@ -99,7 +99,7 @@ class PopulateScriptTemplate(ABC):
             fields_to_update: List of strings specifying which fields to update.
                 (e.g. ["first_ready_date", "last_submitted_date"])
 
-            debug: Whether to log script run summary in debug mode. 
+            debug: Whether to log script run summary in debug mode.
                 Default: True.
 
             verbose: Whether to print a detailed run summary *before* run confirmation. 
@@ -118,13 +118,13 @@ class PopulateScriptTemplate(ABC):
         readable_class_name = self.get_class_name(object_class)
 
         # for use in the execution prompt.
-        proposed_changes=f"""==Proposed Changes==
+        proposed_changes = f"""==Proposed Changes==
             Number of {readable_class_name} objects to change: {len(records)}
             These fields will be updated on each record: {fields_to_update}
             """
-        
+
         if verbose:
-            proposed_changes=f"""{proposed_changes}
+            proposed_changes = f"""{proposed_changes}
             These records will be updated: {list(records.all())}
             """
 
@@ -181,13 +181,11 @@ class PopulateScriptTemplate(ABC):
         *will* be included in the run but will be skipped (and logged as such)."""
         # By default - don't skip
         return False
-    
+
     def custom_filter(self, records: BaseManager[Model]) -> BaseManager[Model]:
-        """Override to define filters that can't be represented by django queryset field lookups. 
+        """Override to define filters that can't be represented by django queryset field lookups.
         Applied to individual records *after* filter_conditions. True means """
         return records
-
-
 
 class TerminalHelper:
     @staticmethod
