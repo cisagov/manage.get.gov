@@ -146,7 +146,7 @@ class CheckPortfolioMiddleware:
 
         # set the portfolio in the session if it is not set
         if "portfolio" not in request.session or request.session["portfolio"] is None:
-            # if user is a multiple portfolio
+            # if multiple portfolios are allowed for this user
             if flag_is_active(request, "multiple_portfolios"):
                 # NOTE: we will want to change later to have a workflow for selecting
                 # portfolio and another for switching portfolio; for now, select first
