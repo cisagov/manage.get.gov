@@ -433,11 +433,9 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
 
     def get_filters_params(self, params=None):
         """
-        Overrides the default behavior which gets filter_params, except
-        those in IGNORED_PARAMS. The override is to also include
-        portfolio in the overrides. This allows the portfolio filter
-        not to throw an error as a valid filter while not listing the
-        portfolio filter on the right side of the Change List view.
+        Add portfolio to ignored params to allow the portfolio filter while not
+        listing it as a filter option on the right side of Change List on the
+        portfolio list.
         """
         params = params or self.params
         lookup_params = params.copy()  # a dictionary of the query string
@@ -3018,7 +3016,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         if domain_count > 0:
             # Construct the URL to the admin page, filtered by portfolio
             url = reverse("admin:registrar_domain_changelist") + f"?portfolio={obj.id}"
-            label = "Domain" if domain_count == 1 else "Domains"
+            label = "Domain" if domain_count == 1 else "No domains"
             # Create a clickable link with the domain count
             return format_html('<a href="{}">{} {}</a>', url, domain_count, label)
         return "No Domains"
@@ -3033,7 +3031,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             url = reverse("admin:registrar_domainrequest_changelist") + f"?portfolio={obj.id}"
             # Create a clickable link with the domain request count
             return format_html('<a href="{}">{} Domain Requests</a>', url, domain_request_count)
-        return "No Domain Requests"
+        return "No domain requests"
 
     domain_requests.short_description = "Domain requests"  # type: ignore
 

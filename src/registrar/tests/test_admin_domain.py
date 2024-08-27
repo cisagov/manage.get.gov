@@ -16,6 +16,7 @@ from registrar.models import (
     Host,
     Portfolio,
 )
+from registrar.models.user_domain_role import UserDomainRole
 from .common import (
     MockSESClient,
     completed_domain_request,
@@ -357,6 +358,7 @@ class TestDomainAdminWithClient(TestCase):
     def tearDown(self):
         super().tearDown()
         Host.objects.all().delete()
+        UserDomainRole.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
@@ -457,7 +459,7 @@ class TestDomainAdminWithClient(TestCase):
     @less_console_noise_decorator
     def test_domains_by_portfolio(self):
         """
-        Tests that domains display for a portfolio.
+        Tests that domains display for a portfolio.  And that domains outside the portfolio do not display.
         """
 
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.superuser)
@@ -468,6 +470,9 @@ class TestDomainAdminWithClient(TestCase):
         _domain_request.approve()
 
         domain = _domain_request.approved_domain
+        domain2, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        UserDomainRole.objects.get_or_create()
+        UserDomainRole.objects.get_or_create(user=self.superuser, domain=domain2, role=UserDomainRole.Roles.MANAGER)
 
         self.client.force_login(self.superuser)
         response = self.client.get(
@@ -478,6 +483,7 @@ class TestDomainAdminWithClient(TestCase):
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
+        self.assertNotContains(response, domain2.name)
         self.assertContains(response, portfolio.organization_name)
 
     @less_console_noise_decorator
