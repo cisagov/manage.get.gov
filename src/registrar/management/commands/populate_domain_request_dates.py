@@ -11,7 +11,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
     help = "Loops through each domain request object and populates the last_status_update and first_submitted_date"
 
     def handle(self, **kwargs):
-        """Loops through each DomainRequest object and populates 
+        """Loops through each DomainRequest object and populates
         its last_status_update and first_submitted_date values"""
         self.mass_update_records(DomainRequest, None, ["last_status_update", "first_submitted_date"])
 
@@ -34,8 +34,8 @@ class Command(BaseCommand, PopulateScriptTemplate):
                 break
 
         logger.info(
-            f"""{TerminalColors.OKCYAN}Updating {record} => 
-                first submitted date: {record.first_submitted_date}, 
+            f"""{TerminalColors.OKCYAN}Updating {record} =>
+                first submitted date: {record.first_submitted_date},
                 last status update: {record.last_status_update}{TerminalColors.ENDC}
             """
         )
