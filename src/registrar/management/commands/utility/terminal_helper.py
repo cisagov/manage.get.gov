@@ -3,6 +3,7 @@ import sys
 from abc import ABC, abstractmethod
 from django.core.paginator import Paginator
 from django.db.models import Model
+from django.db.models.manager import BaseManager
 from typing import List
 from registrar.utility.enums import LogCode
 
@@ -84,7 +85,7 @@ class PopulateScriptTemplate(ABC):
         """
         raise NotImplementedError
 
-    def mass_update_records(self, object_class: Model, filter_conditions, fields_to_update, debug=True, verbose=False, custom_filter=None):
+    def mass_update_records(self, object_class: Model, filter_conditions, fields_to_update, debug=True, verbose=False):
         """Loops through each valid "object_class" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using update_record.
 
@@ -104,10 +105,6 @@ class PopulateScriptTemplate(ABC):
             verbose: Whether to print a detailed run summary *before* run confirmation. 
                 Default: False.
 
-            custom_filter: function taking in a single record and returning a boolean representing whether
-                the record should be included of the final record set. Used to allow for filters that can't be
-                represented by django queryset field lookups. Applied *after* filter_conditions.
-
         Raises:
             NotImplementedError: If you do not define update_record before using this function.
             TypeError: If custom_filter is not Callable.
@@ -116,16 +113,7 @@ class PopulateScriptTemplate(ABC):
         records = object_class.objects.filter(**filter_conditions)
 
         # apply custom filter
-        if custom_filter:
-            to_exclude_pks = []
-            for record in records:
-                try:
-                    if not custom_filter(record):
-                        to_exclude_pks.append(record.pk)
-                except TypeError as e:
-                    logger.error(f"Error applying custom filter: {e}")
-                    sys.exit()
-            records=records.exclude(pk__in=to_exclude_pks)
+        records=self.custom_filter(records)
 
         readable_class_name = self.get_class_name(object_class)
 
@@ -189,10 +177,16 @@ class PopulateScriptTemplate(ABC):
 
     def should_skip_record(self, record) -> bool:  # noqa
         """Defines the condition in which we should skip updating a record. Override as needed.
-        The difference between this and Custom_filter is that records matching these conditions
+        The difference between this and custom_filter is that records matching these conditions
         *will* be included in the run but will be skipped (and logged as such)."""
         # By default - don't skip
         return False
+    
+    def custom_filter(self, records: BaseManager[Model]) -> BaseManager[Model]:
+        """Override to define filters that can't be represented by django queryset field lookups. 
+        Applied to individual records *after* filter_conditions. True means """
+        return records
+
 
 
 class TerminalHelper:

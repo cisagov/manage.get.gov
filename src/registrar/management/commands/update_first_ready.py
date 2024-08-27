@@ -1,5 +1,6 @@
 import logging
 from django.core.management import BaseCommand
+from django.db.models.manager import BaseManager
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors
 from registrar.models import Domain, TransitionDomain
 
@@ -10,8 +11,8 @@ class Command(BaseCommand, PopulateScriptTemplate):
 
     def handle(self, **kwargs):
         """Loops through each valid Domain object and updates it's first_ready value if it is out of sync"""
-        filter_conditions={"state__in":[Domain.State.READY, Domain.State.ON_HOLD, Domain.State.DELETED]}
-        self.mass_update_records(Domain, filter_conditions, ["first_ready"], verbose=True, custom_filter=self.should_update)
+        filter_conditions={"state__in":[Domain.State.READY, Domain.State.ON_HOLD, Domain.State.DELETED, Domain.State.UNKNOWN]}
+        self.mass_update_records(Domain, filter_conditions, ["first_ready"], verbose=True)
 
     def update_record(self, record: Domain):
         """Defines how we update the first_ready field"""
@@ -23,6 +24,11 @@ class Command(BaseCommand, PopulateScriptTemplate):
         )
     
     # check if a transition domain object for this domain name exists, 
-    # and if so whether its first_ready value matches its created_at date
-    def should_update(self, record: Domain) -> bool:
-        return TransitionDomain.objects.filter(domain_name=record.name).exists() and record.first_ready != record.created_at.date()
+    # or if so whether its first_ready value matches its created_at date
+    def custom_filter(self, records: BaseManager[Domain]) -> BaseManager[Domain]:
+        to_include_pks = []
+        for record in records:
+            if  TransitionDomain.objects.filter(domain_name=record.name).exists() and record.first_ready != record.created_at.date():
+                to_include_pks.append(record.pk)
+        
+        return records.filter(pk__in=to_include_pks)
