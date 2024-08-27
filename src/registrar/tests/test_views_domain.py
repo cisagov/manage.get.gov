@@ -1603,12 +1603,6 @@ class TestDomainSuborganization(TestDomainOverview):
 
 class TestDomainContactInformation(TestDomainOverview):
     @less_console_noise_decorator
-    def test_domain_your_contact_information(self):
-        """Can load domain's your contact information page."""
-        page = self.client.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Your contact information")
-
-    @less_console_noise_decorator
     def test_domain_your_contact_information_content(self):
         """Logged-in user's contact information appears on the page."""
         self.user.first_name = "Testy"

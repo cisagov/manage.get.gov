@@ -149,7 +149,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # These should exist in the response
         expected_values = [
-            ("creator", "Person who submitted the domain request; will not receive email updates"),
+            ("creator", "Person who submitted the domain request; will receive email updates"),
             ("approved_domain", "Domain associated with this request; will be blank until request is approved"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
             ("alternative_domains", "Other domain names the creator provided for consideration"),
@@ -1397,7 +1397,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "button--clipboard", count=5)
+        self.assertContains(response, "button--clipboard", count=4)
 
         # Test that Creator counts display properly
         self.assertNotContains(response, "Approved domains")

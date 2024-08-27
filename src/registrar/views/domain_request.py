@@ -45,7 +45,6 @@ class Step(StrEnum):
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
     PURPOSE = "purpose"
-    YOUR_CONTACT = "your_contact"
     OTHER_CONTACTS = "other_contacts"
     ADDITIONAL_DETAILS = "additional_details"
     REQUIREMENTS = "requirements"
@@ -91,7 +90,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.CURRENT_SITES: _("Current websites"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
         Step.PURPOSE: _("Purpose of your domain"),
-        Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
         Step.ADDITIONAL_DETAILS: _("Additional details"),
         Step.REQUIREMENTS: _("Requirements for operating a .gov domain"),
@@ -375,7 +373,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             ),
             "dotgov_domain": self.domain_request.requested_domain is not None,
             "purpose": self.domain_request.purpose is not None,
-            "your_contact": self.domain_request.creator is not None,
             "other_contacts": (
                 self.domain_request.other_contacts.exists()
                 or self.domain_request.no_other_contacts_rationale is not None
@@ -438,9 +435,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 condition = condition(self)
             if condition:
                 step_list.append(step)
-
-        if flag_is_active(self.request, "profile_feature"):
-            step_list.remove(Step.YOUR_CONTACT)
 
         return step_list
 
@@ -580,15 +574,6 @@ class DotgovDomain(DomainRequestWizard):
 class Purpose(DomainRequestWizard):
     template_name = "domain_request_purpose.html"
     forms = [forms.PurposeForm]
-
-
-class YourContact(DomainRequestWizard):
-    template_name = "domain_request_your_contact.html"
-    forms = [forms.YourContactForm]
-
-    @waffle_flag("!profile_feature")  # type: ignore
-    def dispatch(self, request, *args, **kwargs):  # type: ignore
-        return super().dispatch(request, *args, **kwargs)
 
 
 class OtherContacts(DomainRequestWizard):

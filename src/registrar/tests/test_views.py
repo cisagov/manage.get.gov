@@ -1007,20 +1007,6 @@ class UserProfileTests(TestWithUser, WebTest):
         self.assertNotContains(response, "Your contact information")
 
     @less_console_noise_decorator
-    def test_domain_your_contact_information_when_profile_feature_off(self):
-        """test that Your contact information is accessible when profile_feature is off"""
-        with override_flag("profile_feature", active=False):
-            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
-        self.assertContains(response, "Your contact information")
-
-    @less_console_noise_decorator
-    def test_domain_your_contact_information_when_profile_feature_on(self):
-        """test that Your contact information is not accessible when profile feature is on"""
-        with override_flag("profile_feature", active=True):
-            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
-        self.assertEqual(response.status_code, 404)
-
-    @less_console_noise_decorator
     def test_request_when_profile_feature_on(self):
         """test that Your profile is in request page when profile feature is on"""
 
