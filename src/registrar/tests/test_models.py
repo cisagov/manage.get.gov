@@ -1998,13 +1998,6 @@ class TestDomainRequestIncomplete(TestCase):
         self.assertFalse(self.domain_request._is_purpose_complete())
 
     @less_console_noise_decorator
-    def test_is_creator_complete(self):
-        self.assertTrue(self.domain_request._is_creator_complete())
-        self.domain_request.creator = None
-        self.domain_request.save()
-        self.assertFalse(self.domain_request._is_creator_complete())
-
-    @less_console_noise_decorator
     def test_is_other_contacts_complete_missing_one_field(self):
         self.assertTrue(self.domain_request._is_other_contacts_complete())
         contact = self.domain_request.other_contacts.first()
