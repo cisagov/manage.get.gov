@@ -29,7 +29,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         # Loop through logs in ascending order to find first submission
         for log_entry in audit_log_entries.reverse():
             status = log_entry.changes_dict.get('status')
-            if status and status[1] == 'Submitted':
+            if status and status[1] == 'submitted':
                 record.first_submitted_date = log_entry.timestamp.date()
                 break
 
