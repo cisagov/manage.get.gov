@@ -245,7 +245,7 @@ class UserFixture:
 
     # Additional emails to add to the AllowedEmail whitelist.
     # The format should be as follows: ["email@igorville.gov", "email2@igorville.gov"]
-    ADDITIONAL_ALLOWED_EMAILS = ["zander.adkinson@ecstech.com"]
+    ADDITIONAL_ALLOWED_EMAILS = []
 
     def load_users(cls, users, group_name, are_superusers=False):
         logger.info(f"Going to load {len(users)} users in group {group_name}")
