@@ -206,12 +206,11 @@ class User(AbstractUser):
         if not portfolio:
             return False
 
-        portfolio_perms = self.portfolio_permissions.filter(portfolio=portfolio, user=self).first()
-        if not portfolio_perms:
+        user_portfolio_perms = self.portfolio_permissions.filter(portfolio=portfolio, user=self).first()
+        if not user_portfolio_perms:
             return False
 
-        portfolio_permissions = portfolio_perms._get_portfolio_permissions()
-        return portfolio_permission in portfolio_permissions
+        return portfolio_permission in user_portfolio_perms._get_portfolio_permissions()
 
     def has_base_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
