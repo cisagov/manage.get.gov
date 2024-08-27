@@ -224,7 +224,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
         }
         labels = {
-            "action_needed_reason_email": "Auto-generated email",
+            "action_needed_reason_email": "Email",
         }
 
     def __init__(self, *args, **kwargs):
