@@ -159,7 +159,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-dns-nameservers",
             "domain-org-name-address",
             "domain-senior-official",
-            "domain-your-contact-information",
             "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
@@ -179,7 +178,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-dns-nameservers",
             "domain-org-name-address",
             "domain-senior-official",
-            "domain-your-contact-information",
             "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
@@ -200,7 +198,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-dns-dnssec-dsdata",
             "domain-org-name-address",
             "domain-senior-official",
-            "domain-your-contact-information",
             "domain-security-email",
         ]:
             for domain in [
@@ -1599,16 +1596,6 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.delete()
         suborg.delete()
         portfolio.delete()
-
-
-class TestDomainContactInformation(TestDomainOverview):
-    @less_console_noise_decorator
-    def test_domain_your_contact_information_content(self):
-        """Logged-in user's contact information appears on the page."""
-        self.user.first_name = "Testy"
-        self.user.save()
-        page = self.app.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Testy")
 
 
 class TestDomainSecurityEmail(TestDomainOverview):

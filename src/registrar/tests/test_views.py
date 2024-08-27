@@ -350,6 +350,139 @@ class HomeTests(TestWithUser):
                         domain_request.delete()
 
     @less_console_noise_decorator
+    def test_home_deletes_domain_request_and_orphans(self):
+        """Tests if delete for DomainRequest deletes orphaned Contact objects"""
+
+        # Create the site and contacts to delete (orphaned)
+        contact = Contact.objects.create(
+            first_name="Henry",
+            last_name="Mcfakerson",
+        )
+        contact_shared = Contact.objects.create(
+            first_name="Relative",
+            last_name="Aether",
+        )
+
+        # Create two non-orphaned contacts
+        contact_2 = Contact.objects.create(
+            first_name="Saturn",
+            last_name="Mars",
+        )
+
+        # Attach a user object to a contact (should not be deleted)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakey",
+        )
+
+        site = DraftDomain.objects.create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainRequest.DomainRequestStatus.WITHDRAWN,
+            senior_official=contact,
+        )
+        domain_request.other_contacts.set([contact_2])
+
+        # Create a second domain request to attach contacts to
+        site_2 = DraftDomain.objects.create(name="teaville.gov")
+        domain_request_2 = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site_2,
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            senior_official=contact_2,
+        )
+        domain_request_2.other_contacts.set([contact_shared])
+
+        igorville = DomainRequest.objects.filter(requested_domain__name="igorville.gov")
+        self.assertTrue(igorville.exists())
+
+        # Trigger the delete logic
+        self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}))
+
+        # igorville is now deleted
+        igorville = DomainRequest.objects.filter(requested_domain__name="igorville.gov")
+        self.assertFalse(igorville.exists())
+
+        # Check if the orphaned contacts were deleted
+        orphan = Contact.objects.filter(id=contact.id)
+        self.assertFalse(orphan.exists())
+        orphan = Contact.objects.filter(id=contact_user.id)
+        self.assertFalse(orphan.exists())
+
+        try:
+            edge_case = Contact.objects.filter(id=contact_2.id).get()
+        except Contact.DoesNotExist:
+            self.fail("contact_2 (a non-orphaned contact) was deleted")
+
+        self.assertEqual(edge_case, contact_2)
+
+        DomainRequest.objects.all().delete()
+        Contact.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_home_deletes_domain_request_and_shared_orphans(self):
+        """Test the edge case for an object that will become orphaned after a delete
+        (but is not an orphan at the time of deletion)"""
+
+        # Create the site and contacts to delete (orphaned)
+        contact = Contact.objects.create(
+            first_name="Henry",
+            last_name="Mcfakerson",
+        )
+        contact_shared = Contact.objects.create(
+            first_name="Relative",
+            last_name="Aether",
+        )
+
+        # Create two non-orphaned contacts
+        contact_2 = Contact.objects.create(
+            first_name="Saturn",
+            last_name="Mars",
+        )
+
+        # Attach a user object to a contact (should not be deleted)
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakey",
+        )
+
+        site = DraftDomain.objects.create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainRequest.DomainRequestStatus.WITHDRAWN,
+            senior_official=contact,
+        )
+        domain_request.other_contacts.set([contact_2])
+
+        # Create a second domain request to attach contacts to
+        site_2 = DraftDomain.objects.create(name="teaville.gov")
+        domain_request_2 = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site_2,
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            senior_official=contact_2,
+        )
+        domain_request_2.other_contacts.set([contact_shared])
+
+        teaville = DomainRequest.objects.filter(requested_domain__name="teaville.gov")
+        self.assertTrue(teaville.exists())
+
+        # Trigger the delete logic
+        self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request_2.pk}))
+
+        teaville = DomainRequest.objects.filter(requested_domain__name="teaville.gov")
+        self.assertFalse(teaville.exists())
+
+        # Check if the orphaned contact was deleted
+        orphan = Contact.objects.filter(id=contact_shared.id)
+        self.assertFalse(orphan.exists())
+
+        DomainRequest.objects.all().delete()
+        Contact.objects.all().delete()
+
+    @less_console_noise_decorator
     def test_domain_request_form_view(self):
         response = self.client.get("/request/", follow=True)
         self.assertContains(
