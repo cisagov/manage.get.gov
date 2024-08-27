@@ -20,16 +20,16 @@ class Command(BaseCommand, PopulateScriptTemplate):
 
         # Retrieve and order audit log entries by timestamp in descending order
         audit_log_entries = LogEntry.objects.filter(object_pk=record.pk).order_by("-timestamp")
-
         # Loop through logs in descending order to find most recent status change
         for log_entry in audit_log_entries:
-            if 'status' in LogEntry.changes_dict:
+            if 'status' in log_entry.changes_dict:
                 record.last_status_update = log_entry.timestamp.date()
                 break
 
         # Loop through logs in ascending order to find first submission
         for log_entry in audit_log_entries.reverse():
-            if log_entry.changes_dict['status'](1) == 'Submitted':
+            status = log_entry.changes_dict.get('status')
+            if status and status[1] == 'Submitted':
                 record.first_submitted_date = log_entry.timestamp.date()
                 break
 
@@ -42,4 +42,4 @@ class Command(BaseCommand, PopulateScriptTemplate):
 
     def should_skip_record(self, record) -> bool:
         # make sure the record had some kind of history
-        return LogEntry.objects.filter(object_pk=record.pk).exists()
+        return not LogEntry.objects.filter(object_pk=record.pk).exists()
