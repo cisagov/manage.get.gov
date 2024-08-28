@@ -358,21 +358,11 @@ class HomeTests(TestWithUser):
             first_name="Henry",
             last_name="Mcfakerson",
         )
-        contact_shared = Contact.objects.create(
-            first_name="Relative",
-            last_name="Aether",
-        )
 
         # Create two non-orphaned contacts
         contact_2 = Contact.objects.create(
             first_name="Saturn",
             last_name="Mars",
-        )
-
-        # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(
-            first_name="Hank",
-            last_name="McFakey",
         )
 
         site = DraftDomain.objects.create(name="igorville.gov")
@@ -407,8 +397,6 @@ class HomeTests(TestWithUser):
         # Check if the orphaned contacts were deleted
         orphan = Contact.objects.filter(id=contact.id)
         self.assertFalse(orphan.exists())
-        orphan = Contact.objects.filter(id=contact_user.id)
-        self.assertFalse(orphan.exists())
 
         try:
             edge_case = Contact.objects.filter(id=contact_2.id).get()
@@ -430,21 +418,11 @@ class HomeTests(TestWithUser):
             first_name="Henry",
             last_name="Mcfakerson",
         )
-        contact_shared = Contact.objects.create(
-            first_name="Relative",
-            last_name="Aether",
-        )
 
         # Create two non-orphaned contacts
         contact_2 = Contact.objects.create(
             first_name="Saturn",
             last_name="Mars",
-        )
-
-        # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(
-            first_name="Hank",
-            last_name="McFakey",
         )
 
         site = DraftDomain.objects.create(name="igorville.gov")

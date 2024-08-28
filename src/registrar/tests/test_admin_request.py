@@ -35,6 +35,7 @@ from .common import (
     GenericTestHelper,
 )
 from unittest.mock import patch
+from waffle.testutils import override_flag
 
 from django.conf import settings
 import boto3_mocking  # type: ignore
@@ -149,7 +150,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # These should exist in the response
         expected_values = [
-            ("creator", "Person who submitted the domain request; will receive email updates"),
+            ("creator", "Person who submitted the domain request. Will receive email updates"),
             ("approved_domain", "Domain associated with this request; will be blank until request is approved"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
             ("alternative_domains", "Other domain names the creator provided for consideration"),
@@ -894,6 +895,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
+    @override_flag("profile_feature", True)
     @less_console_noise_decorator
     def test_save_model_sends_approved_email(self):
         """When transitioning to approved on a domain request,

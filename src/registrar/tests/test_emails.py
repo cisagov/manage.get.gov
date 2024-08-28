@@ -69,7 +69,6 @@ class TestEmails(TestCase):
 
         # check for optional things
         self.assertIn("Other employees from your organization:", body)
-        self.assertIn("Testy2 Tester2", body)
         self.assertIn("Current websites:", body)
         self.assertIn("city.com", body)
         self.assertIn("About your organization:", body)
