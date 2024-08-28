@@ -30,7 +30,10 @@ class Command(BaseCommand, PopulateScriptTemplate):
     def custom_filter(self, records: BaseManager[Domain]) -> BaseManager[Domain]:
         to_include_pks = []
         for record in records:
-            if TransitionDomain.objects.filter(domain_name=record.name).exists() and record.first_ready != record.created_at.date(): #noqa
+            if (
+                TransitionDomain.objects.filter(domain_name=record.name).exists()
+                and record.first_ready != record.created_at.date()
+            ):  # noqa
                 to_include_pks.append(record.pk)
 
         return records.filter(pk__in=to_include_pks)

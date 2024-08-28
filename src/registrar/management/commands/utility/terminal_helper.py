@@ -93,7 +93,7 @@ class PopulateScriptTemplate(ABC):
             object_class: The Django model class that you want to perform the bulk update on.
                 This should be the actual class, not a string of the class name.
 
-            filter_conditions: dictionary of valid Django Queryset filter conditions 
+            filter_conditions: dictionary of valid Django Queryset filter conditions
                 (e.g. {'verification_type__isnull'=True}).
 
             fields_to_update: List of strings specifying which fields to update.
@@ -102,7 +102,7 @@ class PopulateScriptTemplate(ABC):
             debug: Whether to log script run summary in debug mode.
                 Default: True.
 
-            verbose: Whether to print a detailed run summary *before* run confirmation. 
+            verbose: Whether to print a detailed run summary *before* run confirmation.
                 Default: False.
 
         Raises:
@@ -113,7 +113,7 @@ class PopulateScriptTemplate(ABC):
         records = object_class.objects.filter(**filter_conditions)
 
         # apply custom filter
-        records=self.custom_filter(records)
+        records = self.custom_filter(records)
 
         readable_class_name = self.get_class_name(object_class)
 
@@ -184,8 +184,9 @@ class PopulateScriptTemplate(ABC):
 
     def custom_filter(self, records: BaseManager[Model]) -> BaseManager[Model]:
         """Override to define filters that can't be represented by django queryset field lookups.
-        Applied to individual records *after* filter_conditions. True means """
+        Applied to individual records *after* filter_conditions. True means"""
         return records
+
 
 class TerminalHelper:
     @staticmethod
