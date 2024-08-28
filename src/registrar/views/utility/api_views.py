@@ -33,4 +33,4 @@ def get_senior_official_from_federal_agency_json(request):
 
         return JsonResponse(so_dict)
     else:
-        return JsonResponse({"error": "Senior Official not found"}, status=404)
+        return JsonResponse({"error": "Senior official not found"}, status=404)

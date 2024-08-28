@@ -64,4 +64,4 @@ class GetSeniorOfficialJsonTest(TestCase):
         response = self.client.get(self.api_url, {"agency_name": "Non-Federal Agency"})
         self.assertEqual(response.status_code, 404)
         data = response.json()
-        self.assertEqual(data["error"], "Senior Official not found")
+        self.assertEqual(data["error"], "Senior official not found")
