@@ -2242,7 +2242,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        profile_page = self.app.get(f"/user-profile")
+        profile_page = self.app.get("/user-profile")
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         profile_form = profile_page.forms[0]

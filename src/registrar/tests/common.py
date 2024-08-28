@@ -918,7 +918,6 @@ def completed_domain_request(  # noqa
     domain, _ = DraftDomain.objects.get_or_create(name=name)
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
-    creator = user
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",

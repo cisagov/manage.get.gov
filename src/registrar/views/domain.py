@@ -40,7 +40,6 @@ from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
-    UserForm,
     SeniorOfficialContactForm,
     DomainOrgNameAddressForm,
     DomainAddUserForm,
@@ -59,7 +58,6 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
-from waffle.decorators import waffle_flag
 
 logger = logging.getLogger(__name__)
 

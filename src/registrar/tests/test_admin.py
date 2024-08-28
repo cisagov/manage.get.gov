@@ -60,7 +60,7 @@ from .common import (
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
-from unittest.mock import patch, Mock
+from unittest.mock import Mock
 
 import logging
 

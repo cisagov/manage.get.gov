@@ -6,7 +6,6 @@ from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
-from waffle import flag_is_active
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
@@ -1207,7 +1206,6 @@ class DomainRequest(TimeStampedModel):
         return self.is_policy_acknowledged is not None
 
     def _is_general_form_complete(self, request):
-        has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
             self._is_creator_complete()
             and self._is_organization_name_and_address_complete()
