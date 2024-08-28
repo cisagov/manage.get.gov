@@ -2343,4 +2343,4 @@ class TestTransferUser(WebTest):
     def test_transfer_user_modal(self):
         """Assert modal on page"""
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
-        self.assertContains(user_transfer_page, "But you know what you're doing, right?")
+        self.assertContains(user_transfer_page, "This action cannot be undone.")

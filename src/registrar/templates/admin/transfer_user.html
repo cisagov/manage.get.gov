@@ -48,7 +48,7 @@
                         </option>
                     {% endfor %}
                 </select>
-                <input type="submit" value="Preview" class="usa-button usa-button--dja">
+                <input type="submit" value="Select and preview" class="usa-button usa-button--dja">
             </form>
         </div>
         <div class="desktop:flex-align-center">
@@ -61,64 +61,13 @@
     </div>
 
     <div class="grid-row grid-gap-2">
-        <div class="tablet:grid-col-6 margin-top-2">
-            <div class="module height-full">
-                <h2>User to receive data</h2>
-                <div class="padding-top-2 padding-x-2">
-                    <dl>
-                        <dt>Username:</dt>
-                        <dd>{{ current_user.username }}</dd>
-                        <dt>Created at:</dt>
-                        <dd>{{ current_user.created_at }}</dd>
-                        <dt>Last login:</dt>
-                        <dd>{{ current_user.last_login }}</dd>
-                        <dt>First name:</dt>
-                        <dd>{{ current_user.first_name }}</dd>
-                        <dt>Middle name:</dt>
-                        <dd>{{ current_user.middle_name }}</dd>
-                        <dt>Last name:</dt>
-                        <dd>{{ current_user.last_name }}</dd>
-                        <dt>Title:</dt>
-                        <dd>{{ current_user.title }}</dd>
-                        <dt>Email:</dt>
-                        <dd>{{ current_user.email }}</dd>
-                        <dt>Phone:</dt>
-                        <dd>{{ current_user.phone }}</dd>
-                        <dt>Domains:</dt>
-                        <dd>
-                            {% if current_user_domains %}
-                                <ul>
-                                    {% for domain in current_user_domains %}
-                                        <li>{{ domain }}</li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                None
-                            {% endif %}
-                        </dd>
-                        <dt>Domain requests:</dt>
-                        <dd>
-                            {% if current_user_domain_requests %}
-                                <ul>
-                                    {% for request in current_user_domain_requests %}
-                                        <li>{{ request }}</li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                None
-                            {% endif %}
-                        </dd>
-                    </dl>
-                </div>
-            </div>
-        </div>
 
         <div class="tablet:grid-col-6 margin-top-2">
             <div class="module height-full">
-                <h2>User to lose data and be deleted</h2>
+                <h2>User to transfer data from</h2>
                 <div class="padding-top-2 padding-x-2">
                     {% if selected_user %}
-                        <dl>
+                        <dl class="dl-dja">
                             <dt>Username:</dt>
                             <dd>{{ selected_user.username }}</dd>
                             <dt>Created at:</dt>
@@ -137,6 +86,7 @@
                             <dd>{{ selected_user.email }}</dd>
                             <dt>Phone:</dt>
                             <dd>{{ selected_user.phone }}</dd>
+                            <h3 class="font-heading-md">Data that will get transferred:</h3>
                             <dt>Domains:</dt>
                             <dd>
                                 {% if selected_user_domains %}
@@ -168,6 +118,60 @@
                 </div>
             </div>
         </div>
+
+        <div class="tablet:grid-col-6 margin-top-2">
+            <div class="module height-full">
+                <h2>User to receive data</h2>
+                <div class="padding-top-2 padding-x-2">
+                    <dl class="dl-dja">
+                        <dt>Username:</dt>
+                        <dd>{{ current_user.username }}</dd>
+                        <dt>Created at:</dt>
+                        <dd>{{ current_user.created_at }}</dd>
+                        <dt>Last login:</dt>
+                        <dd>{{ current_user.last_login }}</dd>
+                        <dt>First name:</dt>
+                        <dd>{{ current_user.first_name }}</dd>
+                        <dt>Middle name:</dt>
+                        <dd>{{ current_user.middle_name }}</dd>
+                        <dt>Last name:</dt>
+                        <dd>{{ current_user.last_name }}</dd>
+                        <dt>Title:</dt>
+                        <dd>{{ current_user.title }}</dd>
+                        <dt>Email:</dt>
+                        <dd>{{ current_user.email }}</dd>
+                        <dt>Phone:</dt>
+                        <dd>{{ current_user.phone }}</dd>
+                        <h3 class="font-heading-md" aria-label="Data that will added to:">&nbsp;</h3>
+                        <dt>Domains:</dt>
+                        <dd>
+                            {% if current_user_domains %}
+                                <ul>
+                                    {% for domain in current_user_domains %}
+                                        <li>{{ domain }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                None
+                            {% endif %}
+                        </dd>
+                        <dt>Domain requests:</dt>
+                        <dd>
+                            {% if current_user_domain_requests %}
+                                <ul>
+                                    {% for request in current_user_domain_requests %}
+                                        <li>{{ request }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                None
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -184,7 +188,7 @@
                 </h2>
                 <div class="usa-prose">
                     {% if selected_user != logged_in_user %}
-                        <p>But you know what you're doing, right?</p>
+                        <p>This action cannot be undone.</p>
                     {% else %}
                         <p>Don't do it!</p>
                     {% endif %}
