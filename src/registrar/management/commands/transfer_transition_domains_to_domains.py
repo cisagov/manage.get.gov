@@ -423,7 +423,7 @@ class Command(BaseCommand):
         valid_fed_type = fed_type in fed_choices
         valid_fed_agency = fed_agency in agency_choices
 
-        default_creator, _ = User.objects.get_or_create(username="System")
+        default_creator, _ = User.get_default_user()
 
         new_domain_info_data = {
             "domain": domain,
