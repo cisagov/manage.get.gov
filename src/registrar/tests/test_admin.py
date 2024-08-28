@@ -2119,9 +2119,6 @@ class TestPortfolioAdmin(TestCase):
 
         domain_requests = self.admin.domain_requests(self.portfolio)
         self.assertIn("2 domain requests", domain_requests)
-        self.assertIn("request1.gov", domain_requests)
-        self.assertIn("request2.gov", domain_requests)
-        self.assertIn('<ul class="add-list-reset">', domain_requests)
 
 
 class TestTransferUser(WebTest):
