@@ -48,13 +48,13 @@
                         </option>
                     {% endfor %}
                 </select>
-                <input type="submit" value="Select and preview" class="usa-button usa-button--dja">
+                <input type="submit" value="Select and preview" class="button--dja-toolbar">
             </form>
         </div>
         <div class="desktop:flex-align-center">
             {% if selected_user %}
                 <a class="usa-button usa-button--dja" href="#transfer-and-delete" aria-controls="transfer-and-delete" data-open-modal>
-                    Transfer and delete old user
+                    Transfer and delete user
                 </a>
             {% endif %}
         </div>
@@ -184,10 +184,13 @@
         <div class="usa-modal__content">
             <div class="usa-modal__main">
                 <h2 class="usa-modal__heading" id="transfer-and-delete-heading">
-                    This action will delete {{ selected_user }}
+                    Are you sure you want to transfer data and delete this user?
                 </h2>
                 <div class="usa-prose">
                     {% if selected_user != logged_in_user %}
+                        <p>Username: <b>{{ selected_user.username }}</b><br>
+                        Name: <b>{{ selected_user.first_name }} {{ selected_user.last_name }}</b><br>
+                        Email: <b>{{ selected_user.email }}</b></p>
                         <p>This action cannot be undone.</p>
                     {% else %}
                         <p>Don't do it!</p>
@@ -201,7 +204,7 @@
                                 <form method="POST" action="{% url 'transfer_user' current_user.pk %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="selected_user" value="{{ selected_user.pk }}">
-                                    <input type="submit" class="usa-button usa-button--dja" value="Transfer and delete old user">
+                                    <input type="submit" class="usa-button usa-button--dja" value="Yes, transfer and delete user">
                                 </form>
                             </li>
                         {% endif %}

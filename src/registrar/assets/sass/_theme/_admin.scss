@@ -405,6 +405,20 @@ a.button:active, a.button:focus {
 .usa-modal {
     font-family: inherit;
 }
+input[type=submit].button--dja-toolbar {
+    border: 1px solid var(--border-color);
+    font-size: 0.8125rem;
+    padding: 4px 8px;
+    margin: 0;
+    vertical-align: middle;
+    background: var(--body-bg);
+    box-shadow: 0 -15px 20px -10px rgba(0, 0, 0, 0.15) inset;
+    cursor: pointer;
+    color: var(--body-fg);
+}
+input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-toolbar:hover {
+    border-color: var(--body-quiet-color);
+}
 // Targets the DJA buttom with a nested icon
 button .usa-icon,
 .button .usa-icon,
