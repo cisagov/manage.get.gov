@@ -2423,11 +2423,3 @@ class TestAllowedEmail(TestCase):
         # For good measure, also check the other plus email
         regular_plus_email = AllowedEmail.is_allowed_email(self.plus_email)
         self.assertFalse(regular_plus_email)
-
-    # TODO: We need a small test for domain request admin
-    # We also need a basic test in test_emails based off the mocked is_allowed_email value.
-    # This will be simpler
-    # def test_email_in_whitelist_in_prod(self):
-    #     """Tests that the whitelist does nothing when we are in production"""
-    #     allowed_email = AllowedEmail.objects.create(email=self.email)
-    #     self.assertEqual(allowed_email.is_allowed_email(), True)

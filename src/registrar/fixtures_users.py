@@ -244,7 +244,6 @@ class UserFixture:
     ]
 
     # Additional emails to add to the AllowedEmail whitelist.
-    # The format should be as follows: ["email@igorville.gov", "email2@igorville.gov"]
     ADDITIONAL_ALLOWED_EMAILS: list[str] = []
 
     def load_users(cls, users, group_name, are_superusers=False):
@@ -277,9 +276,8 @@ class UserFixture:
         if additional_emails:
             logger.info(f"Going to load {len(additional_emails)} additional allowed emails")
 
-        allowed_emails = []
-
         # Load user emails
+        allowed_emails = []
         for user_data in users:
             user_email = user_data.get("email")
             if user_email and user_email not in allowed_emails:
@@ -287,11 +285,10 @@ class UserFixture:
             else:
                 first_name = user_data.get("first_name")
                 last_name = user_data.get("last_name")
-                logger.warning(f"Could add email to whitelist for {first_name} {last_name}: No email exists.")
+                logger.warning(f"Could not add email to whitelist for {first_name} {last_name}.")
 
         # Load additional emails
-        for email in additional_emails:
-            allowed_emails.append(AllowedEmail(email=email))
+        allowed_emails.extend(additional_emails)
 
         if allowed_emails:
             AllowedEmail.objects.bulk_create(allowed_emails)

@@ -1969,6 +1969,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         so we should display that information using this function.
 
         """
+
+        # TODO 2574: remove lines 1977-1978 (refactor as needed)
         profile_flag = flag_is_active(request, "profile_feature")
         if profile_flag and hasattr(obj, "creator"):
             recipient = obj.creator
@@ -1977,8 +1979,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         else:
             recipient = None
 
-        # Displays a warning in admin when an email cannot be sent,
-        # Or a success message if it was.
+        # Displays a warning in admin when an email cannot be sent
         if recipient and recipient.email:
             email = recipient.email
             allowed = models.AllowedEmail.is_allowed_email(email)
