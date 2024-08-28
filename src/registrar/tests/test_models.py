@@ -221,7 +221,7 @@ class TestDomainRequest(TestCase):
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(creator=user, requested_domain=site)
 
-        # no submitter email so this emits a log warning
+        # no email sent to creator so this emits a log warning
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():

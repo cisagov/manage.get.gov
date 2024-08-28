@@ -2206,15 +2206,13 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     @override_flag("profile_feature", active=True)
     @less_console_noise_decorator
-    def test_edit_submitter_in_place(self):
+    def test_edit_creator_in_place(self):
         """When you:
-            1. edit a submitter (your contact) which is not joined to another model,
+            1. edit a your user profile information,
             2. then submit,
-        the domain request is linked to the existing submitter, and the submitter updated."""
+        the domain request also updates its creator data to reflect user profile changes."""
 
-        # Populate the database with a domain request that
-        # has a submitter
-        # We'll do it from scratch
+        # Populate the database with a domain request 
         domain_request, _ = DomainRequest.objects.get_or_create(
             generic_org_type="federal",
             federal_type="executive",
@@ -2229,8 +2227,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             status="started",
         )
 
-        # submitter_pk is the initial pk of the submitter. set it before update
-        # to be able to verify after update that the same contact object is in place
         creator_pk = self.user.id
 
         # prime the form by visiting /edit
@@ -2946,7 +2942,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             # Now 'detail_page' contains the response after following the redirect
             self.assertEqual(detail_page.status_code, 200)
 
-            # 5 unlocked steps (so, domain, submitter, other contacts, and current sites
+            # 5 unlocked steps (so, domain, other contacts, and current sites
             # which unlocks if domain exists), one active step, the review step is locked
             self.assertContains(detail_page, "#check_circle", count=4)
             # Type of organization
