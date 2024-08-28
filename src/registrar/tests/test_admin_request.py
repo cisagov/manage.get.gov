@@ -648,7 +648,9 @@ class TestDomainRequestAdmin(MockEppLib):
         already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
 
-        self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, _creator.email, bcc_email_address=BCC_EMAIL)
+        self.assert_email_is_accurate(
+            "ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, _creator.email, bcc_email_address=BCC_EMAIL
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test the email sent out for bad_name
@@ -716,7 +718,9 @@ class TestDomainRequestAdmin(MockEppLib):
             action_needed_reason=eligibility_unclear,
             action_needed_reason_email="custom content when starting anew",
         )
-        self.assert_email_is_accurate("custom content when starting anew", 5, _creator.email, bcc_email_address=BCC_EMAIL)
+        self.assert_email_is_accurate(
+            "custom content when starting anew", 5, _creator.email, bcc_email_address=BCC_EMAIL
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 6)
 
     # def test_action_needed_sends_reason_email_prod_bcc(self):
@@ -1046,7 +1050,9 @@ class TestDomainRequestAdmin(MockEppLib):
             DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.RejectionReasons.SECOND_DOMAIN_REASONING,
         )
-        self.assert_email_is_accurate("Your domain request was rejected because Testorg has a .gov domain.", 0, _creator.email)
+        self.assert_email_is_accurate(
+            "Your domain request was rejected because Testorg has a .gov domain.", 0, _creator.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Approve
