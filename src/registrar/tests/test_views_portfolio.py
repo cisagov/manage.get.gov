@@ -97,8 +97,8 @@ class TestPortfolio(WebTest):
             self.assertNotContains(portfolio_page, self.portfolio.organization_name)
 
     @less_console_noise_decorator
-    def test_middleware_redirects_to_portfolio_organization_page(self):
-        """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to portfolio organization page"""
+    def test_middleware_redirects_to_portfolio_no_domains_page(self):
+        """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to the no domains page"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
@@ -110,7 +110,8 @@ class TestPortfolio(WebTest):
             portfolio_page = self.app.get(reverse("home")).follow()
             # Assert that we're on the right page
             self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertContains(portfolio_page, "You aren’t managing any domains")
 
     @less_console_noise_decorator
     def test_middleware_redirects_to_portfolio_domains_page(self):
@@ -221,8 +222,8 @@ class TestPortfolio(WebTest):
             self.assertContains(response, 'for="id_city"')
 
     @less_console_noise_decorator
-    def test_navigation_links_hidden_when_user_not_have_permission(self):
-        """Test that navigation links are hidden when user does not have portfolio permissions"""
+    def test_accessible_pages_when_user_does_not_have_permission(self):
+        """Tests which pages are accessible when user does not have portfolio permissions"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
         self.user.portfolio_additional_permissions = [
@@ -249,16 +250,29 @@ class TestPortfolio(WebTest):
             self.user.save()
             self.user.refresh_from_db()
 
+            # Members should be redirected to the readonly domains page
             portfolio_page = self.app.get(reverse("home")).follow()
 
             self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertNotContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertContains(portfolio_page, "You aren’t managing any domains")
             self.assertNotContains(portfolio_page, reverse("domains"))
             self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
+            # The organization page should still be accessible
+            org_page = self.app.get(reverse("organization"))
+            self.assertContains(org_page, self.portfolio.organization_name)
+            self.assertContains(org_page, "<h1>Organization</h1>")
+
+            # Both domain pages should not be accessible
+            domain_page = self.app.get(reverse("domains"), expect_errors=True)
+            self.assertEquals(domain_page.status_code, 403)
+            domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
+            self.assertEquals(domain_request_page.status_code, 403)
+
     @less_console_noise_decorator
-    def test_navigation_links_hidden_when_user_not_have_role(self):
+    def test_accessible_pages_when_user_does_not_have_role(self):
         """Test that admin / memmber roles are associated with the right access"""
         self.app.set_user(self.user.username)
         self.user.portfolio = self.portfolio
@@ -282,13 +296,26 @@ class TestPortfolio(WebTest):
             self.user.save()
             self.user.refresh_from_db()
 
+            # Members should be redirected to the readonly domains page
             portfolio_page = self.app.get(reverse("home")).follow()
 
             self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertNotContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertContains(portfolio_page, "You aren’t managing any domains")
             self.assertNotContains(portfolio_page, reverse("domains"))
             self.assertNotContains(portfolio_page, reverse("domain-requests"))
+
+            # The organization page should still be accessible
+            org_page = self.app.get(reverse("organization"))
+            self.assertContains(org_page, self.portfolio.organization_name)
+            self.assertContains(org_page, "<h1>Organization</h1>")
+
+            # Both domain pages should not be accessible
+            domain_page = self.app.get(reverse("domains"), expect_errors=True)
+            self.assertEquals(domain_page.status_code, 403)
+            domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
+            self.assertEquals(domain_request_page.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_org_name(self):
@@ -355,3 +382,51 @@ class TestPortfolio(WebTest):
 
             self.assertContains(success_result_page, "6 Downing st")
             self.assertContains(success_result_page, "London")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_org_member_can_only_see_domains_with_appropriate_permissions(self):
+        """A user with the role organization_member should not have access to the domains page
+        if they do not have the right permissions.
+        """
+
+        # A default organization member should not be able to see any domains
+        self.app.set_user(self.user.username)
+        self.user.portfolio = self.portfolio
+        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertFalse(self.user.has_domains_portfolio_permission())
+
+        response = self.app.get(reverse("no-portfolio-domains"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "You aren’t managing any domains.")
+
+        # Test the domains page - this user should not have access
+        response = self.app.get(reverse("domains"), expect_errors=True)
+        self.assertEqual(response.status_code, 403)
+
+        # Ensure that this user can see domains with the right permissions
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertTrue(self.user.has_domains_portfolio_permission())
+
+        # Test the domains page - this user should have access
+        response = self.app.get(reverse("domains"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Domain name")
+
+        # Test the managed domains permission
+        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS]
+        self.user.save()
+        self.user.refresh_from_db()
+
+        self.assertTrue(self.user.has_domains_portfolio_permission())
+
+        # Test the domains page - this user should have access
+        response = self.app.get(reverse("domains"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Domain name")
