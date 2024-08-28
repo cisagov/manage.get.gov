@@ -42,7 +42,7 @@ def send_templated_email(
 
     if not settings.IS_PRODUCTION:  # type: ignore
         # Split into a function: C901 'send_templated_email' is too complex.
-        # Raises an error if we cannot send an email (due to restrictions). 
+        # Raises an error if we cannot send an email (due to restrictions).
         # Does nothing otherwise.
         _can_send_email(to_address, bcc_address)
 
