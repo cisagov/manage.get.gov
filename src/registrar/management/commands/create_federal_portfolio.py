@@ -21,12 +21,12 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--parse_requests",
-            action=argparse.BooleanOptionalAction
+            action=argparse.BooleanOptionalAction,
             help="Adds portfolio to DomainRequests",
         )
         parser.add_argument(
             "--parse_domains",
-            action=argparse.BooleanOptionalAction
+            action=argparse.BooleanOptionalAction,
             help="Adds portfolio to DomainInformation",
         )
 
@@ -62,12 +62,16 @@ class Command(BaseCommand):
     def create_or_modify_portfolio(self, federal_agency):
         # TODO - state_territory, city, etc fields??? 
         portfolio_args = {
+            "federal_agency": federal_agency,
             "organization_name": federal_agency.agency,
-            "organization_type": federal_agency.federal_type,
-            "senior_official": getattr(federal_agency, "so_federal_agency", None),
+            "organization_type": DomainRequest.OrganizationChoices.FEDERAL,
             "creator": User.get_default_user(),
             "notes": "Auto-generated record",
         }
+
+        senior_official = federal_agency.so_federal_agency
+        if senior_official.exists():
+            portfolio_args["senior_official"] = senior_official.first()
 
         # Create the Portfolio value if it doesn't exist
         existing_portfolio = Portfolio.objects.filter(organization_name=federal_agency.agency)
@@ -75,6 +79,7 @@ class Command(BaseCommand):
             portfolio = Portfolio.objects.create(**portfolio_args)
             message = f"Created portfolio '{federal_agency.agency}'"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+            return portfolio
         else:
             if len(existing_portfolio) > 1:
                 raise ValueError(f"Could not update portfolio '{federal_agency.agency}': multiple records exist.")
@@ -82,9 +87,8 @@ class Command(BaseCommand):
             # TODO a dialog to confirm / deny doing this
             existing_portfolio.update(**portfolio_args)
             message = f"Modified portfolio '{federal_agency.agency}'"
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
-        
-        return portfolio
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+            return existing_portfolio
 
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         non_federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
@@ -127,17 +131,25 @@ class Command(BaseCommand):
 
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
         domain_requests = DomainInformation.objects.filter(federal_agency=federal_agency)
+        if len(domain_requests) < 1:
+            message = f"Portfolios not added to domain requests: no valid records found"
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
+            return
 
         for domain_request in domain_requests:
             domain_request.portfolio = portfolio
         
-        DomainRequest.objects.bulk_update(domain_request, ["portfolio"])
-
+        DomainRequest.objects.bulk_update(domain_requests, ["portfolio"])
         message = f"Added portfolio to {len(domain_requests)} domain requests"
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
         domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
+
+        if len(domain_infos) < 1:
+            message = f"Portfolios not added to domains: no valid records found"
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
+            return
 
         for domain_info in domain_infos:
             domain_info.portfolio = portfolio
@@ -145,4 +157,4 @@ class Command(BaseCommand):
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio"])
 
         message = f"Added portfolio to {len(domain_infos)} domains"
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
