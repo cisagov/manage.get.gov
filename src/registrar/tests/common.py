@@ -918,14 +918,7 @@ def completed_domain_request(  # noqa
     domain, _ = DraftDomain.objects.get_or_create(name=name)
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
-    # if not creator:
-    #     creator, _ = Contact.objects.get_or_create(
-    #         first_name="Testy2",
-    #         last_name="Tester2",
-    #         title="Admin Tester",
-    #         email="mayor@igorville.gov",
-    #         phone="(555) 555 5556",
-    #     )
+    creator = user
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
