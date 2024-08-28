@@ -77,18 +77,18 @@ class Command(BaseCommand):
         existing_portfolio = Portfolio.objects.filter(organization_name=federal_agency.agency)
         if not existing_portfolio.exists():
             portfolio = Portfolio.objects.create(**portfolio_args)
-            message = f"Created portfolio '{federal_agency.agency}'"
+            message = f"Created portfolio '{portfolio}'"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
             return portfolio
         else:
             if len(existing_portfolio) > 1:
-                raise ValueError(f"Could not update portfolio '{federal_agency.agency}': multiple records exist.")
+                raise ValueError(f"Could not update portfolio '{portfolio}': multiple records exist.")
 
             # TODO a dialog to confirm / deny doing this
             existing_portfolio.update(**portfolio_args)
             message = f"Modified portfolio '{federal_agency.agency}'"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-            return existing_portfolio
+            return existing_portfolio.get()
 
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         non_federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
@@ -115,18 +115,48 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
         # Add any suborgs that don't presently exist
+        excluded_org_names = existing_suborgs.values_list("name", flat=True)
         suborgs = []
         for name in org_names:
-            if name not in existing_suborgs:
-                suborg = Suborganization(
-                    name=name,
-                    portfolio=portfolio,
-                )
-                suborgs.append(suborg)
+            if name and name not in excluded_org_names:
+                if portfolio.organization_name and name.lower() == portfolio.organization_name.lower():
+                    # If the suborg name is the name that currently exists,
+                    # thats not a suborg - thats the portfolio itself!
+                    # In this case, we can use this as an opportunity to update
+                    # address information and the like
+                    self._update_portfolio_location_details(portfolio, valid_agencies.get(organization_name=name))
+                else:
+                    suborg = Suborganization(
+                        name=name,
+                        portfolio=portfolio,
+                    )
+                    suborgs.append(suborg)
 
         Suborganization.objects.bulk_create(suborgs)
 
+        # TODO - this is inaccurate when the suborg name does not equal the org name - i.e. if the
+        # record exists already as well
         message = f"Added {len(org_names)} suborganizations..."
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+
+    # TODO rename
+    def _update_portfolio_location_details(self, portfolio: Portfolio, domain_info: DomainInformation):
+        location_props = [
+            "address_line1",
+            "address_line2",
+            "city",
+            "state_territory",
+            "zipcode",
+            "urbanization",
+        ]
+
+        for prop_name in location_props:
+            # Copy the value from the domain info object to the portfolio object
+            value = getattr(domain_info, prop_name)
+            setattr(portfolio, prop_name, value)
+        portfolio.save()
+
+        message = f"Updated location details on portfolio '{portfolio}'"
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
