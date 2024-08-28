@@ -1229,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!noPortfolioFlag) {
               markupForSuborganizationRow = `
                 <td>
-                    <span class="${suborganization ? 'ellipsis ellipsis--30 vertical-align-middle' : ''}" aria-label="${suborganization}" title="${suborganization}">${suborganization}</span>
+                    <span class="text-wrap" aria-label="${suborganization ? '' : 'None'}">${suborganization}</span>
                 </td>
               `
             }

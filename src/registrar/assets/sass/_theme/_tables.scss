@@ -1,6 +1,7 @@
 @use "uswds-core" as *;
 
-td {
+td,
+tr th {
   vertical-align: top;
 }
 
