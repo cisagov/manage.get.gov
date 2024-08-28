@@ -422,6 +422,10 @@ class HomeTests(TestWithUser):
             first_name="Henry",
             last_name="Mcfakerson",
         )
+        contact_shared = Contact.objects.create(
+            first_name="Relative",
+            last_name="Aether",
+        )
 
         # Create two non-orphaned contacts
         contact_2 = Contact.objects.create(
