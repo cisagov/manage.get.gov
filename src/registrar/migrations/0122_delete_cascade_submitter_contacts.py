@@ -11,7 +11,7 @@ def cascade_delete_submitter_contacts(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0120_add_domainrequest_submission_dates"),
+        ("registrar", "0121_alter_domaininformation_submitter_and_more"),
     ]
 
     operations = [
