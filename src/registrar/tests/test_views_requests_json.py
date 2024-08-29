@@ -287,8 +287,9 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
     def test_sorting(self):
         """test that sorting works properly on the result set"""
-        response = self.app.get(reverse("get_domain_requests_json"),
-                                {"sort_by": "last_submitted_date", "order": "desc"})
+        response = self.app.get(
+            reverse("get_domain_requests_json"), {"sort_by": "last_submitted_date", "order": "desc"}
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -307,8 +308,9 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
     def test_filter_approved_excluded(self):
         """test that approved requests are excluded from result set."""
         # sort in reverse chronological order of submission date, since most recent request is approved
-        response = self.app.get(reverse("get_domain_requests_json"),
-                                {"sort_by": "last_submitted_date", "order": "desc"})
+        response = self.app.get(
+            reverse("get_domain_requests_json"), {"sort_by": "last_submitted_date", "order": "desc"}
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 

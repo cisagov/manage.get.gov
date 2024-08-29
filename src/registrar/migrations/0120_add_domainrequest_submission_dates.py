@@ -26,7 +26,11 @@ class Migration(migrations.Migration):
             model_name="domainrequest",
             name="first_submitted_date",
             field=models.DateField(
-                blank=True, default=None, help_text="Date initially submitted", null=True, verbose_name="first submitted on"
+                blank=True,
+                default=None,
+                help_text="Date initially submitted",
+                null=True,
+                verbose_name="first submitted on",
             ),
         ),
         migrations.AddField(
