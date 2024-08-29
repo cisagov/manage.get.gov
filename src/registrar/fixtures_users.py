@@ -44,7 +44,7 @@ class UserFixture:
             "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
             "first_name": "Rachid",
             "last_name": "Mrad",
-            "email": "rachid.mrad@associates.cisa.dhs.gov ",
+            "email": "rachid.mrad@associates.cisa.dhs.gov",
         },
         {
             "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
