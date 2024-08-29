@@ -5,7 +5,7 @@
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_domains_json' as url %}
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
-<section class="section-outlined domains{% if not portfolio %} margin-top-0{% else %} section-outlined--border-base-light{% endif %}" id="domains">
+<section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
   <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
       {% if not portfolio %}
         <h2 id="domains-header" class="display-inline-block">Domains</h2>
