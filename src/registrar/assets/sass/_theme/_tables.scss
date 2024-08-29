@@ -17,7 +17,7 @@ th {
 
   tr {
     border-bottom: none;
-    border-top: 2px solid color('base-light');
+    border-top: 2px solid color('base-lighter');
     margin-top: units(2);
 
     &:first-child {
@@ -61,7 +61,7 @@ th {
     }
 
     td, th {
-      border-bottom: 1px solid color('base-light');
+      border-bottom: 1px solid color('base-lighter');
     }
 
     thead th {
