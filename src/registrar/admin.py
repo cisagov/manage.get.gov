@@ -132,14 +132,6 @@ class MyUserAdminForm(UserChangeForm):
         widgets = {
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
-            "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
-            ),
-            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
-                "portfolio_additional_permissions",
-                is_stacked=False,
-                choices=UserPortfolioPermissionChoices.choices,
-            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -169,6 +161,22 @@ class MyUserAdminForm(UserChangeForm):
                 "Raw passwords are not stored, so they will not display here. "
                 f'You can change the password using <a href="{link}">this form</a>.'
             )
+
+
+class UserPortfolioPermissionsForm(forms.ModelForm):
+    class Meta:
+        model = models.UserPortfolioPermission
+        fields = "__all__"
+        widgets = {
+            "roles": FilteredSelectMultipleArrayWidget(
+                "roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
+            ),
+            "additional_permissions": FilteredSelectMultipleArrayWidget(
+                "additional_permissions",
+                is_stacked=False,
+                choices=UserPortfolioPermissionChoices.choices,
+            ),
+        }
 
 
 class PortfolioInvitationAdminForm(UserChangeForm):
@@ -744,18 +752,11 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "is_superuser",
                     "groups",
                     "user_permissions",
-                    "portfolio",
-                    "portfolio_roles",
-                    "portfolio_additional_permissions",
                 )
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
-
-    autocomplete_fields = [
-        "portfolio",
-    ]
 
     readonly_fields = ("verification_type",)
 
@@ -776,9 +777,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 "fields": (
                     "is_active",
                     "groups",
-                    "portfolio",
-                    "portfolio_roles",
-                    "portfolio_additional_permissions",
                 )
             },
         ),
@@ -833,9 +831,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "Important dates",
         "last_login",
         "date_joined",
-        "portfolio",
-        "portfolio_roles",
-        "portfolio_additional_permissions",
     ]
 
     # TODO: delete after we merge organization feature
@@ -1242,6 +1237,26 @@ class UserDomainRoleResource(resources.ModelResource):
 
     class Meta:
         model = models.UserDomainRole
+
+
+class UserPortfolioPermissionAdmin(ListHeaderAdmin):
+    form = UserPortfolioPermissionsForm
+
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.UserPortfolioPermission
+        fields = "__all__"
+
+    _meta = Meta()
+
+    # Columns
+    list_display = [
+        "user",
+        "portfolio",
+    ]
+
+    autocomplete_fields = ["user", "portfolio"]
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
@@ -3262,6 +3277,7 @@ admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
 admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
+admin.site.register(models.UserPortfolioPermission, UserPortfolioPermissionAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)

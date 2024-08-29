@@ -7,6 +7,7 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models import Portfolio
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.csv_export import (
     DomainDataFull,
@@ -33,7 +34,14 @@ import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from django.utils import timezone
 from api.tests.common import less_console_noise_decorator
-from .common import MockDbForSharedTests, MockDbForIndividualTests, MockEppLib, less_console_noise, get_time_aware_date
+from .common import (
+    MockDbForSharedTests,
+    MockDbForIndividualTests,
+    MockEppLib,
+    get_wsgi_request_object,
+    less_console_noise,
+    get_time_aware_date,
+)
 from waffle.testutils import override_flag
 
 
@@ -281,10 +289,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # Create a user and associate it with some domains
         UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
 
-        # Create a request object
-        factory = RequestFactory()
-        request = factory.get("/")
-        request.user = self.user
+        # Make a GET request using self.client to get a request object
+        request = get_wsgi_request_object(client=self.client, user=self.user)
 
         # Create a CSV file in memory
         csv_file = StringIO()
@@ -321,8 +327,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
         # Create a portfolio and assign it to the user
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
-        self.user.portfolio = portfolio
-        self.user.save()
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
         UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_1).delete()
@@ -336,14 +341,12 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.domain_3.domain_info.save()
 
         # Set up user permissions
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        self.user.save()
-        self.user.refresh_from_db()
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
 
-        # Create a request object
-        factory = RequestFactory()
-        request = factory.get("/")
-        request.user = self.user
+        # Make a GET request using self.client to get a request object
+        request = get_wsgi_request_object(client=self.client, user=self.user)
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
@@ -354,19 +357,22 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Test the output for readonly admin
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
-        self.user.save()
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
 
+        # Get the csv content
+        csv_content = self._run_domain_data_type_user_export(request)
         self.assertIn(self.domain_1.name, csv_content)
         self.assertIn(self.domain_3.name, csv_content)
         self.assertNotIn(self.domain_2.name, csv_content)
 
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
+
         # Get the csv content
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
-        self.user.save()
-
         csv_content = self._run_domain_data_type_user_export(request)
-
         self.assertNotIn(self.domain_1.name, csv_content)
         self.assertNotIn(self.domain_3.name, csv_content)
         self.assertIn(self.domain_2.name, csv_content)
