@@ -175,17 +175,16 @@ class Command(BaseCommand):
         Updates all relevant domain request records.
         """
         domain_requests = DomainInformation.objects.filter(federal_agency=federal_agency)
-        if len(domain_requests) < 1:
+        if not domain_requests.exists():
             message = "Portfolios not added to domain requests: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
-            return
+        else:
+            for domain_request in domain_requests:
+                domain_request.portfolio = portfolio
 
-        for domain_request in domain_requests:
-            domain_request.portfolio = portfolio
-
-        DomainRequest.objects.bulk_update(domain_requests, ["portfolio"])
-        message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests"
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+            DomainRequest.objects.bulk_update(domain_requests, ["portfolio"])
+            message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests"
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
@@ -193,15 +192,14 @@ class Command(BaseCommand):
         Updates all relevant domain information records.
         """
         domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
-
-        if len(domain_infos) < 1:
+        if not domain_infos.exists():
             message = "Portfolios not added to domains: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return
+        else:
+            for domain_info in domain_infos:
+                domain_info.portfolio = portfolio
 
-        for domain_info in domain_infos:
-            domain_info.portfolio = portfolio
-
-        DomainInformation.objects.bulk_update(domain_infos, ["portfolio"])
-        message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains"
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+            DomainInformation.objects.bulk_update(domain_infos, ["portfolio"])
+            message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains"
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
