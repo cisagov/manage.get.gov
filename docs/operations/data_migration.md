@@ -816,3 +816,25 @@ Example: `cf ssh getgov-za`
 |   | Parameter                  | Description                                                                        |
 |:-:|:-------------------------- |:-----------------------------------------------------------------------------------|
 | 1 | **federal_cio_csv_path**   | Specifies where the federal CIO csv is                                             |
+
+## Populate Domain Request Dates
+This section outlines how to run the populate_domain_request_dates script
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py populate_domain_request_dates```
+
+### Running locally
+```docker-compose exec app ./manage.py populate_domain_request_dates```
