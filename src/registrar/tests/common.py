@@ -775,13 +775,13 @@ class MockDb(TestCase):
             cls.domain_request_3.alternative_domains.add(website, website_2)
             cls.domain_request_3.current_websites.add(website_3, website_4)
             cls.domain_request_3.cisa_representative_email = "test@igorville.com"
-            cls.domain_request_3.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_3.last_submitted_date = get_time_aware_date(datetime(2024, 4, 2))
             cls.domain_request_3.save()
 
-            cls.domain_request_4.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_4.last_submitted_date = get_time_aware_date(datetime(2024, 4, 2))
             cls.domain_request_4.save()
 
-            cls.domain_request_6.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_6.last_submitted_date = get_time_aware_date(datetime(2024, 4, 2))
             cls.domain_request_6.save()
 
     @classmethod

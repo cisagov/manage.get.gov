@@ -94,7 +94,7 @@ class DomainRequestFixture:
 
         # TODO for a future ticket: Allow for more than just "federal" here
         da.generic_org_type = app["generic_org_type"] if "generic_org_type" in app else "federal"
-        da.submission_date = fake.date()
+        da.last_submitted_date = fake.date()
         da.federal_type = (
             app["federal_type"]
             if "federal_type" in app

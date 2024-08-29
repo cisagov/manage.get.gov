@@ -8,7 +8,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0119_remove_user_portfolio_and_more"),
+        ("registrar", "0120_add_domainrequest_submission_dates"),
     ]
 
     operations = [
