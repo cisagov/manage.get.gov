@@ -1,7 +1,7 @@
 {% extends "domain_base.html" %}
 {% load static field_helpers%}
 
-{% block title %}Suborganization{% if suborganization_name %} | suborganization_name{% endif %}{% endblock %}
+{% block title %}Suborganization{% if suborganization_name %} | suborganization_name{% endif %} | {% endblock %}
 
 {% block domain_content %}
     {# this is right after the messages block in the parent template #}
