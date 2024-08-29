@@ -1698,7 +1698,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Columns
     list_display = [
         "requested_domain",
-        "submission_date",
+        "first_submitted_date",
+        "last_submitted_date",
+        "last_status_update",
         "status",
         "generic_org_type",
         "federal_type",
@@ -1901,7 +1903,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Table ordering
     # NOTE: This impacts the select2 dropdowns (combobox)
     # Currentl, there's only one for requests on DomainInfo
-    ordering = ["-submission_date", "requested_domain__name"]
+    ordering = ["-last_submitted_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
 

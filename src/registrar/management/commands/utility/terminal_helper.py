@@ -86,7 +86,7 @@ class PopulateScriptTemplate(ABC):
         You must define update_record before you can use this function.
         """
 
-        records = object_class.objects.filter(**filter_conditions)
+        records = object_class.objects.filter(**filter_conditions) if filter_conditions else object_class.objects.all()
         readable_class_name = self.get_class_name(object_class)
 
         # Code execution will stop here if the user prompts "N"
