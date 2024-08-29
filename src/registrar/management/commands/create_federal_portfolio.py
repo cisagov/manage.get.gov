@@ -149,6 +149,10 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
 
     def _update_existing_suborganizations(self, portfolio, orgs_to_update):
+        """
+        Update existing suborganizations with new portfolio.
+        Prompts for user confirmation before proceeding.
+        """
         proceed = TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=False,
             info_to_inspect=f"""Some suborganizations already exist in our DB.
@@ -170,8 +174,10 @@ class Command(BaseCommand):
         TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
     def _update_portfolio_location_details(self, portfolio: Portfolio, domain_info: DomainInformation):
-        """Adds location information to the given portfolio based off of the values in
-        DomainInformation"""
+        """
+        Update portfolio location details based on DomainInformation.
+        Copies relevant fields and saves the portfolio.
+        """
         location_props = [
             "address_line1",
             "address_line2",
@@ -191,6 +197,10 @@ class Command(BaseCommand):
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
+        """
+        Associate portfolio with domain requests for a federal agency.
+        Updates all relevant domain request records.
+        """
         domain_requests = DomainInformation.objects.filter(federal_agency=federal_agency)
         if len(domain_requests) < 1:
             message = "Portfolios not added to domain requests: no valid records found"
@@ -205,6 +215,10 @@ class Command(BaseCommand):
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
+        """
+        Associate portfolio with domains for a federal agency.
+        Updates all relevant domain information records.
+        """
         domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
 
         if len(domain_infos) < 1:

@@ -1408,3 +1408,23 @@ class TestPopulateFederalAgencyInitialsAndFceb(TestCase):
         missing_agency.refresh_from_db()
         self.assertIsNone(missing_agency.initials)
         self.assertIsNone(missing_agency.is_fceb)
+
+
+class TestCreateFederalPortfolio(TestCase):
+    def setUp(self):
+        self.csv_path = "registrar/tests/data/fake_federal_cio.csv"
+
+        # Create test FederalAgency objects
+        self.agency1, _ = FederalAgency.objects.get_or_create(agency="American Battle Monuments Commission")
+        self.agency2, _ = FederalAgency.objects.get_or_create(agency="Advisory Council on Historic Preservation")
+        self.agency3, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
+        self.agency4, _ = FederalAgency.objects.get_or_create(agency="John F. Kennedy Center for Performing Arts")
+
+    def tearDown(self):
+        SeniorOfficial.objects.all().delete()
+        FederalAgency.objects.all().delete()
+    
+    # == create_or_modify_portfolio tests == #
+    # == create_suborganizations tests == #
+    # == handle_portfolio_requests tests == #
+    # == handle_portfolio_domains tests == #
