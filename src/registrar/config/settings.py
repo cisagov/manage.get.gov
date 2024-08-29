@@ -357,7 +357,7 @@ CSP_FORM_ACTION = allowed_sources
 # and inline with a nonce, as well as allowing connections back to their domain.
 # Note: If needed, we can embed chart.js instead of using the CDN
 CSP_DEFAULT_SRC = ("'self'",)
-CSP_STYLE_SRC = ["'self'", "https://www.ssa.gov/accessibility/andi/andi.css"]
+CSP_STYLE_SRC = ["'self'", "https://www.ssa.gov"]
 CSP_SCRIPT_SRC_ELEM = [
     "'self'",
     "https://www.googletagmanager.com/",
@@ -367,7 +367,7 @@ CSP_SCRIPT_SRC_ELEM = [
 ]
 CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/", "https://www.ssa.gov/accessibility/andi/andi.js"]
 CSP_INCLUDE_NONCE_IN = ["script-src-elem", "style-src"]
-CSP_IMG_SRC = ["'self'", "https://www.ssa.gov/accessibility/andi/icons/"]
+CSP_IMG_SRC = ["'self'", "https://www.ssa.gov"]
 
 # Cross-Origin Resource Sharing (CORS) configuration
 # Sets clients that allow access control to manage.get.gov
