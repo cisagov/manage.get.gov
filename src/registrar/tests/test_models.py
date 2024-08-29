@@ -17,6 +17,7 @@ from registrar.models import (
     DomainInvitation,
     UserDomainRole,
     FederalAgency,
+    UserPortfolioPermission,
     AllowedEmail,
 )
 
@@ -1145,19 +1146,24 @@ class TestPortfolioInvitations(TestCase):
 
     def tearDown(self):
         super().tearDown()
+        UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
         User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_retrieval(self):
-        self.assertFalse(self.user.portfolio)
+        portfolio_role_exists = UserPortfolioPermission.objects.filter(
+            user=self.user, portfolio=self.portfolio
+        ).exists()
+        self.assertFalse(portfolio_role_exists)
         self.invitation.retrieve()
         self.user.refresh_from_db()
-        self.assertEqual(self.user.portfolio.organization_name, "Hotel California")
-        self.assertEqual(self.user.portfolio_roles, [self.portfolio_role_base, self.portfolio_role_admin])
+        created_role = UserPortfolioPermission.objects.get(user=self.user, portfolio=self.portfolio)
+        self.assertEqual(created_role.portfolio.organization_name, "Hotel California")
+        self.assertEqual(created_role.roles, [self.portfolio_role_base, self.portfolio_role_admin])
         self.assertEqual(
-            self.user.portfolio_additional_permissions, [self.portfolio_permission_1, self.portfolio_permission_2]
+            created_role.additional_permissions, [self.portfolio_permission_1, self.portfolio_permission_2]
         )
         self.assertEqual(self.invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
 
@@ -1170,15 +1176,128 @@ class TestPortfolioInvitations(TestCase):
 
     @less_console_noise_decorator
     def test_retrieve_user_already_member_error(self):
-        self.assertFalse(self.user.portfolio)
-        portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Tokyo Hotel")
-        self.user.portfolio = portfolio2
-        self.assertEqual(self.user.portfolio.organization_name, "Tokyo Hotel")
-        self.user.save()
+        portfolio_role_exists = UserPortfolioPermission.objects.filter(
+            user=self.user, portfolio=self.portfolio
+        ).exists()
+        self.assertFalse(portfolio_role_exists)
+        portfolio_role, _ = UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio)
+        self.assertEqual(portfolio_role.portfolio.organization_name, "Hotel California")
         self.user.check_portfolio_invitations_on_login()
         self.user.refresh_from_db()
-        self.assertEqual(self.user.portfolio.organization_name, "Tokyo Hotel")
+
+        roles = UserPortfolioPermission.objects.filter(user=self.user)
+        self.assertEqual(len(roles), 1)
         self.assertEqual(self.invitation.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+
+    @less_console_noise_decorator
+    def test_retrieve_user_multiple_invitations(self):
+        """Retrieve user portfolio invitations when there are multiple and multiple_options flag true."""
+        # create a 2nd portfolio and a 2nd portfolio invitation to self.user
+        portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Take It Easy")
+        PortfolioInvitation.objects.get_or_create(
+            email=self.email,
+            portfolio=portfolio2,
+            portfolio_roles=[self.portfolio_role_base, self.portfolio_role_admin],
+            portfolio_additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
+        )
+        with override_flag("multiple_portfolios", active=True):
+            self.user.check_portfolio_invitations_on_login()
+            self.user.refresh_from_db()
+            roles = UserPortfolioPermission.objects.filter(user=self.user)
+            self.assertEqual(len(roles), 2)
+            updated_invitation1, _ = PortfolioInvitation.objects.get_or_create(
+                email=self.email, portfolio=self.portfolio
+            )
+            self.assertEqual(updated_invitation1.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+            updated_invitation2, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=portfolio2)
+            self.assertEqual(updated_invitation2.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+
+    @less_console_noise_decorator
+    def test_retrieve_user_multiple_invitations_when_multiple_portfolios_inactive(self):
+        """Attempt to retrieve user portfolio invitations when there are multiple
+        but multiple_portfolios flag set to False"""
+        # create a 2nd portfolio and a 2nd portfolio invitation to self.user
+        portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Take It Easy")
+        PortfolioInvitation.objects.get_or_create(
+            email=self.email,
+            portfolio=portfolio2,
+            portfolio_roles=[self.portfolio_role_base, self.portfolio_role_admin],
+            portfolio_additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
+        )
+        self.user.check_portfolio_invitations_on_login()
+        self.user.refresh_from_db()
+        roles = UserPortfolioPermission.objects.filter(user=self.user)
+        self.assertEqual(len(roles), 1)
+        updated_invitation1, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=self.portfolio)
+        self.assertEqual(updated_invitation1.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        updated_invitation2, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=portfolio2)
+        self.assertEqual(updated_invitation2.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+
+
+class TestUserPortfolioPermission(TestCase):
+    @less_console_noise_decorator
+    def setUp(self):
+        self.user, _ = User.objects.get_or_create(email="mayor@igorville.gov")
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=True)
+    def test_clean_on_multiple_portfolios_when_flag_active(self):
+        """Ensures that a user can create multiple portfolio permission objects when the flag is enabled"""
+        # Create an instance of User with a portfolio but no roles or additional permissions
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Motel California")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        portfolio_permission_2 = UserPortfolioPermission(
+            portfolio=portfolio_2, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # Clean should pass on both of these objects
+        try:
+            portfolio_permission.clean()
+            portfolio_permission_2.clean()
+        except ValidationError as error:
+            self.fail(f"Raised ValidationError unexpectedly: {error}")
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=False)
+    def test_clean_on_creates_multiple_portfolios(self):
+        """Ensures that a user cannot create multiple portfolio permission objects when the flag is disabled"""
+        # Create an instance of User with a portfolio but no roles or additional permissions
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Motel California")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        portfolio_permission_2 = UserPortfolioPermission(
+            portfolio=portfolio_2, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # This should work as intended
+        portfolio_permission.clean()
+
+        # Test if the ValidationError is raised with the correct message
+        with self.assertRaises(ValidationError) as cm:
+            portfolio_permission_2.clean()
+
+        portfolio_permission_2, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
+
+        self.assertEqual(
+            cm.exception.message,
+            "Only one portfolio permission is allowed per user when multiple portfolios are disabled.",
+        )
 
 
 class TestUser(TestCase):
@@ -1191,6 +1310,7 @@ class TestUser(TestCase):
         self.domain_name = "igorvilleInTransition.gov"
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.user, _ = User.objects.get_or_create(email=self.email)
+        self.factory = RequestFactory()
 
     def tearDown(self):
         super().tearDown()
@@ -1200,6 +1320,7 @@ class TestUser(TestCase):
         DomainRequest.objects.all().delete()
         DraftDomain.objects.all().delete()
         TransitionDomain.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
@@ -1362,44 +1483,41 @@ class TestUser(TestCase):
 
         Note: This tests _get_portfolio_permissions as a side effect
         """
+
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
 
-        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
-        self.user.save()
-        self.user.refresh_from_db()
-
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
         self.assertFalse(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
 
-        self.user.portfolio = portfolio
-        self.user.save()
-        self.user.refresh_from_db()
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio,
+            user=self.user,
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS],
+        )
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
 
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        self.user.save()
-        self.user.refresh_from_db()
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
 
-        UserDomainRole.objects.all().get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission()
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission()
+        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
@@ -1410,13 +1528,15 @@ class TestUser(TestCase):
     def test_user_with_portfolio_but_no_roles(self):
         # Create an instance of User with a portfolio but no roles or additional permissions
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
-        self.user.portfolio = portfolio
-        self.user.portfolio_roles = []
+        # Try to remove the role
+        portfolio_permission.portfolio = portfolio
+        portfolio_permission.roles = []
 
         # Test if the ValidationError is raised with the correct message
         with self.assertRaises(ValidationError) as cm:
-            self.user.clean()
+            portfolio_permission.clean()
 
         self.assertEqual(
             cm.exception.message, "When portfolio is assigned, portfolio roles or additional permissions are required."
@@ -1425,13 +1545,18 @@ class TestUser(TestCase):
 
     @less_console_noise_decorator
     def test_user_with_portfolio_roles_but_no_portfolio(self):
-        # Create an instance of User with a portfolio role but no portfolio
-        self.user.portfolio = None
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # Try to remove the portfolio
+        portfolio_permission.portfolio = None
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
 
         # Test if the ValidationError is raised with the correct message
         with self.assertRaises(ValidationError) as cm:
-            self.user.clean()
+            portfolio_permission.clean()
 
         self.assertEqual(
             cm.exception.message, "When portfolio roles or additional permissions are assigned, portfolio is required."

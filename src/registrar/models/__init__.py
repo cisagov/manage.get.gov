@@ -21,6 +21,7 @@ from .portfolio import Portfolio
 from .domain_group import DomainGroup
 from .suborganization import Suborganization
 from .senior_official import SeniorOfficial
+from .user_portfolio_permission import UserPortfolioPermission
 from .allowed_email import AllowedEmail
 
 
@@ -47,6 +48,7 @@ __all__ = [
     "DomainGroup",
     "Suborganization",
     "SeniorOfficial",
+    "UserPortfolioPermission",
     "AllowedEmail",
 ]
 
@@ -72,4 +74,5 @@ auditlog.register(Portfolio)
 auditlog.register(DomainGroup)
 auditlog.register(Suborganization)
 auditlog.register(SeniorOfficial)
+auditlog.register(UserPortfolioPermission)
 auditlog.register(AllowedEmail)
