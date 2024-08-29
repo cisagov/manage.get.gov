@@ -1,11 +1,12 @@
 {% extends 'django/admin/email_clipboard_change_form.html' %}
+{% load custom_filters %}
 {% load i18n static %}
 
 {% block content %}
     {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
     {% url 'get-senior-official-from-federal-agency-json' as url %}
     <input id="senior_official_from_agency_json_url" class="display-none" value="{{url}}" />
-    {{ block.super }}
+    {{ block.super }} 
 {% endblock content %}
 
 {% block field_sets %}
@@ -20,4 +21,22 @@
         {% endcomment %}
         {% include "django/admin/includes/detail_table_fieldset.html" with original_object=original %}
     {% endfor %}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+    <div class="portfolio-submit-row-wrapper">
+        <span class="portfolio-submit-row-toggle padding-1 padding-right-2 visible-desktop">
+            <button type="button" id="portfolioSubmitRowToggle">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                    <use xlink:href="{% static 'img/sprite.svg' %}#expand_more"></use>
+                </svg>
+                <span>Hide</span>
+            </button>
+        </span>
+        <p class="portfolio-requested-domain-sticky">
+            HELLO WORLD: <strong>{{ original.requested_domain.name }}</strong>
+        </p>
+        {{ block.super }}
+    </div>
+    <span class="scroll-indicator"></span>
 {% endblock %}
