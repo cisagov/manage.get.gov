@@ -45,7 +45,7 @@ th {
   width: 100%;
 
   th[data-sortable]:not([aria-sort]) .usa-table__header__button {
-    right: auto;
+    right: 10px;
   }
 
   tbody th {
