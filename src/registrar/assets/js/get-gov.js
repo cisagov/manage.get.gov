@@ -1599,7 +1599,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${utcDateString(request.created_at)})</span>`;
             const actionUrl = request.action_url;
             const actionLabel = request.action_label;
-            const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
+            const submissionDate = request.last_submitted_date ? new Date(request.last_submitted_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
             
             // Even if the request is not deletable, we may need this empty string for the td if the deletable column is displayed
             let modalTrigger = '';
@@ -1699,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <th scope="row" role="rowheader" data-label="Domain name">
                 ${domainName}
               </th>
-              <td data-sort-value="${new Date(request.submission_date).getTime()}" data-label="Date submitted">
+              <td data-sort-value="${new Date(request.last_submitted_date).getTime()}" data-label="Date submitted">
                 ${submissionDate}
               </td>
               <td data-label="Status">
