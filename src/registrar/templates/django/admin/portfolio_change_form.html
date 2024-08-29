@@ -24,19 +24,20 @@
 {% endblock %}
 
 {% block submit_buttons_bottom %}
-    <div class="portfolio-submit-row-wrapper">
-        <span class="portfolio-submit-row-toggle padding-1 padding-right-2 visible-desktop">
-            <button type="button" id="portfolioSubmitRowToggle">
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                    <use xlink:href="{% static 'img/sprite.svg' %}#expand_more"></use>
-                </svg>
-                <span>Hide</span>
-            </button>
-        </span>
-        <p class="portfolio-requested-domain-sticky">
-            HELLO WORLD: <strong>{{ original.requested_domain.name }}</strong>
-        </p>
-        {{ block.super }}
-    </div>
+<div class="submit-row-wrapper">
+    <span class="submit-row-toggle padding-1 padding-right-2 visible-desktop">
+        <button type="button" class="usa-button usa-button--unstyled" id="submitRowToggle">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#expand_more"></use>
+            </svg>
+            <span>Hide</span>
+        </button>
+    </span>
+
+    <p class="padding-top-05 text-right margin-top-2 padding-right-2 margin-bottom-0 requested-domain-sticky float-right visible-768">
+        HELLO: <strong>{{ original.requested_domain.name }}</strong>
+    </p>
+    {{ block.super }}
+</div>
     <span class="scroll-indicator"></span>
 {% endblock %}

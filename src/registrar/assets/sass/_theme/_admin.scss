@@ -556,43 +556,6 @@ button .usa-icon,
     }
 }
 
-/* Sticky submit bar for Portfolio page on desktop */
-@media screen and (min-width:768px) {
-    .portfolio-submit-row-wrapper {
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        left: 338px; /* Adjust this value according to your layout */
-        background: var(--darkened-bg); /* Use a suitable background color */
-        border-top-left-radius: 6px;
-        transition: transform .2s ease-out;
-    }
-    .portfolio-submit-row-wrapper--collapsed {
-        transform: translate3d(0, 88px, 0);
-    }
-    .portfolio-submit-row {
-        clear: both;
-    }
-    .portfolio-submit-row-toggle {
-        display: inline-block;
-        position: absolute;
-        top: -30px;
-        right: 0;
-        background: var(--darkened-bg);
-    }
-    #portfolioSubmitRowToggle {
-        color: var(--body-fg);
-    }
-    .portfolio-requested-domain-sticky {
-        max-width: 325px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        font-size: medium;
-        padding-top: 3px !important;
-    }
-}
-
 .visible-768 {
     display: none;
 }
@@ -614,19 +577,6 @@ button .usa-icon,
 @media screen and (min-width:1256px) {
     .submit-row-wrapper {
         @include submit-row-wrapper--collapsed-one-line();
-    }
-}
-
-@media screen and (min-width:935px) {
-    /* Analyst-only class for Portfolio page */
-    .portfolio-submit-row-wrapper--analyst-view {
-        @include portfolio-submit-row-wrapper--collapsed-one-line();
-    }
-}
-
-@media screen and (min-width:1256px) {
-    .portfolio-submit-row-wrapper {
-        @include portfolio-submit-row-wrapper--collapsed-one-line();
     }
 }
 
