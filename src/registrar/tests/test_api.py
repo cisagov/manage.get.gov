@@ -4,6 +4,8 @@ from registrar.models import FederalAgency, SeniorOfficial, User
 from django.contrib.auth import get_user_model
 from registrar.tests.common import create_superuser, create_user
 
+from api.tests.common import less_console_noise_decorator
+
 
 class GetSeniorOfficialJsonTest(TestCase):
     def setUp(self):
@@ -26,6 +28,7 @@ class GetSeniorOfficialJsonTest(TestCase):
         SeniorOfficial.objects.all().delete()
         FederalAgency.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_get_senior_official_json_authenticated_superuser(self):
         """Test that a superuser can fetch the senior official information."""
         p = "adminpass"
@@ -38,6 +41,7 @@ class GetSeniorOfficialJsonTest(TestCase):
         self.assertEqual(data["last_name"], "Doe")
         self.assertEqual(data["title"], "Director")
 
+    @less_console_noise_decorator
     def test_get_senior_official_json_authenticated_analyst(self):
         """Test that an analyst user can fetch the senior official's information."""
         p = "userpass"
@@ -50,6 +54,7 @@ class GetSeniorOfficialJsonTest(TestCase):
         self.assertEqual(data["last_name"], "Doe")
         self.assertEqual(data["title"], "Director")
 
+    @less_console_noise_decorator
     def test_get_senior_official_json_unauthenticated(self):
         """Test that an unauthenticated user receives a 403 with an error message."""
         p = "password"
@@ -57,6 +62,7 @@ class GetSeniorOfficialJsonTest(TestCase):
         response = self.client.get(self.api_url, {"agency_name": "Test Agency"})
         self.assertEqual(response.status_code, 302)
 
+    @less_console_noise_decorator
     def test_get_senior_official_json_not_found(self):
         """Test that a request for a non-existent agency returns a 404 with an error message."""
         p = "adminpass"

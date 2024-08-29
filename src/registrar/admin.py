@@ -34,6 +34,7 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
+from django.contrib.admin.views.main import IGNORED_PARAMS
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
@@ -231,7 +232,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
         }
         labels = {
-            "action_needed_reason_email": "Auto-generated email",
+            "action_needed_reason_email": "Email",
         }
 
     def __init__(self, *args, **kwargs):
@@ -374,7 +375,9 @@ class DomainRequestAdminForm(forms.ModelForm):
 class MultiFieldSortableChangeList(admin.views.main.ChangeList):
     """
     This class overrides the behavior of column sorting in django admin tables in order
-    to allow for multi field sorting on admin_order_field
+    to allow for multi field sorting on admin_order_field.  It also overrides behavior
+    of getting the filter params to allow portfolio filters to be executed without
+    displaying on the right side of the ChangeList view.
 
 
     Usage:
@@ -435,6 +438,24 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
             ordering.append("-pk")
 
         return ordering
+
+    def get_filters_params(self, params=None):
+        """
+        Add portfolio to ignored params to allow the portfolio filter while not
+        listing it as a filter option on the right side of Change List on the
+        portfolio list.
+        """
+        params = params or self.params
+        lookup_params = params.copy()  # a dictionary of the query string
+        # Remove all the parameters that are globally and systematically
+        # ignored.
+        # Remove portfolio so that it does not error as an invalid
+        # filter parameter.
+        ignored_params = list(IGNORED_PARAMS) + ["portfolio"]
+        for ignored in ignored_params:
+            if ignored in lookup_params:
+                del lookup_params[ignored]
+        return lookup_params
 
 
 class CustomLogEntryAdmin(LogEntryAdmin):
@@ -651,6 +672,19 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
                             }
                         )
                     except models.User.DoesNotExist:
+                        pass
+                elif parameter_name == "portfolio":
+                    # Retrieves the corresponding portfolio from Portfolio
+                    id_value = request.GET.get(param)
+                    try:
+                        portfolio = models.Portfolio.objects.get(id=id_value)
+                        filters.append(
+                            {
+                                "parameter_name": "portfolio",
+                                "parameter_value": portfolio.organization_name,
+                            }
+                        )
+                    except models.Portfolio.DoesNotExist:
                         pass
                 else:
                     # For other parameter names, append a dictionary with the original
@@ -2251,6 +2285,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
 
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if a 'portfolio' parameter is passed in the request
+        portfolio_id = request.GET.get("portfolio")
+        if portfolio_id:
+            # Further filter the queryset by the portfolio
+            qs = qs.filter(portfolio=portfolio_id)
+        return qs
+
 
 class TransitionDomainAdmin(ListHeaderAdmin):
     """Custom transition domain admin class."""
@@ -2704,6 +2749,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             return True
         return super().has_change_permission(request, obj)
 
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if a 'portfolio' parameter is passed in the request
+        portfolio_id = request.GET.get("portfolio")
+        if portfolio_id:
+            # Further filter the queryset by the portfolio
+            qs = qs.filter(domain_info__portfolio=portfolio_id)
+        return qs
+
 
 class DraftDomainResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -2888,7 +2944,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         #     "classes": ("collapse", "closed"),
         #     "fields": ["administrators", "members"]}
         # ),
-        ("Portfolio domains", {"classes": ("collapse", "closed"), "fields": ["domains", "domain_requests"]}),
+        ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -2970,18 +3026,27 @@ class PortfolioAdmin(ListHeaderAdmin):
     suborganizations.short_description = "Suborganizations"  # type: ignore
 
     def domains(self, obj: models.Portfolio):
-        """Returns a list of links for each related domain"""
-        queryset = obj.get_domains()
-        return self.get_field_links_as_list(
-            queryset, "domaininformation", link_info_attribute="get_state_display_of_domain"
-        )
+        """Returns the count of domains with a link to view them in the admin."""
+        domain_count = obj.get_domains().count()  # Count the related domains
+        if domain_count > 0:
+            # Construct the URL to the admin page, filtered by portfolio
+            url = reverse("admin:registrar_domain_changelist") + f"?portfolio={obj.id}"
+            label = "domain" if domain_count == 1 else "domains"
+            # Create a clickable link with the domain count
+            return format_html('<a href="{}">{} {}</a>', url, domain_count, label)
+        return "No domains"
 
     domains.short_description = "Domains"  # type: ignore
 
     def domain_requests(self, obj: models.Portfolio):
-        """Returns a list of links for each related domain request"""
-        queryset = obj.get_domain_requests()
-        return self.get_field_links_as_list(queryset, "domainrequest", link_info_attribute="get_status_display")
+        """Returns the count of domain requests with a link to view them in the admin."""
+        domain_request_count = obj.get_domain_requests().count()  # Count the related domain requests
+        if domain_request_count > 0:
+            # Construct the URL to the admin page, filtered by portfolio
+            url = reverse("admin:registrar_domainrequest_changelist") + f"?portfolio={obj.id}"
+            # Create a clickable link with the domain request count
+            return format_html('<a href="{}">{} domain requests</a>', url, domain_request_count)
+        return "No domain requests"
 
     domain_requests.short_description = "Domain requests"  # type: ignore
 

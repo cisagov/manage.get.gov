@@ -42,7 +42,7 @@ class UserPortfolioPermission(TimeStampedModel):
     user = models.ForeignKey(
         "registrar.User",
         null=False,
-        # when a portfolio is deleted, permissions are too
+        # when a user is deleted, permissions are too
         on_delete=models.CASCADE,
         related_name="portfolio_permissions",
     )
