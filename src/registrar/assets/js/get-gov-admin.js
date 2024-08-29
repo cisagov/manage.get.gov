@@ -908,10 +908,6 @@ function initializeWidgetOnList(list, parentId) {
             return;
         }
 
-        // Hide the contactList initially. 
-        // If we can update the contact information, it'll be shown again.
-        hideElement(contactList.parentElement);
-
         // Determine if any changes are necessary to the display of portfolio type or federal type
         // based on changes to the Federal Agency
         let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
@@ -925,14 +921,15 @@ function initializeWidgetOnList(list, parentId) {
                 console.error("Error in AJAX call: " + data.error);
                 return;
             }
-
-            let federal_type = data.federal_type;
-            let portfolio_type = data.portfolio_type;
-            updateFederalType(data.federal_type);
-            updatePortfolioType(data.portfolio_type);
+            updateReadOnly(data.federal_type, '.field-federal_type');
+            updateReadOnly(data.portfolio_type, '.field-portfolio_type');
         })
         .catch(error => console.error("Error fetching federal and portfolio types: ", error));
 
+        // Hide the contactList initially. 
+        // If we can update the contact information, it'll be shown again.
+        hideElement(contactList.parentElement);
+        
         let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
         fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
         .then(response => {
@@ -988,33 +985,21 @@ function initializeWidgetOnList(list, parentId) {
     }
 
     /**
-     * Dynamically update the portfolio type text in the dom to portfolioType
+     * Utility that selects a div from the DOM using selectorString,
+     * and updates a div within that div which has class of 'readonly'
+     * so that the text of the div is updated to updateText
+     * @param {*} updateText 
+     * @param {*} selectorString 
      */
-    function updatePortfolioType(portfolioType) {
-        // Find the div with class 'field-portfolio_type'
-        const portfolioTypeDiv = document.querySelector('.field-portfolio_type');
-        if (portfolioTypeDiv) {
-            // Find the nested div with class 'readonly' inside 'field-portfolio_type'
-            const readonlyDiv = portfolioTypeDiv.querySelector('.readonly');
+    function updateReadOnly(updateText, selectorString) {
+        // find the div by selectorString
+        const selectedDiv = document.querySelector(selectorString);
+        if (selectedDiv) {
+            // find the nested div with class 'readonly' inside the selectorString div
+            const readonlyDiv = selectedDiv.querySelector('.readonly');
             if (readonlyDiv) {
                 // Update the text content of the readonly div
-                readonlyDiv.textContent = portfolioType !== null ? portfolioType : '-';
-            }
-        }
-    }
-
-    /**
-     * Dynamically update the federal type text in the dom to federalType
-     */
-    function updateFederalType(federalType) {
-        // Find the div with class 'field-federal_type'
-        const federalTypeDiv = document.querySelector('.field-federal_type');
-        if (federalTypeDiv) {
-            // Find the nested div with class 'readonly' inside 'field-federal_type'
-            const readonlyDiv = federalTypeDiv.querySelector('.readonly');
-            if (readonlyDiv) {
-                // Update the text content of the readonly div
-                readonlyDiv.textContent = federalType !== null ? federalType : '-';
+                readonlyDiv.textContent = updateText !== null ? updateText : '-';
             }
         }
     }

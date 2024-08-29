@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from registrar.tests.common import create_superuser, create_user
 
 from api.tests.common import less_console_noise_decorator
+from registrar.utility.constants import BranchChoices
 
 
 class GetSeniorOfficialJsonTest(TestCase):
@@ -82,7 +83,7 @@ class GetFederalPortfolioTypeJsonTest(TestCase):
         self.superuser = create_superuser()
         self.analyst_user = create_user()
 
-        self.agency = FederalAgency.objects.create(agency="Test Agency", federal_type="judicial")
+        self.agency = FederalAgency.objects.create(agency="Test Agency", federal_type=BranchChoices.JUDICIAL)
 
         self.api_url = reverse("get-federal-and-portfolio-types-from-federal-agency-json")
 
@@ -100,3 +101,11 @@ class GetFederalPortfolioTypeJsonTest(TestCase):
         data = response.json()
         self.assertEqual(data["federal_type"], "Judicial")
         self.assertEqual(data["portfolio_type"], "Federal - Judicial")
+
+    @less_console_noise_decorator
+    def test_get_federal_and_portfolio_types_json_authenticated_regularuser(self):
+        """Test that a regular user receives a 403 with an error message."""
+        p = "password"
+        self.client.login(username="testuser", password=p)
+        response = self.client.get(self.api_url, {"agency_name": "Test Agency", "organization_type": "federal"})
+        self.assertEqual(response.status_code, 302)
