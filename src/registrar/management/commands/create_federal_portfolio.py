@@ -193,7 +193,14 @@ class Command(BaseCommand):
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
         """
-        domain_requests = DomainInformation.objects.filter(federal_agency=federal_agency)
+        invalid_states = [
+            DomainRequest.DomainRequestStatus.STARTED, 
+            DomainRequest.DomainRequestStatus.INELIGIBLE,
+            DomainRequest.DomainRequestStatus.REJECTED,
+        ]
+        domain_requests = DomainRequest.objects.filter(
+            federal_agency=federal_agency
+        ).exclude(status__in=invalid_states)
         if not domain_requests.exists():
             message = "Portfolios not added to domain requests: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
