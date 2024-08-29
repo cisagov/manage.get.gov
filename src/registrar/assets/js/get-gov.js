@@ -1220,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
-            const suborganization = domain.suborganization ? domain.suborganization : '';
+            const suborganization = domain.suborganization ? domain.suborganization : '⎯';
 
             const row = document.createElement('tr');
 
@@ -1229,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!noPortfolioFlag) {
               markupForSuborganizationRow = `
                 <td>
-                    <span class="text-wrap" aria-label="${suborganization ? '' : 'None'}">${suborganization}</span>
+                    <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
                 </td>
               `
             }
@@ -2043,11 +2043,19 @@ document.addEventListener('DOMContentLoaded', function() {
       // Due to the nature of how uswds works, this is slightly hacky.
 
       // Use a MutationObserver to watch for changes in the dropdown list
-      const dropdownList = document.querySelector(`#${input.id}--list`);
+      const dropdownList = comboBox.querySelector(`#${input.id}--list`);
+      // TODO: customize blank value
+      // const isSuborgComboBox = comboBox.querySelector('#id_sub_organization--list');
       const observer = new MutationObserver(function(mutations) {
           mutations.forEach(function(mutation) {
               if (mutation.type === "childList") {
-                  addBlankOption(clearInputButton, dropdownList, initialValue);
+                // TODO: customize blank value
+                // if (isSuborgComboBox) {
+                //   addBlankOption(clearInputButton, dropdownList, initialValue, 'No suborganization');
+                // } else {
+                //   addBlankOption(clearInputButton, dropdownList, initialValue);
+                // }
+                addBlankOption(clearInputButton, dropdownList, initialValue);
               }
           });
       });
@@ -2102,6 +2110,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // TODO: customize blank value
+  // function addBlankOption(clearInputButton, dropdownList, initialValue, customBlank) {
   function addBlankOption(clearInputButton, dropdownList, initialValue) {
     if (dropdownList && !dropdownList.querySelector('[data-value=""]') && !isTyping) {
         const blankOption = document.createElement("li");
@@ -2111,7 +2121,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!initialValue){
           blankOption.classList.add("usa-combo-box__list-option--selected")
         }
-        blankOption.textContent = "---------";
+        // TODO: customize blank value
+        // customBlank ? blankOption.textContent = customBlank : blankOption.textContent = "---------";
+        blankOption.textContent = "⎯";
 
         dropdownList.insertBefore(blankOption, dropdownList.firstChild);
         blankOption.addEventListener("click", (e) => {
