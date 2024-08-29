@@ -2997,6 +2997,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         "domain_requests",
         "suborganizations",
         "portfolio_type",
+        "creator",
     ]
 
     def federal_type(self, obj: models.Portfolio):
