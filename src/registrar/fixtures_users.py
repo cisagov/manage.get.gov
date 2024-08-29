@@ -33,6 +33,7 @@ class UserFixture:
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
             "first_name": "Aditi",
             "last_name": "Green",
+            "email": "aditidevelops+01@gmail.com",
         },
         {
             "username": "be17c826-e200-4999-9389-2ded48c43691",
@@ -43,6 +44,7 @@ class UserFixture:
             "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
             "first_name": "Rachid",
             "last_name": "Mrad",
+            "email": "rachid.mrad@associates.cisa.dhs.gov ",
         },
         {
             "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
@@ -92,6 +94,7 @@ class UserFixture:
             "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
             "first_name": "David",
             "last_name": "Kennedy",
+            "email": "david.kennedy@ecstech.com",
         },
         {
             "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
@@ -145,6 +148,7 @@ class UserFixture:
             "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
             "first_name": "Aditi-Analyst",
             "last_name": "Green-Analyst",
+            "email": "aditidevelops+02@gmail.com",
         },
         {
             "username": "d6bf296b-fac5-47ff-9c12-f88ccc5c1b99",
@@ -187,6 +191,7 @@ class UserFixture:
             "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
             "first_name": "David-Analyst",
             "last_name": "Kennedy-Analyst",
+            "email": "david.kennedy@associates.cisa.dhs.gov",
         },
         {
             "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
@@ -245,7 +250,7 @@ class UserFixture:
     ]
 
     # Additional emails to add to the AllowedEmail whitelist.
-    ADDITIONAL_ALLOWED_EMAILS: list[str] = []
+    ADDITIONAL_ALLOWED_EMAILS: list[str] = ["davekenn4242@gmail.com", "rachid_mrad@hotmail.com"]
 
     def load_users(cls, users, group_name, are_superusers=False):
         logger.info(f"Going to load {len(users)} users in group {group_name}")
