@@ -1428,3 +1428,6 @@ class TestCreateFederalPortfolio(TestCase):
     # == create_suborganizations tests == #
     # == handle_portfolio_requests tests == #
     # == handle_portfolio_domains tests == #
+    # test for parse_requests
+    # test for parse_domains
+    # test for both

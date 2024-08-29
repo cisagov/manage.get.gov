@@ -71,7 +71,10 @@ class Command(BaseCommand):
         if federal_agency.so_federal_agency.exists():
             portfolio_args["senior_official"] = federal_agency.so_federal_agency.first()
 
-        portfolio, created = Portfolio.objects.get_or_create(**portfolio_args)
+        portfolio, created = Portfolio.objects.get_or_create(
+            organization_name=portfolio_args.get("organization_name"),
+            defaults=portfolio_args
+        )
 
         if created:
             message = f"Created portfolio '{portfolio}'"
