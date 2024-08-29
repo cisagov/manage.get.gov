@@ -38,7 +38,6 @@ class "registrar.Contact <Registrar>" as registrar.Contact #d6f4e9 {
     + id (BigAutoField)
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
-    ~ user (OneToOneField)
     + first_name (CharField)
     + middle_name (CharField)
     + last_name (CharField)
@@ -47,7 +46,6 @@ class "registrar.Contact <Registrar>" as registrar.Contact #d6f4e9 {
     + phone (PhoneNumberField)
     --
 }
-registrar.Contact -- registrar.User
 
 
 class "registrar.Host <Registrar>" as registrar.Host #d6f4e9 {
@@ -143,6 +141,8 @@ class "registrar.FederalAgency <Registrar>" as registrar.FederalAgency #d6f4e9 {
     + updated_at (DateTimeField)
     + agency (CharField)
     + federal_type (CharField)
+    + initials (CharField)
+    + is_fceb (BooleanField)
     --
 }
 
@@ -159,6 +159,7 @@ class "registrar.DomainRequest <Registrar>" as registrar.DomainRequest #d6f4e9 {
     + action_needed_reason_email (TextField)
     ~ federal_agency (ForeignKey)
     ~ portfolio (ForeignKey)
+    ~ sub_organization (ForeignKey)
     ~ creator (ForeignKey)
     ~ investigator (ForeignKey)
     + generic_org_type (CharField)
@@ -197,12 +198,12 @@ class "registrar.DomainRequest <Registrar>" as registrar.DomainRequest #d6f4e9 {
 }
 registrar.DomainRequest -- registrar.FederalAgency
 registrar.DomainRequest -- registrar.Portfolio
+registrar.DomainRequest -- registrar.Suborganization
 registrar.DomainRequest -- registrar.User
 registrar.DomainRequest -- registrar.User
 registrar.DomainRequest -- registrar.Contact
 registrar.DomainRequest -- registrar.Domain
 registrar.DomainRequest -- registrar.DraftDomain
-registrar.DomainRequest -- registrar.Contact
 registrar.DomainRequest *--* registrar.Website
 registrar.DomainRequest *--* registrar.Website
 registrar.DomainRequest *--* registrar.Contact
@@ -217,6 +218,7 @@ class "registrar.DomainInformation <Registrar>" as registrar.DomainInformation #
     ~ federal_agency (ForeignKey)
     ~ creator (ForeignKey)
     ~ portfolio (ForeignKey)
+    ~ sub_organization (ForeignKey)
     ~ domain_request (OneToOneField)
     + generic_org_type (CharField)
     + organization_type (CharField)
@@ -251,10 +253,10 @@ class "registrar.DomainInformation <Registrar>" as registrar.DomainInformation #
 registrar.DomainInformation -- registrar.FederalAgency
 registrar.DomainInformation -- registrar.User
 registrar.DomainInformation -- registrar.Portfolio
+registrar.DomainInformation -- registrar.Suborganization
 registrar.DomainInformation -- registrar.DomainRequest
 registrar.DomainInformation -- registrar.Contact
 registrar.DomainInformation -- registrar.Domain
-registrar.DomainInformation -- registrar.Contact
 registrar.DomainInformation *--* registrar.Contact
 
 
@@ -281,6 +283,22 @@ class "registrar.DomainInvitation <Registrar>" as registrar.DomainInvitation #d6
     --
 }
 registrar.DomainInvitation -- registrar.Domain
+
+
+class "registrar.PortfolioInvitation <Registrar>" as registrar.PortfolioInvitation #d6f4e9 {
+    portfolio invitation
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    + email (EmailField)
+    ~ portfolio (ForeignKey)
+    + portfolio_roles (ArrayField)
+    + portfolio_additional_permissions (ArrayField)
+    + status (FSMField)
+    --
+}
+registrar.PortfolioInvitation -- registrar.Portfolio
 
 
 class "registrar.TransitionDomain <Registrar>" as registrar.TransitionDomain #d6f4e9 {
@@ -343,6 +361,9 @@ class "registrar.User <Registrar>" as registrar.User #d6f4e9 {
     + is_active (BooleanField)
     + date_joined (DateTimeField)
     + status (CharField)
+    ~ portfolio (ForeignKey)
+    + portfolio_roles (ArrayField)
+    + portfolio_additional_permissions (ArrayField)
     + phone (PhoneNumberField)
     + middle_name (CharField)
     + title (CharField)
@@ -352,6 +373,7 @@ class "registrar.User <Registrar>" as registrar.User #d6f4e9 {
     # domains (ManyToManyField)
     --
 }
+registrar.User -- registrar.Portfolio
 registrar.User *--* registrar.Domain
 
 
@@ -407,10 +429,11 @@ class "registrar.Portfolio <Registrar>" as registrar.Portfolio #d6f4e9 {
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
     ~ creator (ForeignKey)
+    + organization_name (CharField)
+    + organization_type (CharField)
     + notes (TextField)
     ~ federal_agency (ForeignKey)
-    + organization_type (CharField)
-    + organization_name (CharField)
+    ~ senior_official (ForeignKey)
     + address_line1 (CharField)
     + address_line2 (CharField)
     + city (CharField)
@@ -422,6 +445,7 @@ class "registrar.Portfolio <Registrar>" as registrar.Portfolio #d6f4e9 {
 }
 registrar.Portfolio -- registrar.User
 registrar.Portfolio -- registrar.FederalAgency
+registrar.Portfolio -- registrar.SeniorOfficial
 
 
 class "registrar.DomainGroup <Registrar>" as registrar.DomainGroup #d6f4e9 {
@@ -452,7 +476,21 @@ class "registrar.Suborganization <Registrar>" as registrar.Suborganization #d6f4
 registrar.Suborganization -- registrar.Portfolio
 
 
-@enduml
-```
+class "registrar.SeniorOfficial <Registrar>" as registrar.SeniorOfficial #d6f4e9 {
+    senior official
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    + first_name (CharField)
+    + last_name (CharField)
+    + title (CharField)
+    + phone (PhoneNumberField)
+    + email (EmailField)
+    ~ federal_agency (ForeignKey)
+    --
+}
+registrar.SeniorOfficial -- registrar.FederalAgency
 
-</details>
+
+@enduml
