@@ -25,91 +25,91 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=lamb_chops,
-                submission_date="2024-01-01",
+                last_submitted_date="2024-01-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-01-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=short_ribs,
-                submission_date="2024-02-01",
+                last_submitted_date="2024-02-01",
                 status=DomainRequest.DomainRequestStatus.WITHDRAWN,
                 created_at="2024-02-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=beef_chuck,
-                submission_date="2024-03-01",
+                last_submitted_date="2024-03-01",
                 status=DomainRequest.DomainRequestStatus.REJECTED,
                 created_at="2024-03-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=stew_beef,
-                submission_date="2024-04-01",
+                last_submitted_date="2024-04-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-04-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=None,
-                submission_date="2024-05-01",
+                last_submitted_date="2024-05-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-05-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=None,
-                submission_date="2024-06-01",
+                last_submitted_date="2024-06-01",
                 status=DomainRequest.DomainRequestStatus.WITHDRAWN,
                 created_at="2024-06-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=None,
-                submission_date="2024-07-01",
+                last_submitted_date="2024-07-01",
                 status=DomainRequest.DomainRequestStatus.REJECTED,
                 created_at="2024-07-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=None,
-                submission_date="2024-08-01",
+                last_submitted_date="2024-08-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-08-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=None,
-                submission_date="2024-09-01",
+                last_submitted_date="2024-09-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-09-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=None,
-                submission_date="2024-10-01",
+                last_submitted_date="2024-10-01",
                 status=DomainRequest.DomainRequestStatus.WITHDRAWN,
                 created_at="2024-10-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=None,
-                submission_date="2024-11-01",
+                last_submitted_date="2024-11-01",
                 status=DomainRequest.DomainRequestStatus.REJECTED,
                 created_at="2024-11-01",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=None,
-                submission_date="2024-11-02",
+                last_submitted_date="2024-11-02",
                 status=DomainRequest.DomainRequestStatus.WITHDRAWN,
                 created_at="2024-11-02",
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
                 requested_domain=None,
-                submission_date="2024-12-01",
+                last_submitted_date="2024-12-01",
                 status=DomainRequest.DomainRequestStatus.APPROVED,
                 created_at="2024-12-01",
             ),
@@ -138,7 +138,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
         # Extract fields from response
         requested_domains = [request["requested_domain"] for request in data["domain_requests"]]
-        submission_dates = [request["submission_date"] for request in data["domain_requests"]]
+        last_submitted_dates = [request["last_submitted_date"] for request in data["domain_requests"]]
         statuses = [request["status"] for request in data["domain_requests"]]
         created_ats = [request["created_at"] for request in data["domain_requests"]]
         ids = [request["id"] for request in data["domain_requests"]]
@@ -154,7 +154,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
                 self.domain_requests[i].requested_domain.name if self.domain_requests[i].requested_domain else None,
                 requested_domains[i],
             )
-            self.assertEqual(self.domain_requests[i].submission_date, submission_dates[i])
+            self.assertEqual(self.domain_requests[i].last_submitted_date, last_submitted_dates[i])
             self.assertEqual(self.domain_requests[i].get_status_display(), statuses[i])
             self.assertEqual(
                 parse_datetime(self.domain_requests[i].created_at.isoformat()), parse_datetime(created_ats[i])
@@ -287,26 +287,30 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
     def test_sorting(self):
         """test that sorting works properly on the result set"""
-        response = self.app.get(reverse("get_domain_requests_json"), {"sort_by": "submission_date", "order": "desc"})
+        response = self.app.get(
+            reverse("get_domain_requests_json"), {"sort_by": "last_submitted_date", "order": "desc"}
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
-        # Check if sorted by submission_date in descending order
-        submission_dates = [req["submission_date"] for req in data["domain_requests"]]
-        self.assertEqual(submission_dates, sorted(submission_dates, reverse=True))
+        # Check if sorted by last_submitted_date in descending order
+        last_submitted_dates = [req["last_submitted_date"] for req in data["domain_requests"]]
+        self.assertEqual(last_submitted_dates, sorted(last_submitted_dates, reverse=True))
 
-        response = self.app.get(reverse("get_domain_requests_json"), {"sort_by": "submission_date", "order": "asc"})
+        response = self.app.get(reverse("get_domain_requests_json"), {"sort_by": "last_submitted_date", "order": "asc"})
         self.assertEqual(response.status_code, 200)
         data = response.json
 
-        # Check if sorted by submission_date in ascending order
-        submission_dates = [req["submission_date"] for req in data["domain_requests"]]
-        self.assertEqual(submission_dates, sorted(submission_dates))
+        # Check if sorted by last_submitted_date in ascending order
+        last_submitted_dates = [req["last_submitted_date"] for req in data["domain_requests"]]
+        self.assertEqual(last_submitted_dates, sorted(last_submitted_dates))
 
     def test_filter_approved_excluded(self):
         """test that approved requests are excluded from result set."""
         # sort in reverse chronological order of submission date, since most recent request is approved
-        response = self.app.get(reverse("get_domain_requests_json"), {"sort_by": "submission_date", "order": "desc"})
+        response = self.app.get(
+            reverse("get_domain_requests_json"), {"sort_by": "last_submitted_date", "order": "desc"}
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 

@@ -4,7 +4,7 @@ Hi, {{ recipient.first_name }}.
 Congratulations! Your .gov domain request has been approved.
 
 DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
-REQUEST RECEIVED ON: {{ domain_request.submission_date|date }}
+REQUEST RECEIVED ON: {{ domain_request.last_submitted_date|date }}
 STATUS: Approved
 
 You can manage your approved domain on the .gov registrar <https://manage.get.gov>.

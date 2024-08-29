@@ -834,12 +834,29 @@ Example: `cf ssh getgov-za`
 ```/tmp/lifecycle/shell```
 
 #### Step 4: Running the script
-```./manage.py update_first_ready --debug```
+```./manage.py populate_domain_request_dates```
 
 ### Running locally
-```docker-compose exec app ./manage.py update_first_ready --debug```
+```docker-compose exec app ./manage.py populate_domain_request_dates```
 
-##### Optional parameters
-|   | Parameter                  | Description                                                                 |
-|:-:|:-------------------------- |:----------------------------------------------------------------------------|
-| 1 | **debug**                  | Increases logging detail. Defaults to False.                                |
+## Populate Domain Request Dates
+This section outlines how to run the populate_domain_request_dates script
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py populate_domain_request_dates```
+
+### Running locally
+```docker-compose exec app ./manage.py populate_domain_request_dates```

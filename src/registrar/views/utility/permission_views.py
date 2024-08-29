@@ -214,6 +214,15 @@ class PortfolioDomainsPermissionView(PortfolioDomainsPermission, PortfolioBasePe
     """
 
 
+class NoPortfolioDomainsPermissionView(PortfolioBasePermissionView, abc.ABC):
+    """Abstract base view for a user without access to the
+    portfolio domains views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+
 class PortfolioDomainRequestsPermissionView(PortfolioDomainRequestsPermission, PortfolioBasePermissionView, abc.ABC):
     """Abstract base view for portfolio domain request views that enforces permissions.
 

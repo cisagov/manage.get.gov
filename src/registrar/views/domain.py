@@ -174,10 +174,11 @@ class DomainView(DomainBaseView):
         """Most views should not allow permission to portfolio users.
         If particular views allow permissions, they will need to override
         this function."""
-        if self.request.user.has_domains_portfolio_permission():
+        portfolio = self.request.session.get("portfolio")
+        if self.request.user.has_domains_portfolio_permission(portfolio):
             if Domain.objects.filter(id=pk).exists():
                 domain = Domain.objects.get(id=pk)
-                if domain.domain_info.portfolio == self.request.user.portfolio:
+                if domain.domain_info.portfolio == portfolio:
                     return True
         return False
 
@@ -236,7 +237,8 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        if self.request.user.portfolio and is_org_user:
+        portfolio = self.request.session.get("portfolio")
+        if portfolio and is_org_user:
             return False
         else:
             return super().has_permission()
@@ -255,7 +257,8 @@ class DomainSubOrganizationView(DomainFormBaseView):
 
         # non-org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        if self.request.user.portfolio and is_org_user:
+        portfolio = self.request.session.get("portfolio")
+        if portfolio and is_org_user:
             return super().has_permission()
         else:
             return False
@@ -335,7 +338,8 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        if self.request.user.portfolio and is_org_user:
+        portfolio = self.request.session.get("portfolio")
+        if portfolio and is_org_user:
             return False
         else:
             return super().has_permission()

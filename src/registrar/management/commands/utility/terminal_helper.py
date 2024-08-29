@@ -7,6 +7,7 @@ from django.db.models.manager import BaseManager
 from typing import List
 from registrar.utility.enums import LogCode
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -110,7 +111,7 @@ class PopulateScriptTemplate(ABC):
             TypeError: If custom_filter is not Callable.
         """
 
-        records = object_class.objects.filter(**filter_conditions)
+        records = object_class.objects.filter(**filter_conditions) if filter_conditions else object_class.objects.all()
 
         # apply custom filter
         records = self.custom_filter(records)

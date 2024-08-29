@@ -5,6 +5,8 @@
     {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
     {% url 'get-senior-official-from-federal-agency-json' as url %}
     <input id="senior_official_from_agency_json_url" class="display-none" value="{{url}}" />
+    {% url 'get-federal-and-portfolio-types-from-federal-agency-json' as url %}
+    <input id="federal_and_portfolio_types_from_agency_json_url" class="display-none" value="{{url}}" />
     {{ block.super }}
 {% endblock content %}
 
