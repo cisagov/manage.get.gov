@@ -72,8 +72,7 @@ class Command(BaseCommand):
             portfolio_args["senior_official"] = federal_agency.so_federal_agency.first()
 
         portfolio, created = Portfolio.objects.get_or_create(
-            organization_name=portfolio_args.get("organization_name"),
-            defaults=portfolio_args
+            organization_name=portfolio_args.get("organization_name"), defaults=portfolio_args
         )
 
         if created:
@@ -88,6 +87,15 @@ class Command(BaseCommand):
                 prompt_title="Do you wish to modify this record?",
             )
             if proceed:
+
+                # Don't override the creator and notes fields
+                if portfolio.creator:
+                    portfolio_args.pop("creator")
+
+                if portfolio.notes:
+                    portfolio_args.pop("notes")
+
+                # Update everything else
                 for key, value in portfolio_args.items():
                     setattr(portfolio, key, value)
                 portfolio.save()
@@ -98,11 +106,15 @@ class Command(BaseCommand):
 
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
-        valid_agencies = DomainInformation.objects.filter(federal_agency=federal_agency, organization_name__isnull=False)
+        valid_agencies = DomainInformation.objects.filter(
+            federal_agency=federal_agency, organization_name__isnull=False
+        )
         org_names = set(valid_agencies.values_list("organization_name", flat=True))
 
         if not org_names:
-            TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, f"No suborganizations found for {federal_agency}")
+            TerminalHelper.colorful_logger(
+                logger.warning, TerminalColors.YELLOW, f"No suborganizations found for {federal_agency}"
+            )
             return
 
         # Check if we need to update any existing suborgs first. This step is optional.
@@ -116,13 +128,17 @@ class Command(BaseCommand):
             if name.lower() == portfolio.organization_name.lower():
                 # If the suborg name is a portfolio name that currently exists, thats not a suborg - thats the portfolio itself!
                 # In this case, we can use this as an opportunity to update address information.
-                self._update_portfolio_location_details(portfolio, valid_agencies.filter(organization_name=name).first())
+                self._update_portfolio_location_details(
+                    portfolio, valid_agencies.filter(organization_name=name).first()
+                )
             else:
                 new_suborgs.append(Suborganization(name=name, portfolio=portfolio))
 
         if new_suborgs:
             Suborganization.objects.bulk_create(new_suborgs)
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f"Added {len(new_suborgs)} suborganizations")
+            TerminalHelper.colorful_logger(
+                logger.info, TerminalColors.OKGREEN, f"Added {len(new_suborgs)} suborganizations"
+            )
         else:
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, "No suborganizations added")
 

@@ -838,3 +838,45 @@ Example: `cf ssh getgov-za`
 
 ### Running locally
 ```docker-compose exec app ./manage.py populate_domain_request_dates```
+
+## Create federal portfolio
+This script takes the name of a `FederalAgency` (like 'AMTRAK') and does the following:
+1. Creates the portfolio record based off of data on the federal agency object itself
+2. Creates suborganizations from existing DomainInformation records
+3. Associates the SeniorOfficial record (if it exists)
+4. Adds this portfolio to DomainInformation / DomainRequests or both
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Upload your csv to the desired sandbox
+[Follow these steps](#use-scp-to-transfer-data-to-sandboxes) to upload the federal_cio csv to a sandbox of your choice.
+
+#### Step 5: Running the script
+```./manage.py create_federal_portfolio "{federal_agency_name}" --parse_requests --parse_domains```
+
+Example: `./manage.py create_federal_portfolio "AMTRAK" --parse_requests --parse_domains`
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py create_federal_portfolio "{federal_agency_name}" --parse_requests --parse_domains```
+
+##### Parameters
+|   | Parameter                  | Description                                                                                |
+|:-:|:-------------------------- |:-------------------------------------------------------------------------------------------|
+| 1 | **federal_agency_name**    | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
+| 2 | **parse_requests**         | Optional. If True, then the created portfolio is added to all related DomainRequests.      |
+| 3 | **parse_domains**          | Optional. If True, then the created portfolio is added to all related Domains.             |
+
+Note: While you can specify both at the same time, you must specify either --parse_requests or --parse_domains. You cannot run the script without defining one or the other.
