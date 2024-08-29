@@ -195,7 +195,6 @@ class Command(BaseCommand):
         if not domain_infos.exists():
             message = "Portfolios not added to domains: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
-            return
         else:
             for domain_info in domain_infos:
                 domain_info.portfolio = portfolio
