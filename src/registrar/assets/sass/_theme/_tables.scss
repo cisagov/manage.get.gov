@@ -44,10 +44,6 @@ th {
 .dotgov-table {
   width: 100%;
 
-  th[data-sortable]:not([aria-sort]) .usa-table__header__button {
-    right: 10px;
-  }
-
   tbody th {
     word-break: break-word;
   }
@@ -86,10 +82,8 @@ th {
   }
 
   @include at-media(tablet-lg) {
-
     th[data-sortable]:not([aria-sort]) .usa-table__header__button {
       right: auto;
     }
-
   }
 }
