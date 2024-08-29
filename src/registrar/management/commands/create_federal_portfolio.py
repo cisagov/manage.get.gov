@@ -4,8 +4,8 @@ import argparse
 import logging
 from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User, SeniorOfficial
-from django.db.models import Q
+from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
+
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class Command(BaseCommand):
 
         if parse_requests:
             self.handle_portfolio_requests(portfolio, federal_agency)
-        
+
         if parse_domains:
             self.handle_portfolio_domains(portfolio, federal_agency)
 
@@ -83,10 +83,10 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
             return portfolio
         else:
-            
+
             proceed = TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=False,
-                info_to_inspect=f"""The given portfolio '{federal_agency.agency}' already exists in our DB. 
+                info_to_inspect=f"""The given portfolio '{federal_agency.agency}' already exists in our DB.
                 If you cancel, the rest of the script will still execute but this record will not update.
                 """,
                 prompt_title="Do you wish to modify this record?",
@@ -112,7 +112,7 @@ class Command(BaseCommand):
         valid_agencies = DomainInformation.objects.filter(federal_agency=federal_agency)
         org_names = valid_agencies.values_list("organization_name", flat=True)
         if len(org_names) < 1:
-            message =f"No suborganizations found for {federal_agency}"
+            message = f"No suborganizations found for {federal_agency}"
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
             return
 
@@ -145,7 +145,7 @@ class Command(BaseCommand):
             message = f"Added {len(suborgs)} suborganizations"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
         else:
-            message =f"No suborganizations added"
+            message = "No suborganizations added"
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
 
     def _update_existing_suborganizations(self, portfolio, orgs_to_update):
@@ -169,9 +169,8 @@ class Command(BaseCommand):
         message = f"Updated {len(orgs_to_update)} suborganizations"
         TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
-
     def _update_portfolio_location_details(self, portfolio: Portfolio, domain_info: DomainInformation):
-        """Adds location information to the given portfolio based off of the values in 
+        """Adds location information to the given portfolio based off of the values in
         DomainInformation"""
         location_props = [
             "address_line1",
@@ -194,7 +193,7 @@ class Command(BaseCommand):
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
         domain_requests = DomainInformation.objects.filter(federal_agency=federal_agency)
         if len(domain_requests) < 1:
-            message = f"Portfolios not added to domain requests: no valid records found"
+            message = "Portfolios not added to domain requests: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return
 
@@ -209,7 +208,7 @@ class Command(BaseCommand):
         domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
 
         if len(domain_infos) < 1:
-            message = f"Portfolios not added to domains: no valid records found"
+            message = "Portfolios not added to domains: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return
 
