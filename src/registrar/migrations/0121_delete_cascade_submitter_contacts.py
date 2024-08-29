@@ -1,6 +1,7 @@
 from django.db import migrations
 from typing import Any
 
+
 # Deletes Contact objects associated with a submitter which we are deprecating
 def cascade_delete_submitter_contacts(apps, schema_editor) -> Any:
     contacts_model = apps.get_model("registrar", "Contact")
@@ -14,9 +15,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(
-            cascade_delete_submitter_contacts,
-            reverse_code=migrations.RunPython.noop,
-            atomic=True
-        ),
+        migrations.RunPython(cascade_delete_submitter_contacts, reverse_code=migrations.RunPython.noop, atomic=True),
     ]
