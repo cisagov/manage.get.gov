@@ -84,4 +84,12 @@ th {
       border-top: none;
     }
   }
+
+  @include at-media(tablet-lg) {
+
+    th[data-sortable]:not([aria-sort]) .usa-table__header__button {
+      right: auto;
+    }
+
+  }
 }
