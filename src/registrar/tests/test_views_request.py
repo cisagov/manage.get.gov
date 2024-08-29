@@ -2212,7 +2212,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             2. then submit,
         the domain request also updates its creator data to reflect user profile changes."""
 
-        # Populate the database with a domain request 
+        # Populate the database with a domain request
         domain_request, _ = DomainRequest.objects.get_or_create(
             generic_org_type="federal",
             federal_type="executive",

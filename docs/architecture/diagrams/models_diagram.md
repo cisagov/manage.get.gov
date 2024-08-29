@@ -285,6 +285,22 @@ class "registrar.DomainInvitation <Registrar>" as registrar.DomainInvitation #d6
 registrar.DomainInvitation -- registrar.Domain
 
 
+class "registrar.UserPortfolioPermission <Registrar>" as registrar.UserPortfolioPermission #d6f4e9 {
+    user portfolio permission
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    ~ user (ForeignKey)
+    ~ portfolio (ForeignKey)
+    + roles (ArrayField)
+    + additional_permissions (ArrayField)
+    --
+}
+registrar.UserPortfolioPermission -- registrar.User
+registrar.UserPortfolioPermission -- registrar.Portfolio
+
+
 class "registrar.PortfolioInvitation <Registrar>" as registrar.PortfolioInvitation #d6f4e9 {
     portfolio invitation
     --
@@ -361,9 +377,6 @@ class "registrar.User <Registrar>" as registrar.User #d6f4e9 {
     + is_active (BooleanField)
     + date_joined (DateTimeField)
     + status (CharField)
-    ~ portfolio (ForeignKey)
-    + portfolio_roles (ArrayField)
-    + portfolio_additional_permissions (ArrayField)
     + phone (PhoneNumberField)
     + middle_name (CharField)
     + title (CharField)
@@ -373,7 +386,6 @@ class "registrar.User <Registrar>" as registrar.User #d6f4e9 {
     # domains (ManyToManyField)
     --
 }
-registrar.User -- registrar.Portfolio
 registrar.User *--* registrar.Domain
 
 
