@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0118_alter_portfolio_options_alter_portfolio_creator_and_more"),
+        ("registrar", "0119_remove_user_portfolio_and_more"),
     ]
 
     operations = [
