@@ -1910,7 +1910,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let editableFormGroup = button.parentElement.parentElement.parentElement;
         if (editableFormGroup){
-          let readonlyField = editableFormGroup.querySelector(".input-with-edit-button__readonly-field")
+          let readonlyField = editableFormGroup.querySelector(".toggleable_input__readonly-field")
           let inputField = document.getElementById(`id_${fieldName}`);
           if (!inputField || !readonlyField) {
             return;
@@ -1936,8 +1936,8 @@ document.addEventListener('DOMContentLoaded', function() {
                       // Keep the path before '#' and replace the part after '#' with 'invalid'
                       const newHref = parts[0] + '#error';
                       svg.setAttribute('xlink:href', newHref);
-                      fullNameField.classList.add("input-with-edit-button__error")
-                      label = fullNameField.querySelector(".input-with-edit-button__readonly-field")
+                      fullNameField.classList.add("toggleable_input__error")
+                      label = fullNameField.querySelector(".toggleable_input__readonly-field")
                       label.innerHTML = "Unknown";
                     }
                   }

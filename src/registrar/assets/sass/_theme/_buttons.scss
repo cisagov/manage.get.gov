@@ -124,10 +124,6 @@ a.withdraw:active {
   background-color: color('error-darker');
 }
 
-.usa-button--unstyled .usa-icon {
-  vertical-align: bottom;
-}
-
 a.usa-button--unstyled:visited {
   color: color('primary');
 }
@@ -162,14 +158,14 @@ a.usa-button--unstyled:visited {
   }
 }
 
-.input-with-edit-button {
+.toggleable_input {
   svg.usa-icon {
     width: 1.5em !important;
     height: 1.5em !important;
     color: #{$dhs-green};
     position: absolute;
   }
-  &.input-with-edit-button__error {
+  &.toggleable_input__error {
     svg.usa-icon {
       color: #{$dhs-red};
     }
@@ -205,12 +201,36 @@ a.usa-button--unstyled:visited {
   }
 }
 
+.dotgov-table a,
+.usa-link--icon,
+.usa-button--with-icon {
+    display: flex;
+    align-items: flex-start;
+    color: color('primary');
+    column-gap: units(.5);
+    align-items: center;
+}
+
+
+.dotgov-table a,
+.usa-link--icon {
+    &:visited {
+        color: color('primary');   
+    }
+}
+
+a .usa-icon,
+.usa-button--with-icon .usa-icon {
+  height: 1.2em;
+  width: 1.2em;
+}
+
+a .usa-icon {
+  margin-top: -.1rem;
+}
+
 .usa-icon.usa-icon--big {
   margin: 0;
   height: 1.5em;
   width: 1.5em;
-}
-
-.margin-right-neg-4px {
-  margin-right: -4px;
 }
