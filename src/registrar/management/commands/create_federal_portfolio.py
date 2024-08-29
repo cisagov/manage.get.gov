@@ -60,7 +60,9 @@ class Command(BaseCommand):
             self.handle_portfolio_domains(portfolio, federal_agency)
 
     def create_or_modify_portfolio(self, federal_agency):
-        # TODO - state_territory, city, etc fields??? 
+        """Tries to create a portfolio record based off of a federal agency.
+        If the record already exists, we prompt the user to proceed then
+        update the record."""
         portfolio_args = {
             "federal_agency": federal_agency,
             "organization_name": federal_agency.agency,
@@ -81,38 +83,44 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
             return portfolio
         else:
-            if len(existing_portfolio) > 1:
-                raise ValueError(f"Could not update portfolio '{portfolio}': multiple records exist.")
+            
+            proceed = TerminalHelper.prompt_for_execution(
+                system_exit_on_terminate=False,
+                info_to_inspect=f"""The given portfolio '{federal_agency.agency}' already exists in our DB. 
+                If you cancel, the rest of the script will still execute but this record will not update.
+                """,
+                prompt_title="Do you wish to modify this record?",
+            )
+            if not proceed:
+                if len(existing_portfolio) > 1:
+                    raise ValueError(f"Could not use portfolio '{federal_agency.agency}': multiple records exist.")
+                else:
+                    # Just return the portfolio object without modifying it
+                    return existing_portfolio.get()
 
-            # TODO a dialog to confirm / deny doing this
+            if len(existing_portfolio) > 1:
+                raise ValueError(f"Could not update portfolio '{federal_agency.agency}': multiple records exist.")
+
             existing_portfolio.update(**portfolio_args)
-            message = f"Modified portfolio '{federal_agency.agency}'"
+            message = f"Modified portfolio '{existing_portfolio.first()}'"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             return existing_portfolio.get()
 
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
-        non_federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
-        valid_agencies = DomainInformation.objects.filter(federal_agency=federal_agency).exclude(
-            Q(federal_agency=non_federal_agency) | Q(federal_agency__isnull=True)
-        )
-
+        """Given a list of organization_names on DomainInformation objects (filtered by agency),
+        create multiple Suborganizations tied to the given portfolio"""
+        valid_agencies = DomainInformation.objects.filter(federal_agency=federal_agency)
         org_names = valid_agencies.values_list("organization_name", flat=True)
         if len(org_names) < 1:
-            message =f"No suborganizations found for {federal_agency.agency}"
+            message =f"No suborganizations found for {federal_agency}"
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
             return
 
         # Check if we need to update any existing suborgs first.
         # This step is optional.
         existing_suborgs = Suborganization.objects.filter(name__in=org_names)
-        if len(existing_suborgs) > 1:
-            # TODO - we need a prompt here if any are found
-            for org in existing_suborgs:
-                org.portfolio = portfolio
-
-            Suborganization.objects.bulk_update(existing_suborgs, ["portfolio"])
-            message = f"Updated {len(existing_suborgs)} suborganizations"
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+        if len(existing_suborgs) > 0:
+            self._update_existing_suborganizations(portfolio, existing_suborgs)
 
         # Add any suborgs that don't presently exist
         excluded_org_names = existing_suborgs.values_list("name", flat=True)
@@ -132,15 +140,39 @@ class Command(BaseCommand):
                     )
                     suborgs.append(suborg)
 
-        Suborganization.objects.bulk_create(suborgs)
+        if len(org_names) > 1:
+            Suborganization.objects.bulk_create(suborgs)
+            message = f"Added {len(suborgs)} suborganizations"
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+        else:
+            message =f"No suborganizations added"
+            TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
 
-        # TODO - this is inaccurate when the suborg name does not equal the org name - i.e. if the
-        # record exists already as well
-        message = f"Added {len(org_names)} suborganizations..."
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+    def _update_existing_suborganizations(self, portfolio, orgs_to_update):
+        proceed = TerminalHelper.prompt_for_execution(
+            system_exit_on_terminate=False,
+            info_to_inspect=f"""Some suborganizations already exist in our DB.
+            If you cancel, the rest of the script will still execute but these records will not update.
 
-    # TODO rename
+            ==Proposed Changes==
+            The following suborgs will be updated: {[org.name for org in orgs_to_update]}
+            """,
+            prompt_title="Do you wish to modify existing suborganizations?",
+        )
+        if not proceed:
+            return
+
+        for org in orgs_to_update:
+            org.portfolio = portfolio
+
+        Suborganization.objects.bulk_update(orgs_to_update, ["portfolio"])
+        message = f"Updated {len(orgs_to_update)} suborganizations"
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+
+
     def _update_portfolio_location_details(self, portfolio: Portfolio, domain_info: DomainInformation):
+        """Adds location information to the given portfolio based off of the values in 
+        DomainInformation"""
         location_props = [
             "address_line1",
             "address_line2",
@@ -168,9 +200,9 @@ class Command(BaseCommand):
 
         for domain_request in domain_requests:
             domain_request.portfolio = portfolio
-        
+
         DomainRequest.objects.bulk_update(domain_requests, ["portfolio"])
-        message = f"Added portfolio to {len(domain_requests)} domain requests"
+        message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests"
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
@@ -186,5 +218,5 @@ class Command(BaseCommand):
 
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio"])
 
-        message = f"Added portfolio to {len(domain_infos)} domains"
+        message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains"
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
