@@ -27,6 +27,8 @@ from registrar.models import (
     PublicContact,
     Domain,
     FederalAgency,
+    UserPortfolioPermission,
+    Portfolio,
 )
 from epplibwrapper import (
     commands,
@@ -775,13 +777,13 @@ class MockDb(TestCase):
             cls.domain_request_3.alternative_domains.add(website, website_2)
             cls.domain_request_3.current_websites.add(website_3, website_4)
             cls.domain_request_3.cisa_representative_email = "test@igorville.com"
-            cls.domain_request_3.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_3.last_submitted_date = get_time_aware_date(datetime(2024, 4, 2))
             cls.domain_request_3.save()
 
-            cls.domain_request_4.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_4.last_submitted_date = get_time_aware_date(datetime(2024, 4, 2))
             cls.domain_request_4.save()
 
-            cls.domain_request_6.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_6.last_submitted_date = get_time_aware_date(datetime(2024, 4, 2))
             cls.domain_request_6.save()
 
     @classmethod
@@ -791,6 +793,8 @@ class MockDb(TestCase):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         UserDomainRole.objects.all().delete()
+        Portfolio.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
         User.objects.all().delete()
         DomainInvitation.objects.all().delete()
         cls.federal_agency_1.delete()
@@ -1743,3 +1747,12 @@ class MockEppLib(TestCase):
 
     def tearDown(self):
         self.mockSendPatch.stop()
+
+
+def get_wsgi_request_object(client, user, url="/"):
+    """Returns client.get(url).wsgi_request for testing functions or classes
+    that need a request object directly passed to them."""
+    client.force_login(user)
+    request = client.get(url).wsgi_request
+    request.user = user
+    return request
