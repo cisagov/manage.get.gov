@@ -6,6 +6,8 @@
     {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
     {% url 'get-senior-official-from-federal-agency-json' as url %}
     <input id="senior_official_from_agency_json_url" class="display-none" value="{{url}}" />
+    {% url 'get-federal-and-portfolio-types-from-federal-agency-json' as url %}
+    <input id="federal_and_portfolio_types_from_agency_json_url" class="display-none" value="{{url}}" />
     {{ block.super }}
 {% endblock content %}
 
@@ -34,8 +36,8 @@
         </button>
     </span>
 
-    <p class="padding-top-05 text-right margin-top-2 padding-right-2 margin-bottom-0 requested-domain-sticky float-right visible-768">
-        HELLO: <strong>{{ original.requested_domain.name }}</strong>
+    <p class="padding-top-05 text-right margin-top-2 padding-right-2 margin-bottom-0 submit-row-sticky float-right visible-768">
+        Organization Name: <strong>{{ original.organization_name }}</strong>
     </p>
     {{ block.super }}
 </div>
