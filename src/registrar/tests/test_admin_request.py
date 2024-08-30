@@ -22,6 +22,7 @@ from registrar.models import (
     Contact,
     Website,
     SeniorOfficial,
+    Portfolio,
 )
 from .common import (
     MockSESClient,
@@ -78,6 +79,7 @@ class TestDomainRequestAdmin(MockEppLib):
         Contact.objects.all().delete()
         Website.objects.all().delete()
         SeniorOfficial.objects.all().delete()
+        Portfolio.objects.all().delete()
         self.mock_client.EMAILS_SENT.clear()
 
     @classmethod
@@ -264,6 +266,33 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "<span>Show details</span>")
 
     @less_console_noise_decorator
+    def test_domain_requests_by_portfolio(self):
+        """
+        Tests that domain_requests display for a portfolio. And requests not in portfolio do not display.
+        """
+
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.superuser)
+        # Create a fake domain request and domain
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, portfolio=portfolio
+        )
+        domain_request2 = completed_domain_request(
+            name="testdomain2.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW
+        )
+
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/?portfolio={}".format(portfolio.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+        self.assertNotContains(response, domain_request2.requested_domain.name)
+        self.assertContains(response, portfolio.organization_name)
+
+    @less_console_noise_decorator
     def test_analyst_can_see_and_edit_alternative_domain(self):
         """Tests if an analyst can still see and edit the alternative domain field"""
 
@@ -422,7 +451,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Assert that our sort works correctly
         self.test_helper.assert_table_sorted(
-            "11",
+            "13",
             (
                 "submitter__first_name",
                 "submitter__last_name",
@@ -431,7 +460,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Assert that sorting in reverse works correctly
         self.test_helper.assert_table_sorted(
-            "-11",
+            "-13",
             (
                 "-submitter__first_name",
                 "-submitter__last_name",
@@ -454,7 +483,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Assert that our sort works correctly
         self.test_helper.assert_table_sorted(
-            "12",
+            "14",
             (
                 "investigator__first_name",
                 "investigator__last_name",
@@ -463,7 +492,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Assert that sorting in reverse works correctly
         self.test_helper.assert_table_sorted(
-            "-12",
+            "-14",
             (
                 "-investigator__first_name",
                 "-investigator__last_name",
@@ -476,7 +505,7 @@ class TestDomainRequestAdmin(MockEppLib):
     @less_console_noise_decorator
     def test_default_sorting_in_domain_requests_list(self):
         """
-        Make sure the default sortin in on the domain requests list page is reverse submission_date
+        Make sure the default sortin in on the domain requests list page is reverse last_submitted_date
         then alphabetical requested_domain
         """
 
@@ -486,12 +515,12 @@ class TestDomainRequestAdmin(MockEppLib):
             for name in ["ccc.gov", "bbb.gov", "eee.gov", "aaa.gov", "zzz.gov", "ddd.gov"]
         ]
 
-        domain_requests[0].submission_date = timezone.make_aware(datetime(2024, 10, 16))
-        domain_requests[1].submission_date = timezone.make_aware(datetime(2001, 10, 16))
-        domain_requests[2].submission_date = timezone.make_aware(datetime(1980, 10, 16))
-        domain_requests[3].submission_date = timezone.make_aware(datetime(1998, 10, 16))
-        domain_requests[4].submission_date = timezone.make_aware(datetime(2013, 10, 16))
-        domain_requests[5].submission_date = timezone.make_aware(datetime(1980, 10, 16))
+        domain_requests[0].last_submitted_date = timezone.make_aware(datetime(2024, 10, 16))
+        domain_requests[1].last_submitted_date = timezone.make_aware(datetime(2001, 10, 16))
+        domain_requests[2].last_submitted_date = timezone.make_aware(datetime(1980, 10, 16))
+        domain_requests[3].last_submitted_date = timezone.make_aware(datetime(1998, 10, 16))
+        domain_requests[4].last_submitted_date = timezone.make_aware(datetime(2013, 10, 16))
+        domain_requests[5].last_submitted_date = timezone.make_aware(datetime(1980, 10, 16))
 
         # Save the modified domain requests to update their attributes in the database
         for domain_request in domain_requests:
@@ -1556,7 +1585,9 @@ class TestDomainRequestAdmin(MockEppLib):
             "cisa_representative_last_name",
             "has_cisa_representative",
             "is_policy_acknowledged",
-            "submission_date",
+            "first_submitted_date",
+            "last_submitted_date",
+            "last_status_update",
             "notes",
             "alternative_domains",
         ]
