@@ -127,7 +127,7 @@ class Command(BaseCommand):
         # Create new suborgs, as long as they don't exist in the db already
         new_suborgs = []
         for name in org_names - set(existing_suborgs.values_list("name", flat=True)):
-            # Stored in variables due to linter wanting type information here
+            # Stored in variables due to linter wanting type information here.
             portfolio_name: str = portfolio.organization_name if portfolio.organization_name is not None else ""
             if name is not None and name.lower() == portfolio_name.lower():
                 # You can use this to populate location information, when this occurs.
@@ -138,7 +138,7 @@ class Command(BaseCommand):
                 )
                 TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
             else:
-                new_suborgs.append(Suborganization(name=name, portfolio=portfolio))
+                new_suborgs.append(Suborganization(name=name, portfolio=portfolio))  # type: ignore
 
         if new_suborgs:
             Suborganization.objects.bulk_create(new_suborgs)
