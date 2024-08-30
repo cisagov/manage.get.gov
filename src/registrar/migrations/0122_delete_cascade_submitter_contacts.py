@@ -9,10 +9,7 @@ def cascade_delete_submitter_contacts(apps, schema_editor) -> Any:
     submitter_contacts = contacts_model.objects.filter(
         Q(submitted_domain_requests__isnull=False)
         | Q(submitted_domain_requests_information__isnull=False)
-        | Q(information_senior_official__isnull=True)
-        | Q(senior_official__isnull=True)
-        | Q(contact_domain_requests_information__isnull=True)
-        | Q(contact_domain_requests__isnull=True)
+    ).filter(information_senior_official__isnull=True, senior_official__isnull=True, contact_domain_requests_information__isnull=True, contact_domain_requests__isnull=True
     )
     submitter_contacts.delete()
 
