@@ -1490,6 +1490,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.domain_request.refresh_from_db()
         self.assertIsNotNone(self.domain_request.portfolio)
         self.assertEqual(self.domain_request.portfolio.federal_agency, self.federal_agency)
+        self.assertEqual(self.domain_request.sub_organization.name, "Testorg")
 
     def test_handle_portfolio_domains(self):
         """Check portfolio association with domain information."""
@@ -1498,6 +1499,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.domain_info.refresh_from_db()
         self.assertIsNotNone(self.domain_info.portfolio)
         self.assertEqual(self.domain_info.portfolio.federal_agency, self.federal_agency)
+        self.assertEqual(self.domain_info.sub_organization.name, "Testorg")
 
     def test_handle_parse_both(self):
         """Ensure correct parsing of both requests and domains."""

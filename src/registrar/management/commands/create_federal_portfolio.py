@@ -185,13 +185,18 @@ class Command(BaseCommand):
         if not domain_requests.exists():
             message = "Portfolios not added to domain requests: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
-        else:
-            for domain_request in domain_requests:
-                domain_request.portfolio = portfolio
+            return None
+        
+        # Get all suborg information and store it in a dict to avoid doing a db call
+        suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
+        for domain_request in domain_requests:
+            domain_request.portfolio = portfolio
+            if domain_request.organization_name in suborgs:
+                domain_request.sub_organization = suborgs.get(domain_request.organization_name)
 
-            DomainRequest.objects.bulk_update(domain_requests, ["portfolio"])
-            message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests"
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+        DomainRequest.objects.bulk_update(domain_requests, ["portfolio", "sub_organization"])
+        message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests"
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
@@ -202,10 +207,15 @@ class Command(BaseCommand):
         if not domain_infos.exists():
             message = "Portfolios not added to domains: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
-        else:
-            for domain_info in domain_infos:
-                domain_info.portfolio = portfolio
+            return None
 
-            DomainInformation.objects.bulk_update(domain_infos, ["portfolio"])
-            message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains"
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+        # Get all suborg information and store it in a dict to avoid doing a db call
+        suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
+        for domain_info in domain_infos:
+            domain_info.portfolio = portfolio
+            if domain_info.organization_name in suborgs:
+                domain_info.sub_organization = suborgs.get(domain_info.organization_name)
+
+        DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
+        message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains"
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
