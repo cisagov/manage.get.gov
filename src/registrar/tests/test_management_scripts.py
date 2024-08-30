@@ -1466,6 +1466,7 @@ class TestCreateFederalPortfolio(TestCase):
             )
 
     def test_create_or_modify_portfolio(self):
+        """Test portfolio creation and modification with suborg and senior official."""
         self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
 
         portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
@@ -1483,6 +1484,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(portfolio.senior_official, self.senior_official)
 
     def test_handle_portfolio_requests(self):
+        """Verify portfolio association with domain requests."""
         self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
 
         self.domain_request.refresh_from_db()
@@ -1490,6 +1492,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(self.domain_request.portfolio.federal_agency, self.federal_agency)
 
     def test_handle_portfolio_domains(self):
+        """Check portfolio association with domain information."""
         self.run_create_federal_portfolio("Test Federal Agency", parse_domains=True)
 
         self.domain_info.refresh_from_db()
@@ -1497,6 +1500,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(self.domain_info.portfolio.federal_agency, self.federal_agency)
 
     def test_handle_parse_both(self):
+        """Ensure correct parsing of both requests and domains."""
         self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True, parse_domains=True)
 
         self.domain_request.refresh_from_db()
@@ -1506,12 +1510,14 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(self.domain_request.portfolio, self.domain_info.portfolio)
 
     def test_command_error_no_parse_options(self):
+        """Verify error when no parse options are provided."""
         with self.assertRaisesRegex(
             CommandError, "You must specify at least one of --parse_requests or --parse_domains."
         ):
             self.run_create_federal_portfolio("Test Federal Agency")
 
     def test_command_error_agency_not_found(self):
+        """Check error handling for non-existent agency."""
         expected_message = (
             "Cannot find the federal agency 'Non-existent Agency' in our database. "
             "The value you enter for `agency_name` must be prepopulated in the FederalAgency table before proceeding."
@@ -1520,6 +1526,7 @@ class TestCreateFederalPortfolio(TestCase):
             self.run_create_federal_portfolio("Non-existent Agency", parse_requests=True)
 
     def test_update_existing_portfolio(self):
+        """Test updating an existing portfolio."""
         # Create an existing portfolio
         existing_portfolio = Portfolio.objects.create(
             federal_agency=self.federal_agency,

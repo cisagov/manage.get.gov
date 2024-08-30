@@ -81,7 +81,8 @@ class Command(BaseCommand):
         else:
             proceed = TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=False,
-                info_to_inspect=f"""The given portfolio '{federal_agency.agency}' already exists in our DB.
+                info_to_inspect=f"""
+                The given portfolio '{federal_agency.agency}' already exists in our DB.
                 If you cancel, the rest of the script will still execute but this record will not update.
                 """,
                 prompt_title="Do you wish to modify this record?",
@@ -126,7 +127,9 @@ class Command(BaseCommand):
         # Create new suborgs, as long as they don't exist in the db already
         new_suborgs = []
         for name in org_names - set(existing_suborgs.values_list("name", flat=True)):
-            if name.lower() == portfolio.organization_name.lower():
+            # Stored in variables due to linter wanting type information here
+            portfolio_name: str = portfolio.organization_name if portfolio.organization_name is not None else ""
+            if name is not None and name.lower() == portfolio_name.lower():
                 # You can use this to populate location information, when this occurs.
                 # However, this isn't needed for now so we can skip it.
                 message = (
