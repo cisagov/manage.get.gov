@@ -6,6 +6,7 @@ from registrar.models import (
     User,
     UserGroup,
 )
+from registrar.models.allowed_email import AllowedEmail
 
 
 fake = Faker()
@@ -32,6 +33,7 @@ class UserFixture:
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
             "first_name": "Aditi",
             "last_name": "Green",
+            "email": "aditidevelops+01@gmail.com",
         },
         {
             "username": "be17c826-e200-4999-9389-2ded48c43691",
@@ -42,11 +44,13 @@ class UserFixture:
             "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
             "first_name": "Rachid",
             "last_name": "Mrad",
+            "email": "rachid.mrad@associates.cisa.dhs.gov",
         },
         {
             "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
             "first_name": "Alysia",
             "last_name": "Broddrick",
+            "email": "abroddrick@truss.works",
         },
         {
             "username": "8f8e7293-17f7-4716-889b-1990241cbd39",
@@ -63,6 +67,7 @@ class UserFixture:
             "username": "83c2b6dd-20a2-4cac-bb40-e22a72d2955c",
             "first_name": "Cameron",
             "last_name": "Dixon",
+            "email": "cameron.dixon@cisa.dhs.gov",
         },
         {
             "username": "0353607a-cbba-47d2-98d7-e83dcd5b90ea",
@@ -83,16 +88,19 @@ class UserFixture:
             "username": "2a88a97b-be96-4aad-b99e-0b605b492c78",
             "first_name": "Rebecca",
             "last_name": "Hsieh",
+            "email": "rebecca.hsieh@truss.works",
         },
         {
             "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
             "first_name": "David",
             "last_name": "Kennedy",
+            "email": "david.kennedy@ecstech.com",
         },
         {
             "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
             "first_name": "Nicolle",
             "last_name": "LeClair",
+            "email": "nicolle.leclair@ecstech.com",
         },
         {
             "username": "24840450-bf47-4d89-8aa9-c612fe68f9da",
@@ -141,6 +149,7 @@ class UserFixture:
             "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
             "first_name": "Aditi-Analyst",
             "last_name": "Green-Analyst",
+            "email": "aditidevelops+02@gmail.com",
         },
         {
             "username": "d6bf296b-fac5-47ff-9c12-f88ccc5c1b99",
@@ -183,6 +192,7 @@ class UserFixture:
             "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
             "first_name": "David-Analyst",
             "last_name": "Kennedy-Analyst",
+            "email": "david.kennedy@associates.cisa.dhs.gov",
         },
         {
             "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
@@ -194,7 +204,7 @@ class UserFixture:
             "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
             "first_name": "Nicolle-Analyst",
             "last_name": "LeClair-Analyst",
-            "email": "nicolle.leclair@ecstech.com",
+            "email": "nicolle.leclair@gmail.com",
         },
         {
             "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
@@ -240,6 +250,9 @@ class UserFixture:
         },
     ]
 
+    # Additional emails to add to the AllowedEmail whitelist.
+    ADDITIONAL_ALLOWED_EMAILS: list[str] = ["davekenn4242@gmail.com", "rachid_mrad@hotmail.com"]
+
     def load_users(cls, users, group_name, are_superusers=False):
         logger.info(f"Going to load {len(users)} users in group {group_name}")
         for user_data in users:
@@ -264,6 +277,32 @@ class UserFixture:
                 logger.warning(e)
         logger.info(f"All users in group {group_name} loaded.")
 
+    def load_allowed_emails(cls, users, additional_emails):
+        """Populates a whitelist of allowed emails (as defined in this list)"""
+        logger.info(f"Going to load allowed emails for {len(users)} users")
+        if additional_emails:
+            logger.info(f"Going to load {len(additional_emails)} additional allowed emails")
+
+        # Load user emails
+        allowed_emails = []
+        for user_data in users:
+            user_email = user_data.get("email")
+            if user_email and user_email not in allowed_emails:
+                allowed_emails.append(AllowedEmail(email=user_email))
+            else:
+                first_name = user_data.get("first_name")
+                last_name = user_data.get("last_name")
+                logger.warning(f"Could not add email to whitelist for {first_name} {last_name}.")
+
+        # Load additional emails
+        allowed_emails.extend(additional_emails)
+
+        if allowed_emails:
+            AllowedEmail.objects.bulk_create(allowed_emails)
+            logger.info(f"Loaded {len(allowed_emails)} allowed emails")
+        else:
+            logger.info("No allowed emails to load")
+
     @classmethod
     def load(cls):
         # Lumped under .atomic to ensure we don't make redundant DB calls.
@@ -275,3 +314,7 @@ class UserFixture:
         with transaction.atomic():
             cls.load_users(cls, cls.ADMINS, "full_access_group", are_superusers=True)
             cls.load_users(cls, cls.STAFF, "cisa_analysts_group")
+
+            # Combine ADMINS and STAFF lists
+            all_users = cls.ADMINS + cls.STAFF
+            cls.load_allowed_emails(cls, all_users, additional_emails=cls.ADDITIONAL_ALLOWED_EMAILS)
