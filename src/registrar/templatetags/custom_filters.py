@@ -172,5 +172,5 @@ def has_contact_info(user):
 
 
 @register.filter
-def model_name(instance):
+def model_name_lowercase(instance):
     return instance.__class__.__name__.lower()

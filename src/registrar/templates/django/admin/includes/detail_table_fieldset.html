@@ -330,7 +330,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             </details>
         {% endif %}
         {% endwith %}
-    {% elif field.field.name == "state_territory" and original_object|model_name != 'portfolio' %}
+    {% elif field.field.name == "state_territory" and original_object|model_name_lowercase != 'portfolio' %}
         <div class="flex-container margin-top-2">
             <span>
                 CISA region:
