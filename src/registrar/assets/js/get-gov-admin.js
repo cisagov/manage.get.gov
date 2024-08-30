@@ -530,6 +530,8 @@ function initializeWidgetOnList(list, parentId) {
     let emailWasSent = document.getElementById("action-needed-email-sent");
     let lastSentEmailText = document.getElementById("action-needed-email-last-sent-text");
 
+    var editEmailButton = document.getElementById('email-already-sent-modal_continue-editing-button');
+
     // Get the list of e-mails associated with each action-needed dropdown value
     let emailData = document.getElementById('action-needed-emails-data');
     if (!emailData) {
