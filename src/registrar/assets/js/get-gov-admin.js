@@ -906,10 +906,28 @@ function initializeWidgetOnList(list, parentId) {
             return;
         }
 
+        // Determine if any changes are necessary to the display of portfolio type or federal type
+        // based on changes to the Federal Agency
+        let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
+        fetch(`${federalPortfolioApi}?organization_type=${organizationType.value}&agency_name=${selectedText}`)
+        .then(response => {
+            const statusCode = response.status;
+            return response.json().then(data => ({ statusCode, data }));
+        })
+        .then(({ statusCode, data }) => {
+            if (data.error) {
+                console.error("Error in AJAX call: " + data.error);
+                return;
+            }
+            updateReadOnly(data.federal_type, '.field-federal_type');
+            updateReadOnly(data.portfolio_type, '.field-portfolio_type');
+        })
+        .catch(error => console.error("Error fetching federal and portfolio types: ", error));
+
         // Hide the contactList initially. 
         // If we can update the contact information, it'll be shown again.
         hideElement(contactList.parentElement);
-
+        
         let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
         fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
         .then(response => {
@@ -952,6 +970,7 @@ function initializeWidgetOnList(list, parentId) {
             }
         })
         .catch(error => console.error("Error fetching senior official: ", error));
+
     }
 
     function handleStateTerritoryChange(stateTerritory, urbanizationField) {
@@ -960,6 +979,26 @@ function initializeWidgetOnList(list, parentId) {
             showElement(urbanizationField)
         } else {
             hideElement(urbanizationField)
+        }
+    }
+
+    /**
+     * Utility that selects a div from the DOM using selectorString,
+     * and updates a div within that div which has class of 'readonly'
+     * so that the text of the div is updated to updateText
+     * @param {*} updateText 
+     * @param {*} selectorString 
+     */
+    function updateReadOnly(updateText, selectorString) {
+        // find the div by selectorString
+        const selectedDiv = document.querySelector(selectorString);
+        if (selectedDiv) {
+            // find the nested div with class 'readonly' inside the selectorString div
+            const readonlyDiv = selectedDiv.querySelector('.readonly');
+            if (readonlyDiv) {
+                // Update the text content of the readonly div
+                readonlyDiv.textContent = updateText !== null ? updateText : '-';
+            }
         }
     }
 

@@ -61,7 +61,7 @@
       
       {% if portfolio %}
           {% comment %} Only show this menu option if the user has the perms to do so {% endcomment %}
-          {% if has_domains_portfolio_permission and request.user.has_view_suborganization %}
+          {% if has_domains_portfolio_permission and has_view_suborganization %}
             {% with url_name="domain-suborganization" %}
               {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
             {% endwith %}
