@@ -98,6 +98,7 @@ class Command(BaseCommand):
                 # Update everything else
                 for key, value in portfolio_args.items():
                     setattr(portfolio, key, value)
+
                 portfolio.save()
                 message = f"Modified portfolio '{portfolio}'"
                 TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
@@ -126,11 +127,13 @@ class Command(BaseCommand):
         new_suborgs = []
         for name in org_names - set(existing_suborgs.values_list("name", flat=True)):
             if name.lower() == portfolio.organization_name.lower():
-                # If the suborg name is a portfolio name that currently exists, thats not a suborg - thats the portfolio itself!
-                # In this case, we can use this as an opportunity to update address information.
-                self._update_portfolio_location_details(
-                    portfolio, valid_agencies.filter(organization_name=name).first()
+                # You can use this to populate location information, when this occurs.
+                # However, this isn't needed for now so we can skip it.
+                message = (
+                    f"Skipping suborganization create on record '{name}'. "
+                    f"The federal agency name is the same as the portfolio name."
                 )
+                TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
             else:
                 new_suborgs.append(Suborganization(name=name, portfolio=portfolio))
 
@@ -165,42 +168,17 @@ class Command(BaseCommand):
             message = f"Updated {len(orgs_to_update)} suborganizations"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
-    def _update_portfolio_location_details(self, portfolio: Portfolio, domain_info: DomainInformation):
-        """
-        Update portfolio location details based on DomainInformation.
-        Copies relevant fields and saves the portfolio.
-        """
-        location_props = [
-            "address_line1",
-            "address_line2",
-            "city",
-            "state_territory",
-            "zipcode",
-            "urbanization",
-        ]
-
-        for prop_name in location_props:
-            # Copy the value from the domain info object to the portfolio object
-            value = getattr(domain_info, prop_name)
-            setattr(portfolio, prop_name, value)
-
-        portfolio.save()
-        message = f"Updated location details on portfolio '{portfolio}'"
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
-
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
         """
         invalid_states = [
-            DomainRequest.DomainRequestStatus.STARTED, 
+            DomainRequest.DomainRequestStatus.STARTED,
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-        domain_requests = DomainRequest.objects.filter(
-            federal_agency=federal_agency
-        ).exclude(status__in=invalid_states)
+        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(status__in=invalid_states)
         if not domain_requests.exists():
             message = "Portfolios not added to domain requests: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)

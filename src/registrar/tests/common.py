@@ -912,7 +912,6 @@ def completed_domain_request(  # noqa
     action_needed_reason=None,
     portfolio=None,
     organization_name=None,
-    city=None,
 ):
     """A completed domain request."""
     if not user:
@@ -985,9 +984,6 @@ def completed_domain_request(  # noqa
 
     if portfolio:
         domain_request_kwargs["portfolio"] = portfolio
-
-    if city:
-        domain_request_kwargs["city"] = city
 
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 

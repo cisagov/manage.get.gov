@@ -1422,13 +1422,15 @@ class TestCreateFederalPortfolio(TestCase):
         self.mock_client = MockSESClient()
         self.user = User.objects.create(username="testuser")
         self.federal_agency = FederalAgency.objects.create(agency="Test Federal Agency")
+        self.senior_official = SeniorOfficial.objects.create(
+            first_name="first", last_name="last", email="testuser@igorville.gov", federal_agency=self.federal_agency
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             self.domain_request = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-                generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                generic_org_type=DomainRequest.OrganizationChoices.CITY,
                 federal_agency=self.federal_agency,
                 user=self.user,
-                city="WrongCity",
             )
             self.domain_request.approve()
             self.domain_info = DomainInformation.objects.filter(domain_request=self.domain_request).get()
@@ -1436,11 +1438,10 @@ class TestCreateFederalPortfolio(TestCase):
             self.domain_request_2 = completed_domain_request(
                 name="sock@igorville.org",
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-                generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                generic_org_type=DomainRequest.OrganizationChoices.CITY,
                 federal_agency=self.federal_agency,
                 user=self.user,
                 organization_name="Test Federal Agency",
-                city="Block",
             )
             self.domain_request_2.approve()
             self.domain_info_2 = DomainInformation.objects.filter(domain_request=self.domain_request_2).get()
@@ -1450,6 +1451,7 @@ class TestCreateFederalPortfolio(TestCase):
         DomainRequest.objects.all().delete()
         Suborganization.objects.all().delete()
         Portfolio.objects.all().delete()
+        SeniorOfficial.objects.all().delete()
         FederalAgency.objects.all().delete()
         User.objects.all().delete()
 
@@ -1477,11 +1479,8 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(suborganizations.count(), 1)
         self.assertEqual(suborganizations.first().name, "Testorg")
 
-        # Test other address information
-        self.assertEqual(portfolio.address_line1, "address 1")
-        self.assertEqual(portfolio.city, "Block")
-        self.assertEqual(portfolio.state_territory, "NY")
-        self.assertEqual(portfolio.zipcode, "10002")
+        # Test the senior official
+        self.assertEqual(portfolio.senior_official, self.senior_official)
 
     def test_handle_portfolio_requests(self):
         self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
@@ -1535,6 +1534,7 @@ class TestCreateFederalPortfolio(TestCase):
         existing_portfolio.refresh_from_db()
         self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
         self.assertEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
+
         # Notes and creator should be untouched
         self.assertEqual(existing_portfolio.notes, "Old notes")
         self.assertEqual(existing_portfolio.creator, self.user)
