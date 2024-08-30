@@ -45,6 +45,7 @@ from registrar.models import (
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
@@ -2129,8 +2130,10 @@ class TestPortfolioAdmin(TestCase):
             last_name="Meoward",
             title="Captain",
             email="meaoward@gov.gov",
-            portfolio=self.portfolio,
-            portfolio_roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_1, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
         admin_user_2 = User.objects.create(
@@ -2139,8 +2142,10 @@ class TestPortfolioAdmin(TestCase):
             last_name="Poopy",
             title="Major",
             email="poopy@gov.gov",
-            portfolio=self.portfolio,
-            portfolio_roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_2, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
         admin_user_3 = User.objects.create(
@@ -2149,8 +2154,10 @@ class TestPortfolioAdmin(TestCase):
             last_name="Max",
             title="Road warrior",
             email="madmax@gov.gov",
-            portfolio=self.portfolio,
-            portfolio_roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_3, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
 
         admin_user_4 = User.objects.create(
@@ -2159,8 +2166,12 @@ class TestPortfolioAdmin(TestCase):
             last_name="Smith",
             title="Program",
             email="thematrix@gov.gov",
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_4,
             portfolio=self.portfolio,
-            portfolio_additional_permissions=[
+            additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
             ],

@@ -10,6 +10,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models.domain_information import DomainInformation
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
@@ -3008,6 +3009,28 @@ class PortfolioAdmin(ListHeaderAdmin):
         "creator",
     ]
 
+    def get_admin_users(self, obj):
+        # Filter UserPortfolioPermission objects related to the portfolio
+        admin_permissions = UserPortfolioPermission.objects.filter(
+            portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # Get the user objects associated with these permissions
+        admin_users = User.objects.filter(portfolio_permissions__in=admin_permissions)
+
+        return admin_users
+
+    def get_non_admin_users(self, obj):
+        # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
+        non_admin_permissions = UserPortfolioPermission.objects.filter(portfolio=obj).exclude(
+            roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # Get the user objects associated with these permissions
+        non_admin_users = User.objects.filter(portfolio_permissions__in=non_admin_permissions)
+
+        return non_admin_users
+
     def display_admins(self, obj):
         """Get joined users who are Admin, unpack and return an HTML block.
 
@@ -3016,7 +3039,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         data would display in a custom change form without extensive template customization.
 
         Will be used in the field_readonly block"""
-        admins = [user for user in obj.user.all() if "Admin" in user.portfolio_role_summary]
+        admins = self.get_admin_users(obj)
         if not admins:
             return format_html("<p>No admins found.</p>")
 
@@ -3030,13 +3053,13 @@ class PortfolioAdmin(ListHeaderAdmin):
             admin_details += "<div class='admin-icon-group admin-icon-group__clipboard-link'>"
             admin_details += f"<input aria-hidden='true' class='display-none' value='{portfolio_admin.email}'>"
             admin_details += (
-                "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon"
+                "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon padding-left-05"
                 + "button--clipboard copy-to-clipboard text-no-underline' type='button'>"
             )
             admin_details += "<svg class='usa-icon'>"
             admin_details += "<use aria-hidden='true' xlink:href='/public/img/sprite.svg#content_copy'></use>"
             admin_details += "</svg>"
-            admin_details += "<span class='padding-left-05'>Copy</span>"
+            admin_details += "Copy"
             admin_details += "</button>"
             admin_details += "</div><br>"
             admin_details += f"{portfolio_admin.phone}"
@@ -3053,7 +3076,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         data would display in a custom change form without extensive template customization.
 
         Will be used in the after_help_text block."""
-        members = [user for user in obj.user.all() if "Admin" not in user.portfolio_role_summary]
+        members = self.get_non_admin_users(obj)
         if not members:
             return ""
 
@@ -3073,7 +3096,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             member_details += f"<td>{member.email}</td>"
             member_details += f"<td>{member.phone}</td>"
             member_details += "<td>"
-            for role in member.portfolio_role_summary:
+            for role in member.portfolio_role_summary(obj):
                 member_details += f"<span class='usa-tag'>{role}</span> "
             member_details += "</td></tr>"
         member_details += "</tbody></table>"
@@ -3083,7 +3106,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def display_members_summary(self, obj):
         """Will be passed as context and used in the field_readonly block."""
-        members = [user for user in obj.user.all() if "Admin" not in user.portfolio_role_summary]
+        members = self.get_non_admin_users(obj)
         if not members:
             return {}
 

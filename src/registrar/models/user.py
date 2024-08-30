@@ -245,39 +245,39 @@ class User(AbstractUser):
             return permission.portfolio
         return None
 
-    def has_edit_requests(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_REQUESTS)
+    def has_edit_requests(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
 
-    @property
-    def portfolio_role_summary(self):
+    def portfolio_role_summary(self, portfolio):
         """Returns a list of roles based on the user's permissions."""
         roles = []
 
         # Define the conditions and their corresponding roles
         conditions_roles = [
-            (self.has_edit_suborganization(), ["Admin"]),
+            (self.has_edit_suborganization(portfolio), ["Admin"]),
             (
-                self.has_view_all_domains_permission()
-                and self.has_domain_requests_portfolio_permission()
-                and self.has_edit_requests(),
+                self.has_view_all_domains_permission(portfolio)
+                and self.has_domain_requests_portfolio_permission(portfolio)
+                and self.has_edit_requests(portfolio),
                 ["View-only admin", "Domain requestor"],
             ),
             (
-                self.has_view_all_domains_permission() and self.has_domain_requests_portfolio_permission(),
+                self.has_view_all_domains_permission(portfolio)
+                and self.has_domain_requests_portfolio_permission(portfolio),
                 ["View-only admin"],
             ),
             (
-                self.has_base_portfolio_permission()
-                and self.has_edit_requests()
-                and self.has_domains_portfolio_permission(),
+                self.has_base_portfolio_permission(portfolio)
+                and self.has_edit_requests(portfolio)
+                and self.has_domains_portfolio_permission(portfolio),
                 ["Domain requestor", "Domain manager"],
             ),
-            (self.has_base_portfolio_permission() and self.has_edit_requests(), ["Domain requestor"]),
+            (self.has_base_portfolio_permission(portfolio) and self.has_edit_requests(portfolio), ["Domain requestor"]),
             (
-                self.has_base_portfolio_permission() and self.has_domains_portfolio_permission(),
+                self.has_base_portfolio_permission(portfolio) and self.has_domains_portfolio_permission(portfolio),
                 ["Domain manager"],
             ),
-            (self.has_base_portfolio_permission(), ["Member"]),
+            (self.has_base_portfolio_permission(portfolio), ["Member"]),
         ]
 
         # Evaluate conditions and add roles
