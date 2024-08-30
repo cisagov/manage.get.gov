@@ -3085,11 +3085,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             + "<th>Phone</th><th>Roles</th></tr></thead><tbody>"
         )
         for member in members:
-            full_name = (
-                f"{member.first_name} {member.middle_name} {member.last_name}"
-                if member.middle_name
-                else f"{member.first_name} {member.last_name}"
-            )
+            full_name = member.get_formatted_name()
             member_details += "<tr>"
             member_details += f"<td>{full_name}</td>"
             member_details += f"<td>{member.title}</td>"
