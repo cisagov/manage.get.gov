@@ -186,7 +186,7 @@ class Command(BaseCommand):
             message = "Portfolios not added to domain requests: no valid records found"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return None
-        
+
         # Get all suborg information and store it in a dict to avoid doing a db call
         suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
         for domain_request in domain_requests:
