@@ -2943,11 +2943,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         # created_on is the created_at field, and portfolio_type is f"{organization_type} - {federal_type}"
         (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_on", "notes"]}),
         ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
-        # TODO - uncomment in #2521
-        # ("Portfolio members", {
-        #     "classes": ("collapse", "closed"),
-        #     "fields": ["administrators", "members"]}
-        # ),
         ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
@@ -2995,15 +2990,14 @@ class PortfolioAdmin(ListHeaderAdmin):
     readonly_fields = [
         # This is the created_at field
         "created_on",
-        # Custom fields such as these must be defined as readonly.
+        # Django admin doesn't allow methods to be directly listed in fieldsets. We can
+        # display the custom methods display_admins amd display_members in the admin form if
+        # they are readonly.
         "federal_type",
         "domains",
         "domain_requests",
         "suborganizations",
         "portfolio_type",
-        # Django admin doesn't allow methods to be directly listed in fieldsets. We can
-        # display the custom methods display_admins amd display_members in the admin form if
-        # they are readonly.
         "display_admins",
         "display_members",
         "creator",
