@@ -11,7 +11,9 @@ from django.contrib.admin import site
 from django.contrib import messages
 
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.verified_by_staff import VerifiedByStaff
+from typing import Any, List
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +28,12 @@ class TransferUserView(View):
         (DomainRequest, "investigator"),
         (UserDomainRole, "user"),
         (VerifiedByStaff, "requestor"),
+        (UserPortfolioPermission, "user"),
     ]
 
-    USER_FIELDS = ["portfolio", "portfolio_roles", "portfolio_additional_permissions"]
+    # Future-proofing in case joined fields get added on the user model side
+    # This was tested in the first portfolio model iteration and works
+    USER_FIELDS: List[Any] = []
 
     def get(self, request, user_id):
         """current_user referes to the 'source' user where the button that redirects to this view was clicked.
@@ -51,6 +56,7 @@ class TransferUserView(View):
             **admin_context,  # Include the admin context
             "current_user_domains": self.get_domains(current_user),
             "current_user_domain_requests": self.get_domain_requests(current_user),
+            "current_user_portfolios": self.get_portfolios(current_user),
         }
 
         selected_user_id = request.GET.get("selected_user")
@@ -59,6 +65,7 @@ class TransferUserView(View):
             context["selected_user"] = selected_user
             context["selected_user_domains"] = self.get_domains(selected_user)
             context["selected_user_domain_requests"] = self.get_domain_requests(selected_user)
+            context["selected_user_portfolios"] = self.get_portfolios(selected_user)
 
         return render(request, "admin/transfer_user.html", context)
 
@@ -121,8 +128,6 @@ class TransferUserView(View):
         """
         Transfers portfolio fields from the selected_user to the current_user.
         Logs the changes for each transferred field.
-
-        NOTE: This will be refactored in #2644
         """
         for field in cls.USER_FIELDS:
             field_value = getattr(selected_user, field, None)
@@ -158,3 +163,10 @@ class TransferUserView(View):
         domain_requests = DomainRequest.objects.filter(creator=user)
 
         return domain_requests
+
+    @classmethod
+    def get_portfolios(cls, user):
+        """Get portfolios"""
+        portfolios = UserPortfolioPermission.objects.filter(user=user)
+
+        return portfolios

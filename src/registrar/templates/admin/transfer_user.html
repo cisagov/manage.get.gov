@@ -111,6 +111,18 @@
                                     None
                                 {% endif %}
                             </dd>
+                            <dt>Portfolios:</dt>
+                            <dd>
+                                {% if selected_user_portfolios %}
+                                    <ul>
+                                        {% for portfolio in selected_user_portfolios %}
+                                            <li>{{ portfolio.portfolio }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    None
+                                {% endif %}
+                            </dd>
                         </dl>
                     {% else %}
                         <p>No user selected yet.</p>
@@ -161,6 +173,18 @@
                                 <ul>
                                     {% for request in current_user_domain_requests %}
                                         <li>{{ request }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                None
+                            {% endif %}
+                        </dd>
+                        <dt>Portfolios:</dt>
+                        <dd>
+                            {% if current_user_portfolios %}
+                                <ul>
+                                    {% for portfolio in current_user_portfolios %}
+                                        <li>{{ portfolio.portfolio }}</li>
                                     {% endfor %}
                                 </ul>
                             {% else %}

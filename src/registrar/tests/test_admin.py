@@ -45,7 +45,8 @@ from registrar.models import (
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockDbForSharedTests,
@@ -2162,6 +2163,14 @@ class TestTransferUser(WebTest):
         )
         domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
         domain_request.save()
+        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        UserPortfolioPermission.objects.create(
+            user=self.user1, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        portfolio2 = Portfolio.objects.create(organization_name="Tokyo Hotel", creator=self.user2)
+        UserPortfolioPermission.objects.create(
+            user=self.user2, portfolio=portfolio2, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
 
@@ -2171,6 +2180,7 @@ class TestTransferUser(WebTest):
         self.assertContains(user_transfer_page, "Road warrior")
         self.assertContains(user_transfer_page, "wasteland.gov")
         self.assertContains(user_transfer_page, "citadel.gov")
+        self.assertContains(user_transfer_page, "Hotel California")
 
         select_form = user_transfer_page.forms[0]
         select_form["selected_user"] = str(self.user2.id)
@@ -2180,19 +2190,15 @@ class TestTransferUser(WebTest):
         self.assertContains(preview_result, "Furiosa")
         self.assertContains(preview_result, "Jabassa")
         self.assertContains(preview_result, "Imperator")
+        self.assertContains(preview_result, "Tokyo Hotel")
 
     @less_console_noise_decorator
-    def test_transfer_user_transfers_portfolio_roles_and_permissions_and_portfolio_creator(self):
-        """Assert that a portfolio gets copied over
-        NOTE: Should be revised for #2644"""
-        portfolio = Portfolio.objects.create(organization_name="Citadel", creator=self.user2)
-        self.user2.portfolio = portfolio
-        self.user2.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        self.user2.portfolio_additional_permissions = [
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-        ]
-        self.user2.save()
+    def test_transfer_user_transfers_user_portfolio_roles(self):
+        """Assert that a portfolio user role gets transferred"""
+        portfolio = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        user_portfolio_permission = UserPortfolioPermission.objects.create(
+            user=self.user2, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
 
@@ -2200,16 +2206,9 @@ class TestTransferUser(WebTest):
         submit_form["selected_user"] = self.user2.pk
         submit_form.submit()
 
-        self.user1.refresh_from_db()
-        portfolio.refresh_from_db()
+        user_portfolio_permission.refresh_from_db()
 
-        self.assertEquals(portfolio.creator, self.user1)
-        self.assertEquals(self.user1.portfolio, portfolio)
-        self.assertEquals(self.user1.portfolio_roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
-        self.assertEquals(
-            self.user1.portfolio_additional_permissions,
-            [UserPortfolioPermissionChoices.VIEW_PORTFOLIO, UserPortfolioPermissionChoices.EDIT_PORTFOLIO],
-        )
+        self.assertEquals(user_portfolio_permission.user, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_request_creator_and_investigator(self):
