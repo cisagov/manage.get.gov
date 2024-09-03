@@ -11,7 +11,7 @@
                 <ul class="margin-0 padding-0">
                 {% for portfolio in portfolios %}
                     <li>
-                        <a href="{% url 'admin:registrar_portfolio_change' portfolio %}">
+                        <a href="{% url 'admin:registrar_portfolio_change' portfolio.pk %}">
                             {{ portfolio }}
                         </a>
                     </li>
