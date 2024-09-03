@@ -2,6 +2,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from api.tests.common import less_console_noise_decorator
 from django.urls import reverse
 from registrar.admin import (
@@ -41,6 +42,7 @@ from registrar.models import (
     TransitionDomain,
     Portfolio,
     Suborganization,
+    UserPortfolioPermission,
 )
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
@@ -1223,6 +1225,25 @@ class TestMyUserAdmin(MockDbForSharedTests):
 
         self.assertNotContains(response, "Portfolio roles:")
         self.assertNotContains(response, "Portfolio additional permissions:")
+    
+    @less_console_noise_decorator
+    def test_user_can_see_related_portfolios(self):
+        """Tests if a user can see the portfolios they are associated with on the user page"""
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="test", creator=self.user)
+        permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        self.user.refresh_from_db()
+        self.client.force_login(self.user)
+        response = self.client.get(
+            "/admin/registrar/user/{}/change/".format(self.user.id),
+            follow=True,
+        )
+        expected_href = reverse("admin:registrar_portfolio_change", args=[portfolio.pk])
+        self.assertContains(response, expected_href)
+        self.assertContains(response, str(portfolio))
+        permission.delete()
+        portfolio.delete()
 
 
 class AuditedAdminTest(TestCase):
