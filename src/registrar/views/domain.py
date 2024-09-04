@@ -837,17 +837,19 @@ class DomainAddUserView(DomainFormBaseView):
             )
             return None
         
-        # Check to see if an invite has already been sent (NOTE: we do not want to create an invite just yet.)
+        # Check to see if an invite has already been sent
         try:
-            add_success=False
             invite = DomainInvitation.objects.get(email=email, domain=self.object)
-            # that invitation already existed
+            # check if the invite has already been accepted
             if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
+                add_success=False
                 messages.warning(
                     self.request,
                     f"{email} is already a manager for this domain.",
                 )
             else:
+                add_success=False
+                #else if it has been sent but not accepted
                 messages.warning(
                     self.request,
                     f"{email} has already been invited to this domain"
