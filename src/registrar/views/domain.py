@@ -854,8 +854,8 @@ class DomainAddUserView(DomainFormBaseView):
                     self.request,
                     f"{email} has already been invited to this domain"
                 )
-        except DomainInvitation.DoesNotExist:
-            logger.info("Domain Invitation Does Not Exist")
+        except Exception:
+            logger.error("An error occured")
 
         try:
             send_templated_email(
