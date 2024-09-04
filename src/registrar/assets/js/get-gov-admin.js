@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dropdown = document.getElementById("id_action_needed_reason");
     const textarea = document.getElementById("id_action_needed_reason_email")
     const domainRequestId = dropdown ? document.getElementById("domain_request_id").value : null
-    const texareaPlaceholder = document.querySelector(".field-action_needed_reason_email__placeholder");
+    const textareaPlaceholder = document.querySelector(".field-action_needed_reason_email__placeholder");
     const directEditButton = document.querySelector('.field-action_needed_reason_email__edit');
     const modalTrigger = document.querySelector('.field-action_needed_reason_email__modal-trigger');
     const modalConfirm = document.getElementById('confirm-edit-email');
@@ -520,11 +520,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         </svg>`;
     let lastSentEmailContent = document.getElementById("last-sent-email-content");
     const helpText = document.querySelector('.field-action_needed_reason_email .help');
-    const emailData = document.getElementById('action-needed-emails-data');
-    const actionNeededEmailData = emailData.textContent;
-    const actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
     const initialDropdownValue = dropdown ? dropdown.value : null;
-    const initialEmailValue = actionNeededEmailData ? actionNeededEmailData.value : null;
+    const initialEmailValue = textarea.value;
+
     // We will use the const to control the modal
     let isEmailAlreadySentConst = lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
     // We will use the function to control the label and help
@@ -532,34 +530,36 @@ document.addEventListener('DOMContentLoaded', function() {
         return lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
     }
 
-    if (!dropdown || !textarea || !domainRequestId || !formLabel || !modalConfirm || !emailData) return;
+    if (!dropdown || !textarea || !domainRequestId || !formLabel || !modalConfirm) return;
+    const apiUrl = document.getElementById("get-action-needed-email-for-user-json").value;
 
     function updateUserInterface(reason) {
         if (!reason) {
             // No reason selected, we will set the label to "Email", show the "Make a selection" placeholder, hide the trigger, textarea, hide the help text
             formLabel.innerHTML = "Email:";
-            showElement(texareaPlaceholder);
-            texareaPlaceholder.innerHTML = "Select an action needed reason to see email";
+            textareaPlaceholder.innerHTML = "Select an action needed reason to see email";
+            showElement(textareaPlaceholder);
             hideElement(directEditButton);
             hideElement(modalTrigger);
             hideElement(textarea);
             hideElement(helpText);
-        } else if (reason == 'other') {
+        } else if (reason === 'other') {
             // 'Other' selected, we will set the label to "Email", show the "No email will be sent" placeholder, hide the trigger, textarea, hide the help text
             formLabel.innerHTML = "Email:";
+            textareaPlaceholder.innerHTML = "No email will be sent";
+            showElement(textareaPlaceholder);
             showElement(helpText);
-            showElement(texareaPlaceholder);
-            texareaPlaceholder.innerHTML = "No email will be sent";
             hideElement(directEditButton);
             hideElement(modalTrigger);
             hideElement(textarea);
             hideElement(helpText);
         } else {
             // A triggering selection is selected, all hands on board:
-            hideElement(texareaPlaceholder);
-            showElement(textarea);
             textarea.setAttribute('readonly', true);
+            showElement(textarea);
             showElement(helpText);
+            hideElement(textareaPlaceholder);
+
             if (isEmailAlreadySentConst) {
                 hideElement(directEditButton);
                 showElement(modalTrigger);
@@ -582,13 +582,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     dropdown.addEventListener("change", function() {
         const reason = dropdown.value;
-        const emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
-        
-        if (reason && emailBody) {
+        if (reason && reason !== "other") {
             // If it's not the initial value
             if (initialDropdownValue !== dropdown.value || initialEmailValue !== textarea.value) {
                 // Replace the email content
-                textarea.value = emailBody;
+                fetch(`${apiUrl}?reason=${reason}&domain_request_id=${domainRequestId}`)
+                .then(response => {
+                    return response.json().then(data => data);
+                })
+                .then(data => {
+                    if (data.error) {
+                        console.error("Error in AJAX call: " + data.error);
+                    }else {
+                        textarea.value = data.action_needed_email;
+                    }
+                })
+                .catch(error => {
+                    console.error("Error action needed email: ", error)
+                });
             }
         }
 

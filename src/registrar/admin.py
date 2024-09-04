@@ -21,6 +21,7 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
+from registrar.utility.admin_helpers import get_all_action_needed_reason_emails, get_action_needed_reason_default_email
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
@@ -1956,9 +1957,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Set the action_needed_reason_email to the default if nothing exists.
             # Since this check occurs after save, if the user enters a value then we won't update.
 
-            default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+            default_email = get_action_needed_reason_default_email(request, obj, obj.action_needed_reason)
             if obj.action_needed_reason_email:
-                emails = self.get_all_action_needed_reason_emails(obj)
+                emails = get_all_action_needed_reason_emails(request, obj)
                 is_custom_email = obj.action_needed_reason_email not in emails.values()
                 if not is_custom_email:
                     obj.action_needed_reason_email = default_email
@@ -2170,8 +2171,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
-        emails = self.get_all_action_needed_reason_emails(obj)
-        extra_context["action_needed_reason_emails"] = json.dumps(emails)
         extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
 
         # Denote if an action needed email was sent or not
@@ -2182,42 +2181,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
-
-    def get_all_action_needed_reason_emails(self, domain_request):
-        """Returns a json dictionary of every action needed reason and its associated email
-        for this particular domain request."""
-
-        emails = {}
-        for action_needed_reason in domain_request.ActionNeededReasons:
-            # Map the action_needed_reason to its default email
-            emails[action_needed_reason.value] = self._get_action_needed_reason_default_email(
-                domain_request, action_needed_reason.value
-            )
-
-        return emails
-
-    def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason):
-        """Returns the default email associated with the given action needed reason"""
-        if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
-            return None
-
-        if flag_is_active(None, "profile_feature"):  # type: ignore
-            recipient = domain_request.creator
-        else:
-            recipient = domain_request.submitter
-
-        # Return the context of the rendered views
-        context = {"domain_request": domain_request, "recipient": recipient}
-
-        # Get the email body
-        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
-
-        email_body_text = get_template(template_path).render(context=context)
-        email_body_text_cleaned = None
-        if email_body_text:
-            email_body_text_cleaned = email_body_text.strip().lstrip("\n")
-
-        return email_body_text_cleaned
 
     def process_log_entry(self, log_entry):
         """Process a log entry and return filtered entry dictionary if applicable."""
