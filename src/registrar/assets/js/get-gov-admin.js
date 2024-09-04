@@ -507,70 +507,98 @@ function initializeWidgetOnList(list, parentId) {
  * This shows the auto generated email on action needed reason.
 */
 document.addEventListener('DOMContentLoaded', function() {
-    let actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
-    let textAreaActionNeededEmail = document.getElementById("id_action_needed_reason_email")
-    const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
+    const dropdown = document.getElementById("id_action_needed_reason");
+    const textarea = document.getElementById("id_action_needed_reason_email")
+    const domainRequestId = dropdown ? document.getElementById("domain_request_id").value : null
 
-    // Check we are on the right page and we have the right DOM elements
-    if(actionNeededReasonDropdown && textAreaActionNeededEmail && domainRequestId) {
+    if(dropdown && textarea && domainRequestId) {
 
-        var pleaseMakeASelection = document.getElementById("please-make-selection")
-        var noEmailWillBeSent = document.getElementById("no-email-will-be-sent")
-        var editEmailButton = document.getElementById('email-already-sent-modal_continue-editing-button');
-        // Headers and footers (which change depending on if the email was sent or not)
-        // var actionNeededEmailHeader = document.querySelector("#action-needed-email-header")
-        // var actionNeededEmailHeaderOnSave = document.querySelector("#action-needed-email-header-email-sent")
-        let lastEmailSentInputStorer = document.getElementById("action-needed-email-sent");
-        if (!lastEmailSentInputStorer) {
-            return;
-        }
-        let anEmailWasSent = lastEmailSentInputStorer.value == 'True';
-        let lastEmailSentContent = document.getElementById("action-needed-email-sent-last-content");
+        const texareaPlaceholder = document.querySelector(".field-action_needed_reason_email__placeholder");
+        const directEditButton = document.querySelector('.field-action_needed_reason_email__edit');
+        const modalTrigger = document.querySelector('.field-action_needed_reason_email__modal-trigger');
+        const modalConfirm = document.getElementById('confirm-edit-email');
+        const formLabel = document.querySelector('label[for="id_action_needed_reason_email"]');
+        const greenCheckMark = `<svg class="usa-icon text-green" aria-hidden="true" focusable="false" role="img">
+                                <use xlink:href="/public/img/sprite.svg#check_circle"></use>
+                            </svg>`;
+        let lastSentEmailContent = document.getElementById("last-sent-email-content");
+
+        const helpText = document.querySelector('.field-action_needed_reason_email .help');
         
         // Get the list of emails associated with each action-needed dropdown value
-        let emailData = document.getElementById('action-needed-emails-data');
-        if (!emailData) {
-            return;
-        }
-        let actionNeededEmailData = emailData.textContent;
-        if(!actionNeededEmailData) {
-            return;
-        }
-        let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
-        
-        const emailSentSessionVariableName = `actionNeededEmailSent-${domainRequestId}`;
-        const initialDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
+        const emailData = document.getElementById('action-needed-emails-data');
+        const actionNeededEmailData = emailData.textContent;
+        const actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
+        // Get initial dropdown and email
+        const initialDropdownValue = dropdown ? dropdown.value : null;
         const initialEmailValue = actionNeededEmailData ? actionNeededEmailData.value : null;
+
+        if(
+            !formLabel ||
+            !modalConfirm ||
+            !actionNeededEmailData) {
+            return;
+        }
 
         function updateUserInterface(reason) {
             if (!reason) {
-                showElement(pleaseMakeASelection);
-                hideElement(noEmailWillBeSent);
-                hideElement(textAreaActionNeededEmail);
+                // No reason selected, we will set the label to "Email", show the "Make a selection" placeholder, hide the trigger, textarea, hide the help text
+                formLabel.innerHTML = "Email:";
+                showElement(texareaPlaceholder);
+                texareaPlaceholder.innerHTML = "Select an action needed reason to see email";
+                hideElement(directEditButton);
+                hideElement(modalTrigger);
+                hideElement(textarea);
+                hideElement(helpText);
             } else if (reason == 'other') {
-                hideElement(pleaseMakeASelection);
-                showElement(noEmailWillBeSent);
-                hideElement(textAreaActionNeededEmail);
+                // 'Other' selected, we will set the label to "Email", show the "No email will be sent" placeholder, hide the trigger, textarea, hide the help text
+                formLabel.innerHTML = "Email:";
+                showElement(helpText);
+                showElement(texareaPlaceholder);
+                texareaPlaceholder.innerHTML = "No email will be sent";
+                hideElement(directEditButton);
+                hideElement(modalTrigger);
+                hideElement(textarea);
+                hideElement(helpText);
             } else {
-                hideElement(pleaseMakeASelection);
-                hideElement(noEmailWillBeSent);
-                showElement(textAreaActionNeededEmail);
+                // A triggering selection is selected, all hands on board:
+                hideElement(texareaPlaceholder);
+                showElement(textarea);
+                textarea.setAttribute('readonly', true);
+                showElement(helpText);
+                if (checkEmailAlreadySent()) {
+                    hideElement(directEditButton);
+                    showElement(modalTrigger);
+                    formLabel.innerHTML = greenCheckMark + "Email sent to the creator:"
+                    helpText.innerHTML = "This email has been sent to the creator of this request"
+                } else {
+                    showElement(directEditButton);
+                    hideElement(modalTrigger);
+                    formLabel.innerHTML = "Auto-generated email that will be sent to the creator";
+                    helpText.innerHTML = "This email will be sent to the creator of this request after saving";
+                }
             }
         }
 
+        function checkEmailAlreadySent() {
+            lastEmailSent = lastSentEmailContent.value.replace(/\s+/g, '')
+            currentEmailInTextArea = textarea.value.replace(/\s+/g, '')
+            return lastEmailSent === currentEmailInTextArea
+        }
+
         // Init the UI
-        updateUserInterface(actionNeededReasonDropdown.value);
+        updateUserInterface(dropdown.value);
 
         // Add a change listener to the action needed reason dropdown
-        actionNeededReasonDropdown.addEventListener("change", function() {
-            let reason = actionNeededReasonDropdown.value;
+        dropdown.addEventListener("change", function() {
+            let reason = dropdown.value;
             let emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
             
             if (reason && emailBody) {
                 // If it's not the initial value
-                if (initialDropdownValue !== actionNeededReasonDropdown.value || initialEmailValue !== textAreaActionNeededEmail.value) {
+                if (initialDropdownValue !== dropdown.value || initialEmailValue !== textarea.value) {
                     // Replace the email content
-                    textAreaActionNeededEmail.value = emailBody;
+                    textarea.value = emailBody;
                 }
             }
 
@@ -578,22 +606,14 @@ document.addEventListener('DOMContentLoaded', function() {
             updateUserInterface(reason);
         });
 
-        // Handle the session boolean (to enable/disable editing)
-        // An email was sent out - store that information in a session variable
-        if (anEmailWasSent)
-            addOrRemoveSessionBoolean(emailSentSessionVariableName, add=true);
-        
-        // editEmailButton.addEventListener("click", function() {
-        //     if (!checkEmailAlreadySent()) {
-        //     }
-        // }
-    }
+        modalConfirm.addEventListener("click", function() {
+            textarea.removeAttribute('readonly');
+        });
 
-    // function checkEmailAlreadySent() {
-    //     lastEmailSent = lastEmailSentContent.value.replace(/\s+/g, '')
-    //     currentEmailInTextArea = textAreaActionNeededEmail.value.replace(/\s+/g, '')
-    //     return lastEmailSent === currentEmailInTextArea
-    // }
+        directEditButton.addEventListener("click", function() {
+            textarea.removeAttribute('readonly');
+        });
+    }
 });
 
 
