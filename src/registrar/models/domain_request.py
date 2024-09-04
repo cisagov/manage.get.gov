@@ -644,8 +644,10 @@ class DomainRequest(TimeStampedModel):
         """Save override for custom properties"""
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
-
-        logger.error(traceback.print_stack())
+        try:
+            raise ValueError("TEST TEST TEST")
+        except Exception as e:
+            logger.error(e)
 
         if self._cached_status != self.status:
             self.last_status_update = timezone.now().date()
