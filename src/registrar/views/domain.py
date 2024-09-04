@@ -839,6 +839,7 @@ class DomainAddUserView(DomainFormBaseView):
         
         # Check to see if an invite has already been sent (NOTE: we do not want to create an invite just yet.)
         try:
+            add_success=False
             invite = DomainInvitation.objects.get(email=email, domain=self.object)
             # that invitation already existed
             if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
@@ -880,7 +881,7 @@ class DomainAddUserView(DomainFormBaseView):
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
         try:
-                self._send_domain_invitation_email(email=email_address, requestor=requestor, add_success=False)
+                self._send_domain_invitation_email(email=email_address, requestor=requestor)
         except EmailSendingError:
                 messages.warning(self.request, "Could not send email invitation.")
         else:
@@ -927,8 +928,8 @@ class DomainAddUserView(DomainFormBaseView):
         except IntegrityError:
             # User already has the desired role! Do nothing??
             pass
-        else:
-            messages.success(self.request, f"Added user {requested_email}.")
+       
+        messages.success(self.request, f"Added user {requested_email}.")
 
         return redirect(self.get_success_url())
 
