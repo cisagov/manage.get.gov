@@ -69,6 +69,8 @@ def portfolio_permissions(request):
                 "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(
                     portfolio
                 ),
+                "has_view_members_portfolio_permission": request.user.has_view_members_portfolio_permission(portfolio),
+                "has_edit_members_portfolio_permission": request.user.has_edit_members_portfolio_permission(portfolio),
                 "has_view_suborganization": request.user.has_view_suborganization(portfolio),
                 "has_edit_suborganization": request.user.has_edit_suborganization(portfolio),
                 "portfolio": portfolio,
@@ -78,6 +80,8 @@ def portfolio_permissions(request):
             "has_base_portfolio_permission": False,
             "has_domains_portfolio_permission": False,
             "has_domain_requests_portfolio_permission": False,
+            "has_view_members_portfolio_permission": False,
+            "has_edit_members_portfolio_permission": False,
             "has_view_suborganization": False,
             "has_edit_suborganization": False,
             "portfolio": None,
@@ -90,6 +94,8 @@ def portfolio_permissions(request):
             "has_base_portfolio_permission": False,
             "has_domains_portfolio_permission": False,
             "has_domain_requests_portfolio_permission": False,
+            "has_view_members_portfolio_permission": False,
+            "has_edit_members_portfolio_permission": False,
             "has_view_suborganization": False,
             "has_edit_suborganization": False,
             "portfolio": None,

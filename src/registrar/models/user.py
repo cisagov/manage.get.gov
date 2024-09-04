@@ -64,32 +64,6 @@ class User(AbstractUser):
         # after they login.
         FIXTURE_USER = "fixture_user", "Created by fixtures"
 
-    PORTFOLIO_ROLE_PERMISSIONS = {
-        UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBER,
-            UserPortfolioPermissionChoices.EDIT_MEMBER,
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            UserPortfolioPermissionChoices.EDIT_REQUESTS,
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            # Domain: field specific permissions
-            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
-            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
-        ],
-        UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBER,
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            # Domain: field specific permissions
-            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
-        ],
-        UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-        ],
-    }
-
     # #### Constants for choice fields ####
     RESTRICTED = "restricted"
     STATUS_CHOICES = ((RESTRICTED, RESTRICTED),)
@@ -224,9 +198,39 @@ class User(AbstractUser):
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
     def has_domain_requests_portfolio_permission(self, portfolio):
+        ## BEGIN
+        ## Note code below is to add organization_request feature
+        request = HttpRequest()
+        request.user = self
+        has_organization_requests_flag = flag_is_active(request, "organization_requests")
+        if not has_organization_requests_flag:
+            return False
+        ## END
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
+
+    def has_view_members_portfolio_permission(self, portfolio):
+        ## BEGIN
+        ## Note code below is to add organization_request feature
+        request = HttpRequest()
+        request.user = self
+        has_organization_members_flag = flag_is_active(request, "organization_members")
+        if not has_organization_members_flag:
+            return False
+        ## END
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MEMBERS)
+
+    def has_edit_members_portfolio_permission(self, portfolio):
+                ## BEGIN
+        ## Note code below is to add organization_request feature
+        request = HttpRequest()
+        request.user = self
+        has_organization_members_flag = flag_is_active(request, "organization_members")
+        if not has_organization_members_flag:
+            return False
+        ## END
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_MEMBERS)
 
     def has_view_all_domains_permission(self, portfolio):
         """Determines if the current user can view all available domains in a given portfolio"""
