@@ -1,4 +1,5 @@
 from __future__ import annotations
+import traceback
 from typing import Union
 import logging
 from django.apps import apps
@@ -643,6 +644,8 @@ class DomainRequest(TimeStampedModel):
         """Save override for custom properties"""
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
+
+        logger.error(traceback.print_stack())
 
         if self._cached_status != self.status:
             self.last_status_update = timezone.now().date()
