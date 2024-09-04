@@ -230,6 +230,7 @@ class TestPortfolio(WebTest):
             self.assertContains(response, 'for="id_city"')
 
     @less_console_noise_decorator
+    @override_flag("organization_requests", active=True)
     def test_accessible_pages_when_user_does_not_have_permission(self):
         """Tests which pages are accessible when user does not have portfolio permissions"""
         self.app.set_user(self.user.username)
@@ -280,6 +281,7 @@ class TestPortfolio(WebTest):
             self.assertEquals(domain_request_page.status_code, 403)
 
     @less_console_noise_decorator
+    @override_flag("organization_requests", active=True)
     def test_accessible_pages_when_user_does_not_have_role(self):
         """Test that admin / memmber roles are associated with the right access"""
         self.app.set_user(self.user.username)
@@ -532,3 +534,99 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Domain name")
         permission.delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=False)
+    def test_organization_requests_waffle_flag_off_hides_nav_link_and_restricts_permission(self):
+        """Setting the organization_requests waffle off hides the nav link and restricts access to the requests page"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
+        )
+
+        home = self.app.get(reverse("home")).follow()
+
+        self.assertContains(home, "Hotel California")
+        self.assertNotContains(home, "Domain requests")
+
+        domain_requests = self.app.get(reverse("domain-requests"), expect_errors=True)
+        self.assertEqual(domain_requests.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_organization_requests_waffle_flag_on_shows_nav_link_and_allows_permission(self):
+        """Setting the organization_requests waffle on shows the nav link and allows access to the requests page"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
+        )
+
+        home = self.app.get(reverse("home")).follow()
+
+        self.assertContains(home, "Hotel California")
+        self.assertContains(home, "Domain requests")
+
+        domain_requests = self.app.get(reverse("domain-requests"))
+        self.assertEqual(domain_requests.status_code, 200)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=False)
+    def test_organization_members_waffle_flag_off_hides_nav_link(self):
+        """Setting the organization_members waffle off hides the nav link"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
+        )
+
+        home = self.app.get(reverse("home")).follow()
+
+        self.assertContains(home, "Hotel California")
+        self.assertNotContains(home, "Members")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_organization_members_waffle_flag_on_shows_nav_link(self):
+        """Setting the organization_members waffle on shows the nav link"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        home = self.app.get(reverse("home")).follow()
+
+        self.assertContains(home, "Hotel California")
+        self.assertContains(home, "Members")
