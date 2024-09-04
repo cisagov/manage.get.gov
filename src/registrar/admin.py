@@ -3068,11 +3068,11 @@ class PortfolioAdmin(ListHeaderAdmin):
         for portfolio_admin in admins:
             change_url = reverse("admin:registrar_user_change", args=[portfolio_admin.pk])
             admin_details += "<address class='margin-bottom-2 dja-address-contact-list'>"
-            admin_details += f'<a href="{change_url}">{portfolio_admin}</a><br>'
-            admin_details += f"{portfolio_admin.title}<br>"
-            admin_details += f"{portfolio_admin.email}"
+            admin_details += f'<a href="{change_url}">{escape(portfolio_admin)}</a><br>'
+            admin_details += f"{escape(portfolio_admin.title)}<br>"
+            admin_details += f"{escape(portfolio_admin.email)}"
             admin_details += "<div class='admin-icon-group admin-icon-group__clipboard-link'>"
-            admin_details += f"<input aria-hidden='true' class='display-none' value='{portfolio_admin.email}'>"
+            admin_details += f"<input aria-hidden='true' class='display-none' value='{escape(portfolio_admin.email)}'>"
             admin_details += (
                 "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon padding-left-05"
                 + "button--clipboard copy-to-clipboard text-no-underline' type='button'>"
@@ -3083,7 +3083,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             admin_details += "Copy"
             admin_details += "</button>"
             admin_details += "</div><br>"
-            admin_details += f"{portfolio_admin.phone}"
+            admin_details += f"{escape(portfolio_admin.phone)}"
             admin_details += "</address>"
         return format_html(admin_details)
 
@@ -3108,13 +3108,13 @@ class PortfolioAdmin(ListHeaderAdmin):
         for member in members:
             full_name = member.get_formatted_name()
             member_details += "<tr>"
-            member_details += f"<td>{full_name}</td>"
-            member_details += f"<td>{member.title}</td>"
-            member_details += f"<td>{member.email}</td>"
-            member_details += f"<td>{member.phone}</td>"
+            member_details += f"<td>{escape(full_name)}</td>"
+            member_details += f"<td>{escape(member.title)}</td>"
+            member_details += f"<td>{escape(member.email)}</td>"
+            member_details += f"<td>{escape(member.phone)}</td>"
             member_details += "<td>"
             for role in member.portfolio_role_summary(obj):
-                member_details += f"<span class='usa-tag'>{role}</span> "
+                member_details += f"<span class='usa-tag'>{escape(role)}</span> "
             member_details += "</td></tr>"
         member_details += "</tbody></table>"
         return format_html(member_details)
