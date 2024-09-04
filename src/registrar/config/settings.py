@@ -23,6 +23,8 @@ from cfenv import AppEnv  # type: ignore
 from pathlib import Path
 from typing import Final
 from botocore.config import Config
+import json
+from django.utils.log import ServerFormatter
 
 # # #                          ###
 #      Setup code goes here      #
@@ -192,7 +194,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
 ]
 
-# application object used by Django’s built-in servers (e.g. `runserver`)
+# application object used by Django's built-in servers (e.g. `runserver`)
 WSGI_APPLICATION = "registrar.config.wsgi.application"
 
 # endregion
@@ -410,7 +412,7 @@ LANGUAGE_COOKIE_SECURE = True
 # and to interpret datetimes entered in forms
 TIME_ZONE = "UTC"
 
-# enable Django’s translation system
+# enable Django's translation system
 USE_I18N = True
 
 # enable localized formatting of numbers and dates
@@ -445,6 +447,30 @@ PHONENUMBER_DEFAULT_REGION = "US"
 #   logger.error("Can't do this important task. Something is very wrong.")
 #   logger.critical("Going to crash now.")
 
+class JsonFormatter(logging.Formatter):
+    def __init__(self):
+        super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
+
+    def format(self, record):
+        log_record = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "name": record.name,
+            "lineno": record.lineno,
+            "message": record.getMessage(),
+        }
+        return json.dumps(log_record)
+
+class JsonServerFormatter(ServerFormatter):
+    def format(self, record):
+        formatted_record = super().format(record)
+        log_entry = {
+            "server_time": record.server_time,
+            "level": record.levelname,
+            "message": formatted_record
+        }
+        return json.dumps(log_entry)
+
 LOGGING = {
     "version": 1,
     # Don't import Django's existing loggers
@@ -459,10 +485,11 @@ LOGGING = {
         "simple": {
             "format": "%(levelname)s %(message)s",
         },
-        "django.server": {
-            "()": "django.utils.log.ServerFormatter",
-            "format": "[{server_time}] {message}",
-            "style": "{",
+        "json.server": {
+            "()": JsonServerFormatter,
+        },
+        "json": {
+            "()": JsonFormatter,
         },
     },
     # define where log messages will be sent;
@@ -471,12 +498,12 @@ LOGGING = {
         "console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json",
         },
         "django.server": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "django.server",
+            "formatter": "json.server",
         },
         # No file logger is configured,
         # because containerized apps
