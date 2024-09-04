@@ -647,7 +647,7 @@ class DomainRequest(TimeStampedModel):
         try:
             raise Exception("TEST TEST TEST")
         except Exception:
-            logger.error(traceback.format_exc)
+            logger.error(traceback.format_exc())
 
         if self._cached_status != self.status:
             self.last_status_update = timezone.now().date()
