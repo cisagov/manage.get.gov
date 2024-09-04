@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalTrigger = document.querySelector('.field-action_needed_reason_email__modal-trigger');
     const modalConfirm = document.getElementById('confirm-edit-email');
     const formLabel = document.querySelector('label[for="id_action_needed_reason_email"]');
-    const greenCheckMark = `<svg class="usa-icon text-green" aria-hidden="true" focusable="false" role="img">
+    const greenCheckMark = `<svg class="usa-icon text-green top-2px" aria-hidden="true" focusable="false" role="img">
                             <use xlink:href="/public/img/sprite.svg#check_circle"></use>
                         </svg>`;
     let lastSentEmailContent = document.getElementById("last-sent-email-content");
@@ -568,10 +568,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 hideElement(modalTrigger);
             }
             if (isEmailAlreadySent()) {
-                formLabel.innerHTML = greenCheckMark + "Email sent to the creator:"
-                helpText.innerHTML = "This email has been sent to the creator of this request"
+                formLabel.innerHTML = greenCheckMark + " Email sent to creator:";
+                helpText.innerHTML = "This email has been sent to the creator of this request";
             } else {
-                formLabel.innerHTML = "Auto-generated email that will be sent to the creator";
+                formLabel.innerHTML = "Auto-generated email will be sent to creator:";
                 helpText.innerHTML = "This email will be sent to the creator of this request after saving";
             }
         }
