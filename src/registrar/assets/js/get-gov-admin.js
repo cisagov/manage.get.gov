@@ -596,8 +596,16 @@ document.addEventListener('DOMContentLoaded', function() {
         updateUserInterface(reason);
     });
 
-    modalConfirm.addEventListener("click", () => textarea.removeAttribute('readonly'));
-    directEditButton.addEventListener("click", () => textarea.removeAttribute('readonly'));
+    modalConfirm.addEventListener("click", () => {
+        textarea.removeAttribute('readonly');
+        hideElement(directEditButton);
+        hideElement(modalTrigger);  
+    });
+    directEditButton.addEventListener("click", () => {
+        textarea.removeAttribute('readonly');
+        hideElement(directEditButton);
+        hideElement(modalTrigger);  
+    });
 });
 
 
