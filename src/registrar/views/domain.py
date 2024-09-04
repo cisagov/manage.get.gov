@@ -931,7 +931,6 @@ class DomainAddUserView(DomainFormBaseView):
             # User already has the desired role! Do nothing??
             pass    
         messages.success(self.request, f"Added user {requested_email}.")
-
         return redirect(self.get_success_url())
 
 
