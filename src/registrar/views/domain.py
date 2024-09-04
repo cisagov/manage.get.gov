@@ -836,24 +836,21 @@ class DomainAddUserView(DomainFormBaseView):
                 exc_info=True,
             )
             return None
-        
+
         # Check to see if an invite has already been sent
         try:
             invite = DomainInvitation.objects.get(email=email, domain=self.object)
             # check if the invite has already been accepted
             if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
-                add_success=False
+                add_success = False
                 messages.warning(
                     self.request,
                     f"{email} is already a manager for this domain.",
                 )
             else:
-                add_success=False
-                #else if it has been sent but not accepted
-                messages.warning(
-                    self.request,
-                    f"{email} has already been invited to this domain"
-                )
+                add_success = False
+                # else if it has been sent but not accepted
+                messages.warning(self.request, f"{email} has already been invited to this domain")
         except Exception:
             logger.error("An error occured")
 
@@ -879,16 +876,16 @@ class DomainAddUserView(DomainFormBaseView):
         else:
             if add_success:
                 messages.success(self.request, f"{email} has been invited to this domain.")
-    
+
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
         try:
-                self._send_domain_invitation_email(email=email_address, requestor=requestor)
+            self._send_domain_invitation_email(email=email_address, requestor=requestor)
         except EmailSendingError:
-                messages.warning(self.request, "Could not send email invitation.")
+            messages.warning(self.request, "Could not send email invitation.")
         else:
-                # (NOTE: only create a domainInvitation if the e-mail sends correctly)
-                DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
+            # (NOTE: only create a domainInvitation if the e-mail sends correctly)
+            DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
@@ -928,7 +925,7 @@ class DomainAddUserView(DomainFormBaseView):
                 role=UserDomainRole.Roles.MANAGER,
             )
         except IntegrityError:
-            messages.warning(self.request, f"{requested_email} already added to this domain")  
+            messages.warning(self.request, f"{requested_email} already added to this domain")
         else:
             messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
