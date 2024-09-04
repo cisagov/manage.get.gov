@@ -645,9 +645,9 @@ class DomainRequest(TimeStampedModel):
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
         try:
-            raise ValueError("TEST TEST TEST")
-        except Exception as e:
-            logger.error(e)
+            raise Exception("TEST TEST TEST")
+        except Exception:
+            logger.error(traceback.format_exc)
 
         if self._cached_status != self.status:
             self.last_status_update = timezone.now().date()
