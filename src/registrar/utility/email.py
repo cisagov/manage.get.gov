@@ -4,6 +4,7 @@ import boto3
 import logging
 import textwrap
 from datetime import datetime
+from django.apps import apps
 from django.conf import settings
 from django.template.loader import get_template
 from email.mime.application import MIMEApplication
@@ -27,7 +28,7 @@ def send_templated_email(
     to_address: str,
     bcc_address="",
     context={},
-    attachment_file: str = None,
+    attachment_file=None,
     wrap_email=False,
 ):
     """Send an email built from a template to one email address.
@@ -39,9 +40,11 @@ def send_templated_email(
     Raises EmailSendingError if SES client could not be accessed
     """
 
-    if flag_is_active(None, "disable_email_sending") and not settings.IS_PRODUCTION:  # type: ignore
-        message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
-        raise EmailSendingError(message)
+    if not settings.IS_PRODUCTION:  # type: ignore
+        # Split into a function: C901 'send_templated_email' is too complex.
+        # Raises an error if we cannot send an email (due to restrictions).
+        # Does nothing otherwise.
+        _can_send_email(to_address, bcc_address)
 
     template = get_template(template_name)
     email_body = template.render(context=context)
@@ -71,7 +74,7 @@ def send_templated_email(
         destination["BccAddresses"] = [bcc_address]
 
     try:
-        if attachment_file is None:
+        if not attachment_file:
             # Wrap the email body to a maximum width of 80 characters per line.
             # Not all email clients support CSS to do this, and our .txt files require parsing.
             if wrap_email:
@@ -100,6 +103,24 @@ def send_templated_email(
             )
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
+
+
+def _can_send_email(to_address, bcc_address):
+    """Raises an EmailSendingError if we cannot send an email. Does nothing otherwise."""
+
+    if flag_is_active(None, "disable_email_sending"):  # type: ignore
+        message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
+        raise EmailSendingError(message)
+    else:
+        # Raise an email sending error if these doesn't exist within our whitelist.
+        # If these emails don't exist, this function can handle that elsewhere.
+        AllowedEmail = apps.get_model("registrar", "AllowedEmail")
+        message = "Could not send email. The email '{}' does not exist within the whitelist."
+        if to_address and not AllowedEmail.is_allowed_email(to_address):
+            raise EmailSendingError(message.format(to_address))
+
+        if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
+            raise EmailSendingError(message.format(bcc_address))
 
 
 def wrap_text_and_preserve_paragraphs(text, width):

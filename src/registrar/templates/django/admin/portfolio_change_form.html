@@ -1,4 +1,5 @@
 {% extends 'django/admin/email_clipboard_change_form.html' %}
+{% load custom_filters %}
 {% load i18n static %}
 
 {% block content %}
@@ -21,4 +22,23 @@
         {% endcomment %}
         {% include "django/admin/includes/detail_table_fieldset.html" with original_object=original %}
     {% endfor %}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+<div class="submit-row-wrapper">
+    <span class="submit-row-toggle padding-1 padding-right-2 visible-desktop">
+        <button type="button" class="usa-button usa-button--unstyled" id="submitRowToggle">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#expand_more"></use>
+            </svg>
+            <span>Hide</span>
+        </button>
+    </span>
+
+    <p class="padding-top-05 text-right margin-top-2 padding-right-2 margin-bottom-0 submit-row-sticky float-right visible-768">
+        Organization Name: <strong>{{ original.organization_name }}</strong>
+    </p>
+    {{ block.super }}
+</div>
+    <span class="scroll-indicator"></span>
 {% endblock %}

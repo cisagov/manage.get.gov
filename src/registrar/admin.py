@@ -7,6 +7,7 @@ from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from django.conf import settings
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models.domain_information import DomainInformation
@@ -1966,6 +1967,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             else:
                 obj.action_needed_reason_email = default_email
 
+        if obj.status in DomainRequest.get_statuses_that_send_emails() and not settings.IS_PRODUCTION:
+            self._check_for_valid_email(request, obj)
+
         # == Handle status == #
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
@@ -1977,6 +1981,29 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # We should only save if we don't display any errors in the steps above.
             if should_save:
                 return super().save_model(request, obj, form, change)
+
+    def _check_for_valid_email(self, request, obj):
+        """Certain emails are whitelisted in non-production environments,
+        so we should display that information using this function.
+
+        """
+
+        # TODO 2574: remove lines 1977-1978 (refactor as needed)
+        profile_flag = flag_is_active(request, "profile_feature")
+        if profile_flag and hasattr(obj, "creator"):
+            recipient = obj.creator
+        elif not profile_flag and hasattr(obj, "submitter"):
+            recipient = obj.submitter
+        else:
+            recipient = None
+
+        # Displays a warning in admin when an email cannot be sent
+        if recipient and recipient.email:
+            email = recipient.email
+            allowed = models.AllowedEmail.is_allowed_email(email)
+            error_message = f"Could not send email. The email '{email}' does not exist within the whitelist."
+            if not allowed:
+                messages.warning(request, error_message)
 
     def _handle_status_change(self, request, obj, original_obj):
         """
@@ -3357,6 +3384,16 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
 
+class AllowedEmailAdmin(ListHeaderAdmin):
+    class Meta:
+        model = models.AllowedEmail
+
+    list_display = ["email"]
+    search_fields = ["email"]
+    search_help_text = "Search by email."
+    ordering = ["email"]
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
 admin.site.register(LogEntry, CustomLogEntryAdmin)
@@ -3385,6 +3422,7 @@ admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
 admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
 admin.site.register(models.UserPortfolioPermission, UserPortfolioPermissionAdmin)
+admin.site.register(models.AllowedEmail, AllowedEmailAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
