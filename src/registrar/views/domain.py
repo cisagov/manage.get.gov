@@ -928,9 +928,9 @@ class DomainAddUserView(DomainFormBaseView):
                 role=UserDomainRole.Roles.MANAGER,
             )
         except IntegrityError:
-            # User already has the desired role! Do nothing??
-            pass    
-        messages.success(self.request, f"Added user {requested_email}.")
+            messages.warning(self.request, f"{requested_email} already added to this domain")  
+        else:
+            messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
 
 
