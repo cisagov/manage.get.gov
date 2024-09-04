@@ -60,6 +60,17 @@ def add_has_profile_feature_flag_to_context(request):
 
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
+    context = {
+        "has_base_portfolio_permission": False,
+        "has_domains_portfolio_permission": False,
+        "has_domain_requests_portfolio_permission": False,
+        "has_view_members_portfolio_permission": False,
+        "has_edit_members_portfolio_permission": False,
+        "has_view_suborganization": False,
+        "has_edit_suborganization": False,
+        "portfolio": None,
+        "has_organization_feature_flag": False,
+    }
     try:
         portfolio = request.session.get("portfolio")
         if portfolio:
@@ -76,28 +87,8 @@ def portfolio_permissions(request):
                 "portfolio": portfolio,
                 "has_organization_feature_flag": True,
             }
-        return {
-            "has_base_portfolio_permission": False,
-            "has_domains_portfolio_permission": False,
-            "has_domain_requests_portfolio_permission": False,
-            "has_view_members_portfolio_permission": False,
-            "has_edit_members_portfolio_permission": False,
-            "has_view_suborganization": False,
-            "has_edit_suborganization": False,
-            "portfolio": None,
-            "has_organization_feature_flag": False,
-        }
+        return context
 
     except AttributeError:
         # Handles cases where request.user might not exist
-        return {
-            "has_base_portfolio_permission": False,
-            "has_domains_portfolio_permission": False,
-            "has_domain_requests_portfolio_permission": False,
-            "has_view_members_portfolio_permission": False,
-            "has_edit_members_portfolio_permission": False,
-            "has_view_suborganization": False,
-            "has_edit_suborganization": False,
-            "portfolio": None,
-            "has_organization_feature_flag": False,
-        }
+        return context
