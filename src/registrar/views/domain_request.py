@@ -152,7 +152,14 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             except DomainRequest.DoesNotExist:
                 logger.debug("DomainRequest id %s did not have a DomainRequest" % id)
 
-        self._domain_request = DomainRequest.objects.create(creator=self.request.user)
+        # If a user is creating a request, we assume that perms are handled upstream
+        if self.request.user.is_org_user(self.request):
+            self._domain_request = DomainRequest.objects.create(
+                creator=self.request.user,
+                portfolio=self.request.session.get("portfolio"),
+            )
+        else:
+            self._domain_request = DomainRequest.objects.create(creator=self.request.user)
 
         self.storage["domain_request_id"] = self._domain_request.id
         return self._domain_request

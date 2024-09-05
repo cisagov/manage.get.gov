@@ -8,13 +8,26 @@
 {% block content %}
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
-    <a href="{% url 'home' %}" class="breadcrumb__back">
+    {% comment %} 
+    The back button should redirect to the domain request page if we are in the portfolio view.
+    Otherwise, lets just redirect back to home.
+    {% endcomment %}
+    {% if portfolio %}
+      {% url 'domain-requests' as url%}
+    {% else %}
+      {% url 'home' as url%}
+    {% endif %}
+    <a href="{{ url }}" class="breadcrumb__back">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
       <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
       </svg>
   
       <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-      Back to manage your domains
+        {% if portfolio %}
+        Back to manage your domains requests
+        {% else %}
+        Back to manage your domains
+        {% endif %}
       </p>
     </a>
     <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
