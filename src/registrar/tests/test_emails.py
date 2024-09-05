@@ -2,11 +2,12 @@
 
 from unittest.mock import MagicMock
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from waffle.testutils import override_flag
 from registrar.utility import email
 from registrar.utility.email import send_templated_email
 from .common import completed_domain_request
+from registrar.models import AllowedEmail
 
 from api.tests.common import less_console_noise_decorator
 from datetime import datetime
@@ -14,9 +15,32 @@ import boto3_mocking  # type: ignore
 
 
 class TestEmails(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        allowed_emails = [
+            AllowedEmail(email="doesnotexist@igorville.com"),
+            AllowedEmail(email="testy@town.com"),
+            AllowedEmail(email="mayor@igorville.gov"),
+            AllowedEmail(email="testy2@town.com"),
+            AllowedEmail(email="cisaRep@igorville.gov"),
+            AllowedEmail(email="sender@example.com"),
+            AllowedEmail(email="recipient@example.com"),
+        ]
+        AllowedEmail.objects.bulk_create(allowed_emails)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        AllowedEmail.objects.all().delete()
+
     def setUp(self):
         self.mock_client_class = MagicMock()
         self.mock_client = self.mock_client_class.return_value
+
+    def tearDown(self):
+        super().tearDown()
 
     @boto3_mocking.patching
     @override_flag("disable_email_sending", active=True)
@@ -231,3 +255,59 @@ class TestEmails(TestCase):
             self.assertIn("Content-Transfer-Encoding: base64", call_args["RawMessage"]["Data"])
             self.assertIn("Content-Disposition: attachment;", call_args["RawMessage"]["Data"])
             self.assertNotIn("Attachment file content", call_args["RawMessage"]["Data"])
+
+
+class TestAllowedEmail(TestCase):
+    """Tests our allowed email whitelist"""
+
+    def setUp(self):
+        self.mock_client_class = MagicMock()
+        self.mock_client = self.mock_client_class.return_value
+        self.email = "mayor@igorville.gov"
+        self.email_2 = "cake@igorville.gov"
+        self.plus_email = "mayor+1@igorville.gov"
+        self.invalid_plus_email = "1+mayor@igorville.gov"
+
+    def tearDown(self):
+        super().tearDown()
+        AllowedEmail.objects.all().delete()
+
+    @boto3_mocking.patching
+    @override_settings(IS_PRODUCTION=True)
+    @less_console_noise_decorator
+    def test_email_whitelist_disabled_in_production(self):
+        """Tests if the whitelist is disabled in production"""
+
+        # Ensure that the given email isn't in the whitelist
+        is_in_whitelist = AllowedEmail.objects.filter(email=self.email).exists()
+        self.assertFalse(is_in_whitelist)
+
+        # The submit should work as normal
+        domain_request = completed_domain_request(has_anything_else=False)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            domain_request.submit()
+        _, kwargs = self.mock_client.send_email.call_args
+        body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+        self.assertNotIn("Anything else", body)
+        # spacing should be right between adjacent elements
+        self.assertRegex(body, r"5557\n\n----")
+
+    @boto3_mocking.patching
+    @override_settings(IS_PRODUCTION=False)
+    @less_console_noise_decorator
+    def test_email_whitelist(self):
+        """Tests the email whitelist is enabled elsewhere"""
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            expected_message = "Could not send email. "
+            "The email 'doesnotexist@igorville.com' does not exist within the whitelist."
+            with self.assertRaisesRegex(email.EmailSendingError, expected_message):
+                send_templated_email(
+                    "test content",
+                    "test subject",
+                    "doesnotexist@igorville.com",
+                    context={"domain_request": self},
+                    bcc_address=None,
+                )
+
+        # Assert that an email wasn't sent
+        self.assertFalse(self.mock_client.send_email.called)

@@ -52,20 +52,20 @@
           {% endwith %}
         </div>
         <div class="tablet:grid-col-2">
-          <button type="button" class="usa-button usa-button--unstyled display-block delete-record margin-bottom-075">
+          <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon delete-record margin-bottom-075">
             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
               <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-            </svg><span class="margin-left-05">Delete</span>
+            </svg>Delete
           </button>
         </div>
       </div>
     </div>
     {% endfor %}
 
-    <button type="button" class="usa-button usa-button--unstyled display-block" id="add-form">
+    <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
-      </svg><span class="margin-left-05">Add another name server</span>
+      </svg>Add another name server
     </button>
 
     {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'

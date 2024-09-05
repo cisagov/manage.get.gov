@@ -18,6 +18,7 @@ from registrar.models import (
     UserDomainRole,
     FederalAgency,
     UserPortfolioPermission,
+    AllowedEmail,
 )
 
 import boto3_mocking
@@ -234,7 +235,7 @@ class TestDomainRequest(TestCase):
         self, domain_request, msg, action, expected_count, expected_content=None, expected_email="mayor@igorville.com"
     ):
         """Check if an email was sent after performing an action."""
-
+        email_allowed, _ = AllowedEmail.objects.get_or_create(email=expected_email)
         with self.subTest(msg=msg, action=action):
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 # Perform the specified action
@@ -252,6 +253,8 @@ class TestDomainRequest(TestCase):
             if expected_content:
                 email_content = sent_emails[0]["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
                 self.assertIn(expected_content, email_content)
+
+        email_allowed.delete()
 
     @override_flag("profile_feature", active=False)
     @less_console_noise_decorator
@@ -1306,6 +1309,7 @@ class TestUser(TestCase):
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.user, _ = User.objects.get_or_create(email=self.email)
         self.factory = RequestFactory()
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.user)
 
     def tearDown(self):
         super().tearDown()
@@ -1319,6 +1323,65 @@ class TestUser(TestCase):
         Portfolio.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
+
+    @patch.object(User, "has_edit_suborganization", return_value=True)
+    def test_portfolio_role_summary_admin(self, mock_edit_suborganization):
+        # Test if the user is recognized as an Admin
+        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Admin"])
+
+    @patch.multiple(
+        User,
+        has_view_all_domains_permission=lambda self, portfolio: True,
+        has_domain_requests_portfolio_permission=lambda self, portfolio: True,
+        has_edit_requests=lambda self, portfolio: True,
+    )
+    def test_portfolio_role_summary_view_only_admin_and_domain_requestor(self):
+        # Test if the user has both 'View-only admin' and 'Domain requestor' roles
+        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["View-only admin", "Domain requestor"])
+
+    @patch.multiple(
+        User,
+        has_view_all_domains_permission=lambda self, portfolio: True,
+        has_domain_requests_portfolio_permission=lambda self, portfolio: True,
+    )
+    def test_portfolio_role_summary_view_only_admin(self):
+        # Test if the user is recognized as a View-only admin
+        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["View-only admin"])
+
+    @patch.multiple(
+        User,
+        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_edit_requests=lambda self, portfolio: True,
+        has_domains_portfolio_permission=lambda self, portfolio: True,
+    )
+    def test_portfolio_role_summary_member_domain_requestor_domain_manager(self):
+        # Test if the user has 'Member', 'Domain requestor', and 'Domain manager' roles
+        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain requestor", "Domain manager"])
+
+    @patch.multiple(
+        User, has_base_portfolio_permission=lambda self, portfolio: True, has_edit_requests=lambda self, portfolio: True
+    )
+    def test_portfolio_role_summary_member_domain_requestor(self):
+        # Test if the user has 'Member' and 'Domain requestor' roles
+        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain requestor"])
+
+    @patch.multiple(
+        User,
+        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_domains_portfolio_permission=lambda self, portfolio: True,
+    )
+    def test_portfolio_role_summary_member_domain_manager(self):
+        # Test if the user has 'Member' and 'Domain manager' roles
+        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain manager"])
+
+    @patch.multiple(User, has_base_portfolio_permission=lambda self, portfolio: True)
+    def test_portfolio_role_summary_member(self):
+        # Test if the user is recognized as a Member
+        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Member"])
+
+    def test_portfolio_role_summary_empty(self):
+        # Test if the user has no roles
+        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), [])
 
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
@@ -2435,3 +2498,103 @@ class TestPortfolio(TestCase):
 
         self.assertEqual(portfolio.urbanization, "test123")
         self.assertEqual(portfolio.state_territory, DomainRequest.StateTerritoryChoices.PUERTO_RICO)
+
+
+class TestAllowedEmail(TestCase):
+    """Tests our allowed email whitelist"""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        self.email = "mayor@igorville.gov"
+        self.email_2 = "cake@igorville.gov"
+        self.plus_email = "mayor+1@igorville.gov"
+        self.invalid_plus_email = "1+mayor@igorville.gov"
+
+    def tearDown(self):
+        super().tearDown()
+        AllowedEmail.objects.all().delete()
+
+    def test_email_in_whitelist(self):
+        """Test for a normal email defined in the whitelist"""
+        AllowedEmail.objects.create(email=self.email)
+        is_allowed = AllowedEmail.is_allowed_email(self.email)
+        self.assertTrue(is_allowed)
+
+    def test_email_not_in_whitelist(self):
+        """Test for a normal email NOT defined in the whitelist"""
+        # Check a email not in the list
+        is_allowed = AllowedEmail.is_allowed_email(self.email_2)
+        self.assertFalse(AllowedEmail.objects.filter(email=self.email_2).exists())
+        self.assertFalse(is_allowed)
+
+    def test_plus_email_in_whitelist(self):
+        """Test for a +1 email defined in the whitelist"""
+        AllowedEmail.objects.create(email=self.plus_email)
+        plus_email_allowed = AllowedEmail.is_allowed_email(self.plus_email)
+        self.assertTrue(plus_email_allowed)
+
+    def test_plus_email_not_in_whitelist(self):
+        """Test for a +1 email not defined in the whitelist"""
+        # This email should not be allowed.
+        # Checks that we do more than just a regex check on the record.
+        plus_email_allowed = AllowedEmail.is_allowed_email(self.plus_email)
+        self.assertFalse(plus_email_allowed)
+
+    def test_plus_email_not_in_whitelist_but_base_email_is(self):
+        """
+        Test for a +1 email NOT defined in the whitelist, but the normal one is defined.
+        Example:
+        normal (in whitelist) - joe@igorville.com
+        +1 email (not in whitelist) - joe+1@igorville.com
+        """
+        AllowedEmail.objects.create(email=self.email)
+        base_email_allowed = AllowedEmail.is_allowed_email(self.email)
+        self.assertTrue(base_email_allowed)
+
+        # The plus email should also be allowed
+        plus_email_allowed = AllowedEmail.is_allowed_email(self.plus_email)
+        self.assertTrue(plus_email_allowed)
+
+        # This email shouldn't exist in the DB
+        self.assertFalse(AllowedEmail.objects.filter(email=self.plus_email).exists())
+
+    def test_plus_email_in_whitelist_but_base_email_is_not(self):
+        """
+        Test for a +1 email defined in the whitelist, but the normal is NOT defined.
+        Example:
+        normal (not in whitelist) - joe@igorville.com
+        +1 email (in whitelist) - joe+1@igorville.com
+        """
+        AllowedEmail.objects.create(email=self.plus_email)
+        plus_email_allowed = AllowedEmail.is_allowed_email(self.plus_email)
+        self.assertTrue(plus_email_allowed)
+
+        # The base email should also be allowed
+        base_email_allowed = AllowedEmail.is_allowed_email(self.email)
+        self.assertTrue(base_email_allowed)
+
+        # This email shouldn't exist in the DB
+        self.assertFalse(AllowedEmail.objects.filter(email=self.email).exists())
+
+    def test_invalid_regex_for_plus_email(self):
+        """
+        Test for an invalid email that contains a '+'.
+        This base email should still pass, but the regex rule should not.
+
+        Our regex should only pass for emails that end with a '+'
+        Example:
+        Invalid email - 1+joe@igorville.com
+        Valid email: - joe+1@igorville.com
+        """
+        AllowedEmail.objects.create(email=self.invalid_plus_email)
+        invalid_plus_email = AllowedEmail.is_allowed_email(self.invalid_plus_email)
+        # We still expect that this will pass, it exists in the db
+        self.assertTrue(invalid_plus_email)
+
+        # The base email SHOULD NOT pass, as it doesn't match our regex
+        base_email = AllowedEmail.is_allowed_email(self.email)
+        self.assertFalse(base_email)
+
+        # For good measure, also check the other plus email
+        regular_plus_email = AllowedEmail.is_allowed_email(self.plus_email)
+        self.assertFalse(regular_plus_email)
