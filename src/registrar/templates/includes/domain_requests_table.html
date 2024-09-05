@@ -3,7 +3,7 @@
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_domain_requests_json' as url %}
 <span id="get_domain_requests_json_url" class="display-none">{{url}}</span>
-<section class="section--outlined domain-requests" id="domain-requests">
+<section class="section-outlined domain-requests{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domain-requests">
     <div class="grid-row">
       {% if not portfolio %}
         <div class="mobile:grid-col-12 desktop:grid-col-6">

@@ -45,6 +45,8 @@ from registrar.models import (
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockDbForSharedTests,
@@ -2066,6 +2068,7 @@ class TestPortfolioAdmin(TestCase):
         DomainRequest.objects.all().delete()
         Domain.objects.all().delete()
         Portfolio.objects.all().delete()
+        User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_created_on_display(self):
@@ -2117,3 +2120,91 @@ class TestPortfolioAdmin(TestCase):
 
         domain_requests = self.admin.domain_requests(self.portfolio)
         self.assertIn("2 domain requests", domain_requests)
+
+    @less_console_noise_decorator
+    def test_portfolio_members_display(self):
+        """Tests the custom portfolio members field, admin and member sections"""
+        admin_user_1 = User.objects.create(
+            username="testuser1",
+            first_name="Gerald",
+            last_name="Meoward",
+            title="Captain",
+            email="meaoward@gov.gov",
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_1, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        admin_user_2 = User.objects.create(
+            username="testuser2",
+            first_name="Arnold",
+            last_name="Poopy",
+            title="Major",
+            email="poopy@gov.gov",
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_2, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        admin_user_3 = User.objects.create(
+            username="testuser3",
+            first_name="Mad",
+            last_name="Max",
+            title="Road warrior",
+            email="madmax@gov.gov",
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_3, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+
+        admin_user_4 = User.objects.create(
+            username="testuser4",
+            first_name="Agent",
+            last_name="Smith",
+            title="Program",
+            email="thematrix@gov.gov",
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_4,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
+        )
+
+        display_admins = self.admin.display_admins(self.portfolio)
+
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_1.pk}/change/">Gerald Meoward meaoward@gov.gov</a>',
+            display_admins,
+        )
+        self.assertIn("Captain", display_admins)
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_2.pk}/change/">Arnold Poopy poopy@gov.gov</a>', display_admins
+        )
+        self.assertIn("Major", display_admins)
+
+        display_members_summary = self.admin.display_members_summary(self.portfolio)
+
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_3.pk}/change/">Mad Max madmax@gov.gov</a>',
+            display_members_summary,
+        )
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_4.pk}/change/">Agent Smith thematrix@gov.gov</a>',
+            display_members_summary,
+        )
+
+        display_members = self.admin.display_members(self.portfolio)
+
+        self.assertIn("Mad Max", display_members)
+        self.assertIn("<span class='usa-tag'>Member</span>", display_members)
+        self.assertIn("Road warrior", display_members)
+        self.assertIn("Agent Smith", display_members)
+        self.assertIn("<span class='usa-tag'>Domain requestor</span>", display_members)
+        self.assertIn("Program", display_members)
