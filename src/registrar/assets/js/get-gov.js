@@ -1616,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (portfolioValue) {
               markupCreatorRow = `
                 <td>
-                    <span class="text-wrap">${request.creator ? request.creator : ''}</span>
+                    <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
                 </td>
               `
             }
@@ -1644,7 +1644,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   role="button" 
                   id="button-toggle-delete-domain-alert-${request.id}"
                   href="#toggle-delete-domain-alert-${request.id}"
-                  class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger"
                   aria-controls="toggle-delete-domain-alert-${request.id}"
                   data-open-modal
                 >
@@ -1732,7 +1732,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       role="button" 
                       id="button-toggle-delete-domain-alert-${request.id}"
                       href="#toggle-delete-domain-alert-${request.id}"
-                      class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                      class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger"
                       aria-controls="toggle-delete-domain-alert-${request.id}"
                       data-open-modal
                     >
