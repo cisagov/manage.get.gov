@@ -1498,7 +1498,7 @@ class TestUser(TestCase):
             user=self.user,
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
+                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             ],
         )
 
