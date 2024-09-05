@@ -829,8 +829,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Test Submitted Status from started
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
@@ -911,8 +912,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Test Submitted Status from started
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
@@ -969,8 +971,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Test Submitted Status
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
@@ -1005,8 +1008,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason DOMAIN_PURPOSE and test email
         self.transition_state_and_send_email(
@@ -1041,8 +1045,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason REQUESTOR and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1076,8 +1081,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason SECOND_DOMAIN_REASONING and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1109,8 +1115,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason CONTACTS_OR_ORGANIZATION_LEGITIMACY and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1146,8 +1153,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason ORGANIZATION_ELIGIBILITY and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1182,8 +1190,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1216,8 +1225,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelist user email
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1304,8 +1314,9 @@ class TestDomainRequestAdmin(MockEppLib):
             title="Treat inspector",
         )
 
-        # Create a sample domain request
+        # Create a sample domain request and whitelists user email
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Test Submitted Status
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
