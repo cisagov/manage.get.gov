@@ -295,7 +295,7 @@ class UserFixture:
                 logger.warning(f"Could not add email to whitelist for {first_name} {last_name}.")
 
         # Load additional emails
-        allowed_emails.extend(additional_emails)
+        allowed_emails.extend([AllowedEmail(email=email) for email in additional_emails])
 
         if allowed_emails:
             AllowedEmail.objects.bulk_create(allowed_emails)
