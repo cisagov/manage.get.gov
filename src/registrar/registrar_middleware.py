@@ -144,8 +144,15 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
-        # set the portfolio in the session if it is not set
-        if "portfolio" not in request.session or request.session["portfolio"] is None:
+        old_updated_at = None
+        if request.session.get("portfolio"):
+            old_updated_at = request.session.get("portfolio__updated_at")
+            request.session["portfolio__updated_at"] = request.session.get("portfolio").updated_at
+
+        should_update_portfolio = (
+            not request.session.get("portfolio") or old_updated_at != request.session.get("portfolio__updated_at")
+        )
+        if request.user.is_org_user(request) or should_update_portfolio:
             # if multiple portfolios are allowed for this user
             if flag_is_active(request, "multiple_portfolios"):
                 # NOTE: we will want to change later to have a workflow for selecting
@@ -156,8 +163,8 @@ class CheckPortfolioMiddleware:
             else:
                 request.session["portfolio"] = None
 
-        if request.session["portfolio"] is not None and current_path == self.home:
-            if request.user.is_org_user(request):
+        if request.session.get("portfolio"):
+            if current_path == self.home:
                 if request.user.has_domains_portfolio_permission(request.session["portfolio"]):
                     portfolio_redirect = reverse("domains")
                 else:

@@ -47,6 +47,8 @@ def get_domain_requests_ids_from_request(request):
     """
     portfolio = request.GET.get("portfolio")
     if portfolio:
+        # Question:
+        # Do we need to exclude started if the creator isn't the current request user
         domain_requests = DomainRequest.objects.filter(portfolio=portfolio).exclude(
             status=DomainRequest.DomainRequestStatus.APPROVED
         )
