@@ -16,6 +16,24 @@
             <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
           </svg><span class="margin-left-05">Previous step</span>
         </a>
+        {% else %}
+          {% if portfolio %}
+            {% url 'domain-requests' as url_2 %}
+            <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
+              <ol class="usa-breadcrumb__list">
+                <li class="usa-breadcrumb__list-item">
+                  <a href="{{ url_2 }}" class="usa-breadcrumb__link"><span>Domain requests</span></a>
+                </li>
+                <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+                  {% if requested_domain__name %}
+                  <span>{{ requested_domain__name }}</span>
+                  {% else %}
+                  <span>Start a new domain request</span>
+                  {% endif %}
+                </li>
+              </ol>
+            </nav>
+          {% endif %}
         {% endif %}
 
 {% block form_messages %}
