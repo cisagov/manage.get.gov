@@ -1611,6 +1611,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // Even if the request is not deletable, we may need these empty strings for the td if the deletable column is displayed
             let modalTrigger = '';
 
+            let markupCreatorRow = '';
+
+            if (portfolioValue) {
+              markupCreatorRow = `
+                <td>
+                    <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
+                </td>
+              `
+            }
+
             // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
             if (request.is_deletable) {
               let modalHeading = '';
@@ -1634,7 +1644,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   role="button" 
                   id="button-toggle-delete-domain-alert-${request.id}"
                   href="#toggle-delete-domain-alert-${request.id}"
-                  class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger"
                   aria-controls="toggle-delete-domain-alert-${request.id}"
                   data-open-modal
                 >
@@ -1707,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   <div class="usa-accordion__heading">
                     <button
                       type="button"
-                      class="usa-button usa-button--unstyled usa-accordion__button usa-button--more-actions"
+                      class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
                       aria-expanded="false"
                       aria-controls="more-actions-${request.id}"
                     >
@@ -1722,7 +1732,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       role="button" 
                       id="button-toggle-delete-domain-alert-${request.id}"
                       href="#toggle-delete-domain-alert-${request.id}"
-                      class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                      class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger"
                       aria-controls="toggle-delete-domain-alert-${request.id}"
                       data-open-modal
                     >
@@ -1737,7 +1747,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
 
-
             const row = document.createElement('tr');
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="Domain name">
@@ -1746,6 +1755,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <td data-sort-value="${new Date(request.last_submitted_date).getTime()}" data-label="Date submitted">
                 ${submissionDate}
               </td>
+              ${markupCreatorRow}
               <td data-label="Status">
                 ${request.status}
               </td>

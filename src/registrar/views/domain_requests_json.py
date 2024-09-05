@@ -121,6 +121,7 @@ def serialize_domain_request(domain_request, user):
         "last_submitted_date": domain_request.last_submitted_date,
         "status": domain_request.get_status_display(),
         "created_at": format(domain_request.created_at, "c"),  # Serialize to ISO 8601
+        "creator": domain_request.creator.email,
         "id": domain_request.id,
         "is_deletable": is_deletable,
         "action_url": action_url_map.get(action_label),
