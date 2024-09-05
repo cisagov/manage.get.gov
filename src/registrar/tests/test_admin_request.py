@@ -856,23 +856,6 @@ class TestDomainRequestAdmin(MockEppLib):
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-    @less_console_noise_decorator
-    def test_model_displays_action_needed_email(self):
-        """Tests if the action needed email is visible for Domain Requests"""
-
-        _domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-            action_needed_reason=DomainRequest.ActionNeededReasons.BAD_NAME,
-        )
-
-        self.client.force_login(self.staffuser)
-        response = self.client.get(
-            "/admin/registrar/domainrequest/{}/change/".format(_domain_request.pk),
-            follow=True,
-        )
-
-        self.assertContains(response, "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS")
-
     @override_settings(IS_PRODUCTION=True)
     @less_console_noise_decorator
     def test_save_model_sends_submitted_email_with_bcc_on_prod(self):

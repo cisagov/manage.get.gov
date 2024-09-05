@@ -1,21 +1,20 @@
-from django.http import HttpRequest
 from registrar.models.domain_request import DomainRequest
 from waffle.decorators import flag_is_active
 from django.template.loader import get_template
 
 
 def get_all_action_needed_reason_emails(request, domain_request):
-        """Returns a dictionary of every action needed reason and its associated email
-        for this particular domain request."""
+    """Returns a dictionary of every action needed reason and its associated email
+    for this particular domain request."""
 
-        emails = {}
-        for action_needed_reason in domain_request.ActionNeededReasons:
-            # Map the action_needed_reason to its default email
-            emails[action_needed_reason.value] = get_action_needed_reason_default_email(
-                request, domain_request, action_needed_reason.value
-            )
+    emails = {}
+    for action_needed_reason in domain_request.ActionNeededReasons:
+        # Map the action_needed_reason to its default email
+        emails[action_needed_reason.value] = get_action_needed_reason_default_email(
+            request, domain_request, action_needed_reason.value
+        )
 
-        return emails
+    return emails
 
 
 def get_action_needed_reason_default_email(request, domain_request, action_needed_reason):
