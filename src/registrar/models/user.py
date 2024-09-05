@@ -223,20 +223,27 @@ class User(AbstractUser):
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
-    def has_domain_requests_portfolio_permission(self, portfolio):
-        return self._has_portfolio_permission(
-            portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
-        ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
-
-    def has_view_all_domains_permission(self, portfolio):
+    def has_view_all_domains_portfolio_permission(self, portfolio):
         """Determines if the current user can view all available domains in a given portfolio"""
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+    
+    def has_requests_portfolio_permission(self, portfolio):
+        return self._has_portfolio_permission(
+            portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+        ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
 
+    def has_view_all_requests_portfolio_permission(self, portfolio):
+        """Determines if the current user can view all available domain requests in a given portfolio"""
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+
+    def has_edit_request_portfolio_permission(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+    
     # Field specific permission checks
-    def has_view_suborganization(self, portfolio):
+    def has_view_suborganization_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
 
-    def has_edit_suborganization(self, portfolio):
+    def has_edit_suborganization_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     def get_first_portfolio(self):
@@ -245,34 +252,31 @@ class User(AbstractUser):
             return permission.portfolio
         return None
 
-    def has_edit_requests(self, portfolio):
-        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
-
     def portfolio_role_summary(self, portfolio):
         """Returns a list of roles based on the user's permissions."""
         roles = []
 
         # Define the conditions and their corresponding roles
         conditions_roles = [
-            (self.has_edit_suborganization(portfolio), ["Admin"]),
+            (self.has_edit_suborganization_portfolio_permission(portfolio), ["Admin"]),
             (
-                self.has_view_all_domains_permission(portfolio)
-                and self.has_domain_requests_portfolio_permission(portfolio)
-                and self.has_edit_requests(portfolio),
+                self.has_view_all_domains_portfolio_permission(portfolio)
+                and self.has_requests_portfolio_permission(portfolio)
+                and self.has_edit_request_portfolio_permission(portfolio),
                 ["View-only admin", "Domain requestor"],
             ),
             (
-                self.has_view_all_domains_permission(portfolio)
-                and self.has_domain_requests_portfolio_permission(portfolio),
+                self.has_view_all_domains_portfolio_permission(portfolio)
+                and self.has_requests_portfolio_permission(portfolio),
                 ["View-only admin"],
             ),
             (
                 self.has_base_portfolio_permission(portfolio)
-                and self.has_edit_requests(portfolio)
+                and self.has_edit_request_portfolio_permission(portfolio)
                 and self.has_domains_portfolio_permission(portfolio),
                 ["Domain requestor", "Domain manager"],
             ),
-            (self.has_base_portfolio_permission(portfolio) and self.has_edit_requests(portfolio), ["Domain requestor"]),
+            (self.has_base_portfolio_permission(portfolio) and self.has_edit_request_portfolio_permission(portfolio), ["Domain requestor"]),
             (
                 self.has_base_portfolio_permission(portfolio) and self.has_domains_portfolio_permission(portfolio),
                 ["Domain manager"],
@@ -443,7 +447,7 @@ class User(AbstractUser):
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
         portfolio = request.session.get("portfolio")
-        if self.is_org_user(request) and self.has_view_all_domains_permission(portfolio):
+        if self.is_org_user(request) and self.has_view_all_domains_portfolio_permission(portfolio):
             return DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
         else:
             return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)

@@ -21,7 +21,6 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     EDIT_MEMBER = "edit_member", "Create and edit members"
 
     VIEW_ALL_REQUESTS = "view_all_requests", "View all requests"
-    VIEW_CREATED_REQUESTS = "view_created_requests", "View created requests"
     EDIT_REQUESTS = "edit_requests", "Create and edit requests"
 
     VIEW_PORTFOLIO = "view_portfolio", "View organization"

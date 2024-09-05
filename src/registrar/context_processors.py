@@ -66,20 +66,20 @@ def portfolio_permissions(request):
             return {
                 "has_base_portfolio_permission": request.user.has_base_portfolio_permission(portfolio),
                 "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(portfolio),
-                "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(
+                "has_requests_portfolio_permission": request.user.has_requests_portfolio_permission(
                     portfolio
                 ),
-                "has_view_suborganization": request.user.has_view_suborganization(portfolio),
-                "has_edit_suborganization": request.user.has_edit_suborganization(portfolio),
+                "has_view_suborganization_portfolio_permission": request.user.has_view_suborganization_portfolio_permission(portfolio),
+                "has_edit_suborganization_portfolio_permission": request.user.has_edit_suborganization_portfolio_permission(portfolio),
                 "portfolio": portfolio,
                 "has_organization_feature_flag": True,
             }
         return {
             "has_base_portfolio_permission": False,
             "has_domains_portfolio_permission": False,
-            "has_domain_requests_portfolio_permission": False,
-            "has_view_suborganization": False,
-            "has_edit_suborganization": False,
+            "has_requests_portfolio_permission": False,
+            "has_view_suborganization_portfolio_permission": False,
+            "has_edit_suborganization_portfolio_permission": False,
             "portfolio": None,
             "has_organization_feature_flag": False,
         }
@@ -89,9 +89,9 @@ def portfolio_permissions(request):
         return {
             "has_base_portfolio_permission": False,
             "has_domains_portfolio_permission": False,
-            "has_domain_requests_portfolio_permission": False,
-            "has_view_suborganization": False,
-            "has_edit_suborganization": False,
+            "has_requests_portfolio_permission": False,
+            "has_view_suborganization_portfolio_permission": False,
+            "has_edit_suborganization_portfolio_permission": False,
             "portfolio": None,
             "has_organization_feature_flag": False,
         }

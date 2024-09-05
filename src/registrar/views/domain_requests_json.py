@@ -12,7 +12,7 @@ def get_domain_requests_json(request):
     """Given the current request,
     get all domain requests that are associated with the request user and exclude the APPROVED ones"""
 
-    domain_request_ids = get_domain_requests_ids_from_request(request)
+    domain_request_ids = get_domain_request_ids_from_request(request)
 
     objects = DomainRequest.objects.filter(id__in=domain_request_ids)
     unfiltered_total = objects.count()
@@ -24,7 +24,7 @@ def get_domain_requests_json(request):
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
-    domain_requests = [serialize_domain_request(domain_request) for domain_request in page_obj.object_list]
+    domain_requests = [serialize_domain_request(domain_request, request.user) for domain_request in page_obj.object_list]
 
     return JsonResponse(
         {
@@ -39,22 +39,20 @@ def get_domain_requests_json(request):
     )
 
 
-def get_domain_requests_ids_from_request(request):
+def get_domain_request_ids_from_request(request):
     """Get domain request ids from request.
 
     If portfolio specified, return domain request ids associated with portfolio.
     Otherwise, return domain request ids associated with request.user.
     """
     portfolio = request.GET.get("portfolio")
+    filter_condition = Q(creator=request.user)
     if portfolio:
-        domain_requests = DomainRequest.objects.filter(portfolio=portfolio).exclude(
-            status=DomainRequest.DomainRequestStatus.APPROVED
-        )
-    else:
-        domain_requests = DomainRequest.objects.filter(creator=request.user).exclude(
-            status=DomainRequest.DomainRequestStatus.APPROVED
-        )
-
+        if request.user.is_org_user(request) and request.user.has_view_all_requests_portfolio_permission(portfolio):
+            filter_condition = Q(portfolio=portfolio)
+        else:
+            filter_condition = Q(portfolio=portfolio, creator=request.user)
+    domain_requests = DomainRequest.objects.filter(filter_condition).exclude(status=DomainRequest.DomainRequestStatus.APPROVED)
     return domain_requests.values_list("id", flat=True)
 
 
@@ -86,41 +84,38 @@ def apply_sorting(queryset, request):
     return queryset.order_by(sort_by)
 
 
-def serialize_domain_request(domain_request):
+def serialize_domain_request(domain_request, user):
+    # Determine if the request is deletable
     is_deletable = domain_request.status in [
         DomainRequest.DomainRequestStatus.STARTED,
         DomainRequest.DomainRequestStatus.WITHDRAWN,
     ]
-    action_url = (
-        reverse("edit-domain-request", kwargs={"id": domain_request.id})
-        if domain_request.status
-        in [
-            DomainRequest.DomainRequestStatus.STARTED,
-            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-            DomainRequest.DomainRequestStatus.WITHDRAWN,
-        ]
-        else reverse("domain-request-status", kwargs={"pk": domain_request.id})
-    )
-    action_label = (
-        "Edit"
-        if domain_request.status
-        in [
-            DomainRequest.DomainRequestStatus.STARTED,
-            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-            DomainRequest.DomainRequestStatus.WITHDRAWN,
-        ]
-        else "Manage"
-    )
-    svg_icon = (
-        "edit"
-        if domain_request.status
-        in [
-            DomainRequest.DomainRequestStatus.STARTED,
-            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-            DomainRequest.DomainRequestStatus.WITHDRAWN,
-        ]
-        else "settings"
-    )
+
+    # Determine action label based on user permissions and request status
+    editable_statuses = [
+        DomainRequest.DomainRequestStatus.STARTED,
+        DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+        DomainRequest.DomainRequestStatus.WITHDRAWN,
+    ]
+
+    if user.has_edit_request_portfolio_permission and domain_request.creator == user:
+        action_label = "Edit" if domain_request.status in editable_statuses else "Manage"
+    else:
+        action_label = "View"
+
+    # Map the action label to corresponding URLs and icons
+    action_url_map = {
+        "Edit": reverse("edit-domain-request", kwargs={"id": domain_request.id}),
+        "Manage": reverse("domain-request-status", kwargs={"pk": domain_request.id}),
+        "View": "#"
+    }
+
+    svg_icon_map = {
+        "Edit": "edit",
+        "Manage": "settings",
+        "View": "visibility"
+    }
+
     return {
         "requested_domain": domain_request.requested_domain.name if domain_request.requested_domain else None,
         "last_submitted_date": domain_request.last_submitted_date,
@@ -128,7 +123,7 @@ def serialize_domain_request(domain_request):
         "created_at": format(domain_request.created_at, "c"),  # Serialize to ISO 8601
         "id": domain_request.id,
         "is_deletable": is_deletable,
-        "action_url": action_url,
+        "action_url": action_url_map.get(action_label),
         "action_label": action_label,
-        "svg_icon": svg_icon,
+        "svg_icon": svg_icon_map.get(action_label),
     }

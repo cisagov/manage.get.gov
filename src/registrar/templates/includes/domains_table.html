@@ -156,7 +156,7 @@
             <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
             <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
             <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
-            {% if portfolio and has_view_suborganization %}
+            {% if portfolio and has_view_suborganization_portfolio_permission %}
               <th data-sortable="suborganization" scope="col" role="columnheader">Suborganization</th>
             {% endif %}
             <th 
