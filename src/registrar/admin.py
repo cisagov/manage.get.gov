@@ -1,8 +1,6 @@
 from datetime import date
 import logging
 import copy
-import json
-from django.template.loader import get_template
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce

@@ -133,7 +133,6 @@ class GetActionNeededEmailForUserJsonTest(TestCase):
     @less_console_noise_decorator
     def test_get_action_needed_email_for_user_json_superuser(self):
         """Test that a superuser can fetch the action needed email."""
-        p = "adminpass"
         self.client.force_login(self.superuser)
 
         response = self.client.get(
