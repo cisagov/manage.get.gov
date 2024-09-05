@@ -2044,17 +2044,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Use a MutationObserver to watch for changes in the dropdown list
       const dropdownList = comboBox.querySelector(`#${input.id}--list`);
-      // TODO: customize blank value
-      // const isSuborgComboBox = comboBox.querySelector('#id_sub_organization--list');
       const observer = new MutationObserver(function(mutations) {
           mutations.forEach(function(mutation) {
               if (mutation.type === "childList") {
-                // TODO: customize blank value
-                // if (isSuborgComboBox) {
-                //   addBlankOption(clearInputButton, dropdownList, initialValue, 'No suborganization');
-                // } else {
-                //   addBlankOption(clearInputButton, dropdownList, initialValue);
-                // }
                 addBlankOption(clearInputButton, dropdownList, initialValue);
               }
           });
@@ -2110,8 +2102,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // TODO: customize blank value
-  // function addBlankOption(clearInputButton, dropdownList, initialValue, customBlank) {
   function addBlankOption(clearInputButton, dropdownList, initialValue) {
     if (dropdownList && !dropdownList.querySelector('[data-value=""]') && !isTyping) {
         const blankOption = document.createElement("li");
@@ -2121,8 +2111,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!initialValue){
           blankOption.classList.add("usa-combo-box__list-option--selected")
         }
-        // TODO: customize blank value
-        // customBlank ? blankOption.textContent = customBlank : blankOption.textContent = "---------";
         blankOption.textContent = "⎯";
 
         dropdownList.insertBefore(blankOption, dropdownList.firstChild);
