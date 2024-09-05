@@ -192,3 +192,8 @@ abbr[title] {
     max-width: 50ch;
   }
 }
+
+// Boost this USWDS utility class for the accordions in the portfolio requests table
+.left-auto {
+  left: auto!important;
+}

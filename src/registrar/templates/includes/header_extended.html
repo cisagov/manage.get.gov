@@ -16,7 +16,7 @@
             <li class="usa-nav__primary-item">
                 {% if has_domains_portfolio_permission %}
                     {% url 'domains' as url %}
-                {%else %}
+                {% else %}
                     {% url 'no-portfolio-domains' as url %}
                 {% endif %}
                 <a href="{{ url }}" class="usa-nav-link{% if 'domain'|in_path:request.path %} usa-current{% endif %}"> 
@@ -29,14 +29,38 @@
                 </a>
             </li>
 
-            {% if has_domain_requests_portfolio_permission %}
-                <li class="usa-nav__primary-item">
+            <li class="usa-nav__primary-item">
+                {% if has_domain_requests_portfolio_permission %}
                     {% url 'domain-requests' as url %}
+                    <button
+                        type="button"
+                        class="usa-accordion__button usa-nav__link{% if 'request'|in_path:request.path %} usa-current{% endif %}"
+                        aria-expanded="false"
+                        aria-controls="basic-nav-section-two"
+                    >
+                        <span>Domain requests</span>
+                    </button>
+                    <ul id="basic-nav-section-two" class="usa-nav__submenu">
+                        <li class="usa-nav__submenu-item">
+                            <a href="{{ url }}"
+                            ><span>Domain requests</span></a
+                            >
+                        </li>
+                        <li class="usa-nav__submenu-item">
+                            <a href="{% url 'domain-request:' %}"
+                            ><span>Start a new domain request</span></a
+                            >
+                        </li>
+                    </ul>
+                {% else %}
+                    {% url 'no-portfolio-requests' as url %}
                     <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 
                     Domain requests
                     </a>
-                </li>
-            {% endif %}
+                {% endif %}
+              </li>
+
+
             <li class="usa-nav__primary-item">
                 <a href="#" class="usa-nav-link">
                     Members

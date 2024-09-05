@@ -12,9 +12,9 @@ def get_domain_requests_json(request):
     """Given the current request,
     get all domain requests that are associated with the request user and exclude the APPROVED ones"""
 
-    domain_requests = DomainRequest.objects.filter(creator=request.user).exclude(
-        status=DomainRequest.DomainRequestStatus.APPROVED
-    )
+    domain_request_ids = get_domain_requests_ids_from_request(request)
+
+    domain_requests = DomainRequest.objects.filter(id__in=domain_request_ids)
     unfiltered_total = domain_requests.count()
 
     # Handle sorting
@@ -97,3 +97,21 @@ def get_domain_requests_json(request):
             "unfiltered_total": unfiltered_total,
         }
     )
+
+def get_domain_requests_ids_from_request(request):
+    """Get domain request ids from request.
+
+    If portfolio specified, return domain request ids associated with portfolio.
+    Otherwise, return domain request ids associated with request.user.
+    """
+    portfolio = request.GET.get("portfolio")
+    if portfolio:
+        domain_requests = DomainRequest.objects.filter(portfolio=portfolio).exclude(
+            status=DomainRequest.DomainRequestStatus.APPROVED
+        )
+    else:
+        domain_requests = DomainRequest.objects.filter(creator=request.user).exclude(
+            status=DomainRequest.DomainRequestStatus.APPROVED
+        )
+        
+    return domain_requests.values_list("id", flat=True)

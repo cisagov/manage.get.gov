@@ -42,12 +42,41 @@ class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
 
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
-    """Some users have access  to the underlying portfolio, but not any domains.
+    """Some users have access to the underlying portfolio, but not any domains.
     This is a custom view which explains that to the user - and denotes who to contact.
     """
 
     model = Portfolio
-    template_name = "no_portfolio_domains.html"
+    template_name = "portfolio_no_domains.html"
+
+    def get(self, request):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        portfolio = self.request.session.get("portfolio")
+        if portfolio:
+            admin_ids = UserPortfolioPermission.objects.filter(
+                portfolio=portfolio,
+                roles__overlap=[
+                    UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                ],
+            ).values_list("user__id", flat=True)
+
+            admin_users = User.objects.filter(id__in=admin_ids)
+            context["portfolio_administrators"] = admin_users
+        return context
+
+
+class PortfolioNoDomainRequestsView(NoPortfolioDomainsPermissionView, View):
+    """Some users have access to the underlying portfolio, but not any domain requests.
+    This is a custom view which explains that to the user - and denotes who to contact.
+    """
+
+    model = Portfolio
+    template_name = "portfolio_no_domain_requests.html"
 
     def get(self, request):
         return render(request, self.template_name, context=self.get_context_data())

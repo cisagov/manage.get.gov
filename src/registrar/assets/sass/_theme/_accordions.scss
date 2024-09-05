@@ -1,6 +1,7 @@
 @use "uswds-core" as *;
 
-.usa-accordion--select {
+.usa-accordion--select,
+.usa-accordion--more-actions {
     display: inline-block;
     width: auto;
     position: relative;
