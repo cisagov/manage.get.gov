@@ -244,7 +244,7 @@ class User(AbstractUser):
         if permission:
             return permission.portfolio
         return None
-    
+
     def get_portfolios(self):
         return self.portfolio_permissions.all()
 
