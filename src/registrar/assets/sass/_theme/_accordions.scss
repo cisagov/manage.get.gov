@@ -32,3 +32,8 @@
         margin-top: 0 !important;
     }
 }
+
+tr:last-child .usa-accordion--more-actions .usa-accordion__content {
+    top: auto;
+    bottom: 20px;
+}
