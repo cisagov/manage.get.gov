@@ -17,7 +17,7 @@ from .common import MockSESClient, completed_domain_request, create_test_user
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
-
+from django.test import Client
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 class TestPortfolio(WebTest):
     def setUp(self):
         super().setUp()
+        self.client = Client()
         self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
@@ -644,6 +645,52 @@ class TestPortfolio(WebTest):
         # create new request btn
         self.assertNotContains(requests_page, 'Start a new domain request')
 
-    @skip("TODO")
+    @less_console_noise_decorator
     def test_portfolio_cache_updates_when_modified(self):
-        pass
+        """Test that the portfolio in session updates when the portfolio is modified"""
+        self.client.force_login(self.user)
+        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
+        
+        with override_flag("organization_feature", active=True):
+            # Initial request to set the portfolio in session
+            response = self.client.get(reverse("home"), follow=True)
+
+            portfolio = self.client.session.get("portfolio")
+            self.assertEqual(portfolio.organization_name, "Hotel California")
+            self.assertContains(response, "Hotel California")
+            
+            # Modify the portfolio
+            self.portfolio.organization_name = "Updated Hotel California"
+            self.portfolio.save()
+            
+            # Make another request
+            response = self.client.get(reverse("home"), follow=True)
+            
+            # Check if the updated portfolio name is in the response
+            self.assertContains(response, "Updated Hotel California")
+
+            # Verify that the session contains the updated portfolio
+            portfolio = self.client.session.get("portfolio")
+            self.assertEqual(portfolio.organization_name, "Updated Hotel California")
+
+    @less_console_noise_decorator
+    def test_portfolio_cache_updates_when_flag_disabled_while_logged_in(self):
+        """Test that the portfolio in session is set to None when the organization_feature flag is disabled"""
+        self.client.force_login(self.user)
+        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
+        
+        with override_flag("organization_feature", active=True):
+            # Initial request to set the portfolio in session
+            response = self.client.get(reverse("home"), follow=True)
+            portfolio = self.client.session.get("portfolio")
+            self.assertEqual(portfolio.organization_name, "Hotel California")
+            self.assertContains(response, "Hotel California")
+        
+        # Disable the organization_feature flag
+        with override_flag("organization_feature", active=False):
+            # Make another request
+            response = self.client.get(reverse("home"))
+            self.assertIsNone(self.client.session.get("portfolio"))
+            self.assertNotContains(response, "Hotel California")
