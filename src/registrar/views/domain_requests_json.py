@@ -24,7 +24,9 @@ def get_domain_requests_json(request):
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
-    domain_requests = [serialize_domain_request(domain_request, request.user) for domain_request in page_obj.object_list]
+    domain_requests = [
+        serialize_domain_request(domain_request, request.user) for domain_request in page_obj.object_list
+    ]
 
     return JsonResponse(
         {
@@ -52,7 +54,9 @@ def get_domain_request_ids_from_request(request):
             filter_condition = Q(portfolio=portfolio)
         else:
             filter_condition = Q(portfolio=portfolio, creator=request.user)
-    domain_requests = DomainRequest.objects.filter(filter_condition).exclude(status=DomainRequest.DomainRequestStatus.APPROVED)
+    domain_requests = DomainRequest.objects.filter(filter_condition).exclude(
+        status=DomainRequest.DomainRequestStatus.APPROVED
+    )
     return domain_requests.values_list("id", flat=True)
 
 
@@ -107,14 +111,10 @@ def serialize_domain_request(domain_request, user):
     action_url_map = {
         "Edit": reverse("edit-domain-request", kwargs={"id": domain_request.id}),
         "Manage": reverse("domain-request-status", kwargs={"pk": domain_request.id}),
-        "View": "#"
+        "View": "#",
     }
 
-    svg_icon_map = {
-        "Edit": "edit",
-        "Manage": "settings",
-        "View": "visibility"
-    }
+    svg_icon_map = {"Edit": "edit", "Manage": "settings", "View": "visibility"}
 
     return {
         "requested_domain": domain_request.requested_domain.name if domain_request.requested_domain else None,

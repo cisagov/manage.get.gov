@@ -149,8 +149,8 @@ class CheckPortfolioMiddleware:
             old_updated_at = request.session.get("portfolio__updated_at")
             request.session["portfolio__updated_at"] = request.session.get("portfolio").updated_at
 
-        should_update_portfolio = (
-            not request.session.get("portfolio") or old_updated_at != request.session.get("portfolio__updated_at")
+        should_update_portfolio = not request.session.get("portfolio") or old_updated_at != request.session.get(
+            "portfolio__updated_at"
         )
         if request.user.is_org_user(request) or should_update_portfolio:
             # if multiple portfolios are allowed for this user
