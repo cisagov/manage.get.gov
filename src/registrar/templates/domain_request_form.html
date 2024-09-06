@@ -16,6 +16,8 @@
             <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
           </svg><span class="margin-left-05">Previous step</span>
         </a>
+        {% comment %}
+        TODO: uncomment in #2596
         {% else %}
           {% if portfolio %}
             {% url 'domain-requests' as url_2 %}
@@ -33,7 +35,7 @@
                 </li>
               </ol>
             </nav>
-          {% endif %}
+          {% endif %} {% endcomment %}
         {% endif %}
 
 {% block form_messages %}

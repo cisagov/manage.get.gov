@@ -9,15 +9,9 @@
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
     {% comment %} 
-    The back button should redirect to the domain request page if we are in the portfolio view.
-    Otherwise, lets just redirect back to home.
-    {% endcomment %}
+    TODO: Uncomment in #2596
     {% if portfolio %}
       {% url 'domain-requests' as url %}
-    {% else %}
-      {% url 'home' as url %}
-    {% endif %}
-    {% if portfolio %}
       <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
         <ol class="usa-breadcrumb__list">
           <li class="usa-breadcrumb__list-item">
@@ -29,17 +23,18 @@
           </li>
         </ol>
       </nav>
-    {% else %}
-      <a href="{{ url }}" class="breadcrumb__back">
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-        <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
-        </svg>
-    
-        <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-          Back to manage your domains
-        </p>
-      </a>
-    {% endif %}
+    {% else %}{% endcomment %}
+    {% url 'home' as url %}
+    <a href="{{ url }}" class="breadcrumb__back">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+      <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+      </svg>
+  
+      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+        Back to manage your domains
+      </p>
+    </a>
+    {% comment %} {% endif %}{% endcomment %}
     <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
     <div
         class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
