@@ -33,29 +33,41 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
             help="Adds portfolio to DomainInformation",
         )
+        parser.add_argument(
+            "--both",
+            action=argparse.BooleanOptionalAction,
+            help="Adds portfolio to both requests and domains",
+        )
 
     def handle(self, agency_name, **options):
         parse_requests = options.get("parse_requests")
         parse_domains = options.get("parse_domains")
+        both = options.get("both")
 
-        if not parse_requests and not parse_domains:
-            raise CommandError("You must specify at least one of --parse_requests or --parse_domains.")
+        if not both:
+            if not parse_requests and not parse_domains:
+                raise CommandError("You must specify at least one of --parse_requests or --parse_domains.")
+        else:
+            if parse_requests or parse_domains:
+                raise CommandError("You cannot pass --parse_requests or --parse_domains when passing --both.")
 
         federal_agency = FederalAgency.objects.filter(agency__iexact=agency_name).first()
         if not federal_agency:
-            raise ValueError(
+            message = (
                 f"Cannot find the federal agency '{agency_name}' in our database. "
                 "The value you enter for `agency_name` must be "
                 "prepopulated in the FederalAgency table before proceeding."
             )
+            TerminalHelper.colorful_logger(logger.error, TerminalColors.FAIL, message)
+            return None
 
         portfolio = self.create_or_modify_portfolio(federal_agency)
         self.create_suborganizations(portfolio, federal_agency)
 
-        if parse_requests:
+        if parse_requests or both:
             self.handle_portfolio_requests(portfolio, federal_agency)
 
-        if parse_domains:
+        if parse_domains or both:
             self.handle_portfolio_domains(portfolio, federal_agency)
 
     def create_or_modify_portfolio(self, federal_agency):
@@ -115,7 +127,7 @@ class Command(BaseCommand):
 
         if not org_names:
             TerminalHelper.colorful_logger(
-                logger.warning, TerminalColors.YELLOW, f"No suborganizations found for {federal_agency}"
+                logger.warning, TerminalColors.YELLOW, f"No suborganizations found for '{federal_agency}'"
             )
             return
 
