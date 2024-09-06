@@ -7,7 +7,9 @@ for now we just carry the attribute to both the parent element and the select.
 
 <div class="usa-combo-box"     
 {% for name, value in widget.attrs.items %}
-    {{ name }}="{{ value }}"
+    {% if name != 'id' %}
+        {{ name }}="{{ value }}"
+    {% endif %}
 {% endfor %}
 >
     {% include "django/forms/widgets/select.html" %}

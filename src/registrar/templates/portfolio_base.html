@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block wrapper %}
-  <div id="wrapper" class="dashboard--portfolio">
-      {% block content %}
+  <div id="wrapper" class="{% block wrapper_class %}dashboard--portfolio{% endblock %}">
+    {% block content %}
         
         <main id="main-content" class="grid-container {% if is_widescreen_mode %} grid-container--widescreen {% endif %}">
             {% if user.is_authenticated %}
@@ -26,10 +26,8 @@
             {% endif %}
         </main>
 
-      {% endblock %}
-
+      {% endblock content%}
     <div role="complementary">{% block complementary %}{% endblock %}</div>
-
     {% block content_bottom %}{% endblock %}
   </div>
 {% endblock wrapper %}
