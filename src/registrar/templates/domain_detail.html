@@ -72,7 +72,7 @@
       {% include "includes/summary_item.html" with title='DNSSEC' value='Not Enabled' edit_link=url editable=is_editable %}
     {% endif %}
 
-    {% if portfolio and has_domains_portfolio_permission and has_view_suborganization_portfolio_permission %}
+    {% if portfolio and has_any_domains_portfolio_permission and has_view_suborganization_portfolio_permission %}
       {% url 'domain-suborganization' pk=domain.id as url %}
       {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_edit_suborganization_portfolio_permission %}
     {% else %}

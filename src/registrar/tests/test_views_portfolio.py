@@ -502,7 +502,7 @@ class TestPortfolio(WebTest):
         self.client.force_login(self.user)
         response = self.client.get(reverse("home"), follow=True)
 
-        self.assertFalse(self.user.has_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
+        self.assertFalse(self.user.has_any_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "You aren")
 
@@ -517,7 +517,7 @@ class TestPortfolio(WebTest):
 
         # Test the domains page - this user should have access
         response = self.client.get(reverse("domains"))
-        self.assertTrue(self.user.has_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
+        self.assertTrue(self.user.has_any_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Domain name")
 
@@ -528,7 +528,7 @@ class TestPortfolio(WebTest):
 
         # Test the domains page - this user should have access
         response = self.client.get(reverse("domains"))
-        self.assertTrue(self.user.has_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
+        self.assertTrue(self.user.has_any_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Domain name")
         permission.delete()

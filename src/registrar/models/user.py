@@ -218,7 +218,7 @@ class User(AbstractUser):
     def has_edit_org_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
-    def has_domains_portfolio_permission(self, portfolio):
+    def has_any_domains_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
@@ -227,7 +227,7 @@ class User(AbstractUser):
         """Determines if the current user can view all available domains in a given portfolio"""
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
     
-    def has_requests_portfolio_permission(self, portfolio):
+    def has_any_requests_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
@@ -261,24 +261,24 @@ class User(AbstractUser):
             (self.has_edit_suborganization_portfolio_permission(portfolio), ["Admin"]),
             (
                 self.has_view_all_domains_portfolio_permission(portfolio)
-                and self.has_requests_portfolio_permission(portfolio)
+                and self.has_any_requests_portfolio_permission(portfolio)
                 and self.has_edit_request_portfolio_permission(portfolio),
                 ["View-only admin", "Domain requestor"],
             ),
             (
                 self.has_view_all_domains_portfolio_permission(portfolio)
-                and self.has_requests_portfolio_permission(portfolio),
+                and self.has_any_requests_portfolio_permission(portfolio),
                 ["View-only admin"],
             ),
             (
                 self.has_base_portfolio_permission(portfolio)
                 and self.has_edit_request_portfolio_permission(portfolio)
-                and self.has_domains_portfolio_permission(portfolio),
+                and self.has_any_domains_portfolio_permission(portfolio),
                 ["Domain requestor", "Domain manager"],
             ),
             (self.has_base_portfolio_permission(portfolio) and self.has_edit_request_portfolio_permission(portfolio), ["Domain requestor"]),
             (
-                self.has_base_portfolio_permission(portfolio) and self.has_domains_portfolio_permission(portfolio),
+                self.has_base_portfolio_permission(portfolio) and self.has_any_domains_portfolio_permission(portfolio),
                 ["Domain manager"],
             ),
             (self.has_base_portfolio_permission(portfolio), ["Member"]),

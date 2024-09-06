@@ -37,7 +37,7 @@
         </div>
         <ul class="usa-nav__primary usa-accordion">
             <li class="usa-nav__primary-item">
-                {% if has_domains_portfolio_permission %}
+                {% if has_any_domains_portfolio_permission %}
                     {% url 'domains' as url %}
                 {% else %}
                     {% url 'no-portfolio-domains' as url %}
@@ -77,7 +77,7 @@
                         </li>
                     </ul>
                 <!-- user has view but no edit permissions -->
-                {% elif has_requests_portfolio_permission %}
+                {% elif has_any_requests_portfolio_permission %}
                     {% url 'domain-requests' as url %}
                     <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 
                         Domain requests

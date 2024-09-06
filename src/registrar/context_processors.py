@@ -62,8 +62,8 @@ def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
     default_context = {
             "has_base_portfolio_permission": False,
-            "has_domains_portfolio_permission": False,
-            "has_requests_portfolio_permission": False,
+            "has_any_domains_portfolio_permission": False,
+            "has_any_requests_portfolio_permission": False,
             "has_edit_request_portfolio_permission": False,
             "has_view_suborganization_portfolio_permission": False,
             "has_edit_suborganization_portfolio_permission": False,
@@ -75,8 +75,8 @@ def portfolio_permissions(request):
         if portfolio:
             return {
                 "has_base_portfolio_permission": request.user.has_base_portfolio_permission(portfolio),
-                "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(portfolio),
-                "has_requests_portfolio_permission": request.user.has_requests_portfolio_permission(
+                "has_any_domains_portfolio_permission": request.user.has_any_domains_portfolio_permission(portfolio),
+                "has_any_requests_portfolio_permission": request.user.has_any_requests_portfolio_permission(
                     portfolio
                 ),
                 "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),

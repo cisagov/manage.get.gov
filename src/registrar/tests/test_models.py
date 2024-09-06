@@ -1334,7 +1334,7 @@ class TestUser(TestCase):
     @patch.multiple(
         User,
         has_view_all_domains_portfolio_permission=lambda self, portfolio: True,
-        has_requests_portfolio_permission=lambda self, portfolio: True,
+        has_any_requests_portfolio_permission=lambda self, portfolio: True,
         has_edit_request_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_view_only_admin_and_domain_requestor(self):
@@ -1344,7 +1344,7 @@ class TestUser(TestCase):
     @patch.multiple(
         User,
         has_view_all_domains_portfolio_permission=lambda self, portfolio: True,
-        has_requests_portfolio_permission=lambda self, portfolio: True,
+        has_any_requests_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_view_only_admin(self):
         # Test if the user is recognized as a View-only admin
@@ -1354,7 +1354,7 @@ class TestUser(TestCase):
         User,
         has_base_portfolio_permission=lambda self, portfolio: True,
         has_edit_request_portfolio_permission=lambda self, portfolio: True,
-        has_domains_portfolio_permission=lambda self, portfolio: True,
+        has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_requestor_domain_manager(self):
         # Test if the user has 'Member', 'Domain requestor', and 'Domain manager' roles
@@ -1370,7 +1370,7 @@ class TestUser(TestCase):
     @patch.multiple(
         User,
         has_base_portfolio_permission=lambda self, portfolio: True,
-        has_domains_portfolio_permission=lambda self, portfolio: True,
+        has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_manager(self):
         # Test if the user has 'Member' and 'Domain manager' roles
@@ -1546,8 +1546,8 @@ class TestUser(TestCase):
 
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertFalse(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
@@ -1558,8 +1558,8 @@ class TestUser(TestCase):
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS],
         )
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
@@ -1568,16 +1568,16 @@ class TestUser(TestCase):
         portfolio_permission.save()
         portfolio_permission.refresh_from_db()
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)

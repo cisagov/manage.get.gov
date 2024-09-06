@@ -165,7 +165,7 @@ class CheckPortfolioMiddleware:
 
         if request.session.get("portfolio"):
             if current_path == self.home:
-                if request.user.has_domains_portfolio_permission(request.session["portfolio"]):
+                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
                     portfolio_redirect = reverse("domains")
                 else:
                     portfolio_redirect = reverse("no-portfolio-domains")
