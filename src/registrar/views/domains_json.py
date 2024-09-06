@@ -133,5 +133,5 @@ def serialize_domain(domain, user):
         "action_url": reverse("domain", kwargs={"pk": domain.id}),
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
-        "suborganization": suborganization_name,
+        "domain_info__sub_organization": suborganization_name,
     }
