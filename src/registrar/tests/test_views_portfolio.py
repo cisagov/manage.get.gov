@@ -13,9 +13,10 @@ from registrar.models import (
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import create_test_user
+from .common import MockSESClient, completed_domain_request, create_test_user
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
+import boto3_mocking  # type: ignore
 
 import logging
 
@@ -533,6 +534,115 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Domain name")
         permission.delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_portfolio_domain_requests_page_when_user_has_no_permissions(self):
+        """Test the no requests page"""
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        self.client.force_login(self.user)
+        # create and submit a domain request
+        domain_request = completed_domain_request(user=self.user)
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            domain_request.submit()
+            domain_request.save()
+
+        requests_page = self.client.get(reverse("no-portfolio-requests"), follow=True)
+
+        self.assertContains(requests_page, "You don’t have access to domain requests.")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_main_nav_when_user_has_no_permissions(self):
+        """Test the nav contains a link to the no requests page"""
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        self.client.force_login(self.user)
+        # create and submit a domain request
+        domain_request = completed_domain_request(user=self.user)
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            domain_request.submit()
+            domain_request.save()
+
+        portfolio_landing_page = self.client.get(reverse("home"), follow=True)
+
+        # link to no requests
+        self.assertContains(portfolio_landing_page, "no-organization-requests/")
+        # dropdown
+        self.assertNotContains(portfolio_landing_page, "basic-nav-section-two")
+        # link to requests
+        self.assertNotContains(portfolio_landing_page, 'href="/requests/')
+        # link to create
+        self.assertNotContains(portfolio_landing_page, 'href="/request/')
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_main_nav_when_user_has_all_permissions(self):
+        """Test the nav contains a dropdown with a link to create and another link to view requests
+        Also test for the existence of the Create a new request btn on the requests page"""
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        self.client.force_login(self.user)
+        # create and submit a domain request
+        domain_request = completed_domain_request(user=self.user)
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            domain_request.submit()
+            domain_request.save()
+
+        portfolio_landing_page = self.client.get(reverse("home"), follow=True)
+
+        # link to no requests
+        self.assertNotContains(portfolio_landing_page, "no-organization-requests/")
+        # dropdown
+        self.assertContains(portfolio_landing_page, "basic-nav-section-two")
+        # link to requests
+        self.assertContains(portfolio_landing_page, 'href="/requests/')
+        # link to create
+        self.assertContains(portfolio_landing_page, 'href="/request/')
+
+        requests_page = self.client.get(reverse("domain-requests"))
+
+        # create new request btn
+        self.assertContains(requests_page, 'Start a new domain request')
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_main_nav_when_user_has_view_but_not_edit_permissions(self):
+        """Test the nav contains a simple link to view requests
+        Also test for the existence of the Create a new request btn on the requests page"""
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS]
+        )
+        self.client.force_login(self.user)
+        # create and submit a domain request
+        domain_request = completed_domain_request(user=self.user)
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            domain_request.submit()
+            domain_request.save()
+
+        portfolio_landing_page = self.client.get(reverse("home"), follow=True)
+
+        # link to no requests
+        self.assertNotContains(portfolio_landing_page, "no-organization-requests/")
+        # dropdown
+        self.assertNotContains(portfolio_landing_page, "basic-nav-section-two")
+        # link to requests
+        self.assertContains(portfolio_landing_page, 'href="/requests/')
+        # link to create
+        self.assertNotContains(portfolio_landing_page, 'href="/request/')
+
+        requests_page = self.client.get(reverse("domain-requests"))
+
+        # create new request btn
+        self.assertNotContains(requests_page, 'Start a new domain request')
 
     @skip("TODO")
     def test_portfolio_cache_updates_when_modified(self):

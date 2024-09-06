@@ -1385,6 +1385,73 @@ class TestUser(TestCase):
         # Test if the user has no roles
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), [])
 
+    @patch('registrar.models.User._has_portfolio_permission')
+    def test_has_base_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_base_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
+
+    @patch('registrar.models.User._has_portfolio_permission')
+    def test_has_edit_org_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_edit_org_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
+
+    @patch('registrar.models.User._has_portfolio_permission')
+    def test_has_any_domains_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.side_effect = [False, True]  # First permission false, second permission true
+
+        self.assertTrue(self.user.has_any_domains_portfolio_permission(self.portfolio))
+        self.assertEqual(mock_has_permission.call_count, 2)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
+
+    @patch('registrar.models.User._has_portfolio_permission')
+    def test_has_view_all_domains_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_view_all_domains_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    @patch('registrar.models.User._has_portfolio_permission')
+    def test_has_any_requests_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.side_effect = [False, True]  # First permission false, second permission true
+
+        self.assertTrue(self.user.has_any_requests_portfolio_permission(self.portfolio))
+        self.assertEqual(mock_has_permission.call_count, 2)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    @patch('registrar.models.User._has_portfolio_permission')
+    def test_has_view_all_requests_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_view_all_requests_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+
+    @patch('registrar.models.User._has_portfolio_permission')
+    def test_has_edit_request_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_edit_request_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    @patch('registrar.models.User._has_portfolio_permission')
+    def test_has_view_suborganization_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_view_suborganization_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+
+    @patch('registrar.models.User._has_portfolio_permission')
+    def test_has_edit_suborganization_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_edit_suborganization_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
+
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
         """A user's on_each_login callback does not check transition domains.
