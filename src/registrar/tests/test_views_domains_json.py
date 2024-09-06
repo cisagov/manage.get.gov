@@ -218,7 +218,6 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS],
         )
-        # self.app.set_user(self.user.username)
 
         response = self.app.get(reverse("get_domains_json"), {"portfolio": self.portfolio.id})
         self.assertEqual(response.status_code, 200)
