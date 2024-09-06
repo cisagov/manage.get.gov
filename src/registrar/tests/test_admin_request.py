@@ -23,6 +23,7 @@ from registrar.models import (
     Website,
     SeniorOfficial,
     Portfolio,
+    AllowedEmail,
 )
 from .common import (
     MockSESClient,
@@ -70,6 +71,8 @@ class TestDomainRequestAdmin(MockEppLib):
             model=DomainRequest,
         )
         self.mock_client = MockSESClient()
+        allowed_emails = [AllowedEmail(email="mayor@igorville.gov"), AllowedEmail(email="help@get.gov")]
+        AllowedEmail.objects.bulk_create(allowed_emails)
 
     def tearDown(self):
         super().tearDown()
@@ -86,6 +89,7 @@ class TestDomainRequestAdmin(MockEppLib):
     def tearDownClass(self):
         super().tearDownClass()
         User.objects.all().delete()
+        AllowedEmail.objects.all().delete()
 
     @less_console_noise_decorator
     def test_domain_request_senior_official_is_alphabetically_sorted(self):
@@ -599,7 +603,8 @@ class TestDomainRequestAdmin(MockEppLib):
     ):
         """Helper method for the email test cases."""
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), ExitStack() as stack:
+            stack.enter_context(patch.object(messages, "warning"))
             # Create a mock request
             request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
@@ -626,7 +631,8 @@ class TestDomainRequestAdmin(MockEppLib):
     ):
         """Helper method for the email test cases.
         email_index is the index of the email in mock_client."""
-
+        AllowedEmail.objects.get_or_create(email=email_address)
+        AllowedEmail.objects.get_or_create(email=bcc_email_address)
         with less_console_noise():
             # Access the arguments passed to send_email
             call_args = self.mock_client.EMAILS_SENT
@@ -1174,6 +1180,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with ExitStack() as stack:
             stack.enter_context(patch.object(messages, "error"))
+            stack.enter_context(patch.object(messages, "warning"))
             domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
 
             self.admin.save_model(request, domain_request, None, True)
@@ -1202,6 +1209,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with ExitStack() as stack:
             stack.enter_context(patch.object(messages, "error"))
+            stack.enter_context(patch.object(messages, "warning"))
             domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
             domain_request.rejection_reason = DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY
 
@@ -1253,11 +1261,13 @@ class TestDomainRequestAdmin(MockEppLib):
         request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            # Modify the domain request's property
-            domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(messages, "warning"))
+                # Modify the domain request's property
+                domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
 
-            # Use the model admin's save_model method
-            self.admin.save_model(request, domain_request, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, domain_request, form=None, change=True)
 
         # Test that approved domain exists and equals requested domain
         self.assertEqual(domain_request.requested_domain.name, domain_request.approved_domain.name)
@@ -1717,6 +1727,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 # Patch Domain.is_active and django.contrib.messages.error simultaneously
                 stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
                 stack.enter_context(patch.object(messages, "error"))
+                stack.enter_context(patch.object(messages, "warning"))
+                stack.enter_context(patch.object(messages, "success"))
 
                 domain_request.status = another_state
 

@@ -517,7 +517,6 @@ function initializeWidgetOnList(list, parentId) {
     var actionNeededEmailReadonlyTextarea = document.querySelector("#action-needed-reason-email-readonly-textarea")
 
     // Edit e-mail modal (and its confirmation button)
-    var actionNeededEmailAlreadySentModal = document.querySelector("#email-already-sent-modal")
     var confirmEditEmailButton = document.querySelector("#email-already-sent-modal_continue-editing-button")
 
     // Headers and footers (which change depending on if the e-mail was sent or not)
@@ -559,11 +558,11 @@ function initializeWidgetOnList(list, parentId) {
             updateActionNeededEmailDisplay(reason)
         });
 
-        editEmailButton.addEventListener("click", function() {
-            if (!checkEmailAlreadySent()) {
-                showEmail(canEdit=true)
-            }
-        });
+        // editEmailButton.addEventListener("click", function() {
+        //     if (!checkEmailAlreadySent()) {
+        //         showEmail(canEdit=true)
+        //     }
+        // });
 
         confirmEditEmailButton.addEventListener("click", function() {
             // Show editable view

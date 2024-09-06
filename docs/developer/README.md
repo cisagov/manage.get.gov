@@ -97,6 +97,7 @@ While on production (the sandbox referred to as `stable`), an existing analyst o
             "username": "<UUID here>",
             "first_name": "",
             "last_name": "",
+            "email": "",
         },
         ...
  ]
@@ -121,6 +122,7 @@ Analysts are a variant of the admin role with limited permissions. The process f
             "username": "<UUID here>",
             "first_name": "",
             "last_name": "",
+            "email": "",
         },
         ...
  ]
@@ -130,6 +132,20 @@ Analysts are a variant of the admin role with limited permissions. The process f
 6. (Engineers) Add an optional email key/value pair
 
 Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name, or use a completely different first/last name to avoid confusion. Example: `Bob-Analyst`
+
+## Adding an email address to the email whitelist (sandboxes only)
+On all non-production environments, we use an email whitelist table (called `Allowed emails`). This whitelist is not case sensitive, and it provides an inclusion for +1 emails (like example.person+1@igorville.gov). The content after the `+` can be any _digit_. The whitelist checks for the "base" email (example.person) so even if you only have the +1 email defined, an email will still be sent assuming that it follows those conventions.
+
+To add yourself to this, you can go about it in three ways.
+
+Permanent (all sandboxes):
+1. In src/registrar/fixtures_users.py, add the "email" field to your user in either the ADMIN or STAFF table.
+2. In src/registrar/fixtures_users.py, add the desired email address to the `ADDITIONAL_ALLOWED_EMAILS` list. This route is suggested for product.
+
+Sandbox specific (wiped when the db is reset):
+3. Create a new record on the `Allowed emails` table with your email address. This can be done through django admin.
+
+More detailed instructions regarding #3 can be found [here](https://docs.google.com/document/d/1ebIz4PcUuoiT7LlVy83EAyHAk_nWPEc99neMp4QjzDs).
 
 ## Adding to CODEOWNERS (optional)
 

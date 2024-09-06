@@ -169,3 +169,8 @@ def has_contact_info(user):
         return False
     else:
         return bool(user.title or user.email or user.phone)
+
+
+@register.filter
+def model_name_lowercase(instance):
+    return instance.__class__.__name__.lower()
