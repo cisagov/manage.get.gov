@@ -84,7 +84,7 @@ class OrderableFieldsMixin:
         def get_sortable_creator(self, obj):
             return obj.creator
         # Allows column order sorting
-        get_sortable_creator.admin_order_field = ["creator__first_name", "creaotr__last_name"]
+        get_sortable_creator.admin_order_field = ["creator__first_name", "creator__last_name"]
         # Sets column's header
         get_sortable_creator.short_description = "creator"
         ```
