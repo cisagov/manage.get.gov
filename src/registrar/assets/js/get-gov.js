@@ -1644,7 +1644,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   role="button" 
                   id="button-toggle-delete-domain-alert-${request.id}"
                   href="#toggle-delete-domain-alert-${request.id}"
-                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger line-height-sans-5"
                   aria-controls="toggle-delete-domain-alert-${request.id}"
                   data-open-modal
                 >
@@ -1717,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   role="button" 
                   id="button-toggle-delete-domain-alert-${request.id}"
                   href="#toggle-delete-domain-alert-${request.id}"
-                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile-flex"
+                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile-flex line-height-sans-5"
                   aria-controls="toggle-delete-domain-alert-${request.id}"
                   data-open-modal
                 >
@@ -1745,7 +1745,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       role="button" 
                       id="button-toggle-delete-domain-alert-${request.id}"
                       href="#toggle-delete-domain-alert-${request.id}"
-                      class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2"
+                      class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5"
                       aria-controls="toggle-delete-domain-alert-${request.id}"
                       data-open-modal
                     >
