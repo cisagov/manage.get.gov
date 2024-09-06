@@ -1220,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
-            const suborganization = domain.domain_info__sub_organization ? domain.domain_info__sub_organization : '';
+            const suborganization = domain.domain_info__sub_organization ? domain.domain_info__sub_organization : '⎯';
 
             const row = document.createElement('tr');
 
@@ -1229,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!noPortfolioFlag) {
               markupForSuborganizationRow = `
                 <td>
-                    <span class="${suborganization ? 'ellipsis ellipsis--30 vertical-align-middle' : ''}" aria-label="${suborganization}" title="${suborganization}">${suborganization}</span>
+                    <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
                 </td>
               `
             }
@@ -1910,7 +1910,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let editableFormGroup = button.parentElement.parentElement.parentElement;
         if (editableFormGroup){
-          let readonlyField = editableFormGroup.querySelector(".input-with-edit-button__readonly-field")
+          let readonlyField = editableFormGroup.querySelector(".toggleable_input__readonly-field")
           let inputField = document.getElementById(`id_${fieldName}`);
           if (!inputField || !readonlyField) {
             return;
@@ -1936,8 +1936,8 @@ document.addEventListener('DOMContentLoaded', function() {
                       // Keep the path before '#' and replace the part after '#' with 'invalid'
                       const newHref = parts[0] + '#error';
                       svg.setAttribute('xlink:href', newHref);
-                      fullNameField.classList.add("input-with-edit-button__error")
-                      label = fullNameField.querySelector(".input-with-edit-button__readonly-field")
+                      fullNameField.classList.add("toggleable_input__error")
+                      label = fullNameField.querySelector(".toggleable_input__readonly-field")
                       label.innerHTML = "Unknown";
                     }
                   }
@@ -2043,11 +2043,11 @@ document.addEventListener('DOMContentLoaded', function() {
       // Due to the nature of how uswds works, this is slightly hacky.
 
       // Use a MutationObserver to watch for changes in the dropdown list
-      const dropdownList = document.querySelector(`#${input.id}--list`);
+      const dropdownList = comboBox.querySelector(`#${input.id}--list`);
       const observer = new MutationObserver(function(mutations) {
           mutations.forEach(function(mutation) {
               if (mutation.type === "childList") {
-                  addBlankOption(clearInputButton, dropdownList, initialValue);
+                addBlankOption(clearInputButton, dropdownList, initialValue);
               }
           });
       });
@@ -2111,7 +2111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!initialValue){
           blankOption.classList.add("usa-combo-box__list-option--selected")
         }
-        blankOption.textContent = "---------";
+        blankOption.textContent = "⎯";
 
         dropdownList.insertBefore(blankOption, dropdownList.firstChild);
         blankOption.addEventListener("click", (e) => {
