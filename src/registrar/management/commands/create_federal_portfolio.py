@@ -53,13 +53,11 @@ class Command(BaseCommand):
 
         federal_agency = FederalAgency.objects.filter(agency__iexact=agency_name).first()
         if not federal_agency:
-            message = (
+            raise ValueError(
                 f"Cannot find the federal agency '{agency_name}' in our database. "
                 "The value you enter for `agency_name` must be "
                 "prepopulated in the FederalAgency table before proceeding."
             )
-            TerminalHelper.colorful_logger(logger.error, TerminalColors.FAIL, message)
-            return None
 
         portfolio = self.create_or_modify_portfolio(federal_agency)
         self.create_suborganizations(portfolio, federal_agency)
