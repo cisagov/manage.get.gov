@@ -53,7 +53,8 @@
             </li>
 
             <li class="usa-nav__primary-item">
-                {% if has_requests_portfolio_permission %}
+                <!-- user hasone of the view permissions plus the edit permission, show the dropdown -->
+                {% if has_edit_request_portfolio_permission %}
                     {% url 'domain-requests' as url %}
                     <button
                         type="button"
@@ -75,6 +76,13 @@
                             >
                         </li>
                     </ul>
+                <!-- user has view but no edit permissions -->
+                {% elif has_requests_portfolio_permission %}
+                    {% url 'domain-requests' as url %}
+                    <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 
+                        Domain requests
+                    </a>
+                <!-- user does not have permissions -->
                 {% else %}
                     {% url 'no-portfolio-requests' as url %}
                     <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 

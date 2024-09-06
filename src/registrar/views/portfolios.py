@@ -76,7 +76,7 @@ class PortfolioNoDomainRequestsView(NoPortfolioDomainsPermissionView, View):
     """
 
     model = Portfolio
-    template_name = "portfolio_no_domain_requests.html"
+    template_name = "portfolio_no_requests.html"
 
     def get(self, request):
         return render(request, self.template_name, context=self.get_context_data())

@@ -1713,7 +1713,20 @@ document.addEventListener('DOMContentLoaded', function() {
               // Request is deletable, modal and modalTrigger are built. Now test is portfolio requests page and enhace the modalTrigger markup
               if (portfolioValue) {
                 modalTrigger = `
-                <div class="usa-accordion usa-accordion--more-actions margin-right-2">
+                <a 
+                  role="button" 
+                  id="button-toggle-delete-domain-alert-${request.id}"
+                  href="#toggle-delete-domain-alert-${request.id}"
+                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile"
+                  aria-controls="toggle-delete-domain-alert-${request.id}"
+                  data-open-modal
+                >
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#delete"></use>
+                  </svg> Delete <span class="usa-sr-only">${domainName}</span>
+                </a>
+
+                <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile">
                   <div class="usa-accordion__heading">
                     <button
                       type="button"
@@ -1732,7 +1745,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       role="button" 
                       id="button-toggle-delete-domain-alert-${request.id}"
                       href="#toggle-delete-domain-alert-${request.id}"
-                      class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                      class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2"
                       aria-controls="toggle-delete-domain-alert-${request.id}"
                       data-open-modal
                     >

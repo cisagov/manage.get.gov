@@ -101,6 +101,12 @@
             button.usa-current {
                 font-weight: font-weight('bold');
             }
+            button[aria-expanded="true"] {
+                color: color('white');
+            }
+            button:not(.usa-current):hover::after  {
+                display: none!important;
+            }
         }
         .usa-nav__secondary {
             // I don't know why USWDS has this at 2 rem, which puts it out of alignment

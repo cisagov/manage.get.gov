@@ -15,7 +15,6 @@
         // Note, width is determined by a custom width class on one of the children
         position: absolute;
         z-index: 1;
-        top: 33.88px;
         left: 0;
         border-radius: 4px;
         border: solid 1px color('base-lighter');
@@ -33,7 +32,16 @@
     }
 }
 
+.usa-accordion--select .usa-accordion__content {
+    top: 33.88px;
+}
+
+.usa-accordion--more-actions .usa-accordion__content {
+    top: 30px;
+}
+
 tr:last-child .usa-accordion--more-actions .usa-accordion__content {
     top: auto;
-    bottom: 20px;
+    bottom: -10px;
+    right: 30px;
 }

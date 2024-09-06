@@ -60,6 +60,16 @@ def add_has_profile_feature_flag_to_context(request):
 
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
+    default_context = {
+            "has_base_portfolio_permission": False,
+            "has_domains_portfolio_permission": False,
+            "has_requests_portfolio_permission": False,
+            "has_edit_request_portfolio_permission": False,
+            "has_view_suborganization_portfolio_permission": False,
+            "has_edit_suborganization_portfolio_permission": False,
+            "portfolio": None,
+            "has_organization_feature_flag": False,
+        }
     try:
         portfolio = request.session.get("portfolio")
         if portfolio:
@@ -69,29 +79,14 @@ def portfolio_permissions(request):
                 "has_requests_portfolio_permission": request.user.has_requests_portfolio_permission(
                     portfolio
                 ),
+                "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),
                 "has_view_suborganization_portfolio_permission": request.user.has_view_suborganization_portfolio_permission(portfolio),
                 "has_edit_suborganization_portfolio_permission": request.user.has_edit_suborganization_portfolio_permission(portfolio),
                 "portfolio": portfolio,
                 "has_organization_feature_flag": True,
             }
-        return {
-            "has_base_portfolio_permission": False,
-            "has_domains_portfolio_permission": False,
-            "has_requests_portfolio_permission": False,
-            "has_view_suborganization_portfolio_permission": False,
-            "has_edit_suborganization_portfolio_permission": False,
-            "portfolio": None,
-            "has_organization_feature_flag": False,
-        }
+        return default_context
 
     except AttributeError:
         # Handles cases where request.user might not exist
-        return {
-            "has_base_portfolio_permission": False,
-            "has_domains_portfolio_permission": False,
-            "has_requests_portfolio_permission": False,
-            "has_view_suborganization_portfolio_permission": False,
-            "has_edit_suborganization_portfolio_permission": False,
-            "portfolio": None,
-            "has_organization_feature_flag": False,
-        }
+        return default_context

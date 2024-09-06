@@ -159,6 +159,23 @@ abbr[title] {
   }
 }
 
+.hidden-mobile {
+  display: none!important;
+}
+.visible-mobile {
+  display: block!important;
+}
+
+@include at-media(tablet) {
+  .hidden-mobile {
+    display: block!important;
+  }
+  .visible-mobile {
+    display: none!important;
+  }
+}
+
+
 .flex-end {
   align-items: flex-end;
 }
