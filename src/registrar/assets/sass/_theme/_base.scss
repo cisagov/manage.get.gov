@@ -159,18 +159,18 @@ abbr[title] {
   }
 }
 
-.hidden-mobile {
+.hidden-mobile-flex {
   display: none!important;
 }
-.visible-mobile {
-  display: block!important;
+.visible-mobile-flex {
+  display: flex!important;
 }
 
 @include at-media(tablet) {
-  .hidden-mobile {
-    display: block!important;
+  .hidden-mobile-flex {
+    display: flex!important;
   }
-  .visible-mobile {
+  .visible-mobile-flex {
     display: none!important;
   }
 }

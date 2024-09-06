@@ -1717,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   role="button" 
                   id="button-toggle-delete-domain-alert-${request.id}"
                   href="#toggle-delete-domain-alert-${request.id}"
-                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile"
+                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile-flex"
                   aria-controls="toggle-delete-domain-alert-${request.id}"
                   data-open-modal
                 >
@@ -1726,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   </svg> Delete <span class="usa-sr-only">${domainName}</span>
                 </a>
 
-                <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile">
+                <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
                   <div class="usa-accordion__heading">
                     <button
                       type="button"

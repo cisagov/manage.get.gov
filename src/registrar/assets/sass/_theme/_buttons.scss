@@ -211,6 +211,7 @@ a.usa-button--unstyled:visited {
     align-items: center;
 }
 
+.dotgov-table a
 a .usa-icon,
 .usa-button--with-icon .usa-icon {
   height: 1.3em;
@@ -224,6 +225,7 @@ a .usa-icon,
 }
 
 button.text-secondary,
+button.text-secondary:hover,
 .dotgov-table a.text-secondary {
   color: $theme-color-error;
 }

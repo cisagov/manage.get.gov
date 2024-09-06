@@ -162,10 +162,14 @@ class CheckPortfolioMiddleware:
                 request.session["portfolio"] = request.user.get_first_portfolio()
             else:
                 request.session["portfolio"] = None
+        else: 
+            # Edge case: waffle flag is changed while the user is logged in
+            if not request.user.is_org_user(request) and request.session.get("portfolio"):
+                request.session["portfolio"] = None
 
         if request.session.get("portfolio"):
             if current_path == self.home:
-                if request.user.has_domains_portfolio_permission(request.session["portfolio"]):
+                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
                     portfolio_redirect = reverse("domains")
                 else:
                     portfolio_redirect = reverse("no-portfolio-domains")

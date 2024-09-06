@@ -175,7 +175,7 @@ class DomainView(DomainBaseView):
         If particular views allow permissions, they will need to override
         this function."""
         portfolio = self.request.session.get("portfolio")
-        if self.request.user.has_domains_portfolio_permission(portfolio):
+        if self.request.user.has_any_domains_portfolio_permission(portfolio):
             if Domain.objects.filter(id=pk).exists():
                 domain = Domain.objects.get(id=pk)
                 if domain.domain_info.portfolio == portfolio:
