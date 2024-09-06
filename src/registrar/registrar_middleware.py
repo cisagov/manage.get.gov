@@ -162,6 +162,10 @@ class CheckPortfolioMiddleware:
                 request.session["portfolio"] = request.user.get_first_portfolio()
             else:
                 request.session["portfolio"] = None
+        else: 
+            # Edge case: waffle flag is changed while the user is logged in
+            if not request.user.is_org_user(request) and request.session.get("portfolio"):
+                request.session["portfolio"] = None
 
         if request.session.get("portfolio"):
             if current_path == self.home:

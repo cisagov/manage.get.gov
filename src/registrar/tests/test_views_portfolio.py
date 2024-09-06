@@ -2,6 +2,7 @@ from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.config import settings
 from registrar.models import Portfolio, SeniorOfficial
+from unittest import skip
 from django_webtest import WebTest  # type: ignore
 from registrar.models import (
     DomainRequest,
@@ -532,3 +533,7 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Domain name")
         permission.delete()
+
+    @skip("TODO")
+    def test_portfolio_cache_updates_when_modified(self):
+        pass

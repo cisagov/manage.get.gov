@@ -522,6 +522,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 return HttpResponseRedirect(reverse("domain-requests"))
             else:
                 return HttpResponseRedirect(reverse("home"))
+
         # otherwise, proceed as normal
         return self.goto_next_step()
 
