@@ -6,7 +6,7 @@ import logging
 from urllib.parse import parse_qs
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from registrar.models.user import User
+from registrar.models import User, Portfolio
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
@@ -144,28 +144,17 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
-        old_updated_at = None
-        if request.session.get("portfolio"):
-            old_updated_at = request.session.get("portfolio__updated_at")
-            request.session["portfolio__updated_at"] = request.session.get("portfolio").updated_at
+        portfolio = request.session.get("portfolio")
 
-        should_update_portfolio = (
-            not request.session.get("portfolio") or old_updated_at != request.session.get("portfolio__updated_at")
-        )
-        if request.user.is_org_user(request) or should_update_portfolio:
-            # if multiple portfolios are allowed for this user
-            if flag_is_active(request, "multiple_portfolios"):
-                # NOTE: we will want to change later to have a workflow for selecting
-                # portfolio and another for switching portfolio; for now, select first
-                request.session["portfolio"] = request.user.get_first_portfolio()
-            elif flag_is_active(request, "organization_feature"):
-                request.session["portfolio"] = request.user.get_first_portfolio()
-            else:
-                request.session["portfolio"] = None
-        else: 
-            # Edge case: waffle flag is changed while the user is logged in
-            if not request.user.is_org_user(request) and request.session.get("portfolio"):
-                request.session["portfolio"] = None
+        # if multiple portfolios are allowed for this user
+        if flag_is_active(request, "organization_feature"):
+            old_updated_at = request.session.get("portfolio__updated_at")
+            request.session["portfolio__updated_at"] = portfolio.updated_at if portfolio else None
+            if request.user.is_org_user(request) or old_updated_at != request.session.get("portfolio__updated_at"):
+                self.set_portfolio_in_session(request)
+        elif request.session.get("portfolio"):
+            # Edge case: User disables flag while already logged in
+            request.session["portfolio"] = None
 
         if request.session.get("portfolio"):
             if current_path == self.home:
@@ -173,7 +162,14 @@ class CheckPortfolioMiddleware:
                     portfolio_redirect = reverse("domains")
                 else:
                     portfolio_redirect = reverse("no-portfolio-domains")
-
                 return HttpResponseRedirect(portfolio_redirect)
 
         return None
+
+    def set_portfolio_in_session(self, request):
+        # NOTE: we will want to change later to have a workflow for selecting
+        # portfolio and another for switching portfolio; for now, select first
+        if flag_is_active(request, "multiple_portfolios"):
+            request.session["portfolio"] = request.user.get_first_portfolio()
+        else:
+            request.session["portfolio"] = request.user.get_first_portfolio()

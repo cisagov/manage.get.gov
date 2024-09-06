@@ -78,7 +78,7 @@ class TestPortfolio(WebTest):
     def test_middleware_does_not_redirect_if_no_permission(self):
         """Test that user with no portfolio permission is not redirected when attempting to access home"""
         self.app.set_user(self.user.username)
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+        UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, additional_permissions=[]
         )
         self.user.portfolio = self.portfolio
