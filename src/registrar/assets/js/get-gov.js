@@ -1219,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
-            const suborganization = domain.suborganization ? domain.suborganization : '⎯';
+            const suborganization = domain.domain_info__sub_organization ? domain.domain_info__sub_organization : '⎯';
 
             const row = document.createElement('tr');
 
