@@ -1135,7 +1135,7 @@ class TestPortfolioInvitations(TestCase):
         self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Hotel California")
         self.portfolio_role_base = UserPortfolioRoleChoices.ORGANIZATION_MEMBER
         self.portfolio_role_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
-        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS
+        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         self.portfolio_permission_2 = UserPortfolioPermissionChoices.EDIT_REQUESTS
         self.invitation, _ = PortfolioInvitation.objects.get_or_create(
             email=self.email,
