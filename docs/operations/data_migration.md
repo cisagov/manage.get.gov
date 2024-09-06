@@ -834,10 +834,10 @@ Example: `cf ssh getgov-za`
 ```/tmp/lifecycle/shell```
 
 #### Step 4: Running the script
-```./manage.py populate_domain_request_dates```
+```./manage.py update_first_ready```
 
 ### Running locally
-```docker-compose exec app ./manage.py populate_domain_request_dates```
+```docker-compose exec app ./manage.py update_first_ready```
 
 ## Populate Domain Request Dates
 This section outlines how to run the populate_domain_request_dates script
