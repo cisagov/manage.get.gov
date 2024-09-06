@@ -144,14 +144,9 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
-        portfolio = request.session.get("portfolio")
-
         # if multiple portfolios are allowed for this user
         if flag_is_active(request, "organization_feature"):
-            old_updated_at = request.session.get("portfolio__updated_at")
-            request.session["portfolio__updated_at"] = portfolio.updated_at if portfolio else None
-            if request.user.is_org_user(request) or old_updated_at != request.session.get("portfolio__updated_at"):
-                self.set_portfolio_in_session(request)
+            self.set_portfolio_in_session(request)
         elif request.session.get("portfolio"):
             # Edge case: User disables flag while already logged in
             request.session["portfolio"] = None

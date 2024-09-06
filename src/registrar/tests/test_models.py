@@ -1361,7 +1361,9 @@ class TestUser(TestCase):
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain requestor", "Domain manager"])
 
     @patch.multiple(
-        User, has_base_portfolio_permission=lambda self, portfolio: True, has_edit_request_portfolio_permission=lambda self, portfolio: True
+        User,
+        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_edit_request_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_requestor(self):
         # Test if the user has 'Member' and 'Domain requestor' roles

@@ -238,7 +238,7 @@ class User(AbstractUser):
 
     def has_edit_request_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
-    
+
     # Field specific permission checks
     def has_view_suborganization_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
@@ -276,7 +276,10 @@ class User(AbstractUser):
                 and self.has_any_domains_portfolio_permission(portfolio),
                 ["Domain requestor", "Domain manager"],
             ),
-            (self.has_base_portfolio_permission(portfolio) and self.has_edit_request_portfolio_permission(portfolio), ["Domain requestor"]),
+            (
+                self.has_base_portfolio_permission(portfolio) and self.has_edit_request_portfolio_permission(portfolio),
+                ["Domain requestor"],
+            ),
             (
                 self.has_base_portfolio_permission(portfolio) and self.has_any_domains_portfolio_permission(portfolio),
                 ["Domain manager"],

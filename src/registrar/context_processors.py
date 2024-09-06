@@ -75,13 +75,17 @@ def portfolio_permissions(request):
         if portfolio:
             return {
                 "has_base_portfolio_permission": request.user.has_base_portfolio_permission(portfolio),
+                "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),
+                "has_view_suborganization_portfolio_permission": request.user.has_view_suborganization_portfolio_permission(
+                    portfolio
+                ),
+                "has_edit_suborganization_portfolio_permission": request.user.has_edit_suborganization_portfolio_permission(
+                    portfolio
+                ),
                 "has_any_domains_portfolio_permission": request.user.has_any_domains_portfolio_permission(portfolio),
                 "has_any_requests_portfolio_permission": request.user.has_any_requests_portfolio_permission(
                     portfolio
                 ),
-                "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),
-                "has_view_suborganization_portfolio_permission": request.user.has_view_suborganization_portfolio_permission(portfolio),
-                "has_edit_suborganization_portfolio_permission": request.user.has_edit_suborganization_portfolio_permission(portfolio),
                 "portfolio": portfolio,
                 "has_organization_feature_flag": True,
             }
