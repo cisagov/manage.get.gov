@@ -4,7 +4,12 @@
 
 {% block title %} Domain requests | {% endblock %}
 
+{% block wrapper_class %}
+  {{ block.super }} dashboard--grey-1
+{% endblock %}
+
 {% block portfolio_content %}
+<div id="main-content">
     <h1 id="domain-requests-header">Domain requests</h1>
 
     {% comment %}
@@ -20,4 +25,5 @@
     </p>
     
     {% include "includes/domain_requests_table.html" with portfolio=portfolio %}
+</div>
 {% endblock %}
