@@ -130,7 +130,7 @@ class Command(BaseCommand):
         """Asks if the user wants to proceed with this action"""
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            prompt_message=f"""
             ==Extension Amount==
             Period: {extension_amount} year(s)
 

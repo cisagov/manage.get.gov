@@ -817,6 +817,28 @@ Example: `cf ssh getgov-za`
 |:-:|:-------------------------- |:-----------------------------------------------------------------------------------|
 | 1 | **federal_cio_csv_path**   | Specifies where the federal CIO csv is                                             |
 
+## Update First Ready Values
+This section outlines how to run the populate_first_ready script
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py update_first_ready```
+
+### Running locally
+```docker-compose exec app ./manage.py update_first_ready```
+
 ## Populate Domain Request Dates
 This section outlines how to run the populate_domain_request_dates script
 
