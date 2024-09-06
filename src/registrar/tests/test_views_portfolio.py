@@ -532,3 +532,27 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Domain name")
         permission.delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_widescreen_css(self):
+        """Tests if class modifiers for widescreen mode are appropriately loaded into the DOM"""
+
+        self.client.force_login(self.user)
+
+        # Ensure that this user can see domains with the right permissions
+        permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+        permission.save()
+        permission.refresh_from_db()
+
+        response = self.client.get(reverse("domains"))
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for widescreen modifier
+        self.assertContains(
+            response, "--widescreen"
+        )
