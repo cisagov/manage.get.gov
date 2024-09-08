@@ -553,6 +553,4 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
 
         # Test for widescreen modifier
-        self.assertContains(
-            response, "--widescreen"
-        )
+        self.assertContains(response, "--widescreen")
