@@ -249,6 +249,49 @@ class User(AbstractUser):
             return permission.portfolio
         return None
 
+    def has_edit_requests(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    def portfolio_role_summary(self, portfolio):
+        """Returns a list of roles based on the user's permissions."""
+        roles = []
+
+        # Define the conditions and their corresponding roles
+        conditions_roles = [
+            (self.has_edit_suborganization(portfolio), ["Admin"]),
+            (
+                self.has_view_all_domains_permission(portfolio)
+                and self.has_domain_requests_portfolio_permission(portfolio)
+                and self.has_edit_requests(portfolio),
+                ["View-only admin", "Domain requestor"],
+            ),
+            (
+                self.has_view_all_domains_permission(portfolio)
+                and self.has_domain_requests_portfolio_permission(portfolio),
+                ["View-only admin"],
+            ),
+            (
+                self.has_base_portfolio_permission(portfolio)
+                and self.has_edit_requests(portfolio)
+                and self.has_domains_portfolio_permission(portfolio),
+                ["Domain requestor", "Domain manager"],
+            ),
+            (self.has_base_portfolio_permission(portfolio) and self.has_edit_requests(portfolio), ["Domain requestor"]),
+            (
+                self.has_base_portfolio_permission(portfolio) and self.has_domains_portfolio_permission(portfolio),
+                ["Domain manager"],
+            ),
+            (self.has_base_portfolio_permission(portfolio), ["Member"]),
+        ]
+
+        # Evaluate conditions and add roles
+        for condition, role_list in conditions_roles:
+            if condition:
+                roles.extend(role_list)
+                break
+
+        return roles
+
     @classmethod
     def needs_identity_verification(cls, email, uuid):
         """A method used by our oidc classes to test whether a user needs email/uuid verification

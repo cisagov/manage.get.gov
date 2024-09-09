@@ -1,7 +1,7 @@
 {% extends 'portfolio_base.html' %}
 {% load static field_helpers%}
 
-{% block title %}Organization mailing address | {{ portfolio.name }} | {% endblock %}
+{% block title %}Organization mailing address | {{ portfolio.name }}{% endblock %}
 
 {% load static %}
 
@@ -17,7 +17,7 @@
         {% include 'portfolio_organization_sidebar.html' %}
     </div>
 
-    <div class="tablet:grid-col-9">
+    <div class="tablet:grid-col-9" id="main-content">
 
         <h1>Organization</h1>
 
@@ -41,7 +41,7 @@
                 {% input_with_errors form.address_line2 %}
                 {% input_with_errors form.city %}
                 {% input_with_errors form.state_territory %}
-                {% with add_class="usa-input--small" %}
+                {% with add_class="usa-input--small" sublabel_text="Enter a zip code in the required format, like 12345 or 12345-6789." %}
                     {% input_with_errors form.zipcode %}
                 {% endwith %}
                 <button type="submit" class="usa-button">

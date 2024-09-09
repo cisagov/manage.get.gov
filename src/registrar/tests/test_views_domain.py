@@ -1153,7 +1153,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
         page = self.client.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Senior official", count=3)
+        self.assertContains(page, "Senior official", count=4)
 
     @less_console_noise_decorator
     def test_domain_senior_official_content(self):
