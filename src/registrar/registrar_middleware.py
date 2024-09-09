@@ -155,8 +155,11 @@ class CheckPortfolioMiddleware:
             request.session["portfolio"] = None
 
         if request.user.is_org_user(request):
+            portfolio = request.session.get("portfolio")
+            request.session["portfolio__updated_at"] = portfolio.updated_at
+            request.session["portfolio__id"] = portfolio.id
             if current_path == self.home:
-                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
+                if request.user.has_any_domains_portfolio_permission(portfolio):
                     portfolio_redirect = reverse("domains")
                 else:
                     portfolio_redirect = reverse("no-portfolio-domains")
@@ -165,9 +168,20 @@ class CheckPortfolioMiddleware:
         return None
 
     def set_portfolio_in_session(self, request):
-        # NOTE: we will want to change later to have a workflow for selecting
-        # portfolio and another for switching portfolio; for now, select first
-        if flag_is_active(request, "multiple_portfolios"):
-            request.session["portfolio"] = request.user.get_first_portfolio()
+        portfolio = request.session.get("portfolio")
+        if not portfolio:
+            # NOTE: we will want to change later to have a workflow for selecting
+            # portfolio and another for switching portfolio; for now, select first
+            if flag_is_active(request, "multiple_portfolios"):
+                request.session["portfolio"] = request.user.get_first_portfolio()
+            else:
+                request.session["portfolio"] = request.user.get_first_portfolio()
         else:
-            request.session["portfolio"] = request.user.get_first_portfolio()
+            last_portfolio_updated_at = request.session.get("portfolio__updated_at")
+            last_portfolio_id = request.session.get("portfolio__id")
+            if not last_portfolio_updated_at or not last_portfolio_id:
+                return None
+
+            # Update the portfolio if it changed
+            if portfolio.updated_at > last_portfolio_updated_at:
+                request.session["portfolio"] = Portfolio.objects.get(id=last_portfolio_id)
