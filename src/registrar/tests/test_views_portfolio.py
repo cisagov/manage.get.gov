@@ -550,7 +550,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
             ],
@@ -576,7 +576,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
             ],
@@ -602,7 +602,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
             ],
@@ -655,6 +655,7 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
     def test_main_nav_when_user_has_no_permissions(self):
         """Test the nav contains a link to the no requests page"""
         UserPortfolioPermission.objects.get_or_create(
@@ -681,6 +682,7 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
     def test_main_nav_when_user_has_all_permissions(self):
         """Test the nav contains a dropdown with a link to create and another link to view requests
         Also test for the existence of the Create a new request btn on the requests page"""
@@ -713,6 +715,7 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
     def test_main_nav_when_user_has_view_but_not_edit_permissions(self):
         """Test the nav contains a simple link to view requests
         Also test for the existence of the Create a new request btn on the requests page"""
