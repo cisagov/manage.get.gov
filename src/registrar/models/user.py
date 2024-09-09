@@ -224,13 +224,86 @@ class User(AbstractUser):
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
     def has_domain_requests_portfolio_permission(self, portfolio):
+        # BEGIN
+        # Note code below is to add organization_request feature
+        request = HttpRequest()
+        request.user = self
+        has_organization_requests_flag = flag_is_active(request, "organization_requests")
+        if not has_organization_requests_flag:
+            return False
+        # END
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
 
+    def has_view_members_portfolio_permission(self, portfolio):
+        # BEGIN
+        # Note code below is to add organization_request feature
+        request = HttpRequest()
+        request.user = self
+        has_organization_members_flag = flag_is_active(request, "organization_members")
+        if not has_organization_members_flag:
+            return False
+        # END
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MEMBERS)
+
+    def has_edit_members_portfolio_permission(self, portfolio):
+        # BEGIN
+        # Note code below is to add organization_request feature
+        request = HttpRequest()
+        request.user = self
+        has_organization_members_flag = flag_is_active(request, "organization_members")
+        if not has_organization_members_flag:
+            return False
+        # END
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_MEMBERS)
+
     def has_view_all_domains_permission(self, portfolio):
         """Determines if the current user can view all available domains in a given portfolio"""
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    def has_edit_requests(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    def portfolio_role_summary(self, portfolio):
+        """Returns a list of roles based on the user's permissions."""
+        roles = []
+
+        # Define the conditions and their corresponding roles
+        conditions_roles = [
+            (self.has_edit_suborganization(portfolio), ["Admin"]),
+            (
+                self.has_view_all_domains_permission(portfolio)
+                and self.has_domain_requests_portfolio_permission(portfolio)
+                and self.has_edit_requests(portfolio),
+                ["View-only admin", "Domain requestor"],
+            ),
+            (
+                self.has_view_all_domains_permission(portfolio)
+                and self.has_domain_requests_portfolio_permission(portfolio),
+                ["View-only admin"],
+            ),
+            (
+                self.has_base_portfolio_permission(portfolio)
+                and self.has_edit_requests(portfolio)
+                and self.has_domains_portfolio_permission(portfolio),
+                ["Domain requestor", "Domain manager"],
+            ),
+            (self.has_base_portfolio_permission(portfolio) and self.has_edit_requests(portfolio), ["Domain requestor"]),
+            (
+                self.has_base_portfolio_permission(portfolio) and self.has_domains_portfolio_permission(portfolio),
+                ["Domain manager"],
+            ),
+            (self.has_base_portfolio_permission(portfolio), ["Member"]),
+        ]
+
+        # Evaluate conditions and add roles
+        for condition, role_list in conditions_roles:
+            if condition:
+                roles.extend(role_list)
+                break
+
+        return roles
 
     # Field specific permission checks
     def has_view_suborganization(self, portfolio):
