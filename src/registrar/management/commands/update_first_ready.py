@@ -1,6 +1,5 @@
 import logging
 from django.core.management import BaseCommand
-from django.db.models.manager import BaseManager
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors
 from registrar.models import Domain, TransitionDomain
 
@@ -27,7 +26,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
 
     # check if a transition domain object for this domain name exists,
     # or if so whether its first_ready value matches its created_at date
-    def custom_filter(self, records: BaseManager[Domain]) -> BaseManager[Domain]:
+    def custom_filter(self, records):
         to_include_pks = []
         for record in records:
             if (
