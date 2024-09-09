@@ -741,9 +741,6 @@ class DomainRequest(TimeStampedModel):
         contact information. If there is not creator information, then do
         nothing.
 
-        If the waffle flag "profile_feature" is active, then this email will be sent to the
-        domain request creator rather than the submitter
-
         Optional args:
         bcc_address: str -> the address to bcc to
 
@@ -758,7 +755,7 @@ class DomainRequest(TimeStampedModel):
         custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
 
-        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
+        recipient = self.creator
         if recipient is None or recipient.email is None:
             logger.warning(
                 f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
