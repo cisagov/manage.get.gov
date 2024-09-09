@@ -1248,14 +1248,11 @@ class DomainRequest(TimeStampedModel):
         return self.is_policy_acknowledged is not None
 
     def _is_general_form_complete(self, request):
-        has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
             self._is_organization_name_and_address_complete()
             and self._is_senior_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
-            # NOTE: This flag leaves submitter as empty (request wont submit) hence set to True
-            and (self._is_submitter_complete() if not has_profile_feature_flag else True)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()
             and self._is_policy_acknowledgement_complete()
