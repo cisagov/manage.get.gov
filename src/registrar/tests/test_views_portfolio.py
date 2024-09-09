@@ -711,7 +711,7 @@ class TestPortfolio(WebTest):
         requests_page = self.client.get(reverse("domain-requests"))
 
         # create new request btn
-        self.assertContains(requests_page, 'Start a new domain request')
+        self.assertContains(requests_page, "Start a new domain request")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -720,7 +720,12 @@ class TestPortfolio(WebTest):
         """Test the nav contains a simple link to view requests
         Also test for the existence of the Create a new request btn on the requests page"""
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS]
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            ],
         )
         self.client.force_login(self.user)
         # create and submit a domain request
@@ -744,7 +749,7 @@ class TestPortfolio(WebTest):
         requests_page = self.client.get(reverse("domain-requests"))
 
         # create new request btn
-        self.assertNotContains(requests_page, 'Start a new domain request')
+        self.assertNotContains(requests_page, "Start a new domain request")
 
     @less_console_noise_decorator
     def test_portfolio_cache_updates_when_modified(self):
@@ -752,7 +757,7 @@ class TestPortfolio(WebTest):
         self.client.force_login(self.user)
         portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
-        
+
         with override_flag("organization_feature", active=True):
             # Initial request to set the portfolio in session
             response = self.client.get(reverse("home"), follow=True)
@@ -760,14 +765,14 @@ class TestPortfolio(WebTest):
             portfolio = self.client.session.get("portfolio")
             self.assertEqual(portfolio.organization_name, "Hotel California")
             self.assertContains(response, "Hotel California")
-            
+
             # Modify the portfolio
             self.portfolio.organization_name = "Updated Hotel California"
             self.portfolio.save()
-            
+
             # Make another request
             response = self.client.get(reverse("home"), follow=True)
-            
+
             # Check if the updated portfolio name is in the response
             self.assertContains(response, "Updated Hotel California")
 
@@ -781,14 +786,14 @@ class TestPortfolio(WebTest):
         self.client.force_login(self.user)
         portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
-        
+
         with override_flag("organization_feature", active=True):
             # Initial request to set the portfolio in session
             response = self.client.get(reverse("home"), follow=True)
             portfolio = self.client.session.get("portfolio")
             self.assertEqual(portfolio.organization_name, "Hotel California")
             self.assertContains(response, "Hotel California")
-        
+
         # Disable the organization_feature flag
         with override_flag("organization_feature", active=False):
             # Make another request

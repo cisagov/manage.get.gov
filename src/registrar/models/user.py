@@ -201,7 +201,7 @@ class User(AbstractUser):
         request = HttpRequest()
         request.user = self
         return flag_is_active(request, "organization_requests")
-    
+
     def has_organization_members_flag(self):
         request = HttpRequest()
         request.user = self
@@ -226,7 +226,7 @@ class User(AbstractUser):
     def has_view_all_domains_portfolio_permission(self, portfolio):
         """Determines if the current user can view all available domains in a given portfolio"""
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
-    
+
     def has_any_requests_portfolio_permission(self, portfolio):
         # BEGIN
         # Note code below is to add organization_request feature
@@ -445,8 +445,6 @@ class User(AbstractUser):
         self.check_domain_invitations_on_login()
         self.check_portfolio_invitations_on_login()
 
-    # NOTE TO DAVE: I'd simply suggest that we move these functions outside of the user object,
-    # and move them to some sort of utility file. That way we aren't calling request inside here.
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
         portfolio = request.session.get("portfolio")

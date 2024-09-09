@@ -18,7 +18,7 @@ from registrar.models import (
     Website,
     FederalAgency,
     Portfolio,
-    UserPortfolioPermission
+    UserPortfolioPermission,
 )
 from registrar.views.domain_request import DomainRequestWizard, Step
 
@@ -2933,9 +2933,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         """Tests that the withdraw button on portfolio redirects to the portfolio domain requests page"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
