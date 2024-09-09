@@ -27,7 +27,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
 
     # check if a transition domain object for this domain name exists,
     # or if so whether its first_ready value matches its created_at date
-    def custom_filter(self, records: BaseManager[Domain]) -> BaseManager[Domain]:
+    def custom_filter(self, records):
         to_include_pks = []
         for record in records:
             if (

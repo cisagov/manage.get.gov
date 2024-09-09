@@ -78,7 +78,7 @@ class PopulateScriptTemplate(ABC):
     run_summary_header = None
 
     @abstractmethod
-    def update_record(self, record: Model):
+    def update_record(self, record):
         """Defines how we update each field.
 
         raises:
@@ -86,7 +86,7 @@ class PopulateScriptTemplate(ABC):
         """
         raise NotImplementedError
 
-    def mass_update_records(self, object_class: Model, filter_conditions, fields_to_update, debug=True, verbose=False):
+    def mass_update_records(self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False):
         """Loops through each valid "object_class" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using update_record.
 
