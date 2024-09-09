@@ -197,26 +197,20 @@ class User(AbstractUser):
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
-    def has_domain_requests_portfolio_permission(self, portfolio):
-        # BEGIN
-        # Note code below is to add organization_request feature
+    def has_organization_requests_flag(self):
         request = HttpRequest()
         request.user = self
-        has_organization_requests_flag = flag_is_active(request, "organization_requests")
-        if not has_organization_requests_flag:
-            return False
-        # END
-        return self._has_portfolio_permission(
-            portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
-        ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
+        return flag_is_active(request, "organization_requests")
+    
+    def has_organization_members_flag(self):
+        request = HttpRequest()
+        request.user = self
+        return flag_is_active(request, "organization_members")
 
     def has_view_members_portfolio_permission(self, portfolio):
         # BEGIN
         # Note code below is to add organization_request feature
-        request = HttpRequest()
-        request.user = self
-        has_organization_members_flag = flag_is_active(request, "organization_members")
-        if not has_organization_members_flag:
+        if not self.has_organization_members_flag():
             return False
         # END
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MEMBERS)
@@ -224,10 +218,7 @@ class User(AbstractUser):
     def has_edit_members_portfolio_permission(self, portfolio):
         # BEGIN
         # Note code below is to add organization_request feature
-        request = HttpRequest()
-        request.user = self
-        has_organization_members_flag = flag_is_active(request, "organization_members")
-        if not has_organization_members_flag:
+        if not self.has_organization_members_flag():
             return False
         # END
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_MEMBERS)
@@ -237,6 +228,11 @@ class User(AbstractUser):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
     
     def has_any_requests_portfolio_permission(self, portfolio):
+        # BEGIN
+        # Note code below is to add organization_request feature
+        if not self.has_organization_requests_flag():
+            return False
+        # END
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)

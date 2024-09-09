@@ -71,6 +71,8 @@ def portfolio_permissions(request):
             "has_edit_members_portfolio_permission": False,
             "portfolio": None,
             "has_organization_feature_flag": False,
+            "has_organization_requests_flag": False,
+            "has_organization_members_flag": False,
         }
     try:
         portfolio = request.session.get("portfolio")
@@ -92,6 +94,8 @@ def portfolio_permissions(request):
                 "has_edit_members_portfolio_permission": request.user.has_edit_members_portfolio_permission(portfolio),
                 "portfolio": portfolio,
                 "has_organization_feature_flag": True,
+                "has_organization_requests_flag": request.user.has_organization_requests_flag(),
+                "has_organization_members_flag": request.user.has_organization_members_flag(),
             }
         return default_context
 
