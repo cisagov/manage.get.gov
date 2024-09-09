@@ -236,6 +236,19 @@ class User(AbstractUser):
         """Determines if the current user can view all available domains in a given portfolio"""
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
 
+    # Field specific permission checks
+    def has_view_suborganization(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+
+    def has_edit_suborganization(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
+
+    def get_first_portfolio(self):
+        permission = self.portfolio_permissions.first()
+        if permission:
+            return permission.portfolio
+        return None
+
     def has_edit_requests(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
 
@@ -278,19 +291,6 @@ class User(AbstractUser):
                 break
 
         return roles
-
-    # Field specific permission checks
-    def has_view_suborganization(self, portfolio):
-        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
-
-    def has_edit_suborganization(self, portfolio):
-        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
-
-    def get_first_portfolio(self):
-        permission = self.portfolio_permissions.first()
-        if permission:
-            return permission.portfolio
-        return None
 
     def get_portfolios(self):
         return self.portfolio_permissions.all()
