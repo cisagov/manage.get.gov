@@ -439,8 +439,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             if condition:
                 step_list.append(step)
 
-        if flag_is_active(self.request, "profile_feature"):
-            step_list.remove(Step.YOUR_CONTACT)
+       
+        step_list.remove(Step.YOUR_CONTACT)
 
         return step_list
 
@@ -585,10 +585,6 @@ class Purpose(DomainRequestWizard):
 class YourContact(DomainRequestWizard):
     template_name = "domain_request_your_contact.html"
     forms = [forms.YourContactForm]
-
-    @waffle_flag("!profile_feature")  # type: ignore
-    def dispatch(self, request, *args, **kwargs):  # type: ignore
-        return super().dispatch(request, *args, **kwargs)
 
 
 class OtherContacts(DomainRequestWizard):

@@ -18,7 +18,6 @@
                     {% if user.is_authenticated %}
                     <span class="ellipsis usa-nav__username">{{ user.email }}</span>
                 </li>
-                {% if has_profile_feature_flag %}
                 <li class="usa-nav__secondary-item">
                     {% url 'user-profile' as user_profile_url %}
                     {% url 'finish-user-profile-setup' as finish_setup_url %}
@@ -26,7 +25,6 @@
                         Your profile
                     </a>
                 </li>
-                {% endif %}
                 <li class="usa-nav__secondary-item">
                     <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
                     {% else %}

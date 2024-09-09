@@ -70,7 +70,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     <div class="readonly textarea-wrapper">
         <div id="action_needed_reason_email_readonly" class="dja-readonly-textarea-container padding-1 margin-top-0 padding-top-0 margin-bottom-1 thin-border collapse--dgsimple collapsed">
             <label class="max-full" for="action_needed_reason_email_view_more">
-                <strong>Sent to {% if has_profile_feature_flag %}creator{%else%}submitter{%endif%}</strong>
+                <strong>Sent to creator</strong>
             </label>
             <textarea id="action_needed_reason_email_view_more" cols="40" rows="20" class="{% if not original_object.action_needed_reason %}display-none{% endif %}" readonly>
                 {{ original_object.action_needed_reason_email }}

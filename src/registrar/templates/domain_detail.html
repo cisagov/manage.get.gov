@@ -83,13 +83,6 @@
       {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=is_editable %}
     {% endif %}
 
-
-    {# Conditionally display profile #}
-    {% if not has_profile_feature_flag %}
-    {% url 'domain-your-contact-information' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Your contact information' value=request.user contact='true' edit_link=url editable=is_editable %}
-    {% endif %}
-
     {% url 'domain-security-email' pk=domain.id as url %}
     {% if security_email is not None and security_email not in hidden_security_emails%}
       {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=is_editable %}

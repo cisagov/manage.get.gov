@@ -46,10 +46,6 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
         return self.render_to_response(context)
 
-    @waffle_flag("profile_feature")  # type: ignore
-    def dispatch(self, request, *args, **kwargs):  # type: ignore
-        return super().dispatch(request, *args, **kwargs)
-
     def get_context_data(self, **kwargs):
         """Extend get_context_data"""
         context = super().get_context_data(**kwargs)

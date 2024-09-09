@@ -1989,13 +1989,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         """
 
         # TODO 2574: remove lines 1977-1978 (refactor as needed)
-        profile_flag = flag_is_active(request, "profile_feature")
-        if profile_flag and hasattr(obj, "creator"):
-            recipient = obj.creator
-        elif not profile_flag and hasattr(obj, "submitter"):
-            recipient = obj.submitter
-        else:
-            recipient = None
+        recipient = obj.creator
 
         # Displays a warning in admin when an email cannot be sent
         if recipient and recipient.email:
@@ -2200,7 +2194,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
         emails = self.get_all_action_needed_reason_emails(obj)
         extra_context["action_needed_reason_emails"] = json.dumps(emails)
-        extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
 
         # Denote if an action needed email was sent or not
         email_sent = request.session.get("action_needed_email_sent", False)
@@ -2228,11 +2221,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         """Returns the default email associated with the given action needed reason"""
         if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
             return None
-
-        if flag_is_active(None, "profile_feature"):  # type: ignore
-            recipient = domain_request.creator
-        else:
-            recipient = domain_request.submitter
+        
+        recipient = domain_request.creator
 
         # Return the context of the rendered views
         context = {"domain_request": domain_request, "recipient": recipient}

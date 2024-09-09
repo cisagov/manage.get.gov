@@ -647,10 +647,6 @@ class DomainYourContactInformationView(DomainFormBaseView):
     template_name = "domain_your_contact_information.html"
     form_class = UserForm
 
-    @waffle_flag("!profile_feature")  # type: ignore
-    def dispatch(self, request, *args, **kwargs):  # type: ignore
-        return super().dispatch(request, *args, **kwargs)
-
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
