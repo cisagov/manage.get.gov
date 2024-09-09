@@ -48,6 +48,8 @@ from registrar.models import (
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockDbForSharedTests,
@@ -63,7 +65,8 @@ from .common import (
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
-from unittest.mock import patch, Mock
+from unittest.mock import ANY, patch, Mock
+from django_webtest import WebTest  # type: ignore
 
 import logging
 
@@ -2084,6 +2087,7 @@ class TestPortfolioAdmin(TestCase):
         DomainRequest.objects.all().delete()
         Domain.objects.all().delete()
         Portfolio.objects.all().delete()
+        User.objects.all().delete()
 
     @less_console_noise_decorator
     def test_created_on_display(self):
@@ -2135,3 +2139,310 @@ class TestPortfolioAdmin(TestCase):
 
         domain_requests = self.admin.domain_requests(self.portfolio)
         self.assertIn("2 domain requests", domain_requests)
+
+    @less_console_noise_decorator
+    def test_portfolio_members_display(self):
+        """Tests the custom portfolio members field, admin and member sections"""
+        admin_user_1 = User.objects.create(
+            username="testuser1",
+            first_name="Gerald",
+            last_name="Meoward",
+            title="Captain",
+            email="meaoward@gov.gov",
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_1, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        admin_user_2 = User.objects.create(
+            username="testuser2",
+            first_name="Arnold",
+            last_name="Poopy",
+            title="Major",
+            email="poopy@gov.gov",
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_2, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        admin_user_3 = User.objects.create(
+            username="testuser3",
+            first_name="Mad",
+            last_name="Max",
+            title="Road warrior",
+            email="madmax@gov.gov",
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_3, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+
+        admin_user_4 = User.objects.create(
+            username="testuser4",
+            first_name="Agent",
+            last_name="Smith",
+            title="Program",
+            email="thematrix@gov.gov",
+        )
+
+        UserPortfolioPermission.objects.all().create(
+            user=admin_user_4,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
+        )
+
+        display_admins = self.admin.display_admins(self.portfolio)
+
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_1.pk}/change/">Gerald Meoward meaoward@gov.gov</a>',
+            display_admins,
+        )
+        self.assertIn("Captain", display_admins)
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_2.pk}/change/">Arnold Poopy poopy@gov.gov</a>', display_admins
+        )
+        self.assertIn("Major", display_admins)
+
+        display_members_summary = self.admin.display_members_summary(self.portfolio)
+
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_3.pk}/change/">Mad Max madmax@gov.gov</a>',
+            display_members_summary,
+        )
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_4.pk}/change/">Agent Smith thematrix@gov.gov</a>',
+            display_members_summary,
+        )
+
+        display_members = self.admin.display_members(self.portfolio)
+
+        self.assertIn("Mad Max", display_members)
+        self.assertIn("<span class='usa-tag'>Member</span>", display_members)
+        self.assertIn("Road warrior", display_members)
+        self.assertIn("Agent Smith", display_members)
+        self.assertIn("<span class='usa-tag'>Domain requestor</span>", display_members)
+        self.assertIn("Program", display_members)
+
+
+class TestTransferUser(WebTest):
+    """User transfer custom admin page"""
+
+    # csrf checks do not work well with WebTest.
+    # We disable them here.
+    csrf_checks = False
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.superuser = create_superuser()
+        cls.admin = PortfolioAdmin(model=Portfolio, admin_site=cls.site)
+        cls.factory = RequestFactory()
+
+    def setUp(self):
+        self.app.set_user(self.superuser)
+        self.user1, _ = User.objects.get_or_create(
+            username="madmax", first_name="Max", last_name="Rokatanski", title="Road warrior"
+        )
+        self.user2, _ = User.objects.get_or_create(
+            username="furiosa", first_name="Furiosa", last_name="Jabassa", title="Imperator"
+        )
+
+    def tearDown(self):
+        Suborganization.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Domain.objects.all().delete()
+        Portfolio.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_transfer_user_shows_current_and_selected_user_information(self):
+        """Assert we pull the current user info and display it on the transfer page"""
+        completed_domain_request(user=self.user1, name="wasteland.gov")
+        domain_request = completed_domain_request(
+            user=self.user1, name="citadel.gov", status=DomainRequest.DomainRequestStatus.SUBMITTED
+        )
+        domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
+        domain_request.save()
+        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        UserPortfolioPermission.objects.create(
+            user=self.user1, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        portfolio2 = Portfolio.objects.create(organization_name="Tokyo Hotel", creator=self.user2)
+        UserPortfolioPermission.objects.create(
+            user=self.user2, portfolio=portfolio2, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+
+        self.assertContains(user_transfer_page, "madmax")
+        self.assertContains(user_transfer_page, "Max")
+        self.assertContains(user_transfer_page, "Rokatanski")
+        self.assertContains(user_transfer_page, "Road warrior")
+        self.assertContains(user_transfer_page, "wasteland.gov")
+        self.assertContains(user_transfer_page, "citadel.gov")
+        self.assertContains(user_transfer_page, "Hotel California")
+
+        select_form = user_transfer_page.forms[0]
+        select_form["selected_user"] = str(self.user2.id)
+        preview_result = select_form.submit()
+
+        self.assertContains(preview_result, "furiosa")
+        self.assertContains(preview_result, "Furiosa")
+        self.assertContains(preview_result, "Jabassa")
+        self.assertContains(preview_result, "Imperator")
+        self.assertContains(preview_result, "Tokyo Hotel")
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_user_portfolio_roles(self):
+        """Assert that a portfolio user role gets transferred"""
+        portfolio = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        user_portfolio_permission = UserPortfolioPermission.objects.create(
+            user=self.user2, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+
+        user_portfolio_permission.refresh_from_db()
+
+        self.assertEquals(user_portfolio_permission.user, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_domain_request_creator_and_investigator(self):
+        """Assert that domain request fields get transferred"""
+        domain_request = completed_domain_request(user=self.user2, name="wasteland.gov", investigator=self.user2)
+
+        self.assertEquals(domain_request.creator, self.user2)
+        self.assertEquals(domain_request.investigator, self.user2)
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        domain_request.refresh_from_db()
+
+        self.assertEquals(domain_request.creator, self.user1)
+        self.assertEquals(domain_request.investigator, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_domain_information_creator(self):
+        """Assert that domain fields get transferred"""
+        domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user2)
+
+        self.assertEquals(domain_information.creator, self.user2)
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        domain_information.refresh_from_db()
+
+        self.assertEquals(domain_information.creator, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_domain_role(self):
+        """Assert that user domain role get transferred"""
+        domain_1, _ = Domain.objects.get_or_create(name="chrome.gov", state=Domain.State.READY)
+        domain_2, _ = Domain.objects.get_or_create(name="v8.gov", state=Domain.State.READY)
+        user_domain_role1, _ = UserDomainRole.objects.get_or_create(
+            user=self.user2, domain=domain_1, role=UserDomainRole.Roles.MANAGER
+        )
+        user_domain_role2, _ = UserDomainRole.objects.get_or_create(
+            user=self.user2, domain=domain_2, role=UserDomainRole.Roles.MANAGER
+        )
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        user_domain_role1.refresh_from_db()
+        user_domain_role2.refresh_from_db()
+
+        self.assertEquals(user_domain_role1.user, self.user1)
+        self.assertEquals(user_domain_role2.user, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_verified_by_staff_requestor(self):
+        """Assert that verified by staff creator gets transferred"""
+        vip, _ = VerifiedByStaff.objects.get_or_create(requestor=self.user2, email="immortan.joe@citadel.com")
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        vip.refresh_from_db()
+
+        self.assertEquals(vip.requestor, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_deletes_old_user(self):
+        """Assert that the slected user gets deleted"""
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        # Refresh user2 from the database and check if it still exists
+        with self.assertRaises(User.DoesNotExist):
+            self.user2.refresh_from_db()
+
+    @less_console_noise_decorator
+    def test_transfer_user_throws_transfer_and_delete_success_messages(self):
+        """Test that success messages for data transfer and user deletion are displayed."""
+        # Ensure the setup for VerifiedByStaff
+        VerifiedByStaff.objects.get_or_create(requestor=self.user2, email="immortan.joe@citadel.com")
+
+        # Access the transfer user page
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+
+        with patch("django.contrib.messages.success") as mock_success_message:
+
+            # Fill the form with the selected user and submit
+            submit_form = user_transfer_page.forms[1]
+            submit_form["selected_user"] = self.user2.pk
+            after_submit = submit_form.submit().follow()
+
+            self.assertContains(after_submit, "<h1>Change user</h1>")
+
+            mock_success_message.assert_any_call(
+                ANY,
+                (
+                    "Data transferred successfully for the following objects: ['Changed requestor "
+                    + 'from "Furiosa Jabassa " to "Max Rokatanski " on immortan.joe@citadel.com\']'
+                ),
+            )
+
+            mock_success_message.assert_any_call(ANY, f"Deleted {self.user2} {self.user2.username}")
+
+    @less_console_noise_decorator
+    def test_transfer_user_throws_error_message(self):
+        """Test that an error message is thrown if the transfer fails."""
+        with patch(
+            "registrar.views.TransferUserView.transfer_user_fields_and_log", side_effect=Exception("Simulated Error")
+        ):
+            with patch("django.contrib.messages.error") as mock_error:
+                # Access the transfer user page
+                user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+
+                # Fill the form with the selected user and submit
+                submit_form = user_transfer_page.forms[1]
+                submit_form["selected_user"] = self.user2.pk
+                submit_form.submit().follow()
+
+                # Assert that the error message was called with the correct argument
+                mock_error.assert_called_once_with(ANY, "An error occurred during the transfer: Simulated Error")
+
+    @less_console_noise_decorator
+    def test_transfer_user_modal(self):
+        """Assert modal on page"""
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        self.assertContains(user_transfer_page, "This action cannot be undone.")
