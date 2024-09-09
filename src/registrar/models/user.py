@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.http import HttpRequest
 
 from registrar.models import DomainInformation, UserDomainRole
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 
 from .domain_invitation import DomainInvitation
 from .portfolio_invitation import PortfolioInvitation
@@ -63,32 +63,6 @@ class User(AbstractUser):
         # because those users still do get "verified" through normal means
         # after they login.
         FIXTURE_USER = "fixture_user", "Created by fixtures"
-
-    PORTFOLIO_ROLE_PERMISSIONS = {
-        UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBER,
-            UserPortfolioPermissionChoices.EDIT_MEMBER,
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            UserPortfolioPermissionChoices.EDIT_REQUESTS,
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            # Domain: field specific permissions
-            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
-            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
-        ],
-        UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBER,
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            # Domain: field specific permissions
-            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
-        ],
-        UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-        ],
-    }
 
     # #### Constants for choice fields ####
     RESTRICTED = "restricted"
