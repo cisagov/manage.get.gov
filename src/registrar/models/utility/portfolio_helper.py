@@ -17,8 +17,8 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     VIEW_ALL_DOMAINS = "view_all_domains", "View all domains and domain reports"
     VIEW_MANAGED_DOMAINS = "view_managed_domains", "View managed domains"
 
-    VIEW_MEMBER = "view_member", "View members"
-    EDIT_MEMBER = "edit_member", "Create and edit members"
+    VIEW_MEMBERS = "view_members", "View members"
+    EDIT_MEMBERS = "edit_members", "Create and edit members"
 
     VIEW_ALL_REQUESTS = "view_all_requests", "View all requests"
     EDIT_REQUESTS = "edit_requests", "Create and edit requests"

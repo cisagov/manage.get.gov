@@ -1603,6 +1603,7 @@ class TestUser(TestCase):
         self.assertFalse(self.user.has_contact_info())
 
     @less_console_noise_decorator
+    @override_flag("organization_requests", active=True)
     def test_has_portfolio_permission(self):
         """
         0. Returns False when user does not have a permission
@@ -1624,7 +1625,10 @@ class TestUser(TestCase):
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             portfolio=portfolio,
             user=self.user,
-            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            ],
         )
 
         user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
