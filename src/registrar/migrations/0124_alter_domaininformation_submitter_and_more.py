@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0122_create_groups_v16"),
+        ("registrar", "0123_alter_portfolioinvitation_portfolio_additional_permissions_and_more"),
     ]
 
     operations = [
