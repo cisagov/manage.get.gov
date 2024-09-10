@@ -75,9 +75,14 @@ def apply_search(queryset, request):
         if search_term_lower in new_domain_request_text:
             queryset = queryset.filter(
                 Q(requested_domain__name__icontains=search_term) | Q(requested_domain__isnull=True)
-            ) 
+            )
         elif is_portfolio:
-            queryset = queryset.filter(Q(requested_domain__name__icontains=search_term) | Q(creator__first_name__icontains=search_term) | Q(creator__last_name__icontains=search_term) | Q(creator__email__icontains=search_term))
+            queryset = queryset.filter(
+                Q(requested_domain__name__icontains=search_term)
+                | Q(creator__first_name__icontains=search_term)
+                | Q(creator__last_name__icontains=search_term)
+                | Q(creator__email__icontains=search_term)
+            )
         # For non org users
         else:
             queryset = queryset.filter(Q(requested_domain__name__icontains=search_term))
