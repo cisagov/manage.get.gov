@@ -1559,6 +1559,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
+      // add searchParams
       let searchParams = new URLSearchParams(
         {
           "page": page,
