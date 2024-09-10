@@ -1,5 +1,4 @@
 from django.conf import settings
-from waffle.decorators import flag_is_active
 
 
 def language_code(request):
