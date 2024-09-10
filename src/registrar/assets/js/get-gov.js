@@ -34,6 +34,26 @@ const showElement = (element) => {
 };
 
 /**
+ * Helper function that returns commonly used search params for tables
+ * @param {*} page - Used for the paginator to determine which page we reside on
+ * @param {*} sortBy - which value to sort on. Passed to sort_by in django
+ * @param {*} order - which value to order on. Passed to order_by in django
+ * @param {*} status - Represents the status filter button
+ * @param {*} searchTerm - Represents the value of the search bar
+ */
+function getGenericTableSearchParams(page, sortBy, order, status, searchTerm) {
+  return new URLSearchParams(
+    {
+      "page": page,
+      "sort_by": sortBy,
+      "order": order,
+      "status": status,
+      "search_term": searchTerm
+    }
+  );
+}
+
+/**
  * Helper function that scrolls to an element
  * @param {string} attributeName - The string "class" or "id"
  * @param {string} attributeValue - The class or id name
@@ -1179,6 +1199,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
      * @param {*} scroll - control for the scrollToElement functionality
+     * @param {*} status - control for the status filter
      * @param {*} searchTerm - the search term
      * @param {*} portfolio - the portfolio id
      */
@@ -1195,10 +1216,11 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       // fetch json of page of domains, given params
-      let url = `${baseUrlValue}?page=${page}&sort_by=${sortBy}&order=${order}&status=${status}&search_term=${searchTerm}`
+      let searchParams = getGenericTableSearchParams(page, sort_by, order, status, search_term);
       if (portfolio)
-        url += `&portfolio=${portfolio}`
+        searchParams.append("portfolio", portfolio)
 
+      let url = `${baseUrlValue}?${searchParams.toString()}`
       fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -1485,6 +1507,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
     const tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
     const resetSearchButton = document.querySelector('.domain-requests__reset-search');
+    const portfolioElement = document.getElementById('portfolio-js-value');
+    const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
 
     /**
      * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
@@ -1524,6 +1548,7 @@ document.addEventListener('DOMContentLoaded', function() {
       return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
     }
 
+    let currentStatus = []
     /**
      * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
      * based on the supplied attributes.
@@ -1533,7 +1558,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} scroll - control for the scrollToElement functionality
      * @param {*} searchTerm - the search term
      */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, searchTerm = currentSearchTerm) {
+    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, status = currentStatus, searchTerm = currentSearchTerm, portfolio = portfolioValue) {
       // fetch json of page of domain requests, given params
       let baseUrl = document.getElementById("get_domain_requests_json_url");
       if (!baseUrl) {
@@ -1545,7 +1570,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      fetch(`${baseUrlValue}?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
+      let searchParams = getGenericTableSearchParams(page, sort_by, order, status, search_term);
+      if (portfolio)
+        searchParams.append("portfolio", portfolio)
+
+      let url = `${baseUrlValue}?${searchParams.toString()}`
+      fetch(url)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
