@@ -45,7 +45,7 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
             context["show_confirmation_modal"] = True
 
         return self.render_to_response(context)
-    
+
     def dispatch(self, request, *args, **kwargs):  # type: ignore
         return super().dispatch(request, *args, **kwargs)
 

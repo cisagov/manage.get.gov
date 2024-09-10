@@ -73,7 +73,6 @@ class CheckUserProfileMiddleware:
         finished_setup flag on the current user. If they haven't done so,
         then we redirect them to the finish setup page."""
 
-
         if request.user.is_authenticated:
             profile_page = self.profile_page
             if request.user.verification_type == User.VerificationTypeChoices.REGULAR:

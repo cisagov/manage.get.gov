@@ -439,7 +439,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             if condition:
                 step_list.append(step)
 
-       
         step_list.remove(Step.YOUR_CONTACT)
 
         return step_list

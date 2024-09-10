@@ -2221,7 +2221,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         """Returns the default email associated with the given action needed reason"""
         if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
             return None
-        
+
         recipient = domain_request.creator
 
         # Return the context of the rendered views

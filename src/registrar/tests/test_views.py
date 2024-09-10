@@ -627,7 +627,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.app.set_user(incomplete_regular_user.username)
 
         # This will redirect the user to the setup page.
-         # Follow implicity checks if our redirect is working.
+        # Follow implicity checks if our redirect is working.
         finish_setup_page = self.app.get(reverse("home")).follow()
         self._set_session_cookie()
 
@@ -638,13 +638,13 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
         self.assertEqual(finish_setup_page.status_code, 200)
 
-            # We're missing a phone number, so the page should tell us that
+        # We're missing a phone number, so the page should tell us that
         self.assertContains(finish_setup_page, "Enter your phone number.")
 
-            # Check for the name of the save button
+        # Check for the name of the save button
         self.assertContains(finish_setup_page, "user_setup_save_button")
 
-            # Add a phone number
+        # Add a phone number
         finish_setup_form = finish_setup_page.form
         finish_setup_form["phone"] = "(201) 555-0123"
         finish_setup_form["title"] = "CEO"
@@ -654,8 +654,8 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.assertEqual(save_page.status_code, 200)
         self.assertContains(save_page, "Your profile has been updated.")
 
-            # Try to navigate back to the home page.
-            # This is the same as clicking the back button.
+        # Try to navigate back to the home page.
+        # This is the same as clicking the back button.
         completed_setup_page = self.app.get(reverse("home"))
         self.assertContains(completed_setup_page, "Manage your domain")
         incomplete_regular_user.delete()
@@ -739,7 +739,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         # Check for the name of the save button
         self.assertContains(finish_setup_page, "user_setup_save_button")
 
-            # Add a phone number
+        # Add a phone number
         finish_setup_form = finish_setup_page.form
         finish_setup_form["first_name"] = "firstname"
         finish_setup_form["phone"] = "(201) 555-0123"
@@ -751,14 +751,14 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
         finish_setup_form = completed_setup_page.form
 
-            # Submit the form using the specific submit button to execute the redirect
+        # Submit the form using the specific submit button to execute the redirect
         completed_setup_page = self._submit_form_webtest(
-                finish_setup_form, follow=True, name="user_setup_submit_button"
-            )
+            finish_setup_form, follow=True, name="user_setup_submit_button"
+        )
         self.assertEqual(completed_setup_page.status_code, 200)
 
-            # Assert that we are still on the
-            # Assert that we're on the domain request page
+        # Assert that we are still on the
+        # Assert that we're on the domain request page
         self.assertNotContains(completed_setup_page, "Finish setting up your profile")
         self.assertNotContains(completed_setup_page, "What contact information should we use to reach you?")
 
@@ -836,14 +836,12 @@ class UserProfileTests(TestWithUser, WebTest):
             self.assertEqual(response.status_code, 500)
             self.assertContains(response, "Your profile")
 
-
     @less_console_noise_decorator
     def test_home_page_main_nav(self):
         """test that Your profile is in main nav of home page"""
-       
+
         response = self.client.get("/", follow=True)
         self.assertContains(response, "Your profile")
-
 
     @less_console_noise_decorator
     def test_new_request_main_nav(self):
@@ -894,7 +892,7 @@ class UserProfileTests(TestWithUser, WebTest):
             senior_official=contact_user,
             submitter=contact_user,
         )
-        
+
         response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
         self.assertContains(response, "Your profile")
         response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
