@@ -22,8 +22,6 @@ from .utility import (
     DomainRequestWizardPermissionView,
 )
 
-from waffle.decorators import flag_is_active, waffle_flag
-
 logger = logging.getLogger(__name__)
 
 

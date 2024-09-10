@@ -11,7 +11,6 @@ from django.urls import NoReverseMatch, reverse
 from registrar.models.user import User
 from registrar.models.utility.generic_helper import replace_url_queryparams
 from registrar.views.utility.permission_views import UserProfilePermissionView
-from waffle.decorators import waffle_flag
 
 logger = logging.getLogger(__name__)
 
