@@ -170,7 +170,6 @@ class TestDomainRequest(TestCase):
             zipcode="12345-6789",
             senior_official=contact,
             requested_domain=domain,
-            submitter=contact,
             purpose="Igorville rules!",
             anything_else="All of Igorville loves the dotgov program.",
             is_policy_acknowledged=True,
@@ -197,7 +196,6 @@ class TestDomainRequest(TestCase):
             state_territory="CA",
             zipcode="12345-6789",
             senior_official=contact,
-            submitter=contact,
             purpose="Igorville rules!",
             anything_else="All of Igorville loves the dotgov program.",
             is_policy_acknowledged=True,
@@ -225,7 +223,7 @@ class TestDomainRequest(TestCase):
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(creator=user, requested_domain=site)
 
-        # no submitter email so this emits a log warning
+        # no email sent to creator so this emits a log warning
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
@@ -258,19 +256,19 @@ class TestDomainRequest(TestCase):
 
         email_allowed.delete()
 
-    @override_flag("profile_feature", active=False)
     @less_console_noise_decorator
     def test_submit_from_started_sends_email(self):
         msg = "Create a domain request and submit it and see if email was sent."
-        domain_request = completed_domain_request(submitter=self.dummy_user, user=self.dummy_user_2)
-        self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hello")
-
-    @override_flag("profile_feature", active=True)
+        domain_request = completed_domain_request(user=self.dummy_user_2)
+        self.check_email_sent(
+            domain_request, msg, "submit", 1, expected_content="Hi", expected_email=self.dummy_user_2.email
+        )
+        
     @less_console_noise_decorator
     def test_submit_from_started_sends_email_to_creator(self):
         """Tests if, when the profile feature flag is on, we send an email to the creator"""
         msg = "Create a domain request and submit it and see if email was sent when the feature flag is on."
-        domain_request = completed_domain_request(submitter=self.dummy_user, user=self.dummy_user_2)
+        domain_request = completed_domain_request(user=self.dummy_user_2)
         self.check_email_sent(
             domain_request, msg, "submit", 1, expected_content="Lava", expected_email="intern@igorville.com"
         )
@@ -278,10 +276,9 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     def test_submit_from_withdrawn_sends_email(self):
         msg = "Create a withdrawn domain request and submit it and see if email was sent."
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.WITHDRAWN, submitter=self.dummy_user
-        )
-        self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hello")
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.WITHDRAWN, user=user)
+        self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hi", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_submit_from_action_needed_does_not_send_email(self):
@@ -298,26 +295,25 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     def test_approve_sends_email(self):
         msg = "Create a domain request and approve it and see if email was sent."
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, submitter=self.dummy_user
-        )
-        self.check_email_sent(domain_request, msg, "approve", 1, expected_content="Hello")
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
+        self.check_email_sent(domain_request, msg, "approve", 1, expected_content="approved", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_withdraw_sends_email(self):
         msg = "Create a domain request and withdraw it and see if email was sent."
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, submitter=self.dummy_user
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
+        self.check_email_sent(
+            domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
         )
-        self.check_email_sent(domain_request, msg, "withdraw", 1, expected_content="Hello")
 
     @less_console_noise_decorator
     def test_reject_sends_email(self):
         msg = "Create a domain request and reject it and see if email was sent."
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.APPROVED, submitter=self.dummy_user
-        )
-        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hello")
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED, user=user)
+        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="rejected", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_reject_with_prejudice_does_not_send_email(self):
@@ -2069,7 +2065,6 @@ class TestDomainRequestIncomplete(TestCase):
             senior_official=so,
             requested_domain=draft_domain,
             purpose="Some purpose",
-            submitter=you,
             no_other_contacts_rationale=None,
             has_cisa_representative=True,
             cisa_representative_email="somerep@cisa.com",
@@ -2197,13 +2192,6 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.purpose = None
         self.domain_request.save()
         self.assertFalse(self.domain_request._is_purpose_complete())
-
-    @less_console_noise_decorator
-    def test_is_submitter_complete(self):
-        self.assertTrue(self.domain_request._is_submitter_complete())
-        self.domain_request.submitter = None
-        self.domain_request.save()
-        self.assertFalse(self.domain_request._is_submitter_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_complete_missing_one_field(self):
