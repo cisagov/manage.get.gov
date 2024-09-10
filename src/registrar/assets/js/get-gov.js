@@ -1484,12 +1484,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const domainRequestsWrapper = document.querySelector('.domain-requests__table-wrapper');
 
   if (domainRequestsWrapper) {
-    let currentSortBy = 'id';
-    let currentOrder = 'asc';
+    var currentSortBy = 'id';
+    var currentOrder = 'asc';
+    var currentStatus = []
+    var scrollToTable = false;
+    var currentSearchTerm = '';
     const noDomainRequestsWrapper = document.querySelector('.domain-requests__no-data');
     const noSearchResultsWrapper = document.querySelector('.domain-requests__no-search-results');
-    let scrollToTable = false;
-    let currentSearchTerm = '';
     const domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
     const domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
     const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
@@ -1526,7 +1527,8 @@ document.addEventListener('DOMContentLoaded', function() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         // Update data and UI
-        loadDomainRequests(pageToDisplay, currentSortBy, currentOrder, scrollToTable, currentSearchTerm);
+        args = {"sort_by": currentSortBy, "order": currentOrder, "status": currentStatus, "search_term": currentSearchTerm}
+        loadDomainRequests(args, scrollToTable);
       })
       .catch(error => console.error('Error fetching domain requests:', error));
     }
@@ -1536,17 +1538,17 @@ document.addEventListener('DOMContentLoaded', function() {
       return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
     }
 
-    let currentStatus = []
     /**
      * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
      * based on the supplied attributes.
      * @param {*} page - the page number of the results (starts with 1)
-     * @param {*} sortBy - the sort column option
-     * @param {*} order - the sort order {asc, desc}
      * @param {*} scroll - control for the scrollToElement functionality
-     * @param {*} searchTerm - the search term
+     * @param {*} sort_by - the sort column option
+     * @param {*} order - the sort order {asc, desc}
+     * @param {*} search_term - the search term
+     * @param {*} portfolio - the given portfolio
      */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, status = currentStatus, searchTerm = currentSearchTerm, portfolio = portfolioValue) {
+    function loadDomainRequests(args = {}, scroll = scrollToTable, portfolio=portfolioValue) {
       // fetch json of page of domain requests, given params
       let baseUrl = document.getElementById("get_domain_requests_json_url");
       if (!baseUrl) {
@@ -1558,15 +1560,25 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      let searchParams = new URLSearchParams(
-        {
-          "page": page,
-          "sort_by": sortBy,
-          "order": order,
-          "status": status,
-          "search_term": searchTerm
-        }
+      // Default values
+      let params = {
+        page: 1,
+        sort_by: currentSortBy,
+        order: currentOrder,
+        status: currentStatus,
+        search_term: currentSearchTerm,
+        portfolio: portfolioValue,
+      };
+    
+      // Merge args into params - i.e. override defaults where appropriate
+      Object.assign(params, args);
+    
+      // Filter out undefined values
+      let filteredParams = Object.fromEntries(
+        Object.entries(params).filter(([_, v]) => v !== undefined)
       );
+
+      let searchParams = new URLSearchParams(filteredParams);
       if (portfolio)
         searchParams.append("portfolio", portfolio)
 
@@ -1802,7 +1814,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (sortBy === currentSortBy) {
           order = currentOrder === 'asc' ? 'desc' : 'asc';
         }
-        loadDomainRequests(1, sortBy, order);
+        loadDomainRequests(args={"page": 1, "sort_by": sortBy, "order": order});
       });
     });
 
@@ -1815,7 +1827,7 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         hideElement(resetSearchButton);
       }
-      loadDomainRequests(1, 'id', 'asc');
+      loadDomainRequests(args={"page": 1, "sort_by": "id", "order": "asc"});
       resetHeaders();
     });
 
@@ -1833,7 +1845,7 @@ document.addEventListener('DOMContentLoaded', function() {
       domainRequestsSearchInput.value = '';
       currentSearchTerm = '';
       hideElement(resetSearchButton);
-      loadDomainRequests(1, 'id', 'asc');
+      loadDomainRequests(args={"page": 1, "sort_by": "id", "order": "asc"});
       resetHeaders();
     }
 
@@ -1844,7 +1856,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initial load
-    loadDomainRequests(1);
+    loadDomainRequests(args={"page": 1});
   }
 });
 
