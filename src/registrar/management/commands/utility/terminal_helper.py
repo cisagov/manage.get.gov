@@ -2,8 +2,11 @@ import logging
 import sys
 from abc import ABC, abstractmethod
 from django.core.paginator import Paginator
+from django.db.models import Model
+from django.db.models.manager import BaseManager
 from typing import List
 from registrar.utility.enums import LogCode
+
 
 logger = logging.getLogger(__name__)
 
@@ -76,27 +79,60 @@ class PopulateScriptTemplate(ABC):
 
     @abstractmethod
     def update_record(self, record):
-        """Defines how we update each field. Must be defined before using mass_update_records."""
+        """Defines how we update each field.
+
+        raises:
+            NotImplementedError: If not defined before calling mass_update_records.
+        """
         raise NotImplementedError
 
-    def mass_update_records(self, object_class, filter_conditions, fields_to_update, debug=True):
+    def mass_update_records(self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False):
         """Loops through each valid "object_class" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using update_record.
 
-        You must define update_record before you can use this function.
+        Parameters:
+            object_class: The Django model class that you want to perform the bulk update on.
+                This should be the actual class, not a string of the class name.
+
+            filter_conditions: dictionary of valid Django Queryset filter conditions
+                (e.g. {'verification_type__isnull'=True}).
+
+            fields_to_update: List of strings specifying which fields to update.
+                (e.g. ["first_ready_date", "last_submitted_date"])
+
+            debug: Whether to log script run summary in debug mode.
+                Default: True.
+
+            verbose: Whether to print a detailed run summary *before* run confirmation.
+                Default: False.
+
+        Raises:
+            NotImplementedError: If you do not define update_record before using this function.
+            TypeError: If custom_filter is not Callable.
         """
 
         records = object_class.objects.filter(**filter_conditions) if filter_conditions else object_class.objects.all()
+
+        # apply custom filter
+        records = self.custom_filter(records)
+
         readable_class_name = self.get_class_name(object_class)
+
+        # for use in the execution prompt.
+        proposed_changes = f"""==Proposed Changes==
+            Number of {readable_class_name} objects to change: {len(records)}
+            These fields will be updated on each record: {fields_to_update}
+            """
+
+        if verbose:
+            proposed_changes = f"""{proposed_changes}
+            These records will be updated: {list(records.all())}
+            """
 
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
-            ==Proposed Changes==
-            Number of {readable_class_name} objects to change: {len(records)}
-            These fields will be updated on each record: {fields_to_update}
-            """,
+            prompt_message=proposed_changes,
             prompt_title=self.prompt_title,
         )
         logger.info("Updating...")
@@ -141,9 +177,16 @@ class PopulateScriptTemplate(ABC):
         return f"{TerminalColors.FAIL}" f"Failed to update {record}" f"{TerminalColors.ENDC}"
 
     def should_skip_record(self, record) -> bool:  # noqa
-        """Defines the condition in which we should skip updating a record. Override as needed."""
+        """Defines the condition in which we should skip updating a record. Override as needed.
+        The difference between this and custom_filter is that records matching these conditions
+        *will* be included in the run but will be skipped (and logged as such)."""
         # By default - don't skip
         return False
+
+    def custom_filter(self, records: BaseManager[Model]) -> BaseManager[Model]:
+        """Override to define filters that can't be represented by django queryset field lookups.
+        Applied to individual records *after* filter_conditions. True means"""
+        return records
 
 
 class TerminalHelper:
@@ -220,6 +263,9 @@ class TerminalHelper:
                 an answer is required of the user).
 
         The "answer" return value is True for "yes" or False for "no".
+
+        Raises:
+            ValueError: When "default" is not "yes", "no", or None.
         """
         valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
         if default is None:
@@ -244,6 +290,7 @@ class TerminalHelper:
     @staticmethod
     def query_yes_no_exit(question: str, default="yes"):
         """Ask a yes/no question via raw_input() and return their answer.
+        Allows for answer "e" to exit.
 
         "question" is a string that is presented to the user.
         "default" is the presumed answer if the user just hits <Enter>.
@@ -251,6 +298,9 @@ class TerminalHelper:
                 an answer is required of the user).
 
         The "answer" return value is True for "yes" or False for "no".
+
+        Raises:
+            ValueError: When "default" is not "yes", "no", or None.
         """
         valid = {
             "yes": True,
@@ -317,9 +367,8 @@ class TerminalHelper:
                 case _:
                     logger.info(print_statement)
 
-    # TODO - "info_to_inspect" should be refactored to "prompt_message"
     @staticmethod
-    def prompt_for_execution(system_exit_on_terminate: bool, info_to_inspect: str, prompt_title: str) -> bool:
+    def prompt_for_execution(system_exit_on_terminate: bool, prompt_message: str, prompt_title: str) -> bool:
         """Create to reduce code complexity.
         Prompts the user to inspect the given string
         and asks if they wish to proceed.
@@ -340,7 +389,7 @@ class TerminalHelper:
             =====================================================
             *** IMPORTANT:  VERIFY THE FOLLOWING LOOKS CORRECT ***
 
-            {info_to_inspect}
+            {prompt_message}
             {TerminalColors.FAIL}
             Proceed? (Y = proceed, N = {action_description_for_selecting_no})
             {TerminalColors.ENDC}"""

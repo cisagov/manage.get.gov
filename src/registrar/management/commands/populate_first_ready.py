@@ -31,7 +31,7 @@ class Command(BaseCommand):
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            prompt_message=f"""
             ==Proposed Changes==
             Number of Domain objects to change: {len(domains)}
             """,

@@ -63,3 +63,4 @@ The class also provides helper methods:
 - `get_class_name`: Returns a display-friendly class name for the terminal prompt
 - `get_failure_message`: Returns the message to display if a record fails to update
 - `should_skip_record`: Defines the condition for skipping a record (by default, no records are skipped)
+- `custom_filter`: Allows for additional filters that cannot be expressed using django queryset field lookups
