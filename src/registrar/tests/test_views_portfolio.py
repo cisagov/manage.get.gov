@@ -2,7 +2,6 @@ from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.config import settings
 from registrar.models import Portfolio, SeniorOfficial
-from unittest import skip
 from django_webtest import WebTest  # type: ignore
 from registrar.models import (
     DomainRequest,

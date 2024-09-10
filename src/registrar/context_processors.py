@@ -76,16 +76,15 @@ def portfolio_permissions(request):
     }
     try:
         portfolio = request.session.get("portfolio")
+        # Linting: line too long
+        view_suborg = request.user.has_view_suborganization_portfolio_permission(portfolio)
+        edit_suborg = request.user.has_edit_suborganization_portfolio_permission(portfolio)
         if portfolio:
             return {
                 "has_base_portfolio_permission": request.user.has_base_portfolio_permission(portfolio),
                 "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),
-                "has_view_suborganization_portfolio_permission": request.user.has_view_suborganization_portfolio_permission(
-                    portfolio
-                ),
-                "has_edit_suborganization_portfolio_permission": request.user.has_edit_suborganization_portfolio_permission(
-                    portfolio
-                ),
+                "has_view_suborganization_portfolio_permission": view_suborg,
+                "has_edit_suborganization_portfolio_permission": edit_suborg,
                 "has_any_domains_portfolio_permission": request.user.has_any_domains_portfolio_permission(portfolio),
                 "has_any_requests_portfolio_permission": request.user.has_any_requests_portfolio_permission(portfolio),
                 "has_view_members_portfolio_permission": request.user.has_view_members_portfolio_permission(portfolio),
