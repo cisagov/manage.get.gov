@@ -39,6 +39,7 @@ class UserFixture:
             "username": "be17c826-e200-4999-9389-2ded48c43691",
             "first_name": "Matthew",
             "last_name": "Spence",
+            "email": "mspence1845@gmail.com"
         },
         {
             "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
@@ -155,6 +156,7 @@ class UserFixture:
             "username": "d6bf296b-fac5-47ff-9c12-f88ccc5c1b99",
             "first_name": "Matthew-Analyst",
             "last_name": "Spence-Analyst",
+            "email": "mspence1845+1@gmail.com"
         },
         {
             "username": "319c490d-453b-43d9-bc4d-7d6cd8ff6844",

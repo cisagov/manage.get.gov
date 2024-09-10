@@ -441,6 +441,9 @@ class DomainNameserversView(DomainFormBaseView):
                 # no server information in this field, skip it
                 pass
 
+        old_nameservers = self.object.nameservers
+        should_notify = old_nameservers and old_nameservers != nameservers 
+
         try:
             self.object.nameservers = nameservers
         except NameserverError as Err:
@@ -466,6 +469,30 @@ class DomainNameserversView(DomainFormBaseView):
                 "Note that DNS changes could take anywhere from a few minutes to "
                 "48 hours to propagate across the internet.",
             )
+
+            # if the nameservers where changed, send notification to domain managers.
+            if should_notify:
+                managers = UserDomainRole.objects.filter(domain=self.object.name, role=UserDomainRole.Roles.MANAGER)
+                emails = list(managers.values_list("user", flat=True).values_list("email", flat=True))
+                to_addresses=', '.join(emails)
+
+                try:
+                    send_templated_email(
+                        "templateName",
+                        "Subject Template Name",
+                        to_address=to_addresses,
+                        context={
+                            "nameservers": nameservers,
+                            "domain": self.object,
+                        },
+                    )
+                except EmailSendingError as exc:
+                    logger.warn(
+                        "Could not sent notification email to %s for domain %s",
+                        to_addresses,
+                        self.object,
+                        exc_info=True,
+                    )
 
         # superclass has the redirect
         return super().form_valid(formset)
