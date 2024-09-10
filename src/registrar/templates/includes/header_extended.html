@@ -37,9 +37,9 @@
         </div>
         <ul class="usa-nav__primary usa-accordion">
             <li class="usa-nav__primary-item">
-                {% if has_domains_portfolio_permission %}
+                {% if has_any_domains_portfolio_permission %}
                     {% url 'domains' as url %}
-                {%else %}
+                {% else %}
                     {% url 'no-portfolio-domains' as url %}
                 {% endif %}
                 <a href="{{ url }}" class="usa-nav-link{% if 'domain'|in_path:request.path %} usa-current{% endif %}"> 
@@ -51,22 +51,56 @@
                     Domain groups
                 </a>
             </li> -->
-
-            {% if has_domain_requests_portfolio_permission %}
-                <li class="usa-nav__primary-item">
+            
+            {% if has_organization_requests_flag %}
+            <li class="usa-nav__primary-item">
+                <!-- user hasone of the view permissions plus the edit permission, show the dropdown -->
+                {% if has_edit_request_portfolio_permission %}
                     {% url 'domain-requests' as url %}
+                    <button
+                        type="button"
+                        class="usa-accordion__button usa-nav__link{% if 'request'|in_path:request.path %} usa-current{% endif %}"
+                        aria-expanded="false"
+                        aria-controls="basic-nav-section-two"
+                    >
+                        <span>Domain requests</span>
+                    </button>
+                    <ul id="basic-nav-section-two" class="usa-nav__submenu">
+                        <li class="usa-nav__submenu-item">
+                            <a href="{{ url }}"
+                            ><span>Domain requests</span></a
+                            >
+                        </li>
+                        <li class="usa-nav__submenu-item">
+                            <a href="{% url 'domain-request:' %}"
+                            ><span>Start a new domain request</span></a
+                            >
+                        </li>
+                    </ul>
+                <!-- user has view but no edit permissions -->
+                {% elif has_any_requests_portfolio_permission %}
+                    {% url 'domain-requests' as url %}
+                    <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 
+                        Domain requests
+                    </a>
+                <!-- user does not have permissions -->
+                {% else %}
+                    {% url 'no-portfolio-requests' as url %}
                     <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 
                     Domain requests
                     </a>
-                </li>
+                {% endif %}
+            </li>
             {% endif %}
-            {% if has_view_members_portfolio_permission %}
+
+            {% if has_organization_members_flag %}
             <li class="usa-nav__primary-item">
                 <a href="#" class="usa-nav-link">
                     Members
                 </a>
             </li>
             {% endif %}
+
             <li class="usa-nav__primary-item">
                 {% url 'organization' as url %}
                 <!-- Move the padding from the a to the span so that the descenders do not get cut off -->
