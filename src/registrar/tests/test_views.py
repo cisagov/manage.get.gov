@@ -558,6 +558,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         return page.follow() if follow else page
 
     @less_console_noise_decorator
+    @override_flag("profile_feature", active=True)
     def test_full_name_initial_value(self):
         """Test that full_name initial value is empty when first_name or last_name is empty.
         This will later be displayed as "unknown" using javascript."""
@@ -611,8 +612,8 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         incomplete_regular_user.delete()
 
     @less_console_noise_decorator
-    def test_new_user_is_directed_to_profile_setup_page(self):
-        """Tests that a new user is redirected to the profile setup page"""
+    def test_new_user_with_profile_feature_on(self):
+        """Tests that a new user is redirected to the profile setup page when profile_feature is on"""
         username_regular_incomplete = "test_regular_user_incomplete"
         first_name_2 = "Incomplete"
         email_2 = "unicorn@igorville.com"
@@ -625,39 +626,39 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         )
 
         self.app.set_user(incomplete_regular_user.username)
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the setup page.
+            # Follow implicity checks if our redirect is working.
+            finish_setup_page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
 
-        # This will redirect the user to the setup page.
-        # Follow implicity checks if our redirect is working.
-        finish_setup_page = self.app.get(reverse("home")).follow()
-        self._set_session_cookie()
+            # Assert that we're on the right page
+            self.assertContains(finish_setup_page, "Finish setting up your profile")
 
-        # Assert that we're on the right page
-        self.assertContains(finish_setup_page, "Finish setting up your profile")
+            finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
 
-        finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
+            self.assertEqual(finish_setup_page.status_code, 200)
 
-        self.assertEqual(finish_setup_page.status_code, 200)
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(finish_setup_page, "Enter your phone number.")
 
-        # We're missing a phone number, so the page should tell us that
-        self.assertContains(finish_setup_page, "Enter your phone number.")
+            # Check for the name of the save button
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
-        # Check for the name of the save button
-        self.assertContains(finish_setup_page, "user_setup_save_button")
+            # Add a phone number
+            finish_setup_form = finish_setup_page.form
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            save_page = self._submit_form_webtest(finish_setup_form, follow=True)
 
-        # Add a phone number
-        finish_setup_form = finish_setup_page.form
-        finish_setup_form["phone"] = "(201) 555-0123"
-        finish_setup_form["title"] = "CEO"
-        finish_setup_form["last_name"] = "example"
-        save_page = self._submit_form_webtest(finish_setup_form, follow=True)
+            self.assertEqual(save_page.status_code, 200)
+            self.assertContains(save_page, "Your profile has been updated.")
 
-        self.assertEqual(save_page.status_code, 200)
-        self.assertContains(save_page, "Your profile has been updated.")
-
-        # Try to navigate back to the home page.
-        # This is the same as clicking the back button.
-        completed_setup_page = self.app.get(reverse("home"))
-        self.assertContains(completed_setup_page, "Manage your domain")
+            # Try to navigate back to the home page.
+            # This is the same as clicking the back button.
+            completed_setup_page = self.app.get(reverse("home"))
+            self.assertContains(completed_setup_page, "Manage your domain")
         incomplete_regular_user.delete()
 
     @less_console_noise_decorator
@@ -674,43 +675,46 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             verification_type=User.VerificationTypeChoices.REGULAR,
         )
         self.app.set_user(incomplete_regular_user.username)
-        finish_setup_page = self.app.get(reverse("home")).follow()
-        self._set_session_cookie()
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the setup page.
+            # Follow implicity checks if our redirect is working.
+            finish_setup_page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
 
-        # Assert that we're on the right page
-        self.assertContains(finish_setup_page, "Finish setting up your profile")
+            # Assert that we're on the right page
+            self.assertContains(finish_setup_page, "Finish setting up your profile")
 
-        finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
+            finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
 
-        self.assertEqual(finish_setup_page.status_code, 200)
+            self.assertEqual(finish_setup_page.status_code, 200)
 
-        # We're missing a phone number, so the page should tell us that
-        self.assertContains(finish_setup_page, "Enter your phone number.")
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(finish_setup_page, "Enter your phone number.")
 
-        # Check for the name of the save button
-        self.assertContains(finish_setup_page, "user_setup_save_button")
+            # Check for the name of the save button
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
-        # Add a phone number
-        finish_setup_form = finish_setup_page.form
-        finish_setup_form["first_name"] = "test"
-        finish_setup_form["last_name"] = "test2"
-        finish_setup_form["phone"] = "(201) 555-0123"
-        finish_setup_form["title"] = "CEO"
-        finish_setup_form["last_name"] = "example"
-        save_page = self._submit_form_webtest(finish_setup_form, follow=True)
+            # Add a phone number
+            finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "test"
+            finish_setup_form["last_name"] = "test2"
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            save_page = self._submit_form_webtest(finish_setup_form, follow=True)
 
-        self.assertEqual(save_page.status_code, 200)
-        self.assertContains(save_page, "Your profile has been updated.")
+            self.assertEqual(save_page.status_code, 200)
+            self.assertContains(save_page, "Your profile has been updated.")
 
-        # Try to navigate back to the home page.
-        # This is the same as clicking the back button.
-        completed_setup_page = self.app.get(reverse("home"))
-        self.assertContains(completed_setup_page, "Manage your domain")
+            # Try to navigate back to the home page.
+            # This is the same as clicking the back button.
+            completed_setup_page = self.app.get(reverse("home"))
+            self.assertContains(completed_setup_page, "Manage your domain")
         incomplete_regular_user.delete()
 
     @less_console_noise_decorator
-    def test_new_user_goes_to_domain_request(self):
-        """Tests that a new user is redirected to the domain request page"""
+    def test_new_user_goes_to_domain_request_with_profile_feature_on(self):
+        """Tests that a new user is redirected to the domain request page when profile_feature is on"""
         username_regular_incomplete = "test_regular_user_incomplete"
         first_name_2 = "Incomplete"
         email_2 = "unicorn@igorville.com"
@@ -722,49 +726,49 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             verification_type=User.VerificationTypeChoices.REGULAR,
         )
         self.app.set_user(incomplete_regular_user.username)
-        # This will redirect the user to the setup page
-        finish_setup_page = self.app.get(reverse("domain-request:")).follow()
-        self._set_session_cookie()
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the setup page
+            finish_setup_page = self.app.get(reverse("domain-request:")).follow()
+            self._set_session_cookie()
 
-        # Assert that we're on the right page
-        self.assertContains(finish_setup_page, "Finish setting up your profile")
+            # Assert that we're on the right page
+            self.assertContains(finish_setup_page, "Finish setting up your profile")
 
-        finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
+            finish_setup_page = self._submit_form_webtest(finish_setup_page.form)
 
-        self.assertEqual(finish_setup_page.status_code, 200)
+            self.assertEqual(finish_setup_page.status_code, 200)
 
-        # We're missing a phone number, so the page should tell us that
-        self.assertContains(finish_setup_page, "Enter your phone number.")
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(finish_setup_page, "Enter your phone number.")
 
-        # Check for the name of the save button
-        self.assertContains(finish_setup_page, "user_setup_save_button")
+            # Check for the name of the save button
+            self.assertContains(finish_setup_page, "user_setup_save_button")
 
-        # Add a phone number
-        finish_setup_form = finish_setup_page.form
-        finish_setup_form["first_name"] = "firstname"
-        finish_setup_form["phone"] = "(201) 555-0123"
-        finish_setup_form["title"] = "CEO"
-        finish_setup_form["last_name"] = "example"
-        completed_setup_page = self._submit_form_webtest(finish_setup_page.form, follow=True)
+            # Add a phone number
+            finish_setup_form = finish_setup_page.form
+            finish_setup_form["first_name"] = "firstname"
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            completed_setup_page = self._submit_form_webtest(finish_setup_page.form, follow=True)
 
-        self.assertEqual(completed_setup_page.status_code, 200)
+            self.assertEqual(completed_setup_page.status_code, 200)
 
-        finish_setup_form = completed_setup_page.form
+            finish_setup_form = completed_setup_page.form
 
-        # Submit the form using the specific submit button to execute the redirect
-        completed_setup_page = self._submit_form_webtest(
-            finish_setup_form, follow=True, name="user_setup_submit_button"
-        )
-        self.assertEqual(completed_setup_page.status_code, 200)
+            # Submit the form using the specific submit button to execute the redirect
+            completed_setup_page = self._submit_form_webtest(
+                finish_setup_form, follow=True, name="user_setup_submit_button"
+            )
+            self.assertEqual(completed_setup_page.status_code, 200)
 
-        # Assert that we are still on the
-        # Assert that we're on the domain request page
-        self.assertNotContains(completed_setup_page, "Finish setting up your profile")
-        self.assertNotContains(completed_setup_page, "What contact information should we use to reach you?")
+            # Assert that we are still on the
+            # Assert that we're on the domain request page
+            self.assertNotContains(completed_setup_page, "Finish setting up your profile")
+            self.assertNotContains(completed_setup_page, "What contact information should we use to reach you?")
 
-        self.assertContains(completed_setup_page, "You’re about to start your .gov domain request")
+            self.assertContains(completed_setup_page, "You’re about to start your .gov domain request")
         incomplete_regular_user.delete()
-
 
 class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
     """A series of tests that target the user profile page intercept for incomplete IAL1 user profiles."""
@@ -803,6 +807,83 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
         self._set_session_cookie()
         return page.follow() if follow else page
 
+    @less_console_noise_decorator
+    def test_new_user_with_profile_feature_on(self):
+        """Tests that a new user is redirected to the profile setup page when profile_feature is on,
+        and testing that the confirmation modal is present"""
+        username_other_incomplete = "test_other_user_incomplete"
+        first_name_2 = "Incomplete"
+        email_2 = "unicorn@igorville.com"
+        # in the case below, other user is representative of GRANDFATHERED,
+        # VERIFIED_BY_STAFF, INVITED, FIXTURE_USER, ie. IAL1
+        incomplete_other_user = get_user_model().objects.create(
+            username=username_other_incomplete,
+            first_name=first_name_2,
+            email=email_2,
+            verification_type=User.VerificationTypeChoices.VERIFIED_BY_STAFF,
+        )
+        self.app.set_user(incomplete_other_user.username)
+        with override_flag("profile_feature", active=True):
+            # This will redirect the user to the user profile page.
+            # Follow implicity checks if our redirect is working.
+            user_profile_page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
+
+            # Assert that we're on the right page by testing for the modal
+            self.assertContains(user_profile_page, "domain registrants must maintain accurate contact information")
+
+            user_profile_page = self._submit_form_webtest(user_profile_page.form)
+
+            self.assertEqual(user_profile_page.status_code, 200)
+
+            # Assert that modal does not appear on subsequent submits
+            self.assertNotContains(user_profile_page, "domain registrants must maintain accurate contact information")
+            # Assert that unique error message appears by testing the message in a specific div
+            html_content = user_profile_page.content.decode("utf-8")
+            # Normalize spaces and line breaks in the HTML content
+            normalized_html_content = " ".join(html_content.split())
+            # Expected string without extra spaces and line breaks
+            expected_string = "Before you can manage your domain, we need you to add contact information."
+            # Check for the presence of the <div> element with the specific text
+            self.assertIn(f'<div class="usa-alert__body"> {expected_string} </div>', normalized_html_content)
+
+            # We're missing a phone number, so the page should tell us that
+            self.assertContains(user_profile_page, "Enter your phone number.")
+
+            # We need to assert that links to manage your domain are not present (in both body and footer)
+            self.assertNotContains(user_profile_page, "Manage your domains")
+            # Assert the tooltip on the logo, indicating that the logo is not clickable
+            self.assertContains(
+                user_profile_page, 'title="Before you can manage your domains, we need you to add contact information."'
+            )
+            # Assert that modal does not appear on subsequent submits
+            self.assertNotContains(user_profile_page, "domain registrants must maintain accurate contact information")
+
+            # Add a phone number
+            finish_setup_form = user_profile_page.form
+            finish_setup_form["phone"] = "(201) 555-0123"
+            finish_setup_form["title"] = "CEO"
+            finish_setup_form["last_name"] = "example"
+            save_page = self._submit_form_webtest(finish_setup_form, follow=True)
+
+            self.assertEqual(save_page.status_code, 200)
+            self.assertContains(save_page, "Your profile has been updated.")
+
+            # We need to assert that logo is not clickable and links to manage your domain are not present
+            # NOTE: "anage" is not a typo.  It is to accomodate the fact that the "m" is uppercase in one
+            # instance and lowercase in the other.
+            self.assertContains(save_page, "anage your domains", count=2)
+            self.assertNotContains(
+                save_page, "Before you can manage your domains, we need you to add contact information"
+            )
+            # Assert that modal does not appear on subsequent submits
+            self.assertNotContains(save_page, "domain registrants must maintain accurate contact information")
+
+            # Try to navigate back to the home page.
+            # This is the same as clicking the back button.
+            completed_setup_page = self.app.get(reverse("home"))
+            self.assertContains(completed_setup_page, "Manage your domain")
+
 
 class UserProfileTests(TestWithUser, WebTest):
     """A series of tests that target your profile functionality"""
@@ -826,58 +907,105 @@ class UserProfileTests(TestWithUser, WebTest):
         DomainInformation.objects.all().delete()
 
     @less_console_noise_decorator
-    def error_500_main_nav(self):
-        """test that Your profile is in main nav of 500 error page.
+    def error_500_main_nav_with_profile_feature_turned_on(self):
+        """test that Your profile is in main nav of 500 error page when profile_feature is on.
 
         Our treatment of 401 and 403 error page handling with that waffle feature is similar, so we
         assume that the same test results hold true for 401 and 403."""
-        with self.assertRaises(Exception):
-            response = self.client.get(reverse("home"), follow=True)
-            self.assertEqual(response.status_code, 500)
-            self.assertContains(response, "Your profile")
+        with override_flag("profile_feature", active=True):
+            with self.assertRaises(Exception):
+                response = self.client.get(reverse("home"), follow=True)
+                self.assertEqual(response.status_code, 500)
+                self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
-    def test_home_page_main_nav(self):
-        """test that Your profile is in main nav of home page"""
+    def error_500_main_nav_with_profile_feature_turned_off(self):
+        """test that Your profile is not in main nav of 500 error page when profile_feature is off.
 
-        response = self.client.get("/", follow=True)
+        Our treatment of 401 and 403 error page handling with that waffle feature is similar, so we
+        assume that the same test results hold true for 401 and 403."""
+        with override_flag("profile_feature", active=False):
+            with self.assertRaises(Exception):
+                response = self.client.get(reverse("home"), follow=True)
+                self.assertEqual(response.status_code, 500)
+                self.assertNotContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_home_page_main_nav_with_profile_feature_on(self):
+        """test that Your profile is in main nav of home page when profile_feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get("/", follow=True)
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
-    def test_new_request_main_nav(self):
-        """test that Your profile is in main nav of new request"""
-        response = self.client.get("/request/", follow=True)
+    def test_home_page_main_nav_with_profile_feature_off(self):
+        """test that Your profile is not in main nav of home page when profile_feature is off"""
+        with override_flag("profile_feature", active=False):
+            response = self.client.get("/", follow=True)
+        self.assertNotContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_new_request_main_nav_with_profile_feature_on(self):
+        """test that Your profile is in main nav of new request when profile_feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get("/request/", follow=True)
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
-    def test_user_profile_main_nav(self):
-        """test that Your profile is in main nav of user profile"""
-        response = self.client.get("/user-profile", follow=True)
+    def test_new_request_main_nav_with_profile_feature_off(self):
+        """test that Your profile is not in main nav of new request when profile_feature is off"""
+        with override_flag("profile_feature", active=False):
+            response = self.client.get("/request/", follow=True)
+        self.assertNotContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_user_profile_main_nav_with_profile_feature_on(self):
+        """test that Your profile is in main nav of user profile when profile_feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get("/user-profile", follow=True)
         self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_user_profile_returns_404_when_feature_off(self):
+        """test that Your profile returns 404 when profile_feature is off"""
+        with override_flag("profile_feature", active=False):
+            response = self.client.get("/user-profile", follow=True)
+        self.assertEqual(response.status_code, 404)
 
     @less_console_noise_decorator
     def test_user_profile_back_button_when_coming_from_domain_request(self):
-        """tests user profile when they are redirected from the domain request page"""
-        response = self.client.get("/user-profile?redirect=domain-request:")
+        """tests user profile when profile_feature is on,
+        and when they are redirected from the domain request page"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get("/user-profile?redirect=domain-request:")
         self.assertContains(response, "Your profile")
         self.assertContains(response, "Go back to your domain request")
         self.assertNotContains(response, "Back to manage your domains")
 
     @less_console_noise_decorator
-    def test_domain_detail(self):
-        """test that domain detail view"""
-        response = self.client.get(reverse("domain", args=[self.domain.pk]))
+    def test_domain_detail_profile_feature_on(self):
+        """test that domain detail view when profile_feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get(reverse("domain", args=[self.domain.pk]))
         self.assertContains(response, "Your profile")
         self.assertNotContains(response, "Your contact information")
 
     @less_console_noise_decorator
-    def test_domain_your_contact_information(self):
-        """test that Your contact information is not accessible"""
-        response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
+    def test_domain_your_contact_information_when_profile_feature_off(self):
+        """test that Your contact information is accessible when profile_feature is off"""
+        with override_flag("profile_feature", active=False):
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
+        self.assertContains(response, "Your contact information")
+
+    @less_console_noise_decorator
+    def test_domain_your_contact_information_when_profile_feature_on(self):
+        """test that Your contact information is not accessible when profile feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
         self.assertEqual(response.status_code, 404)
 
     @less_console_noise_decorator
-    def test_request_profile_request_page(self):
+    def test_request_when_profile_feature_on(self):
         """test that Your profile is in request page when profile feature is on"""
 
         contact_user, _ = Contact.objects.get_or_create(
@@ -892,27 +1020,53 @@ class UserProfileTests(TestWithUser, WebTest):
             senior_official=contact_user,
             submitter=contact_user,
         )
+        with override_flag("profile_feature", active=True):
+            response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
+            self.assertContains(response, "Your profile")
+            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
+            self.assertContains(response, "Your profile")
 
-        response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
-        self.assertContains(response, "Your profile")
-        response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
-        self.assertContains(response, "Your profile")
+    @less_console_noise_decorator
+    def test_request_when_profile_feature_off(self):
+        """test that Your profile is not in request page when profile feature is off"""
+
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakerson",
+        )
+        site = DraftDomain.objects.create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            senior_official=contact_user,
+            submitter=contact_user,
+        )
+        with override_flag("profile_feature", active=False):
+            response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
+            self.assertNotContains(response, "Your profile")
+            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
+            self.assertNotContains(response, "Your profile")
+        # cleanup
+        domain_request.delete()
+        site.delete()
 
     @less_console_noise_decorator
     def test_user_profile_form_submission(self):
         """test user profile form submission"""
         self.app.set_user(self.user.username)
-        profile_page = self.app.get(reverse("user-profile"))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        profile_form = profile_page.form
-        profile_form["title"] = "sample title"
-        profile_form["phone"] = "(201) 555-1212"
-        profile_page = profile_form.submit()
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        profile_page = profile_page.follow()
-        self.assertEqual(profile_page.status_code, 200)
-        self.assertContains(profile_page, "Your profile has been updated")
+        with override_flag("profile_feature", active=True):
+            profile_page = self.app.get(reverse("user-profile"))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            profile_form = profile_page.form
+            profile_form["title"] = "sample title"
+            profile_form["phone"] = "(201) 555-1212"
+            profile_page = profile_form.submit()
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            profile_page = profile_page.follow()
+            self.assertEqual(profile_page.status_code, 200)
+            self.assertContains(profile_page, "Your profile has been updated")
 
 
 class PortfoliosTests(TestWithUser, WebTest):
