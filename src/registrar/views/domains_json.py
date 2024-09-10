@@ -50,7 +50,7 @@ def get_domain_ids_from_request(request):
     """
     portfolio = request.GET.get("portfolio")
     if portfolio:
-        if request.user.is_org_user(request) and request.user.has_view_all_domains_permission(portfolio):
+        if request.user.is_org_user(request) and request.user.has_view_all_domains_portfolio_permission(portfolio):
             domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
             return domain_infos.values_list("domain_id", flat=True)
         else:
