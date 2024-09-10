@@ -458,3 +458,85 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         # Ensure no approved requests are included
         for domain_request in data["domain_requests"]:
             self.assertNotEqual(domain_request["status"], DomainRequest.DomainRequestStatus.APPROVED)
+
+
+    def test_search(self):
+        """Tests our search functionality. We expect that search filters on creator only when we are in portfolio mode"""
+        # Test search for domain name
+        response = self.app.get(reverse("get_domain_requests_json"), {"search_term": "lamb"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertEqual(len(data["domain_requests"]), 1)
+
+        requested_domain = data["domain_requests"][0]["requested_domain"]
+        print(f"requested domain is: {requested_domain}")
+        self.assertEqual(requested_domain, "lamb-chops.gov")
+
+        # Test search for 'New domain request'
+        response = self.app.get(reverse("get_domain_requests_json"), {"search_term": "new domain"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertTrue(any(req["requested_domain"] is None for req in data["domain_requests"]))
+
+        # Test search with portfolio (including creator search)
+        self.client.force_login(self.user)
+        with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
+            user_perm, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user,
+                portfolio=self.portfolio,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            )
+            response = self.app.get(reverse("get_domain_requests_json"), {
+                "search_term": "info",
+                "portfolio": self.portfolio.id
+            })
+            self.assertEqual(response.status_code, 200)
+            data = response.json
+            self.assertTrue(any(req["creator"].startswith("info") for req in data["domain_requests"]))
+
+        # Test search without portfolio (should not search on creator)
+        with override_flag("organization_feature", active=False), override_flag("organization_requests", active=False):
+            user_perm.delete()
+            response = self.app.get(reverse("get_domain_requests_json"), {"search_term": "info"})
+            self.assertEqual(response.status_code, 200)
+            data = response.json
+            self.assertEqual(len(data["domain_requests"]), 0)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_status_filter(self):
+        """Test that status filtering works properly"""
+        # Test a single status
+        response = self.app.get(reverse("get_domain_requests_json"), {"status": "started"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertTrue(all(req["status"] == "Started" for req in data["domain_requests"]))
+
+        # Test an invalid status
+        response = self.app.get(reverse("get_domain_requests_json"), {"status": "approved"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertEqual(len(data["domain_requests"]), 0)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_combined_filtering_and_sorting(self):
+        """Test that combining filters and sorting works properly"""
+        user_perm, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        self.client.force_login(self.user)
+        response = self.app.get(reverse("get_domain_requests_json"), {
+            "search_term": "beef",
+            "status": "started",
+            "portfolio": self.portfolio.id
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertTrue(all("beef" in req["requested_domain"] for req in data["domain_requests"]))
+        self.assertTrue(all(req["status"] == "Started" for req in data["domain_requests"]))
+        created_at_dates = [req["created_at"] for req in data["domain_requests"]]
+        self.assertEqual(created_at_dates, sorted(created_at_dates, reverse=True))
+        user_perm.delete()
