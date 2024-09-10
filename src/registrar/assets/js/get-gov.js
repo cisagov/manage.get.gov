@@ -1166,7 +1166,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetSearchButton = document.querySelector('.domains__reset-search');
     const resetFiltersButton = document.querySelector('.domains__reset-filters');
     const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
-    const statusIndicator = document.querySelector('.domain__filter-indicator');
+    const statusIndicator = document.querySelector('.filter-indicator');
     const statusToggle = document.querySelector('.usa-button--filter');
     const portfolioElement = document.getElementById('portfolio-js-value');
     const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
@@ -1419,10 +1419,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateStatusIndicator() {
       statusIndicator.innerHTML = '';
       // Even if the element is empty, it'll mess up the flex layout unless we set display none
-      statusIndicator.hideElement();
+      hideElement(statusIndicator);
       if (currentStatus.length)
         statusIndicator.innerHTML = '(' + currentStatus.length + ')';
-        statusIndicator.showElement();
+        showElement(statusIndicator);
     }
 
     function closeFilters() {
@@ -1436,9 +1436,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // NOTE: We may need to evolve this as we add more filters.
     document.addEventListener('focusin', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
-      const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const openFilterAccordion = document.querySelector('.usa-button--filter[aria-expanded="true"]');
       
-      if (accordionIsOpen && !accordion.contains(event.target)) {
+      if (openFilterAccordion && !accordion.contains(event.target)) {
         closeFilters();
       }
     });
@@ -1447,9 +1447,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // NOTE: We may need to evolve this as we add more filters.
     document.addEventListener('click', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
-      const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const openFilterAccordion = document.querySelector('.usa-button--filter[aria-expanded="true"]');
     
-      if (accordionIsOpen && !accordion.contains(event.target)) {
+      if (openFilterAccordion && !accordion.contains(event.target)) {
         closeFilters();
       }
     });
@@ -1488,14 +1488,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const noDomainRequestsWrapper = document.querySelector('.domain-requests__no-data');
     const noSearchResultsWrapper = document.querySelector('.domain-requests__no-search-results');
     let scrollToTable = false;
+    let currentStatus = [];
     let currentSearchTerm = '';
     const domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
     const domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
     const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
     const tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
     const resetSearchButton = document.querySelector('.domain-requests__reset-search');
-    const portfolioElement = document.getElementById('portfolio-js-value');
-    const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
+    const resetFiltersButton = document.querySelector('.domains__reset-filters');
+    const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
+    const statusIndicator = document.querySelector('.filter-indicator');
+    const statusToggle = document.querySelector('.usa-button--filter');
     const portfolioElement = document.getElementById('portfolio-js-value');
     const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
 
@@ -1537,7 +1540,6 @@ document.addEventListener('DOMContentLoaded', function() {
       return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
     }
 
-    let currentStatus = []
     /**
      * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
      * based on the supplied attributes.
@@ -1547,7 +1549,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} scroll - control for the scrollToElement functionality
      * @param {*} searchTerm - the search term
      */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, searchTerm = currentSearchTerm, status = currentStatus, portfolio = portfolioValue, portfolio = portfolioValue) {
+    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, searchTerm = currentSearchTerm, status = currentStatus, portfolio = portfolioValue) {
       // fetch json of page of domain requests, given params
       let baseUrl = document.getElementById("get_domain_requests_json_url");
       if (!baseUrl) {
@@ -1882,6 +1884,44 @@ document.addEventListener('DOMContentLoaded', function() {
       resetHeaders();
     });
 
+    if (statusToggle) {
+      statusToggle.addEventListener('click', function() {
+        toggleCaret(statusToggle);
+      });
+    }
+
+    // Add event listeners to status filter checkboxes
+    statusCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        const checkboxValue = this.value;
+        
+        // Update currentStatus array based on checkbox state
+        if (this.checked) {
+          currentStatus.push(checkboxValue);
+        } else {
+          const index = currentStatus.indexOf(checkboxValue);
+          if (index > -1) {
+            currentStatus.splice(index, 1);
+          }
+        }
+
+        // Manage visibility of reset filters button
+        if (currentStatus.length == 0) {
+          hideElement(resetFiltersButton);
+        } else {
+          showElement(resetFiltersButton);
+        }
+
+        // Disable the auto scroll
+        scrollToTable = false;
+
+        // Call loadDomains with updated status
+        loadDomainRequests(1, 'id', 'asc');
+        resetHeaders();
+        updateStatusIndicator();
+      });
+    });
+
     // Reset UI and accessibility
     function resetHeaders() {
       tableHeaders.forEach(header => {
@@ -1906,34 +1946,85 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    function closeMoreActionMenu(accordionIsOpen) {
-      if (accordionIsOpen.getAttribute("aria-expanded") === "true") {
-        accordionIsOpen.click();
+    function closeMoreActionMenu(openFilterAccordion) {
+      if (openFilterAccordion.getAttribute("aria-expanded") === "true") {
+        openFilterAccordion.click();
+      }
+    }
+
+    function resetFilters() {
+      currentStatus = [];
+      statusCheckboxes.forEach(checkbox => {
+        checkbox.checked = false; 
+      });
+      hideElement(resetFiltersButton);
+
+      // Disable the auto scroll
+      scrollToTable = false;
+
+      loadDomainRequests(1, 'id', 'asc');
+      resetHeaders();
+      updateStatusIndicator();
+      // No need to toggle close the filters. The focus shift will trigger that for us.
+    }
+
+    if (resetFiltersButton) {
+      resetFiltersButton.addEventListener('click', function() {
+        resetFilters();
+      });
+    }
+
+    function updateStatusIndicator() {
+      statusIndicator.innerHTML = '';
+      // Even if the element is empty, it'll mess up the flex layout unless we set display none
+      hideElement(statusIndicator);
+      if (currentStatus.length)
+        statusIndicator.innerHTML = '(' + currentStatus.length + ')';
+        showElement(statusIndicator);
+    }
+
+    function closeFilters() {
+      if (statusToggle.getAttribute("aria-expanded") === "true") {
+        statusToggle.click();
       }
     }
 
     document.addEventListener('focusin', function(event) {
-      const accordions = document.querySelectorAll('.usa-accordion--more-actions');
-      const openAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
+      const openMoreActionsAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
       
-      openAccordions.forEach((openAccordionButton) => {
-        const accordion = openAccordionButton.closest('.usa-accordion--more-actions'); // Find the corresponding accordion
-        if (accordion && !accordion.contains(event.target)) {
-          closeMoreActionMenu(openAccordionButton); // Close the accordion if the focus is outside
+      openMoreActionsAccordions.forEach((openMoreActionsAccordionButton) => {
+        const moreActionsAccordion = openMoreActionsAccordionButton.closest('.usa-accordion--more-actions'); // Find the corresponding accordion
+        if (moreActionsAccordion && !moreActionsAccordion.contains(event.target)) {
+          closeMoreActionMenu(openMoreActionsAccordionButton); // Close the accordion if the focus is outside
         }
       });
+
+      const openFilterAccordion = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const moreFilterAccordion = openFilterAccordion ? openFilterAccordion.closest('.usa-accordion--select') : undefined;
+
+      if (openFilterAccordion) {
+        if (!moreFilterAccordion.contains(event.target)) {
+          closeFilters();
+        }
+      }
     });
     
     document.addEventListener('click', function(event) {
-      const accordions = document.querySelectorAll('.usa-accordion--more-actions');
-      const openAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
+      const openMoreActionsAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
     
-      openAccordions.forEach((openAccordionButton) => {
-        const accordion = openAccordionButton.closest('.usa-accordion--more-actions'); // Find the corresponding accordion
+      openMoreActionsAccordions.forEach((openMoreActionsAccordionButton) => {
+        const accordion = openMoreActionsAccordionButton.closest('.usa-accordion--more-actions'); // Find the corresponding accordion
         if (accordion && !accordion.contains(event.target)) {
-          closeMoreActionMenu(openAccordionButton); // Close the accordion if the click is outside
+          closeMoreActionMenu(openMoreActionsAccordionButton); // Close the accordion if the click is outside
         }
       });
+
+      const openFilterAccordion = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const moreFilterAccordion = openFilterAccordion ? openFilterAccordion.closest('.usa-accordion--select') : undefined;
+
+      if (openFilterAccordion && moreFilterAccordion && !moreFilterAccordion.contains(event.target)) {
+        closeFilters();
+      }
     });
 
     // Initial load

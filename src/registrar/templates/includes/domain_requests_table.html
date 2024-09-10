@@ -23,7 +23,7 @@
               </svg>
               Reset
             </button>
-            <label class="usa-sr-only" for="domain-requests__search-field">Search by domain name</label>
+            <label class="usa-sr-only" for="domain-requests__search-field">Search by domain name or creator</label>
             <input
               class="usa-input"
               id="domain-requests__search-field"
@@ -42,6 +42,125 @@
         </section>
       </div>
     </div>
+    {% if portfolio %}
+    <div class="display-flex flex-align-center"> 
+      <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
+      <div class="usa-accordion usa-accordion--select margin-right-2">
+        <div class="usa-accordion__heading">
+          <button
+            type="button"
+            class="usa-button usa-button--small padding--8-8-9 usa-button--outline usa-button--filter usa-accordion__button"
+            aria-expanded="false"
+            aria-controls="filter-status"
+          >
+            <span class="filter-indicator text-bold display-none"></span> Status
+            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+            </svg>
+          </button>
+        </div>
+        <div id="filter-status" class="usa-accordion__content usa-prose shadow-1">
+          <h2>Status</h2>
+          <fieldset class="usa-fieldset margin-top-0">
+            <legend class="usa-legend">Select to apply <span class="sr-only">status</span> filter</legend>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-started"
+                type="checkbox"
+                name="filter-status"
+                value="started"
+              />
+              <label class="usa-checkbox__label" for="filter-status-started"
+                >Started</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-submitted"
+                type="checkbox"
+                name="filter-status"
+                value="submitted"
+              />
+              <label class="usa-checkbox__label" for="filter-status-submitted"
+                >Submitted</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-in-review"
+                type="checkbox"
+                name="filter-status"
+                value="in review"
+              />
+              <label class="usa-checkbox__label" for="filter-status-in-review"
+                >In review</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-action-needed"
+                type="checkbox"
+                name="filter-status"
+                value="action needed"
+              />
+              <label class="usa-checkbox__label" for="filter-status-action-needed"
+                >Action needed</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-rejected"
+                type="checkbox"
+                name="filter-status"
+                value="rejected"
+              />
+              <label class="usa-checkbox__label" for="filter-status-rejected"
+                >Rejected</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-withdrawn"
+                type="checkbox"
+                name="filter-status"
+                value="withdrawn"
+              />
+              <label class="usa-checkbox__label" for="filter-status-withdrawn"
+                >Withdrawn</label
+              >
+            </div>
+            <div class="usa-checkbox">
+              <input
+                class="usa-checkbox__input"
+                id="filter-status-ineligible"
+                type="checkbox"
+                name="filter-status"
+                value="ineligible"
+              />
+              <label class="usa-checkbox__label" for="filter-status-ineligible"
+                >Ineligible</label
+              >
+            </div>
+          </fieldset>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="usa-button usa-button--small padding--8-12-9-12 usa-button--outline usa-button--filter domains__reset-filters display-none"
+      >
+        Clear filters
+        <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
+          <use xlink:href="/public/img/sprite.svg#close"></use>
+        </svg>
+      </button>
+    </div>
+    {% endif %}
     <div class="domain-requests__table-wrapper display-none usa-table-container--scrollable margin-top-0" tabindex="0">
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked domain-requests__table">
         <caption class="sr-only">Your domain requests</caption>

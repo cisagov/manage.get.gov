@@ -18,6 +18,7 @@ def get_domain_requests_json(request):
     unfiltered_total = objects.count()
 
     objects = apply_search(objects, request)
+    objects = apply_status_filter(objects, request)
     objects = apply_sorting(objects, request)
 
     paginator = Paginator(objects, 10)
@@ -62,6 +63,7 @@ def get_domain_request_ids_from_request(request):
 
 def apply_search(queryset, request):
     search_term = request.GET.get("search_term")
+    is_portfolio = request.GET.get("portfolio")
 
     if search_term:
         search_term_lower = search_term.lower()
@@ -73,9 +75,27 @@ def apply_search(queryset, request):
         if search_term_lower in new_domain_request_text:
             queryset = queryset.filter(
                 Q(requested_domain__name__icontains=search_term) | Q(requested_domain__isnull=True)
-            )
+            ) 
+        elif is_portfolio:
+            queryset = queryset.filter(Q(requested_domain__name__icontains=search_term) | Q(creator__first_name__icontains=search_term) | Q(creator__last_name__icontains=search_term) | Q(creator__email__icontains=search_term))
+        # For non org users
         else:
             queryset = queryset.filter(Q(requested_domain__name__icontains=search_term))
+    return queryset
+
+
+def apply_status_filter(queryset, request):
+    status_param = request.GET.get("status")
+    if status_param:
+        status_list = status_param.split(",")
+        statuses = [status for status in status_list if status in DomainRequest.DomainRequestStatus.values]
+        # Construct Q objects for statuses that can be queried through ORM
+        status_query = Q()
+        if statuses:
+            status_query |= Q(status__in=statuses)
+        # Apply the combined query
+        queryset = queryset.filter(status_query)
+
     return queryset
 
 
