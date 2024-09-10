@@ -46,11 +46,11 @@
                 Domains
                 </a>
             </li>
-            <li class="usa-nav__primary-item">
+            <!-- <li class="usa-nav__primary-item">
                 <a href="#" class="usa-nav-link">
                     Domain groups
                 </a>
-            </li>
+            </li> -->
 
             {% if has_domain_requests_portfolio_permission %}
                 <li class="usa-nav__primary-item">
@@ -60,11 +60,13 @@
                     </a>
                 </li>
             {% endif %}
+            {% if has_view_members_portfolio_permission %}
             <li class="usa-nav__primary-item">
                 <a href="#" class="usa-nav-link">
                     Members
                 </a>
             </li>
+            {% endif %}
             <li class="usa-nav__primary-item">
                 {% url 'organization' as url %}
                 <!-- Move the padding from the a to the span so that the descenders do not get cut off -->
