@@ -34,26 +34,6 @@ const showElement = (element) => {
 };
 
 /**
- * Helper function that returns commonly used search params for tables
- * @param {*} page - Used for the paginator to determine which page we reside on
- * @param {*} sortBy - which value to sort on. Passed to sort_by in django
- * @param {*} order - which value to order on. Passed to order_by in django
- * @param {*} status - Represents the status filter button
- * @param {*} searchTerm - Represents the value of the search bar
- */
-function getGenericTableSearchParams(page, sortBy, order, status, searchTerm) {
-  return new URLSearchParams(
-    {
-      "page": page,
-      "sort_by": sortBy,
-      "order": order,
-      "status": status,
-      "search_term": searchTerm
-    }
-  );
-}
-
-/**
  * Helper function that scrolls to an element
  * @param {string} attributeName - The string "class" or "id"
  * @param {string} attributeValue - The class or id name
@@ -1216,7 +1196,15 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       // fetch json of page of domains, given params
-      let searchParams = getGenericTableSearchParams(page, sort_by, order, status, search_term);
+      let searchParams = new URLSearchParams(
+        {
+          "page": page,
+          "sort_by": sortBy,
+          "order": order,
+          "status": status,
+          "search_term": searchTerm
+        }
+      );
       if (portfolio)
         searchParams.append("portfolio", portfolio)
 
@@ -1570,7 +1558,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      let searchParams = getGenericTableSearchParams(page, sort_by, order, status, search_term);
+      let searchParams = new URLSearchParams(
+        {
+          "page": page,
+          "sort_by": sortBy,
+          "order": order,
+          "status": status,
+          "search_term": searchTerm
+        }
+      );
       if (portfolio)
         searchParams.append("portfolio", portfolio)
 
