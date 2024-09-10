@@ -386,64 +386,6 @@ class PurposeForm(RegistrarForm):
     )
 
 
-class YourContactForm(RegistrarForm):
-    JOIN = "creator"
-
-    def to_database(self, obj):
-        if not self.is_valid():
-            return
-        contact = getattr(obj, "creator", None)
-        if contact is not None and not contact.has_more_than_one_join("submitted_domain_requests"):
-            # if contact exists in the database and is not joined to other entities
-            super().to_database(contact)
-        else:
-            # no contact exists OR contact exists which is joined also to other entities;
-            # in either case, create a new contact and update it
-            contact = Contact()
-            super().to_database(contact)
-            obj.creator = contact
-            obj.save()
-
-    @classmethod
-    def from_database(cls, obj):
-        contact = getattr(obj, "creator", None)
-        return super().from_database(contact)
-
-    first_name = forms.CharField(
-        label="First name / given name",
-        error_messages={"required": "Enter your first name / given name."},
-    )
-    middle_name = forms.CharField(
-        required=False,
-        label="Middle name (optional)",
-    )
-    last_name = forms.CharField(
-        label="Last name / family name",
-        error_messages={"required": "Enter your last name / family name."},
-    )
-    title = forms.CharField(
-        label="Title or role in your organization",
-        error_messages={
-            "required": ("Enter your title or role in your organization (e.g., Chief Information Officer).")
-        },
-    )
-    email = forms.EmailField(
-        label="Email",
-        max_length=None,
-        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
-    )
-    phone = PhoneNumberField(
-        label="Phone",
-        error_messages={"invalid": "Enter a valid 10-digit phone number.", "required": "Enter your phone number."},
-    )
-
-
 class OtherContactsYesNoForm(BaseYesNoForm):
     """The yes/no field for the OtherContacts form."""
 

@@ -7,7 +7,7 @@ from waffle.testutils import override_flag
 from registrar.utility import email
 from registrar.utility.email import send_templated_email
 from .common import completed_domain_request
-from registrar.models import AllowedEmail
+from registrar.models import AllowedEmail, User
 
 from api.tests.common import less_console_noise_decorator
 from datetime import datetime
@@ -129,13 +129,21 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_other_contacts_spacing(self):
         """Test line spacing with other contacts."""
-        domain_request = completed_domain_request(has_other_contacts=True)
+
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward", first_name="Meoward", last_name="Jones", phone="(888) 888 8888"
+        )
+
+        # Create a fake domain request
+        domain_request = completed_domain_request(has_other_contacts=True, user=_creator)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("Other employees from your organization:", body)
-        # spacing should be right between adjacent elements        self.assertRegex(body, r"5557\n\nAnything else")
+        self.assertRegex(body, r"8888\n\nOther employees")
+        self.assertRegex(body, r"5557\n\nAnything else")
 
     @boto3_mocking.patching
     @less_console_noise_decorator

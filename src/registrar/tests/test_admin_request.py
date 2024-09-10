@@ -685,16 +685,14 @@ class TestDomainRequestAdmin(MockEppLib):
         already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
 
-        self.assert_email_is_accurate(
-            "ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, _creator.email, bcc_email_address=BCC_EMAIL
-        )
+        self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test the email sent out for bad_name
         bad_name = DomainRequest.ActionNeededReasons.BAD_NAME
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=bad_name)
         self.assert_email_is_accurate(
-            "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS", 1, _creator.email, bcc_email_address=BCC_EMAIL
+            "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS", 1, EMAIL, bcc_email_address=BCC_EMAIL
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -702,7 +700,7 @@ class TestDomainRequestAdmin(MockEppLib):
         eligibility_unclear = DomainRequest.ActionNeededReasons.ELIGIBILITY_UNCLEAR
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=eligibility_unclear)
         self.assert_email_is_accurate(
-            "ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", 2, _creator.email, bcc_email_address=BCC_EMAIL
+            "ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", 2, EMAIL, bcc_email_address=BCC_EMAIL
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
