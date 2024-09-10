@@ -1197,9 +1197,6 @@ class DomainRequest(TimeStampedModel):
     def _is_purpose_complete(self):
         return self.purpose is not None
 
-    def _is_submitter_complete(self):
-        return self.submitter is not None
-
     def _has_other_contacts_and_filled(self):
         # Other Contacts Radio button is Yes and if all required fields are filled
         return (
