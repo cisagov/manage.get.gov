@@ -2,7 +2,6 @@ from datetime import datetime
 from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from django_webtest import WebTest  # type: ignore
 from api.tests.common import less_console_noise_decorator
 from django.urls import reverse
@@ -44,13 +43,11 @@ from registrar.models import (
     Portfolio,
     Suborganization,
     UserPortfolioPermission,
+    UserDomainRole,
+    SeniorOfficial,
+    PortfolioInvitation,
+    VerifiedByStaff,
 )
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.senior_official import SeniorOfficial
-from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockDbForSharedTests,
     AuditedAdminMockData,
@@ -63,10 +60,11 @@ from .common import (
     multiple_unalphabetical_domain_objects,
     GenericTestHelper,
 )
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from unittest.mock import ANY, patch, Mock
-from django_webtest import WebTest  # type: ignore
+
 
 import logging
 
