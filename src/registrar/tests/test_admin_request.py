@@ -663,11 +663,13 @@ class TestDomainRequestAdmin(MockEppLib):
         """When an action needed reason is set, an email is sent out and help@get.gov
         is BCC'd in production"""
         # Create fake creator
+        EMAIL = "meoward.jones@igorville.gov"
+
         _creator = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
-            email="meoward.jones@igorville.gov",
+            email=EMAIL,
             phone="(555) 123 12345",
             title="Treat inspector",
         )
@@ -819,12 +821,14 @@ class TestDomainRequestAdmin(MockEppLib):
         Also test that the default email set in settings is NOT BCCd on non-prod whenever
         an email does go out."""
 
+        EMAIL = "meoward.jones@igorville.gov"
+
         # Create fake creator
         _creator = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
-            email="meoward.jones@igorville.gov",
+            email=EMAIL,
             phone="(555) 123 12345",
             title="Treat inspector",
         )
@@ -1106,11 +1110,13 @@ class TestDomainRequestAdmin(MockEppLib):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is contacts or org legitimacy."""
         # Create fake creator
+
+        EMAIL = "meoward.jones@igorville.gov"
         _creator = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
-            email="meoward.jones@igorville.gov",
+            email=EMAIL,
             phone="(555) 123 12345",
             title="Treat inspector",
         )

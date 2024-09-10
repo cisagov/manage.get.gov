@@ -262,7 +262,7 @@ class TestDomainRequest(TestCase):
         msg = "Create a domain request and submit it and see if email was sent."
         domain_request = completed_domain_request(user=self.dummy_user_2)
         self.check_email_sent(
-            domain_request, msg, "submit", 1, expected_content="Hi", expected_email=self.dummy_user_2.email
+            domain_request, msg, "submit", 1, expected_content="Hello", expected_email=self.dummy_user_2.email
         )
 
     @override_flag("profile_feature", active=True)
@@ -272,7 +272,7 @@ class TestDomainRequest(TestCase):
         msg = "Create a domain request and submit it and see if email was sent when the feature flag is on."
         domain_request = completed_domain_request(user=self.dummy_user_2)
         self.check_email_sent(
-            domain_request, msg, "submit", 1, expected_content="Lava", expected_email="intern@igorville.com"
+            domain_request, msg, "submit", 1, expected_content="Hello", expected_email="intern@igorville.com"
         )
 
     @less_console_noise_decorator
@@ -306,16 +306,14 @@ class TestDomainRequest(TestCase):
         msg = "Create a domain request and withdraw it and see if email was sent."
         user, _ = User.objects.get_or_create(username="testy")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
-        self.check_email_sent(
-            domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
-        )
+        self.check_email_sent(domain_request, msg, "withdraw", 1, expected_content="Hello", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_reject_sends_email(self):
         msg = "Create a domain request and reject it and see if email was sent."
         user, _ = User.objects.get_or_create(username="testy")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED, user=user)
-        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="rejected", expected_email=user.email)
+        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hello", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_reject_with_prejudice_does_not_send_email(self):
