@@ -460,7 +460,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
             self.assertNotEqual(domain_request["status"], DomainRequest.DomainRequestStatus.APPROVED)
 
     def test_search(self):
-        """Tests our search functionality. We expect that search filters on creator only when we are in portfolio mode"""
+        """Tests our search functionality. We expect that search filters on creator only when we are in a portfolio"""
         # Test search for domain name
         response = self.app.get(reverse("get_domain_requests_json"), {"search_term": "lamb"})
         self.assertEqual(response.status_code, 200)
