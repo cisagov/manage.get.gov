@@ -510,6 +510,8 @@ class HomeTests(TestWithUser):
         )
         self.client.force_login(restricted_user)
         response = self.client.get("/request/", follow=True)
+        print('response')
+        print(response)
         self.assertEqual(response.status_code, 403)
         restricted_user.delete()
 
@@ -938,13 +940,6 @@ class UserProfileTests(TestWithUser, WebTest):
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
-    def test_home_page_main_nav_with_profile_feature_off(self):
-        """test that Your profile is not in main nav of home page when profile_feature is off"""
-        with override_flag("profile_feature", active=False):
-            response = self.client.get("/", follow=True)
-        self.assertNotContains(response, "Your profile")
-
-    @less_console_noise_decorator
     def test_new_request_main_nav_with_profile_feature_on(self):
         """test that Your profile is in main nav of new request when profile_feature is on"""
         with override_flag("profile_feature", active=True):
@@ -952,26 +947,12 @@ class UserProfileTests(TestWithUser, WebTest):
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
-    def test_new_request_main_nav_with_profile_feature_off(self):
-        """test that Your profile is not in main nav of new request when profile_feature is off"""
-        with override_flag("profile_feature", active=False):
-            response = self.client.get("/request/", follow=True)
-        self.assertNotContains(response, "Your profile")
-
-    @less_console_noise_decorator
     def test_user_profile_main_nav_with_profile_feature_on(self):
         """test that Your profile is in main nav of user profile when profile_feature is on"""
         with override_flag("profile_feature", active=True):
             response = self.client.get("/user-profile", follow=True)
         self.assertContains(response, "Your profile")
-
-    @less_console_noise_decorator
-    def test_user_profile_returns_404_when_feature_off(self):
-        """test that Your profile returns 404 when profile_feature is off"""
-        with override_flag("profile_feature", active=False):
-            response = self.client.get("/user-profile", follow=True)
-        self.assertEqual(response.status_code, 404)
-
+        
     @less_console_noise_decorator
     def test_user_profile_back_button_when_coming_from_domain_request(self):
         """tests user profile when profile_feature is on,
@@ -983,30 +964,21 @@ class UserProfileTests(TestWithUser, WebTest):
         self.assertNotContains(response, "Back to manage your domains")
 
     @less_console_noise_decorator
-    def test_domain_detail_profile_feature_on(self):
-        """test that domain detail view when profile_feature is on"""
-        with override_flag("profile_feature", active=True):
-            response = self.client.get(reverse("domain", args=[self.domain.pk]))
+    def test_domain_detail(self):
+        """test that domain detail view"""
+        response = self.client.get(reverse("domain", args=[self.domain.pk]))
         self.assertContains(response, "Your profile")
         self.assertNotContains(response, "Your contact information")
 
     @less_console_noise_decorator
-    def test_domain_your_contact_information_when_profile_feature_off(self):
-        """test that Your contact information is accessible when profile_feature is off"""
-        with override_flag("profile_feature", active=False):
-            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
-        self.assertContains(response, "Your contact information")
-
-    @less_console_noise_decorator
-    def test_domain_your_contact_information_when_profile_feature_on(self):
-        """test that Your contact information is not accessible when profile feature is on"""
-        with override_flag("profile_feature", active=True):
-            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
+    def test_domain_your_contact_information(self):
+        """test that Your contact information is not accessible """
+        response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
         self.assertEqual(response.status_code, 404)
 
     @less_console_noise_decorator
-    def test_request_when_profile_feature_on(self):
-        """test that Your profile is in request page when profile feature is on"""
+    def test_profile_request_page(self):
+        """test that Your profile is in request"""
 
         contact_user, _ = Contact.objects.get_or_create(
             first_name="Hank",
@@ -1020,53 +992,27 @@ class UserProfileTests(TestWithUser, WebTest):
             senior_official=contact_user,
             submitter=contact_user,
         )
-        with override_flag("profile_feature", active=True):
-            response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
-            self.assertContains(response, "Your profile")
-            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
-            self.assertContains(response, "Your profile")
-
-    @less_console_noise_decorator
-    def test_request_when_profile_feature_off(self):
-        """test that Your profile is not in request page when profile feature is off"""
-
-        contact_user, _ = Contact.objects.get_or_create(
-            first_name="Hank",
-            last_name="McFakerson",
-        )
-        site = DraftDomain.objects.create(name="igorville.gov")
-        domain_request = DomainRequest.objects.create(
-            creator=self.user,
-            requested_domain=site,
-            status=DomainRequest.DomainRequestStatus.SUBMITTED,
-            senior_official=contact_user,
-            submitter=contact_user,
-        )
-        with override_flag("profile_feature", active=False):
-            response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
-            self.assertNotContains(response, "Your profile")
-            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
-            self.assertNotContains(response, "Your profile")
-        # cleanup
-        domain_request.delete()
-        site.delete()
+    
+        response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
+        self.assertContains(response, "Your profile")
+        response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
+        self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
     def test_user_profile_form_submission(self):
         """test user profile form submission"""
         self.app.set_user(self.user.username)
-        with override_flag("profile_feature", active=True):
-            profile_page = self.app.get(reverse("user-profile"))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            profile_form = profile_page.form
-            profile_form["title"] = "sample title"
-            profile_form["phone"] = "(201) 555-1212"
-            profile_page = profile_form.submit()
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            profile_page = profile_page.follow()
-            self.assertEqual(profile_page.status_code, 200)
-            self.assertContains(profile_page, "Your profile has been updated")
+        profile_page = self.app.get(reverse("user-profile"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        profile_form = profile_page.form
+        profile_form["title"] = "sample title"
+        profile_form["phone"] = "(201) 555-1212"
+        profile_page = profile_form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        profile_page = profile_page.follow()
+        self.assertEqual(profile_page.status_code, 200)
+        self.assertContains(profile_page, "Your profile has been updated")
 
 
 class PortfoliosTests(TestWithUser, WebTest):
