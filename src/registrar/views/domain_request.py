@@ -85,7 +85,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.TRIBAL_GOVERNMENT: _("Tribal government"),
         Step.ORGANIZATION_FEDERAL: _("Federal government branch"),
         Step.ORGANIZATION_ELECTION: _("Election office"),
-        Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
+        Step.ORGANIZATION_CONTACT: _("Organization name"),
         Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
         Step.SENIOR_OFFICIAL: _("Senior official"),
         Step.CURRENT_SITES: _("Current websites"),

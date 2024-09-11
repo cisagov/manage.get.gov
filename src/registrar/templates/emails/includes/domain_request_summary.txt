@@ -15,7 +15,7 @@ State-recognized tribe
 Election office:
 {{ domain_request.is_election_board|yesno:"Yes,No,Incomplete" }}
 {% endif %}
-Organization name and mailing address:
+Organization name:
 {% spaceless %}{{ domain_request.federal_agency }}
 {{ domain_request.organization_name }}
 {{ domain_request.address_line1 }}{% if  domain_request.address_line2  %}
