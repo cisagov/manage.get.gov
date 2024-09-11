@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Final
 from botocore.config import Config
 import json
+import logging
 from django.utils.log import ServerFormatter
 
 # # #                          ###
@@ -59,7 +60,7 @@ env_db_url = env.dj_db_url("DATABASE_URL")
 env_debug = env.bool("DJANGO_DEBUG", default=False)
 env_is_production = env.bool("IS_PRODUCTION", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
-env_base_url = env.str("DJANGO_BASE_URL")
+env_base_url: str = env.str("DJANGO_BASE_URL")
 env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
 env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox")
 
@@ -448,8 +449,24 @@ PHONENUMBER_DEFAULT_REGION = "US"
 #   logger.critical("Going to crash now.")
 
 
+class JsonFormatter(logging.Formatter):
+    """Formats logs into JSON for better parsing"""
+    def __init__(self):
+        super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
+
+    def format(self, record):
+        log_record = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "name": record.name,
+            "lineno": record.lineno,
+            "message": record.getMessage(),
+        }
+        return json.dumps(log_record)
+
+
 class JsonServerFormatter(ServerFormatter):
-    """Formats logs into JSON for easier and more accurate processing."""
+    """Formats server logs into JSON for better parsing"""
     def format(self, record):
         formatted_record = super().format(record)
         log_entry = {
@@ -459,6 +476,12 @@ class JsonServerFormatter(ServerFormatter):
         }
         return json.dumps(log_entry)
 
+# default to json formatted logs
+server_formatter, console_formatter = 'json.server', 'json'
+
+# don't use json format locally, it makes logs hard to read in console
+if "localhost" in env_base_url:
+    server_formatter, console_formatter = 'django.server', 'verbose'
 
 LOGGING = {
     "version": 1,
@@ -474,8 +497,16 @@ LOGGING = {
         "simple": {
             "format": "%(levelname)s %(message)s",
         },
+        "django.server": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[{server_time}] {message}",
+            "style": "{",
+        },
         "json.server": {
             "()": JsonServerFormatter,
+        },
+        "json": {
+            "()": JsonFormatter,
         },
     },
     # define where log messages will be sent;
@@ -484,12 +515,12 @@ LOGGING = {
         "console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": console_formatter,
         },
         "django.server": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "json.server",
+            "formatter": server_formatter,
         },
         # No file logger is configured,
         # because containerized apps
