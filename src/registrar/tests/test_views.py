@@ -510,8 +510,6 @@ class HomeTests(TestWithUser):
         )
         self.client.force_login(restricted_user)
         response = self.client.get("/request/", follow=True)
-        print('response')
-        print(response)
         self.assertEqual(response.status_code, 403)
         restricted_user.delete()
 
@@ -772,6 +770,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
             self.assertContains(completed_setup_page, "You’re about to start your .gov domain request")
         incomplete_regular_user.delete()
 
+
 class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
     """A series of tests that target the user profile page intercept for incomplete IAL1 user profiles."""
 
@@ -952,7 +951,7 @@ class UserProfileTests(TestWithUser, WebTest):
         with override_flag("profile_feature", active=True):
             response = self.client.get("/user-profile", follow=True)
         self.assertContains(response, "Your profile")
-        
+
     @less_console_noise_decorator
     def test_user_profile_back_button_when_coming_from_domain_request(self):
         """tests user profile when profile_feature is on,
@@ -972,7 +971,7 @@ class UserProfileTests(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_domain_your_contact_information(self):
-        """test that Your contact information is not accessible """
+        """test that Your contact information is not accessible"""
         response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
         self.assertEqual(response.status_code, 404)
 
@@ -992,7 +991,7 @@ class UserProfileTests(TestWithUser, WebTest):
             senior_official=contact_user,
             submitter=contact_user,
         )
-    
+
         response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
         self.assertContains(response, "Your profile")
         response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)

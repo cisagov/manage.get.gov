@@ -16,7 +16,7 @@
             {% endif %}
           {% endif %}
         <a href="{% namespaced_url 'domain-request' this_step %}" 
-           {% if this_step == steps.current %}
+           {% if this_step = steps.current %}
            class="usa-current"
            {% else %}
            class="link_usa-checked"
