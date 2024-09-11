@@ -91,7 +91,7 @@ class Command(BaseCommand):
         else:
             proceed = TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=False,
-                info_to_inspect=f"""
+                prompt_message=f"""
                 The given portfolio '{federal_agency.agency}' already exists in our DB.
                 If you cancel, the rest of the script will still execute but this record will not update.
                 """,
@@ -124,9 +124,12 @@ class Command(BaseCommand):
         org_names = set(valid_agencies.values_list("organization_name", flat=True))
 
         if not org_names:
-            TerminalHelper.colorful_logger(
-                logger.warning, TerminalColors.YELLOW, f"No suborganizations found for '{federal_agency}'"
+            message = (
+                "Could not add any suborganizations."
+                f"\nNo suborganizations were found for '{federal_agency}' when filtering on this name, "
+                "and excluding null organization_name records."
             )
+            TerminalHelper.colorful_logger(logger.warning, TerminalColors.FAIL, message)
             return
 
         # Check if we need to update any existing suborgs first. This step is optional.
@@ -144,7 +147,7 @@ class Command(BaseCommand):
                 # However, this isn't needed for now so we can skip it.
                 message = (
                     f"Skipping suborganization create on record '{name}'. "
-                    f"The federal agency name is the same as the portfolio name."
+                    "The federal agency name is the same as the portfolio name."
                 )
                 TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
             else:
@@ -165,7 +168,7 @@ class Command(BaseCommand):
         """
         proceed = TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=False,
-            info_to_inspect=f"""Some suborganizations already exist in our DB.
+            prompt_message=f"""Some suborganizations already exist in our DB.
             If you cancel, the rest of the script will still execute but these records will not update.
 
             ==Proposed Changes==
@@ -178,7 +181,7 @@ class Command(BaseCommand):
                 org.portfolio = portfolio
 
             Suborganization.objects.bulk_update(orgs_to_update, ["portfolio"])
-            message = f"Updated {len(orgs_to_update)} suborganizations"
+            message = f"Updated {len(orgs_to_update)} suborganizations."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
@@ -192,8 +195,12 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
         domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(status__in=invalid_states)
-        if not domain_requests.exists():
-            message = "Portfolios not added to domain requests: no valid records found"
+        if domain_requests.exists():
+            message = f"""
+            Portfolios not added to domain requests: no valid records found.
+            This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
+            Excluded statuses: STARTED, INELIGIBLE, REJECTED.
+            """
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return None
 
@@ -205,7 +212,7 @@ class Command(BaseCommand):
                 domain_request.sub_organization = suborgs.get(domain_request.organization_name)
 
         DomainRequest.objects.bulk_update(domain_requests, ["portfolio", "sub_organization"])
-        message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests"
+        message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
@@ -215,7 +222,10 @@ class Command(BaseCommand):
         """
         domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
         if not domain_infos.exists():
-            message = "Portfolios not added to domains: no valid records found"
+            message = f"""
+            Portfolios not added to domains: no valid records found.
+            This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
+            """
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return None
 
