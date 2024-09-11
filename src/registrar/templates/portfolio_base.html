@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
 {% block wrapper %}
-  <div id="wrapper" class="dashboard--portfolio">
-      {% block content %}
+  <div id="wrapper" class="{% block wrapper_class %}dashboard--portfolio{% endblock %}">
+    {% block content %}
         
-        <main id="main-content" class="grid-container">
+        <main class="grid-container">
             {% if user.is_authenticated %}
             {# the entire logged in page goes here #}
             
@@ -26,10 +26,8 @@
             {% endif %}
         </main>
 
-      {% endblock %}
-
+      {% endblock content%}
     <div role="complementary">{% block complementary %}{% endblock %}</div>
-
     {% block content_bottom %}{% endblock %}
   </div>
 {% endblock wrapper %}

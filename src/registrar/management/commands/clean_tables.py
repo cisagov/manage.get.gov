@@ -21,7 +21,7 @@ class Command(BaseCommand):
 
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect="""
+            prompt_message="""
             This script will delete all rows from the following tables:
              * Contact
              * Domain

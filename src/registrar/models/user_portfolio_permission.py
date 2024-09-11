@@ -16,8 +16,8 @@ class UserPortfolioPermission(TimeStampedModel):
     PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBER,
-            UserPortfolioPermissionChoices.EDIT_MEMBER,
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            UserPortfolioPermissionChoices.EDIT_MEMBERS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
@@ -28,7 +28,7 @@ class UserPortfolioPermission(TimeStampedModel):
         ],
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBER,
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             # Domain: field specific permissions

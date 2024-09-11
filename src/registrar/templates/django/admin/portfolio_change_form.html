@@ -17,8 +17,7 @@
         This is a placeholder for now.
 
         Disclaimer:
-        When extending the fieldset view - *make a new one* that extends from detail_table_fieldset.
-        For instance, "portfolio_fieldset.html".
+        When extending the fieldset view consider whether you need to make a new one that extends from detail_table_fieldset.
         detail_table_fieldset is used on multiple admin pages, so a change there can have unintended consequences.
         {% endcomment %}
         {% include "django/admin/includes/detail_table_fieldset.html" with original_object=original %}
