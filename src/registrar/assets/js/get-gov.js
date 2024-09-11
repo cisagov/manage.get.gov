@@ -1426,9 +1426,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // NOTE: We may need to evolve this as we add more filters.
     document.addEventListener('focusin', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
-      const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
       
-      if (accordionIsOpen && !accordion.contains(event.target)) {
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
         closeFilters();
       }
     });
@@ -1437,9 +1437,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // NOTE: We may need to evolve this as we add more filters.
     document.addEventListener('click', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
-      const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
     
-      if (accordionIsOpen && !accordion.contains(event.target)) {
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
         closeFilters();
       }
     });
@@ -1607,7 +1607,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const actionLabel = request.action_label;
             const submissionDate = request.last_submitted_date ? new Date(request.last_submitted_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
             
-            // Delete markup will either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
+            // The markup for the delete function either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
             // Even if the request is not deletable, we may need these empty strings for the td if the deletable column is displayed
             let modalTrigger = '';
 
@@ -1884,35 +1884,31 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    function closeMoreActionMenu(accordionIsOpen) {
-      if (accordionIsOpen.getAttribute("aria-expanded") === "true") {
-        accordionIsOpen.click();
+    function closeMoreActionMenu(accordionThatIsOpen) {
+      if (accordionThatIsOpen.getAttribute("aria-expanded") === "true") {
+        accordionThatIsOpen.click();
       }
     }
 
     document.addEventListener('focusin', function(event) {
-      const accordions = document.querySelectorAll('.usa-accordion--more-actions');
-      const openAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
-      
-      openAccordions.forEach((openAccordionButton) => {
-        const accordion = openAccordionButton.closest('.usa-accordion--more-actions'); // Find the corresponding accordion
-        if (accordion && !accordion.contains(event.target)) {
-          closeMoreActionMenu(openAccordionButton); // Close the accordion if the focus is outside
-        }
-      });
+      closeOpenAccordions(event);
     });
     
     document.addEventListener('click', function(event) {
-      const accordions = document.querySelectorAll('.usa-accordion--more-actions');
+      closeOpenAccordions(event);
+    });
+
+    function closeOpenAccordions(event) {
       const openAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
-    
       openAccordions.forEach((openAccordionButton) => {
-        const accordion = openAccordionButton.closest('.usa-accordion--more-actions'); // Find the corresponding accordion
+        // Find the corresponding accordion
+        const accordion = openAccordionButton.closest('.usa-accordion--more-actions');
         if (accordion && !accordion.contains(event.target)) {
-          closeMoreActionMenu(openAccordionButton); // Close the accordion if the click is outside
+          // Close the accordion if the click is outside
+          closeMoreActionMenu(openAccordionButton);
         }
       });
-    });
+    }
 
     // Initial load
     loadDomainRequests(1);
