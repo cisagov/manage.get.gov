@@ -50,11 +50,15 @@ def get_domain_ids_from_request(request):
     """
     portfolio = request.GET.get("portfolio")
     if portfolio:
-        domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
-        return domain_infos.values_list("domain_id", flat=True)
-    else:
-        user_domain_roles = UserDomainRole.objects.filter(user=request.user)
-        return user_domain_roles.values_list("domain_id", flat=True)
+        if request.user.is_org_user(request) and request.user.has_view_all_domains_permission(portfolio):
+            domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
+            return domain_infos.values_list("domain_id", flat=True)
+        else:
+            domain_info_ids = DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
+            user_domain_roles = UserDomainRole.objects.filter(user=request.user).values_list("domain_id", flat=True)
+            return domain_info_ids.intersection(user_domain_roles)
+    user_domain_roles = UserDomainRole.objects.filter(user=request.user)
+    return user_domain_roles.values_list("domain_id", flat=True)
 
 
 def apply_search(queryset, request):
