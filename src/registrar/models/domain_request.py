@@ -1,5 +1,4 @@
 from __future__ import annotations
-import traceback
 from typing import Union
 import logging
 from django.apps import apps
