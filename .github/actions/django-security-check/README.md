@@ -38,7 +38,7 @@ jobs:
         id: check
         uses: victoriadrake/django-security-check@master
       - name: Upload output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v2
         with:
           name: security-check-output
           path: output.txt
