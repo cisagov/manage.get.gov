@@ -195,7 +195,7 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
         domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(status__in=invalid_states)
-        if domain_requests.exists():
+        if not domain_requests.exists():
             message = f"""
             Portfolios not added to domain requests: no valid records found.
             This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
