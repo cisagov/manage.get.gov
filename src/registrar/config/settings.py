@@ -451,6 +451,7 @@ PHONENUMBER_DEFAULT_REGION = "US"
 
 class JsonFormatter(logging.Formatter):
     """Formats logs into JSON for better parsing"""
+
     def __init__(self):
         super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
 
@@ -467,21 +468,19 @@ class JsonFormatter(logging.Formatter):
 
 class JsonServerFormatter(ServerFormatter):
     """Formats server logs into JSON for better parsing"""
+
     def format(self, record):
         formatted_record = super().format(record)
-        log_entry = {
-            "server_time": record.server_time,
-            "level": record.levelname,
-            "message": formatted_record
-        }
+        log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
         return json.dumps(log_entry)
 
+
 # default to json formatted logs
-server_formatter, console_formatter = 'json.server', 'json'
+server_formatter, console_formatter = "json.server", "json"
 
 # don't use json format locally, it makes logs hard to read in console
 if "localhost" in env_base_url:
-    server_formatter, console_formatter = 'django.server', 'verbose'
+    server_formatter, console_formatter = "django.server", "verbose"
 
 LOGGING = {
     "version": 1,
