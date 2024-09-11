@@ -54,7 +54,7 @@
             
             {% if has_organization_requests_flag %}
             <li class="usa-nav__primary-item">
-                <!-- user hasone of the view permissions plus the edit permission, show the dropdown -->
+                <!-- user has one of the view permissions plus the edit permission, show the dropdown -->
                 {% if has_edit_request_portfolio_permission %}
                     {% url 'domain-requests' as url %}
                     <button
