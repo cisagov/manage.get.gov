@@ -2,10 +2,8 @@ import logging
 
 from django.core.management.base import BaseCommand
 from auditlog.context import disable_auditlog  # type: ignore
+from registrar.fixtures import UserFixture, DomainRequestFixture, DomainFixture
 
-
-from registrar.fixtures_users import UserFixture
-from registrar.fixtures_domain_requests import DomainRequestFixture, DomainFixture
 
 logger = logging.getLogger(__name__)
 
