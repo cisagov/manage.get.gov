@@ -1710,7 +1710,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
               domainRequestsSectionWrapper.appendChild(modal);
 
-              // Request is deletable, modal and modalTrigger are built. Now test is portfolio requests page and enhace the modalTrigger markup
+              // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
               if (portfolioValue) {
                 modalTrigger = `
                 <a 
