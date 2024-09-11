@@ -1,7 +1,7 @@
 import logging
 import random
 from django.db import transaction
-from registrar.fixtures.fixtures_domain_requests import DomainRequestFixture
+from registrar.fixtures import DomainRequestFixture
 from registrar.models import User, DomainRequest
 
 logger = logging.getLogger(__name__)
