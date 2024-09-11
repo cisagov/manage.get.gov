@@ -448,21 +448,8 @@ PHONENUMBER_DEFAULT_REGION = "US"
 #   logger.error("Can't do this important task. Something is very wrong.")
 #   logger.critical("Going to crash now.")
 
-class JsonFormatter(logging.Formatter):
-    def __init__(self):
-        super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
-
-    def format(self, record):
-        log_record = {
-            "timestamp": self.formatTime(record, self.datefmt),
-            "level": record.levelname,
-            "name": record.name,
-            "lineno": record.lineno,
-            "message": record.getMessage(),
-        }
-        return json.dumps(log_record)
-
 class JsonServerFormatter(ServerFormatter):
+    """Formats logs into JSON for easier and more accurate processing."""
     def format(self, record):
         formatted_record = super().format(record)
         log_entry = {
@@ -489,9 +476,6 @@ LOGGING = {
         "json.server": {
             "()": JsonServerFormatter,
         },
-        "json": {
-            "()": JsonFormatter,
-        },
     },
     # define where log messages will be sent;
     # each logger can have one or more handlers
@@ -499,7 +483,7 @@ LOGGING = {
         "console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
-            "formatter": "json",
+            "formatter": "verbose",
         },
         "django.server": {
             "level": "INFO",
