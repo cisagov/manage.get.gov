@@ -24,7 +24,6 @@ from pathlib import Path
 from typing import Final
 from botocore.config import Config
 import json
-import logging
 from django.utils.log import ServerFormatter
 
 # # #                          ###
@@ -448,6 +447,7 @@ PHONENUMBER_DEFAULT_REGION = "US"
 #   logger.error("Can't do this important task. Something is very wrong.")
 #   logger.critical("Going to crash now.")
 
+
 class JsonServerFormatter(ServerFormatter):
     """Formats logs into JSON for easier and more accurate processing."""
     def format(self, record):
@@ -458,6 +458,7 @@ class JsonServerFormatter(ServerFormatter):
             "message": formatted_record
         }
         return json.dumps(log_entry)
+
 
 LOGGING = {
     "version": 1,
