@@ -198,7 +198,7 @@ class TestPortfolio(WebTest):
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="read-only-label">Federal agency</h4>')
+            self.assertContains(response, '<h4 class="read-only-label">Organization name</h4>')
             # The read only label for city will be a h4
             self.assertContains(response, '<h4 class="read-only-label">City</h4>')
             self.assertNotContains(response, 'for="id_city"')
@@ -223,7 +223,7 @@ class TestPortfolio(WebTest):
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="read-only-label">Federal agency</h4>')
+            self.assertContains(response, '<h4 class="read-only-label">Organization name</h4>')
             # The read only label for city will be a h4
             self.assertNotContains(response, '<h4 class="read-only-label">City</h4>')
             self.assertNotContains(response, '<p class="read-only-value">Los Angeles</p>>')
