@@ -173,7 +173,7 @@ You can change the logging verbosity, if needed. Do a web search for "django log
 
 ## Mock data
 
-[load.py](../../src/registrar/management/commands/load.py) called from docker-compose (locally) and reset-db.yml (upper) loads all fixtures from the file `/fixtures/`, giving you some test data to play with while developing.
+[load.py](../../src/registrar/management/commands/load.py) called from docker-compose (locally) and reset-db.yml (upper) loads all fixtures from the folder `/fixtures/`, giving you some test data to play with while developing.
 
 See the [database-access README](./database-access.md) for information on how to pull data to update these fixtures.
 
