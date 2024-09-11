@@ -4,6 +4,7 @@ from faker import Faker
 from django.db import transaction
 
 from registrar.models import User, DomainRequest, DraftDomain, Contact, Website, FederalAgency
+from registrar.utility.constants import BranchChoices
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -17,6 +18,57 @@ class DomainRequestFixture:
     in management/commands/load.py, then use `./manage.py load`
     to run this code.
     """
+
+    all_users = User.objects.all()
+    all_federal_agencies = FederalAgency.objects.all()
+
+    class GenerateData:
+        """Functions that generate dummy data for domain requests"""
+
+        @classmethod
+        def fake_contact(cls):
+            return {
+                "first_name": fake.first_name(),
+                "middle_name": None,
+                "last_name": fake.last_name(),
+                "title": fake.job(),
+                "email": fake.ascii_safe_email(),
+                "phone": "201-555-5555",
+            }
+
+        @classmethod
+        def fake_dot_gov(cls):
+            return {
+                "name": f"{fake.slug()}.gov"
+            }
+
+        @classmethod
+        def random_user(cls):
+            return random.choice(DomainRequestFixture.all_users)
+
+        @classmethod
+        def random_federal_agency(cls):
+            return random.choice(DomainRequestFixture.all_federal_agencies)
+
+        @classmethod
+        def random_federal_type(cls):
+            return random.choice(list(BranchChoices))
+
+        @classmethod
+        def random_other_contacts(cls):
+            fake_contacts = [Contact(**cls.fake_contact()) for _ in range(random.randint(0, 3))]  # nosec
+            return Contact.objects.bulk_create(fake_contacts) 
+        
+        @classmethod
+        def random_current_websites(cls):
+            fake_websites = [Website(website=fake.uri()) for _ in range(random.randint(0, 3))]  # nosec
+            return Website.objects.bulk_create(fake_websites) 
+        
+        @classmethod
+        def random_alternative_domains(cls):
+            domain_name = cls.fake_dot_gov().get("name")
+            fake_websites = [Website(website=domain_name) for _ in range(random.randint(0, 3))]
+            return Website.objects.bulk_create(fake_websites) 
 
     # any fields not specified here will be filled in with fake data or defaults
     # NOTE BENE: each fixture must have `organization_name` for uniqueness!
@@ -57,7 +109,7 @@ class DomainRequestFixture:
         },
         {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
-            "organization_name": "Example - Approved",
+            "organization_name": "Example - reqroved",
         },
         {
             "status": DomainRequest.DomainRequestStatus.WITHDRAWN,
@@ -68,116 +120,168 @@ class DomainRequestFixture:
             "organization_name": "Example - Action needed",
         },
         {
-            "status": "rejected",
+            "status": DomainRequest.DomainRequestStatus.REJECTED,
             "organization_name": "Example - Rejected",
         },
     ]
 
-    @classmethod
-    def fake_contact(cls):
-        return {
-            "first_name": fake.first_name(),
-            "middle_name": None,
-            "last_name": fake.last_name(),
-            "title": fake.job(),
-            "email": fake.ascii_safe_email(),
-            "phone": "201-555-5555",
+    # Define fake values for non fk fields
+    non_fk_fields = [
+        {
+            "field_name": "status",
+            "default_value": "started",
+        },
+        { "field_name": "generic_org_type", "default_value": "federal",},
+        { "field_name": "last_submitted_date", "default_value": fake.date,},
+        { "field_name": "federal_type", "default_value": GenerateData.random_federal_type},
+        { "field_name": "address_line1", "default_value": fake.street_address},
+        {
+            "field_name": "address_line2",
+            "default_value": fake.street_address
+        },
+        {
+            "field_name": "city",
+            "default_value": fake.city
+        },
+        {
+            "field_name": "state_territory",
+            "default_value": fake.state_abbr
+        },
+        {
+            "field_name": "zipcode",
+            "default_value": fake.postalcode
+        },
+        {
+            "field_name": "purpose",
+            "default_value": fake.paragraph
+        },
+        {
+            "field_name": "has_cisa_representative",
+            "default_value": False
+        },
+        {
+            "field_name": "anything_else",
+            "default_value": fake.paragraph()
+        },
+        {
+            "field_name": "has_anything_else_text",
+            "default_value": True
+        },
+        {
+            "field_name": "is_policy_acknowledged",
+            "default_value": True
+        },
+    ]
+
+    # Define fake values for non fk fields
+    fk_fields = [
+        {
+            # field_name, default
+            "field_name": "senior_official",
+            "default_value": GenerateData.fake_contact,
+            "model": Contact,
+        },
+        {
+            "field_name": "submitter",
+            "default_value": GenerateData.fake_contact,
+            "model": Contact,
+        },
+        {
+            "field_name": "requested_domain",
+            "default_value": GenerateData.fake_dot_gov,
+            "model": DraftDomain,
+        },
+        {
+            "field_name": "investigator",
+            "default_value": GenerateData.random_user,
+            "model": User
+        },
+        {
+            "field_name": "federal_agency",
+            "default_value": GenerateData.random_federal_agency,
+            "model": FederalAgency,
+        },
+    ]
+
+    # Define fake values for many-to-many fields
+    many_to_many_fields = [
+        {
+            "field_name": "other_contacts",
+            "default_value": GenerateData.random_other_contacts,
+        },
+        {
+            "field_name": "current_websites",
+            "default_value": GenerateData.random_current_websites,
+        },
+        {
+            "field_name": "alternative_domains",
+            "default_value": GenerateData.random_alternative_domains
         }
+    ]
 
     @classmethod
-    def fake_dot_gov(cls):
-        return f"{fake.slug()}.gov"
-
-    @classmethod
-    def _set_non_foreign_key_fields(cls, da: DomainRequest, app: dict):
+    def _set_non_foreign_key_fields(cls, da: DomainRequest, req: dict):
         """Helper method used by `load`."""
-        da.status = app["status"] if "status" in app else "started"
 
-        # TODO for a future ticket: Allow for more than just "federal" here
-        da.generic_org_type = app["generic_org_type"] if "generic_org_type" in app else "federal"
-        da.last_submitted_date = fake.date()
-        da.federal_type = (
-            app["federal_type"]
-            if "federal_type" in app
-            else random.choice(["executive", "judicial", "legislative"])  # nosec
-        )
-        da.address_line1 = app["address_line1"] if "address_line1" in app else fake.street_address()
-        da.address_line2 = app["address_line2"] if "address_line2" in app else None
-        da.city = app["city"] if "city" in app else fake.city()
-        da.state_territory = app["state_territory"] if "state_territory" in app else fake.state_abbr()
-        da.zipcode = app["zipcode"] if "zipcode" in app else fake.postalcode()
-        da.urbanization = app["urbanization"] if "urbanization" in app else None
-        da.purpose = app["purpose"] if "purpose" in app else fake.paragraph()
-        da.anything_else = app["anything_else"] if "anything_else" in app else None
-        da.is_policy_acknowledged = app["is_policy_acknowledged"] if "is_policy_acknowledged" in app else True
+        for field in cls.non_fk_fields:
+            field_name = field.get("field_name")
+            default_value = field.get("default_value")
+
+            # Populate the field with the default if it doesn't exist.
+            # Otherwise just grab from the request dictionary.
+            if not req.get(field_name):
+                value = default_value() if callable(default_value) else default_value
+            else:
+                value = req.get(field_name)
+            
+            setattr(da, field_name, value)
 
     @classmethod
-    def _set_foreign_key_fields(cls, da: DomainRequest, app: dict, user: User):
+    def _set_foreign_key_fields(cls, da: DomainRequest, req: dict):
         """Helper method used by `load`."""
-        if not da.investigator:
-            da.investigator = User.objects.get(username=user.username) if "investigator" in app else None
+        for field in cls.fk_fields:
+            field_name = field.get("field_name")
+            default_value = field.get("default_value")
+            model = field.get("model")
 
-        if not da.senior_official:
-            if "senior_official" in app and app["senior_official"] is not None:
-                da.senior_official, _ = Contact.objects.get_or_create(**app["senior_official"])
+            if not req.get(field_name):
+                value = default_value() if callable(default_value) else default_value
             else:
-                da.senior_official = Contact.objects.create(**cls.fake_contact())
-
-        if not da.submitter:
-            if "submitter" in app and app["submitter"] is not None:
-                da.submitter, _ = Contact.objects.get_or_create(**app["submitter"])
+                value = req.get(field_name)
+            
+            # If a dictionary is returned, try to retrieve the given model.
+            # If not, just assign the value normally.
+            if isinstance(value, dict):
+                created_obj, _ = model.objects.get_or_create(**value)
+                setattr(da, field_name, created_obj)
             else:
-                da.submitter = Contact.objects.create(**cls.fake_contact())
-
-        if not da.requested_domain:
-            if "requested_domain" in app and app["requested_domain"] is not None:
-                da.requested_domain, _ = DraftDomain.objects.get_or_create(name=app["requested_domain"])
-            else:
-                da.requested_domain = DraftDomain.objects.create(name=cls.fake_dot_gov())
-        if not da.federal_agency:
-            if "federal_agency" in app and app["federal_agency"] is not None:
-                da.federal_agency, _ = FederalAgency.objects.get_or_create(name=app["federal_agency"])
-            else:
-                federal_agencies = FederalAgency.objects.all()
-                # Random choice of agency for selects, used as placeholders for testing.
-                da.federal_agency = random.choice(federal_agencies)  # nosec
+                setattr(da, field_name, value)
 
     @classmethod
-    def _set_many_to_many_relations(cls, da: DomainRequest, app: dict):
+    def _set_many_to_many_relations(cls, da: DomainRequest, req: dict):
         """Helper method used by `load`."""
-        if "other_contacts" in app:
-            for contact in app["other_contacts"]:
-                da.other_contacts.add(Contact.objects.get_or_create(**contact)[0])
-        elif not da.other_contacts.exists():
-            other_contacts = [
-                Contact.objects.create(**cls.fake_contact()) for _ in range(random.randint(0, 3))  # nosec
-            ]
-            da.other_contacts.add(*other_contacts)
 
-        if "current_websites" in app:
-            for website in app["current_websites"]:
-                da.current_websites.add(Website.objects.get_or_create(website=website)[0])
-        elif not da.current_websites.exists():
-            current_websites = [
-                Website.objects.create(website=fake.uri()) for _ in range(random.randint(0, 3))  # nosec
-            ]
-            da.current_websites.add(*current_websites)
+        for field in cls.many_to_many_fields:
+            field_name = field.get("field_name")
+            default_value = field.get("default_value")
 
-        if "alternative_domains" in app:
-            for domain in app["alternative_domains"]:
-                da.alternative_domains.add(Website.objects.get_or_create(website=domain)[0])
-        elif not da.alternative_domains.exists():
-            alternative_domains = [
-                Website.objects.create(website=cls.fake_dot_gov()) for _ in range(random.randint(0, 3))  # nosec
-            ]
-            da.alternative_domains.add(*alternative_domains)
+            if not req.get(field_name):
+                value = default_value() if callable(default_value) else default_value
+            else:
+                value = req.get(field_name)
+
+            many_to_many_field = getattr(da, field_name)
+            if isinstance(value, list):
+                many_to_many_field.add(*value)
+            elif value is not None:
+                many_to_many_field.add(value)
 
     @classmethod
     def load(cls):
         """Creates domain requests for each user in the database."""
         logger.info("Going to load %s domain requests" % len(cls.DA))
         try:
-            users = list(User.objects.all())  # force evaluation to catch db errors
+            users = list(cls.all_users)  # force evaluation to catch db errors
         except Exception as e:
             logger.warning(e)
             return
@@ -192,15 +296,15 @@ class DomainRequestFixture:
         """Creates DomainRequests given a list of users"""
         for user in users:
             logger.debug("Loading domain requests for %s" % user)
-            for app in cls.DA:
+            for req in cls.DA:
                 try:
                     da, _ = DomainRequest.objects.get_or_create(
                         creator=user,
-                        organization_name=app["organization_name"],
+                        organization_name=req["organization_name"],
                     )
-                    cls._set_non_foreign_key_fields(da, app)
-                    cls._set_foreign_key_fields(da, app, user)
+                    cls._set_non_foreign_key_fields(da, req)
+                    cls._set_foreign_key_fields(da, req)
                     da.save()
-                    cls._set_many_to_many_relations(da, app)
+                    cls._set_many_to_many_relations(da, req)
                 except Exception as e:
                     logger.warning(e)

@@ -9,9 +9,9 @@ fake = Faker()
 logger = logging.getLogger(__name__)
 
 
-class DomainRequestFixture:
+class PortfolioFixture:
     """
-    Load domain requests into the database.
+    Load dummy Portfolios into the database.
 
     Make sure this class' `load` method is called from `handle`
     in management/commands/load.py, then use `./manage.py load`
