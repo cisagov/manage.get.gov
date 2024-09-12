@@ -159,6 +159,23 @@ abbr[title] {
   }
 }
 
+.hidden-mobile-flex {
+  display: none!important;
+}
+.visible-mobile-flex {
+  display: flex!important;
+}
+
+@include at-media(tablet) {
+  .hidden-mobile-flex {
+    display: flex!important;
+  }
+  .visible-mobile-flex {
+    display: none!important;
+  }
+}
+
+
 .flex-end {
   align-items: flex-end;
 }
@@ -200,6 +217,11 @@ abbr[title] {
   }
 }
 
-.margin-right-neg-4px {
-  margin-right: -4px;
+// Boost this USWDS utility class for the accordions in the portfolio requests table
+.left-auto {
+  left: auto!important;
+}
+
+.break-word {
+  word-break: break-word;
 }

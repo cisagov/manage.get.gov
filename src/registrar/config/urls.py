@@ -80,6 +80,11 @@ urlpatterns = [
         name="domain-requests",
     ),
     path(
+        "no-organization-requests/",
+        views.PortfolioNoDomainRequestsView.as_view(),
+        name="no-portfolio-requests",
+    ),
+    path(
         "organization/",
         views.PortfolioOrganizationView.as_view(),
         name="organization",

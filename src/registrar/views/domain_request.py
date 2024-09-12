@@ -152,7 +152,14 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             except DomainRequest.DoesNotExist:
                 logger.debug("DomainRequest id %s did not have a DomainRequest" % id)
 
-        self._domain_request = DomainRequest.objects.create(creator=self.request.user)
+        # If a user is creating a request, we assume that perms are handled upstream
+        if self.request.user.is_org_user(self.request):
+            self._domain_request = DomainRequest.objects.create(
+                creator=self.request.user,
+                portfolio=self.request.session.get("portfolio"),
+            )
+        else:
+            self._domain_request = DomainRequest.objects.create(creator=self.request.user)
 
         self.storage["domain_request_id"] = self._domain_request.id
         return self._domain_request
@@ -395,6 +402,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def get_context_data(self):
         """Define context for access on all wizard pages."""
 
+        requested_domain_name = None
+        if self.domain_request.requested_domain is not None:
+            requested_domain_name = self.domain_request.requested_domain.name
+
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request, self.request):
             modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
@@ -411,6 +422,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 You’ll only be able to withdraw your request.",
                 "review_form_is_complete": True,
                 "user": self.request.user,
+                "requested_domain__name": requested_domain_name,
             }
         else:  # form is not complete
             modal_button = '<button type="button" class="usa-button" data-close-modal>Return to request</button>'
@@ -426,6 +438,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 Return to the request and visit the steps that are marked as "incomplete."',
                 "review_form_is_complete": False,
                 "user": self.request.user,
+                "requested_domain__name": requested_domain_name,
             }
         return context_stuff
 
@@ -505,7 +518,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # if user opted to save progress and return,
         # return them to the home page
         if button == "save_and_return":
-            return HttpResponseRedirect(reverse("home"))
+            if request.user.is_org_user(request):
+                return HttpResponseRedirect(reverse("domain-requests"))
+            else:
+                return HttpResponseRedirect(reverse("home"))
+
         # otherwise, proceed as normal
         return self.goto_next_step()
 
@@ -774,7 +791,10 @@ class DomainRequestWithdrawn(DomainRequestPermissionWithdrawView):
         domain_request = DomainRequest.objects.get(id=self.kwargs["pk"])
         domain_request.withdraw()
         domain_request.save()
-        return HttpResponseRedirect(reverse("home"))
+        if self.request.user.is_org_user(self.request):
+            return HttpResponseRedirect(reverse("domain-requests"))
+        else:
+            return HttpResponseRedirect(reverse("home"))
 
 
 class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
