@@ -1976,12 +1976,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         """
 
-        # TODO 2574: remove lines 1977-1978 (refactor as needed)
-        profile_flag = flag_is_active(request, "profile_feature")
-        if profile_flag and hasattr(obj, "creator"):
+        if hasattr(obj, "creator"):
             recipient = obj.creator
-        elif not profile_flag and hasattr(obj, "submitter"):
-            recipient = obj.submitter
         else:
             recipient = None
 
