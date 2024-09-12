@@ -12,7 +12,7 @@ class Cert:
     variable but Python's ssl library requires a file.
     """
 
-    def __init__(self, data = settings.SECRET_REGISTRY_CERT) -> None:  # type: ignore
+    def __init__(self, data=settings.SECRET_REGISTRY_CERT) -> None:  # type: ignore
         self.filename = self._write(data)
 
     def __del__(self):
