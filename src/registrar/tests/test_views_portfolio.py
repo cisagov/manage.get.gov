@@ -751,6 +751,44 @@ class TestPortfolio(WebTest):
         self.assertNotContains(requests_page, "Start a new domain request")
 
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_organization_requests_additional_column(self):
+        """The requests table has a column for created at"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
+        )
+
+        home = self.app.get(reverse("home")).follow()
+
+        self.assertContains(home, "Hotel California")
+        self.assertContains(home, "Domain requests")
+
+        domain_requests = self.app.get(reverse("domain-requests"))
+        self.assertEqual(domain_requests.status_code, 200)
+
+        self.assertContains(domain_requests, "Created by")
+
+    @less_console_noise_decorator
+    def test_no_org_requests_no_additional_column(self):
+        """The requests table does not have a column for created at"""
+        self.app.set_user(self.user.username)
+
+        home = self.app.get(reverse("home"))
+
+        self.assertContains(home, "Domain requests")
+        self.assertNotContains(home, "Created by")
+
+    @less_console_noise_decorator
     def test_portfolio_cache_updates_when_modified(self):
         """Test that the portfolio in session updates when the portfolio is modified"""
         self.client.force_login(self.user)
