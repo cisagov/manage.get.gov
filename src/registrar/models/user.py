@@ -131,6 +131,12 @@ class User(AbstractUser):
         else:
             return self.username
 
+    @classmethod
+    def get_default_user(cls):
+        """Returns the default "system" user"""
+        default_creator, _ = User.objects.get_or_create(username="System")
+        return default_creator
+
     def restrict_user(self):
         self.status = self.RESTRICTED
         self.save()
@@ -299,6 +305,9 @@ class User(AbstractUser):
                 break
 
         return roles
+
+    def get_portfolios(self):
+        return self.portfolio_permissions.all()
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
