@@ -306,6 +306,9 @@ class User(AbstractUser):
 
         return roles
 
+    def get_portfolios(self):
+        return self.portfolio_permissions.all()
+
     @classmethod
     def needs_identity_verification(cls, email, uuid):
         """A method used by our oidc classes to test whether a user needs email/uuid verification
