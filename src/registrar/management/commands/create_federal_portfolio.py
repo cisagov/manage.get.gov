@@ -88,6 +88,16 @@ class Command(BaseCommand):
         if created:
             message = f"Created portfolio '{portfolio}'"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+
+            if portfolio_args.get("senior_official"):
+                message = f"Added senior official '{portfolio_args['senior_official']}'."
+                TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+            else:
+                message = (
+                    "No senior official added. "
+                    "None was returned for the reverse relation `FederalAgency.so_federal_agency.first()`."
+                )
+                TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
         else:
             proceed = TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=False,
@@ -113,6 +123,10 @@ class Command(BaseCommand):
                 portfolio.save()
                 message = f"Modified portfolio '{portfolio}'"
                 TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+
+                if portfolio_args.get("senior_official"):
+                    message = f"Added/modified senior official '{portfolio_args['senior_official']}'."
+                    TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
         return portfolio
 
