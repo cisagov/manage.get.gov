@@ -994,184 +994,370 @@ function unloadModals() {
   window.modal.off();
 }
 
-/**
+class LoadTableBase {
+  constructor(tableSelector, tableWrapper, searchFieldId, searchSubmitId, resetSearchBtn, resetFiltersBtn, noDataDisplay, noSearchresultsDisplay) {
+    this.domainsWrapper = document.querySelector(tableWrapper);
+    this.tableHeaders = document.querySelectorAll(`${tableSelector} th[data-sortable]`);
+    this.currentSortBy = 'id';
+    this.currentOrder = 'asc';
+    this.currentStatus = [];
+    this.currentSearchTerm = '';
+    this.scrollToTable = false;
+    this.domainsSearchInput = document.querySelector(searchFieldId);
+    this.domainsSearchSubmit = document.querySelector(searchSubmitId);
+    this.tableAnnouncementRegion = document.querySelector(`${tableWrapper} .usa-table__announcement-region`);
+    this.resetSearchButton = document.querySelector(resetSearchBtn);
+    this.resetFiltersButton = document.querySelector(resetFiltersBtn);
+    // NOTE: these 3 can't be used if filters are active on a page with more than 1 table
+    this.statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
+    this.statusIndicator = document.querySelector('.filter-indicator');
+    this.statusToggle = document.querySelector('.usa-button--filter');
+    this.noDomainsWrapper = document.querySelector(noDataDisplay);
+    this.noSearchResultsWrapper = document.querySelector(noSearchresultsDisplay);
+    this.portfolioElement = document.getElementById('portfolio-js-value');
+    this.portfolioValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-portfolio') : null;
+    this.initializetableHeaders();
+    this.initializeSearchHandler();
+    this.initializeStatusToggleHandler();
+    this.initializeFilterCheckboxes();
+    this.initializeResetSearchButton();
+    this.initializeResetFiltersButton();
+    this.initializeAccordionAccessibilityListeners();
+  }
+
+  /**
  * Generalized function to update pagination for a list.
  * @param {string} itemName - The name displayed in the counter
  * @param {string} paginationSelector - CSS selector for the pagination container.
  * @param {string} counterSelector - CSS selector for the pagination counter.
- * @param {string} linkAnchor - CSS selector for the header element to anchor the links to.
- * @param {Function} loadPageFunction - Function to call when a page link is clicked.
+ * @param {string} tableSelector - CSS selector for the header element to anchor the links to.
  * @param {number} currentPage - The current page number (starting with 1).
  * @param {number} numPages - The total number of pages.
  * @param {boolean} hasPrevious - Whether there is a page before the current page.
  * @param {boolean} hasNext - Whether there is a page after the current page.
- * @param {number} totalItems - The total number of items.
- * @param {string} searchTerm - The search term
- */
-function updatePagination(itemName, paginationSelector, counterSelector, linkAnchor, loadPageFunction, currentPage, numPages, hasPrevious, hasNext, totalItems, searchTerm) {
-  const paginationContainer = document.querySelector(paginationSelector);
-  const paginationCounter = document.querySelector(counterSelector);
-  const paginationButtons = document.querySelector(`${paginationSelector} .usa-pagination__list`);
-  paginationCounter.innerHTML = '';
-  paginationButtons.innerHTML = '';
+ * @param {number} total - The total number of items.
+ */  
+  updatePagination(
+    itemName,
+    paginationSelector,
+    counterSelector,
+    tableSelector,
+    currentPage,
+    numPages,
+    hasPrevious,
+    hasNext,
+    totalItems,
+  ) {
+    const paginationButtons = document.querySelector(`${paginationSelector} .usa-pagination__list`);
+    const counterSelectorEl = document.querySelector(counterSelector);
+    const paginationSelectorEl = document.querySelector(paginationSelector);
+    counterSelectorEl.innerHTML = '';
+    paginationButtons.innerHTML = '';
 
-  // Buttons should only be displayed if there are more than one pages of results
-  paginationButtons.classList.toggle('display-none', numPages <= 1);
+    // Buttons should only be displayed if there are more than one pages of results
+    paginationButtons.classList.toggle('display-none', numPages <= 1);
 
-  // Counter should only be displayed if there is more than 1 item
-  paginationContainer.classList.toggle('display-none', totalItems < 1);
+    // Counter should only be displayed if there is more than 1 item
+    paginationSelectorEl.classList.toggle('display-none', totalItems < 1);
 
-  paginationCounter.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}${searchTerm ? ' for ' + '"' + searchTerm + '"' : ''}`;
+    counterSelectorEl.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}${this.currentSearchTerm ? ' for ' + '"' + this.currentSearchTerm + '"' : ''}`;
 
-  if (hasPrevious) {
-    const prevPageItem = document.createElement('li');
-    prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-    prevPageItem.innerHTML = `
-      <a href="${linkAnchor}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
-        <svg class="usa-icon" aria-hidden="true" role="img">
-          <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
-        </svg>
-        <span class="usa-pagination__link-text">Previous</span>
-      </a>
-    `;
-    prevPageItem.querySelector('a').addEventListener('click', (event) => {
-      event.preventDefault();
-      loadPageFunction(currentPage - 1);
-    });
-    paginationButtons.appendChild(prevPageItem);
-  }
-
-  // Helper function to create a page item
-  function createPageItem(page) {
-    const pageItem = document.createElement('li');
-    pageItem.className = 'usa-pagination__item usa-pagination__page-no';
-    pageItem.innerHTML = `
-      <a href="${linkAnchor}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
-    `;
-    if (page === currentPage) {
-      pageItem.querySelector('a').classList.add('usa-current');
-      pageItem.querySelector('a').setAttribute('aria-current', 'page');
+    if (hasPrevious) {
+      const prevPageItem = document.createElement('li');
+      prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+      prevPageItem.innerHTML = `
+        <a href="${tableSelector}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
+          <svg class="usa-icon" aria-hidden="true" role="img">
+            <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
+          </svg>
+          <span class="usa-pagination__link-text">Previous</span>
+        </a>
+      `;
+      prevPageItem.querySelector('a').addEventListener('click', (event) => {
+        event.preventDefault();
+        this.loadTable(currentPage - 1);
+      });
+      paginationButtons.appendChild(prevPageItem);
     }
-    pageItem.querySelector('a').addEventListener('click', (event) => {
-      event.preventDefault();
-      loadPageFunction(page);
-    });
-    return pageItem;
-  }
 
-  // Add first page and ellipsis if necessary
-  if (currentPage > 2) {
-    paginationButtons.appendChild(createPageItem(1));
-    if (currentPage > 3) {
-      const ellipsis = document.createElement('li');
-      ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
-      ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
-      ellipsis.innerHTML = '<span>…</span>';
-      paginationButtons.appendChild(ellipsis);
+    // Helper function to create a page item
+    function createPageItem(page) {
+      const pageItem = document.createElement('li');
+      pageItem.className = 'usa-pagination__item usa-pagination__page-no';
+      pageItem.innerHTML = `
+        <a href="${tableSelector}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
+      `;
+      if (page === currentPage) {
+        pageItem.querySelector('a').classList.add('usa-current');
+        pageItem.querySelector('a').setAttribute('aria-current', 'page');
+      }
+      pageItem.querySelector('a').addEventListener('click', (event) => {
+        event.preventDefault();
+        this.loadTable(page);
+      });
+      return pageItem;
+    }
+
+    // Add first page and ellipsis if necessary
+    if (currentPage > 2) {
+      paginationButtons.appendChild(createPageItem(1));
+      if (currentPage > 3) {
+        const ellipsis = document.createElement('li');
+        ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
+        ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
+        ellipsis.innerHTML = '<span>…</span>';
+        paginationButtons.appendChild(ellipsis);
+      }
+    }
+
+    // Add pages around the current page
+    for (let i = Math.max(1, currentPage - 1); i <= Math.min(numPages, currentPage + 1); i++) {
+      paginationButtons.appendChild(createPageItem(i));
+    }
+
+    // Add last page and ellipsis if necessary
+    if (currentPage < numPages - 1) {
+      if (currentPage < numPages - 2) {
+        const ellipsis = document.createElement('li');
+        ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
+        ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
+        ellipsis.innerHTML = '<span>…</span>';
+        paginationButtons.appendChild(ellipsis);
+      }
+      paginationButtons.appendChild(createPageItem(numPages));
+    }
+
+    if (hasNext) {
+      const nextPageItem = document.createElement('li');
+      nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+      nextPageItem.innerHTML = `
+        <a href="${tableSelector}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
+          <span class="usa-pagination__link-text">Next</span>
+          <svg class="usa-icon" aria-hidden="true" role="img">
+            <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
+          </svg>
+        </a>
+      `;
+      nextPageItem.querySelector('a').addEventListener('click', (event) => {
+        event.preventDefault();
+        this.loadTable(currentPage + 1);
+      });
+      paginationButtons.appendChild(nextPageItem);
     }
   }
 
-  // Add pages around the current page
-  for (let i = Math.max(1, currentPage - 1); i <= Math.min(numPages, currentPage + 1); i++) {
-    paginationButtons.appendChild(createPageItem(i));
-  }
-
-  // Add last page and ellipsis if necessary
-  if (currentPage < numPages - 1) {
-    if (currentPage < numPages - 2) {
-      const ellipsis = document.createElement('li');
-      ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
-      ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
-      ellipsis.innerHTML = '<span>…</span>';
-      paginationButtons.appendChild(ellipsis);
+  /**
+   * A helper that toggles content/ no content/ no search results
+   *
+  */
+  updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
+    const { unfiltered_total, total } = data;
+    if (unfiltered_total) {
+      if (total) {
+        showElement(dataWrapper);
+        hideElement(noSearchResultsWrapper);
+        hideElement(noDataWrapper);
+      } else {
+        hideElement(dataWrapper);
+        showElement(noSearchResultsWrapper);
+        hideElement(noDataWrapper);
+      }
+    } else {
+      hideElement(dataWrapper);
+      hideElement(noSearchResultsWrapper);
+      showElement(noDataWrapper);
     }
-    paginationButtons.appendChild(createPageItem(numPages));
+  };
+
+  /**
+   * A helper that resets sortable table headers
+   *
+  */
+  unsetHeader = (header) => {
+    header.removeAttribute('aria-sort');
+    let headerName = header.innerText;
+    const headerLabel = `${headerName}, sortable column, currently unsorted"`;
+    const headerButtonLabel = `Click to sort by ascending order.`;
+    header.setAttribute("aria-label", headerLabel);
+    header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
+  };
+
+  // Abstract method (to be implemented in the child class)
+  loadTable(page, sortBy, order) {
+    throw new Error('loadData() must be implemented in a subclass');
   }
 
-  if (hasNext) {
-    const nextPageItem = document.createElement('li');
-    nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-    nextPageItem.innerHTML = `
-      <a href="${linkAnchor}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
-        <span class="usa-pagination__link-text">Next</span>
-        <svg class="usa-icon" aria-hidden="true" role="img">
-          <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
-        </svg>
-      </a>
-    `;
-    nextPageItem.querySelector('a').addEventListener('click', (event) => {
-      event.preventDefault();
-      loadPageFunction(currentPage + 1);
+  // Add event listeners to table headers for sorting
+  initializetableHeaders() {
+    this.tableHeaders.forEach(header => {
+      header.addEventListener('click', () => {
+        const sortBy = header.getAttribute('data-sortable');
+        let order = 'asc';
+        // sort order will be ascending, unless the currently sorted column is ascending, and the user
+        // is selecting the same column to sort in descending order
+        if (sortBy === this.currentSortBy) {
+          order = this.currentOrder === 'asc' ? 'desc' : 'asc';
+        }
+        // load the results with the updated sort
+        this.loadTable(1, sortBy, order);
+      });
     });
-    paginationButtons.appendChild(nextPageItem);
+  }
+
+  initializeSearchHandler() {
+    this.domainsSearchSubmit.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.currentSearchTerm = this.domainsSearchInput.value;
+      // If the search is blank, we match the resetSearch functionality
+      if (this.currentSearchTerm) {
+        showElement(this.resetSearchButton);
+      } else {
+        hideElement(this.resetSearchButton);
+      }
+      this.loadTable(1, 'id', 'asc');
+      this.resetHeaders();
+    });
+  }
+
+  initializeStatusToggleHandler() {
+    if (this.statusToggle) {
+      this.statusToggle.addEventListener('click', () => {
+        toggleCaret(this.statusToggle);
+      });
+    }
+  }
+
+  // Add event listeners to status filter checkboxes
+  initializeFilterCheckboxes() {
+    this.statusCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        const checkboxValue = checkbox.value;
+        
+        // Update currentStatus array based on checkbox state
+        if (checkbox.checked) {
+          this.currentStatus.push(checkboxValue);
+        } else {
+          const index = this.currentStatus.indexOf(checkboxValue);
+          if (index > -1) {
+            this.currentStatus.splice(index, 1);
+          }
+        }
+
+        // Manage visibility of reset filters button
+        if (this.currentStatus.length == 0) {
+          hideElement(this.resetFiltersButton);
+        } else {
+          showElement(this.resetFiltersButton);
+        }
+
+        // Disable the auto scroll
+        this.scrollToTable = false;
+
+        // Call loadTable with updated status
+        this.loadTable(1, 'id', 'asc');
+        this.resetHeaders();
+        this.updateStatusIndicator();
+      });
+    });
+  }
+
+  // Reset UI and accessibility
+  resetHeaders() {
+    this.tableHeaders.forEach(header => {
+      // Unset sort UI in headers
+      this.unsetHeader(header);
+    });
+    // Reset the announcement region
+    this.tableAnnouncementRegion.innerHTML = '';
+  }
+
+  resetSearch() {
+    this.domainsSearchInput.value = '';
+    this.currentSearchTerm = '';
+    hideElement(this.resetSearchButton);
+    this.loadTable(1, 'id', 'asc');
+    this.resetHeaders();
+  }
+
+  initializeResetSearchButton() {
+    if (this.resetSearchButton) {
+      this.resetSearchButton.addEventListener('click', () => {
+        this.resetSearch();
+      });
+    }
+  }
+
+  resetFilters() {
+    this.currentStatus = [];
+    this.statusCheckboxes.forEach(checkbox => {
+      checkbox.checked = false; 
+    });
+    hideElement(this.resetFiltersButton);
+
+    // Disable the auto scroll
+    this.scrollToTable = false;
+
+    this.loadTable(1, 'id', 'asc');
+    this.resetHeaders();
+    this.updateStatusIndicator();
+    // No need to toggle close the filters. The focus shift will trigger that for us.
+  }
+
+  initializeResetFiltersButton() {
+    if (this.resetFiltersButton) {
+      this.resetFiltersButton.addEventListener('click', () => {
+        this.resetFilters();
+      });
+    }
+  }
+
+  updateStatusIndicator() {
+    this.statusIndicator.innerHTML = '';
+    // Even if the element is empty, it'll mess up the flex layout unless we set display none
+    hideElement(this.statusIndicator);
+    if (this.currentStatus.length)
+      this.statusIndicator.innerHTML = '(' + this.currentStatus.length + ')';
+      showElement(this.statusIndicator);
+  }
+
+  closeFilters() {
+    if (this.statusToggle.getAttribute("aria-expanded") === "true") {
+      this.statusToggle.click();
+    }
+  }
+
+  initializeAccordionAccessibilityListeners() {
+    // Instead of managing the toggle/close on the filter buttons in all edge cases (user clicks on search, user clicks on ANOTHER filter,
+    // user clicks on main nav...) we add a listener and close the filters whenever the focus shifts out of the dropdown menu/filter button.
+    // NOTE: We may need to evolve this as we add more filters.
+    document.addEventListener('focusin', (event) => {
+      const accordion = document.querySelector('.usa-accordion--select');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
+        this.closeFilters();
+      }
+    });
+
+    // Close when user clicks outside
+    // NOTE: We may need to evolve this as we add more filters.
+    document.addEventListener('click', (event) => {
+      const accordion = document.querySelector('.usa-accordion--select');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+    
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
+        this.closeFilters();
+      }
+    });
   }
 }
 
-/**
- * A helper that toggles content/ no content/ no search results
- *
-*/
-const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
-  const { unfiltered_total, total } = data;
-  if (unfiltered_total) {
-    if (total) {
-      showElement(dataWrapper);
-      hideElement(noSearchResultsWrapper);
-      hideElement(noDataWrapper);
-    } else {
-      hideElement(dataWrapper);
-      showElement(noSearchResultsWrapper);
-      hideElement(noDataWrapper);
-    }
-  } else {
-    hideElement(dataWrapper);
-    hideElement(noSearchResultsWrapper);
-    showElement(noDataWrapper);
+class DomainsTable extends LoadTableBase {
+
+  constructor() {
+    super('.domains__table', '.domains__table-wrapper', '#domains__search-field', '#domains__search-field-submit', '.domains__reset-search', '.domains__reset-filters', '.domains__no-data', '.domains__no-search-results');
   }
-};
-
-/**
- * A helper that resets sortable table headers
- *
-*/
-const unsetHeader = (header) => {
-  header.removeAttribute('aria-sort');
-  let headerName = header.innerText;
-  const headerLabel = `${headerName}, sortable column, currently unsorted"`;
-  const headerButtonLabel = `Click to sort by ascending order.`;
-  header.setAttribute("aria-label", headerLabel);
-  header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
-};
-
-/**
- * An IIFE that listens for DOM Content to be loaded, then executes.  This function
- * initializes the domains list and associated functionality on the home page of the app.
- *
- */
-document.addEventListener('DOMContentLoaded', function() {
-  const domainsWrapper = document.querySelector('.domains__table-wrapper');
-
-  if (domainsWrapper) {
-    let currentSortBy = 'id';
-    let currentOrder = 'asc';
-    const noDomainsWrapper = document.querySelector('.domains__no-data');
-    const noSearchResultsWrapper = document.querySelector('.domains__no-search-results');
-    let scrollToTable = false;
-    let currentStatus = [];
-    let currentSearchTerm = '';
-    const domainsSearchInput = document.getElementById('domains__search-field');
-    const domainsSearchSubmit = document.getElementById('domains__search-field-submit');
-    const tableHeaders = document.querySelectorAll('.domains__table th[data-sortable]');
-    const tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region');
-    const resetSearchButton = document.querySelector('.domains__reset-search');
-    const resetFiltersButton = document.querySelector('.domains__reset-filters');
-    const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
-    const statusIndicator = document.querySelector('.filter-indicator');
-    const statusToggle = document.querySelector('.usa-button--filter');
-    const portfolioElement = document.getElementById('portfolio-js-value');
-    const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
-
-    /**
+  /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
      * based on the supplied attributes.
      * @param {*} page - the page number of the results (starts with 1)
@@ -1182,7 +1368,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} searchTerm - the search term
      * @param {*} portfolio - the portfolio id
      */
-    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, status = currentStatus, searchTerm = currentSearchTerm, portfolio = portfolioValue) {
+  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+
       // fetch json of page of domais, given params
       let baseUrl = document.getElementById("get_domains_json_url");
       if (!baseUrl) {
@@ -1217,7 +1404,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           // handle the display of proper messaging in the event that no domains exist in the list or search returns no results
-          updateDisplay(data, domainsWrapper, noDomainsWrapper, noSearchResultsWrapper, currentSearchTerm);
+          this.updateDisplay(data, this.domainsWrapper, this.noDomainsWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
           const domainList = document.querySelector('.domains__table tbody');
@@ -1235,7 +1422,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let markupForSuborganizationRow = '';
 
-            if (portfolioValue) {
+            if (this.portfolioValue) {
               markupForSuborganizationRow = `
                 <td>
                     <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
@@ -1281,181 +1468,42 @@ document.addEventListener('DOMContentLoaded', function() {
           // Do not scroll on first page load
           if (scroll)
             ScrollToElement('class', 'domains');
-          scrollToTable = true;
+          this.scrollToTable = true;
 
           // update pagination
-          updatePagination(
+          this.updatePagination(
             'domain',
             '#domains-pagination',
             '#domains-pagination .usa-pagination__counter',
             '#domains',
-            loadDomains,
             data.page,
             data.num_pages,
             data.has_previous,
             data.has_next,
             data.total,
-            currentSearchTerm
           );
-          currentSortBy = sortBy;
-          currentOrder = order;
-          currentSearchTerm = searchTerm;
+          this.currentSortBy = sortBy;
+          this.currentOrder = order;
+          this.currentSearchTerm = searchTerm;
         })
         .catch(error => console.error('Error fetching domains:', error));
-    }
+  }
+}
 
-    // Add event listeners to table headers for sorting
-    tableHeaders.forEach(header => {
-      header.addEventListener('click', function() {
-        const sortBy = this.getAttribute('data-sortable');
-        let order = 'asc';
-        // sort order will be ascending, unless the currently sorted column is ascending, and the user
-        // is selecting the same column to sort in descending order
-        if (sortBy === currentSortBy) {
-          order = currentOrder === 'asc' ? 'desc' : 'asc';
-        }
-        // load the results with the updated sort
-        loadDomains(1, sortBy, order);
-      });
-    });
 
-    domainsSearchSubmit.addEventListener('click', function(e) {
-      e.preventDefault();
-      currentSearchTerm = domainsSearchInput.value;
-      // If the search is blank, we match the resetSearch functionality
-      if (currentSearchTerm) {
-        showElement(resetSearchButton);
-      } else {
-        hideElement(resetSearchButton);
-      }
-      loadDomains(1, 'id', 'asc');
-      resetHeaders();
-    });
+/**
+ * An IIFE that listens for DOM Content to be loaded, then executes.  This function
+ * initializes the domains list and associated functionality on the home page of the app.
+ *
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  const domainsTable = new DomainsTable();
 
-    if (statusToggle) {
-      statusToggle.addEventListener('click', function() {
-        toggleCaret(statusToggle);
-      });
-    }
-
-    // Add event listeners to status filter checkboxes
-    statusCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', function() {
-        const checkboxValue = this.value;
-        
-        // Update currentStatus array based on checkbox state
-        if (this.checked) {
-          currentStatus.push(checkboxValue);
-        } else {
-          const index = currentStatus.indexOf(checkboxValue);
-          if (index > -1) {
-            currentStatus.splice(index, 1);
-          }
-        }
-
-        // Manage visibility of reset filters button
-        if (currentStatus.length == 0) {
-          hideElement(resetFiltersButton);
-        } else {
-          showElement(resetFiltersButton);
-        }
-
-        // Disable the auto scroll
-        scrollToTable = false;
-
-        // Call loadDomains with updated status
-        loadDomains(1, 'id', 'asc');
-        resetHeaders();
-        updateStatusIndicator();
-      });
-    });
-
-    // Reset UI and accessibility
-    function resetHeaders() {
-      tableHeaders.forEach(header => {
-        // Unset sort UI in headers
-        unsetHeader(header);
-      });
-      // Reset the announcement region
-      tableAnnouncementRegion.innerHTML = '';
-    }
-
-    function resetSearch() {
-      domainsSearchInput.value = '';
-      currentSearchTerm = '';
-      hideElement(resetSearchButton);
-      loadDomains(1, 'id', 'asc');
-      resetHeaders();
-    }
-
-    if (resetSearchButton) {
-      resetSearchButton.addEventListener('click', function() {
-        resetSearch();
-      });
-    }
-
-    function resetFilters() {
-      currentStatus = [];
-      statusCheckboxes.forEach(checkbox => {
-        checkbox.checked = false; 
-      });
-      hideElement(resetFiltersButton);
-
-      // Disable the auto scroll
-      scrollToTable = false;
-
-      loadDomains(1, 'id', 'asc');
-      resetHeaders();
-      updateStatusIndicator();
-      // No need to toggle close the filters. The focus shift will trigger that for us.
-    }
-
-    if (resetFiltersButton) {
-      resetFiltersButton.addEventListener('click', function() {
-        resetFilters();
-      });
-    }
-
-    function updateStatusIndicator() {
-      statusIndicator.innerHTML = '';
-      // Even if the element is empty, it'll mess up the flex layout unless we set display none
-      hideElement(statusIndicator);
-      if (currentStatus.length)
-        statusIndicator.innerHTML = '(' + currentStatus.length + ')';
-        showElement(statusIndicator);
-    }
-
-    function closeFilters() {
-      if (statusToggle.getAttribute("aria-expanded") === "true") {
-        statusToggle.click();
-      }
-    }
-
-    // Instead of managing the toggle/close on the filter buttons in all edge cases (user clicks on search, user clicks on ANOTHER filter,
-    // user clicks on main nav...) we add a listener and close the filters whenever the focus shifts out of the dropdown menu/filter button.
-    // NOTE: We may need to evolve this as we add more filters.
-    document.addEventListener('focusin', function(event) {
-      const accordion = document.querySelector('.usa-accordion--select');
-      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
-      
-      if (accordionThatIsOpen && !accordion.contains(event.target)) {
-        closeFilters();
-      }
-    });
-
-    // Close when user clicks outside
-    // NOTE: We may need to evolve this as we add more filters.
-    document.addEventListener('click', function(event) {
-      const accordion = document.querySelector('.usa-accordion--select');
-      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
-    
-      if (accordionThatIsOpen && !accordion.contains(event.target)) {
-        closeFilters();
-      }
-    });
+ 
+  if (domainsTable.domainsWrapper) {
 
     // Initial load
-    loadDomains(1);
+    domainsTable.loadTable(1);
   }
 });
 
@@ -1915,7 +1963,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Disable the auto scroll
         scrollToTable = false;
 
-        // Call loadDomains with updated status
+        // Call loadTable with updated status
         loadDomainRequests(1, 'id', 'asc');
         resetHeaders();
         updateStatusIndicator();
