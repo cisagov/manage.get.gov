@@ -23,13 +23,21 @@
               </svg>
               Reset
             </button>
+            {% if portfolio %}
             <label class="usa-sr-only" for="domain-requests__search-field">Search by domain name or creator</label>
+            {% else %}
+            <label class="usa-sr-only" for="domain-requests__search-field">Search by domain name</label>
+            {% endif %}
             <input
               class="usa-input"
               id="domain-requests__search-field"
               type="search"
               name="search"
+              {% if portfolio %}
+              placeholder="Search by domain name or creator"
+              {% else %}
               placeholder="Search by domain name"
+              {% endif %}
             />
             <button class="usa-button" type="submit" id="domain-requests__search-field-submit">
               <img
