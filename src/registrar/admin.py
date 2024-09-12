@@ -963,7 +963,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
         domains = Domain.objects.filter(id__in=domain_ids).exclude(state=Domain.State.DELETED)
 
-        extra_context = {"domain_requests": domain_requests, "domains": domains}
+        portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
+        portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
+        extra_context = {"domain_requests": domain_requests, "domains": domains, "portfolios": portfolios}
         return super().change_view(request, object_id, form_url, extra_context)
 
 
