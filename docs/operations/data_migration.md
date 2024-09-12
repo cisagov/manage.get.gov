@@ -863,10 +863,17 @@ Example: `cf ssh getgov-za`
 
 ## Create federal portfolio
 This script takes the name of a `FederalAgency` (like 'AMTRAK') and does the following:
-1. Creates the portfolio record based off of data on the federal agency object itself
-2. Creates suborganizations from existing DomainInformation records
-3. Associates the SeniorOfficial record (if it exists)
-4. Adds this portfolio to DomainInformation / DomainRequests or both
+1. Creates the portfolio record based off of data on the federal agency object itself.
+2. Creates suborganizations from existing DomainInformation records.
+3. Associates the SeniorOfficial record (if it exists).
+4. Adds this portfolio to DomainInformation / DomainRequests or both.
+
+Errors:
+1. ValueError: Federal agency not found in database.
+2. Logged Error: No suborganizations found for agency.
+3. Logged Warning: No new suborganizations to add.
+4. Logged Warning: No valid DomainRequest records to update.
+5. Logged Warning: No valid DomainInformation records to update.
 
 ### Running on sandboxes
 
@@ -887,7 +894,7 @@ Example: `cf ssh getgov-za`
 #### Step 5: Running the script
 ```./manage.py create_federal_portfolio "{federal_agency_name}" --both```
 
-Example: `./manage.py create_federal_portfolio "AMTRAK" --parse_requests --parse_domains`
+Example (only requests): `./manage.py create_federal_portfolio "AMTRAK" --parse_requests`
 
 ### Running locally
 
@@ -898,8 +905,9 @@ Example: `./manage.py create_federal_portfolio "AMTRAK" --parse_requests --parse
 |   | Parameter                  | Description                                                                                |
 |:-:|:-------------------------- |:-------------------------------------------------------------------------------------------|
 | 1 | **federal_agency_name**    | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
-| 2 | **both**                   | Optional. If True, runs parse_requests and parse_domains                                   |
-| 3 | **parse_requests**         | Optional. If True, then the created portfolio is added to all related DomainRequests.      |
-| 4 | **parse_domains**          | Optional. If True, then the created portfolio is added to all related Domains.             |
+| 2 | **both**                   | If True, runs parse_requests and parse_domains.                                            |
+| 3 | **parse_requests**         | If True, then the created portfolio is added to all related DomainRequests.                |
+| 4 | **parse_domains**          | If True, then the created portfolio is added to all related Domains.                       |
 
-Note: While you can specify both at the same time, you must specify either --parse_requests or --parse_domains. You cannot run the script without defining one or the other.
+Note: Regarding parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
+you must specify at least one to run this script.
