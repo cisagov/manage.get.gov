@@ -473,10 +473,9 @@ class DomainNameserversView(DomainFormBaseView):
             # if the nameservers where changed, send notification to domain managers.
             if should_notify:
                 context={
-                            "nameservers": nameservers,
                             "domain": self.object,
                         }
-                email_domain_managers(self.object.name, "template", "subject", context)
+                email_domain_managers(self.object.name, "emails/domain_change_notification.txt", "emails.domain_change_notification_subject.txt", context)
 
         # superclass has the redirect
         return super().form_valid(formset)
