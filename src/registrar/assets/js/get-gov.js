@@ -2007,6 +2007,15 @@ document.addEventListener('DOMContentLoaded', function() {
           closeMoreActionMenu(openAccordionButton);
         }
       });
+
+      // Close the filter accordion
+      const openFilterAccordion = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const moreFilterAccordion = openFilterAccordion ? openFilterAccordion.closest('.usa-accordion--select') : undefined;
+      if (openFilterAccordion) {
+        if (!moreFilterAccordion.contains(event.target)) {
+          closeFilters();
+        }
+      }
     }
 
     // Initial load
