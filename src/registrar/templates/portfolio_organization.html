@@ -37,7 +37,7 @@
             {% include "includes/required_fields.html" %}
             <form class="usa-form usa-form--large desktop:margin-top-4" method="post" novalidate>
                 {% csrf_token %}
-                <h4 class="read-only-label">Organization name</h4>
+                <h4 class="read-only-label">Organization</h4>
                 <p class="read-only-value">
                     {{ portfolio.federal_agency }}
                 </p>
