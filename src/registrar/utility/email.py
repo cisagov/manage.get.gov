@@ -180,7 +180,7 @@ def email_domain_managers(domain, template: str, subject_template: str, context:
     """
     managers = UserDomainRole.objects.filter(domain=domain, role=UserDomainRole.Roles.MANAGER)
     emails = list(managers.values_list("user", flat=True).values_list("email", flat=True))
-
+    logger.debug("attempting to send templated email to domain managers")
     try:
         send_templated_email(
             template,

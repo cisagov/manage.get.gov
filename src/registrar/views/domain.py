@@ -472,6 +472,7 @@ class DomainNameserversView(DomainFormBaseView):
 
             # if the nameservers where changed, send notification to domain managers.
             if should_notify:
+                logger.debug("Sending email to domain managers")
                 context={
                             "domain": self.object,
                         }
