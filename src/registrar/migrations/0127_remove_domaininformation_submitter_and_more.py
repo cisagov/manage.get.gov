@@ -8,7 +8,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0125_delete_cascade_submitter_contacts"),
+        ("registrar", "0126_delete_cascade_submitter_contacts"),
     ]
 
     operations = [
