@@ -1049,7 +1049,7 @@ class LoadTableBase {
     itemName,
     paginationSelector,
     counterSelector,
-    tableSelector,
+    parentTableSelector,
     currentPage,
     numPages,
     hasPrevious,
@@ -1074,7 +1074,7 @@ class LoadTableBase {
       const prevPageItem = document.createElement('li');
       prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
       prevPageItem.innerHTML = `
-        <a href="${tableSelector}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
+        <a href="${parentTableSelector}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
           <svg class="usa-icon" aria-hidden="true" role="img">
             <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
           </svg>
@@ -1088,27 +1088,9 @@ class LoadTableBase {
       paginationButtons.appendChild(prevPageItem);
     }
 
-    // Helper function to create a page item
-    function createPageItem(page) {
-      const pageItem = document.createElement('li');
-      pageItem.className = 'usa-pagination__item usa-pagination__page-no';
-      pageItem.innerHTML = `
-        <a href="${tableSelector}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
-      `;
-      if (page === currentPage) {
-        pageItem.querySelector('a').classList.add('usa-current');
-        pageItem.querySelector('a').setAttribute('aria-current', 'page');
-      }
-      pageItem.querySelector('a').addEventListener('click', (event) => {
-        event.preventDefault();
-        this.loadTable(page);
-      });
-      return pageItem;
-    }
-
     // Add first page and ellipsis if necessary
     if (currentPage > 2) {
-      paginationButtons.appendChild(createPageItem(1));
+      paginationButtons.appendChild(this.createPageItem(1, parentTableSelector, currentPage));
       if (currentPage > 3) {
         const ellipsis = document.createElement('li');
         ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
@@ -1120,7 +1102,7 @@ class LoadTableBase {
 
     // Add pages around the current page
     for (let i = Math.max(1, currentPage - 1); i <= Math.min(numPages, currentPage + 1); i++) {
-      paginationButtons.appendChild(createPageItem(i));
+      paginationButtons.appendChild(this.createPageItem(i, parentTableSelector, currentPage));
     }
 
     // Add last page and ellipsis if necessary
@@ -1132,14 +1114,14 @@ class LoadTableBase {
         ellipsis.innerHTML = '<span>…</span>';
         paginationButtons.appendChild(ellipsis);
       }
-      paginationButtons.appendChild(createPageItem(numPages));
+      paginationButtons.appendChild(this.createPageItem(numPages, parentTableSelector, currentPage));
     }
 
     if (hasNext) {
       const nextPageItem = document.createElement('li');
       nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
       nextPageItem.innerHTML = `
-        <a href="${tableSelector}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
+        <a href="${parentTableSelector}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
           <span class="usa-pagination__link-text">Next</span>
           <svg class="usa-icon" aria-hidden="true" role="img">
             <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
@@ -1176,6 +1158,24 @@ class LoadTableBase {
       showElement(noDataWrapper);
     }
   };
+
+  // Helper function to create a page item
+  createPageItem(page, parentTableSelector, currentPage) {
+    const pageItem = document.createElement('li');
+    pageItem.className = 'usa-pagination__item usa-pagination__page-no';
+    pageItem.innerHTML = `
+      <a href="${parentTableSelector}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
+    `;
+    if (page === currentPage) {
+      pageItem.querySelector('a').classList.add('usa-current');
+      pageItem.querySelector('a').setAttribute('aria-current', 'page');
+    }
+    pageItem.querySelector('a').addEventListener('click', (event) => {
+      event.preventDefault();
+      this.loadTable(page);
+    });
+    return pageItem;
+  }
 
   /**
    * A helper that resets sortable table headers
