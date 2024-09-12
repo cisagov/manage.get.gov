@@ -341,7 +341,7 @@ class TestPortfolio(WebTest):
             )
             page = self.app.get(reverse("organization"))
             self.assertContains(
-                page, "The name of your federal agency will be publicly listed as the domain registrant."
+                page, "The name of your organization will be publicly listed as the domain registrant."
             )
 
     @less_console_noise_decorator
