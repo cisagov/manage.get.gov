@@ -60,7 +60,7 @@ def add_has_profile_feature_flag_to_context(request):
 
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
-    default_context = {
+    portfolio_context = {
         "has_base_portfolio_permission": False,
         "has_any_domains_portfolio_permission": False,
         "has_any_requests_portfolio_permission": False,
@@ -94,8 +94,8 @@ def portfolio_permissions(request):
                 "has_organization_requests_flag": request.user.has_organization_requests_flag(),
                 "has_organization_members_flag": request.user.has_organization_members_flag(),
             }
-        return default_context
+        return portfolio_context
 
     except AttributeError:
         # Handles cases where request.user might not exist
-        return default_context
+        return portfolio_context

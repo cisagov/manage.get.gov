@@ -10,7 +10,9 @@ from django.db.models import Q
 @login_required
 def get_domain_requests_json(request):
     """Given the current request,
-    get all domain requests that are associated with the request user and exclude the APPROVED ones"""
+    get all domain requests that are associated with the request user and exclude the APPROVED ones.
+    If we are on the portfolio requests page, limit the response to only those requests associated with
+    the given portfolio."""
 
     domain_request_ids = get_domain_request_ids_from_request(request)
 

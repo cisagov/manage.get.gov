@@ -1436,9 +1436,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // NOTE: We may need to evolve this as we add more filters.
     document.addEventListener('focusin', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
-      const openFilterAccordion = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
       
-      if (openFilterAccordion && !accordion.contains(event.target)) {
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
         closeFilters();
       }
     });
@@ -1447,9 +1447,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // NOTE: We may need to evolve this as we add more filters.
     document.addEventListener('click', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
-      const openFilterAccordion = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
     
-      if (openFilterAccordion && !accordion.contains(event.target)) {
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
         closeFilters();
       }
     });
@@ -1631,7 +1631,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const actionLabel = request.action_label;
             const submissionDate = request.last_submitted_date ? new Date(request.last_submitted_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
             
-            // Delete markup will either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
+            // The markup for the delete function either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
             // Even if the request is not deletable, we may need these empty strings for the td if the deletable column is displayed
             let modalTrigger = '';
 
@@ -1734,7 +1734,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
               domainRequestsSectionWrapper.appendChild(modal);
 
-              // Request is deletable, modal and modalTrigger are built. Now test is portfolio requests page and enhace the modalTrigger markup
+              // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
               if (portfolioValue) {
                 modalTrigger = `
                 <a 
@@ -1946,9 +1946,9 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    function closeMoreActionMenu(openFilterAccordion) {
-      if (openFilterAccordion.getAttribute("aria-expanded") === "true") {
-        openFilterAccordion.click();
+    function closeMoreActionMenu(accordionThatIsOpen) {
+      if (accordionThatIsOpen.getAttribute("aria-expanded") === "true") {
+        accordionThatIsOpen.click();
       }
     }
 
@@ -1990,42 +1990,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.addEventListener('focusin', function(event) {
-      const openMoreActionsAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
-      
-      openMoreActionsAccordions.forEach((openMoreActionsAccordionButton) => {
-        const moreActionsAccordion = openMoreActionsAccordionButton.closest('.usa-accordion--more-actions'); // Find the corresponding accordion
-        if (moreActionsAccordion && !moreActionsAccordion.contains(event.target)) {
-          closeMoreActionMenu(openMoreActionsAccordionButton); // Close the accordion if the focus is outside
-        }
-      });
-
-      const openFilterAccordion = document.querySelector('.usa-button--filter[aria-expanded="true"]');
-      const moreFilterAccordion = openFilterAccordion ? openFilterAccordion.closest('.usa-accordion--select') : undefined;
-
-      if (openFilterAccordion) {
-        if (!moreFilterAccordion.contains(event.target)) {
-          closeFilters();
-        }
-      }
+      closeOpenAccordions(event);
     });
     
     document.addEventListener('click', function(event) {
-      const openMoreActionsAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
-    
-      openMoreActionsAccordions.forEach((openMoreActionsAccordionButton) => {
-        const accordion = openMoreActionsAccordionButton.closest('.usa-accordion--more-actions'); // Find the corresponding accordion
+      closeOpenAccordions(event);
+    });
+
+    function closeOpenAccordions(event) {
+      const openAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
+      openAccordions.forEach((openAccordionButton) => {
+        // Find the corresponding accordion
+        const accordion = openAccordionButton.closest('.usa-accordion--more-actions');
         if (accordion && !accordion.contains(event.target)) {
-          closeMoreActionMenu(openMoreActionsAccordionButton); // Close the accordion if the click is outside
+          // Close the accordion if the click is outside
+          closeMoreActionMenu(openAccordionButton);
         }
       });
-
-      const openFilterAccordion = document.querySelector('.usa-button--filter[aria-expanded="true"]');
-      const moreFilterAccordion = openFilterAccordion ? openFilterAccordion.closest('.usa-accordion--select') : undefined;
-
-      if (openFilterAccordion && moreFilterAccordion && !moreFilterAccordion.contains(event.target)) {
-        closeFilters();
-      }
-    });
+    }
 
     // Initial load
     loadDomainRequests(1);
