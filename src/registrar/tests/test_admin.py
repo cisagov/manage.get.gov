@@ -67,7 +67,6 @@ from django.contrib.auth import get_user_model
 from unittest.mock import ANY, patch, Mock
 
 
-
 import logging
 
 logger = logging.getLogger(__name__)
