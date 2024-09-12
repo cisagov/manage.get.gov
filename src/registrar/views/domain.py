@@ -403,6 +403,9 @@ class DomainNameserversView(DomainFormBaseView):
 
         This post method harmonizes using DomainBaseView and FormMixin
         """
+
+        logger.debug("Posted to Namservers View")
+
         self._get_domain(request)
         formset = self.get_form()
 
