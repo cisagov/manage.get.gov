@@ -748,7 +748,10 @@ function initializeWidgetOnList(list, parentId) {
 
             //------ Requested Domains
             const requestedDomainElement = document.getElementById('id_requested_domain');
-            const requestedDomain = requestedDomainElement.options[requestedDomainElement.selectedIndex].text;
+            // We have to account for different superuser and analyst markups
+            const requestedDomain = requestedDomainElement.options 
+                ? requestedDomainElement.options[requestedDomainElement.selectedIndex].text 
+                : requestedDomainElement.text;
 
             //------ Submitter
             // Function to extract text by ID and handle missing elements
@@ -762,7 +765,10 @@ function initializeWidgetOnList(list, parentId) {
             // Extract the submitter name, title, email, and phone number
             const submitterDiv = document.querySelector('.form-row.field-submitter');
             const submitterNameElement = document.getElementById('id_submitter');
-            const submitterName = submitterNameElement.options[submitterNameElement.selectedIndex].text;
+            // We have to account for different superuser and analyst markups
+            const submitterName = submitterNameElement 
+                ? submitterNameElement.options[submitterNameElement.selectedIndex].text 
+                : submitterDiv.querySelector('a').text;
             const submitterTitle = extractTextById('contact_info_title', submitterDiv);
             const submitterEmail = extractTextById('contact_info_email', submitterDiv);
             const submitterPhone = extractTextById('contact_info_phone', submitterDiv);
