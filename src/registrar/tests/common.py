@@ -908,6 +908,7 @@ def completed_domain_request(  # noqa
     federal_type=None,
     action_needed_reason=None,
     portfolio=None,
+    organization_name=None,
 ):
     """A completed domain request."""
     if not user:
@@ -943,7 +944,7 @@ def completed_domain_request(  # noqa
         federal_type="executive",
         purpose="Purpose of the site",
         is_policy_acknowledged=True,
-        organization_name="Testorg",
+        organization_name=organization_name if organization_name else "Testorg",
         address_line1="address 1",
         address_line2="address 2",
         state_territory="NY",

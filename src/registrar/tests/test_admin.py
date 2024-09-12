@@ -2,6 +2,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
+from django_webtest import WebTest  # type: ignore
 from api.tests.common import less_console_noise_decorator
 from django.urls import reverse
 from registrar.admin import (
@@ -41,13 +42,12 @@ from registrar.models import (
     TransitionDomain,
     Portfolio,
     Suborganization,
+    UserPortfolioPermission,
+    UserDomainRole,
+    SeniorOfficial,
+    PortfolioInvitation,
+    VerifiedByStaff,
 )
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.senior_official import SeniorOfficial
-from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockDbForSharedTests,
     AuditedAdminMockData,
@@ -60,11 +60,12 @@ from .common import (
     multiple_unalphabetical_domain_objects,
     GenericTestHelper,
 )
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 
 from unittest.mock import ANY, patch, Mock
-from django_webtest import WebTest  # type: ignore
+
 
 
 import logging
@@ -963,7 +964,7 @@ class TestListHeaderAdmin(TestCase):
             )
 
 
-class TestMyUserAdmin(MockDbForSharedTests):
+class TestMyUserAdmin(MockDbForSharedTests, WebTest):
     """Tests for the MyUserAdmin class as super or staff user
 
     Notes:
@@ -983,6 +984,7 @@ class TestMyUserAdmin(MockDbForSharedTests):
 
     def setUp(self):
         super().setUp()
+        self.app.set_user(self.superuser.username)
         self.client = Client(HTTP_HOST="localhost:8080")
 
     def tearDown(self):
@@ -1216,6 +1218,20 @@ class TestMyUserAdmin(MockDbForSharedTests):
 
         self.assertNotContains(response, "Portfolio roles:")
         self.assertNotContains(response, "Portfolio additional permissions:")
+
+    @less_console_noise_decorator
+    def test_user_can_see_related_portfolios(self):
+        """Tests if a user can see the portfolios they are associated with on the user page"""
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="test", creator=self.superuser)
+        permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.superuser, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        response = self.app.get(reverse("admin:registrar_user_change", args=[self.superuser.pk]))
+        expected_href = reverse("admin:registrar_portfolio_change", args=[portfolio.pk])
+        self.assertContains(response, expected_href)
+        self.assertContains(response, str(portfolio))
+        permission.delete()
+        portfolio.delete()
 
 
 class AuditedAdminTest(TestCase):

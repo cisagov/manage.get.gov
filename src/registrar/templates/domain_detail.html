@@ -72,9 +72,9 @@
       {% include "includes/summary_item.html" with title='DNSSEC' value='Not Enabled' edit_link=url editable=is_editable %}
     {% endif %}
 
-    {% if portfolio and has_domains_portfolio_permission and has_view_suborganization %}
+    {% if portfolio and has_any_domains_portfolio_permission and has_view_suborganization_portfolio_permission %}
       {% url 'domain-suborganization' pk=domain.id as url %}
-      {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_edit_suborganization %}
+      {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_edit_suborganization_portfolio_permission %}
     {% else %}
       {% url 'domain-org-name-address' pk=domain.id as url %}
       {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=is_editable %}

@@ -18,12 +18,14 @@ from registrar.models import (
     User,
     Website,
     FederalAgency,
+    Portfolio,
+    UserPortfolioPermission,
 )
 from registrar.views.domain_request import DomainRequestWizard, Step
 
 from .common import less_console_noise
 from .test_views import TestWithUser
-
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 import logging
 
 logger = logging.getLogger(__name__)
@@ -2768,6 +2770,39 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
             target_status_code=200,
             fetch_redirect_response=True,
         )
+        response = self.client.get("/get-domain-requests-json/")
+        self.assertContains(response, "Withdrawn")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_domain_request_withdraw_portfolio_redirects_correctly(self):
+        """Tests that the withdraw button on portfolio redirects to the portfolio domain requests page"""
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
+        domain_request.save()
+
+        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
+        self.assertContains(detail_page, "city.gov")
+        self.assertContains(detail_page, "city1.gov")
+        self.assertContains(detail_page, "Chief Tester")
+        self.assertContains(detail_page, "testy@town.com")
+        self.assertContains(detail_page, "Admin Tester")
+        self.assertContains(detail_page, "Status:")
+        # click the "Withdraw request" button
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                withdraw_page = detail_page.click("Withdraw request")
+                self.assertContains(withdraw_page, "Withdraw request for")
+                home_page = withdraw_page.click("Withdraw request")
+
+        # Assert that it redirects to the portfolio requests page and the status has been updated to withdrawn
+        self.assertEqual(home_page.status_code, 302)
+        self.assertEqual(home_page.location, reverse("domain-requests"))
+
         response = self.client.get("/get-domain-requests-json/")
         self.assertContains(response, "Withdrawn")
 
