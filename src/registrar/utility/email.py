@@ -10,6 +10,7 @@ from django.template.loader import get_template
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from registrar.models.user_domain_role import UserDomainRole
 from waffle import flag_is_active
 
 
@@ -31,7 +32,7 @@ def send_templated_email(
     attachment_file=None,
     wrap_email=False,
 ):
-    """Send an email built from a template to one email address.
+    """Send an email built from a template.
 
     template_name and subject_template_name are relative to the same template
     context as Django's HTML templates. context gives additional information
@@ -164,3 +165,33 @@ def send_email_with_attachment(sender, recipient, subject, body, attachment_file
 
     response = ses_client.send_raw_email(Source=sender, Destinations=[recipient], RawMessage={"Data": msg.as_string()})
     return response
+
+def email_domain_managers(domain, template: str, subject_template: str, context: any = {}):
+    """Send a single email built from a template to all managers for a given domain.
+
+    template_name and subject_template_name are relative to the same template
+    context as Django's HTML templates. context gives additional information
+    that the template may use.
+
+    context is a dictionary containing any information needed to fill in values
+    in the provided template, exactly the same as with send_templated_email.
+
+    Will log a warning if the email fails to send for any reason, but will not raise an error.
+    """
+    managers = UserDomainRole.objects.filter(domain=domain, role=UserDomainRole.Roles.MANAGER)
+    emails = list(managers.values_list("user", flat=True).values_list("email", flat=True))
+
+    try:
+        send_templated_email(
+            template,
+            subject_template,
+            to_address=emails,
+            context=context,
+        )
+    except EmailSendingError as exc:
+        logger.warn(
+            "Could not sent notification email to %s for domain %s",
+            emails,
+            domain,
+            exc_info=True,
+        )

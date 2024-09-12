@@ -57,7 +57,7 @@ from epplibwrapper import (
     RegistryError,
 )
 
-from ..utility.email import send_templated_email, EmailSendingError
+from ..utility.email import send_templated_email, EmailSendingError, email_domain_managers
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
 from waffle.decorators import waffle_flag
 
@@ -472,27 +472,11 @@ class DomainNameserversView(DomainFormBaseView):
 
             # if the nameservers where changed, send notification to domain managers.
             if should_notify:
-                managers = UserDomainRole.objects.filter(domain=self.object.name, role=UserDomainRole.Roles.MANAGER)
-                emails = list(managers.values_list("user", flat=True).values_list("email", flat=True))
-                to_addresses=', '.join(emails)
-
-                try:
-                    send_templated_email(
-                        "templateName",
-                        "Subject Template Name",
-                        to_address=to_addresses,
-                        context={
+                context={
                             "nameservers": nameservers,
                             "domain": self.object,
-                        },
-                    )
-                except EmailSendingError as exc:
-                    logger.warn(
-                        "Could not sent notification email to %s for domain %s",
-                        to_addresses,
-                        self.object,
-                        exc_info=True,
-                    )
+                        }
+                email_domain_managers(self.object.name, "template", "subject", context)
 
         # superclass has the redirect
         return super().form_valid(formset)
