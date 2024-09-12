@@ -870,10 +870,11 @@ This script takes the name of a `FederalAgency` (like 'AMTRAK') and does the fol
 
 Errors:
 1. ValueError: Federal agency not found in database.
-2. Logged Error: No suborganizations found for agency.
-3. Logged Warning: No new suborganizations to add.
-4. Logged Warning: No valid DomainRequest records to update.
-5. Logged Warning: No valid DomainInformation records to update.
+2. Logged warning: No senior official found for portfolio
+3. Logged Error: No suborganizations found for portfolio.
+4. Logged Warning: No new suborganizations to add.
+5. Logged Warning: No valid DomainRequest records to update.
+6. Logged Warning: No valid DomainInformation records to update.
 
 ### Running on sandboxes
 
