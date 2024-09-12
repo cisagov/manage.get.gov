@@ -417,6 +417,8 @@ class DomainNameserversView(DomainFormBaseView):
 
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
+    
+        logger.debug("------ Form is valid -------")
 
         self.request.session["nameservers_form_domain"] = self.object
 
@@ -442,8 +444,9 @@ class DomainNameserversView(DomainFormBaseView):
                 pass
 
         old_nameservers = self.object.nameservers
+        logger.debug("nameservers", nameservers)
         should_notify = old_nameservers and old_nameservers != nameservers 
-
+        logger.debug("should_notify", should_notify)
         try:
             self.object.nameservers = nameservers
         except NameserverError as Err:
