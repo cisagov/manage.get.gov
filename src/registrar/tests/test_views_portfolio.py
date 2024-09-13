@@ -858,6 +858,8 @@ class TestPortfolio(WebTest):
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             portfolio=self.portfolio,
         )
+        domain_request.creator = self.user
+        domain_request.save()
 
         self.client.force_login(self.user)
         # Perform delete
@@ -889,6 +891,8 @@ class TestPortfolio(WebTest):
             status=DomainRequest.DomainRequestStatus.STARTED,
             portfolio=self.portfolio,
         )
+        domain_request.creator = self.user
+        domain_request.save()
 
         self.client.force_login(self.user)
         # Attempt to delete
