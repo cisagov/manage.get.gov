@@ -48,25 +48,70 @@
           <span class="text-bold text-primary-darker">
              Status:
           </span>
-          {% if DomainRequest.status == 'approved' %} Approved 
-          {% elif DomainRequest.status == 'in review' %} In review 
-          {% elif DomainRequest.status == 'rejected' %} Rejected
-          {% elif DomainRequest.status == 'submitted' %} Submitted
-          {% elif DomainRequest.status == 'ineligible' %} Ineligible
-          {% else %}ERROR Please contact technical support/dev
-          {% endif %}
+          {{ DomainRequest.get_status_display|default:"ERROR Please contact technical support/dev" }}
         </p>
       </div>
     </div>
     <br>
-    <p><b class="review__step__name">Last updated:</b> {{DomainRequest.updated_at|date:"F j, Y"}}</p>
-  
+
+    {% if DomainRequest.creator and DomainRequest.creator != request.user %}
+      <p class="margin-top-1 margin-bottom-1">
+        <b class="review__step__name">Created by:</b> {{DomainRequest.creator.email|default:DomainRequest.creator.get_formatted_name }}
+      </p>
+    {% endif %}
+
+    {% with statuses=DomainRequest.DomainRequestStatus last_submitted=DomainRequest.last_submitted_date|date:"F j, Y" first_submitted=DomainRequest.first_submitted_date|date:"F j, Y" %}
+    {% comment %} 
+    These are intentionally seperated this way. 
+    There is some code repetition, but it gives us more flexibility rather than a dense reduction. 
+    Leave it this way until we've solidified our requirements.
+    {% endcomment %}
+    {% if DomainRequest.status == statuses.STARTED %}
+      <p class="margin-top-1">
+        <b class="review__step__name">Started on:</b> {{DomainRequest.last_status_update|date:"F j, Y"}}
+      </p>
+    {% elif DomainRequest.status == statuses.SUBMITTED %}
+      <p class="margin-top-1 margin-bottom-1">
+        <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+      </p>
+      <p class="margin-top-1">
+        <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+      </p>
+    {% elif DomainRequest.status == statuses.ACTION_NEEDED %}
+      <p class="margin-top-1 margin-bottom-1">
+        <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+      </p>
+      <p class="margin-top-1">
+        <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+      </p>
+    {% elif DomainRequest.status == statuses.REJECTED %}
+      <p class="margin-top-1 margin-bottom-1">
+        <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+      </p>
+      <p class="margin-top-1">
+        <b class="review__step__name">Rejected on:</b> {{DomainRequest.last_status_update|date:"F j, Y"}}
+      </p>
+    {% elif DomainRequest.status == statuses.WITHDRAWN %}
+      <p class="margin-top-1 margin-bottom-1">
+        <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+      </p>
+      <p class="margin-top-1">
+        <b class="review__step__name">Withdrawn on:</b> {{DomainRequest.last_status_update|date:"F j, Y"}}
+      </p>
+    {% else %}
+      {% comment %} Shown for in_review, approved, ineligible {% endcomment %}
+      <p class="margin-top-1">
+        <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+      </p>
+    {% endif %}
+
     {% if DomainRequest.status != 'rejected' %}
     <p>{% include "includes/domain_request.html" %}</p>
     <p><a href="{% url 'domain-request-withdraw-confirmation' pk=DomainRequest.id %}" class="usa-button usa-button--outline withdraw_outline">
       Withdraw request</a>
     </p>
     {% endif %}
+    {% endwith %}
   </div>
 
   <div class="grid-col desktop:grid-offset-2 maxw-tablet">
@@ -141,8 +186,8 @@
     {% if DomainRequest %}
       <h3 class="register-form-review-header">CISA Regional Representative</h3>
       <ul class="usa-list usa-list--unstyled margin-top-0">
-        {% if domain_request.cisa_representative_first_name %}
-          {{domain_request.cisa_representative_first_name}} {{domain_request.cisa_representative_last_name}}
+        {% if DomainRequest.cisa_representative_first_name %}
+          {{ DomainRequest.get_formatted_cisa_rep_name }}
         {% else %}
           No
         {% endif %}

@@ -1154,6 +1154,11 @@ class DomainRequest(TimeStampedModel):
             data[field.name] = field.value_from_object(self)
         return data
 
+    def get_formatted_cisa_rep_name(self):
+        """Returns the cisa representatives name in Western order."""
+        names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
+        return " ".join(names) if names else "Unknown"
+
     def _is_federal_complete(self):
         # Federal -> "Federal government branch" page can't be empty + Federal Agency selection can't be None
         return not (self.federal_type is None or self.federal_agency is None)
