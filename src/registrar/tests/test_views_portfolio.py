@@ -849,7 +849,7 @@ class TestPortfolio(WebTest):
             user=self.user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS]
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
 
         # Create a domain request with status WITHDRAWN
@@ -882,7 +882,7 @@ class TestPortfolio(WebTest):
             user=self.user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[]
+            additional_permissions=[],
         )
 
         # Create a domain request with status STARTED
@@ -915,7 +915,7 @@ class TestPortfolio(WebTest):
             user=self.user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS]
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
 
         # Create another user and a domain request
