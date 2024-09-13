@@ -421,7 +421,7 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
     
-        logger.debug("------ Form is valid -------")
+        logger.debug("------ Nameserver Form is valid -------")
 
         self.request.session["nameservers_form_domain"] = self.object
 
