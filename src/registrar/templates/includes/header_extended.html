@@ -42,7 +42,7 @@
                 {% else %}
                     {% url 'no-portfolio-domains' as url %}
                 {% endif %}
-                <a href="{{ url }}" class="usa-nav-link{% if 'domain'|in_path:request.path %} usa-current{% endif %}"> 
+                <a href="{{ url }}" class="usa-nav-link{% if 'domains'|in_path:request.path %} usa-current{% endif %}"> 
                 Domains
                 </a>
             </li>
