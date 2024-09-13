@@ -34,8 +34,15 @@
         Back to manage your domains
       </p>
     </a>
-    {% comment %} {% endif %}{% endcomment %}
+
+    {% if DomainRequest.requested_domain %}
     <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
+    {% elif DomainRequest.status == DomainRequest.DomainRequestStatus.STARTED %}
+    <h1>New domain request</h1>
+    {% else %}
+    {% comment %} Question: What do we do in this case???? {% endcomment %}
+    <h1>Domain request for [UNKNOWN]</h1>
+    {% endif %}
     <div
         class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
         role="region"
@@ -60,16 +67,23 @@
       </p>
     {% endif %}
 
-    {% with statuses=DomainRequest.DomainRequestStatus last_submitted=DomainRequest.last_submitted_date|date:"F j, Y" first_submitted=DomainRequest.first_submitted_date|date:"F j, Y" %}
+    {% with statuses=DomainRequest.DomainRequestStatus last_submitted=DomainRequest.last_submitted_date|date:"F j, Y" first_submitted=DomainRequest.first_submitted_date|date:"F j, Y" last_status_update=DomainRequest.last_status_update|date:"F j, Y" %}
     {% comment %} 
     These are intentionally seperated this way. 
     There is some code repetition, but it gives us more flexibility rather than a dense reduction. 
     Leave it this way until we've solidified our requirements.
     {% endcomment %}
     {% if DomainRequest.status == statuses.STARTED %}
+      {% with first_started_date=DomainRequest.get_first_status_started_date|date:"F j, Y" %}
       <p class="margin-top-1">
-        <b class="review__step__name">Started on:</b> {{DomainRequest.last_status_update|date:"F j, Y"}}
+        {% comment %} 
+        A newly created domain request will not have a value for last_status update.
+        This is because the status never really updated. 
+        However, if this somehow goes back to started we can default to displaying that new date.
+        {% endcomment %}
+        <b class="review__step__name">Started on:</b> {{last_status_update|default:first_started_date}}
       </p>
+      {% endwith %}
     {% elif DomainRequest.status == statuses.SUBMITTED %}
       <p class="margin-top-1 margin-bottom-1">
         <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
@@ -89,14 +103,14 @@
         <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
       </p>
       <p class="margin-top-1">
-        <b class="review__step__name">Rejected on:</b> {{DomainRequest.last_status_update|date:"F j, Y"}}
+        <b class="review__step__name">Rejected on:</b> {{last_status_update}}
       </p>
     {% elif DomainRequest.status == statuses.WITHDRAWN %}
       <p class="margin-top-1 margin-bottom-1">
         <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
       </p>
       <p class="margin-top-1">
-        <b class="review__step__name">Withdrawn on:</b> {{DomainRequest.last_status_update|date:"F j, Y"}}
+        <b class="review__step__name">Withdrawn on:</b> {{last_status_update}}
       </p>
     {% else %}
       {% comment %} Shown for in_review, approved, ineligible {% endcomment %}

@@ -12,6 +12,7 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
+from auditlog.models import LogEntry
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -589,10 +590,22 @@ class DomainRequest(TimeStampedModel):
         verbose_name="last updated on",
         help_text="Date of the last status update",
     )
+
     notes = models.TextField(
         null=True,
         blank=True,
     )
+
+    def get_first_status_set_date(self, status):
+        """Returns the date when the domain request was first set to the given status."""
+        log_entry = LogEntry.objects.filter(
+            content_type__model="domainrequest", object_pk=self.pk, changes__status__1=status
+        ).order_by("-timestamp").first()
+        return log_entry.timestamp.date() if log_entry else None
+
+    def get_first_status_started_date(self):
+        """Returns the date when the domain request was put into the status "started" for the first time"""
+        return self.get_first_status_set_date(DomainRequest.DomainRequestStatus.STARTED)
 
     @classmethod
     def get_statuses_that_send_emails(cls):
