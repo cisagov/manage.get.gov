@@ -875,7 +875,7 @@ class TestPortfolio(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
     def test_delete_domain_request_as_org_user_without_permission_with_deletable_status(self):
-        """Test that an org user without edit permission cannot delete their DomainRequest even if status is deletable."""
+        """Test that an org user without edit permission cant delete their DomainRequest even if status is deletable."""
 
         # Assign the user to a portfolio without edit permission
         UserPortfolioPermission.objects.get_or_create(
