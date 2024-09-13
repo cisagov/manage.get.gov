@@ -15,12 +15,12 @@
               </svg>
             {% endif %}
           {% endif %}
-        <a href="{% namespaced_url 'domain-request' this_step %}">
+        <a href="{% namespaced_url 'domain-request' this_step %}""
            {% if this_step == steps.current %}
            class="usa-current"
            {% else %}
            class="link_usa-checked"
-           {% endif%}>
+           {% endif%} >
           {{ form_titles|get_item:this_step }}
         </a>
       </span>
