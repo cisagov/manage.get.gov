@@ -1503,8 +1503,6 @@ class DomainRequestsTable extends LoadTableBase {
 
   constructor() {
     super('.domain-requests__table', '.domain-requests__table-wrapper', '#domain-requests__search-field', '#domain-requests__search-field-submit', '.domain-requests__reset-search', '.domain-requests__reset-filters', '.domain-requests__no-data', '.domain-requests__no-search-results');
-    this.domainRequestPk = 1
-
   }
   /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
