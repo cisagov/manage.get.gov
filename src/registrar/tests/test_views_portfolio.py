@@ -870,6 +870,7 @@ class TestPortfolio(WebTest):
 
         # Check that the domain request no longer exists
         self.assertFalse(DomainRequest.objects.filter(pk=domain_request.pk).exists())
+        domain_request.delete()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -903,6 +904,7 @@ class TestPortfolio(WebTest):
 
         # Check that the domain request still exists
         self.assertTrue(DomainRequest.objects.filter(pk=domain_request.pk).exists())
+        domain_request.delete()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -937,3 +939,4 @@ class TestPortfolio(WebTest):
 
         # Check that the domain request still exists
         self.assertTrue(DomainRequest.objects.filter(pk=domain_request.pk).exists())
+        domain_request.delete()
