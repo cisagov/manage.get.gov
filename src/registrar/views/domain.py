@@ -404,7 +404,7 @@ class DomainNameserversView(DomainFormBaseView):
         This post method harmonizes using DomainBaseView and FormMixin
         """
 
-        logger.debug("Posted to Namservers View")
+        logger.info("Posted to Namservers View")
 
         self._get_domain(request)
         formset = self.get_form()
@@ -421,7 +421,7 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
     
-        logger.debug("------ Nameserver Form is valid -------")
+        logger.info("------ Nameserver Form is valid -------")
 
         self.request.session["nameservers_form_domain"] = self.object
 
@@ -447,9 +447,9 @@ class DomainNameserversView(DomainFormBaseView):
                 pass
 
         old_nameservers = self.object.nameservers
-        logger.debug("nameservers", nameservers)
+        logger.info("nameservers", nameservers)
         should_notify = old_nameservers and old_nameservers != nameservers 
-        logger.debug("should_notify", should_notify)
+        logger.info("should_notify", should_notify)
         try:
             self.object.nameservers = nameservers
         except NameserverError as Err:
@@ -478,7 +478,7 @@ class DomainNameserversView(DomainFormBaseView):
 
             # if the nameservers where changed, send notification to domain managers.
             if should_notify:
-                logger.debug("Sending email to domain managers")
+                logger.info("Sending email to domain managers")
                 context={
                             "domain": self.object,
                         }
