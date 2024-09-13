@@ -261,9 +261,10 @@ class TestDomainRequest(TestCase):
         msg = "Create a domain request and submit it and see if email was sent."
         domain_request = completed_domain_request(user=self.dummy_user_2)
         self.check_email_sent(
-            domain_request, msg, "submit", 1, expected_content="Hi", expected_email=self.dummy_user_2.email
+            domain_request, msg, "submit", 1, expected_content="Lava", expected_email=self.dummy_user_2.email
         )
 
+    @override_flag("profile_feature", active=True)
     @less_console_noise_decorator
     def test_submit_from_started_sends_email_to_creator(self):
         """Tests if, when the profile feature flag is on, we send an email to the creator"""
@@ -313,7 +314,7 @@ class TestDomainRequest(TestCase):
         msg = "Create a domain request and reject it and see if email was sent."
         user, _ = User.objects.get_or_create(username="testy")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED, user=user)
-        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="rejected", expected_email=user.email)
+        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hi", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_reject_with_prejudice_does_not_send_email(self):
@@ -1131,7 +1132,7 @@ class TestPortfolioInvitations(TestCase):
         self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Hotel California")
         self.portfolio_role_base = UserPortfolioRoleChoices.ORGANIZATION_MEMBER
         self.portfolio_role_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
-        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS
+        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         self.portfolio_permission_2 = UserPortfolioPermissionChoices.EDIT_REQUESTS
         self.invitation, _ = PortfolioInvitation.objects.get_or_create(
             email=self.email,
@@ -1322,16 +1323,16 @@ class TestUser(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
-    @patch.object(User, "has_edit_suborganization", return_value=True)
+    @patch.object(User, "has_edit_suborganization_portfolio_permission", return_value=True)
     def test_portfolio_role_summary_admin(self, mock_edit_suborganization):
         # Test if the user is recognized as an Admin
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Admin"])
 
     @patch.multiple(
         User,
-        has_view_all_domains_permission=lambda self, portfolio: True,
-        has_domain_requests_portfolio_permission=lambda self, portfolio: True,
-        has_edit_requests=lambda self, portfolio: True,
+        has_view_all_domains_portfolio_permission=lambda self, portfolio: True,
+        has_any_requests_portfolio_permission=lambda self, portfolio: True,
+        has_edit_request_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_view_only_admin_and_domain_requestor(self):
         # Test if the user has both 'View-only admin' and 'Domain requestor' roles
@@ -1339,8 +1340,8 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_view_all_domains_permission=lambda self, portfolio: True,
-        has_domain_requests_portfolio_permission=lambda self, portfolio: True,
+        has_view_all_domains_portfolio_permission=lambda self, portfolio: True,
+        has_any_requests_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_view_only_admin(self):
         # Test if the user is recognized as a View-only admin
@@ -1349,15 +1350,17 @@ class TestUser(TestCase):
     @patch.multiple(
         User,
         has_base_portfolio_permission=lambda self, portfolio: True,
-        has_edit_requests=lambda self, portfolio: True,
-        has_domains_portfolio_permission=lambda self, portfolio: True,
+        has_edit_request_portfolio_permission=lambda self, portfolio: True,
+        has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_requestor_domain_manager(self):
         # Test if the user has 'Member', 'Domain requestor', and 'Domain manager' roles
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain requestor", "Domain manager"])
 
     @patch.multiple(
-        User, has_base_portfolio_permission=lambda self, portfolio: True, has_edit_requests=lambda self, portfolio: True
+        User,
+        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_edit_request_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_requestor(self):
         # Test if the user has 'Member' and 'Domain requestor' roles
@@ -1366,7 +1369,7 @@ class TestUser(TestCase):
     @patch.multiple(
         User,
         has_base_portfolio_permission=lambda self, portfolio: True,
-        has_domains_portfolio_permission=lambda self, portfolio: True,
+        has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_manager(self):
         # Test if the user has 'Member' and 'Domain manager' roles
@@ -1380,6 +1383,74 @@ class TestUser(TestCase):
     def test_portfolio_role_summary_empty(self):
         # Test if the user has no roles
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), [])
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_base_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_base_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_org_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_edit_org_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_any_domains_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.side_effect = [False, True]  # First permission false, second permission true
+
+        self.assertTrue(self.user.has_any_domains_portfolio_permission(self.portfolio))
+        self.assertEqual(mock_has_permission.call_count, 2)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_view_all_domains_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_view_all_domains_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    @override_flag("organization_requests", active=True)
+    def test_has_any_requests_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.side_effect = [False, True]  # First permission false, second permission true
+
+        self.assertTrue(self.user.has_any_requests_portfolio_permission(self.portfolio))
+        self.assertEqual(mock_has_permission.call_count, 2)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_view_all_requests_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_view_all_requests_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_request_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_edit_request_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_view_suborganization_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_view_suborganization_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_suborganization_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_edit_suborganization_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
@@ -1543,8 +1614,8 @@ class TestUser(TestCase):
 
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertFalse(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
@@ -1558,8 +1629,8 @@ class TestUser(TestCase):
             ],
         )
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
@@ -1568,16 +1639,16 @@ class TestUser(TestCase):
         portfolio_permission.save()
         portfolio_permission.refresh_from_db()
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)

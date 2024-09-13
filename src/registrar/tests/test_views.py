@@ -369,19 +369,12 @@ class HomeTests(TestWithUser):
             last_name="Mars",
         )
 
-        # Attach a user object to a contact (should not be deleted)
-        contact_user, _ = Contact.objects.get_or_create(
-            first_name="Hank",
-            last_name="McFakey",
-        )
-
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
-            submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
 
@@ -392,7 +385,6 @@ class HomeTests(TestWithUser):
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
             senior_official=contact_2,
-            submitter=contact_shared,
         )
         domain_request_2.other_contacts.set([contact_shared])
 
@@ -408,8 +400,6 @@ class HomeTests(TestWithUser):
 
         # Check if the orphaned contacts were deleted
         orphan = Contact.objects.filter(id=contact.id)
-        self.assertFalse(orphan.exists())
-        orphan = Contact.objects.filter(id=contact_user.id)
         self.assertFalse(orphan.exists())
 
         try:
@@ -455,7 +445,6 @@ class HomeTests(TestWithUser):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
-            submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
 
@@ -466,7 +455,6 @@ class HomeTests(TestWithUser):
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
             senior_official=contact_2,
-            submitter=contact_shared,
         )
         domain_request_2.other_contacts.set([contact_shared])
 
@@ -970,9 +958,17 @@ class UserProfileTests(TestWithUser, WebTest):
         self.assertNotContains(response, "Your contact information")
 
     @less_console_noise_decorator
-    def test_domain_your_contact_information(self):
-        """test that Your contact information is not accessible"""
-        response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
+    def test_domain_your_contact_information_when_profile_feature_off(self):
+        """test that Your contact information is accessible when profile_feature is off"""
+        with override_flag("profile_feature", active=False):
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
+        self.assertContains(response, "Your contact information")
+
+    @less_console_noise_decorator
+    def test_domain_your_contact_information_when_profile_feature_on(self):
+        """test that Your contact information is not accessible when profile feature is on"""
+        with override_flag("profile_feature", active=True):
+            response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
         self.assertEqual(response.status_code, 404)
 
     @less_console_noise_decorator
@@ -989,13 +985,37 @@ class UserProfileTests(TestWithUser, WebTest):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             senior_official=contact_user,
-            submitter=contact_user,
         )
 
         response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
         self.assertContains(response, "Your profile")
         response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
         self.assertContains(response, "Your profile")
+
+    @less_console_noise_decorator
+    def test_request_when_profile_feature_off(self):
+        """test that Your profile is not in request page when profile feature is off"""
+
+        contact_user, _ = Contact.objects.get_or_create(
+            first_name="Hank",
+            last_name="McFakerson",
+        )
+        site = DraftDomain.objects.create(name="igorville.gov")
+        domain_request = DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            senior_official=contact_user,
+            submitter=contact_user,
+        )
+        with override_flag("profile_feature", active=False):
+            response = self.client.get(f"/domain-request/{domain_request.id}", follow=True)
+            self.assertNotContains(response, "Your profile")
+            response = self.client.get(f"/domain-request/{domain_request.id}/withdraw", follow=True)
+            self.assertNotContains(response, "Your profile")
+        # cleanup
+        domain_request.delete()
+        site.delete()
 
     @less_console_noise_decorator
     def test_user_profile_form_submission(self):

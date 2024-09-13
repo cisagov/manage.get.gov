@@ -1,6 +1,7 @@
 @use "uswds-core" as *;
 
-.usa-accordion--select {
+.usa-accordion--select,
+.usa-accordion--more-actions {
     display: inline-block;
     width: auto;
     position: relative;
@@ -14,7 +15,6 @@
         // Note, width is determined by a custom width class on one of the children
         position: absolute;
         z-index: 1;
-        top: 33.88px;
         left: 0;
         border-radius: 4px;
         border: solid 1px color('base-lighter');
@@ -30,4 +30,18 @@
     .margin-top-0 {
         margin-top: 0 !important;
     }
+}
+
+.usa-accordion--select .usa-accordion__content {
+    top: 33.88px;
+}
+
+.usa-accordion--more-actions .usa-accordion__content {
+    top: 30px;
+}
+
+tr:last-child .usa-accordion--more-actions .usa-accordion__content {
+    top: auto;
+    bottom: -10px;
+    right: 30px;
 }

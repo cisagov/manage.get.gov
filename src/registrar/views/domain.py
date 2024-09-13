@@ -40,7 +40,6 @@ from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
-    UserForm,
     SeniorOfficialContactForm,
     DomainOrgNameAddressForm,
     DomainAddUserForm,
@@ -174,7 +173,7 @@ class DomainView(DomainBaseView):
         If particular views allow permissions, they will need to override
         this function."""
         portfolio = self.request.session.get("portfolio")
-        if self.request.user.has_domains_portfolio_permission(portfolio):
+        if self.request.user.has_any_domains_portfolio_permission(portfolio):
             if Domain.objects.filter(id=pk).exists():
                 domain = Domain.objects.get(id=pk)
                 if domain.domain_info.portfolio == portfolio:
@@ -638,34 +637,6 @@ class DomainDsDataView(DomainFormBaseView):
             messages.success(self.request, "The DS data records for this domain have been updated.")
             # superclass has the redirect
             return super().form_valid(formset)
-
-
-class DomainYourContactInformationView(DomainFormBaseView):
-    """Domain your contact information editing view."""
-
-    template_name = "domain_your_contact_information.html"
-    form_class = UserForm
-
-    def get_form_kwargs(self, *args, **kwargs):
-        """Add domain_info.submitter instance to make a bound form."""
-        form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.request.user
-        return form_kwargs
-
-    def get_success_url(self):
-        """Redirect to the your contact information for the domain."""
-        return reverse("domain-your-contact-information", kwargs={"pk": self.object.pk})
-
-    def form_valid(self, form):
-        """The form is valid, call setter in model."""
-
-        # Post to DB using values from the form
-        form.save()
-
-        messages.success(self.request, "Your contact information for all your domains has been updated.")
-
-        # superclass has the redirect
-        return super().form_valid(form)
 
 
 class DomainSecurityEmailView(DomainFormBaseView):
