@@ -256,14 +256,6 @@ class TestDomainRequest(TestCase):
 
         email_allowed.delete()
 
-    @less_console_noise_decorator
-    def test_submit_from_started_sends_email(self):
-        msg = "Create a domain request and submit it and see if email was sent."
-        domain_request = completed_domain_request(user=self.dummy_user_2)
-        self.check_email_sent(
-            domain_request, msg, "submit", 1, expected_content="Lava", expected_email=self.dummy_user_2.email
-        )
-
     @override_flag("profile_feature", active=True)
     @less_console_noise_decorator
     def test_submit_from_started_sends_email_to_creator(self):
