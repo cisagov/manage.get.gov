@@ -35,13 +35,10 @@
       </p>
     </a>
 
-    {% if DomainRequest.requested_domain %}
-    <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
-    {% elif DomainRequest.status == DomainRequest.DomainRequestStatus.STARTED %}
-    <h1>New domain request</h1>
+    {% if not DomainRequest.requested_domain and DomainRequest.status == DomainRequest.DomainRequestStatus.STARTED %}
+      <h1>New domain request</h1>
     {% else %}
-    {% comment %} Question: What do we do in this case???? {% endcomment %}
-    <h1>Domain request for [UNKNOWN]</h1>
+      <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
     {% endif %}
     <div
         class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
