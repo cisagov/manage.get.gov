@@ -72,13 +72,6 @@
         {% endwith %}
       {% endif %}
 
-      {% if not has_profile_feature_flag %}
-      {# Conditionally display profile link in main nav #}
-        {% with url_name="domain-your-contact-information" %}
-          {% include "includes/domain_sidenav_item.html" with item_text="Your contact information" %}
-        {% endwith %}
-      {% endif %}
-
       {% with url_name="domain-security-email" %}
         {% include "includes/domain_sidenav_item.html" with item_text="Security email" %}
       {% endwith %}
