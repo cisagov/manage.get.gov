@@ -598,9 +598,11 @@ class DomainRequest(TimeStampedModel):
 
     def get_first_status_set_date(self, status):
         """Returns the date when the domain request was first set to the given status."""
-        log_entry = LogEntry.objects.filter(
-            content_type__model="domainrequest", object_pk=self.pk, changes__status__1=status
-        ).order_by("-timestamp").first()
+        log_entry = (
+            LogEntry.objects.filter(content_type__model="domainrequest", object_pk=self.pk, changes__status__1=status)
+            .order_by("-timestamp")
+            .first()
+        )
         return log_entry.timestamp.date() if log_entry else None
 
     def get_first_status_started_date(self):

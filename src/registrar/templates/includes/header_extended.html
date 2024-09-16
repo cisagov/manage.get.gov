@@ -59,7 +59,7 @@
                     {% url 'domain-requests' as url %}
                     <button
                         type="button"
-                        class="usa-accordion__button usa-nav__link{% if 'request'|in_path:request.path %} usa-current{% endif %}"
+                        class="usa-accordion__button usa-nav__link{% if path|is_domain_request_subpage %} usa-current{% endif %}"
                         aria-expanded="false"
                         aria-controls="basic-nav-section-two"
                     >
@@ -80,13 +80,13 @@
                 <!-- user has view but no edit permissions -->
                 {% elif has_any_requests_portfolio_permission %}
                     {% url 'domain-requests' as url %}
-                    <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 
+                    <a href="{{ url }}" class="usa-nav-link{% if path|is_domain_request_subpage %} usa-current{% endif %}"> 
                         Domain requests
                     </a>
                 <!-- user does not have permissions -->
                 {% else %}
                     {% url 'no-portfolio-requests' as url %}
-                    <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 
+                    <a href="{{ url }}" class="usa-nav-link{% if path|is_domain_request_subpage %} usa-current{% endif %}"> 
                     Domain requests
                     </a>
                 {% endif %}
