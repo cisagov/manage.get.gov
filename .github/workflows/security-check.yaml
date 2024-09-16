@@ -44,7 +44,7 @@ jobs:
         id: check
         uses: ./.github/actions/django-security-check
       - name: Upload output
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: security-check-output
           path: ./src/output.txt

@@ -81,12 +81,12 @@ class OrderableFieldsMixin:
         Or for fields with multiple order_fields:
 
         ```
-        def get_sortable_submitter(self, obj):
-            return obj.submitter
+        def get_sortable_creator(self, obj):
+            return obj.creator
         # Allows column order sorting
-        get_sortable_submitter.admin_order_field = ["submitter__first_name", "submitter__last_name"]
+        get_sortable_creator.admin_order_field = ["creator__first_name", "creator__last_name"]
         # Sets column's header
-        get_sortable_submitter.short_description = "submitter"
+        get_sortable_creator.short_description = "creator"
         ```
 
         Parameters:
@@ -114,8 +114,8 @@ class OrderableFieldsMixin:
 
             Returns (example):
             ```
-            def get_submitter(self, obj):
-                return obj.submitter
+            def get_creator(self, obj):
+                return obj.creator
             ```
             """
             attr = getattr(obj, field)
@@ -419,7 +419,7 @@ class PortfolioBasePermission(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
-        return self.request.user.has_base_portfolio_permission()
+        return self.request.user.is_org_user(self.request)
 
 
 class PortfolioDomainsPermission(PortfolioBasePermission):
@@ -432,9 +432,11 @@ class PortfolioDomainsPermission(PortfolioBasePermission):
         The user is in self.request.user and the portfolio can be looked
         up from the portfolio's primary key in self.kwargs["pk"]"""
 
-        if not self.request.user.is_authenticated:
+        portfolio = self.request.session.get("portfolio")
+        if not self.request.user.has_any_domains_portfolio_permission(portfolio):
             return False
-        return self.request.user.has_domains_portfolio_permission()
+
+        return super().has_permission()
 
 
 class PortfolioDomainRequestsPermission(PortfolioBasePermission):
@@ -447,6 +449,25 @@ class PortfolioDomainRequestsPermission(PortfolioBasePermission):
         The user is in self.request.user and the portfolio can be looked
         up from the portfolio's primary key in self.kwargs["pk"]"""
 
-        if not self.request.user.is_authenticated:
+        portfolio = self.request.session.get("portfolio")
+        if not self.request.user.has_any_requests_portfolio_permission(portfolio):
             return False
-        return self.request.user.has_domain_requests_portfolio_permission()
+
+        return super().has_permission()
+
+
+class PortfolioMembersPermission(PortfolioBasePermission):
+    """Permission mixin that allows access to portfolio members pages if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to members for this portfolio.
+
+        The user is in self.request.user and the portfolio can be looked
+        up from the portfolio's primary key in self.kwargs["pk"]"""
+
+        portfolio = self.request.session.get("portfolio")
+        if not self.request.user.has_view_members(portfolio):
+            return False
+
+        return super().has_permission()

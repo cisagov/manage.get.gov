@@ -1,7 +1,7 @@
 {% extends "domain_base.html" %}
 {% load static field_helpers%}
 
-{% block title %}Suborganization{% endblock %}
+{% block title %}Suborganization{% if suborganization_name %} | suborganization_name{% endif %} | {% endblock %}
 
 {% block domain_content %}
     {# this is right after the messages block in the parent template #}
@@ -15,7 +15,7 @@
         If you believe there is an error please contact <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
     </p>
 
-    {% if has_domains_portfolio_permission and request.user.has_edit_suborganization %}
+    {% if has_any_domains_portfolio_permission and has_edit_suborganization_portfolio_permission %}
         <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
             {% csrf_token %}
             {% input_with_errors form.sub_organization %}

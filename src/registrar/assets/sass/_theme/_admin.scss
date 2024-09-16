@@ -66,6 +66,9 @@ html[data-theme="light"] {
     // --object-tools-fg: var(--button-fg);
     // --object-tools-bg: var(--close-button-bg);
     // --object-tools-hover-bg: var(--close-button-hover-bg);
+
+    --summary-box-bg: #f1f1f1;
+    --summary-box-border: #d1d2d2;
 }
 
 // Fold dark theme settings into our main CSS
@@ -104,6 +107,9 @@ html[data-theme="light"] {
   
       --close-button-bg: #333333;
       --close-button-hover-bg: #666666;
+
+      --summary-box-bg:  #121212;
+      --summary-box-border: #666666;
     }
 
     // Dark mode django (bug due to scss cascade) and USWDS tables
@@ -120,7 +126,7 @@ html[data-theme="light"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .analytics {
+    .custom-admin-template, dt {
         color: var(--body-fg);
     }
     .usa-table td {
@@ -149,7 +155,7 @@ html[data-theme="dark"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .analytics {
+    .custom-admin-template, dt {
         color: var(--body-fg);
     }
     .usa-table td {
@@ -160,7 +166,7 @@ html[data-theme="dark"] {
     // Remove when dark mode successfully applies to Django delete page.
     .delete-confirmation .content a:not(.button)  {
         color: color('primary');
-    }
+    } 
 }
 
 
@@ -364,14 +370,60 @@ input.admin-confirm-button {
         list-style-type: none;
         line-height: normal;
     }
-    .button {
-        display: inline-block;
-        padding: 10px 8px;
-        line-height: normal;
-    }
-    a.button:active, a.button:focus {
-        text-decoration: none;
-    }
+}
+
+// This block resolves some of the issues we're seeing on buttons due to css
+// conflicts between DJ and USWDS
+a.button,
+.usa-button--dja {
+    display: inline-block;
+    padding: 10px 15px;
+    font-size: 14px;
+    line-height: 16.1px;
+    font-kerning: auto;
+    font-family: inherit;
+    font-weight: normal;
+}
+.button svg,
+.button span,
+.usa-button--dja svg,
+.usa-button--dja span {
+    vertical-align: middle;
+}
+.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary) {
+    background: var(--button-bg);
+}
+.usa-button--dja span {
+    font-size: 14px;
+}
+.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary):hover {
+    background: var(--button-hover-bg);
+}
+a.button:active, a.button:focus {
+    text-decoration: none;
+}
+.usa-modal {
+    font-family: inherit;
+}
+input[type=submit].button--dja-toolbar {
+    border: 1px solid var(--border-color);
+    font-size: 0.8125rem;
+    padding: 4px 8px;
+    margin: 0;
+    vertical-align: middle;
+    background: var(--body-bg);
+    box-shadow: 0 -15px 20px -10px rgba(0, 0, 0, 0.15) inset;
+    cursor: pointer;
+    color: var(--body-fg);
+}
+input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-toolbar:hover {
+    border-color: var(--body-quiet-color);
+}
+// Targets the DJA buttom with a nested icon
+button .usa-icon,
+.button .usa-icon,
+.button--clipboard .usa-icon {
+    vertical-align: middle;      
 }
 
 .module--custom {
@@ -465,13 +517,6 @@ address.dja-address-contact-list {
     color: var(--link-fg);
 }
 
-// Targets the DJA buttom with a nested icon
-button .usa-icon,
-.button .usa-icon,
-.button--clipboard .usa-icon {
-    vertical-align: middle;      
-}
-
 .errors span.select2-selection {
     border: 1px solid var(--error-fg) !important;
 }
@@ -540,7 +585,7 @@ button .usa-icon,
     #submitRowToggle {
         color: var(--body-fg);
     }
-    .requested-domain-sticky {
+    .submit-row-sticky {
         max-width: 325px;
         overflow: hidden;
         white-space: nowrap;
@@ -732,7 +777,7 @@ div.dja__model-description{
 
     li {
         list-style-type: disc;
-        font-family: Source Sans Pro Web,Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;
+        font-family: family('sans');
     }
 
     a, a:link, a:visited {
@@ -848,7 +893,40 @@ div.dja__model-description{
     }
 }
 
+.vertical-separator {
+    min-height: 20px;
+    height: 100%;
+    width: 1px;
+    background-color: #d1d2d2;
+    vertical-align: middle
+}
+
+.usa-summary-box_admin {
+    color: var(--body-fg);
+    border-color: var(--summary-box-border);
+    background-color: var(--summary-box-bg);
+    min-width: fit-content;
+    padding: .5rem;
+    border-radius: .25rem;
+}
+
+.text-faded {
+    color: #{$dhs-gray-60};
+}
 ul.add-list-reset {
     padding: 0 !important;
     margin: 0 !important;
+}
+
+// Fix the combobox when deployed outside admin (eg user transfer)
+.submit-row .select2,
+.submit-row .select2 span {
+    margin-top: 0;
+}
+.transfer-user-selector .select2-selection__placeholder {
+    color: #3d4551!important;
+}
+
+.dl-dja dt {
+    font-size: 14px;
 }

@@ -7,9 +7,11 @@ from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from django.conf import settings
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models.domain_information import DomainInformation
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
@@ -34,6 +36,7 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
+from django.contrib.admin.views.main import IGNORED_PARAMS
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
@@ -131,14 +134,6 @@ class MyUserAdminForm(UserChangeForm):
         widgets = {
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
-            "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
-            ),
-            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
-                "portfolio_additional_permissions",
-                is_stacked=False,
-                choices=UserPortfolioPermissionChoices.choices,
-            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -168,6 +163,22 @@ class MyUserAdminForm(UserChangeForm):
                 "Raw passwords are not stored, so they will not display here. "
                 f'You can change the password using <a href="{link}">this form</a>.'
             )
+
+
+class UserPortfolioPermissionsForm(forms.ModelForm):
+    class Meta:
+        model = models.UserPortfolioPermission
+        fields = "__all__"
+        widgets = {
+            "roles": FilteredSelectMultipleArrayWidget(
+                "roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
+            ),
+            "additional_permissions": FilteredSelectMultipleArrayWidget(
+                "additional_permissions",
+                is_stacked=False,
+                choices=UserPortfolioPermissionChoices.choices,
+            ),
+        }
 
 
 class PortfolioInvitationAdminForm(UserChangeForm):
@@ -223,7 +234,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
         }
         labels = {
-            "action_needed_reason_email": "Auto-generated email",
+            "action_needed_reason_email": "Email",
         }
 
     def __init__(self, *args, **kwargs):
@@ -366,7 +377,9 @@ class DomainRequestAdminForm(forms.ModelForm):
 class MultiFieldSortableChangeList(admin.views.main.ChangeList):
     """
     This class overrides the behavior of column sorting in django admin tables in order
-    to allow for multi field sorting on admin_order_field
+    to allow for multi field sorting on admin_order_field.  It also overrides behavior
+    of getting the filter params to allow portfolio filters to be executed without
+    displaying on the right side of the ChangeList view.
 
 
     Usage:
@@ -427,6 +440,24 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
             ordering.append("-pk")
 
         return ordering
+
+    def get_filters_params(self, params=None):
+        """
+        Add portfolio to ignored params to allow the portfolio filter while not
+        listing it as a filter option on the right side of Change List on the
+        portfolio list.
+        """
+        params = params or self.params
+        lookup_params = params.copy()  # a dictionary of the query string
+        # Remove all the parameters that are globally and systematically
+        # ignored.
+        # Remove portfolio so that it does not error as an invalid
+        # filter parameter.
+        ignored_params = list(IGNORED_PARAMS) + ["portfolio"]
+        for ignored in ignored_params:
+            if ignored in lookup_params:
+                del lookup_params[ignored]
+        return lookup_params
 
 
 class CustomLogEntryAdmin(LogEntryAdmin):
@@ -505,7 +536,6 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "submitter": (Contact, _name_sort),
         # == Senior Official == #
         "senior_official": (SeniorOfficial, _name_sort),
         # == User == #
@@ -644,6 +674,19 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
                         )
                     except models.User.DoesNotExist:
                         pass
+                elif parameter_name == "portfolio":
+                    # Retrieves the corresponding portfolio from Portfolio
+                    id_value = request.GET.get(param)
+                    try:
+                        portfolio = models.Portfolio.objects.get(id=id_value)
+                        filters.append(
+                            {
+                                "parameter_name": "portfolio",
+                                "parameter_value": portfolio.organization_name,
+                            }
+                        )
+                    except models.Portfolio.DoesNotExist:
+                        pass
                 else:
                     # For other parameter names, append a dictionary with the original
                     # parameter_name and the corresponding parameter_value
@@ -710,18 +753,11 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                     "is_superuser",
                     "groups",
                     "user_permissions",
-                    "portfolio",
-                    "portfolio_roles",
-                    "portfolio_additional_permissions",
                 )
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
-
-    autocomplete_fields = [
-        "portfolio",
-    ]
 
     readonly_fields = ("verification_type",)
 
@@ -742,9 +778,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
                 "fields": (
                     "is_active",
                     "groups",
-                    "portfolio",
-                    "portfolio_roles",
-                    "portfolio_additional_permissions",
                 )
             },
         ),
@@ -799,9 +832,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         "Important dates",
         "last_login",
         "date_joined",
-        "portfolio",
-        "portfolio_roles",
-        "portfolio_additional_permissions",
     ]
 
     # TODO: delete after we merge organization feature
@@ -932,7 +962,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
         domains = Domain.objects.filter(id__in=domain_ids).exclude(state=Domain.State.DELETED)
 
-        extra_context = {"domain_requests": domain_requests, "domains": domains}
+        portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
+        portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
+        extra_context = {"domain_requests": domain_requests, "domains": domains, "portfolios": portfolios}
         return super().change_view(request, object_id, form_url, extra_context)
 
 
@@ -1210,6 +1242,26 @@ class UserDomainRoleResource(resources.ModelResource):
         model = models.UserDomainRole
 
 
+class UserPortfolioPermissionAdmin(ListHeaderAdmin):
+    form = UserPortfolioPermissionsForm
+
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.UserPortfolioPermission
+        fields = "__all__"
+
+    _meta = Meta()
+
+    # Columns
+    list_display = [
+        "user",
+        "portfolio",
+    ]
+
+    autocomplete_fields = ["user", "portfolio"]
+
+
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom user domain role admin class."""
 
@@ -1390,13 +1442,9 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain",
         "generic_org_type",
         "created_at",
-        "submitter",
     ]
 
-    orderable_fk_fields = [
-        ("domain", "name"),
-        ("submitter", ["first_name", "last_name"]),
-    ]
+    orderable_fk_fields = [("domain", "name")]
 
     # Filters
     list_filter = ["generic_org_type"]
@@ -1408,7 +1456,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "sub_organization", "creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "sub_organization", "creator", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1472,7 +1520,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "more_organization_information",
         "domain",
         "domain_request",
-        "submitter",
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
@@ -1487,7 +1534,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain_request",
         "senior_official",
         "domain",
-        "submitter",
         "portfolio",
         "sub_organization",
     ]
@@ -1649,7 +1695,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Columns
     list_display = [
         "requested_domain",
-        "submission_date",
+        "first_submitted_date",
+        "last_submitted_date",
+        "last_status_update",
         "status",
         "generic_org_type",
         "federal_type",
@@ -1658,13 +1706,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "submitter",
         "investigator",
     ]
 
     orderable_fk_fields = [
         ("requested_domain", "name"),
-        ("submitter", ["first_name", "last_name"]),
         ("investigator", ["first_name", "last_name"]),
     ]
 
@@ -1694,11 +1740,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Search
     search_fields = [
         "requested_domain__name",
-        "submitter__email",
-        "submitter__first_name",
-        "submitter__last_name",
+        "creator__email",
+        "creator__first_name",
+        "creator__last_name",
     ]
-    search_help_text = "Search by domain or submitter."
+    search_help_text = "Search by domain or creator."
 
     fieldsets = [
         (
@@ -1714,7 +1760,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "action_needed_reason_email",
                     "investigator",
                     "creator",
-                    "submitter",
                     "approved_domain",
                     "notes",
                 ]
@@ -1802,7 +1847,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "approved_domain",
         "alternative_domains",
         "purpose",
-        "submitter",
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
@@ -1813,7 +1857,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
-        "submitter",
         "creator",
         "senior_official",
         "investigator",
@@ -1852,7 +1895,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Table ordering
     # NOTE: This impacts the select2 dropdowns (combobox)
     # Currentl, there's only one for requests on DomainInfo
-    ordering = ["-submission_date", "requested_domain__name"]
+    ordering = ["-last_submitted_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
 
@@ -1914,6 +1957,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             else:
                 obj.action_needed_reason_email = default_email
 
+        if obj.status in DomainRequest.get_statuses_that_send_emails() and not settings.IS_PRODUCTION:
+            self._check_for_valid_email(request, obj)
+
         # == Handle status == #
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
@@ -1925,6 +1971,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # We should only save if we don't display any errors in the steps above.
             if should_save:
                 return super().save_model(request, obj, form, change)
+
+    def _check_for_valid_email(self, request, obj):
+        """Certain emails are whitelisted in non-production environments,
+        so we should display that information using this function.
+
+        """
+
+        if hasattr(obj, "creator"):
+            recipient = obj.creator
+        else:
+            recipient = None
+
+        # Displays a warning in admin when an email cannot be sent
+        if recipient and recipient.email:
+            email = recipient.email
+            allowed = models.AllowedEmail.is_allowed_email(email)
+            error_message = f"Could not send email. The email '{email}' does not exist within the whitelist."
+            if not allowed:
+                messages.warning(request, error_message)
 
     def _handle_status_change(self, request, obj, original_obj):
         """
@@ -2150,10 +2215,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
             return None
 
-        if flag_is_active(None, "profile_feature"):  # type: ignore
-            recipient = domain_request.creator
-        else:
-            recipient = domain_request.submitter
+        recipient = domain_request.creator
 
         # Return the context of the rendered views
         context = {"domain_request": domain_request, "recipient": recipient}
@@ -2235,6 +2297,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # objects rather than Contact objects.
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
+
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if a 'portfolio' parameter is passed in the request
+        portfolio_id = request.GET.get("portfolio")
+        if portfolio_id:
+            # Further filter the queryset by the portfolio
+            qs = qs.filter(portfolio=portfolio_id)
+        return qs
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
@@ -2724,6 +2797,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             return True
         return super().has_change_permission(request, obj)
 
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if a 'portfolio' parameter is passed in the request
+        portfolio_id = request.GET.get("portfolio")
+        if portfolio_id:
+            # Further filter the queryset by the portfolio
+            qs = qs.filter(domain_info__portfolio=portfolio_id)
+        return qs
+
 
 class DraftDomainResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -2903,12 +2987,8 @@ class PortfolioAdmin(ListHeaderAdmin):
     fieldsets = [
         # created_on is the created_at field, and portfolio_type is f"{organization_type} - {federal_type}"
         (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_on", "notes"]}),
-        # TODO - uncomment in #2521
-        # ("Portfolio members", {
-        #     "classes": ("collapse", "closed"),
-        #     "fields": ["administrators", "members"]}
-        # ),
-        ("Portfolio domains", {"classes": ("collapse", "closed"), "fields": ["domains", "domain_requests"]}),
+        ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
+        ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -2955,13 +3035,117 @@ class PortfolioAdmin(ListHeaderAdmin):
     readonly_fields = [
         # This is the created_at field
         "created_on",
-        # Custom fields such as these must be defined as readonly.
+        # Django admin doesn't allow methods to be directly listed in fieldsets. We can
+        # display the custom methods display_admins amd display_members in the admin form if
+        # they are readonly.
         "federal_type",
         "domains",
         "domain_requests",
         "suborganizations",
         "portfolio_type",
+        "display_admins",
+        "display_members",
+        "creator",
     ]
+
+    def get_admin_users(self, obj):
+        # Filter UserPortfolioPermission objects related to the portfolio
+        admin_permissions = UserPortfolioPermission.objects.filter(
+            portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # Get the user objects associated with these permissions
+        admin_users = User.objects.filter(portfolio_permissions__in=admin_permissions)
+
+        return admin_users
+
+    def get_non_admin_users(self, obj):
+        # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
+        non_admin_permissions = UserPortfolioPermission.objects.filter(portfolio=obj).exclude(
+            roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # Get the user objects associated with these permissions
+        non_admin_users = User.objects.filter(portfolio_permissions__in=non_admin_permissions)
+
+        return non_admin_users
+
+    def display_admins(self, obj):
+        """Get joined users who are Admin, unpack and return an HTML block.
+
+        'DJA readonly can't handle querysets, so we need to unpack and return html here.
+        Alternatively, we could return querysets in context but that would limit where this
+        data would display in a custom change form without extensive template customization.
+
+        Will be used in the field_readonly block"""
+        admins = self.get_admin_users(obj)
+        if not admins:
+            return format_html("<p>No admins found.</p>")
+
+        admin_details = ""
+        for portfolio_admin in admins:
+            change_url = reverse("admin:registrar_user_change", args=[portfolio_admin.pk])
+            admin_details += "<address class='margin-bottom-2 dja-address-contact-list'>"
+            admin_details += f'<a href="{change_url}">{escape(portfolio_admin)}</a><br>'
+            admin_details += f"{escape(portfolio_admin.title)}<br>"
+            admin_details += f"{escape(portfolio_admin.email)}"
+            admin_details += "<div class='admin-icon-group admin-icon-group__clipboard-link'>"
+            admin_details += f"<input aria-hidden='true' class='display-none' value='{escape(portfolio_admin.email)}'>"
+            admin_details += (
+                "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon padding-left-05"
+                + "button--clipboard copy-to-clipboard text-no-underline' type='button'>"
+            )
+            admin_details += "<svg class='usa-icon'>"
+            admin_details += "<use aria-hidden='true' xlink:href='/public/img/sprite.svg#content_copy'></use>"
+            admin_details += "</svg>"
+            admin_details += "Copy"
+            admin_details += "</button>"
+            admin_details += "</div><br>"
+            admin_details += f"{escape(portfolio_admin.phone)}"
+            admin_details += "</address>"
+        return format_html(admin_details)
+
+    display_admins.short_description = "Administrators"  # type: ignore
+
+    def display_members(self, obj):
+        """Get joined users who have roles/perms that are not Admin, unpack and return an HTML block.
+
+        DJA readonly can't handle querysets, so we need to unpack and return html here.
+        Alternatively, we could return querysets in context but that would limit where this
+        data would display in a custom change form without extensive template customization.
+
+        Will be used in the after_help_text block."""
+        members = self.get_non_admin_users(obj)
+        if not members:
+            return ""
+
+        member_details = (
+            "<table><thead><tr><th>Name</th><th>Title</th><th>Email</th>"
+            + "<th>Phone</th><th>Roles</th></tr></thead><tbody>"
+        )
+        for member in members:
+            full_name = member.get_formatted_name()
+            member_details += "<tr>"
+            member_details += f"<td>{escape(full_name)}</td>"
+            member_details += f"<td>{escape(member.title)}</td>"
+            member_details += f"<td>{escape(member.email)}</td>"
+            member_details += f"<td>{escape(member.phone)}</td>"
+            member_details += "<td>"
+            for role in member.portfolio_role_summary(obj):
+                member_details += f"<span class='usa-tag'>{escape(role)}</span> "
+            member_details += "</td></tr>"
+        member_details += "</tbody></table>"
+        return format_html(member_details)
+
+    display_members.short_description = "Members"  # type: ignore
+
+    def display_members_summary(self, obj):
+        """Will be passed as context and used in the field_readonly block."""
+        members = self.get_non_admin_users(obj)
+        if not members:
+            return {}
+
+        return self.get_field_links_as_list(members, "user", separator=", ")
 
     def federal_type(self, obj: models.Portfolio):
         """Returns the federal_type field"""
@@ -2990,18 +3174,27 @@ class PortfolioAdmin(ListHeaderAdmin):
     suborganizations.short_description = "Suborganizations"  # type: ignore
 
     def domains(self, obj: models.Portfolio):
-        """Returns a list of links for each related domain"""
-        queryset = obj.get_domains()
-        return self.get_field_links_as_list(
-            queryset, "domaininformation", link_info_attribute="get_state_display_of_domain"
-        )
+        """Returns the count of domains with a link to view them in the admin."""
+        domain_count = obj.get_domains().count()  # Count the related domains
+        if domain_count > 0:
+            # Construct the URL to the admin page, filtered by portfolio
+            url = reverse("admin:registrar_domain_changelist") + f"?portfolio={obj.id}"
+            label = "domain" if domain_count == 1 else "domains"
+            # Create a clickable link with the domain count
+            return format_html('<a href="{}">{} {}</a>', url, domain_count, label)
+        return "No domains"
 
     domains.short_description = "Domains"  # type: ignore
 
     def domain_requests(self, obj: models.Portfolio):
-        """Returns a list of links for each related domain request"""
-        queryset = obj.get_domain_requests()
-        return self.get_field_links_as_list(queryset, "domainrequest", link_info_attribute="get_status_display")
+        """Returns the count of domain requests with a link to view them in the admin."""
+        domain_request_count = obj.get_domain_requests().count()  # Count the related domain requests
+        if domain_request_count > 0:
+            # Construct the URL to the admin page, filtered by portfolio
+            url = reverse("admin:registrar_domainrequest_changelist") + f"?portfolio={obj.id}"
+            # Create a clickable link with the domain request count
+            return format_html('<a href="{}">{} domain requests</a>', url, domain_request_count)
+        return "No domain requests"
 
     domain_requests.short_description = "Domain requests"  # type: ignore
 
@@ -3013,7 +3206,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     ]
 
     def get_field_links_as_list(
-        self, queryset, model_name, attribute_name=None, link_info_attribute=None, seperator=None
+        self, queryset, model_name, attribute_name=None, link_info_attribute=None, separator=None
     ):
         """
         Generate HTML links for items in a queryset, using a specified attribute for link text.
@@ -3045,14 +3238,14 @@ class PortfolioAdmin(ListHeaderAdmin):
                 if link_info_attribute:
                     link += f" ({self.value_of_attribute(item, link_info_attribute)})"
 
-                if seperator:
+                if separator:
                     links.append(link)
                 else:
                     links.append(f"<li>{link}</li>")
 
-        # If no seperator is specified, just return an unordered list.
-        if seperator:
-            return format_html(seperator.join(links)) if links else "-"
+        # If no separator is specified, just return an unordered list.
+        if separator:
+            return format_html(separator.join(links)) if links else "-"
         else:
             links = "".join(links)
             return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else "-"
@@ -3095,8 +3288,12 @@ class PortfolioAdmin(ListHeaderAdmin):
         return readonly_fields
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Add related suborganizations and domain groups"""
-        extra_context = {"skip_additional_contact_info": True}
+        """Add related suborganizations and domain groups.
+        Add the summary for the portfolio members field (list of members that link to change_forms)."""
+        obj = self.get_object(request, object_id)
+        extra_context = extra_context or {}
+        extra_context["skip_additional_contact_info"] = True
+        extra_context["display_members_summary"] = self.display_members_summary(obj)
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
@@ -3205,6 +3402,16 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
 
+class AllowedEmailAdmin(ListHeaderAdmin):
+    class Meta:
+        model = models.AllowedEmail
+
+    list_display = ["email"]
+    search_fields = ["email"]
+    search_help_text = "Search by email."
+    ordering = ["email"]
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 
 admin.site.register(LogEntry, CustomLogEntryAdmin)
@@ -3232,6 +3439,8 @@ admin.site.register(models.Portfolio, PortfolioAdmin)
 admin.site.register(models.DomainGroup, DomainGroupAdmin)
 admin.site.register(models.Suborganization, SuborganizationAdmin)
 admin.site.register(models.SeniorOfficial, SeniorOfficialAdmin)
+admin.site.register(models.UserPortfolioPermission, UserPortfolioPermissionAdmin)
+admin.site.register(models.AllowedEmail, AllowedEmailAdmin)
 
 # Register our custom waffle implementations
 admin.site.register(models.WaffleFlag, WaffleFlagAdmin)

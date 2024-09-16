@@ -6,7 +6,7 @@ import logging
 from urllib.parse import parse_qs
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from registrar.models.user import User
+from registrar.models import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
@@ -125,8 +125,9 @@ class CheckUserProfileMiddleware:
 
 class CheckPortfolioMiddleware:
     """
-    Checks if the current user has a portfolio
-    If they do, redirect them to the portfolio homepage when they navigate to home.
+    this middleware should serve two purposes:
+      1 - set the portfolio in session if appropriate   # views will need the session portfolio
+      2 - if path is home and session portfolio is set, redirect based on permissions of user
     """
 
     def __init__(self, get_response):
@@ -140,19 +141,33 @@ class CheckPortfolioMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         current_path = request.path
 
-        if current_path == self.home and request.user.is_authenticated and request.user.is_org_user(request):
+        if not request.user.is_authenticated:
+            return None
 
-            if request.user.has_base_portfolio_permission():
-                portfolio = request.user.portfolio
+        # if multiple portfolios are allowed for this user
+        if flag_is_active(request, "organization_feature"):
+            self.set_portfolio_in_session(request)
+        elif request.session.get("portfolio"):
+            # Edge case: User disables flag while already logged in
+            request.session["portfolio"] = None
+        elif "portfolio" not in request.session:
+            # Set the portfolio in the session if its not already in it
+            request.session["portfolio"] = None
 
-                # Add the portfolio to the request object
-                request.portfolio = portfolio
-
-                if request.user.has_domains_portfolio_permission():
+        if request.user.is_org_user(request):
+            if current_path == self.home:
+                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
                     portfolio_redirect = reverse("domains")
                 else:
                     portfolio_redirect = reverse("no-portfolio-domains")
-
                 return HttpResponseRedirect(portfolio_redirect)
 
         return None
+
+    def set_portfolio_in_session(self, request):
+        # NOTE: we will want to change later to have a workflow for selecting
+        # portfolio and another for switching portfolio; for now, select first
+        if flag_is_active(request, "multiple_portfolios"):
+            request.session["portfolio"] = request.user.get_first_portfolio()
+        else:
+            request.session["portfolio"] = request.user.get_first_portfolio()

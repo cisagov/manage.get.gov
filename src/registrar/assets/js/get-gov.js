@@ -1168,7 +1168,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
     const statusIndicator = document.querySelector('.domain__filter-indicator');
     const statusToggle = document.querySelector('.usa-button--filter');
-    const noPortfolioFlag = document.getElementById('no-portfolio-js-flag');
     const portfolioElement = document.getElementById('portfolio-js-value');
     const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
 
@@ -1220,16 +1219,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
             const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
             const actionUrl = domain.action_url;
-            const suborganization = domain.suborganization ? domain.suborganization : '';
+            const suborganization = domain.domain_info__sub_organization ? domain.domain_info__sub_organization : '⎯';
 
             const row = document.createElement('tr');
 
             let markupForSuborganizationRow = '';
 
-            if (!noPortfolioFlag) {
+            if (portfolioValue) {
               markupForSuborganizationRow = `
                 <td>
-                    <span class="${suborganization ? 'ellipsis ellipsis--30 vertical-align-middle' : ''}" aria-label="${suborganization}" title="${suborganization}">${suborganization}</span>
+                    <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
                 </td>
               `
             }
@@ -1427,9 +1426,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // NOTE: We may need to evolve this as we add more filters.
     document.addEventListener('focusin', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
-      const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
       
-      if (accordionIsOpen && !accordion.contains(event.target)) {
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
         closeFilters();
       }
     });
@@ -1438,9 +1437,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // NOTE: We may need to evolve this as we add more filters.
     document.addEventListener('click', function(event) {
       const accordion = document.querySelector('.usa-accordion--select');
-      const accordionIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
     
-      if (accordionIsOpen && !accordion.contains(event.target)) {
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
         closeFilters();
       }
     });
@@ -1485,6 +1484,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
     const tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
     const resetSearchButton = document.querySelector('.domain-requests__reset-search');
+    const portfolioElement = document.getElementById('portfolio-js-value');
+    const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
 
     /**
      * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
@@ -1533,7 +1534,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {*} scroll - control for the scrollToElement functionality
      * @param {*} searchTerm - the search term
      */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, searchTerm = currentSearchTerm) {
+    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, searchTerm = currentSearchTerm, portfolio = portfolioValue) {
       // fetch json of page of domain requests, given params
       let baseUrl = document.getElementById("get_domain_requests_json_url");
       if (!baseUrl) {
@@ -1545,7 +1546,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      fetch(`${baseUrlValue}?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`)
+      // fetch json of page of requests, given params
+      let url = `${baseUrlValue}?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`
+      if (portfolio)
+        url += `&portfolio=${portfolio}`
+
+      fetch(url)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
@@ -1599,12 +1605,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${utcDateString(request.created_at)})</span>`;
             const actionUrl = request.action_url;
             const actionLabel = request.action_label;
-            const submissionDate = request.submission_date ? new Date(request.submission_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
+            const submissionDate = request.last_submitted_date ? new Date(request.last_submitted_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
             
-            // Even if the request is not deletable, we may need this empty string for the td if the deletable column is displayed
+            // The markup for the delete function either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
+            // Even if the request is not deletable, we may need these empty strings for the td if the deletable column is displayed
             let modalTrigger = '';
 
-            // If the request is deletable, create modal body and insert it
+            let markupCreatorRow = '';
+
+            if (portfolioValue) {
+              markupCreatorRow = `
+                <td>
+                    <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
+                </td>
+              `
+            }
+
+            // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
             if (request.is_deletable) {
               let modalHeading = '';
               let modalDescription = '';
@@ -1627,7 +1644,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   role="button" 
                   id="button-toggle-delete-domain-alert-${request.id}"
                   href="#toggle-delete-domain-alert-${request.id}"
-                  class="usa-button--unstyled text-no-underline late-loading-modal-trigger"
+                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger line-height-sans-5"
                   aria-controls="toggle-delete-domain-alert-${request.id}"
                   data-open-modal
                 >
@@ -1692,16 +1709,66 @@ document.addEventListener('DOMContentLoaded', function() {
                 `
 
               domainRequestsSectionWrapper.appendChild(modal);
+
+              // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
+              if (portfolioValue) {
+                modalTrigger = `
+                <a 
+                  role="button" 
+                  id="button-toggle-delete-domain-alert-${request.id}"
+                  href="#toggle-delete-domain-alert-${request.id}"
+                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile-flex line-height-sans-5"
+                  aria-controls="toggle-delete-domain-alert-${request.id}"
+                  data-open-modal
+                >
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#delete"></use>
+                  </svg> Delete <span class="usa-sr-only">${domainName}</span>
+                </a>
+
+                <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+                  <div class="usa-accordion__heading">
+                    <button
+                      type="button"
+                      class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+                      aria-expanded="false"
+                      aria-controls="more-actions-${request.id}"
+                    >
+                      <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                      </svg>
+                    </button>
+                  </div>
+                  <div id="more-actions-${request.id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+                    <h2>More options</h2>
+                    <a 
+                      role="button" 
+                      id="button-toggle-delete-domain-alert-${request.id}"
+                      href="#toggle-delete-domain-alert-${request.id}"
+                      class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5"
+                      aria-controls="toggle-delete-domain-alert-${request.id}"
+                      data-open-modal
+                    >
+                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="/public/img/sprite.svg#delete"></use>
+                      </svg> Delete <span class="usa-sr-only">${domainName}</span>
+                    </a>
+                  </div>
+                </div>
+                `
+              }
             }
+
 
             const row = document.createElement('tr');
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="Domain name">
                 ${domainName}
               </th>
-              <td data-sort-value="${new Date(request.submission_date).getTime()}" data-label="Date submitted">
+              <td data-sort-value="${new Date(request.last_submitted_date).getTime()}" data-label="Date submitted">
                 ${submissionDate}
               </td>
+              ${markupCreatorRow}
               <td data-label="Status">
                 ${request.status}
               </td>
@@ -1817,6 +1884,32 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
+    function closeMoreActionMenu(accordionThatIsOpen) {
+      if (accordionThatIsOpen.getAttribute("aria-expanded") === "true") {
+        accordionThatIsOpen.click();
+      }
+    }
+
+    document.addEventListener('focusin', function(event) {
+      closeOpenAccordions(event);
+    });
+    
+    document.addEventListener('click', function(event) {
+      closeOpenAccordions(event);
+    });
+
+    function closeOpenAccordions(event) {
+      const openAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
+      openAccordions.forEach((openAccordionButton) => {
+        // Find the corresponding accordion
+        const accordion = openAccordionButton.closest('.usa-accordion--more-actions');
+        if (accordion && !accordion.contains(event.target)) {
+          // Close the accordion if the click is outside
+          closeMoreActionMenu(openAccordionButton);
+        }
+      });
+    }
+
     // Initial load
     loadDomainRequests(1);
   }
@@ -1910,7 +2003,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let editableFormGroup = button.parentElement.parentElement.parentElement;
         if (editableFormGroup){
-          let readonlyField = editableFormGroup.querySelector(".input-with-edit-button__readonly-field")
+          let readonlyField = editableFormGroup.querySelector(".toggleable_input__readonly-field")
           let inputField = document.getElementById(`id_${fieldName}`);
           if (!inputField || !readonlyField) {
             return;
@@ -1936,8 +2029,8 @@ document.addEventListener('DOMContentLoaded', function() {
                       // Keep the path before '#' and replace the part after '#' with 'invalid'
                       const newHref = parts[0] + '#error';
                       svg.setAttribute('xlink:href', newHref);
-                      fullNameField.classList.add("input-with-edit-button__error")
-                      label = fullNameField.querySelector(".input-with-edit-button__readonly-field")
+                      fullNameField.classList.add("toggleable_input__error")
+                      label = fullNameField.querySelector(".toggleable_input__readonly-field")
                       label.innerHTML = "Unknown";
                     }
                   }
@@ -2043,11 +2136,11 @@ document.addEventListener('DOMContentLoaded', function() {
       // Due to the nature of how uswds works, this is slightly hacky.
 
       // Use a MutationObserver to watch for changes in the dropdown list
-      const dropdownList = document.querySelector(`#${input.id}--list`);
+      const dropdownList = comboBox.querySelector(`#${input.id}--list`);
       const observer = new MutationObserver(function(mutations) {
           mutations.forEach(function(mutation) {
               if (mutation.type === "childList") {
-                  addBlankOption(clearInputButton, dropdownList, initialValue);
+                addBlankOption(clearInputButton, dropdownList, initialValue);
               }
           });
       });
@@ -2111,7 +2204,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!initialValue){
           blankOption.classList.add("usa-combo-box__list-option--selected")
         }
-        blankOption.textContent = "---------";
+        blankOption.textContent = "⎯";
 
         dropdownList.insertBefore(blankOption, dropdownList.firstChild);
         blankOption.addEventListener("click", (e) => {

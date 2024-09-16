@@ -816,3 +816,99 @@ Example: `cf ssh getgov-za`
 |   | Parameter                  | Description                                                                        |
 |:-:|:-------------------------- |:-----------------------------------------------------------------------------------|
 | 1 | **federal_cio_csv_path**   | Specifies where the federal CIO csv is                                             |
+
+## Update First Ready Values
+This section outlines how to run the populate_first_ready script
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py update_first_ready```
+
+### Running locally
+```docker-compose exec app ./manage.py update_first_ready```
+
+## Populate Domain Request Dates
+This section outlines how to run the populate_domain_request_dates script
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py populate_domain_request_dates```
+
+### Running locally
+```docker-compose exec app ./manage.py populate_domain_request_dates```
+
+## Create federal portfolio
+This script takes the name of a `FederalAgency` (like 'AMTRAK') and does the following:
+1. Creates the portfolio record based off of data on the federal agency object itself.
+2. Creates suborganizations from existing DomainInformation records.
+3. Associates the SeniorOfficial record (if it exists).
+4. Adds this portfolio to DomainInformation / DomainRequests or both.
+
+Errors:
+1. ValueError: Federal agency not found in database.
+2. Logged Warning: No senior official found for portfolio
+3. Logged Error: No suborganizations found for portfolio.
+4. Logged Warning: No new suborganizations to add.
+5. Logged Warning: No valid DomainRequest records to update.
+6. Logged Warning: No valid DomainInformation records to update.
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Upload your csv to the desired sandbox
+[Follow these steps](#use-scp-to-transfer-data-to-sandboxes) to upload the federal_cio csv to a sandbox of your choice.
+
+#### Step 5: Running the script
+```./manage.py create_federal_portfolio "{federal_agency_name}" --both```
+
+Example (only requests): `./manage.py create_federal_portfolio "AMTRAK" --parse_requests`
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py create_federal_portfolio "{federal_agency_name}" --both```
+
+##### Parameters
+|   | Parameter                  | Description                                                                                |
+|:-:|:-------------------------- |:-------------------------------------------------------------------------------------------|
+| 1 | **federal_agency_name**    | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
+| 2 | **both**                   | If True, runs parse_requests and parse_domains.                                            |
+| 3 | **parse_requests**         | If True, then the created portfolio is added to all related DomainRequests.                |
+| 4 | **parse_domains**          | If True, then the created portfolio is added to all related Domains.                       |
+
+Note: Regarding parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
+you must specify at least one to run this script.

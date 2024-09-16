@@ -130,8 +130,8 @@
 
         {% if step == Step.YOUR_CONTACT %}
           {% namespaced_url 'domain-request' step as domain_request_url %}
-          {% if domain_request.submitter is not None %}
-            {% with title=form_titles|get_item:step value=domain_request.submitter %}
+          {% if domain_request.creator is not None %}
+            {% with title=form_titles|get_item:step value=domain_request.creator %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=domain_request_url contact='true' %}
             {% endwith %}
           {% else %}

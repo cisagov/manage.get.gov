@@ -651,7 +651,7 @@ class Command(BaseCommand):
         title = "Do you wish to load additional data for TransitionDomains?"
         proceed = TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            prompt_message=f"""
             !!! ENSURE THAT ALL FILENAMES ARE CORRECT BEFORE PROCEEDING
             ==Master data file==
             domain_additional_filename: {domain_additional_filename}

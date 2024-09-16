@@ -27,6 +27,8 @@ from registrar.models import (
     PublicContact,
     Domain,
     FederalAgency,
+    UserPortfolioPermission,
+    Portfolio,
 )
 from epplibwrapper import (
     commands,
@@ -392,7 +394,6 @@ class AuditedAdminMockData:
                 about_your_organization: str = "e-Government",
                 anything_else: str = "There is more",
                 senior_official: Contact = self.dummy_contact(item_name, "senior_official"),
-                submitter: Contact = self.dummy_contact(item_name, "submitter"),
                 creator: User = self.dummy_user(item_name, "creator"),
             }
         """  # noqa
@@ -410,7 +411,6 @@ class AuditedAdminMockData:
             about_your_organization="e-Government",
             anything_else="There is more",
             senior_official=self.dummy_contact(item_name, "senior_official"),
-            submitter=self.dummy_contact(item_name, "submitter"),
             creator=creator,
         )
         return common_args
@@ -775,13 +775,13 @@ class MockDb(TestCase):
             cls.domain_request_3.alternative_domains.add(website, website_2)
             cls.domain_request_3.current_websites.add(website_3, website_4)
             cls.domain_request_3.cisa_representative_email = "test@igorville.com"
-            cls.domain_request_3.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_3.last_submitted_date = get_time_aware_date(datetime(2024, 4, 2))
             cls.domain_request_3.save()
 
-            cls.domain_request_4.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_4.last_submitted_date = get_time_aware_date(datetime(2024, 4, 2))
             cls.domain_request_4.save()
 
-            cls.domain_request_6.submission_date = get_time_aware_date(datetime(2024, 4, 2))
+            cls.domain_request_6.last_submitted_date = get_time_aware_date(datetime(2024, 4, 2))
             cls.domain_request_6.save()
 
     @classmethod
@@ -791,6 +791,8 @@ class MockDb(TestCase):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         UserDomainRole.objects.all().delete()
+        Portfolio.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
         User.objects.all().delete()
         DomainInvitation.objects.all().delete()
         cls.federal_agency_1.delete()
@@ -897,7 +899,6 @@ def completed_domain_request(  # noqa
     has_cisa_representative=True,
     status=DomainRequest.DomainRequestStatus.STARTED,
     user=False,
-    submitter=False,
     name="city.gov",
     investigator=None,
     generic_org_type="federal",
@@ -907,6 +908,7 @@ def completed_domain_request(  # noqa
     federal_type=None,
     action_needed_reason=None,
     portfolio=None,
+    organization_name=None,
 ):
     """A completed domain request."""
     if not user:
@@ -921,14 +923,6 @@ def completed_domain_request(  # noqa
     domain, _ = DraftDomain.objects.get_or_create(name=name)
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
-    if not submitter:
-        submitter, _ = Contact.objects.get_or_create(
-            first_name="Testy2",
-            last_name="Tester2",
-            title="Admin Tester",
-            email="mayor@igorville.gov",
-            phone="(555) 555 5556",
-        )
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
@@ -950,14 +944,13 @@ def completed_domain_request(  # noqa
         federal_type="executive",
         purpose="Purpose of the site",
         is_policy_acknowledged=True,
-        organization_name="Testorg",
+        organization_name=organization_name if organization_name else "Testorg",
         address_line1="address 1",
         address_line2="address 2",
         state_territory="NY",
         zipcode="10002",
         senior_official=so,
         requested_domain=domain,
-        submitter=submitter,
         creator=user,
         status=status,
         investigator=investigator,
@@ -1743,3 +1736,12 @@ class MockEppLib(TestCase):
 
     def tearDown(self):
         self.mockSendPatch.stop()
+
+
+def get_wsgi_request_object(client, user, url="/"):
+    """Returns client.get(url).wsgi_request for testing functions or classes
+    that need a request object directly passed to them."""
+    client.force_login(user)
+    request = client.get(url).wsgi_request
+    request.user = user
+    return request

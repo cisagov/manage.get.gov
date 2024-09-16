@@ -91,7 +91,7 @@ class Command(BaseCommand):
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            prompt_message=f"""
             ==Proposed Changes==
             Number of DomainInformation objects to change: {len(human_readable_domain_names)}
             The following DomainInformation objects will be modified: {human_readable_domain_names}
@@ -148,7 +148,7 @@ class Command(BaseCommand):
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            prompt_message=f"""
             ==File location==
             current-full.csv filepath: {file_path}
 

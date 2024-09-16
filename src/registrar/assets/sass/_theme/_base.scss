@@ -33,16 +33,19 @@ body {
 }
 
 #wrapper.dashboard--portfolio {
-  background-color: color('gray-1');
   padding-top: units(4)!important;
 }
 
+#wrapper.dashboard--grey-1 {
+  background-color: color('gray-1');
+}
 
-.section--outlined {
+
+.section-outlined {
   background-color: color('white');
   border: 1px solid color('base-lighter');
   border-radius: 4px;
-  padding: 0 units(2) units(3);
+  padding: 0 units(4) units(3) units(2);
   margin-top: units(3);
 
   &.margin-top-0 {
@@ -72,9 +75,13 @@ body {
   }
 }
 
-.section--outlined__header--no-portfolio {
-  .section--outlined__search,
-  .section--outlined__utility-button {
+.section-outlined--border-base-light {
+  border: 1px solid color('base-light');
+}
+
+.section-outlined__header--no-portfolio {
+  .section-outlined__search,
+  .section-outlined__utility-button {
     margin-top: units(2);
   }
 
@@ -82,11 +89,11 @@ body {
     display: flex;
     column-gap: units(3);
 
-    .section--outlined__search,
-    .section--outlined__utility-button {
+    .section-outlined__search,
+    .section-outlined__utility-button {
       margin-top: 0;
     }
-    .section--outlined__search {
+    .section-outlined__search {
       flex-grow: 4;
       // Align right
       max-width: 383px;
@@ -152,6 +159,23 @@ abbr[title] {
   }
 }
 
+.hidden-mobile-flex {
+  display: none!important;
+}
+.visible-mobile-flex {
+  display: flex!important;
+}
+
+@include at-media(tablet) {
+  .hidden-mobile-flex {
+    display: flex!important;
+  }
+  .visible-mobile-flex {
+    display: none!important;
+  }
+}
+
+
 .flex-end {
   align-items: flex-end;
 }
@@ -191,4 +215,13 @@ abbr[title] {
   .ellipsis--desktop-50 {
     max-width: 50ch;
   }
+}
+
+// Boost this USWDS utility class for the accordions in the portfolio requests table
+.left-auto {
+  left: auto!important;
+}
+
+.break-word {
+  word-break: break-word;
 }

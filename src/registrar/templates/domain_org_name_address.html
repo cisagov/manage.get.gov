@@ -42,7 +42,7 @@
 
     {% input_with_errors form.state_territory %}
 
-    {% with add_class="usa-input--small" %}
+    {% with add_class="usa-input--small" sublabel_text="Enter a zip code in the required format, like 12345 or 12345-6789." %}
       {% input_with_errors form.zipcode %}
     {% endwith %}
 
