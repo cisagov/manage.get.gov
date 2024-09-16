@@ -42,7 +42,7 @@
                 {% else %}
                     {% url 'no-portfolio-domains' as url %}
                 {% endif %}
-                <a href="{{ url }}" class="usa-nav-link{% if 'domains'|in_path:request.path %} usa-current{% endif %}"> 
+                <a href="{{ url }}" class="usa-nav-link{% if path|is_domain_subpage %} usa-current{% endif %}"> 
                 Domains
                 </a>
             </li>
@@ -104,7 +104,7 @@
             <li class="usa-nav__primary-item">
                 {% url 'organization' as url %}
                 <!-- Move the padding from the a to the span so that the descenders do not get cut off -->
-                <a href="{{ url }}" class="usa-nav-link padding-y-0 {% if request.path == '/organization/' %} usa-current{% endif %}">
+                <a href="{{ url }}" class="usa-nav-link padding-y-0 {% if path|is_portfolio_subpage %} usa-current{% endif %}">
                     <span class="ellipsis ellipsis--23 ellipsis--desktop-50 padding-y-1 desktop:padding-y-2">
                         {{ portfolio.organization_name }}
                     </span>
