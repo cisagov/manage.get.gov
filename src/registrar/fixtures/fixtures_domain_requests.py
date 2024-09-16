@@ -294,17 +294,38 @@ class DomainRequestFixture:
     @classmethod
     def _create_domain_requests(cls, users):
         """Creates DomainRequests given a list of users"""
+
+        existing_domain_requests = DomainRequest.objects.filter(
+            creator__in=users,
+            organization_name__in=[req.get("organization_name") for req in cls.DA]
+        ).select_related(
+            "creator"
+        )
+        domain_requests_to_create = []
         for user in users:
             logger.debug("Loading domain requests for %s" % user)
-            for req in cls.DA:
-                try:
-                    da, _ = DomainRequest.objects.get_or_create(
-                        creator=user,
-                        organization_name=req["organization_name"],
-                    )
-                    cls._set_non_foreign_key_fields(da, req)
-                    cls._set_foreign_key_fields(da, req)
-                    da.save()
-                    cls._set_many_to_many_relations(da, req)
-                except Exception as e:
+            if not user in existing_domain_requests:
+                for req in cls.DA:
+                    org_name = req.get("organization_name")
+                    if not existing_domain_requests.filter(
+                        creator=user, organization_name=org_name
+                    ).exists():
+                        try:
+                            da = DomainRequest(
+                                creator=user,
+                                organization_name=org_name,
+                            )
+                            cls._set_non_foreign_key_fields(da, req)
+                            cls._set_foreign_key_fields(da, req)
+                            domain_requests_to_create.append(da)
+                        except Exception as e:
+                            logger.warning(e)
+        
+        if len(domain_requests_to_create) > 0:
+            DomainRequest.objects.bulk_create(domain_requests_to_create)
+
+        for domain_request in domain_requests_to_create:
+            try:
+                cls._set_many_to_many_relations(domain_request, req)
+            except Exception as e:
                     logger.warning(e)

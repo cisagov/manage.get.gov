@@ -31,14 +31,15 @@ class DomainFixture(DomainRequestFixture):
             domain_request = DomainRequest.objects.filter(
                 creator=user, status=DomainRequest.DomainRequestStatus.IN_REVIEW
             ).last()
-            logger.debug(f"Approving {domain_request} for {user}")
 
-            # All approvals require an investigator, so if there is none,
-            # assign one.
-            if domain_request.investigator is None:
-                # All "users" in fixtures have admin perms per prior config.
-                # No need to check for that.
-                domain_request.investigator = random.choice(users)  # nosec
+            if domain_request:
+                # All approvals require an investigator, so if there is none,
+                # assign one.
+                if domain_request.investigator is None:
+                    # All "users" in fixtures have admin perms per prior config.
+                    # No need to check for that.
+                    domain_request.investigator = random.choice(users)  # nosec
+                    domain_request.save()
 
-            domain_request.approve(send_email=False)
-            domain_request.save()
+                domain_request.approve(send_email=False)
+                logger.debug(f"Approving {domain_request} for {user}")

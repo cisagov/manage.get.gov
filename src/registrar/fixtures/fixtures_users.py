@@ -256,53 +256,61 @@ class UserFixture:
 
     def load_users(cls, users, group_name, are_superusers=False):
         logger.info(f"Going to load {len(users)} users in group {group_name}")
-
+        
+        # Get all existing usernames - so we don't add fields that already exist
+        usernames = [user.get("username") for user in users]
+        existing_users = User.objects.filter(username__in=usernames).in_bulk(field_name="username")
         added_users = []
         updated_users = []
         updated_fields = set()
         for user_data in users:
             try:
-                user, created = User.objects.get_or_create(username=user_data.get("username"))
+                new_user = user_data.get("username") not in existing_users
+                if new_user:
+                    user = User(username=user_data.pop("username"))
+                else:
+                    user = User.objects.get(username=user_data.pop("username"))
+
                 for field_name, value in user_data.items():
                     if hasattr(user, field_name):
                         setattr(user, field_name, value)
                         updated_fields.add(field_name)
                     else:
                         logger.error(f"Could not find field '{field_name}' on user {user}")
-                
+
+                # This verification type will get reverted to "regular" (or whichever is applicable)
+                # once the user logs in for the first time (as they then got verified through different means).
+                # In the meantime, we can still describe how the user got here in the first place.
+                user.verification_type = User.VerificationTypeChoices.FIXTURE_USER
                 user.is_superuser = are_superusers
                 user.is_staff = True
                 user.is_active = True
 
-                # This verification type will get reverted to "regular" (or whichever is applicables)
-                # once the user logs in for the first time (as they then got verified through different means).
-                # In the meantime, we can still describe how the user got here in the first place.
-                user.verification_type = User.VerificationTypeChoices.FIXTURE_USER
-
-                if created:
+                if new_user:
                     added_users.append(user)
+                    logger.debug(f"User object created for {user_data.get('first_name')}")
                 else:
                     updated_users.append(user)
-
-                logger.debug(f"User object created for {user_data.get('first_name')}")
+                    logger.debug(f"User object updated for {user_data.get('first_name')}")
             except Exception as e:
                 logger.warning(e)
-        
+
+        users_to_add_to_group = []
         if len(added_users) > 0:
-            User.objects.bulk_create(added_users)
+            users_to_add_to_group = User.objects.bulk_create(added_users)
         
         if len(updated_users) > 0:
-            updated_fields = ["is_superuser", "is_staff", "is_active", "verification_type"]
-            updated_fields += list(updated_fields)
+            updated_fields.update({"is_superuser", "is_staff", "is_active", "verification_type"})
             User.objects.bulk_update(updated_users, fields=updated_fields)
+            users_to_add_to_group += updated_users
         
         if group_name:
             try:
-                for user in added_users + updated_users:
+                for user in users_to_add_to_group:
                     group = UserGroup.objects.get(name=group_name)
                     if not user.groups.filter(id=group.id).exists():
                         user.groups.add(group)
-                    logger.debug(f"User group added for {user_data.get('first_name')}")
+                    logger.debug(f"User group added for {user.get_formatted_name()}")
             except Exception as e:
                 logger.warning(e)
 
@@ -315,11 +323,11 @@ class UserFixture:
             logger.info(f"Going to load {len(additional_emails)} additional allowed emails")
 
         # Load user emails
-        existing_emails = AllowedEmail.objects.in_bulk(field_name="email")
         allowed_emails = []
+        existing_emails = AllowedEmail.objects.all().in_bulk(field_name="email")
         for user_data in users:
             user_email = user_data.get("email")
-            if user_email and user_email not in allowed_emails and not existing_emails.get(user_email):
+            if user_email and user_email not in allowed_emails and user_email not in existing_emails:
                 allowed_emails.append(AllowedEmail(email=user_email))
             else:
                 first_name = user_data.get("first_name")
@@ -327,7 +335,9 @@ class UserFixture:
                 logger.warning(f"Could not add email to whitelist for {first_name} {last_name}.")
 
         # Load additional emails
-        allowed_emails.extend([AllowedEmail(email=email) for email in additional_emails])
+        for email in additional_emails:
+            if email not in existing_emails:
+                allowed_emails.append(AllowedEmail(email=email))
 
         if allowed_emails:
             AllowedEmail.objects.bulk_create(allowed_emails)
