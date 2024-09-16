@@ -881,7 +881,6 @@ def create_test_user():
     email = "info@example.com"
     phone = "8003111234"
     title = "test title"
-    password = "password"
     user = get_user_model().objects.create(
         username=username,
         first_name=first_name,
@@ -889,7 +888,6 @@ def create_test_user():
         email=email,
         phone=phone,
         title=title,
-        password=password,
     )
     return user
 
