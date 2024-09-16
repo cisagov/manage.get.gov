@@ -350,7 +350,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
-        print(csv_content)
 
         # We expect only domains associated with the user's portfolio
         self.assertIn(self.domain_1.name, csv_content)
@@ -390,8 +389,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         DomainDataTypeUser.export_data_to_csv(csv_file, request=request)
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
-        print(csv_file)
-        print(csv_file.seek(0))
         # Read the content into a variable
         csv_content = csv_file.read()
 
