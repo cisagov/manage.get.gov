@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0123_alter_portfolioinvitation_portfolio_additional_permissions_and_more"),
+        ("registrar", "0127_remove_domaininformation_submitter_and_more"),
     ]
 
     operations = [
