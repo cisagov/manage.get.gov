@@ -58,12 +58,6 @@
     </div>
     <br>
 
-    {% if DomainRequest.creator and DomainRequest.creator != request.user %}
-      <p class="margin-top-1 margin-bottom-1">
-        <b class="review__step__name">Created by:</b> {{DomainRequest.creator.email|default:DomainRequest.creator.get_formatted_name }}
-      </p>
-    {% endif %}
-
     {% with statuses=DomainRequest.DomainRequestStatus last_submitted=DomainRequest.last_submitted_date|date:"F j, Y" first_submitted=DomainRequest.first_submitted_date|date:"F j, Y" last_status_update=DomainRequest.last_status_update|date:"F j, Y" %}
     {% comment %} 
     These are intentionally seperated this way. 
