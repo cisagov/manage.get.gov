@@ -494,7 +494,13 @@ class HomeTests(TestWithUser):
         phone = "8003111234"
         status = User.RESTRICTED
         restricted_user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, status=status
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            status=status,
+            title="title",
         )
         self.client.force_login(restricted_user)
         response = self.client.get("/request/", follow=True)

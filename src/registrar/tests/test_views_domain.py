@@ -723,7 +723,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
 
-        other_user = User()
+        other_user = create_user()
         other_user.save()
         self.client.force_login(other_user)
         mock_client = MagicMock()
@@ -759,7 +759,7 @@ class TestDomainManagers(TestDomainOverview):
         new_user.on_each_login()
 
         # Now load the home page and make sure our domain appears there
-        home_page = self.app.get(reverse("home"))
+        home_page = self.app.get(reverse("user-profile"))
         self.assertContains(home_page, self.domain.name)
 
 

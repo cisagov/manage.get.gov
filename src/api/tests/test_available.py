@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 
 from ..views import available, check_domain_available
-from .common import less_console_noise
+from .common import less_console_noise, create_user
 from registrar.tests.common import MockEppLib
 from registrar.utility.errors import GenericError, GenericErrorCodes
 from unittest.mock import call
@@ -126,7 +126,7 @@ class AvailableAPITest(MockEppLib):
 
     def setUp(self):
         super().setUp()
-        self.user = get_user_model().objects.create(username="username")
+        self.user = create_user()
 
     def test_available_get(self):
         self.client.force_login(self.user)

@@ -2,6 +2,7 @@ import os
 import logging
 
 from contextlib import contextmanager
+from django.contrib.auth import get_user_model
 
 
 def get_handlers():
@@ -63,3 +64,16 @@ def less_console_noise_decorator(func):
             return func(*args, **kwargs)
 
     return wrapper
+
+
+def create_user():
+    username = "restricted_user"
+    first_name = "First"
+    last_name = "Last"
+    email = "restricted@example.com"
+    phone = "8003111234"
+    title = "title"
+    user = get_user_model().objects.create(
+        username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, title=title
+    )
+    return user
