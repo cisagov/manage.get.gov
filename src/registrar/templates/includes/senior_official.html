@@ -33,7 +33,7 @@
         <button type="submit" class="usa-button">Save</button>
     </form>
 {% elif not form.full_name.value and not form.title.value and not form.email.value %}
-    <h4>No senior official was found.</h4>
+    <h4 class="text-primary-dark">No senior official was found.</h4>
 {% else %}
     <div class="desktop:margin-top-4">
         {% if form.full_name.value is not None %}

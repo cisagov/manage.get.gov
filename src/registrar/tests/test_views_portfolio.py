@@ -340,9 +340,7 @@ class TestPortfolio(WebTest):
                 user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
             )
             page = self.app.get(reverse("organization"))
-            self.assertContains(
-                page, "The name of your organization will be publicly listed as the domain registrant."
-            )
+            self.assertContains(page, "The name of your organization will be publicly listed as the domain registrant.")
 
     @less_console_noise_decorator
     def test_domain_org_name_address_content(self):
