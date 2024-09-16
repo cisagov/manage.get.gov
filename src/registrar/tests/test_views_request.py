@@ -65,7 +65,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         response = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(response, "Submitted on:")
         self.assertContains(response, domain_request.last_submitted_date.strftime("%B %-d, %Y"))
-    
+
     @patch.object(DomainRequest, "get_first_status_set_date")
     def test_get_first_status_started_date(self, mock_get_first_status_set_date):
         """Tests retrieval of the first date the status was set to 'started'."""
@@ -95,7 +95,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # We should still grab a date for this field in this event - but it should come from the audit log instead
         self.assertContains(response, "Started on:")
         self.assertContains(response, domain_request.last_status_update.strftime("%B %-d, %Y"))
-    
+
     def test_template_new_domain_request_display(self):
         """Tests the display of the new domain request header."""
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
