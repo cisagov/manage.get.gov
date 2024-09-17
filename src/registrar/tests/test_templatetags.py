@@ -93,17 +93,17 @@ class CustomFiltersTestCase(TestCase):
         ]
         result = contains_checkbox(html_list)
         self.assertFalse(result)  # Expecting False
-    
+
     def test_is_domain_subpage(self):
         """Tests if the path is recognized as a domain subpage."""
         self.assertTrue(is_domain_subpage("/domains/"))
         self.assertFalse(is_domain_subpage("/"))
-    
+
     def test_is_domain_request_subpage(self):
         """Tests if the path is recognized as a domain request subpage."""
         self.assertTrue(is_domain_request_subpage("/requests/"))
         self.assertFalse(is_domain_request_subpage("/"))
-    
+
     def test_is_portfolio_subpage(self):
         """Tests if the path is recognized as a portfolio subpage."""
         self.assertTrue(is_portfolio_subpage("/organization/"))
