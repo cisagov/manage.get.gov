@@ -16,14 +16,6 @@
 
 {% if can_edit %}
     {% include "includes/required_fields.html" %}
-{% else %}
-    <p>
-        The senior official for your organization can’t be updated here. 
-        To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
-    </p>
-{% endif %}
-
-{% if can_edit %}
     <form class="usa-form usa-form--large desktop:margin-top-4" method="post" novalidate id="form-container">
         {% csrf_token %}
         {% input_with_errors form.first_name %}
@@ -33,8 +25,15 @@
         <button type="submit" class="usa-button">Save</button>
     </form>
 {% elif not form.full_name.value and not form.title.value and not form.email.value %}
-    <h4 class="text-primary-dark">No senior official was found.</h4>
+    <p>
+        Your senior official is a person within your organization who can authorize domain requests.
+        We don't have information about your organization's senior official. To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+    </p>
 {% else %}
+    <p>
+        The senior official for your organization can’t be updated here. 
+        To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+    </p>
     <div class="desktop:margin-top-4">
         {% if form.full_name.value is not None %}
             {% include "includes/input_read_only.html" with field=form.full_name %}
