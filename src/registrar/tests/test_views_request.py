@@ -1,6 +1,7 @@
 from unittest import skip
-from unittest.mock import Mock
-
+from unittest.mock import Mock, patch
+from datetime import datetime
+from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
@@ -55,6 +56,46 @@ class DomainRequestTests(TestWithUser, WebTest):
         """Tests that user is presented with intro acknowledgement page"""
         intro_page = self.app.get(reverse("domain-request:"))
         self.assertContains(intro_page, "You’re about to start your .gov domain request")
+
+    @less_console_noise_decorator
+    def test_template_status_display(self):
+        """Tests the display of status-related information in the template."""
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
+        domain_request.last_submitted_date = datetime.now()
+        domain_request.save()
+        response = self.app.get(f"/domain-request/{domain_request.id}")
+        self.assertContains(response, "Submitted on:")
+        self.assertContains(response, domain_request.last_submitted_date.strftime("%B %-d, %Y"))
+
+    @patch.object(DomainRequest, "get_first_status_set_date")
+    def test_get_first_status_started_date(self, mock_get_first_status_set_date):
+        """Tests retrieval of the first date the status was set to 'started'."""
+
+        # Set the mock to return a fixed date
+        fixed_date = timezone.datetime(2023, 1, 1).date()
+        mock_get_first_status_set_date.return_value = fixed_date
+
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        domain_request.last_status_update = None
+        domain_request.save()
+
+        response = self.app.get(f"/domain-request/{domain_request.id}")
+        # Ensure that the date is still set to None
+        self.assertIsNone(domain_request.last_status_update)
+        print(response)
+        # We should still grab a date for this field in this event - but it should come from the audit log instead
+        self.assertContains(response, "Started on:")
+        self.assertContains(response, fixed_date.strftime("%B %-d, %Y"))
+
+        # If a status date is set, we display that instead
+        domain_request.last_status_update = datetime.now()
+        domain_request.save()
+
+        response = self.app.get(f"/domain-request/{domain_request.id}")
+
+        # We should still grab a date for this field in this event - but it should come from the audit log instead
+        self.assertContains(response, "Started on:")
+        self.assertContains(response, domain_request.last_status_update.strftime("%B %-d, %Y"))
 
     @less_console_noise_decorator
     def test_domain_request_form_intro_is_skipped_when_edit_access(self):
