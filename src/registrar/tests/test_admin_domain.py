@@ -427,13 +427,6 @@ class TestDomainAdminWithClient(TestCase):
         # Check for the field itself
         self.assertContains(response, "Meoward Jones")
 
-        # == Check for the submitter == #
-        self.assertContains(response, "mayor@igorville.gov")
-
-        self.assertContains(response, "Admin Tester")
-        self.assertContains(response, "(555) 555 5556")
-        self.assertContains(response, "Testy2 Tester2")
-
         # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com")
         self.assertContains(response, "Chief Tester")

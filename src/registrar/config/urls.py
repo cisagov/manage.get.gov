@@ -53,7 +53,6 @@ for step, view in [
     (Step.CURRENT_SITES, views.CurrentSites),
     (Step.DOTGOV_DOMAIN, views.DotgovDomain),
     (Step.PURPOSE, views.Purpose),
-    (Step.YOUR_CONTACT, views.YourContact),
     (Step.OTHER_CONTACTS, views.OtherContacts),
     (Step.ADDITIONAL_DETAILS, views.AdditionalDetails),
     (Step.REQUIREMENTS, views.Requirements),
@@ -78,6 +77,11 @@ urlpatterns = [
         "requests/",
         views.PortfolioDomainRequestsView.as_view(),
         name="domain-requests",
+    ),
+    path(
+        "no-organization-requests/",
+        views.PortfolioNoDomainRequestsView.as_view(),
+        name="no-portfolio-requests",
     ),
     path(
         "organization/",
@@ -207,11 +211,6 @@ urlpatterns = [
         "domain/<int:pk>/dns/dnssec/dsdata",
         views.DomainDsDataView.as_view(),
         name="domain-dns-dnssec-dsdata",
-    ),
-    path(
-        "domain/<int:pk>/your-contact-information",
-        views.DomainYourContactInformationView.as_view(),
-        name="domain-your-contact-information",
     ),
     path(
         "domain/<int:pk>/org-name-address",

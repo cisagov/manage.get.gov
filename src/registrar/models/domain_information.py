@@ -48,8 +48,7 @@ class DomainInformation(TimeStampedModel):
         null=True,
     )
 
-    # This is the domain request user who created this domain request. The contact
-    # information that they gave is in the `submitter` field
+    # This is the domain request user who created this domain request.
     creator = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
@@ -195,17 +194,6 @@ class DomainInformation(TimeStampedModel):
         null=True,
         # Access this information via Domain as "domain.domain_info"
         related_name="domain_info",
-    )
-
-    # This is the contact information provided by the domain requestor. The
-    # user who created the domain request is in the `creator` field.
-    submitter = models.ForeignKey(
-        "registrar.Contact",
-        null=True,
-        blank=True,
-        related_name="submitted_domain_requests_information",
-        on_delete=models.PROTECT,
-        help_text='Person listed under "your contact information" in the request form',
     )
 
     purpose = models.TextField(

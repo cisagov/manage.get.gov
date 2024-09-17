@@ -223,6 +223,7 @@ a.usa-button--unstyled:visited {
     }
 }
 
+.dotgov-table a
 a .usa-icon,
 .usa-button--with-icon .usa-icon {
   height: 1.3em;
@@ -233,4 +234,10 @@ a .usa-icon,
   margin: 0;
   height: 1.5em;
   width: 1.5em;
+}
+
+button.text-secondary,
+button.text-secondary:hover,
+.dotgov-table a.text-secondary {
+  color: $theme-color-error;
 }

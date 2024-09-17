@@ -37,7 +37,6 @@ class DomainRequestFixture:
     #     "anything_else": None,
     #     "is_policy_acknowledged": None,
     #     "senior_official": None,
-    #     "submitter": None,
     #     "other_contacts": [],
     #     "current_websites": [],
     #     "alternative_domains": [],
@@ -122,12 +121,6 @@ class DomainRequestFixture:
                 da.senior_official, _ = Contact.objects.get_or_create(**app["senior_official"])
             else:
                 da.senior_official = Contact.objects.create(**cls.fake_contact())
-
-        if not da.submitter:
-            if "submitter" in app and app["submitter"] is not None:
-                da.submitter, _ = Contact.objects.get_or_create(**app["submitter"])
-            else:
-                da.submitter = Contact.objects.create(**cls.fake_contact())
 
         if not da.requested_domain:
             if "requested_domain" in app and app["requested_domain"] is not None:
