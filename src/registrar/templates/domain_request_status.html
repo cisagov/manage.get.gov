@@ -8,8 +8,6 @@
 {% block content %}
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
-    {% comment %} 
-    TODO: Uncomment in #2596
     {% if portfolio %}
       {% url 'domain-requests' as url %}
       <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
@@ -18,12 +16,15 @@
             <a href="{{ url }}" class="usa-breadcrumb__link"><span>Domain requests</span></a>
           </li>
           <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-            <span>{{ DomainRequest.requested_domain.name }}</span
-            >
+            {% if not DomainRequest.requested_domain and DomainRequest.status == DomainRequest.DomainRequestStatus.STARTED %}
+              <span>New domain request</span>
+            {% else %}
+              <span>{{ DomainRequest.requested_domain.name }}</span>
+            {% endif %}
           </li>
         </ol>
       </nav>
-    {% else %}{% endcomment %}
+    {% else %}
     {% url 'home' as url %}
     <a href="{{ url }}" class="breadcrumb__back">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
@@ -34,12 +35,9 @@
         Back to manage your domains
       </p>
     </a>
-
-    {% if not DomainRequest.requested_domain and DomainRequest.status == DomainRequest.DomainRequestStatus.STARTED %}
-      <h1>New domain request</h1>
-    {% else %}
-      <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
     {% endif %}
+
+    <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
     <div
         class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
         role="region"
@@ -57,12 +55,6 @@
       </div>
     </div>
     <br>
-
-    {% if DomainRequest.creator and DomainRequest.creator != request.user %}
-      <p class="margin-top-1 margin-bottom-1">
-        <b class="review__step__name">Created by:</b> {{DomainRequest.creator.email|default:DomainRequest.creator.get_formatted_name }}
-      </p>
-    {% endif %}
 
     {% with statuses=DomainRequest.DomainRequestStatus last_submitted=DomainRequest.last_submitted_date|date:"F j, Y" first_submitted=DomainRequest.first_submitted_date|date:"F j, Y" last_status_update=DomainRequest.last_status_update|date:"F j, Y" %}
     {% comment %} 
