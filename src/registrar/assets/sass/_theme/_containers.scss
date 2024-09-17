@@ -2,5 +2,5 @@
 
 .grid-container--widescreen,
 .usa-identifier__container--widescreen {
-    max-width: 1920px !important;
+    max-width: var(--widescreen-max-width) !important;
 }

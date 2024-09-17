@@ -1,6 +1,10 @@
 @use "uswds-core" as *;
 @use "cisa_colors" as *;
 
+:root {
+  --widescreen-max-width: 1920px;
+}
+
 /* Styles for making visible to screen reader / AT users only. */
 .sr-only {
   @include sr-only;
@@ -201,8 +205,9 @@ abbr[title] {
 }
 
 .usa-banner__inner--widescreen  {
-  max-width: 1920px;
+  max-width: var(--widescreen-max-width);
 }
+
 .margin-right-neg-4px {
   margin-right: -4px;
 }

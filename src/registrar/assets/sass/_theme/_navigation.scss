@@ -2,5 +2,5 @@
 
 .usa-nav__inner--widescreen,
 .usa-navbar--widescreen  {
-    max-width: 1920px !important;
+    max-width: var(--widescreen-max-width) !important;
 }
