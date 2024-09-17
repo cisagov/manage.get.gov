@@ -334,6 +334,131 @@ class TestDomainAdminAsStaff(MockEppLib):
         domain.delete()
 
 
+class TestDomainInformationInline(MockEppLib):
+    """Test DomainAdmin class, specifically the DomainInformationInline class, as staff user.
+
+    Notes:
+      all tests share staffuser; do not change staffuser model in tests
+      tests have available staffuser, client, and admin
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.staffuser = create_user()
+        cls.site = AdminSite()
+        cls.admin = DomainAdmin(model=Domain, admin_site=cls.site)
+        cls.factory = RequestFactory()
+
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.client.force_login(self.staffuser)
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        Host.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+
+    @classmethod
+    def tearDownClass(cls):
+        User.objects.all().delete()
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    def test_domain_managers_display(self):
+        """Tests the custom domain managers field"""
+        admin_user_1 = User.objects.create(
+            username="testuser1",
+            first_name="Gerald",
+            last_name="Meoward",
+            email="meoward@gov.gov",
+        )
+
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=self.staffuser, name="fake.gov"
+        )
+        domain_request.approve()
+        _domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
+        domain = Domain.objects.filter(domain_info=_domain_info).get()
+
+        UserDomainRole.objects.get_or_create(user=admin_user_1, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        admin_user_2 = User.objects.create(
+            username="testuser2",
+            first_name="Arnold",
+            last_name="Poopy",
+            email="poopy@gov.gov",
+        )
+
+        UserDomainRole.objects.get_or_create(user=admin_user_2, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        # Get the first inline (DomainInformationInline)
+        inline_instance = self.admin.inlines[0](self.admin.model, self.admin.admin_site)
+
+        # Call the domain_managers method
+        domain_managers = inline_instance.domain_managers(domain.domain_info)
+
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_1.pk}/change/">testuser1</a>',
+            domain_managers,
+        )
+        self.assertIn("Gerald Meoward", domain_managers)
+        self.assertIn("meoward@gov.gov", domain_managers)
+        self.assertIn(f'<a href="/admin/registrar/user/{admin_user_2.pk}/change/">testuser2</a>', domain_managers)
+        self.assertIn("Arnold Poopy", domain_managers)
+        self.assertIn("poopy@gov.gov", domain_managers)
+
+    @less_console_noise_decorator
+    def test_invited_domain_managers_display(self):
+        """Tests the custom invited domain managers field"""
+        admin_user_1 = User.objects.create(
+            username="testuser1",
+            first_name="Gerald",
+            last_name="Meoward",
+            email="meoward@gov.gov",
+        )
+
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=self.staffuser, name="fake.gov"
+        )
+        domain_request.approve()
+        _domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
+        domain = Domain.objects.filter(domain_info=_domain_info).get()
+
+        # domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        UserDomainRole.objects.get_or_create(user=admin_user_1, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        admin_user_2 = User.objects.create(
+            username="testuser2",
+            first_name="Arnold",
+            last_name="Poopy",
+            email="poopy@gov.gov",
+        )
+
+        UserDomainRole.objects.get_or_create(user=admin_user_2, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        # Get the first inline (DomainInformationInline)
+        inline_instance = self.admin.inlines[0](self.admin.model, self.admin.admin_site)
+
+        # Call the domain_managers method
+        domain_managers = inline_instance.domain_managers(domain.domain_info)
+        # domain_managers = self.admin.get_inlinesdomain_managers(self.domain)
+
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_1.pk}/change/">testuser1</a>',
+            domain_managers,
+        )
+        self.assertIn("Gerald Meoward", domain_managers)
+        self.assertIn("meoward@gov.gov", domain_managers)
+        self.assertIn(f'<a href="/admin/registrar/user/{admin_user_2.pk}/change/">testuser2</a>', domain_managers)
+        self.assertIn("Arnold Poopy", domain_managers)
+        self.assertIn("poopy@gov.gov", domain_managers)
+
+
 class TestDomainAdminWithClient(TestCase):
     """Test DomainAdmin class as super user.
 
