@@ -841,7 +841,7 @@ class TestPortfolio(WebTest):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
-    def test_delete_domain_request_as_org_user_with_permission_and_deletable_status(self):
+    def test_org_user_can_delete_own_domain_request_with_permission(self):
         """Test that an org user with edit permission can delete their own DomainRequest with a deletable status."""
 
         # Assign the user to a portfolio with edit permission
@@ -909,7 +909,7 @@ class TestPortfolio(WebTest):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
-    def test_delete_domain_request_as_org_user_not_creator_with_permission_and_deletable_status(self):
+    def test_org_user_cannot_delete_others_domain_requests(self):
         """Test that an org user with edit permission cannot delete DomainRequests they did not create."""
 
         # Assign the user to a portfolio with edit permission
