@@ -1977,8 +1977,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         so we should display that information using this function.
 
         """
-
-        # TODO 2574: remove lines 1977-1978 (refactor as needed)
         recipient = obj.creator
 
         # Displays a warning in admin when an email cannot be sent
