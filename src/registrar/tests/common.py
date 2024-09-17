@@ -394,7 +394,6 @@ class AuditedAdminMockData:
                 about_your_organization: str = "e-Government",
                 anything_else: str = "There is more",
                 senior_official: Contact = self.dummy_contact(item_name, "senior_official"),
-                submitter: Contact = self.dummy_contact(item_name, "submitter"),
                 creator: User = self.dummy_user(item_name, "creator"),
             }
         """  # noqa
@@ -412,7 +411,6 @@ class AuditedAdminMockData:
             about_your_organization="e-Government",
             anything_else="There is more",
             senior_official=self.dummy_contact(item_name, "senior_official"),
-            submitter=self.dummy_contact(item_name, "submitter"),
             creator=creator,
         )
         return common_args
@@ -901,7 +899,6 @@ def completed_domain_request(  # noqa
     has_cisa_representative=True,
     status=DomainRequest.DomainRequestStatus.STARTED,
     user=False,
-    submitter=False,
     name="city.gov",
     investigator=None,
     generic_org_type="federal",
@@ -926,14 +923,6 @@ def completed_domain_request(  # noqa
     domain, _ = DraftDomain.objects.get_or_create(name=name)
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
-    if not submitter:
-        submitter, _ = Contact.objects.get_or_create(
-            first_name="Testy2",
-            last_name="Tester2",
-            title="Admin Tester",
-            email="mayor@igorville.gov",
-            phone="(555) 555 5556",
-        )
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
@@ -962,7 +951,6 @@ def completed_domain_request(  # noqa
         zipcode="10002",
         senior_official=so,
         requested_domain=domain,
-        submitter=submitter,
         creator=user,
         status=status,
         investigator=investigator,

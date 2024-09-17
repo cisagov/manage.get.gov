@@ -22,8 +22,6 @@ from .utility import (
     DomainRequestWizardPermissionView,
 )
 
-from waffle.decorators import flag_is_active, waffle_flag
-
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +43,6 @@ class Step(StrEnum):
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
     PURPOSE = "purpose"
-    YOUR_CONTACT = "your_contact"
     OTHER_CONTACTS = "other_contacts"
     ADDITIONAL_DETAILS = "additional_details"
     REQUIREMENTS = "requirements"
@@ -91,7 +88,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.CURRENT_SITES: _("Current websites"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
         Step.PURPOSE: _("Purpose of your domain"),
-        Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
         Step.ADDITIONAL_DETAILS: _("Additional details"),
         Step.REQUIREMENTS: _("Requirements for operating a .gov domain"),
@@ -382,7 +378,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             ),
             "dotgov_domain": self.domain_request.requested_domain is not None,
             "purpose": self.domain_request.purpose is not None,
-            "your_contact": self.domain_request.submitter is not None,
             "other_contacts": (
                 self.domain_request.other_contacts.exists()
                 or self.domain_request.no_other_contacts_rationale is not None
@@ -451,9 +446,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 condition = condition(self)
             if condition:
                 step_list.append(step)
-
-        if flag_is_active(self.request, "profile_feature"):
-            step_list.remove(Step.YOUR_CONTACT)
 
         return step_list
 
@@ -597,15 +589,6 @@ class DotgovDomain(DomainRequestWizard):
 class Purpose(DomainRequestWizard):
     template_name = "domain_request_purpose.html"
     forms = [forms.PurposeForm]
-
-
-class YourContact(DomainRequestWizard):
-    template_name = "domain_request_your_contact.html"
-    forms = [forms.YourContactForm]
-
-    @waffle_flag("!profile_feature")  # type: ignore
-    def dispatch(self, request, *args, **kwargs):  # type: ignore
-        return super().dispatch(request, *args, **kwargs)
 
 
 class OtherContacts(DomainRequestWizard):
@@ -813,6 +796,12 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         if status not in valid_statuses:
             return False
 
+        # Portfolio users cannot delete their requests if they aren't permissioned to do so
+        if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
+            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
+                return False
+
         return True
 
     def get_success_url(self):
@@ -833,7 +822,7 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         # After a delete occurs, do a second sweep on any returned duplicates.
         # This determines if any of these three fields share a contact, which is used for
-        # the edge case where the same user may be an SO, and a submitter, for example.
+        # the edge case where the same user may be an SO, and a creator, for example.
         if len(duplicates) > 0:
             duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
             Contact.objects.filter(id__in=duplicates_to_delete).delete()
@@ -846,7 +835,7 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         Collects all orphaned contacts associated with a given DomainRequest object.
 
         An orphaned contact is defined as a contact that is associated with the domain request,
-        but not with any other domain_request. This includes the senior official, the submitter,
+        but not with any other domain_request. This includes the senior official, the creator,
         and any other contacts linked to the domain_request.
 
         Parameters:
@@ -862,18 +851,16 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         # Get each contact object on the DomainRequest object
         so = domain_request.senior_official
-        submitter = domain_request.submitter
         other_contacts = list(domain_request.other_contacts.all())
         other_contact_ids = domain_request.other_contacts.all().values_list("id", flat=True)
 
         # Check if the desired item still exists in the DB
         if check_db:
             so = self._get_contacts_by_id([so.id]).first() if so is not None else None
-            submitter = self._get_contacts_by_id([submitter.id]).first() if submitter is not None else None
             other_contacts = self._get_contacts_by_id(other_contact_ids)
 
         # Pair each contact with its db related name for use in checking if it has joins
-        checked_contacts = [(so, "senior_official"), (submitter, "submitted_domain_requests")]
+        checked_contacts = [(so, "senior_official")]
         checked_contacts.extend((contact, "contact_domain_requests") for contact in other_contacts)
 
         for contact, related_name in checked_contacts:

@@ -77,17 +77,15 @@ class FSMErrorCodes(IntEnum):
         - 1 APPROVE_DOMAIN_IN_USE The domain is already in use
         - 2 NO_INVESTIGATOR No investigator is assigned
         - 3 INVESTIGATOR_NOT_STAFF Investigator is a non-staff user
-        - 4 INVESTIGATOR_NOT_SUBMITTER The form submitter is not the investigator
-        - 5 NO_REJECTION_REASON No rejection reason is specified
-        - 6 NO_ACTION_NEEDED_REASON No action needed reason is specified
+        - 4 NO_REJECTION_REASON No rejection reason is specified
+        - 5 NO_ACTION_NEEDED_REASON No action needed reason is specified
     """
 
     APPROVE_DOMAIN_IN_USE = 1
     NO_INVESTIGATOR = 2
     INVESTIGATOR_NOT_STAFF = 3
-    INVESTIGATOR_NOT_SUBMITTER = 4
-    NO_REJECTION_REASON = 5
-    NO_ACTION_NEEDED_REASON = 6
+    NO_REJECTION_REASON = 4
+    NO_ACTION_NEEDED_REASON = 5
 
 
 class FSMDomainRequestError(Exception):
@@ -100,7 +98,6 @@ class FSMDomainRequestError(Exception):
         FSMErrorCodes.APPROVE_DOMAIN_IN_USE: ("Cannot approve. Requested domain is already in use."),
         FSMErrorCodes.NO_INVESTIGATOR: ("Investigator is required for this status."),
         FSMErrorCodes.INVESTIGATOR_NOT_STAFF: ("Investigator is not a staff user."),
-        FSMErrorCodes.INVESTIGATOR_NOT_SUBMITTER: ("Only the assigned investigator can make this change."),
         FSMErrorCodes.NO_REJECTION_REASON: ("A reason is required for this status."),
         FSMErrorCodes.NO_ACTION_NEEDED_REASON: ("A reason is required for this status."),
     }
