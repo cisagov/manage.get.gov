@@ -535,8 +535,10 @@ class MockDb(TestCase):
         first_name = "First"
         last_name = "Last"
         email = "info@example.com"
+        title = "title"
+        phone = "8080102431"
         cls.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email, title="title", phone="8080102431"
+            username=username, first_name=first_name, last_name=last_name, email=email, title=title, phone=phone
         )
 
         current_date = get_time_aware_date(datetime(2024, 4, 2))
