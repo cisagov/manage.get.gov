@@ -57,7 +57,7 @@ from epplibwrapper import (
     RegistryError,
 )
 
-from ..utility.email import send_templated_email, EmailSendingError, email_domain_managers
+from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
 from waffle.decorators import waffle_flag
 
@@ -149,6 +149,43 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             logger.error("Could get domain_info. No domain info exists, or duplicates exist.")
 
         return current_domain_info
+    
+    def email_domain_managers(self, domain_name, template: str, subject_template: str, context: any = {}):
+        """Send a single email built from a template to all managers for a given domain.
+
+        template_name and subject_template_name are relative to the same template
+        context as Django's HTML templates. context gives additional information
+        that the template may use.
+
+        context is a dictionary containing any information needed to fill in values
+        in the provided template, exactly the same as with send_templated_email.
+
+        Will log a warning if the email fails to send for any reason, but will not raise an error.
+        """
+        try:
+            domain = Domain.objects.get(name=domain_name)
+        except Domain.DoesNotExist:
+            logger.warn(
+                "Could not send notification email for domain %s, unable to find matching domain object",
+                domain_name
+            )
+        manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list("user", flat=True)
+        emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
+        logger.debug("attempting to send templated email to domain managers")
+        try:
+            send_templated_email(
+                template,
+                subject_template,
+                context=context,
+                cc_addresses=emails
+            )
+        except EmailSendingError as exc:
+            logger.warn(
+                "Could not sent notification email to %s for domain %s",
+                emails,
+                domain_name,
+                exc_info=True,
+            )
 
 
 class DomainView(DomainBaseView):
@@ -225,6 +262,13 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
+        if form.has_changed():
+            logger.info("Sending email to domain managers")
+            context={
+                        "domain": self.object,
+                    }
+            self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+
         form.save()
 
         messages.success(self.request, "The organization information for this domain has been updated.")
@@ -325,6 +369,14 @@ class DomainSeniorOfficialView(DomainFormBaseView):
         # Set the domain information in the form so that it can be accessible
         # to associate a new Contact, if a new Contact is needed
         # in the save() method
+        if form.has_changed():
+            logger.info("Sending email to domain managers")
+            context={
+                        "domain": self.object,
+                    }
+            self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+
+
         form.set_domain_info(self.object.domain_info)
         form.save()
 
@@ -447,10 +499,15 @@ class DomainNameserversView(DomainFormBaseView):
                 pass
 
         old_nameservers = self.object.nameservers
-        logger.info("nameservers", nameservers)
-        should_notify = old_nameservers and old_nameservers != nameservers 
-        logger.info("should_notify", should_notify)
+        logger.info("nameservers %s", nameservers)
+        logger.info("old nameservers: %s", old_nameservers)
+
+        logger.info("State: %s", self.object.state)
+
+        # if there are existing
+        logger.info("has changed? %s", formset.has_changed())
         try:
+            # logger.info("skipping actual assignment of nameservers")
             self.object.nameservers = nameservers
         except NameserverError as Err:
             # NamserverErrors *should* be caught in form; if reached here,
@@ -477,12 +534,12 @@ class DomainNameserversView(DomainFormBaseView):
             )
 
             # if the nameservers where changed, send notification to domain managers.
-            if should_notify:
+            if formset.has_changed():
                 logger.info("Sending email to domain managers")
                 context={
                             "domain": self.object,
                         }
-                email_domain_managers(self.object.name, "emails/domain_change_notification.txt", "emails.domain_change_notification_subject.txt", context)
+                self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
 
         # superclass has the redirect
         return super().form_valid(formset)

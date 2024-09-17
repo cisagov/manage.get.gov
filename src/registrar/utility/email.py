@@ -10,7 +10,6 @@ from django.template.loader import get_template
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from registrar.models.user_domain_role import UserDomainRole
 from waffle import flag_is_active
 
 
@@ -26,13 +25,19 @@ class EmailSendingError(RuntimeError):
 def send_templated_email(
     template_name: str,
     subject_template_name: str,
-    to_address: str,
-    bcc_address="",
+    to_address: str="",
+    bcc_address: str="",
     context={},
     attachment_file=None,
     wrap_email=False,
+    cc_addresses: list[str]=[],
 ):
     """Send an email built from a template.
+
+    to can be either a string representing a single address or a 
+    list of strings for multi-recipient emails.
+
+    bcc currently only supports a single address.
 
     template_name and subject_template_name are relative to the same template
     context as Django's HTML templates. context gives additional information
@@ -46,6 +51,8 @@ def send_templated_email(
         # Raises an error if we cannot send an email (due to restrictions).
         # Does nothing otherwise.
         _can_send_email(to_address, bcc_address)
+        sendable_cc_addresses = get_sendable_addresses(cc_addresses)
+
 
     template = get_template(template_name)
     email_body = template.render(context=context)
@@ -70,9 +77,18 @@ def send_templated_email(
         logger.debug("E-mail unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
 
-    destination = {"ToAddresses": [to_address]}
+    destination = {}
+    if to_address:
+        destination["ToAddresses"] = [to_address]
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
+    if cc_addresses:
+        destination["CcAddresses"] = sendable_cc_addresses
+
+    # make sure we don't try and send an email to nowhere
+    if not destination:
+        message = "E-mail unable to send, no valid recipients provided."
+        raise EmailSendingError(message)
 
     try:
         if not attachment_file:
@@ -105,7 +121,6 @@ def send_templated_email(
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
 
-
 def _can_send_email(to_address, bcc_address):
     """Raises an EmailSendingError if we cannot send an email. Does nothing otherwise."""
 
@@ -122,6 +137,28 @@ def _can_send_email(to_address, bcc_address):
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
+
+def get_sendable_addresses(addresses: list[str]) -> list[str]:
+    """Checks whether a list of addresses can be sent to.
+    
+    Returns: a lists of all provided addresses that are ok to send to
+
+    Paramaters:
+    
+    addresses: a list of strings representing all addresses to be checked.
+    
+    raises:
+        EmailSendingError if email sending is disabled
+    """
+
+    if flag_is_active(None, "disable_email_sending"):  # type: ignore
+        message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
+        raise EmailSendingError(message)
+    else:
+        AllowedEmail = apps.get_model("registrar", "AllowedEmail")
+        allowed_emails = [address for address in addresses if (address and AllowedEmail.is_allowed_email(address))]
+
+        return allowed_emails
 
 
 def wrap_text_and_preserve_paragraphs(text, width):
@@ -165,33 +202,3 @@ def send_email_with_attachment(sender, recipient, subject, body, attachment_file
 
     response = ses_client.send_raw_email(Source=sender, Destinations=[recipient], RawMessage={"Data": msg.as_string()})
     return response
-
-def email_domain_managers(domain, template: str, subject_template: str, context: any = {}):
-    """Send a single email built from a template to all managers for a given domain.
-
-    template_name and subject_template_name are relative to the same template
-    context as Django's HTML templates. context gives additional information
-    that the template may use.
-
-    context is a dictionary containing any information needed to fill in values
-    in the provided template, exactly the same as with send_templated_email.
-
-    Will log a warning if the email fails to send for any reason, but will not raise an error.
-    """
-    managers = UserDomainRole.objects.filter(domain=domain, role=UserDomainRole.Roles.MANAGER)
-    emails = list(managers.values_list("user", flat=True).values_list("email", flat=True))
-    logger.debug("attempting to send templated email to domain managers")
-    try:
-        send_templated_email(
-            template,
-            subject_template,
-            to_address=emails,
-            context=context,
-        )
-    except EmailSendingError as exc:
-        logger.warn(
-            "Could not sent notification email to %s for domain %s",
-            emails,
-            domain,
-            exc_info=True,
-        )
