@@ -256,7 +256,6 @@ class TestDomainRequest(TestCase):
 
         email_allowed.delete()
 
-    @override_flag("profile_feature", active=True)
     @less_console_noise_decorator
     def test_submit_from_started_sends_email_to_creator(self):
         """Tests if, when the profile feature flag is on, we send an email to the creator"""

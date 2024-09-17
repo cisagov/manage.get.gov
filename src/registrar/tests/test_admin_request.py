@@ -957,7 +957,6 @@ class TestDomainRequestAdmin(MockEppLib):
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-    @override_flag("profile_feature", True)
     @less_console_noise_decorator
     def test_save_model_sends_approved_email(self):
         """When transitioning to approved on a domain request,
