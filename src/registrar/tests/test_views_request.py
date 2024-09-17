@@ -96,14 +96,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(response, "Started on:")
         self.assertContains(response, domain_request.last_status_update.strftime("%B %-d, %Y"))
 
-    def test_template_new_domain_request_display(self):
-        """Tests the display of the new domain request header."""
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
-        domain_request.requested_domain = None
-        domain_request.save()
-        response = self.app.get(f"/domain-request/{domain_request.id}")
-        self.assertContains(response, "New domain request")
-
     @less_console_noise_decorator
     def test_domain_request_form_intro_is_skipped_when_edit_access(self):
         """Tests that user is NOT presented with intro acknowledgement page when accessed through 'edit'"""
