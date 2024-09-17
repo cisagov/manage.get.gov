@@ -16,7 +16,11 @@
     <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
       <ol class="usa-breadcrumb__list">
         <li class="usa-breadcrumb__list-item">
-          <a href="{{ url }}" class="usa-breadcrumb__link"><span>Domain requests</span></a>
+          {% if portfolio %}
+            <a href="{{ url }}" class="usa-breadcrumb__link"><span>Domain requests</span></a>
+          {% else %}
+            <a href="{{ url }}" class="usa-breadcrumb__link"><span>Manage your domains</span></a>
+          {% endif %}
         </li>
         <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
           {% if not DomainRequest.requested_domain and DomainRequest.status == DomainRequest.DomainRequestStatus.STARTED %}
