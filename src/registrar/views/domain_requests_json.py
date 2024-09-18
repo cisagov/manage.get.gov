@@ -25,9 +25,8 @@ def get_domain_requests_json(request):
     paginator = Paginator(objects, 10)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
-
     domain_requests = [
-        serialize_domain_request(domain_request, request.user) for domain_request in page_obj.object_list
+        serialize_domain_request(request, domain_request, request.user) for domain_request in page_obj.object_list
     ]
 
     return JsonResponse(
@@ -90,12 +89,21 @@ def apply_sorting(queryset, request):
     return queryset.order_by(sort_by)
 
 
-def serialize_domain_request(domain_request, user):
-    # Determine if the request is deletable
-    is_deletable = domain_request.status in [
+def serialize_domain_request(request, domain_request, user):
+
+    deletable_statuses = [
         DomainRequest.DomainRequestStatus.STARTED,
         DomainRequest.DomainRequestStatus.WITHDRAWN,
     ]
+
+    # Determine if the request is deletable
+    if not user.is_org_user(request):
+        is_deletable = domain_request.status in deletable_statuses
+    else:
+        portfolio = request.session.get("portfolio")
+        is_deletable = (
+            domain_request.status in deletable_statuses and user.has_edit_request_portfolio_permission(portfolio)
+        ) and domain_request.creator == user
 
     # Determine action label based on user permissions and request status
     editable_statuses = [

@@ -796,6 +796,12 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         if status not in valid_statuses:
             return False
 
+        # Portfolio users cannot delete their requests if they aren't permissioned to do so
+        if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
+            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
+                return False
+
         return True
 
     def get_success_url(self):
