@@ -37,7 +37,6 @@ from .common import (
     GenericTestHelper,
 )
 from unittest.mock import patch
-from waffle.testutils import override_flag
 
 from django.conf import settings
 import boto3_mocking  # type: ignore
