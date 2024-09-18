@@ -43,7 +43,7 @@
                 {% endfor %}
                 </dl>
             {% elif custom_text_for_value_none %}
-              <p>
+              <p class="dhs-red-50">
                 {{ custom_text_for_value_none }}
               </p>
             {% else %}
@@ -96,15 +96,18 @@
           </ul>
         {% endif %}
       {% else %}
-      <p class="margin-top-0 margin-bottom-0">
         {% if value %}
-          {{ value }}
+          <p class="margin-top-0 margin-bottom-0">
+            {{ value }}
+          </p>
         {% elif custom_text_for_value_none %}
+          <p class="margin-top-0 margin-bottom-0 dhs-red-50">
+            {{ value }}
+          </p>
           {{ custom_text_for_value_none }}
         {% else %}
           None
         {% endif %}
-      </p>
       {% endif %}
     </div>
 

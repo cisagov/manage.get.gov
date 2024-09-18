@@ -1190,7 +1190,7 @@ class DomainRequest(TimeStampedModel):
     def _is_creator_complete(self):
         return self.creator is not None
 
-    def _is_organization_name_and_address_complete(self):
+    def is_organization_name_and_address_complete(self):
         return not (
             self.organization_name is None
             and self.address_line1 is None
@@ -1258,7 +1258,7 @@ class DomainRequest(TimeStampedModel):
     def _is_general_form_complete(self, request):
         return (
             self._is_creator_complete()
-            and self._is_organization_name_and_address_complete()
+            and self.is_organization_name_and_address_complete()
             and self._is_senior_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()

@@ -1,0 +1,198 @@
+{% load custom_filters %}
+{% load static url_helpers %}
+<main id="main-content" class="grid-container">
+    <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
+        {% block breadcrumb %}
+        {% if portfolio %}
+            {% url 'domain-requests' as url %}
+        {% else %}
+            {% url 'home' as url %}
+        {% endif %}
+        <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
+        <ol class="usa-breadcrumb__list">
+            <li class="usa-breadcrumb__list-item">
+            {% if portfolio %}
+                <a href="{{ url }}" class="usa-breadcrumb__link"><span>Domain requests</span></a>
+            {% else %}
+                <a href="{{ url }}" class="usa-breadcrumb__link"><span>Manage your domains</span></a>
+            {% endif %}
+            </li>
+            <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+            {% if not DomainRequest.requested_domain and DomainRequest.status == DomainRequest.DomainRequestStatus.STARTED %}
+                <span>New domain request</span>
+            {% else %}
+                <span>{{ DomainRequest.requested_domain.name }}</span>
+            {% endif %}
+            </li>
+        </ol>
+        </nav>
+        {% endblock breadcrumb %}
+
+        {% block header %}
+        <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
+        {% endblock header %}
+
+        {% block status_summary %}
+        <div
+            class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
+            role="region"
+            aria-labelledby="summary-box-key-information"
+        >
+        <div class="usa-summary-box__body">
+            <p class="usa-summary-box__heading font-sans-md margin-bottom-0" 
+                id="summary-box-key-information"
+            > 
+            <span class="text-bold text-primary-darker">
+                Status:
+            </span>
+            {{ DomainRequest.get_status_display|default:"ERROR Please contact technical support/dev" }}
+            </p>
+        </div>
+        </div>
+        <br>
+
+        {% with statuses=DomainRequest.DomainRequestStatus last_submitted=DomainRequest.last_submitted_date|date:"F j, Y" first_submitted=DomainRequest.first_submitted_date|date:"F j, Y" last_status_update=DomainRequest.last_status_update|date:"F j, Y" %}
+        {% comment %} 
+        These are intentionally seperated this way. 
+        There is some code repetition, but it gives us more flexibility rather than a dense reduction. 
+        Leave it this way until we've solidified our requirements.
+        {% endcomment %}
+        {% if DomainRequest.status == statuses.STARTED %}
+        {% with first_started_date=DomainRequest.get_first_status_started_date|date:"F j, Y" %}
+        <p class="margin-top-1">
+            {% comment %} 
+            A newly created domain request will not have a value for last_status update.
+            This is because the status never really updated. 
+            However, if this somehow goes back to started we can default to displaying that new date.
+            {% endcomment %}
+            <b class="review__step__name">Started on:</b> {{last_status_update|default:first_started_date}}
+        </p>
+        {% endwith %}
+        {% elif DomainRequest.status == statuses.SUBMITTED %}
+        <p class="margin-top-1 margin-bottom-1">
+            <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+        </p>
+        <p class="margin-top-1">
+            <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+        </p>
+        {% elif DomainRequest.status == statuses.ACTION_NEEDED %}
+        <p class="margin-top-1 margin-bottom-1">
+            <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+        </p>
+        <p class="margin-top-1">
+            <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+        </p>
+        {% elif DomainRequest.status == statuses.REJECTED %}
+        <p class="margin-top-1 margin-bottom-1">
+            <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+        </p>
+        <p class="margin-top-1">
+            <b class="review__step__name">Rejected on:</b> {{last_status_update}}
+        </p>
+        {% elif DomainRequest.status == statuses.WITHDRAWN %}
+        <p class="margin-top-1 margin-bottom-1">
+            <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+        </p>
+        <p class="margin-top-1">
+            <b class="review__step__name">Withdrawn on:</b> {{last_status_update}}
+        </p>
+        {% else %}
+        {% comment %} Shown for in_review, approved, ineligible {% endcomment %}
+        <p class="margin-top-1">
+            <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+        </p>
+        {% endif %}
+        {% endwith %}
+        {% endblock status_summary %}
+
+        {% block modify_request %}
+        {% if DomainRequest.status != 'rejected' %}
+            <p>{% include "includes/domain_request.html" %}</p>
+            <p><a href="{% url 'domain-request-withdraw-confirmation' pk=DomainRequest.id %}" class="usa-button usa-button--outline withdraw_outline">
+            Withdraw request</a>
+            </p>
+        {% endif %}
+        {% endblock modify_request %}
+    </div>
+
+    <div class="grid-col desktop:grid-offset-2 maxw-tablet">
+        {% block request_summary_header %}
+        <h2 class="text-primary-darker"> Summary of your domain request </h2> 
+        {% endblock request_summary_header%}
+
+        {% block request_summary %}
+        {% with heading_level='h3' %}
+        {% with org_type=DomainRequest.get_generic_org_type_display %}
+        {% include "includes/summary_item.html" with title='Type of organization' value=org_type heading_level=heading_level %}
+        {% endwith %}
+
+        {% if DomainRequest.show_tribal_government %}
+        {% include "includes/summary_item.html" with title='Tribal government' value=DomainRequest.tribe_name heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+
+        {% if DomainRequest.federally_recognized_tribe %}
+            <p>Federally-recognized tribe</p>
+        {% endif %}
+        
+        {% if DomainRequest.state_recognized_tribe %}
+            <p>State-recognized tribe</p>
+        {% endif %}
+        {% endif %}
+
+        {% if DomainRequest.show_organization_federal %}
+        {% include "includes/summary_item.html" with title='Federal government branch' value=DomainRequest.get_federal_type_display heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% endif %}
+
+        {% if DomainRequest.show_organization_election %}
+        {% with value=DomainRequest.is_election_board|yesno:"Yes,No,Incomplete" %}
+            {% include "includes/summary_item.html" with title='Election office' value=value heading_level=heading_level %}
+        {% endwith %}
+        {% endif %}
+
+        {% if not portfolio %}
+        {% include "includes/summary_item.html" with title='Organization name and mailing address' value=DomainRequest address='true' heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% endif %}
+
+        {% if DomainRequest.show_about_your_organization %}
+        {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% endif %}
+
+        {% include "includes/summary_item.html" with title='Senior official' value=DomainRequest.senior_official contact='true' heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+
+        {% include "includes/summary_item.html" with title='Current websites' value=DomainRequest.current_websites.all list='true' heading_level=heading_level %}
+
+        {% include "includes/summary_item.html" with title='.gov domain' value=DomainRequest.requested_domain heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+
+        {% include "includes/summary_item.html" with title='Alternative domains' value=DomainRequest.alternative_domains.all list='true' heading_level=heading_level %}
+
+        {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+
+        {% if DomainRequest.other_contacts.all %}
+        {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.other_contacts.all contact='true' list='true' heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% else %}
+        {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% endif %}
+
+        {# We always show this field even if None #}
+        {% if DomainRequest %}
+        <h3 class="register-form-review-header">CISA Regional Representative</h3>
+        <ul class="usa-list usa-list--unstyled margin-top-0">
+            {% if DomainRequest.cisa_representative_first_name %}
+            {{ DomainRequest.get_formatted_cisa_rep_name }}
+            {% else %}
+            No
+            {% endif %}
+        </ul>
+
+        <h3 class="register-form-review-header">Anything else</h3>
+        <ul class="usa-list usa-list--unstyled margin-top-0">
+            {% if DomainRequest.anything_else %}
+            {{DomainRequest.anything_else}}
+            {% else %}
+            No
+            {% endif %}
+        </ul>
+        {% endif %}
+    {% endwith %}
+    {% endblock request_summary %}
+    </div>
+</main>

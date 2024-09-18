@@ -170,6 +170,11 @@ urlpatterns = [
         name="domain-request-status",
     ),
     path(
+        "domain-request/viewonly/<int:pk>",
+        views.DomainRequestStatusViewOnly.as_view(),
+        name="domain-request-status-viewonly",
+    ),
+    path(
         "domain-request/<int:pk>/withdraw",
         views.DomainRequestWithdrawConfirmation.as_view(),
         name="domain-request-withdraw-confirmation",
