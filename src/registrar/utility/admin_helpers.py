@@ -1,5 +1,4 @@
 from registrar.models.domain_request import DomainRequest
-from waffle.decorators import flag_is_active
 from django.template.loader import get_template
 
 
