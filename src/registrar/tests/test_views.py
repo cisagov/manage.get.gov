@@ -941,13 +941,13 @@ class UserProfileTests(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_domain_your_contact_information(self):
-        """test that Your contact information is not accessible when profile feature is on"""
+        """test that your contact information is not accessible"""
         response = self.client.get(f"/domain/{self.domain.id}/your-contact-information", follow=True)
         self.assertEqual(response.status_code, 404)
 
     @less_console_noise_decorator
     def test_profile_request_page(self):
-        """test that Your profile is in request"""
+        """test that your profile is in request"""
 
         contact_user, _ = Contact.objects.get_or_create(
             first_name="Hank",
