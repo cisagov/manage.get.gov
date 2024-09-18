@@ -29,7 +29,9 @@
 </address>
 {% else %}
     {% if custom_text_for_value_none %}
-        {{ custom_text_for_value_none }}
+        <p class="margin-top-0 margin-bottom-0 red-incomplete-text">
+            {{ custom_text_for_value_none }}
+        </p>
     {% else %}
     None
     {% endif %}
