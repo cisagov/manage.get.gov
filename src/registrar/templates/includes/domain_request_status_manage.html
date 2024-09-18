@@ -29,7 +29,11 @@
         {% endblock breadcrumb %}
 
         {% block header %}
-        <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
+            {% if not DomainRequest.requested_domain and DomainRequest.status == DomainRequest.DomainRequestStatus.STARTED %}
+                <h1>New domain request</h1>
+            {% else %}
+                <h1>{{ DomainRequest.requested_domain.name }}</h1>
+            {% endif %}
         {% endblock header %}
 
         {% block status_summary %}
@@ -50,6 +54,21 @@
         </div>
         </div>
         <br>
+        {% endblock status_summary %}
+        
+        {% block status_metadata %}
+
+        {% if portfolio %}
+            {% if DomainRequest.creator %}
+            <p class="margin-top-1 margin-bottom-1">
+                <b class="review__step__name">Created by:</b> {{DomainRequest.creator.email|default:DomainRequest.creator.get_formatted_name }}
+            </p>
+            {% else %}
+            <p class="margin-top-1 margin-bottom-1">
+                <b class="review__step__name">No creator found:</b> this is an error, please email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+            </p>
+            {% endif %}
+        {% endif %}
 
         {% with statuses=DomainRequest.DomainRequestStatus last_submitted=DomainRequest.last_submitted_date|date:"F j, Y" first_submitted=DomainRequest.first_submitted_date|date:"F j, Y" last_status_update=DomainRequest.last_status_update|date:"F j, Y" %}
         {% comment %} 
@@ -103,13 +122,18 @@
         </p>
         {% endif %}
         {% endwith %}
-        {% endblock status_summary %}
+        {% endblock status_metadata %}
+
+        {% block status_blurb %}
+        {% if DomainRequest.status == 'submitted' %}
+            <p>{% include "includes/domain_request.html" %}</p>
+        {% endif %}
+        {% endblock status_blurb %}
 
         {% block modify_request %}
-        {% if DomainRequest.status != 'rejected' %}
-            <p>{% include "includes/domain_request.html" %}</p>
+        {% if DomainRequest.status != 'withdrawn' or DomainRequest.status != 'rejected' %}
             <p><a href="{% url 'domain-request-withdraw-confirmation' pk=DomainRequest.id %}" class="usa-button usa-button--outline withdraw_outline">
-            Withdraw request</a>
+                Withdraw request</a>
             </p>
         {% endif %}
         {% endblock modify_request %}

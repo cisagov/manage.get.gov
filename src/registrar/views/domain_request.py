@@ -20,6 +20,7 @@ from .utility import (
     DomainRequestPermissionView,
     DomainRequestPermissionWithdrawView,
     DomainRequestWizardPermissionView,
+    DomainRequestPortfolioViewonlyView,
 )
 
 logger = logging.getLogger(__name__)
@@ -765,22 +766,8 @@ class DomainRequestStatus(DomainRequestPermissionView):
         return True
 
 
-class DomainRequestStatusViewOnly(DomainRequestPermissionView):
+class DomainRequestStatusViewOnly(DomainRequestPortfolioViewonlyView):
     template_name = "domain_request_status_viewonly.html"
-    def has_permission(self):
-        """
-        Override of the base has_permission class to account for portfolio permissions
-        """
-        has_base_perms = super().has_permission()
-        if not has_base_perms:
-            return False
-        
-        if self.request.user.is_org_user(self.request):
-            portfolio = self.request.session.get("portfolio")
-            if not self.request.user.has_view_all_requests_portfolio_permission(portfolio):
-                return False
-
-        return True
 
 
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
