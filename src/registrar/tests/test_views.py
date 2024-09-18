@@ -933,8 +933,8 @@ class UserProfileTests(TestWithUser, WebTest):
         self.assertNotContains(response, "Back to manage your domains")
 
     @less_console_noise_decorator
-    def test_domain_detail(self):
-        """test that domain detail view"""
+    def test_domain_detail_contains_your_profile(self):
+        """Tests that the domain detail view contains 'your profile' rather than 'your contact information'"""
         response = self.client.get(reverse("domain", args=[self.domain.pk]))
         self.assertContains(response, "Your profile")
         self.assertNotContains(response, "Your contact information")
