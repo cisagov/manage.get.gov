@@ -8,15 +8,33 @@
 {% block content %}
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
-    <a href="{% url 'home' %}" class="breadcrumb__back">
+    {% comment %} 
+    TODO: Uncomment in #2596
+    {% if portfolio %}
+      {% url 'domain-requests' as url %}
+      <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
+        <ol class="usa-breadcrumb__list">
+          <li class="usa-breadcrumb__list-item">
+            <a href="{{ url }}" class="usa-breadcrumb__link"><span>Domain requests</span></a>
+          </li>
+          <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+            <span>{{ DomainRequest.requested_domain.name }}</span
+            >
+          </li>
+        </ol>
+      </nav>
+    {% else %}{% endcomment %}
+    {% url 'home' as url %}
+    <a href="{{ url }}" class="breadcrumb__back">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
       <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
       </svg>
   
       <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-      Back to manage your domains
+        Back to manage your domains
       </p>
     </a>
+    {% comment %} {% endif %}{% endcomment %}
     <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
     <div
         class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
@@ -109,8 +127,8 @@
       {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level %}
     {% endif %}
 
-    {% if DomainRequest.submitter and not has_profile_feature_flag %}
-      {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.submitter contact='true' heading_level=heading_level %}
+    {% if DomainRequest.creator %}
+      {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.creator contact='true' heading_level=heading_level %}
     {% endif %}
 
     {% if DomainRequest.other_contacts.all %}

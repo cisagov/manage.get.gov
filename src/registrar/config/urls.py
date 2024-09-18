@@ -24,6 +24,7 @@ from registrar.views.report_views import (
 
 from registrar.views.domain_request import Step
 from registrar.views.domain_requests_json import get_domain_requests_json
+from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
@@ -53,7 +54,6 @@ for step, view in [
     (Step.CURRENT_SITES, views.CurrentSites),
     (Step.DOTGOV_DOMAIN, views.DotgovDomain),
     (Step.PURPOSE, views.Purpose),
-    (Step.YOUR_CONTACT, views.YourContact),
     (Step.OTHER_CONTACTS, views.OtherContacts),
     (Step.ADDITIONAL_DETAILS, views.AdditionalDetails),
     (Step.REQUIREMENTS, views.Requirements),
@@ -78,6 +78,11 @@ urlpatterns = [
         "requests/",
         views.PortfolioDomainRequestsView.as_view(),
         name="domain-requests",
+    ),
+    path(
+        "no-organization-requests/",
+        views.PortfolioNoDomainRequestsView.as_view(),
+        name="no-portfolio-requests",
     ),
     path(
         "organization/",
@@ -138,6 +143,7 @@ urlpatterns = [
         AnalyticsView.as_view(),
         name="analytics",
     ),
+    path("admin/registrar/user/<int:user_id>/transfer/", TransferUserView.as_view(), name="transfer_user"),
     path(
         "admin/api/get-senior-official-from-federal-agency-json/",
         get_senior_official_from_federal_agency_json,
@@ -211,11 +217,6 @@ urlpatterns = [
         "domain/<int:pk>/dns/dnssec/dsdata",
         views.DomainDsDataView.as_view(),
         name="domain-dns-dnssec-dsdata",
-    ),
-    path(
-        "domain/<int:pk>/your-contact-information",
-        views.DomainYourContactInformationView.as_view(),
-        name="domain-your-contact-information",
     ),
     path(
         "domain/<int:pk>/org-name-address",

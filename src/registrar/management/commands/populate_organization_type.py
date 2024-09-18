@@ -54,7 +54,7 @@ class Command(BaseCommand):
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            prompt_message=f"""
             ==Proposed Changes==
             Number of DomainRequest objects to change: {len(domain_requests)}
 
@@ -72,7 +72,7 @@ class Command(BaseCommand):
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            prompt_message=f"""
             ==Proposed Changes==
             Number of DomainInformation objects to change: {len(domain_infos)}
 

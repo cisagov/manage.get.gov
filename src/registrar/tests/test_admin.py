@@ -2,6 +2,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
+from django_webtest import WebTest  # type: ignore
 from api.tests.common import less_console_noise_decorator
 from django.urls import reverse
 from registrar.admin import (
@@ -41,13 +42,12 @@ from registrar.models import (
     TransitionDomain,
     Portfolio,
     Suborganization,
+    UserPortfolioPermission,
+    UserDomainRole,
+    SeniorOfficial,
+    PortfolioInvitation,
+    VerifiedByStaff,
 )
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.senior_official import SeniorOfficial
-from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockDbForSharedTests,
     AuditedAdminMockData,
@@ -60,9 +60,12 @@ from .common import (
     multiple_unalphabetical_domain_objects,
     GenericTestHelper,
 )
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
-from unittest.mock import patch, Mock
+
+from unittest.mock import ANY, patch, Mock
+
 
 import logging
 
@@ -382,7 +385,7 @@ class TestDomainInformationAdmin(TestCase):
 
         contact, _ = Contact.objects.get_or_create(first_name="Henry", last_name="McFakerson")
         domain_request = completed_domain_request(
-            submitter=contact, name="city1244.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW
+            name="city1244.gov", status=DomainRequest.DomainRequestStatus.IN_REVIEW
         )
         domain_request.approve()
 
@@ -507,7 +510,6 @@ class TestDomainInformationAdmin(TestCase):
         # These should exist in the response
         expected_values = [
             ("creator", "Person who submitted the domain request"),
-            ("submitter", 'Person listed under "your contact information" in the request form'),
             ("domain_request", "Request associated with this domain"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
             ("urbanization", "Required for Puerto Rico only"),
@@ -631,16 +633,6 @@ class TestDomainInformationAdmin(TestCase):
         # Check for the field itself
         self.assertContains(response, "Meoward Jones")
 
-        # == Check for the submitter == #
-        self.assertContains(response, "mayor@igorville.gov", count=2)
-        expected_submitter_fields = [
-            # Field, expected value
-            ("title", "Admin Tester"),
-            ("phone", "(555) 555 5556"),
-        ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
-        self.assertContains(response, "Testy2 Tester2")
-
         # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
         expected_so_fields = [
@@ -662,7 +654,7 @@ class TestDomainInformationAdmin(TestCase):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "button--clipboard", count=4)
+        self.assertContains(response, "button--clipboard", count=3)
 
         # cleanup this test
         domain_info.delete()
@@ -686,7 +678,6 @@ class TestDomainInformationAdmin(TestCase):
                 "more_organization_information",
                 "domain",
                 "domain_request",
-                "submitter",
                 "no_other_contacts_rationale",
                 "anything_else",
                 "is_policy_acknowledged",
@@ -705,19 +696,19 @@ class TestDomainInformationAdmin(TestCase):
             # Assert that sorting in reverse works correctly
             self.test_helper.assert_table_sorted("-1", ("-domain__name",))
 
-    def test_submitter_sortable(self):
-        """Tests if DomainInformation sorts by submitter correctly"""
+    def test_creator_sortable(self):
+        """Tests if DomainInformation sorts by creator correctly"""
         with less_console_noise():
             self.client.force_login(self.superuser)
 
             # Assert that our sort works correctly
             self.test_helper.assert_table_sorted(
                 "4",
-                ("submitter__first_name", "submitter__last_name"),
+                ("creator__first_name", "creator__last_name"),
             )
 
             # Assert that sorting in reverse works correctly
-            self.test_helper.assert_table_sorted("-4", ("-submitter__first_name", "-submitter__last_name"))
+            self.test_helper.assert_table_sorted("-4", ("-creator__first_name", "-creator__last_name"))
 
 
 class TestUserDomainRoleAdmin(TestCase):
@@ -972,7 +963,7 @@ class TestListHeaderAdmin(TestCase):
             )
 
 
-class TestMyUserAdmin(MockDbForSharedTests):
+class TestMyUserAdmin(MockDbForSharedTests, WebTest):
     """Tests for the MyUserAdmin class as super or staff user
 
     Notes:
@@ -992,6 +983,7 @@ class TestMyUserAdmin(MockDbForSharedTests):
 
     def setUp(self):
         super().setUp()
+        self.app.set_user(self.superuser.username)
         self.client = Client(HTTP_HOST="localhost:8080")
 
     def tearDown(self):
@@ -1226,6 +1218,20 @@ class TestMyUserAdmin(MockDbForSharedTests):
         self.assertNotContains(response, "Portfolio roles:")
         self.assertNotContains(response, "Portfolio additional permissions:")
 
+    @less_console_noise_decorator
+    def test_user_can_see_related_portfolios(self):
+        """Tests if a user can see the portfolios they are associated with on the user page"""
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="test", creator=self.superuser)
+        permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.superuser, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        response = self.app.get(reverse("admin:registrar_user_change", args=[self.superuser.pk]))
+        expected_href = reverse("admin:registrar_portfolio_change", args=[portfolio.pk])
+        self.assertContains(response, expected_href)
+        self.assertContains(response, str(portfolio))
+        permission.delete()
+        portfolio.delete()
+
 
 class AuditedAdminTest(TestCase):
 
@@ -1300,7 +1306,6 @@ class AuditedAdminTest(TestCase):
                 # Senior offical is commented out for now - this is alphabetized
                 # and this test does not accurately reflect that.
                 # DomainRequest.senior_official.field,
-                DomainRequest.submitter.field,
                 # DomainRequest.investigator.field,
                 DomainRequest.creator.field,
                 DomainRequest.requested_domain.field,
@@ -1360,7 +1365,6 @@ class AuditedAdminTest(TestCase):
                 # Senior offical is commented out for now - this is alphabetized
                 # and this test does not accurately reflect that.
                 # DomainInformation.senior_official.field,
-                DomainInformation.submitter.field,
                 # DomainInformation.creator.field,
                 (DomainInformation.domain.field, ["name"]),
                 (DomainInformation.domain_request.field, ["requested_domain__name"]),
@@ -1668,91 +1672,6 @@ class TestContactAdmin(TestCase):
             expected_fields = []
 
             self.assertEqual(readonly_fields, expected_fields)
-
-    def test_change_view_for_joined_contact_five_or_less(self):
-        """Create a contact, join it to 4 domain requests.
-        Assert that the warning on the contact form lists 4 joins."""
-        with less_console_noise():
-            self.client.force_login(self.superuser)
-
-            # Create an instance of the model
-            contact, _ = Contact.objects.get_or_create(
-                first_name="Henry",
-                last_name="McFakerson",
-            )
-
-            # join it to 4 domain requests.
-            domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
-            domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
-            domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
-            domain_request4 = completed_domain_request(submitter=contact, name="city4.gov")
-
-            with patch("django.contrib.messages.warning") as mock_warning:
-                # Use the test client to simulate the request
-                response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
-
-                # Assert that the error message was called with the correct argument
-                # Note: The 5th join will be a user.
-                mock_warning.assert_called_once_with(
-                    response.wsgi_request,
-                    "<ul class='messagelist_content-list--unstyled'>"
-                    "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"domainrequest/{domain_request1.pk}/change/'>city1.gov</a></li>"
-                    "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"domainrequest/{domain_request2.pk}/change/'>city2.gov</a></li>"
-                    "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"domainrequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
-                    "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"domainrequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
-                    "</ul>",
-                )
-
-            # cleanup this test
-            DomainRequest.objects.all().delete()
-            contact.delete()
-
-    def test_change_view_for_joined_contact_five_or_more(self):
-        """Create a contact, join it to 6 domain requests.
-        Assert that the warning on the contact form lists 5 joins and a '1 more' ellispsis."""
-        with less_console_noise():
-            self.client.force_login(self.superuser)
-            # Create an instance of the model
-            # join it to 6 domain requests.
-            contact, _ = Contact.objects.get_or_create(
-                first_name="Henry",
-                last_name="McFakerson",
-            )
-            domain_request1 = completed_domain_request(submitter=contact, name="city1.gov")
-            domain_request2 = completed_domain_request(submitter=contact, name="city2.gov")
-            domain_request3 = completed_domain_request(submitter=contact, name="city3.gov")
-            domain_request4 = completed_domain_request(submitter=contact, name="city4.gov")
-            domain_request5 = completed_domain_request(submitter=contact, name="city5.gov")
-            completed_domain_request(submitter=contact, name="city6.gov")
-            with patch("django.contrib.messages.warning") as mock_warning:
-                # Use the test client to simulate the request
-                response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
-                logger.debug(mock_warning)
-                # Assert that the error message was called with the correct argument
-                # Note: The 6th join will be a user.
-                mock_warning.assert_called_once_with(
-                    response.wsgi_request,
-                    "<ul class='messagelist_content-list--unstyled'>"
-                    "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"domainrequest/{domain_request1.pk}/change/'>city1.gov</a></li>"
-                    "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"domainrequest/{domain_request2.pk}/change/'>city2.gov</a></li>"
-                    "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"domainrequest/{domain_request3.pk}/change/'>city3.gov</a></li>"
-                    "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"domainrequest/{domain_request4.pk}/change/'>city4.gov</a></li>"
-                    "<li>Joined to DomainRequest: <a href='/admin/registrar/"
-                    f"domainrequest/{domain_request5.pk}/change/'>city5.gov</a></li>"
-                    "</ul>"
-                    "<p class='font-sans-3xs'>And 1 more...</p>",
-                )
-            # cleanup this test
-            DomainRequest.objects.all().delete()
-            contact.delete()
 
 
 class TestVerifiedByStaffAdmin(TestCase):
@@ -2208,3 +2127,222 @@ class TestPortfolioAdmin(TestCase):
         self.assertIn("Agent Smith", display_members)
         self.assertIn("<span class='usa-tag'>Domain requestor</span>", display_members)
         self.assertIn("Program", display_members)
+
+
+class TestTransferUser(WebTest):
+    """User transfer custom admin page"""
+
+    # csrf checks do not work well with WebTest.
+    # We disable them here.
+    csrf_checks = False
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.site = AdminSite()
+        cls.superuser = create_superuser()
+        cls.admin = PortfolioAdmin(model=Portfolio, admin_site=cls.site)
+        cls.factory = RequestFactory()
+
+    def setUp(self):
+        self.app.set_user(self.superuser)
+        self.user1, _ = User.objects.get_or_create(
+            username="madmax", first_name="Max", last_name="Rokatanski", title="Road warrior"
+        )
+        self.user2, _ = User.objects.get_or_create(
+            username="furiosa", first_name="Furiosa", last_name="Jabassa", title="Imperator"
+        )
+
+    def tearDown(self):
+        Suborganization.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Domain.objects.all().delete()
+        Portfolio.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_transfer_user_shows_current_and_selected_user_information(self):
+        """Assert we pull the current user info and display it on the transfer page"""
+        completed_domain_request(user=self.user1, name="wasteland.gov")
+        domain_request = completed_domain_request(
+            user=self.user1, name="citadel.gov", status=DomainRequest.DomainRequestStatus.SUBMITTED
+        )
+        domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
+        domain_request.save()
+        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        UserPortfolioPermission.objects.create(
+            user=self.user1, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        portfolio2 = Portfolio.objects.create(organization_name="Tokyo Hotel", creator=self.user2)
+        UserPortfolioPermission.objects.create(
+            user=self.user2, portfolio=portfolio2, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+
+        self.assertContains(user_transfer_page, "madmax")
+        self.assertContains(user_transfer_page, "Max")
+        self.assertContains(user_transfer_page, "Rokatanski")
+        self.assertContains(user_transfer_page, "Road warrior")
+        self.assertContains(user_transfer_page, "wasteland.gov")
+        self.assertContains(user_transfer_page, "citadel.gov")
+        self.assertContains(user_transfer_page, "Hotel California")
+
+        select_form = user_transfer_page.forms[0]
+        select_form["selected_user"] = str(self.user2.id)
+        preview_result = select_form.submit()
+
+        self.assertContains(preview_result, "furiosa")
+        self.assertContains(preview_result, "Furiosa")
+        self.assertContains(preview_result, "Jabassa")
+        self.assertContains(preview_result, "Imperator")
+        self.assertContains(preview_result, "Tokyo Hotel")
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_user_portfolio_roles(self):
+        """Assert that a portfolio user role gets transferred"""
+        portfolio = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        user_portfolio_permission = UserPortfolioPermission.objects.create(
+            user=self.user2, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+
+        user_portfolio_permission.refresh_from_db()
+
+        self.assertEquals(user_portfolio_permission.user, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_domain_request_creator_and_investigator(self):
+        """Assert that domain request fields get transferred"""
+        domain_request = completed_domain_request(user=self.user2, name="wasteland.gov", investigator=self.user2)
+
+        self.assertEquals(domain_request.creator, self.user2)
+        self.assertEquals(domain_request.investigator, self.user2)
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        domain_request.refresh_from_db()
+
+        self.assertEquals(domain_request.creator, self.user1)
+        self.assertEquals(domain_request.investigator, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_domain_information_creator(self):
+        """Assert that domain fields get transferred"""
+        domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user2)
+
+        self.assertEquals(domain_information.creator, self.user2)
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        domain_information.refresh_from_db()
+
+        self.assertEquals(domain_information.creator, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_domain_role(self):
+        """Assert that user domain role get transferred"""
+        domain_1, _ = Domain.objects.get_or_create(name="chrome.gov", state=Domain.State.READY)
+        domain_2, _ = Domain.objects.get_or_create(name="v8.gov", state=Domain.State.READY)
+        user_domain_role1, _ = UserDomainRole.objects.get_or_create(
+            user=self.user2, domain=domain_1, role=UserDomainRole.Roles.MANAGER
+        )
+        user_domain_role2, _ = UserDomainRole.objects.get_or_create(
+            user=self.user2, domain=domain_2, role=UserDomainRole.Roles.MANAGER
+        )
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        user_domain_role1.refresh_from_db()
+        user_domain_role2.refresh_from_db()
+
+        self.assertEquals(user_domain_role1.user, self.user1)
+        self.assertEquals(user_domain_role2.user, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_verified_by_staff_requestor(self):
+        """Assert that verified by staff creator gets transferred"""
+        vip, _ = VerifiedByStaff.objects.get_or_create(requestor=self.user2, email="immortan.joe@citadel.com")
+
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        vip.refresh_from_db()
+
+        self.assertEquals(vip.requestor, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_deletes_old_user(self):
+        """Assert that the slected user gets deleted"""
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        submit_form = user_transfer_page.forms[1]
+        submit_form["selected_user"] = self.user2.pk
+        submit_form.submit()
+        # Refresh user2 from the database and check if it still exists
+        with self.assertRaises(User.DoesNotExist):
+            self.user2.refresh_from_db()
+
+    @less_console_noise_decorator
+    def test_transfer_user_throws_transfer_and_delete_success_messages(self):
+        """Test that success messages for data transfer and user deletion are displayed."""
+        # Ensure the setup for VerifiedByStaff
+        VerifiedByStaff.objects.get_or_create(requestor=self.user2, email="immortan.joe@citadel.com")
+
+        # Access the transfer user page
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+
+        with patch("django.contrib.messages.success") as mock_success_message:
+
+            # Fill the form with the selected user and submit
+            submit_form = user_transfer_page.forms[1]
+            submit_form["selected_user"] = self.user2.pk
+            after_submit = submit_form.submit().follow()
+
+            self.assertContains(after_submit, "<h1>Change user</h1>")
+
+            mock_success_message.assert_any_call(
+                ANY,
+                (
+                    "Data transferred successfully for the following objects: ['Changed requestor "
+                    + 'from "Furiosa Jabassa " to "Max Rokatanski " on immortan.joe@citadel.com\']'
+                ),
+            )
+
+            mock_success_message.assert_any_call(ANY, f"Deleted {self.user2} {self.user2.username}")
+
+    @less_console_noise_decorator
+    def test_transfer_user_throws_error_message(self):
+        """Test that an error message is thrown if the transfer fails."""
+        with patch(
+            "registrar.views.TransferUserView.transfer_user_fields_and_log", side_effect=Exception("Simulated Error")
+        ):
+            with patch("django.contrib.messages.error") as mock_error:
+                # Access the transfer user page
+                user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+
+                # Fill the form with the selected user and submit
+                submit_form = user_transfer_page.forms[1]
+                submit_form["selected_user"] = self.user2.pk
+                submit_form.submit().follow()
+
+                # Assert that the error message was called with the correct argument
+                mock_error.assert_called_once_with(ANY, "An error occurred during the transfer: Simulated Error")
+
+    @less_console_noise_decorator
+    def test_transfer_user_modal(self):
+        """Assert modal on page"""
+        user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+        self.assertContains(user_transfer_page, "This action cannot be undone.")

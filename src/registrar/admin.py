@@ -535,7 +535,6 @@ class AdminSortFields:
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
-        "submitter": (Contact, _name_sort),
         # == Senior Official == #
         "senior_official": (SeniorOfficial, _name_sort),
         # == User == #
@@ -962,7 +961,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
         domains = Domain.objects.filter(id__in=domain_ids).exclude(state=Domain.State.DELETED)
 
-        extra_context = {"domain_requests": domain_requests, "domains": domains}
+        portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
+        portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
+        extra_context = {"domain_requests": domain_requests, "domains": domains, "portfolios": portfolios}
         return super().change_view(request, object_id, form_url, extra_context)
 
 
@@ -1440,13 +1441,9 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain",
         "generic_org_type",
         "created_at",
-        "submitter",
     ]
 
-    orderable_fk_fields = [
-        ("domain", "name"),
-        ("submitter", ["first_name", "last_name"]),
-    ]
+    orderable_fk_fields = [("domain", "name")]
 
     # Filters
     list_filter = ["generic_org_type"]
@@ -1458,7 +1455,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "sub_organization", "creator", "submitter", "domain_request", "notes"]}),
+        (None, {"fields": ["portfolio", "sub_organization", "creator", "domain_request", "notes"]}),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1522,7 +1519,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "more_organization_information",
         "domain",
         "domain_request",
-        "submitter",
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
@@ -1537,7 +1533,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain_request",
         "senior_official",
         "domain",
-        "submitter",
         "portfolio",
         "sub_organization",
     ]
@@ -1710,13 +1705,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "custom_election_board",
         "city",
         "state_territory",
-        "submitter",
         "investigator",
     ]
 
     orderable_fk_fields = [
         ("requested_domain", "name"),
-        ("submitter", ["first_name", "last_name"]),
         ("investigator", ["first_name", "last_name"]),
     ]
 
@@ -1746,11 +1739,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Search
     search_fields = [
         "requested_domain__name",
-        "submitter__email",
-        "submitter__first_name",
-        "submitter__last_name",
+        "creator__email",
+        "creator__first_name",
+        "creator__last_name",
     ]
-    search_help_text = "Search by domain or submitter."
+    search_help_text = "Search by domain or creator."
 
     fieldsets = [
         (
@@ -1766,7 +1759,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "action_needed_reason_email",
                     "investigator",
                     "creator",
-                    "submitter",
                     "approved_domain",
                     "notes",
                 ]
@@ -1854,7 +1846,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "approved_domain",
         "alternative_domains",
         "purpose",
-        "submitter",
         "no_other_contacts_rationale",
         "anything_else",
         "is_policy_acknowledged",
@@ -1865,7 +1856,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
-        "submitter",
         "creator",
         "senior_official",
         "investigator",
@@ -1987,12 +1977,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         """
 
-        # TODO 2574: remove lines 1977-1978 (refactor as needed)
-        profile_flag = flag_is_active(request, "profile_feature")
-        if profile_flag and hasattr(obj, "creator"):
+        if hasattr(obj, "creator"):
             recipient = obj.creator
-        elif not profile_flag and hasattr(obj, "submitter"):
-            recipient = obj.submitter
         else:
             recipient = None
 

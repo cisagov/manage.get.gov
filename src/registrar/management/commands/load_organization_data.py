@@ -64,7 +64,7 @@ class Command(BaseCommand):
         # Will sys.exit() when prompt is "n"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            prompt_message=f"""
             ==Master data file==
             domain_additional_filename: {org_args.domain_additional_filename}
 
@@ -84,7 +84,7 @@ class Command(BaseCommand):
         # Will sys.exit() when prompt is "n"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
-            info_to_inspect=f"""
+            prompt_message=f"""
             ==Master data file==
             domain_additional_filename: {org_args.domain_additional_filename}
 

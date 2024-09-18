@@ -1,7 +1,42 @@
 {% extends 'django/admin/email_clipboard_change_form.html' %}
 {% load i18n static %}
 
+
+{% block field_sets %}
+    <div class="display-flex flex-row flex-justify submit-row">
+        <div class="desktop:flex-align-self-end">
+            <a href="{% url 'transfer_user' original.pk %}" class="button">
+                Transfer data from old account
+            </a>
+        </div>
+    </div>
+
+    {% for fieldset in adminform %}
+        {% include "django/admin/includes/domain_fieldset.html" with state_help_message=state_help_message %}
+    {% endfor %}
+{% endblock %}
+
 {% block after_related_objects %}
+    {% if portfolios %}
+    <div class="module aligned padding-3">
+        <h2>Portfolio information</h2>
+        <div class="grid-row grid-gap mobile:padding-x-1 desktop:padding-x-4">
+            <div class="mobile:grid-col-12 tablet:grid-col-6 desktop:grid-col-4">
+                <h3>Portfolios</h3>
+                <ul class="margin-0 padding-0">
+                {% for portfolio in portfolios %}
+                    <li>
+                        <a href="{% url 'admin:registrar_portfolio_change' portfolio.pk %}">
+                            {{ portfolio }}
+                        </a>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="module aligned padding-3">
         <h2>Associated requests and domains</h2>
         <div class="grid-row grid-gap mobile:padding-x-1 desktop:padding-x-4">

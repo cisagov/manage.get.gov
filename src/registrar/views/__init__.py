@@ -8,7 +8,6 @@ from .domain import (
     DomainNameserversView,
     DomainDNSSECView,
     DomainDsDataView,
-    DomainYourContactInformationView,
     DomainSecurityEmailView,
     DomainUsersView,
     DomainAddUserView,
@@ -19,3 +18,4 @@ from .user_profile import UserProfileView, FinishProfileSetupView
 from .health import *
 from .index import *
 from .portfolios import *
+from .transfer_user import TransferUserView

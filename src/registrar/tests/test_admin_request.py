@@ -37,6 +37,7 @@ from .common import (
     GenericTestHelper,
 )
 from unittest.mock import patch
+from waffle.testutils import override_flag
 
 from django.conf import settings
 import boto3_mocking  # type: ignore
@@ -100,7 +101,7 @@ class TestDomainRequestAdmin(MockEppLib):
         SeniorOfficial.objects.get_or_create(first_name="Zoup", last_name="Soup", title="title")
 
         contact, _ = Contact.objects.get_or_create(first_name="Henry", last_name="McFakerson")
-        domain_request = completed_domain_request(submitter=contact, name="city1.gov")
+        domain_request = completed_domain_request(name="city1.gov")
         request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(domain_request.pk))
         model_admin = AuditedAdmin(DomainRequest, self.site)
 
@@ -155,11 +156,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # These should exist in the response
         expected_values = [
-            ("creator", "Person who submitted the domain request; will not receive email updates"),
-            (
-                "submitter",
-                'Person listed under "your contact information" in the request form; will receive email updates',
-            ),
+            ("creator", "Person who submitted the domain request. Will receive email updates"),
             ("approved_domain", "Domain associated with this request; will be blank until request is approved"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
             ("alternative_domains", "Other domain names the creator provided for consideration"),
@@ -442,8 +439,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted("-1", ("-requested_domain__name",))
 
     @less_console_noise_decorator
-    def test_submitter_sortable(self):
-        """Tests if the DomainRequest sorts by submitter correctly"""
+    def test_creator_sortable(self):
+        """Tests if the DomainRequest sorts by creator correctly"""
         self.client.force_login(self.superuser)
 
         multiple_unalphabetical_domain_objects("domain_request")
@@ -457,8 +454,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted(
             "13",
             (
-                "submitter__first_name",
-                "submitter__last_name",
+                "creator__first_name",
+                "creator__last_name",
             ),
         )
 
@@ -466,8 +463,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted(
             "-13",
             (
-                "-submitter__first_name",
-                "-submitter__last_name",
+                "-creator__first_name",
+                "-creator__last_name",
             ),
         )
 
@@ -665,15 +662,24 @@ class TestDomainRequestAdmin(MockEppLib):
     def test_action_needed_sends_reason_email_prod_bcc(self):
         """When an action needed reason is set, an email is sent out and help@get.gov
         is BCC'd in production"""
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
+        # Create fake creator
+        EMAIL = "meoward.jones@igorville.gov"
+
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email=EMAIL,
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
+
         BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
-        User.objects.filter(email=EMAIL).delete()
         in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
         action_needed = DomainRequest.DomainRequestStatus.ACTION_NEEDED
 
         # Create a sample domain request
-        domain_request = completed_domain_request(status=in_review)
+        domain_request = completed_domain_request(status=in_review, user=_creator)
 
         # Test the email sent out for already_has_domains
         already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
@@ -702,7 +708,7 @@ class TestDomainRequestAdmin(MockEppLib):
         questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
         self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
         self.assert_email_is_accurate(
-            "SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address=BCC_EMAIL
+            "SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, _creator.email, bcc_email_address=BCC_EMAIL
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
 
@@ -723,7 +729,7 @@ class TestDomainRequestAdmin(MockEppLib):
         )
 
         domain_request.refresh_from_db()
-        self.assert_email_is_accurate("custom email content", 4, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assert_email_is_accurate("custom email content", 4, _creator.email, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 5)
 
         # Tests if a new email gets sent when just the email is changed.
@@ -747,7 +753,9 @@ class TestDomainRequestAdmin(MockEppLib):
             action_needed_reason=eligibility_unclear,
             action_needed_reason_email="custom content when starting anew",
         )
-        self.assert_email_is_accurate("custom content when starting anew", 5, EMAIL, bcc_email_address=BCC_EMAIL)
+        self.assert_email_is_accurate(
+            "custom content when starting anew", 5, _creator.email, bcc_email_address=BCC_EMAIL
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 6)
 
     # def test_action_needed_sends_reason_email_prod_bcc(self):
@@ -811,22 +819,31 @@ class TestDomainRequestAdmin(MockEppLib):
         Also test that the default email set in settings is NOT BCCd on non-prod whenever
         an email does go out."""
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        EMAIL = "meoward.jones@igorville.gov"
 
-        # Create a sample domain request
-        domain_request = completed_domain_request()
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email=EMAIL,
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
+
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Test Submitted Status from started
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, True)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, _creator.email, True)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test Withdrawn Status
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
         self.assert_email_is_accurate(
-            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL, True
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, _creator.email, True
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -868,30 +885,37 @@ class TestDomainRequestAdmin(MockEppLib):
         Also test that the default email set in settings IS BCCd on prod whenever
         an email does go out."""
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
         BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
 
-        # Create a sample domain request
-        domain_request = completed_domain_request()
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Test Submitted Status from started
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, _creator.email, False, BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test Withdrawn Status
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
         self.assert_email_is_accurate(
-            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, _creator.email
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
         # Test Submitted Status Again (from withdrawn)
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, _creator.email, False, BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
         # Move it to IN_REVIEW
@@ -916,21 +940,29 @@ class TestDomainRequestAdmin(MockEppLib):
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
+    @override_flag("profile_feature", True)
     @less_console_noise_decorator
     def test_save_model_sends_approved_email(self):
         """When transitioning to approved on a domain request,
         an email is sent out every time."""
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-        # Create a sample domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Test Submitted Status
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 0, EMAIL)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 0, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test Withdrawn Status
@@ -939,7 +971,7 @@ class TestDomainRequestAdmin(MockEppLib):
             DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.RejectionReasons.DOMAIN_PURPOSE,
         )
-        self.assert_email_is_accurate("Your .gov domain request has been rejected.", 1, EMAIL)
+        self.assert_email_is_accurate("Your .gov domain request has been rejected.", 1, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
         # Test Submitted Status Again (No new email should be sent)
@@ -951,12 +983,19 @@ class TestDomainRequestAdmin(MockEppLib):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is domain purpose."""
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-        # Create a sample domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason DOMAIN_PURPOSE and test email
         self.transition_state_and_send_email(
@@ -967,13 +1006,13 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assert_email_is_accurate(
             "Your domain request was rejected because the purpose you provided did not meet our \nrequirements.",
             0,
-            EMAIL,
+            _creator.email,
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -981,12 +1020,19 @@ class TestDomainRequestAdmin(MockEppLib):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is requestor."""
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-        # Create a sample domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason REQUESTOR and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -996,13 +1042,13 @@ class TestDomainRequestAdmin(MockEppLib):
             "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "
             "domain on behalf of Testorg",
             0,
-            EMAIL,
+            _creator.email,
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1010,12 +1056,19 @@ class TestDomainRequestAdmin(MockEppLib):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is second domain."""
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-        # Create a sample domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason SECOND_DOMAIN_REASONING and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1023,25 +1076,35 @@ class TestDomainRequestAdmin(MockEppLib):
             DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.RejectionReasons.SECOND_DOMAIN_REASONING,
         )
-        self.assert_email_is_accurate("Your domain request was rejected because Testorg has a .gov domain.", 0, EMAIL)
+        self.assert_email_is_accurate(
+            "Your domain request was rejected because Testorg has a .gov domain.", 0, _creator.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
     def test_save_model_sends_rejected_email_contacts_or_org_legitimacy(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is contacts or org legitimacy."""
+        # Create fake creator
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        EMAIL = "meoward.jones@igorville.gov"
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email=EMAIL,
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-        # Create a sample domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason CONTACTS_OR_ORGANIZATION_LEGITIMACY and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1053,13 +1116,13 @@ class TestDomainRequestAdmin(MockEppLib):
             "Your domain request was rejected because we could not verify the organizational \n"
             "contacts you provided. If you have questions or comments, reply to this email.",
             0,
-            EMAIL,
+            _creator.email,
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1067,12 +1130,19 @@ class TestDomainRequestAdmin(MockEppLib):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is org eligibility."""
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-        # Create a sample domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason ORGANIZATION_ELIGIBILITY and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1084,26 +1154,32 @@ class TestDomainRequestAdmin(MockEppLib):
             "Your domain request was rejected because we determined that Testorg is not \neligible for "
             "a .gov domain.",
             0,
-            EMAIL,
+            _creator.email,
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
     def test_save_model_sends_rejected_email_naming(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is naming."""
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
-
-        # Create a sample domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1112,13 +1188,13 @@ class TestDomainRequestAdmin(MockEppLib):
             DomainRequest.RejectionReasons.NAMING_REQUIREMENTS,
         )
         self.assert_email_is_accurate(
-            "Your domain request was rejected because it does not meet our naming requirements.", 0, EMAIL
+            "Your domain request was rejected because it does not meet our naming requirements.", 0, _creator.email
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1126,12 +1202,19 @@ class TestDomainRequestAdmin(MockEppLib):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is other."""
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-        # Create a sample domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request and whitelist user email
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
         self.transition_state_and_send_email(
@@ -1139,12 +1222,12 @@ class TestDomainRequestAdmin(MockEppLib):
             DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.RejectionReasons.OTHER,
         )
-        self.assert_email_is_accurate("Choosing a .gov domain name", 0, EMAIL)
+        self.assert_email_is_accurate("Choosing a .gov domain name", 0, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1208,23 +1291,30 @@ class TestDomainRequestAdmin(MockEppLib):
         """When transitioning to withdrawn on a domain request,
         an email is sent out every time."""
 
-        # Ensure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        # Create fake creator
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email="meoward.jones@igorville.gov",
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-        # Create a sample domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Create a sample domain request and whitelists user email
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        AllowedEmail.objects.get_or_create(email=_creator.email)
 
         # Test Submitted Status
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
         self.assert_email_is_accurate(
-            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 0, EMAIL
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 0, _creator.email
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test Withdrawn Status
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.SUBMITTED)
-        self.assert_email_is_accurate("We received your .gov domain request.", 1, EMAIL)
+        self.assert_email_is_accurate("We received your .gov domain request.", 1, _creator.email)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
         # Test Submitted Status Again (No new email should be sent)
@@ -1403,16 +1493,6 @@ class TestDomainRequestAdmin(MockEppLib):
         # Check for the field itself
         self.assertContains(response, "Meoward Jones")
 
-        # == Check for the submitter == #
-        self.assertContains(response, "mayor@igorville.gov", count=2)
-        expected_submitter_fields = [
-            # Field, expected value
-            ("title", "Admin Tester"),
-            ("phone", "(555) 555 5556"),
-        ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_submitter_fields)
-        self.assertContains(response, "Testy2 Tester2")
-
         # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com", count=2)
         expected_so_fields = [
@@ -1433,7 +1513,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "button--clipboard", count=5)
+        self.assertContains(response, "button--clipboard", count=4)
 
         # Test that Creator counts display properly
         self.assertNotContains(response, "Approved domains")
@@ -1568,7 +1648,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "senior_official",
             "approved_domain",
             "requested_domain",
-            "submitter",
             "purpose",
             "no_other_contacts_rationale",
             "anything_else",
@@ -1607,7 +1686,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "approved_domain",
                 "alternative_domains",
                 "purpose",
-                "submitter",
                 "no_other_contacts_rationale",
                 "anything_else",
                 "is_policy_acknowledged",
