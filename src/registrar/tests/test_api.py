@@ -163,3 +163,17 @@ class GetActionNeededEmailForUserJsonTest(TestCase):
         data = response.json()
         self.assertIn("action_needed_email", data)
         self.assertIn("SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", data["action_needed_email"])
+
+    @less_console_noise_decorator
+    def test_get_action_needed_email_for_user_json_regular(self):
+        """Test that a regular user receives a 403 with an error message."""
+        p = "password"
+        self.client.login(username="testuser", password=p)
+        response = self.client.get(
+            self.api_url,
+            {
+                "reason": DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL,
+                "domain_request_id": self.domain_request.id,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
