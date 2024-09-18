@@ -582,6 +582,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     dropdown.addEventListener("change", function() {
         const reason = dropdown.value;
+        // Update the UI
+        updateUserInterface(reason);
         if (reason && reason !== "other") {
             // If it's not the initial value
             if (initialDropdownValue !== dropdown.value || initialEmailValue !== textarea.value) {
@@ -596,6 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }else {
                         textarea.value = data.action_needed_email;
                     }
+                    updateUserInterface(reason);
                 })
                 .catch(error => {
                     console.error("Error action needed email: ", error)
@@ -603,8 +606,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Update the UI
-        updateUserInterface(reason);
     });
 
     modalConfirm.addEventListener("click", () => {
