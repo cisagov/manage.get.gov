@@ -2,6 +2,7 @@ from unittest import skip
 from unittest.mock import MagicMock, ANY, patch
 
 from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
@@ -10,6 +11,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
+from django.middleware.csrf import get_token
 
 from registrar.utility.errors import (
     NameserverError,
@@ -1973,3 +1975,49 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(
             result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA256)), count=2, status_code=200
         )
+
+
+# class TestDomainChangeNotifications(TestDomainOverview):
+#     """Test email notifications on updates to domain information"""
+
+#     @classmethod
+#     def setUpClass(cls):
+#         super().setUpClass()
+#         allowed_emails = [
+#             AllowedEmail(email="info@example.com"),
+#         ]
+#         AllowedEmail.objects.bulk_create(allowed_emails)
+
+#     @classmethod
+#     def tearDownClass(cls):
+#         super().tearDownClass()
+#         AllowedEmail.objects.all().delete()
+
+#     def test_notification_email_sent_on_org_name_change(self):
+#         """Test that an email is sent when the organization name is changed."""
+#         with patch('registrar.utility.email.boto3.client') as mock_boto3_client:
+#             mock_ses_client = mock_boto3_client.return_value
+            
+#             self.domain_information.organization_name = "Town of Igorville"
+#             self.domain_information.save()
+            
+#             org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+#             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+#             org_name_page.form["organization_name"] = "Not igorville"
+
+#             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+#             success_result_page = org_name_page.form.submit()
+
+#             # Check that the page loads successfully
+#             self.assertEqual(success_result_page.status_code, 200)
+#             self.assertContains(success_result_page, "Not igorville")
+
+#             # Check that an email was sent
+#             mock_ses_client.send_email.assert_called_once()
+            
+#             # Check email content
+#             call_kwargs = mock_ses_client.send_email.call_args[1]
+#             self.assertEqual(call_kwargs['FromEmailAddress'], settings.DEFAULT_FROM_EMAIL)
+#             self.assertIn('Domain information updated', call_kwargs['Content']['Simple']['Subject']['Data'])
+#             self.assertIn('City of Igorville', call_kwargs['Content']['Simple']['Body']['Text']['Data'])

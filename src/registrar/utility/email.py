@@ -51,7 +51,10 @@ def send_templated_email(
         # Raises an error if we cannot send an email (due to restrictions).
         # Does nothing otherwise.
         _can_send_email(to_address, bcc_address)
-        sendable_cc_addresses = get_sendable_addresses(cc_addresses)
+        sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
+
+        if len(sendable_cc_addresses) < len(cc_addresses):
+            logger.warning("Some CC'ed addresses were removed: %s.", blocked_cc_addresses)
 
 
     template = get_template(template_name)
@@ -107,6 +110,7 @@ def send_templated_email(
                     },
                 },
             )
+            logger.info("Email sent to %s, bcc %s, cc %s", to_address, bcc_address, cc_addresses)
         else:
             ses_client = boto3.client(
                 "ses",
@@ -138,10 +142,10 @@ def _can_send_email(to_address, bcc_address):
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
 
-def get_sendable_addresses(addresses: list[str]) -> list[str]:
+def get_sendable_addresses(addresses: list[str]) -> tuple[list[str], list[str]]:
     """Checks whether a list of addresses can be sent to.
     
-    Returns: a lists of all provided addresses that are ok to send to
+    Returns: a lists of all provided addresses that are ok to send to and a list of addresses that were blocked.
 
     Paramaters:
     
@@ -157,8 +161,9 @@ def get_sendable_addresses(addresses: list[str]) -> list[str]:
     else:
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
         allowed_emails = [address for address in addresses if (address and AllowedEmail.is_allowed_email(address))]
+        blocked_emails = [address for address in addresses if (address and not AllowedEmail.is_allowed_email(address))]
 
-        return allowed_emails
+        return allowed_emails, blocked_emails
 
 
 def wrap_text_and_preserve_paragraphs(text, width):
