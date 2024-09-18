@@ -22,11 +22,7 @@ def get_action_needed_reason_default_email(request, domain_request, action_neede
     if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
         return None
 
-    if flag_is_active(request, "profile_feature"):  # type: ignore
-        recipient = domain_request.creator
-    else:
-        recipient = domain_request.submitter
-
+    recipient = domain_request.creator
     # Return the context of the rendered views
     context = {"domain_request": domain_request, "recipient": recipient}
 
