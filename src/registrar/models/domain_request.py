@@ -50,25 +50,11 @@ class DomainRequest(TimeStampedModel):
         def get_status_label(cls, status_name: str):
             """Returns the associated label for a given status name"""
             return cls(status_name).label if status_name else None
-        
+
         @classmethod
         def statuses_awaiting_review(cls):
             """Returns all statuses that are awaiting a review from analysts"""
-            return [
-                cls.SUBMITTED,
-                cls.IN_REVIEW
-            ]
-        
-        # TODO - a better approach might be to just grab the value of source?
-        # How??
-        @classmethod
-        def withdrawable_statuses(cls):
-            """Returns all statuses that are withdrawable"""
-            return [
-                cls.SUBMITTED,
-                cls.IN_REVIEW, 
-                cls.ACTION_NEEDED
-            ]
+            return [cls.SUBMITTED, cls.IN_REVIEW]
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
@@ -606,10 +592,6 @@ class DomainRequest(TimeStampedModel):
         """Checks if the current status is in submitted or in_review"""
         return self.status in DomainRequest.DomainRequestStatus.statuses_awaiting_review()
 
-    def is_withdrawable(self):
-        """Helper function that determines if the request can be withdrawn in its current status"""
-        return self.status in DomainRequest.DomainRequestStatus.withdrawable_statuses()
-
     def get_first_status_set_date(self, status):
         """Returns the date when the domain request was first set to the given status."""
         log_entry = (
@@ -1027,6 +1009,17 @@ class DomainRequest(TimeStampedModel):
             "emails/status_change_approved_subject.txt",
             send_email=send_email,
         )
+
+    def is_withdrawable(self):
+        """Helper function that determines if the request can be withdrawn in its current status"""
+        # This list is equivalent to the source field on withdraw. We need a better way to
+        # consolidate these two lists - i.e. some sort of method that keeps these two lists in sync.
+        # django fsm is very picky with what we can define in that field.
+        return self.status in [
+            self.DomainRequestStatus.SUBMITTED,
+            self.DomainRequestStatus.IN_REVIEW,
+            self.DomainRequestStatus.ACTION_NEEDED,
+        ]
 
     @transition(
         field="status",

@@ -758,7 +758,7 @@ class DomainRequestStatus(DomainRequestPermissionView):
         has_base_perms = super().has_permission()
         if not has_base_perms:
             return False
-        
+
         if self.request.user.is_org_user(self.request):
             portfolio = self.request.session.get("portfolio")
             if not self.request.user.has_edit_request_portfolio_permission(portfolio):
