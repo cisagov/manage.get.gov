@@ -151,7 +151,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                         "date": date.today(),
                         "changes": form.changed_data
                     }
-            self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+            self.email_domain_managers(self.object, "emails/update_to_approved_domain.txt", "emails/update_to_approved_domain_subject.txt", context)
                 
         # superclass has the redirect
         return super().form_valid(form)
