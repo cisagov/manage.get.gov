@@ -34,16 +34,18 @@ def send_templated_email(
 ):
     """Send an email built from a template.
 
-    to can be either a string representing a single address or a 
-    list of strings for multi-recipient emails.
+    to_address and bcc_address currently only supports a single address.
 
-    bcc currently only supports a single address.
+    cc_address is a list and can contain many addresses. Emails not in the
+    whitelist (if applicable) will be filtered out before sending.
 
     template_name and subject_template_name are relative to the same template
     context as Django's HTML templates. context gives additional information
     that the template may use.
 
-    Raises EmailSendingError if SES client could not be accessed
+    Raises EmailSendingError if:
+        SES client could not be accessed
+        No valid recipient addresses are provided
     """
 
     if not settings.IS_PRODUCTION:  # type: ignore
@@ -160,8 +162,13 @@ def get_sendable_addresses(addresses: list[str]) -> tuple[list[str], list[str]]:
         raise EmailSendingError(message)
     else:
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
-        allowed_emails = [address for address in addresses if (address and AllowedEmail.is_allowed_email(address))]
-        blocked_emails = [address for address in addresses if (address and not AllowedEmail.is_allowed_email(address))]
+        allowed_emails = []
+        blocked_emails = []
+        for address in addresses:
+            if AllowedEmail.is_allowed_email(address):
+                allowed_emails.append(address)
+            else:
+                blocked_emails.append(address)
 
         return allowed_emails, blocked_emails
 
