@@ -25,6 +25,7 @@
   }
 }
 
+// NOTE: !important is used because _font.scss overrides this
 .usa-alert__body--widescreen {
-  max-width: $widescreen-max-width;
+  max-width: $widescreen-max-width !important;
 }
