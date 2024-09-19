@@ -7,19 +7,15 @@
     {% if heading_level %}
       <{{ heading_level }}
     {% else %} 
-      <h3
+      <h4
     {% endif %} 
-      class="summary-item__title
-             font-sans-md
-             text-primary-dark text-semibold
-             margin-top-0 margin-bottom-05
-             padding-right-1"
-      >
+      class="font-sans-md
+             text-primary-dark text-semibold">
         {{ title }}
     {% if heading_level %}
       </{{ heading_level }}>
     {% else %} 
-      </h3>
+      </h4>
     {% endif %}
       {% if sub_header_text %}
         <h4 class="register-form-review-header">{{ sub_header_text }}</h4>
@@ -32,16 +28,23 @@
             {% include "includes/contact.html" with contact=value|first %}
           {% else %}
             {% if value %}
-              <dl class="usa-list usa-list--unstyled margin-top-0">
+              <ul class="usa-list usa-list--unstyled margin-top-0">
                 {% for item in value %}
-                  <dt>
-                    Contact {{forloop.counter}}
-                  </dt>
-                  <dd>
+                  <li>
+                  
+                 <h4 class="summary-item__title
+             font-sans-md
+             text-primary-dark text-semibold
+             margin-bottom-05
+             padding-right-1">
+                      Contact {{forloop.counter}}
+                  </h4>
+                  </li>
+                  <li>
                     {% include "includes/contact.html" with contact=item %}
-                  </dd>
+                  </li>
                 {% endfor %}
-                </dl>
+                </ul>
             {% elif custom_text_for_value_none %}
               <p>
                 {{ custom_text_for_value_none }}
