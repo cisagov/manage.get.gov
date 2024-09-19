@@ -750,6 +750,7 @@ class Finished(DomainRequestWizard):
 
 class DomainRequestStatus(DomainRequestPermissionView):
     template_name = "domain_request_status.html"
+
     def has_permission(self):
         """
         Override of the base has_permission class to account for portfolio permissions

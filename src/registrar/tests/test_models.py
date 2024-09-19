@@ -2238,11 +2238,11 @@ class TestDomainRequestIncomplete(TestCase):
 
     @less_console_noise_decorator
     def test_is_organization_name_and_address_complete(self):
-        self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
+        self.assertTrue(self.domain_request.is_organization_name_and_address_complete())
         self.domain_request.organization_name = None
         self.domain_request.address_line1 = None
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
+        self.assertTrue(self.domain_request.is_organization_name_and_address_complete())
 
     @less_console_noise_decorator
     def test_is_senior_official_complete(self):

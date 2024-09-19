@@ -50,6 +50,25 @@ class DomainRequest(TimeStampedModel):
         def get_status_label(cls, status_name: str):
             """Returns the associated label for a given status name"""
             return cls(status_name).label if status_name else None
+        
+        @classmethod
+        def statuses_awaiting_review(cls):
+            """Returns all statuses that are awaiting a review from analysts"""
+            return [
+                cls.SUBMITTED,
+                cls.IN_REVIEW
+            ]
+        
+        # TODO - a better approach might be to just grab the value of source?
+        # How??
+        @classmethod
+        def withdrawable_statuses(cls):
+            """Returns all statuses that are withdrawable"""
+            return [
+                cls.SUBMITTED,
+                cls.IN_REVIEW, 
+                cls.ACTION_NEEDED
+            ]
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
@@ -582,6 +601,14 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
     )
+
+    def is_awaiting_review(self) -> bool:
+        """Checks if the current status is in submitted or in_review"""
+        return self.status in DomainRequest.DomainRequestStatus.statuses_awaiting_review()
+
+    def is_withdrawable(self):
+        """Helper function that determines if the request can be withdrawn in its current status"""
+        return self.status in DomainRequest.DomainRequestStatus.withdrawable_statuses()
 
     def get_first_status_set_date(self, status):
         """Returns the date when the domain request was first set to the given status."""
