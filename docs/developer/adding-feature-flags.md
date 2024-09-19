@@ -9,10 +9,10 @@ We use [django-waffle](https://waffle.readthedocs.io/en/stable/) for our feature
 3. Click `Add waffle flag`.
 4. Add the model as you would normally. Refer to waffle's documentation [regarding attributes](https://waffle.readthedocs.io/en/stable/types/flag.html#flag-attributes) for more information on them.
 
-### Enabling the profile_feature flag
+### Enabling a feature flag
 1. On the app, navigate to `\admin`.
 2. Under models, click `Waffle flags`.
-3. Click the `profile_feature` record. This should exist by default, if not - create one with that name.
+3. Click the featue flag record. This should exist by default, if not - create one with that name.
 4. (Important) Set the field `Everyone` to `Unknown`. This field overrides all other settings when set to anything else.
 5. Configure the settings as you see fit.
 

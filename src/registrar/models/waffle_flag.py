@@ -9,7 +9,7 @@ class WaffleFlag(AbstractUserFlag):
     Custom implementation of django-waffles 'Flag' object.
     Read more here: https://waffle.readthedocs.io/en/stable/types/flag.html
 
-    Use this class when dealing with feature flags, such as profile_feature.
+    Use this class when dealing with feature flags.
     """
 
     class Meta:

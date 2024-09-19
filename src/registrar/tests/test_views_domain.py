@@ -723,7 +723,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
 
-        other_user = User()
+        other_user = create_user()
         other_user.save()
         self.client.force_login(other_user)
         mock_client = MagicMock()
@@ -737,6 +737,12 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_invitation_flow(self):
         """Send an invitation to a new user, log in and load the dashboard."""
         email_address = "mayor@igorville.gov"
+        username = "mayor"
+        first_name = "First"
+        last_name = "Last"
+        title = "title"
+        phone = "8080102431"
+        title = "title"
         User.objects.filter(email=email_address).delete()
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
@@ -752,7 +758,9 @@ class TestDomainManagers(TestDomainOverview):
             add_page.form.submit()
 
         # user was invited, create them
-        new_user = User.objects.create(username=email_address, email=email_address)
+        new_user = User.objects.create(
+            username=username, email=email_address, first_name=first_name, last_name=last_name, title=title, phone=phone
+        )
         # log them in to `self.app`
         self.app.set_user(new_user.username)
         # and manually call the on each login callback

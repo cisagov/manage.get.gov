@@ -2247,7 +2247,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         senior_official = domain_request.senior_official
         self.assertEquals("Testy2", senior_official.first_name)
 
-    @override_flag("profile_feature", active=True)
     @less_console_noise_decorator
     def test_edit_creator_in_place(self):
         """When you:
