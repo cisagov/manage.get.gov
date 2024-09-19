@@ -1,5 +1,6 @@
 @use "uswds-core" as *;
 @use "cisa_colors" as *;
+@use "base" as *;
 
 // Define some styles for the .gov header/logo
 .usa-logo button {
@@ -129,6 +130,7 @@
 }
 
 .usa-nav__inner--widescreen,
-.usa-navbar--widescreen  {
-    max-width: var(--widescreen-max-width) !important;
+.usa-navbar--widescreen,
+.usa-nav-container--widescreen  {
+    max-width: $widescreen-max-width !important;
 }

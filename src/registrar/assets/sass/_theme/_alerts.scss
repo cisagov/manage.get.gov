@@ -1,3 +1,5 @@
+@use "base" as *;
+
 // Fixes some font size disparities with the Figma
 // for usa-alert alert elements
 .usa-alert {
@@ -21,4 +23,8 @@
   .usa-alert__body.margin-left-1 {
     margin-left: 0.5rem!important;
   }
+}
+
+.usa-alert__body--widescreen {
+  max-width: $widescreen-max-width;
 }

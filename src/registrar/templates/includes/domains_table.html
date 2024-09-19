@@ -13,7 +13,7 @@
         <!-- Embedding the portfolio value in a data attribute -->
         <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
       {% endif %}
-      <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
+      <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %} {% if is_widescreen_mode %} section-outlined__search--widescreen {% endif %}">
         <section aria-label="Domains search component" class="margin-top-2">
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}

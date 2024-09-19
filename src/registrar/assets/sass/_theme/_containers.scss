@@ -1,6 +1,7 @@
 @use "uswds-core" as *;
+@use "base" as *;
 
 .grid-container--widescreen,
 .usa-identifier__container--widescreen {
-    max-width: var(--widescreen-max-width) !important;
+    max-width: $widescreen-max-width !important;
 }

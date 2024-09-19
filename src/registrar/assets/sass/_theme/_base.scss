@@ -1,9 +1,7 @@
 @use "uswds-core" as *;
 @use "cisa_colors" as *;
 
-:root {
-  --widescreen-max-width: 1920px;
-}
+$widescreen-max-width: 1920px;
 
 /* Styles for making visible to screen reader / AT users only. */
 .sr-only {
@@ -104,6 +102,24 @@ body {
       margin-left: auto;
     }
   }
+}
+
+/*
+This is a hack to keep the "Export" button on Domain Requests page inline
+with the searchbar in widescreen mode. 
+
+EXPLANATION:  The existing frontend implementation puts the searchbar and export
+button in two separate columns in a grid, which creates a solid wrap-around effect
+for mobile divices.  The searchbar had a max-width that exactly equaled the max width
+of its parent column (for non-widescreens), so there wasn't any issue at this time of 
+implementation.
+However, during immplementation of widescreen mode this small max-width caused the searchbar to
+no longer fill its parent grid column for larger screen sizes, creating a visual gap between 
+it and the adjacent export button.  To fix this, we will limit the width of the first 
+grid column to the max-width of the searchbar, which was calculated to be 33rem.
+*/
+.section-outlined__search--widescreen {
+  max-width: 33rem;
 }
 
 .break-word {
@@ -224,8 +240,10 @@ abbr[title] {
 // Boost this USWDS utility class for the accordions in the portfolio requests table
 .left-auto {
   left: auto!important;
+}
+
 .usa-banner__inner--widescreen  {
-  max-width: var(--widescreen-max-width);
+  max-width: $widescreen-max-width;
 }
 
 .margin-right-neg-4px {
