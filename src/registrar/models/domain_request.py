@@ -51,11 +51,6 @@ class DomainRequest(TimeStampedModel):
             """Returns the associated label for a given status name"""
             return cls(status_name).label if status_name else None
 
-        @classmethod
-        def statuses_awaiting_review(cls):
-            """Returns all statuses that are awaiting a review from analysts"""
-            return [cls.SUBMITTED, cls.IN_REVIEW]
-
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
         ALASKA = "AK", "Alaska (AK)"
@@ -590,7 +585,7 @@ class DomainRequest(TimeStampedModel):
 
     def is_awaiting_review(self) -> bool:
         """Checks if the current status is in submitted or in_review"""
-        return self.status in DomainRequest.DomainRequestStatus.statuses_awaiting_review()
+        return self.status in [self.DomainRequestStatus.SUBMITTED, self.DomainRequestStatus.IN_REVIEW]
 
     def get_first_status_set_date(self, status):
         """Returns the date when the domain request was first set to the given status."""
