@@ -143,6 +143,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         # updates session cache with domain
         self._update_session_with_domain()
 
+        logger.info("Valid form has changed? %s", form.has_changed())
         if self.should_notify(form):
             logger.info("Sending email to domain managers")
             context={
@@ -849,6 +850,9 @@ class DomainSecurityEmailView(DomainFormBaseView):
             #     self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
 
             messages.success(self.request, "The security email for this domain has been updated.")
+            
+            # superclass has the redirect
+            return super().form_valid(form)
 
         # superclass has the redirect
         return redirect(self.get_success_url())
