@@ -5,6 +5,7 @@ authorized users can see information on a domain, every view here should
 inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
 """
 
+from datetime import date
 import logging
 
 from django.contrib import messages
@@ -146,6 +147,9 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             logger.info("Sending email to domain managers")
             context={
                         "domain": self.object,
+                        "user": self.request.user,
+                        "date": date.today(),
+                        "changes": form.changed_data
                     }
             self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
                 

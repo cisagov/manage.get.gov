@@ -1,1 +1,0 @@
-There has been a change to {{ domain }}
