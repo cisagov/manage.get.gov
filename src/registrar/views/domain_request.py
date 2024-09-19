@@ -14,7 +14,7 @@ from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
-from registrar.utility.enums import DomainRequestStep, PortfolioDomainRequestStep
+from registrar.utility.enums import Step, PortfolioDomainRequestStep
 
 from .utility import (
     DomainRequestPermissionView,
@@ -43,7 +43,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     Any method not marked as internal can be overridden in a subclass,
     although not without consulting the base implementation, first.
     """
-    StepEnum = DomainRequestStep
+    StepEnum = Step
     template_name = ""
 
     # uniquely namespace the wizard in urls.py
@@ -698,7 +698,7 @@ class Review(DomainRequestWizard):
         if DomainRequest._form_complete(self.domain_request, self.request) is False:
             logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()
-        context["Step"] = DomainRequestStep.__members__
+        context["Step"] = Step.__members__
         context["domain_request"] = self.domain_request
         return context
 

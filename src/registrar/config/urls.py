@@ -22,7 +22,7 @@ from registrar.views.report_views import (
     ExportDataTypeUser,
 )
 
-from registrar.views.domain_request import DomainRequestStep
+from registrar.views.domain_request import Step
 from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility.api_views import (
@@ -43,20 +43,20 @@ domain_request_urls = [
 # dynamically generate the other domain_request_urls
 for step, view in [
     # add/remove steps here
-    (DomainRequestStep.ORGANIZATION_TYPE, views.OrganizationType),
-    (DomainRequestStep.TRIBAL_GOVERNMENT, views.TribalGovernment),
-    (DomainRequestStep.ORGANIZATION_FEDERAL, views.OrganizationFederal),
-    (DomainRequestStep.ORGANIZATION_ELECTION, views.OrganizationElection),
-    (DomainRequestStep.ORGANIZATION_CONTACT, views.OrganizationContact),
-    (DomainRequestStep.ABOUT_YOUR_ORGANIZATION, views.AboutYourOrganization),
-    (DomainRequestStep.SENIOR_OFFICIAL, views.SeniorOfficial),
-    (DomainRequestStep.CURRENT_SITES, views.CurrentSites),
-    (DomainRequestStep.DOTGOV_DOMAIN, views.DotgovDomain),
-    (DomainRequestStep.PURPOSE, views.Purpose),
-    (DomainRequestStep.OTHER_CONTACTS, views.OtherContacts),
-    (DomainRequestStep.ADDITIONAL_DETAILS, views.AdditionalDetails),
-    (DomainRequestStep.REQUIREMENTS, views.Requirements),
-    (DomainRequestStep.REVIEW, views.Review),
+    (Step.ORGANIZATION_TYPE, views.OrganizationType),
+    (Step.TRIBAL_GOVERNMENT, views.TribalGovernment),
+    (Step.ORGANIZATION_FEDERAL, views.OrganizationFederal),
+    (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
+    (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
+    (Step.ABOUT_YOUR_ORGANIZATION, views.AboutYourOrganization),
+    (Step.SENIOR_OFFICIAL, views.SeniorOfficial),
+    (Step.CURRENT_SITES, views.CurrentSites),
+    (Step.DOTGOV_DOMAIN, views.DotgovDomain),
+    (Step.PURPOSE, views.Purpose),
+    (Step.OTHER_CONTACTS, views.OtherContacts),
+    (Step.ADDITIONAL_DETAILS, views.AdditionalDetails),
+    (Step.REQUIREMENTS, views.Requirements),
+    (Step.REVIEW, views.Review),
 ]:
     domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
 

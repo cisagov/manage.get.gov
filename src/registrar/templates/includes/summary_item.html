@@ -43,12 +43,12 @@
                 {% endfor %}
                 </dl>
             {% elif custom_text_for_value_none %}
-              <p class="red-incomplete-text">
+              <p>
                 {{ custom_text_for_value_none }}
               </p>
             {% else %}
               <p>
-                None
+                  None
               </p>
             {% endif %}
           {% endif %}
@@ -96,17 +96,15 @@
           </ul>
         {% endif %}
       {% else %}
+      <p class="margin-top-0 margin-bottom-0">
         {% if value %}
-          <p class="margin-top-0 margin-bottom-0">
-            {{ value }}
-          </p>
+          {{ value }}
         {% elif custom_text_for_value_none %}
-          <p class="margin-top-0 margin-bottom-0 red-incomplete-text">
-            {{ custom_text_for_value_none }}
-          </p>
+          {{ custom_text_for_value_none }}
         {% else %}
           None
         {% endif %}
+      </p>
       {% endif %}
     </div>
 

@@ -40,7 +40,7 @@ class DefaultEmail(Enum):
     LEGACY_DEFAULT = "registrar@dotgov.gov"
 
 
-class DomainRequestStep(StrEnum):
+class Step(StrEnum):
     """
     Names for each page of the domain request wizard.
 
