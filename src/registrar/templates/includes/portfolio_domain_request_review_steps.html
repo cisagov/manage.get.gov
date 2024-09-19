@@ -1,0 +1,86 @@
+{% load custom_filters %}
+{% load static url_helpers %}
+
+{% for step in steps %}
+<section class="summary-item margin-top-3">
+    {% if is_editable %}
+        {% namespaced_url 'domain-request' step as domain_request_url %}
+    {% endif %}
+
+    {% comment %} TODO: what is this? {% endcomment %}
+    {% if step == Step.REQUESTING_ENTITY %}
+        {% with title=form_titles|get_item:step value=domain_request.portfolio|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe%}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+        {% endwith %}
+    {% endif %}
+
+    {% if step == Step.CURRENT_SITES %}
+        {% if domain_request.current_websites.all %}
+            {% with title=form_titles|get_item:step value=domain_request.current_websites.all %}
+                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url list='true' %}
+            {% endwith %}
+        {% else %}
+            {% with title=form_titles|get_item:step value='None' %}
+                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% endwith %}
+        {% endif %}
+    {% endif %}
+
+    {% if step == Step.DOTGOV_DOMAIN %}
+        {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe%}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+        {% endwith %}
+
+        {% if domain_request.alternative_domains.all %}
+            <h3 class="register-form-review-header">Alternative domains</h3>
+            <ul class="usa-list usa-list--unstyled margin-top-0">
+            {% for site in domain_request.alternative_domains.all %}
+                <li>{{ site.website }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endif %}
+
+    {% if step == Step.PURPOSE %}
+        {% with title=form_titles|get_item:step value=domain_request.purpose|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+        {% endwith %}
+    {% endif %}
+
+    {% if step == Step.ADDITIONAL_DETAILS %}
+        {% with title=form_titles|get_item:step %}
+            {% if domain_request.has_additional_details %}
+                {% include "includes/summary_item.html" with title="Additional Details" value=" " heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+                <h3 class="register-form-review-header">CISA Regional Representative</h3>
+                <ul class="usa-list usa-list--unstyled margin-top-0">
+                    {% if domain_request.cisa_representative_first_name %}
+                        <li>{{domain_request.cisa_representative_first_name}} {{domain_request.cisa_representative_last_name}}</li>
+                    {% if domain_request.cisa_representative_email %}
+                        <li>{{domain_request.cisa_representative_email}}</li>
+                    {% endif %}
+                    {% else %}
+                    No
+                    {% endif %}
+                </ul>
+
+            <h3 class="register-form-review-header">Anything else</h3>
+            <ul class="usa-list usa-list--unstyled margin-top-0">
+                {% if domain_request.anything_else %}
+                    {{domain_request.anything_else}}
+                {% else %}
+                    No
+                {% endif %}
+            </ul>
+            {% else %}
+                {% include "includes/summary_item.html" with title="Additional Details" value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% endif %}
+        {% endwith %}
+    {% endif %}
+
+    {% if step == Step.REQUIREMENTS %}
+        {% with title=form_titles|get_item:step value=domain_request.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+        {% endwith %}
+    {% endif %}
+</section>
+{% endfor %}

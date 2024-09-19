@@ -1,7 +1,7 @@
 """Used for holding various enums"""
 
 from enum import Enum
-
+from registrar.utility import StrEnum
 
 class ValidationReturnType(Enum):
     """Determines the return value of the validate_and_handle_errors class"""
@@ -38,3 +38,32 @@ class DefaultEmail(Enum):
 
     PUBLIC_CONTACT_DEFAULT = "dotgov@cisa.dhs.gov"
     LEGACY_DEFAULT = "registrar@dotgov.gov"
+
+
+class Step(StrEnum):
+    """
+    Names for each page of the domain request wizard.
+
+    As with Django's own `TextChoices` class, steps will
+    appear in the order they are defined. (Order matters.)
+    """
+    # Portfolio
+    # TODO - this does not exist yet.
+    # Fill this in for the portfolio domain request experience.
+    REQUESTING_ENTITY = "portfolio"
+
+    # Non-Portfolio
+    ORGANIZATION_TYPE = "generic_org_type"
+    TRIBAL_GOVERNMENT = "tribal_government"
+    ORGANIZATION_FEDERAL = "organization_federal"
+    ORGANIZATION_ELECTION = "organization_election"
+    ORGANIZATION_CONTACT = "organization_contact"
+    ABOUT_YOUR_ORGANIZATION = "about_your_organization"
+    SENIOR_OFFICIAL = "senior_official"
+    CURRENT_SITES = "current_sites"
+    DOTGOV_DOMAIN = "dotgov_domain"
+    PURPOSE = "purpose"
+    OTHER_CONTACTS = "other_contacts"
+    ADDITIONAL_DETAILS = "additional_details"
+    REQUIREMENTS = "requirements"
+    REVIEW = "review"
