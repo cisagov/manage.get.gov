@@ -930,3 +930,10 @@ ul.add-list-reset {
 .dl-dja dt {
     font-size: 14px;
 }
+
+.domain-name-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
