@@ -9,13 +9,18 @@
 {% endblock %}
 
 {% block portfolio_content %}
+{% block messages %}
+  {% include "includes/form_messages.html" %}
+{% endblock %}
+
 <div id="main-content">
     <h1 id="domain-requests-header">Domain requests</h1>
     <div class="grid-row grid-gap">
-        <div class="mobile:grid-col-12 tablet:grid-col-6">
-            <p class="margin-y-0">Domain requests can only be modified by the person who created the request.</p>
-        </div>
+
         {% if has_edit_request_portfolio_permission %}
+            <div class="mobile:grid-col-12 tablet:grid-col-6">
+                <p class="margin-y-0">Domain requests can only be modified by the person who created the request.</p>
+            </div>
             <div class="mobile:grid-col-12 tablet:grid-col-6">
                 {% comment %}
                 IMPORTANT:
@@ -29,6 +34,8 @@
                     </a>
                 </p>
             </div>
+        {% else %}
+            <p class="margin-y-0">Domain requests can only be modified by the person who created the request.</p>
         {% endif %}
     </div>
     

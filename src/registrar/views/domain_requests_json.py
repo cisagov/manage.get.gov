@@ -20,14 +20,14 @@ def get_domain_requests_json(request):
     unfiltered_total = objects.count()
 
     objects = apply_search(objects, request)
+    objects = apply_status_filter(objects, request)
     objects = apply_sorting(objects, request)
 
     paginator = Paginator(objects, 10)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
-
     domain_requests = [
-        serialize_domain_request(domain_request, request.user) for domain_request in page_obj.object_list
+        serialize_domain_request(request, domain_request, request.user) for domain_request in page_obj.object_list
     ]
 
     return JsonResponse(
@@ -64,6 +64,7 @@ def get_domain_request_ids_from_request(request):
 
 def apply_search(queryset, request):
     search_term = request.GET.get("search_term")
+    is_portfolio = request.GET.get("portfolio")
 
     if search_term:
         search_term_lower = search_term.lower()
@@ -76,8 +77,31 @@ def apply_search(queryset, request):
             queryset = queryset.filter(
                 Q(requested_domain__name__icontains=search_term) | Q(requested_domain__isnull=True)
             )
+        elif is_portfolio:
+            queryset = queryset.filter(
+                Q(requested_domain__name__icontains=search_term)
+                | Q(creator__first_name__icontains=search_term)
+                | Q(creator__last_name__icontains=search_term)
+                | Q(creator__email__icontains=search_term)
+            )
+        # For non org users
         else:
             queryset = queryset.filter(Q(requested_domain__name__icontains=search_term))
+    return queryset
+
+
+def apply_status_filter(queryset, request):
+    status_param = request.GET.get("status")
+    if status_param:
+        status_list = status_param.split(",")
+        statuses = [status for status in status_list if status in DomainRequest.DomainRequestStatus.values]
+        # Construct Q objects for statuses that can be queried through ORM
+        status_query = Q()
+        if statuses:
+            status_query |= Q(status__in=statuses)
+        # Apply the combined query
+        queryset = queryset.filter(status_query)
+
     return queryset
 
 
@@ -90,12 +114,21 @@ def apply_sorting(queryset, request):
     return queryset.order_by(sort_by)
 
 
-def serialize_domain_request(domain_request, user):
-    # Determine if the request is deletable
-    is_deletable = domain_request.status in [
+def serialize_domain_request(request, domain_request, user):
+
+    deletable_statuses = [
         DomainRequest.DomainRequestStatus.STARTED,
         DomainRequest.DomainRequestStatus.WITHDRAWN,
     ]
+
+    # Determine if the request is deletable
+    if not user.is_org_user(request):
+        is_deletable = domain_request.status in deletable_statuses
+    else:
+        portfolio = request.session.get("portfolio")
+        is_deletable = (
+            domain_request.status in deletable_statuses and user.has_edit_request_portfolio_permission(portfolio)
+        ) and domain_request.creator == user
 
     # Determine action label based on user permissions and request status
     editable_statuses = [

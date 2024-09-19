@@ -81,12 +81,12 @@ class OrderableFieldsMixin:
         Or for fields with multiple order_fields:
 
         ```
-        def get_sortable_submitter(self, obj):
-            return obj.submitter
+        def get_sortable_creator(self, obj):
+            return obj.creator
         # Allows column order sorting
-        get_sortable_submitter.admin_order_field = ["submitter__first_name", "submitter__last_name"]
+        get_sortable_creator.admin_order_field = ["creator__first_name", "creator__last_name"]
         # Sets column's header
-        get_sortable_submitter.short_description = "submitter"
+        get_sortable_creator.short_description = "creator"
         ```
 
         Parameters:
@@ -114,8 +114,8 @@ class OrderableFieldsMixin:
 
             Returns (example):
             ```
-            def get_submitter(self, obj):
-                return obj.submitter
+            def get_creator(self, obj):
+                return obj.creator
             ```
             """
             attr = getattr(obj, field)

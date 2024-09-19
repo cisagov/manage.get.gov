@@ -10,7 +10,6 @@ from registrar.forms.domain_request_wizard import (
     DotGovDomainForm,
     SeniorOfficialForm,
     OrganizationContactForm,
-    YourContactForm,
     OtherContactsForm,
     RequirementsForm,
     TribalGovernmentForm,
@@ -365,19 +364,6 @@ class TestFormValidation(MockEppLib):
             form.errors["about_your_organization"],
             ["Response must be less than 2000 characters."],
         )
-
-    def test_your_contact_email_invalid(self):
-        """must be a valid email address."""
-        form = YourContactForm(data={"email": "boss@boss"})
-        self.assertEqual(
-            form.errors["email"],
-            ["Enter your email address in the required format, like name@example.com."],
-        )
-
-    def test_your_contact_phone_invalid(self):
-        """Must be a valid phone number."""
-        form = YourContactForm(data={"phone": "boss@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number."))
 
     def test_other_contact_email_invalid(self):
         """must be a valid email address."""

@@ -143,7 +143,7 @@
     {% endif %}
 
     {% if DomainRequest.organization_name %}
-      {% include "includes/summary_item.html" with title='Organization name and mailing address' value=DomainRequest  address='true' heading_level=heading_level %}
+      {% include "includes/summary_item.html" with title='Organization' value=DomainRequest  address='true' heading_level=heading_level %}
     {% endif %}
 
     {% if DomainRequest.about_your_organization %}
@@ -170,10 +170,9 @@
       {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level %}
     {% endif %}
 
-    {% if DomainRequest.submitter and not has_profile_feature_flag %}
-      {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.submitter contact='true' heading_level=heading_level %}
+    {% if DomainRequest.creator %}
+      {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.creator contact='true' heading_level=heading_level %}
     {% endif %}
-
     {% if DomainRequest.other_contacts.all %}
       {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.other_contacts.all contact='true' list='true' heading_level=heading_level %}
     {% else %}

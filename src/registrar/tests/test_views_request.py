@@ -9,6 +9,7 @@ from .common import MockSESClient, completed_domain_request  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 from waffle.testutils import override_flag
+
 from registrar.models import (
     DomainRequest,
     DraftDomain,
@@ -391,41 +392,13 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(purpose_result.status_code, 302)
-        self.assertEqual(purpose_result["Location"], "/request/your_contact/")
-        num_pages_tested += 1
-
-        # ---- YOUR CONTACT INFO PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        your_contact_page = purpose_result.follow()
-        your_contact_form = your_contact_page.forms[0]
-
-        your_contact_form["your_contact-first_name"] = "Testy you"
-        your_contact_form["your_contact-last_name"] = "Tester you"
-        your_contact_form["your_contact-title"] = "Admin Tester"
-        your_contact_form["your_contact-email"] = "testy-admin@town.com"
-        your_contact_form["your_contact-phone"] = "(201) 555 5556"
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        your_contact_result = your_contact_form.submit()
-        # validate that data from this step are being saved
-        domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.submitter.first_name, "Testy you")
-        self.assertEqual(domain_request.submitter.last_name, "Tester you")
-        self.assertEqual(domain_request.submitter.title, "Admin Tester")
-        self.assertEqual(domain_request.submitter.email, "testy-admin@town.com")
-        self.assertEqual(domain_request.submitter.phone, "(201) 555 5556")
-        # the post request should return a redirect to the next form in
-        # the domain request page
-        self.assertEqual(your_contact_result.status_code, 302)
-        self.assertEqual(your_contact_result["Location"], "/request/other_contacts/")
+        self.assertEqual(purpose_result["Location"], "/request/other_contacts/")
         num_pages_tested += 1
 
         # ---- OTHER CONTACTS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        other_contacts_page = your_contact_result.follow()
+        other_contacts_page = purpose_result.follow()
 
         # This page has 3 forms in 1.
         # Let's set the yes/no radios to enable the other contacts fieldsets
@@ -535,11 +508,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "city.gov")
         self.assertContains(review_page, "city1.gov")
         self.assertContains(review_page, "For all kinds of things.")
-        self.assertContains(review_page, "Testy you")
-        self.assertContains(review_page, "Tester you")
-        self.assertContains(review_page, "Admin Tester")
-        self.assertContains(review_page, "testy-admin@town.com")
-        self.assertContains(review_page, "(201) 555-5556")
         self.assertContains(review_page, "Testy2")
         self.assertContains(review_page, "Tester2")
         self.assertContains(review_page, "Another Tester")
@@ -747,41 +715,13 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(purpose_result.status_code, 302)
-        self.assertEqual(purpose_result["Location"], "/request/your_contact/")
-        num_pages_tested += 1
-
-        # ---- YOUR CONTACT INFO PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        your_contact_page = purpose_result.follow()
-        your_contact_form = your_contact_page.forms[0]
-
-        your_contact_form["your_contact-first_name"] = "Testy you"
-        your_contact_form["your_contact-last_name"] = "Tester you"
-        your_contact_form["your_contact-title"] = "Admin Tester"
-        your_contact_form["your_contact-email"] = "testy-admin@town.com"
-        your_contact_form["your_contact-phone"] = "(201) 555 5556"
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        your_contact_result = your_contact_form.submit()
-        # validate that data from this step are being saved
-        domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.submitter.first_name, "Testy you")
-        self.assertEqual(domain_request.submitter.last_name, "Tester you")
-        self.assertEqual(domain_request.submitter.title, "Admin Tester")
-        self.assertEqual(domain_request.submitter.email, "testy-admin@town.com")
-        self.assertEqual(domain_request.submitter.phone, "(201) 555 5556")
-        # the post request should return a redirect to the next form in
-        # the domain request page
-        self.assertEqual(your_contact_result.status_code, 302)
-        self.assertEqual(your_contact_result["Location"], "/request/other_contacts/")
+        self.assertEqual(purpose_result["Location"], "/request/other_contacts/")
         num_pages_tested += 1
 
         # ---- OTHER CONTACTS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        other_contacts_page = your_contact_result.follow()
+        other_contacts_page = purpose_result.follow()
 
         # This page has 3 forms in 1.
         # Let's set the yes/no radios to enable the other contacts fieldsets
@@ -1686,7 +1626,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -1823,7 +1762,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -1898,7 +1836,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -1976,7 +1913,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -2053,7 +1989,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -2129,7 +2064,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            submitter=you,
             creator=self.user,
             status="started",
         )
@@ -2314,22 +2248,13 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEquals("Testy2", senior_official.first_name)
 
     @less_console_noise_decorator
-    def test_edit_submitter_in_place(self):
+    def test_edit_creator_in_place(self):
         """When you:
-            1. edit a submitter (your contact) which is not joined to another model,
+            1. edit a your user profile information,
             2. then submit,
-        the domain request is linked to the existing submitter, and the submitter updated."""
+        the domain request also updates its creator data to reflect user profile changes."""
 
-        # Populate the database with a domain request that
-        # has a submitter
-        # We'll do it from scratch
-        you, _ = Contact.objects.get_or_create(
-            first_name="Testy",
-            last_name="Tester",
-            title="Chief Tester",
-            email="testy@town.com",
-            phone="(201) 555 5555",
-        )
+        # Populate the database with a domain request
         domain_request, _ = DomainRequest.objects.get_or_create(
             generic_org_type="federal",
             federal_type="executive",
@@ -2340,14 +2265,11 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            submitter=you,
             creator=self.user,
             status="started",
         )
 
-        # submitter_pk is the initial pk of the submitter. set it before update
-        # to be able to verify after update that the same contact object is in place
-        submitter_pk = you.id
+        creator_pk = self.user.id
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
@@ -2358,98 +2280,25 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        your_contact_page = self.app.get(reverse("domain-request:your_contact"))
+        profile_page = self.app.get("/user-profile")
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        your_contact_form = your_contact_page.forms[0]
+        profile_form = profile_page.forms[0]
 
         # Minimal check to ensure the form is loaded
-        self.assertEqual(your_contact_form["your_contact-first_name"].value, "Testy")
+        self.assertEqual(profile_form["first_name"].value, self.user.first_name)
 
         # update the first name of the contact
-        your_contact_form["your_contact-first_name"] = "Testy2"
+        profile_form["first_name"] = "Testy2"
 
         # Submit the updated form
-        your_contact_form.submit()
+        profile_form.submit()
 
         domain_request.refresh_from_db()
 
-        updated_submitter = domain_request.submitter
-        self.assertEquals(submitter_pk, updated_submitter.id)
-        self.assertEquals("Testy2", updated_submitter.first_name)
-
-    @less_console_noise_decorator
-    def test_edit_submitter_creates_new(self):
-        """When you:
-            1. edit an existing your contact which IS joined to another model,
-            2. then submit,
-        the domain request is linked to a new Contact, and the new Contact is updated."""
-
-        # Populate the database with a domain request that
-        # has submitter assigned to it, the submitter is also
-        # an other contact initially
-        # We'll do it from scratch
-        submitter, _ = Contact.objects.get_or_create(
-            first_name="Testy",
-            last_name="Tester",
-            title="Chief Tester",
-            email="testy@town.com",
-            phone="(201) 555 5555",
-        )
-        domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
-            purpose="Purpose of the site",
-            anything_else="No",
-            is_policy_acknowledged=True,
-            organization_name="Testorg",
-            address_line1="address 1",
-            state_territory="NY",
-            zipcode="10002",
-            submitter=submitter,
-            creator=self.user,
-            status="started",
-        )
-        domain_request.other_contacts.add(submitter)
-
-        # submitter_pk is the initial pk of the your contact. set it before update
-        # to be able to verify after update that the other contact is still in place
-        # and not updated, and that the new submitter has a new id
-        submitter_pk = submitter.id
-
-        # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
-        # django-webtest does not handle cookie-based sessions well because it keeps
-        # resetting the session key on each new request, thus destroying the concept
-        # of a "session". We are going to do it manually, saving the session ID here
-        # and then setting the cookie on each request.
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        your_contact_page = self.app.get(reverse("domain-request:your_contact"))
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        your_contact_form = your_contact_page.forms[0]
-
-        # Minimal check to ensure the form is loaded
-        self.assertEqual(your_contact_form["your_contact-first_name"].value, "Testy")
-
-        # update the first name of the contact
-        your_contact_form["your_contact-first_name"] = "Testy2"
-
-        # Submit the updated form
-        your_contact_form.submit()
-
-        domain_request.refresh_from_db()
-
-        # assert that the other contact is not updated
-        other_contacts = domain_request.other_contacts.all()
-        other_contact = other_contacts[0]
-        self.assertEquals(submitter_pk, other_contact.id)
-        self.assertEquals("Testy", other_contact.first_name)
-        # assert that the submitter is updated
-        submitter = domain_request.submitter
-        self.assertEquals("Testy2", submitter.first_name)
+        updated_creator = domain_request.creator
+        self.assertEquals(creator_pk, updated_creator.id)
+        self.assertEquals("Testy2", updated_creator.first_name)
 
     @less_console_noise_decorator
     def test_domain_request_about_your_organiztion_interstate(self):
@@ -2772,7 +2621,6 @@ class DomainRequestTests(TestWithUser, WebTest):
             zipcode="10002",
             senior_official=so,
             requested_domain=domain,
-            submitter=you,
             creator=self.user,
         )
         domain_request.other_contacts.add(other)
@@ -2917,7 +2765,6 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
-        self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
 
     @less_console_noise_decorator
@@ -2934,7 +2781,6 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
-        self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
 
     @less_console_noise_decorator
@@ -2948,7 +2794,6 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
-        self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
         # click the "Withdraw request" button
         mock_client = MockSESClient()
@@ -2984,7 +2829,6 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
-        self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
         # click the "Withdraw request" button
         mock_client = MockSESClient()
@@ -3014,7 +2858,6 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
-        self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
         # Restricted user trying to withdraw results in 403 error
         with less_console_noise():
@@ -3113,10 +2956,10 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             self.assertEqual(detail_page.status_code, 200)
 
             # 10 unlocked steps, one active step, the review step will have link_usa but not check_circle
-            self.assertContains(detail_page, "#check_circle", count=10)
+            self.assertContains(detail_page, "#check_circle", count=9)
             # Type of organization
             self.assertContains(detail_page, "usa-current", count=1)
-            self.assertContains(detail_page, "link_usa-checked", count=11)
+            self.assertContains(detail_page, "link_usa-checked", count=10)
 
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
@@ -3148,7 +2991,6 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
-            submitter=contact_user,
         )
         domain_request.other_contacts.set([contact_2])
 
@@ -3174,12 +3016,12 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             # Now 'detail_page' contains the response after following the redirect
             self.assertEqual(detail_page.status_code, 200)
 
-            # 5 unlocked steps (so, domain, submitter, other contacts, and current sites
+            # 5 unlocked steps (so, domain, other contacts, and current sites
             # which unlocks if domain exists), one active step, the review step is locked
-            self.assertContains(detail_page, "#check_circle", count=5)
+            self.assertContains(detail_page, "#check_circle", count=4)
             # Type of organization
             self.assertContains(detail_page, "usa-current", count=1)
-            self.assertContains(detail_page, "link_usa-checked", count=5)
+            self.assertContains(detail_page, "link_usa-checked", count=4)
 
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")

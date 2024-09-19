@@ -200,7 +200,7 @@ class TestPortfolio(WebTest):
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="read-only-label">Federal agency</h4>')
+            self.assertContains(response, '<h4 class="read-only-label">Organization name</h4>')
             # The read only label for city will be a h4
             self.assertContains(response, '<h4 class="read-only-label">City</h4>')
             self.assertNotContains(response, 'for="id_city"')
@@ -225,10 +225,10 @@ class TestPortfolio(WebTest):
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="read-only-label">Federal agency</h4>')
+            self.assertContains(response, '<h4 class="read-only-label">Organization name</h4>')
             # The read only label for city will be a h4
             self.assertNotContains(response, '<h4 class="read-only-label">City</h4>')
-            self.assertNotContains(response, '<p class="read-only-value">Los Angeles</p>>')
+            self.assertNotContains(response, '<p class="read-only-value">Los Angeles</p>')
             self.assertContains(response, 'for="id_city"')
 
     @less_console_noise_decorator
@@ -342,9 +342,7 @@ class TestPortfolio(WebTest):
                 user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
             )
             page = self.app.get(reverse("organization"))
-            self.assertContains(
-                page, "The name of your federal agency will be publicly listed as the domain registrant."
-            )
+            self.assertContains(page, "The name of your organization will be publicly listed as the domain registrant.")
 
     @less_console_noise_decorator
     def test_domain_org_name_address_content(self):
@@ -837,3 +835,106 @@ class TestPortfolio(WebTest):
             response = self.client.get(reverse("home"))
             self.assertIsNone(self.client.session.get("portfolio"))
             self.assertNotContains(response, "Hotel California")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_org_user_can_delete_own_domain_request_with_permission(self):
+        """Test that an org user with edit permission can delete their own DomainRequest with a deletable status."""
+
+        # Assign the user to a portfolio with edit permission
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
+        )
+
+        # Create a domain request with status WITHDRAWN
+        domain_request = completed_domain_request(
+            name="test-domain.gov",
+            status=DomainRequest.DomainRequestStatus.WITHDRAWN,
+            portfolio=self.portfolio,
+        )
+        domain_request.creator = self.user
+        domain_request.save()
+
+        self.client.force_login(self.user)
+        # Perform delete
+        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+
+        # Check that the response is 200
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the domain request no longer exists
+        self.assertFalse(DomainRequest.objects.filter(pk=domain_request.pk).exists())
+        domain_request.delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_delete_domain_request_as_org_user_without_permission_with_deletable_status(self):
+        """Test that an org user without edit permission cant delete their DomainRequest even if status is deletable."""
+
+        # Assign the user to a portfolio without edit permission
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[],
+        )
+
+        # Create a domain request with status STARTED
+        domain_request = completed_domain_request(
+            name="test-domain.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            portfolio=self.portfolio,
+        )
+        domain_request.creator = self.user
+        domain_request.save()
+
+        self.client.force_login(self.user)
+        # Attempt to delete
+        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+
+        # Check response is 403 Forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # Check that the domain request still exists
+        self.assertTrue(DomainRequest.objects.filter(pk=domain_request.pk).exists())
+        domain_request.delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_org_user_cannot_delete_others_domain_requests(self):
+        """Test that an org user with edit permission cannot delete DomainRequests they did not create."""
+
+        # Assign the user to a portfolio with edit permission
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
+        )
+
+        # Create another user and a domain request
+        other_user = User.objects.create(username="other_user")
+        domain_request = completed_domain_request(
+            name="test-domain.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            portfolio=self.portfolio,
+        )
+        domain_request.creator = other_user
+        domain_request.save()
+
+        self.client.force_login(self.user)
+        # Perform delete as self.user
+        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+
+        # Check response is 403 Forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # Check that the domain request still exists
+        self.assertTrue(DomainRequest.objects.filter(pk=domain_request.pk).exists())
+        domain_request.delete()
