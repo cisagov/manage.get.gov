@@ -89,7 +89,7 @@ class Portfolio(TimeStampedModel):
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
-        verbose_name="state / territory",
+        verbose_name="state, territory, or military post",
     )
 
     zipcode = models.CharField(

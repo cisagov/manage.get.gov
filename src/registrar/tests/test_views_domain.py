@@ -1306,7 +1306,9 @@ class TestDomainOrganization(TestDomainOverview):
         """Can load domain's org name and mailing address page."""
         page = self.client.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         # once on the sidebar, once in the page title, once as H1
-        self.assertContains(page, "Organization name and mailing address", count=4)
+        self.assertContains(page, "/org-name-address")
+        self.assertContains(page, "Organization name and mailing address")
+        self.assertContains(page, "Organization</h1>")
 
     @less_console_noise_decorator
     def test_domain_org_name_address_content(self):
@@ -1615,7 +1617,7 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Test for the title change
         self.assertContains(page, "Suborganization")
-        self.assertNotContains(page, "Organization name")
+        self.assertNotContains(page, "Organization")
 
         # Test for the good value
         self.assertContains(page, "Ice Cream")
