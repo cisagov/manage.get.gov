@@ -170,7 +170,6 @@ class TestDomainRequest(TestCase):
             zipcode="12345-6789",
             senior_official=contact,
             requested_domain=domain,
-            submitter=contact,
             purpose="Igorville rules!",
             anything_else="All of Igorville loves the dotgov program.",
             is_policy_acknowledged=True,
@@ -197,7 +196,6 @@ class TestDomainRequest(TestCase):
             state_territory="CA",
             zipcode="12345-6789",
             senior_official=contact,
-            submitter=contact,
             purpose="Igorville rules!",
             anything_else="All of Igorville loves the dotgov program.",
             is_policy_acknowledged=True,
@@ -225,7 +223,7 @@ class TestDomainRequest(TestCase):
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(creator=user, requested_domain=site)
 
-        # no submitter email so this emits a log warning
+        # no email sent to creator so this emits a log warning
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
@@ -258,19 +256,11 @@ class TestDomainRequest(TestCase):
 
         email_allowed.delete()
 
-    @override_flag("profile_feature", active=False)
-    @less_console_noise_decorator
-    def test_submit_from_started_sends_email(self):
-        msg = "Create a domain request and submit it and see if email was sent."
-        domain_request = completed_domain_request(submitter=self.dummy_user, user=self.dummy_user_2)
-        self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hello")
-
-    @override_flag("profile_feature", active=True)
     @less_console_noise_decorator
     def test_submit_from_started_sends_email_to_creator(self):
-        """Tests if, when the profile feature flag is on, we send an email to the creator"""
+        """tests that we send an email to the creator"""
         msg = "Create a domain request and submit it and see if email was sent when the feature flag is on."
-        domain_request = completed_domain_request(submitter=self.dummy_user, user=self.dummy_user_2)
+        domain_request = completed_domain_request(user=self.dummy_user_2)
         self.check_email_sent(
             domain_request, msg, "submit", 1, expected_content="Lava", expected_email="intern@igorville.com"
         )
@@ -278,10 +268,9 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     def test_submit_from_withdrawn_sends_email(self):
         msg = "Create a withdrawn domain request and submit it and see if email was sent."
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.WITHDRAWN, submitter=self.dummy_user
-        )
-        self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hello")
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.WITHDRAWN, user=user)
+        self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hi", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_submit_from_action_needed_does_not_send_email(self):
@@ -298,26 +287,25 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     def test_approve_sends_email(self):
         msg = "Create a domain request and approve it and see if email was sent."
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, submitter=self.dummy_user
-        )
-        self.check_email_sent(domain_request, msg, "approve", 1, expected_content="Hello")
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
+        self.check_email_sent(domain_request, msg, "approve", 1, expected_content="approved", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_withdraw_sends_email(self):
         msg = "Create a domain request and withdraw it and see if email was sent."
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, submitter=self.dummy_user
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
+        self.check_email_sent(
+            domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
         )
-        self.check_email_sent(domain_request, msg, "withdraw", 1, expected_content="Hello")
 
     @less_console_noise_decorator
     def test_reject_sends_email(self):
         msg = "Create a domain request and reject it and see if email was sent."
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.APPROVED, submitter=self.dummy_user
-        )
-        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hello")
+        user, _ = User.objects.get_or_create(username="testy")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED, user=user)
+        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hi", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_reject_with_prejudice_does_not_send_email(self):
@@ -1135,7 +1123,7 @@ class TestPortfolioInvitations(TestCase):
         self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Hotel California")
         self.portfolio_role_base = UserPortfolioRoleChoices.ORGANIZATION_MEMBER
         self.portfolio_role_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
-        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS
+        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         self.portfolio_permission_2 = UserPortfolioPermissionChoices.EDIT_REQUESTS
         self.invitation, _ = PortfolioInvitation.objects.get_or_create(
             email=self.email,
@@ -1326,16 +1314,16 @@ class TestUser(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
-    @patch.object(User, "has_edit_suborganization", return_value=True)
+    @patch.object(User, "has_edit_suborganization_portfolio_permission", return_value=True)
     def test_portfolio_role_summary_admin(self, mock_edit_suborganization):
         # Test if the user is recognized as an Admin
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Admin"])
 
     @patch.multiple(
         User,
-        has_view_all_domains_permission=lambda self, portfolio: True,
-        has_domain_requests_portfolio_permission=lambda self, portfolio: True,
-        has_edit_requests=lambda self, portfolio: True,
+        has_view_all_domains_portfolio_permission=lambda self, portfolio: True,
+        has_any_requests_portfolio_permission=lambda self, portfolio: True,
+        has_edit_request_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_view_only_admin_and_domain_requestor(self):
         # Test if the user has both 'View-only admin' and 'Domain requestor' roles
@@ -1343,8 +1331,8 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_view_all_domains_permission=lambda self, portfolio: True,
-        has_domain_requests_portfolio_permission=lambda self, portfolio: True,
+        has_view_all_domains_portfolio_permission=lambda self, portfolio: True,
+        has_any_requests_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_view_only_admin(self):
         # Test if the user is recognized as a View-only admin
@@ -1353,15 +1341,17 @@ class TestUser(TestCase):
     @patch.multiple(
         User,
         has_base_portfolio_permission=lambda self, portfolio: True,
-        has_edit_requests=lambda self, portfolio: True,
-        has_domains_portfolio_permission=lambda self, portfolio: True,
+        has_edit_request_portfolio_permission=lambda self, portfolio: True,
+        has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_requestor_domain_manager(self):
         # Test if the user has 'Member', 'Domain requestor', and 'Domain manager' roles
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain requestor", "Domain manager"])
 
     @patch.multiple(
-        User, has_base_portfolio_permission=lambda self, portfolio: True, has_edit_requests=lambda self, portfolio: True
+        User,
+        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_edit_request_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_requestor(self):
         # Test if the user has 'Member' and 'Domain requestor' roles
@@ -1370,7 +1360,7 @@ class TestUser(TestCase):
     @patch.multiple(
         User,
         has_base_portfolio_permission=lambda self, portfolio: True,
-        has_domains_portfolio_permission=lambda self, portfolio: True,
+        has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_manager(self):
         # Test if the user has 'Member' and 'Domain manager' roles
@@ -1384,6 +1374,74 @@ class TestUser(TestCase):
     def test_portfolio_role_summary_empty(self):
         # Test if the user has no roles
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), [])
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_base_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_base_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_org_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_edit_org_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_any_domains_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.side_effect = [False, True]  # First permission false, second permission true
+
+        self.assertTrue(self.user.has_any_domains_portfolio_permission(self.portfolio))
+        self.assertEqual(mock_has_permission.call_count, 2)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_view_all_domains_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_view_all_domains_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    @override_flag("organization_requests", active=True)
+    def test_has_any_requests_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.side_effect = [False, True]  # First permission false, second permission true
+
+        self.assertTrue(self.user.has_any_requests_portfolio_permission(self.portfolio))
+        self.assertEqual(mock_has_permission.call_count, 2)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+        mock_has_permission.assert_any_call(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_view_all_requests_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_view_all_requests_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_request_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_edit_request_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_view_suborganization_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_view_suborganization_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_suborganization_portfolio_permission(self, mock_has_permission):
+        mock_has_permission.return_value = True
+
+        self.assertTrue(self.user.has_edit_suborganization_portfolio_permission(self.portfolio))
+        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
@@ -1547,8 +1605,8 @@ class TestUser(TestCase):
 
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertFalse(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
@@ -1562,8 +1620,8 @@ class TestUser(TestCase):
             ],
         )
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertFalse(user_can_view_all_requests)
@@ -1572,16 +1630,16 @@ class TestUser(TestCase):
         portfolio_permission.save()
         portfolio_permission.refresh_from_db()
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
-        user_can_view_all_domains = self.user.has_domains_portfolio_permission(portfolio)
-        user_can_view_all_requests = self.user.has_domain_requests_portfolio_permission(portfolio)
+        user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
+        user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
 
         self.assertTrue(user_can_view_all_domains)
         self.assertTrue(user_can_view_all_requests)
@@ -2069,7 +2127,6 @@ class TestDomainRequestIncomplete(TestCase):
             senior_official=so,
             requested_domain=draft_domain,
             purpose="Some purpose",
-            submitter=you,
             no_other_contacts_rationale=None,
             has_cisa_representative=True,
             cisa_representative_email="somerep@cisa.com",
@@ -2197,13 +2254,6 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.purpose = None
         self.domain_request.save()
         self.assertFalse(self.domain_request._is_purpose_complete())
-
-    @less_console_noise_decorator
-    def test_is_submitter_complete(self):
-        self.assertTrue(self.domain_request._is_submitter_complete())
-        self.domain_request.submitter = None
-        self.domain_request.save()
-        self.assertFalse(self.domain_request._is_submitter_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_complete_missing_one_field(self):

@@ -1,4 +1,5 @@
 import copy
+import boto3_mocking  # type: ignore
 from datetime import date, datetime, time
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -8,6 +9,7 @@ from django.utils import timezone
 from django.utils.module_loading import import_string
 import logging
 import pyzipper
+from django.core.management.base import CommandError
 from registrar.management.commands.clean_tables import Command as CleanTablesCommand
 from registrar.management.commands.export_tables import Command as ExportTablesCommand
 from registrar.models import (
@@ -23,13 +25,16 @@ from registrar.models import (
     VerifiedByStaff,
     PublicContact,
     FederalAgency,
+    Portfolio,
+    Suborganization,
 )
 import tablib
 from unittest.mock import patch, call, MagicMock, mock_open
 from epplibwrapper import commands, common
 
-from .common import MockEppLib, less_console_noise, completed_domain_request
+from .common import MockEppLib, less_console_noise, completed_domain_request, MockSESClient
 from api.tests.common import less_console_noise_decorator
+
 
 logger = logging.getLogger(__name__)
 
@@ -1408,3 +1413,137 @@ class TestPopulateFederalAgencyInitialsAndFceb(TestCase):
         missing_agency.refresh_from_db()
         self.assertIsNone(missing_agency.initials)
         self.assertIsNone(missing_agency.is_fceb)
+
+
+class TestCreateFederalPortfolio(TestCase):
+
+    @less_console_noise_decorator
+    def setUp(self):
+        self.mock_client = MockSESClient()
+        self.user = User.objects.create(username="testuser")
+        self.federal_agency = FederalAgency.objects.create(agency="Test Federal Agency")
+        self.senior_official = SeniorOfficial.objects.create(
+            first_name="first", last_name="last", email="testuser@igorville.gov", federal_agency=self.federal_agency
+        )
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            self.domain_request = completed_domain_request(
+                status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+                generic_org_type=DomainRequest.OrganizationChoices.CITY,
+                federal_agency=self.federal_agency,
+                user=self.user,
+            )
+            self.domain_request.approve()
+            self.domain_info = DomainInformation.objects.filter(domain_request=self.domain_request).get()
+
+            self.domain_request_2 = completed_domain_request(
+                name="sock@igorville.org",
+                status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+                generic_org_type=DomainRequest.OrganizationChoices.CITY,
+                federal_agency=self.federal_agency,
+                user=self.user,
+                organization_name="Test Federal Agency",
+            )
+            self.domain_request_2.approve()
+            self.domain_info_2 = DomainInformation.objects.filter(domain_request=self.domain_request_2).get()
+
+    def tearDown(self):
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Suborganization.objects.all().delete()
+        Portfolio.objects.all().delete()
+        SeniorOfficial.objects.all().delete()
+        FederalAgency.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def run_create_federal_portfolio(self, agency_name, parse_requests=False, parse_domains=False):
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            return_value=True,
+        ):
+            call_command(
+                "create_federal_portfolio", agency_name, parse_requests=parse_requests, parse_domains=parse_domains
+            )
+
+    def test_create_or_modify_portfolio(self):
+        """Test portfolio creation and modification with suborg and senior official."""
+        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
+
+        portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
+        self.assertEqual(portfolio.organization_name, self.federal_agency.agency)
+        self.assertEqual(portfolio.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
+        self.assertEqual(portfolio.creator, User.get_default_user())
+        self.assertEqual(portfolio.notes, "Auto-generated record")
+
+        # Test the suborgs
+        suborganizations = Suborganization.objects.filter(portfolio__federal_agency=self.federal_agency)
+        self.assertEqual(suborganizations.count(), 1)
+        self.assertEqual(suborganizations.first().name, "Testorg")
+
+        # Test the senior official
+        self.assertEqual(portfolio.senior_official, self.senior_official)
+
+    def test_handle_portfolio_requests(self):
+        """Verify portfolio association with domain requests."""
+        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
+
+        self.domain_request.refresh_from_db()
+        self.assertIsNotNone(self.domain_request.portfolio)
+        self.assertEqual(self.domain_request.portfolio.federal_agency, self.federal_agency)
+        self.assertEqual(self.domain_request.sub_organization.name, "Testorg")
+
+    def test_handle_portfolio_domains(self):
+        """Check portfolio association with domain information."""
+        self.run_create_federal_portfolio("Test Federal Agency", parse_domains=True)
+
+        self.domain_info.refresh_from_db()
+        self.assertIsNotNone(self.domain_info.portfolio)
+        self.assertEqual(self.domain_info.portfolio.federal_agency, self.federal_agency)
+        self.assertEqual(self.domain_info.sub_organization.name, "Testorg")
+
+    def test_handle_parse_both(self):
+        """Ensure correct parsing of both requests and domains."""
+        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True, parse_domains=True)
+
+        self.domain_request.refresh_from_db()
+        self.domain_info.refresh_from_db()
+        self.assertIsNotNone(self.domain_request.portfolio)
+        self.assertIsNotNone(self.domain_info.portfolio)
+        self.assertEqual(self.domain_request.portfolio, self.domain_info.portfolio)
+
+    def test_command_error_no_parse_options(self):
+        """Verify error when no parse options are provided."""
+        with self.assertRaisesRegex(
+            CommandError, "You must specify at least one of --parse_requests or --parse_domains."
+        ):
+            self.run_create_federal_portfolio("Test Federal Agency")
+
+    def test_command_error_agency_not_found(self):
+        """Check error handling for non-existent agency."""
+        expected_message = (
+            "Cannot find the federal agency 'Non-existent Agency' in our database. "
+            "The value you enter for `agency_name` must be prepopulated in the FederalAgency table before proceeding."
+        )
+        with self.assertRaisesRegex(ValueError, expected_message):
+            self.run_create_federal_portfolio("Non-existent Agency", parse_requests=True)
+
+    def test_update_existing_portfolio(self):
+        """Test updating an existing portfolio."""
+        # Create an existing portfolio
+        existing_portfolio = Portfolio.objects.create(
+            federal_agency=self.federal_agency,
+            organization_name="Test Federal Agency",
+            organization_type=DomainRequest.OrganizationChoices.CITY,
+            creator=self.user,
+            notes="Old notes",
+        )
+
+        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
+
+        existing_portfolio.refresh_from_db()
+        self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
+        self.assertEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
+
+        # Notes and creator should be untouched
+        self.assertEqual(existing_portfolio.notes, "Old notes")
+        self.assertEqual(existing_portfolio.creator, self.user)

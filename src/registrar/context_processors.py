@@ -1,5 +1,4 @@
 from django.conf import settings
-from waffle.decorators import flag_is_active
 
 
 def language_code(request):
@@ -54,41 +53,44 @@ def add_path_to_context(request):
     return {"path": getattr(request, "path", None)}
 
 
-def add_has_profile_feature_flag_to_context(request):
-    return {"has_profile_feature_flag": flag_is_active(request, "profile_feature")}
-
-
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
-    context = {
+    portfolio_context = {
         "has_base_portfolio_permission": False,
-        "has_domains_portfolio_permission": False,
-        "has_domain_requests_portfolio_permission": False,
+        "has_any_domains_portfolio_permission": False,
+        "has_any_requests_portfolio_permission": False,
+        "has_edit_request_portfolio_permission": False,
+        "has_view_suborganization_portfolio_permission": False,
+        "has_edit_suborganization_portfolio_permission": False,
         "has_view_members_portfolio_permission": False,
         "has_edit_members_portfolio_permission": False,
-        "has_view_suborganization": False,
-        "has_edit_suborganization": False,
         "portfolio": None,
         "has_organization_feature_flag": False,
+        "has_organization_requests_flag": False,
+        "has_organization_members_flag": False,
     }
     try:
         portfolio = request.session.get("portfolio")
+        # Linting: line too long
+        view_suborg = request.user.has_view_suborganization_portfolio_permission(portfolio)
+        edit_suborg = request.user.has_edit_suborganization_portfolio_permission(portfolio)
         if portfolio:
             return {
                 "has_base_portfolio_permission": request.user.has_base_portfolio_permission(portfolio),
-                "has_domains_portfolio_permission": request.user.has_domains_portfolio_permission(portfolio),
-                "has_domain_requests_portfolio_permission": request.user.has_domain_requests_portfolio_permission(
-                    portfolio
-                ),
+                "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),
+                "has_view_suborganization_portfolio_permission": view_suborg,
+                "has_edit_suborganization_portfolio_permission": edit_suborg,
+                "has_any_domains_portfolio_permission": request.user.has_any_domains_portfolio_permission(portfolio),
+                "has_any_requests_portfolio_permission": request.user.has_any_requests_portfolio_permission(portfolio),
                 "has_view_members_portfolio_permission": request.user.has_view_members_portfolio_permission(portfolio),
                 "has_edit_members_portfolio_permission": request.user.has_edit_members_portfolio_permission(portfolio),
-                "has_view_suborganization": request.user.has_view_suborganization(portfolio),
-                "has_edit_suborganization": request.user.has_edit_suborganization(portfolio),
                 "portfolio": portfolio,
                 "has_organization_feature_flag": True,
+                "has_organization_requests_flag": request.user.has_organization_requests_flag(),
+                "has_organization_members_flag": request.user.has_organization_members_flag(),
             }
-        return context
+        return portfolio_context
 
     except AttributeError:
         # Handles cases where request.user might not exist
-        return context
+        return portfolio_context

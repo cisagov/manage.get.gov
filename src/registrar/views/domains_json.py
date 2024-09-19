@@ -1,7 +1,7 @@
 import logging
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-from registrar.models import UserDomainRole, Domain, DomainInformation
+from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
@@ -50,11 +50,16 @@ def get_domain_ids_from_request(request):
     """
     portfolio = request.GET.get("portfolio")
     if portfolio:
-        domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
-        return domain_infos.values_list("domain_id", flat=True)
-    else:
-        user_domain_roles = UserDomainRole.objects.filter(user=request.user)
-        return user_domain_roles.values_list("domain_id", flat=True)
+        current_user: User = request.user
+        if current_user.is_org_user(request) and current_user.has_view_all_domains_portfolio_permission(portfolio):
+            domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
+            return domain_infos.values_list("domain_id", flat=True)
+        else:
+            domain_info_ids = DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
+            user_domain_roles = UserDomainRole.objects.filter(user=request.user).values_list("domain_id", flat=True)
+            return domain_info_ids.intersection(user_domain_roles)
+    user_domain_roles = UserDomainRole.objects.filter(user=request.user)
+    return user_domain_roles.values_list("domain_id", flat=True)
 
 
 def apply_search(queryset, request):

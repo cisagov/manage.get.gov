@@ -11,7 +11,6 @@ from django.urls import NoReverseMatch, reverse
 from registrar.models.user import User
 from registrar.models.utility.generic_helper import replace_url_queryparams
 from registrar.views.utility.permission_views import UserProfilePermissionView
-from waffle.decorators import waffle_flag
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,6 @@ class UserProfileView(UserProfilePermissionView, FormMixin):
 
         return self.render_to_response(context)
 
-    @waffle_flag("profile_feature")  # type: ignore
     def dispatch(self, request, *args, **kwargs):  # type: ignore
         return super().dispatch(request, *args, **kwargs)
 

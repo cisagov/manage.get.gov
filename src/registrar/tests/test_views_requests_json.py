@@ -2,9 +2,14 @@ from registrar.models import DomainRequest
 from django.urls import reverse
 
 from registrar.models.draft_domain import DraftDomain
+from registrar.models.portfolio import Portfolio
+from registrar.models.user import User
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_datetime
+from waffle.testutils import override_flag
 
 
 class GetRequestsJsonTest(TestWithUser, WebTest):
@@ -20,6 +25,19 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         beef_chuck, _ = DraftDomain.objects.get_or_create(name="beef-chuck.gov")
         stew_beef, _ = DraftDomain.objects.get_or_create(name="stew-beef.gov")
 
+        # Create Portfolio
+        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Example org")
+
+        # create a second user to assign requests to
+        cls.user2 = User.objects.create(
+            username="test_user2",
+            first_name="Second",
+            last_name="last",
+            email="info2@example.com",
+            phone="8003111234",
+            title="title",
+        )
+
         # Create domain requests for the user
         cls.domain_requests = [
             DomainRequest.objects.create(
@@ -28,6 +46,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
                 last_submitted_date="2024-01-01",
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 created_at="2024-01-01",
+                portfolio=cls.portfolio,
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
@@ -42,6 +61,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
                 last_submitted_date="2024-03-01",
                 status=DomainRequest.DomainRequestStatus.REJECTED,
                 created_at="2024-03-01",
+                portfolio=cls.portfolio,
             ),
             DomainRequest.objects.create(
                 creator=cls.user,
@@ -113,6 +133,14 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
                 status=DomainRequest.DomainRequestStatus.APPROVED,
                 created_at="2024-12-01",
             ),
+            DomainRequest.objects.create(
+                creator=cls.user2,
+                requested_domain=None,
+                last_submitted_date="2024-12-01",
+                status=DomainRequest.DomainRequestStatus.STARTED,
+                created_at="2024-12-01",
+                portfolio=cls.portfolio,
+            ),
         ]
 
     @classmethod
@@ -120,6 +148,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         super().tearDownClass()
         DomainRequest.objects.all().delete()
         DraftDomain.objects.all().delete()
+        Portfolio.objects.all().delete()
 
     def test_get_domain_requests_json_authenticated(self):
         """Test that domain requests are returned properly for an authenticated user."""
@@ -262,6 +291,118 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         for expected_value, actual_value in zip(expected_domain_values, requested_domains):
             self.assertEqual(expected_value, actual_value)
 
+    @override_flag("organization_feature", active=True)
+    def test_get_domain_requests_json_with_portfolio_view_all_requests(self):
+        """Test that an authenticated user gets the list of 3 requests for portfolio. The 3 requests
+        are the requests that are associated with the portfolio."""
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
+        )
+
+        response = self.app.get(reverse("get_domain_requests_json"), {"portfolio": self.portfolio.id})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertFalse(data["has_next"])
+        self.assertFalse(data["has_previous"])
+        self.assertEqual(data["num_pages"], 1)
+
+        # Check the number of requests
+        self.assertEqual(len(data["domain_requests"]), 3)
+
+        # Expected domain requests
+        expected_domain_requests = [self.domain_requests[0], self.domain_requests[2], self.domain_requests[13]]
+
+        # Extract fields from response
+        domain_request_ids = [domain_request["id"] for domain_request in data["domain_requests"]]
+        requested_domain = [domain_request["requested_domain"] for domain_request in data["domain_requests"]]
+        creator = [domain_request["creator"] for domain_request in data["domain_requests"]]
+        status = [domain_request["status"] for domain_request in data["domain_requests"]]
+        action_urls = [domain_request["action_url"] for domain_request in data["domain_requests"]]
+        action_labels = [domain_request["action_label"] for domain_request in data["domain_requests"]]
+        svg_icons = [domain_request["svg_icon"] for domain_request in data["domain_requests"]]
+
+        # Check fields for each domain_request
+        for i, expected_domain_request in enumerate(expected_domain_requests):
+            self.assertEqual(expected_domain_request.id, domain_request_ids[i])
+            if expected_domain_request.requested_domain:
+                self.assertEqual(expected_domain_request.requested_domain.name, requested_domain[i])
+            else:
+                self.assertIsNone(requested_domain[i])
+            self.assertEqual(expected_domain_request.creator.email, creator[i])
+            # Check action url, action label and svg icon
+            # Example domain requests will test each of below three scenarios
+            if creator[i] != self.user.email:
+                # Test case where action is View
+                self.assertEqual("View", action_labels[i])
+                self.assertEqual("#", action_urls[i])
+                self.assertEqual("visibility", svg_icons[i])
+            elif status[i] in [
+                DomainRequest.DomainRequestStatus.STARTED.label,
+                DomainRequest.DomainRequestStatus.ACTION_NEEDED.label,
+                DomainRequest.DomainRequestStatus.WITHDRAWN.label,
+            ]:
+                # Test case where action is Edit
+                self.assertEqual("Edit", action_labels[i])
+                self.assertEqual(
+                    reverse("edit-domain-request", kwargs={"id": expected_domain_request.id}), action_urls[i]
+                )
+                self.assertEqual("edit", svg_icons[i])
+            else:
+                # Test case where action is Manage
+                self.assertEqual("Manage", action_labels[i])
+                self.assertEqual(
+                    reverse("domain-request-status", kwargs={"pk": expected_domain_request.id}), action_urls[i]
+                )
+                self.assertEqual("settings", svg_icons[i])
+
+    @override_flag("organization_feature", active=True)
+    def test_get_domain_requests_json_with_portfolio_edit_requests(self):
+        """Test that an authenticated user gets the list of 2 requests for portfolio. The 2 requests
+        are the requests that are associated with the portfolio and owned by self.user."""
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
+        )
+
+        response = self.app.get(reverse("get_domain_requests_json"), {"portfolio": self.portfolio.id})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertFalse(data["has_next"])
+        self.assertFalse(data["has_previous"])
+        self.assertEqual(data["num_pages"], 1)
+
+        # Check the number of requests
+        self.assertEqual(len(data["domain_requests"]), 2)
+
+        # Expected domain requests
+        expected_domain_requests = [self.domain_requests[0], self.domain_requests[2]]
+
+        # Extract fields from response, since other tests test all fields, only ids and requested
+        # domains tested in this test
+        domain_request_ids = [domain_request["id"] for domain_request in data["domain_requests"]]
+        requested_domain = [domain_request["requested_domain"] for domain_request in data["domain_requests"]]
+
+        # Check fields for each domain_request
+        for i, expected_domain_request in enumerate(expected_domain_requests):
+            self.assertEqual(expected_domain_request.id, domain_request_ids[i])
+            if expected_domain_request.requested_domain:
+                self.assertEqual(expected_domain_request.requested_domain.name, requested_domain[i])
+            else:
+                self.assertIsNone(requested_domain[i])
+
     def test_pagination(self):
         """Test that pagination works properly. There are 11 total non-approved requests and
         a page size of 10"""
@@ -317,3 +458,81 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         # Ensure no approved requests are included
         for domain_request in data["domain_requests"]:
             self.assertNotEqual(domain_request["status"], DomainRequest.DomainRequestStatus.APPROVED)
+
+    def test_search(self):
+        """Tests our search functionality. We expect that search filters on creator only when we are in a portfolio"""
+        # Test search for domain name
+        response = self.app.get(reverse("get_domain_requests_json"), {"search_term": "lamb"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertEqual(len(data["domain_requests"]), 1)
+
+        requested_domain = data["domain_requests"][0]["requested_domain"]
+        self.assertEqual(requested_domain, "lamb-chops.gov")
+
+        # Test search for 'New domain request'
+        response = self.app.get(reverse("get_domain_requests_json"), {"search_term": "new domain"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertTrue(any(req["requested_domain"] is None for req in data["domain_requests"]))
+
+        # Test search with portfolio (including creator search)
+        self.client.force_login(self.user)
+        with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
+            user_perm, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user,
+                portfolio=self.portfolio,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            )
+            response = self.app.get(
+                reverse("get_domain_requests_json"), {"search_term": "info", "portfolio": self.portfolio.id}
+            )
+            self.assertEqual(response.status_code, 200)
+            data = response.json
+            self.assertTrue(any(req["creator"].startswith("info") for req in data["domain_requests"]))
+
+        # Test search without portfolio (should not search on creator)
+        with override_flag("organization_feature", active=False), override_flag("organization_requests", active=False):
+            user_perm.delete()
+            response = self.app.get(reverse("get_domain_requests_json"), {"search_term": "info"})
+            self.assertEqual(response.status_code, 200)
+            data = response.json
+            self.assertEqual(len(data["domain_requests"]), 0)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_status_filter(self):
+        """Test that status filtering works properly"""
+        # Test a single status
+        response = self.app.get(reverse("get_domain_requests_json"), {"status": "started"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertTrue(all(req["status"] == "Started" for req in data["domain_requests"]))
+
+        # Test an invalid status
+        response = self.app.get(reverse("get_domain_requests_json"), {"status": "approved"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertEqual(len(data["domain_requests"]), 0)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_combined_filtering_and_sorting(self):
+        """Test that combining filters and sorting works properly"""
+        user_perm, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        self.client.force_login(self.user)
+        response = self.app.get(
+            reverse("get_domain_requests_json"),
+            {"search_term": "beef", "status": "started", "portfolio": self.portfolio.id},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertTrue(all("beef" in req["requested_domain"] for req in data["domain_requests"]))
+        self.assertTrue(all(req["status"] == "Started" for req in data["domain_requests"]))
+        created_at_dates = [req["created_at"] for req in data["domain_requests"]]
+        self.assertEqual(created_at_dates, sorted(created_at_dates, reverse=True))
+        user_perm.delete()

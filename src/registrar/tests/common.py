@@ -394,7 +394,6 @@ class AuditedAdminMockData:
                 about_your_organization: str = "e-Government",
                 anything_else: str = "There is more",
                 senior_official: Contact = self.dummy_contact(item_name, "senior_official"),
-                submitter: Contact = self.dummy_contact(item_name, "submitter"),
                 creator: User = self.dummy_user(item_name, "creator"),
             }
         """  # noqa
@@ -412,7 +411,6 @@ class AuditedAdminMockData:
             about_your_organization="e-Government",
             anything_else="There is more",
             senior_official=self.dummy_contact(item_name, "senior_official"),
-            submitter=self.dummy_contact(item_name, "submitter"),
             creator=creator,
         )
         return common_args
@@ -537,8 +535,10 @@ class MockDb(TestCase):
         first_name = "First"
         last_name = "Last"
         email = "info@example.com"
+        title = "title"
+        phone = "8080102431"
         cls.user = get_user_model().objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email
+            username=username, first_name=first_name, last_name=last_name, email=email, title=title, phone=phone
         )
 
         current_date = get_time_aware_date(datetime(2024, 4, 2))
@@ -847,6 +847,7 @@ def create_superuser():
         last_name="last",
         is_staff=True,
         password=p,
+        phone="8003111234",
     )
     # Retrieve the group or create it if it doesn't exist
     group, _ = UserGroup.objects.get_or_create(name="full_access_group")
@@ -864,7 +865,9 @@ def create_user():
         first_name="first",
         last_name="last",
         is_staff=True,
+        title="title",
         password=p,
+        phone="8003111234",
     )
     # Retrieve the group or create it if it doesn't exist
     group, _ = UserGroup.objects.get_or_create(name="cisa_analysts_group")
@@ -881,7 +884,12 @@ def create_test_user():
     phone = "8003111234"
     title = "test title"
     user = get_user_model().objects.create(
-        username=username, first_name=first_name, last_name=last_name, email=email, phone=phone, title=title
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        phone=phone,
+        title=title,
     )
     return user
 
@@ -901,7 +909,6 @@ def completed_domain_request(  # noqa
     has_cisa_representative=True,
     status=DomainRequest.DomainRequestStatus.STARTED,
     user=False,
-    submitter=False,
     name="city.gov",
     investigator=None,
     generic_org_type="federal",
@@ -911,6 +918,7 @@ def completed_domain_request(  # noqa
     federal_type=None,
     action_needed_reason=None,
     portfolio=None,
+    organization_name=None,
 ):
     """A completed domain request."""
     if not user:
@@ -925,14 +933,6 @@ def completed_domain_request(  # noqa
     domain, _ = DraftDomain.objects.get_or_create(name=name)
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
-    if not submitter:
-        submitter, _ = Contact.objects.get_or_create(
-            first_name="Testy2",
-            last_name="Tester2",
-            title="Admin Tester",
-            email="mayor@igorville.gov",
-            phone="(555) 555 5556",
-        )
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
@@ -954,14 +954,13 @@ def completed_domain_request(  # noqa
         federal_type="executive",
         purpose="Purpose of the site",
         is_policy_acknowledged=True,
-        organization_name="Testorg",
+        organization_name=organization_name if organization_name else "Testorg",
         address_line1="address 1",
         address_line2="address 2",
         state_territory="NY",
         zipcode="10002",
         senior_official=so,
         requested_domain=domain,
-        submitter=submitter,
         creator=user,
         status=status,
         investigator=investigator,
