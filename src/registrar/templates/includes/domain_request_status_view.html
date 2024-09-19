@@ -12,3 +12,78 @@
 {% comment %} Do not show action buttons in viewonly mode {% endcomment %}
 {% block modify_request %}
 {% endblock modify_request %}
+
+
+{% block request_summary %}
+    {% with heading_level='h3' org_type=DomainRequest.get_generic_org_type_display %}
+
+        {% include "includes/summary_item.html" with title='Type of organization' value=org_type heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+
+        {% if DomainRequest.show_tribal_government %}
+            {% include "includes/summary_item.html" with title='Tribal government' value=DomainRequest.tribe_name heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+
+            {% if DomainRequest.federally_recognized_tribe %}
+                <p>Federally-recognized tribe</p>
+            {% endif %}
+            
+            {% if DomainRequest.state_recognized_tribe %}
+                <p>State-recognized tribe</p>
+            {% endif %}
+        {% endif %}
+
+        {% if DomainRequest.show_organization_federal %}
+            {% include "includes/summary_item.html" with title='Federal government branch' value=DomainRequest.get_federal_type_display heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% endif %}
+
+        {% if DomainRequest.show_organization_election %}
+            {% with value=DomainRequest.is_election_board|yesno:"Yes,No,Incomplete" %}
+                {% include "includes/summary_item.html" with title='Election office' value=value heading_level=heading_level %}
+            {% endwith %}
+        {% endif %}
+
+        {% if not portfolio %}
+            {% include "includes/summary_item.html" with title='Organization' value=DomainRequest address='true' heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% endif %}
+
+        {% if DomainRequest.show_about_your_organization %}
+            {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% endif %}
+
+        {% include "includes/summary_item.html" with title='Senior official' value=DomainRequest.senior_official contact='true' heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+
+        {% include "includes/summary_item.html" with title='Current websites' value=DomainRequest.current_websites.all list='true' heading_level=heading_level %}
+
+        {% include "includes/summary_item.html" with title='.gov domain' value=DomainRequest.requested_domain heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+
+        {% include "includes/summary_item.html" with title='Alternative domains' value=DomainRequest.alternative_domains.all list='true' heading_level=heading_level %}
+
+        {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+
+        {% if DomainRequest.other_contacts.all %}
+            {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.other_contacts.all contact='true' list='true' heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% else %}
+            {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level custom_text_for_value_none="Incomplete" %}
+        {% endif %}
+
+        {# We always show this field even if None #}
+        {% if DomainRequest %}
+            <h3 class="register-form-review-header">CISA Regional Representative</h3>
+            <ul class="usa-list usa-list--unstyled margin-top-0">
+                {% if DomainRequest.cisa_representative_first_name %}
+                {{ DomainRequest.get_formatted_cisa_rep_name }}
+                {% else %}
+                No
+                {% endif %}
+            </ul>
+
+            <h3 class="register-form-review-header">Anything else</h3>
+            <ul class="usa-list usa-list--unstyled margin-top-0">
+                {% if DomainRequest.anything_else %}
+                {{DomainRequest.anything_else}}
+                {% else %}
+                No
+                {% endif %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+{% endblock request_summary %}
