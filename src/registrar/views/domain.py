@@ -110,6 +110,22 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
     implementations of post, form_valid and form_invalid.
     """
 
+    # send notification email for changes to any of these forms
+    notify_on_change = (
+        DomainSecurityEmailForm, 
+        DomainDnssecForm,
+        DomainDsdataFormset,
+    )
+
+    # forms of these types should not send notifications if they're part of a portfolio/Organization
+    notify_unless_portfolio = (
+        DomainOrgNameAddressForm,
+        SeniorOfficialContactForm
+    )
+
+    def should_notify(self, form) -> bool:
+        return isinstance(form, self.notify_on_change) or isinstance(form, self.notify_unless_portfolio)
+
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view.
 
@@ -126,6 +142,13 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         # updates session cache with domain
         self._update_session_with_domain()
 
+        if self.should_notify(form):
+            logger.info("Sending email to domain managers")
+            context={
+                        "domain": self.object,
+                    }
+            self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+                
         # superclass has the redirect
         return super().form_valid(form)
 
@@ -262,13 +285,6 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
-        if form.has_changed():
-            logger.info("Sending email to domain managers")
-            context={
-                        "domain": self.object,
-                    }
-            self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
-
         form.save()
 
         messages.success(self.request, "The organization information for this domain has been updated.")
@@ -369,12 +385,12 @@ class DomainSeniorOfficialView(DomainFormBaseView):
         # Set the domain information in the form so that it can be accessible
         # to associate a new Contact, if a new Contact is needed
         # in the save() method
-        if form.has_changed():
-            logger.info("Sending email to domain managers")
-            context={
-                        "domain": self.object,
-                    }
-            self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+        # if form.has_changed():
+        #     logger.info("Sending email to domain managers")
+        #     context={
+        #                 "domain": self.object,
+        #             }
+        #     self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
 
 
         form.set_domain_info(self.object.domain_info)
@@ -526,13 +542,12 @@ class DomainNameserversView(DomainFormBaseView):
                 messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         else:
-            if form.has_changed():
-                logger.info("Sending email to domain managers")
-                context={
-                            "domain": self.object,
-                        }
-                self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
-
+            # if form.has_changed():
+            #     logger.info("Sending email to domain managers")
+            #     context={
+            #                 "domain": self.object,
+            #             }
+            #     self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
 
             messages.success(
                 self.request,
@@ -586,13 +601,13 @@ class DomainDNSSECView(DomainFormBaseView):
                     errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
                     messages.error(self.request, errmsg)
-                else:
-                    if form.has_changed():
-                        logger.info("Sending email to domain managers")
-                        context={
-                                    "domain": self.object,
-                                }
-                        self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+                # else:
+                #     if form.has_changed():
+                #         logger.info("Sending email to domain managers")
+                #         context={
+                #                     "domain": self.object,
+                #                 }
+                #         self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
 
         return self.form_valid(form)
 
@@ -717,12 +732,12 @@ class DomainDsDataView(DomainFormBaseView):
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
-            if form.has_changed():
-                logger.info("Sending email to domain managers")
-                context={
-                            "domain": self.object,
-                        }
-                self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+            # if formset.has_changed():
+            #     logger.info("Sending email to domain managers")
+            #     context={
+            #                 "domain": self.object,
+            #             }
+            #     self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
 
             messages.success(self.request, "The DS data records for this domain have been updated.")
             # superclass has the redirect
@@ -822,12 +837,12 @@ class DomainSecurityEmailView(DomainFormBaseView):
             messages.error(self.request, SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA))
             logger.error(f"Generic registry error: {Err}")
         else:
-            if form.has_changed():
-                logger.info("Sending email to domain managers")
-                context={
-                            "domain": self.object,
-                        }
-                self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+            # if form.has_changed():
+            #     logger.info("Sending email to domain managers")
+            #     context={
+            #                 "domain": self.object,
+            #             }
+            #     self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
 
             messages.success(self.request, "The security email for this domain has been updated.")
 
