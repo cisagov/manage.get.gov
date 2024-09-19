@@ -11,6 +11,7 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
+from auditlog.models import LogEntry
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -576,10 +577,24 @@ class DomainRequest(TimeStampedModel):
         verbose_name="last updated on",
         help_text="Date of the last status update",
     )
+
     notes = models.TextField(
         null=True,
         blank=True,
     )
+
+    def get_first_status_set_date(self, status):
+        """Returns the date when the domain request was first set to the given status."""
+        log_entry = (
+            LogEntry.objects.filter(content_type__model="domainrequest", object_pk=self.pk, changes__status__1=status)
+            .order_by("-timestamp")
+            .first()
+        )
+        return log_entry.timestamp.date() if log_entry else None
+
+    def get_first_status_started_date(self):
+        """Returns the date when the domain request was put into the status "started" for the first time"""
+        return self.get_first_status_set_date(DomainRequest.DomainRequestStatus.STARTED)
 
     @classmethod
     def get_statuses_that_send_emails(cls):
@@ -1137,6 +1152,11 @@ class DomainRequest(TimeStampedModel):
         for field in opts.many_to_many:
             data[field.name] = field.value_from_object(self)
         return data
+
+    def get_formatted_cisa_rep_name(self):
+        """Returns the cisa representatives name in Western order."""
+        names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
+        return " ".join(names) if names else "Unknown"
 
     def _is_federal_complete(self):
         # Federal -> "Federal government branch" page can't be empty + Federal Agency selection can't be None
