@@ -526,20 +526,20 @@ class DomainNameserversView(DomainFormBaseView):
                 messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         else:
+            if form.has_changed():
+                logger.info("Sending email to domain managers")
+                context={
+                            "domain": self.object,
+                        }
+                self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+
+
             messages.success(
                 self.request,
                 "The name servers for this domain have been updated. "
                 "Note that DNS changes could take anywhere from a few minutes to "
                 "48 hours to propagate across the internet.",
             )
-
-            # if the nameservers where changed, send notification to domain managers.
-            if formset.has_changed():
-                logger.info("Sending email to domain managers")
-                context={
-                            "domain": self.object,
-                        }
-                self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
 
         # superclass has the redirect
         return super().form_valid(formset)
@@ -586,6 +586,13 @@ class DomainDNSSECView(DomainFormBaseView):
                     errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
                     messages.error(self.request, errmsg)
+                else:
+                    if form.has_changed():
+                        logger.info("Sending email to domain managers")
+                        context={
+                                    "domain": self.object,
+                                }
+                        self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
 
         return self.form_valid(form)
 
@@ -710,6 +717,13 @@ class DomainDsDataView(DomainFormBaseView):
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
+            if form.has_changed():
+                logger.info("Sending email to domain managers")
+                context={
+                            "domain": self.object,
+                        }
+                self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+
             messages.success(self.request, "The DS data records for this domain have been updated.")
             # superclass has the redirect
             return super().form_valid(formset)
@@ -808,6 +822,13 @@ class DomainSecurityEmailView(DomainFormBaseView):
             messages.error(self.request, SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA))
             logger.error(f"Generic registry error: {Err}")
         else:
+            if form.has_changed():
+                logger.info("Sending email to domain managers")
+                context={
+                            "domain": self.object,
+                        }
+                self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+
             messages.success(self.request, "The security email for this domain has been updated.")
 
         # superclass has the redirect
