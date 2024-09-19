@@ -4,7 +4,7 @@ from itertools import zip_longest
 from typing import Callable
 from django.db.models.fields.related import ForeignObjectRel
 from django import forms
-from registrar.utility.enums import Step
+from registrar.utility.enums import DomainRequestStep
 from registrar.models import DomainRequest, Contact
 
 
@@ -283,7 +283,7 @@ class BaseYesNoForm(RegistrarForm):
 def request_step_list(request_wizard):
     """Dynamically generated list of steps in the form wizard."""
     step_list = []
-    for step in Step:
+    for step in request_wizard.StepEnum:
         condition = request_wizard.WIZARD_CONDITIONS.get(step, True)
         if callable(condition):
             condition = condition(request_wizard)

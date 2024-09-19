@@ -1,4 +1,3 @@
-{% if organization.is_organization_name_and_address_complete %}
 <address>
     {% if  organization.federal_agency  %}
         {{ organization.federal_agency }}<br />
@@ -27,12 +26,3 @@
         <br />{{ organization.urbanization }}
     {% endif %}
 </address>
-{% else %}
-    {% if custom_text_for_value_none %}
-        <p class="margin-top-0 margin-bottom-0 red-incomplete-text">
-            {{ custom_text_for_value_none }}
-        </p>
-    {% else %}
-    None
-    {% endif %}
-{% endif %}

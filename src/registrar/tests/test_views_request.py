@@ -22,7 +22,7 @@ from registrar.models import (
     Portfolio,
     UserPortfolioPermission,
 )
-from registrar.views.domain_request import DomainRequestWizard, Step
+from registrar.views.domain_request import DomainRequestWizard, DomainRequestStep
 
 from .common import less_console_noise
 from .test_views import TestWithUser
@@ -1098,7 +1098,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = type_result.follow()
 
-        self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
+        self.assertContains(contact_page, self.TITLES[DomainRequestStep.ABOUT_YOUR_ORGANIZATION])
 
     @less_console_noise_decorator
     def test_federal_agency_dropdown_excludes_expected_values(self):
@@ -2327,7 +2327,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = type_result.follow()
 
-        self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
+        self.assertContains(contact_page, self.TITLES[DomainRequestStep.ABOUT_YOUR_ORGANIZATION])
 
     @less_console_noise_decorator
     def test_domain_request_tribal_government(self):
@@ -2359,7 +2359,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         tribal_government_page = type_result.follow()
 
         # and the step is on the sidebar list.
-        self.assertContains(tribal_government_page, self.TITLES[Step.TRIBAL_GOVERNMENT])
+        self.assertContains(tribal_government_page, self.TITLES[DomainRequestStep.TRIBAL_GOVERNMENT])
 
     @less_console_noise_decorator
     def test_domain_request_so_dynamic_text(self):

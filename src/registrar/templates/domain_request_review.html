@@ -19,9 +19,12 @@
 {% endblock %}
 
 {% block form_fields %}
+  {% include "includes/domain_request_review_steps.html" with is_editable=True %}
+  {% comment %} 
+  TODO - uncomment
   {% if not portfolio %}
     {% include "includes/domain_request_review_steps.html" with is_editable=True %}
   {% else %}
     {% include "includes/portfolio_domain_request_review_steps.html" with is_editable=True %}
-  {% endif %}
+  {% endif %} {% endcomment %}
 {% endblock %}

@@ -40,17 +40,13 @@ class DefaultEmail(Enum):
     LEGACY_DEFAULT = "registrar@dotgov.gov"
 
 
-class Step(StrEnum):
+class DomainRequestStep(StrEnum):
     """
     Names for each page of the domain request wizard.
 
     As with Django's own `TextChoices` class, steps will
     appear in the order they are defined. (Order matters.)
     """
-    # Portfolio
-    # TODO - this does not exist yet.
-    # Fill this in for the portfolio domain request experience.
-    REQUESTING_ENTITY = "portfolio"
 
     # Non-Portfolio
     ORGANIZATION_TYPE = "generic_org_type"
@@ -67,3 +63,20 @@ class Step(StrEnum):
     ADDITIONAL_DETAILS = "additional_details"
     REQUIREMENTS = "requirements"
     REVIEW = "review"
+
+class PortfolioDomainRequestStep(StrEnum):
+    """
+    Names for each page of the portfolio domain request wizard.
+
+    As with Django's own `TextChoices` class, steps will
+    appear in the order they are defined. (Order matters.)
+    """
+    # Portfolio
+    # TODO - this does not exist yet.
+    # Fill this in for the portfolio domain request experience.
+    REQUESTING_ENTITY = "portfolio"
+    CURRENT_SITES = "current_sites"
+    DOTGOV_DOMAIN = "dotgov_domain"
+    PURPOSE = "purpose"
+    ADDITIONAL_DETAILS = "additional_details"
+    REQUIREMENTS = "requirements"
