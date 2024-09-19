@@ -564,7 +564,6 @@ class TestPortfolio(WebTest):
         """Tests if class modifiers for widescreen mode are appropriately
         loaded into the DOM for org model pages"""
         self.check_widescreen_is_loaded("domains")
-        
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=False)
