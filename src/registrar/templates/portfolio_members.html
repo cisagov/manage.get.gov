@@ -1,0 +1,20 @@
+{% extends 'portfolio_base.html' %}
+
+{% load static %}
+
+{% block title %} Members | {% endblock %}
+
+{% block wrapper_class %}
+  {{ block.super }} dashboard--grey-1
+{% endblock %}
+
+{% block portfolio_content %}
+{% block messages %}
+  {% include "includes/form_messages.html" %}
+{% endblock %}
+
+<div id="main-content">
+    <h1 id="members-header">Members</h1>
+    {% include "includes/members_table.html" with portfolio=portfolio portfolio_members_count=portfolio_members_count %}
+</div>
+{% endblock %}

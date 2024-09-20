@@ -41,6 +41,45 @@ class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
         return render(request, "portfolio_requests.html")
 
 
+class PortfolioMembersView(PortfolioMembersPermissionView, View):
+
+    template_name = "portfolio_members.html"
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        portfolio = self.request.session.get("portfolio")
+        if portfolio:
+
+            # # ------ Gets admin members
+            # admin_ids = UserPortfolioPermission.objects.filter(
+            #     portfolio=portfolio,
+            #     roles__overlap=[
+            #         UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            #     ],
+            # ).values_list("user__id", flat=True)
+
+
+            # # ------ Gets non-admin members
+            # # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
+            # non_admin_permissions = UserPortfolioPermission.objects.filter(portfolio=obj).exclude(
+            #     roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            # )
+            # # Get the user objects associated with these permissions
+            # non_admin_users = User.objects.filter(portfolio_permissions__in=non_admin_permissions)
+
+
+            # ------- Gets all members
+            member_ids = UserPortfolioPermission.objects.filter(
+                portfolio=portfolio
+            ).values_list("user__id", flat=True)
+
+            all_members = User.objects.filter(id__in=member_ids)
+            context["portfolio_members"] = all_members
+            context["portfolio_members_count"] = all_members.count()
+        return render(request, "portfolio_members.html")
+
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
     """Some users have access to the underlying portfolio, but not any domains.
     This is a custom view which explains that to the user - and denotes who to contact.
