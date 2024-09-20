@@ -66,6 +66,21 @@ class UserGroup(Group):
                 "model": "federalagency",
                 "permissions": ["add_federalagency", "change_federalagency", "delete_federalagency"],
             },
+            {
+                "app_label": "registrar",
+                "model": "portfolio",
+                "permissions": ["add_portfolio", "change_portfolio", "delete_portfolio"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "suborganization",
+                "permissions": ["add_suborganization", "change_suborganization", "delete_suborganization"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "userportfoliopermission",
+                "permissions": ["add_userportfoliopermission", "change_userportfoliopermission", "delete_userportfoliopermission"],
+            },
         ]
 
         # Avoid error: You can't execute queries until the end
