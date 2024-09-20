@@ -43,7 +43,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     although not without consulting the base implementation, first.
     """
 
-    StepEnum = Step
+    StepEnum: Step = Step  # type: ignore
     template_name = ""
 
     # uniquely namespace the wizard in urls.py
@@ -501,7 +501,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete
 class PortfolioDomainRequestWizard(DomainRequestWizard):
-    StepEnum = PortfolioDomainRequestStep
+    StepEnum: PortfolioDomainRequestStep = PortfolioDomainRequestStep  # type: ignore
 
     TITLES = {
         StepEnum.REQUESTING_ENTITY: _("Requesting entity"),
