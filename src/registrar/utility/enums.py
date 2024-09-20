@@ -72,7 +72,7 @@ class PortfolioDomainRequestStep(StrEnum):
     appear in the order they are defined. (Order matters.)
     """
     # Portfolio
-    REQUESTING_ENTITY = "portfolio"
+    REQUESTING_ENTITY = "organization_name"
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
     PURPOSE = "purpose"

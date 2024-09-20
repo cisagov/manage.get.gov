@@ -8,9 +8,16 @@
     {% endif %}
 
     {% if step == Step.REQUESTING_ENTITY %}
-        {% with title=form_titles|get_item:step value=domain_request.portfolio|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe%}
-            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
-        {% endwith %}
+
+        {% if domain_request.organization_name %}
+            {% with title=form_titles|get_item:step value=domain_request %}
+                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url address='true' %}
+            {% endwith %}
+        {% else %}
+            {% with title=form_titles|get_item:step value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% endwith %}
+        {% endif%}
     {% endif %}
 
     {% if step == Step.CURRENT_SITES %}
