@@ -202,7 +202,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
     def _get_changes_from_formset(self, formset):
         changes = set()
         for form in formset:
-            changes.update(form.get_changes)
+            changes.update(form.changed_data)
 
         return list(changes)
 
