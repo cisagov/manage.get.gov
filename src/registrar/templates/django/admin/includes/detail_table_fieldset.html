@@ -144,14 +144,15 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
         {{ field.field }}
 
-        <a
-            href="#id_action_needed_reason_email"
-            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text margin-left-1 text-no-underline field-action_needed_reason_email__edit"
-            ><img src="/public/admin/img/icon-changelink.svg" alt="Change"> Edit email</a
+        <button
+            aria-label="Edit email in textarea"
+            type="button"
+            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text margin-left-1 text-no-underline field-action_needed_reason_email__edit flex-align-self-start"
+            ><img src="/public/admin/img/icon-changelink.svg" alt="Change"> Edit email</button
         >
         <a
             href="#email-already-sent-modal"
-            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-left-1 field-action_needed_reason_email__modal-trigger"
+            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-left-1 field-action_needed_reason_email__modal-trigger flex-align-self-start"
             aria-controls="email-already-sent-modal"
             data-open-modal
             ><img src="/public/admin/img/icon-changelink.svg" alt="Change"> Edit email</a
@@ -231,10 +232,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endblock field_other %}
 
 {% block after_help_text %}
-    {% if field.field.name == "action_needed_reason_email" %}
-        <div class="help">
-        </div>
-    {% elif field.field.name == "creator" %}
+    {% if field.field.name == "creator" %}
         <div class="flex-container tablet:margin-top-2">
         <label aria-label="Creator contact details"></label>
             {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly user_verification_type=original_object.creator.get_verification_type_display%}

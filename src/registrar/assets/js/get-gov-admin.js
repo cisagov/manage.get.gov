@@ -513,11 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalTrigger = document.querySelector('.field-action_needed_reason_email__modal-trigger');
     const modalConfirm = document.getElementById('confirm-edit-email');
     const formLabel = document.querySelector('label[for="id_action_needed_reason_email"]');
-    const greenCheckMark = `<svg class="usa-icon text-green top-2px" aria-hidden="true" focusable="false" role="img">
-                            <use xlink:href="/public/img/sprite.svg#check_circle"></use>
-                        </svg>`;
     let lastSentEmailContent = document.getElementById("last-sent-email-content");
-    const helpText = document.querySelector('.field-action_needed_reason_email .help');
     const initialDropdownValue = dropdown ? dropdown.value : null;
     const initialEmailValue = textarea.value;
 
@@ -540,22 +536,18 @@ document.addEventListener('DOMContentLoaded', function() {
             hideElement(directEditButton);
             hideElement(modalTrigger);
             hideElement(textarea);
-            hideElement(helpText);
         } else if (reason === 'other') {
             // 'Other' selected, we will set the label to "Email", show the "No email will be sent" placeholder, hide the trigger, textarea, hide the help text
             formLabel.innerHTML = "Email:";
             textareaPlaceholder.innerHTML = "No email will be sent";
             showElement(textareaPlaceholder);
-            showElement(helpText);
             hideElement(directEditButton);
             hideElement(modalTrigger);
             hideElement(textarea);
-            hideElement(helpText);
         } else {
             // A triggering selection is selected, all hands on board:
             textarea.setAttribute('readonly', true);
             showElement(textarea);
-            showElement(helpText);
             hideElement(textareaPlaceholder);
 
             if (isEmailAlreadySentConst) {
@@ -566,11 +558,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 hideElement(modalTrigger);
             }
             if (isEmailAlreadySent()) {
-                formLabel.innerHTML = greenCheckMark + " Email sent to creator:";
-                helpText.innerHTML = "This email has been sent to the creator of this request";
+                formLabel.innerHTML = "Email sent to creator:";
             } else {
-                formLabel.innerHTML = "Auto-generated email will be sent to creator:";
-                helpText.innerHTML = "This email will be sent to the creator of this request after saving";
+                formLabel.innerHTML = "Email will be sent to creator:";
             }
         }
     }
@@ -608,11 +598,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     modalConfirm.addEventListener("click", () => {
         textarea.removeAttribute('readonly');
+        textarea.focus();
         hideElement(directEditButton);
         hideElement(modalTrigger);  
     });
     directEditButton.addEventListener("click", () => {
         textarea.removeAttribute('readonly');
+        textarea.focus();
         hideElement(directEditButton);
         hideElement(modalTrigger);  
     });
