@@ -2444,7 +2444,7 @@ class DomainInformationInline(admin.StackedInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
-        readonly_fields =  copy.deepcopy(DomainInformationAdmin.get_readonly_fields(self, request, obj=None))
+        readonly_fields = copy.deepcopy(DomainInformationAdmin.get_readonly_fields(self, request, obj=None))
         readonly_fields.extend(["domain_managers", "invited_domain_managers"])  # type: ignore
         return readonly_fields
 
@@ -2461,13 +2461,19 @@ class DomainInformationInline(admin.StackedInline):
         for index, (title, f) in enumerate(modified_fieldsets):
             if title is None:
                 modified_fieldsets[index][1]["fields"] = [
-                    field for field in modified_fieldsets[index][1]["fields"] if field not in ["creator", "domain_request", "notes"]
+                    field
+                    for field in modified_fieldsets[index][1]["fields"]
+                    if field not in ["creator", "domain_request", "notes"]
                 ]
             elif title == "Contacts":
                 modified_fieldsets[index][1]["fields"] = [
-                    field for field in modified_fieldsets[index][1]["fields"] if field not in ["other_contacts", "no_other_contacts_rationale"]
+                    field
+                    for field in modified_fieldsets[index][1]["fields"]
+                    if field not in ["other_contacts", "no_other_contacts_rationale"]
                 ]
-                modified_fieldsets[index][1]["fields"].extend(["domain_managers", "invited_domain_managers"])  # type: ignore
+                modified_fieldsets[index][1]["fields"].extend(
+                    ["domain_managers", "invited_domain_managers"]
+                )  # type: ignore
 
         # Remove or remove fieldset sections
         for index, (title, f) in enumerate(modified_fieldsets):
@@ -2478,7 +2484,7 @@ class DomainInformationInline(admin.StackedInline):
                 # move Background info to the bottom of the list
                 fieldsets_to_move = modified_fieldsets.pop(index)
                 modified_fieldsets.append(fieldsets_to_move)
-        
+
         return modified_fieldsets
 
 
