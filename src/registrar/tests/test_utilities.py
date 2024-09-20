@@ -1,13 +1,14 @@
 from django.test import TestCase
-from django.contrib.auth.models import User
+from registrar.models import User
 from waffle.testutils import override_flag
 from registrar.utility.waffle import flag_is_active_for_user
+
 
 class FlagIsActiveForUserTest(TestCase):
 
     def setUp(self):
         # Set up a test user
-        self.user = User.objects.create_user(username="testuser", password="testpassword")
+        self.user = User.objects.create_user(username="testuser")
 
     @override_flag("test_flag", active=True)
     def test_flag_active_for_user(self):

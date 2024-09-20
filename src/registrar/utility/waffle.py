@@ -1,6 +1,7 @@
 from django.http import HttpRequest
 from waffle.decorators import flag_is_active
 
+
 def flag_is_active_for_user(user, flag_name):
     """flag_is_active_for_user can be used when a waffle_flag may be
     activated for a user, but the context of where the flag needs to
