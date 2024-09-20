@@ -72,8 +72,6 @@ class PortfolioDomainRequestStep(StrEnum):
     appear in the order they are defined. (Order matters.)
     """
     # Portfolio
-    # TODO - this does not exist yet.
-    # Fill this in for the portfolio domain request experience.
     REQUESTING_ENTITY = "portfolio"
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"

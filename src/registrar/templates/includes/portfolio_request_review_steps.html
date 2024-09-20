@@ -7,7 +7,6 @@
         {% namespaced_url 'domain-request' step as domain_request_url %}
     {% endif %}
 
-    {% comment %} TODO: what is this? {% endcomment %}
     {% if step == Step.REQUESTING_ENTITY %}
         {% with title=form_titles|get_item:step value=domain_request.portfolio|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe%}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}

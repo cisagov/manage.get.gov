@@ -756,20 +756,6 @@ class DomainRequestStatus(DomainRequestPermissionView):
         return True
 
 
-class DomainRequestStatusViewOnly(DomainRequestPortfolioViewonlyView):
-    template_name = "domain_request_status_viewonly.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Create a temp wizard object to grab the step list
-        wizard = PortfolioDomainRequestWizard()
-        wizard.request = self.request
-        context["Step"] = wizard.StepEnum.__members__
-        context["steps"] = request_step_list(wizard)
-        context["form_titles"] = wizard.TITLES
-        return context
-
-
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
 
@@ -902,3 +888,19 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         duplicates = [item for item, count in object_dict.items() if count > 1]
         return duplicates
+
+
+# region Portfolio views
+class PortfolioDomainRequestStatusViewOnly(DomainRequestPortfolioViewonlyView):
+    template_name = "portfolio_domain_request_status_viewonly.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Create a temp wizard object to grab the step list
+        wizard = PortfolioDomainRequestWizard()
+        wizard.request = self.request
+        context["Step"] = wizard.StepEnum.__members__
+        context["steps"] = request_step_list(wizard)
+        context["form_titles"] = wizard.TITLES
+        return context
+# endregion
