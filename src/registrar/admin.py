@@ -1511,7 +1511,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "is_election_board")
+    readonly_fields = ("other_contacts", "is_election_board", "domain_managers", "invited_domain_managers")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1604,6 +1604,70 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # objects rather than Contact objects.
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
+
+
+    def get_domain_managers(self, obj):
+        user_domain_roles = UserDomainRole.objects.filter(domain=obj.domain)
+        user_ids = user_domain_roles.values_list("user_id", flat=True)
+        domain_managers = User.objects.filter(id__in=user_ids)
+        return domain_managers
+
+    def get_domain_invitations(self, obj):
+        domain_invitations = DomainInvitation.objects.filter(
+            domain=obj.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        return domain_invitations
+
+    @admin.display(description='Domain managers')
+    def domain_managers(self, obj):
+        """Get joined users who have roles/perms that are not Admin, unpack and return an HTML block.
+
+        DJA readonly can't handle querysets, so we need to unpack and return html here.
+        Alternatively, we could return querysets in context but that would limit where this
+        data would display in a custom change form without extensive template customization.
+
+        Will be used in the after_help_text block."""
+        domain_managers = self.get_domain_managers(obj)
+        if not domain_managers:
+            return "No domain managers found."
+
+        domain_manager_details = "<table><thead><tr><th>UID</th><th>Name</th><th>Email</th>" + "</tr></thead><tbody>"
+        for domain_manager in domain_managers:
+            full_name = domain_manager.get_formatted_name()
+            change_url = reverse("admin:registrar_user_change", args=[domain_manager.pk])
+            domain_manager_details += "<tr>"
+            domain_manager_details += f'<td><a href="{change_url}">{escape(domain_manager.username)}</a>'
+            domain_manager_details += f"<td>{escape(full_name)}</td>"
+            domain_manager_details += f"<td>{escape(domain_manager.email)}</td>"
+            domain_manager_details += "</tr>"
+        domain_manager_details += "</tbody></table>"
+        return format_html(domain_manager_details)
+
+    domain_managers.short_description = "Domain managers"  # type: ignore
+
+    @admin.display(description='Invited domain managers')
+    def invited_domain_managers(self, obj):
+        """Get emails which have been invited to the domain, unpack and return an HTML block.
+
+        DJA readonly can't handle querysets, so we need to unpack and return html here.
+        Alternatively, we could return querysets in context but that would limit where this
+        data would display in a custom change form without extensive template customization.
+
+        Will be used in the after_help_text block."""
+        domain_invitations = self.get_domain_invitations(obj)
+        if not domain_invitations:
+            return "No invited domain managers found."
+
+        domain_invitation_details = "<table><thead><tr><th>Email</th><th>Status</th>" + "</tr></thead><tbody>"
+        for domain_invitation in domain_invitations:
+            domain_invitation_details += "<tr>"
+            domain_invitation_details += f"<td>{escape(domain_invitation.email)}</td>"
+            domain_invitation_details += f"<td>{escape(domain_invitation.status.capitalize())}</td>"
+            domain_invitation_details += "</tr>"
+        domain_invitation_details += "</tbody></table>"
+        return format_html(domain_invitation_details)
+
+    invited_domain_managers.short_description = "Invited domain managers"  # type: ignore
 
 
 class DomainRequestResource(FsmModelResource):
@@ -2358,7 +2422,6 @@ class DomainInformationInline(admin.StackedInline):
     fieldsets_to_move = fieldsets.pop(3)
     fieldsets.append(fieldsets_to_move)
     
-
     def get_domain_managers(self, obj):
         user_domain_roles = UserDomainRole.objects.filter(domain=obj.domain)
         user_ids = user_domain_roles.values_list("user_id", flat=True)
@@ -2371,6 +2434,7 @@ class DomainInformationInline(admin.StackedInline):
         )
         return domain_invitations
 
+    @admin.display(description='Domain managers')
     def domain_managers(self, obj):
         """Get joined users who have roles/perms that are not Admin, unpack and return an HTML block.
 
@@ -2395,8 +2459,9 @@ class DomainInformationInline(admin.StackedInline):
         domain_manager_details += "</tbody></table>"
         return format_html(domain_manager_details)
 
-    domain_managers.short_description = "Domain Managers"  # type: ignore
+    domain_managers.short_description = "Domain managers"  # type: ignore
 
+    @admin.display(description='Invited domain managers')
     def invited_domain_managers(self, obj):
         """Get emails which have been invited to the domain, unpack and return an HTML block.
 
@@ -2418,7 +2483,7 @@ class DomainInformationInline(admin.StackedInline):
         domain_invitation_details += "</tbody></table>"
         return format_html(domain_invitation_details)
 
-    invited_domain_managers.short_description = "Invited Domain Managers"  # type: ignore
+    invited_domain_managers.short_description = "Invited domain managers"  # type: ignore
 
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
