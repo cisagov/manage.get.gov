@@ -28,9 +28,9 @@
             {% include "includes/contact.html" with contact=value|first %}
           {% else %}
             {% if value %}
-              <ul class="usa-list usa-list--unstyled margin-top-0">
+              <dl class="usa-list usa-list--unstyled margin-top-0">
                 {% for item in value %}
-                  <li>
+                  <dt>
                   
                  <h4 class="summary-item__title
              font-sans-md
@@ -39,12 +39,12 @@
              padding-right-1">
                       Contact {{forloop.counter}}
                   </h4>
-                  </li>
-                  <li>
+                </dt>
+                  <dd>
                     {% include "includes/contact.html" with contact=item %}
-                  </li>
+                  </dd>
                 {% endfor %}
-                </ul>
+                </dl>
             {% elif custom_text_for_value_none %}
               <p>
                 {{ custom_text_for_value_none }}
