@@ -34,6 +34,14 @@ const showElement = (element) => {
 };
 
 /**
+ * Helper function to get the CSRF token from the cookie
+ *
+*/
+function getCsrfToken() {
+  return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+}
+
+/**
  * Helper function that scrolls to an element
  * @param {string} attributeName - The string "class" or "id"
  * @param {string} attributeValue - The class or id name
@@ -994,59 +1002,169 @@ function unloadModals() {
   window.modal.off();
 }
 
-/**
+class LoadTableBase {
+  constructor(tableSelector, tableWrapperSelector, searchFieldId, searchSubmitId, resetSearchBtn, resetFiltersBtn, noDataDisplay, noSearchresultsDisplay) {
+    this.tableWrapper = document.querySelector(tableWrapperSelector);
+    this.tableHeaders = document.querySelectorAll(`${tableSelector} th[data-sortable]`);
+    this.currentSortBy = 'id';
+    this.currentOrder = 'asc';
+    this.currentStatus = [];
+    this.currentSearchTerm = '';
+    this.scrollToTable = false;
+    this.searchInput = document.querySelector(searchFieldId);
+    this.searchSubmit = document.querySelector(searchSubmitId);
+    this.tableAnnouncementRegion = document.querySelector(`${tableWrapperSelector} .usa-table__announcement-region`);
+    this.resetSearchButton = document.querySelector(resetSearchBtn);
+    this.resetFiltersButton = document.querySelector(resetFiltersBtn);
+    // NOTE: these 3 can't be used if filters are active on a page with more than 1 table
+    this.statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
+    this.statusIndicator = document.querySelector('.filter-indicator');
+    this.statusToggle = document.querySelector('.usa-button--filter');
+    this.noTableWrapper = document.querySelector(noDataDisplay);
+    this.noSearchResultsWrapper = document.querySelector(noSearchresultsDisplay);
+    this.portfolioElement = document.getElementById('portfolio-js-value');
+    this.portfolioValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-portfolio') : null;
+    this.initializeTableHeaders();
+    this.initializeSearchHandler();
+    this.initializeStatusToggleHandler();
+    this.initializeFilterCheckboxes();
+    this.initializeResetSearchButton();
+    this.initializeResetFiltersButton();
+    this.initializeAccordionAccessibilityListeners();
+  }
+
+  /**
  * Generalized function to update pagination for a list.
  * @param {string} itemName - The name displayed in the counter
  * @param {string} paginationSelector - CSS selector for the pagination container.
  * @param {string} counterSelector - CSS selector for the pagination counter.
- * @param {string} linkAnchor - CSS selector for the header element to anchor the links to.
- * @param {Function} loadPageFunction - Function to call when a page link is clicked.
+ * @param {string} tableSelector - CSS selector for the header element to anchor the links to.
  * @param {number} currentPage - The current page number (starting with 1).
  * @param {number} numPages - The total number of pages.
  * @param {boolean} hasPrevious - Whether there is a page before the current page.
  * @param {boolean} hasNext - Whether there is a page after the current page.
- * @param {number} totalItems - The total number of items.
- * @param {string} searchTerm - The search term
- */
-function updatePagination(itemName, paginationSelector, counterSelector, linkAnchor, loadPageFunction, currentPage, numPages, hasPrevious, hasNext, totalItems, searchTerm) {
-  const paginationContainer = document.querySelector(paginationSelector);
-  const paginationCounter = document.querySelector(counterSelector);
-  const paginationButtons = document.querySelector(`${paginationSelector} .usa-pagination__list`);
-  paginationCounter.innerHTML = '';
-  paginationButtons.innerHTML = '';
+ * @param {number} total - The total number of items.
+ */  
+  updatePagination(
+    itemName,
+    paginationSelector,
+    counterSelector,
+    parentTableSelector,
+    currentPage,
+    numPages,
+    hasPrevious,
+    hasNext,
+    totalItems,
+  ) {
+    const paginationButtons = document.querySelector(`${paginationSelector} .usa-pagination__list`);
+    const counterSelectorEl = document.querySelector(counterSelector);
+    const paginationSelectorEl = document.querySelector(paginationSelector);
+    counterSelectorEl.innerHTML = '';
+    paginationButtons.innerHTML = '';
 
-  // Buttons should only be displayed if there are more than one pages of results
-  paginationButtons.classList.toggle('display-none', numPages <= 1);
+    // Buttons should only be displayed if there are more than one pages of results
+    paginationButtons.classList.toggle('display-none', numPages <= 1);
 
-  // Counter should only be displayed if there is more than 1 item
-  paginationContainer.classList.toggle('display-none', totalItems < 1);
+    // Counter should only be displayed if there is more than 1 item
+    paginationSelectorEl.classList.toggle('display-none', totalItems < 1);
 
-  paginationCounter.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}${searchTerm ? ' for ' + '"' + searchTerm + '"' : ''}`;
+    counterSelectorEl.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}${this.currentSearchTerm ? ' for ' + '"' + this.currentSearchTerm + '"' : ''}`;
 
-  if (hasPrevious) {
-    const prevPageItem = document.createElement('li');
-    prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-    prevPageItem.innerHTML = `
-      <a href="${linkAnchor}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
-        <svg class="usa-icon" aria-hidden="true" role="img">
-          <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
-        </svg>
-        <span class="usa-pagination__link-text">Previous</span>
-      </a>
-    `;
-    prevPageItem.querySelector('a').addEventListener('click', (event) => {
-      event.preventDefault();
-      loadPageFunction(currentPage - 1);
-    });
-    paginationButtons.appendChild(prevPageItem);
+    if (hasPrevious) {
+      const prevPageItem = document.createElement('li');
+      prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+      prevPageItem.innerHTML = `
+        <a href="${parentTableSelector}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
+          <svg class="usa-icon" aria-hidden="true" role="img">
+            <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
+          </svg>
+          <span class="usa-pagination__link-text">Previous</span>
+        </a>
+      `;
+      prevPageItem.querySelector('a').addEventListener('click', (event) => {
+        event.preventDefault();
+        this.loadTable(currentPage - 1);
+      });
+      paginationButtons.appendChild(prevPageItem);
+    }
+
+    // Add first page and ellipsis if necessary
+    if (currentPage > 2) {
+      paginationButtons.appendChild(this.createPageItem(1, parentTableSelector, currentPage));
+      if (currentPage > 3) {
+        const ellipsis = document.createElement('li');
+        ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
+        ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
+        ellipsis.innerHTML = '<span>…</span>';
+        paginationButtons.appendChild(ellipsis);
+      }
+    }
+
+    // Add pages around the current page
+    for (let i = Math.max(1, currentPage - 1); i <= Math.min(numPages, currentPage + 1); i++) {
+      paginationButtons.appendChild(this.createPageItem(i, parentTableSelector, currentPage));
+    }
+
+    // Add last page and ellipsis if necessary
+    if (currentPage < numPages - 1) {
+      if (currentPage < numPages - 2) {
+        const ellipsis = document.createElement('li');
+        ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
+        ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
+        ellipsis.innerHTML = '<span>…</span>';
+        paginationButtons.appendChild(ellipsis);
+      }
+      paginationButtons.appendChild(this.createPageItem(numPages, parentTableSelector, currentPage));
+    }
+
+    if (hasNext) {
+      const nextPageItem = document.createElement('li');
+      nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
+      nextPageItem.innerHTML = `
+        <a href="${parentTableSelector}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
+          <span class="usa-pagination__link-text">Next</span>
+          <svg class="usa-icon" aria-hidden="true" role="img">
+            <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
+          </svg>
+        </a>
+      `;
+      nextPageItem.querySelector('a').addEventListener('click', (event) => {
+        event.preventDefault();
+        this.loadTable(currentPage + 1);
+      });
+      paginationButtons.appendChild(nextPageItem);
+    }
   }
 
+  /**
+   * A helper that toggles content/ no content/ no search results
+   *
+  */
+  updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
+    const { unfiltered_total, total } = data;
+    if (unfiltered_total) {
+      if (total) {
+        showElement(dataWrapper);
+        hideElement(noSearchResultsWrapper);
+        hideElement(noDataWrapper);
+      } else {
+        hideElement(dataWrapper);
+        showElement(noSearchResultsWrapper);
+        hideElement(noDataWrapper);
+      }
+    } else {
+      hideElement(dataWrapper);
+      hideElement(noSearchResultsWrapper);
+      showElement(noDataWrapper);
+    }
+  };
+
   // Helper function to create a page item
-  function createPageItem(page) {
+  createPageItem(page, parentTableSelector, currentPage) {
     const pageItem = document.createElement('li');
     pageItem.className = 'usa-pagination__item usa-pagination__page-no';
     pageItem.innerHTML = `
-      <a href="${linkAnchor}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
+      <a href="${parentTableSelector}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
     `;
     if (page === currentPage) {
       pageItem.querySelector('a').classList.add('usa-current');
@@ -1054,134 +1172,212 @@ function updatePagination(itemName, paginationSelector, counterSelector, linkAnc
     }
     pageItem.querySelector('a').addEventListener('click', (event) => {
       event.preventDefault();
-      loadPageFunction(page);
+      this.loadTable(page);
     });
     return pageItem;
   }
 
-  // Add first page and ellipsis if necessary
-  if (currentPage > 2) {
-    paginationButtons.appendChild(createPageItem(1));
-    if (currentPage > 3) {
-      const ellipsis = document.createElement('li');
-      ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
-      ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
-      ellipsis.innerHTML = '<span>…</span>';
-      paginationButtons.appendChild(ellipsis);
-    }
+  /**
+   * A helper that resets sortable table headers
+   *
+  */
+  unsetHeader = (header) => {
+    header.removeAttribute('aria-sort');
+    let headerName = header.innerText;
+    const headerLabel = `${headerName}, sortable column, currently unsorted"`;
+    const headerButtonLabel = `Click to sort by ascending order.`;
+    header.setAttribute("aria-label", headerLabel);
+    header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
+  };
+
+  // Abstract method (to be implemented in the child class)
+  loadTable(page, sortBy, order) {
+    throw new Error('loadData() must be implemented in a subclass');
   }
 
-  // Add pages around the current page
-  for (let i = Math.max(1, currentPage - 1); i <= Math.min(numPages, currentPage + 1); i++) {
-    paginationButtons.appendChild(createPageItem(i));
-  }
-
-  // Add last page and ellipsis if necessary
-  if (currentPage < numPages - 1) {
-    if (currentPage < numPages - 2) {
-      const ellipsis = document.createElement('li');
-      ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
-      ellipsis.setAttribute('aria-label', 'ellipsis indicating non-visible pages');
-      ellipsis.innerHTML = '<span>…</span>';
-      paginationButtons.appendChild(ellipsis);
-    }
-    paginationButtons.appendChild(createPageItem(numPages));
-  }
-
-  if (hasNext) {
-    const nextPageItem = document.createElement('li');
-    nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-    nextPageItem.innerHTML = `
-      <a href="${linkAnchor}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
-        <span class="usa-pagination__link-text">Next</span>
-        <svg class="usa-icon" aria-hidden="true" role="img">
-          <use xlink:href="/public/img/sprite.svg#navigate_next"></use>
-        </svg>
-      </a>
-    `;
-    nextPageItem.querySelector('a').addEventListener('click', (event) => {
-      event.preventDefault();
-      loadPageFunction(currentPage + 1);
+  // Add event listeners to table headers for sorting
+  initializeTableHeaders() {
+    this.tableHeaders.forEach(header => {
+      header.addEventListener('click', () => {
+        const sortBy = header.getAttribute('data-sortable');
+        let order = 'asc';
+        // sort order will be ascending, unless the currently sorted column is ascending, and the user
+        // is selecting the same column to sort in descending order
+        if (sortBy === this.currentSortBy) {
+          order = this.currentOrder === 'asc' ? 'desc' : 'asc';
+        }
+        // load the results with the updated sort
+        this.loadTable(1, sortBy, order);
+      });
     });
-    paginationButtons.appendChild(nextPageItem);
+  }
+
+  initializeSearchHandler() {
+    this.searchSubmit.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.currentSearchTerm = this.searchInput.value;
+      // If the search is blank, we match the resetSearch functionality
+      if (this.currentSearchTerm) {
+        showElement(this.resetSearchButton);
+      } else {
+        hideElement(this.resetSearchButton);
+      }
+      this.loadTable(1, 'id', 'asc');
+      this.resetHeaders();
+    });
+  }
+
+  initializeStatusToggleHandler() {
+    if (this.statusToggle) {
+      this.statusToggle.addEventListener('click', () => {
+        toggleCaret(this.statusToggle);
+      });
+    }
+  }
+
+  // Add event listeners to status filter checkboxes
+  initializeFilterCheckboxes() {
+    this.statusCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        const checkboxValue = checkbox.value;
+        
+        // Update currentStatus array based on checkbox state
+        if (checkbox.checked) {
+          this.currentStatus.push(checkboxValue);
+        } else {
+          const index = this.currentStatus.indexOf(checkboxValue);
+          if (index > -1) {
+            this.currentStatus.splice(index, 1);
+          }
+        }
+
+        // Manage visibility of reset filters button
+        if (this.currentStatus.length == 0) {
+          hideElement(this.resetFiltersButton);
+        } else {
+          showElement(this.resetFiltersButton);
+        }
+
+        // Disable the auto scroll
+        this.scrollToTable = false;
+
+        // Call loadTable with updated status
+        this.loadTable(1, 'id', 'asc');
+        this.resetHeaders();
+        this.updateStatusIndicator();
+      });
+    });
+  }
+
+  // Reset UI and accessibility
+  resetHeaders() {
+    this.tableHeaders.forEach(header => {
+      // Unset sort UI in headers
+      this.unsetHeader(header);
+    });
+    // Reset the announcement region
+    this.tableAnnouncementRegion.innerHTML = '';
+  }
+
+  resetSearch() {
+    this.searchInput.value = '';
+    this.currentSearchTerm = '';
+    hideElement(this.resetSearchButton);
+    this.loadTable(1, 'id', 'asc');
+    this.resetHeaders();
+  }
+
+  initializeResetSearchButton() {
+    if (this.resetSearchButton) {
+      this.resetSearchButton.addEventListener('click', () => {
+        this.resetSearch();
+      });
+    }
+  }
+
+  resetFilters() {
+    this.currentStatus = [];
+    this.statusCheckboxes.forEach(checkbox => {
+      checkbox.checked = false; 
+    });
+    hideElement(this.resetFiltersButton);
+
+    // Disable the auto scroll
+    this.scrollToTable = false;
+
+    this.loadTable(1, 'id', 'asc');
+    this.resetHeaders();
+    this.updateStatusIndicator();
+    // No need to toggle close the filters. The focus shift will trigger that for us.
+  }
+
+  initializeResetFiltersButton() {
+    if (this.resetFiltersButton) {
+      this.resetFiltersButton.addEventListener('click', () => {
+        this.resetFilters();
+      });
+    }
+  }
+
+  updateStatusIndicator() {
+    this.statusIndicator.innerHTML = '';
+    // Even if the element is empty, it'll mess up the flex layout unless we set display none
+    hideElement(this.statusIndicator);
+    if (this.currentStatus.length)
+      this.statusIndicator.innerHTML = '(' + this.currentStatus.length + ')';
+      showElement(this.statusIndicator);
+  }
+
+  closeFilters() {
+    if (this.statusToggle.getAttribute("aria-expanded") === "true") {
+      this.statusToggle.click();
+    }
+  }
+
+  initializeAccordionAccessibilityListeners() {
+    // Instead of managing the toggle/close on the filter buttons in all edge cases (user clicks on search, user clicks on ANOTHER filter,
+    // user clicks on main nav...) we add a listener and close the filters whenever the focus shifts out of the dropdown menu/filter button.
+    // NOTE: We may need to evolve this as we add more filters.
+    document.addEventListener('focusin', (event) => {
+      const accordion = document.querySelector('.usa-accordion--select');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+      
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
+        this.closeFilters();
+      }
+    });
+
+    // Close when user clicks outside
+    // NOTE: We may need to evolve this as we add more filters.
+    document.addEventListener('click', (event) => {
+      const accordion = document.querySelector('.usa-accordion--select');
+      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+    
+      if (accordionThatIsOpen && !accordion.contains(event.target)) {
+        this.closeFilters();
+      }
+    });
   }
 }
 
-/**
- * A helper that toggles content/ no content/ no search results
- *
-*/
-const updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
-  const { unfiltered_total, total } = data;
-  if (unfiltered_total) {
-    if (total) {
-      showElement(dataWrapper);
-      hideElement(noSearchResultsWrapper);
-      hideElement(noDataWrapper);
-    } else {
-      hideElement(dataWrapper);
-      showElement(noSearchResultsWrapper);
-      hideElement(noDataWrapper);
-    }
-  } else {
-    hideElement(dataWrapper);
-    hideElement(noSearchResultsWrapper);
-    showElement(noDataWrapper);
+class DomainsTable extends LoadTableBase {
+
+  constructor() {
+    super('.domains__table', '.domains__table-wrapper', '#domains__search-field', '#domains__search-field-submit', '.domains__reset-search', '.domains__reset-filters', '.domains__no-data', '.domains__no-search-results');
   }
-};
-
-/**
- * A helper that resets sortable table headers
- *
-*/
-const unsetHeader = (header) => {
-  header.removeAttribute('aria-sort');
-  let headerName = header.innerText;
-  const headerLabel = `${headerName}, sortable column, currently unsorted"`;
-  const headerButtonLabel = `Click to sort by ascending order.`;
-  header.setAttribute("aria-label", headerLabel);
-  header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
-};
-
-/**
- * An IIFE that listens for DOM Content to be loaded, then executes.  This function
- * initializes the domains list and associated functionality on the home page of the app.
- *
- */
-document.addEventListener('DOMContentLoaded', function() {
-  const domainsWrapper = document.querySelector('.domains__table-wrapper');
-
-  if (domainsWrapper) {
-    let currentSortBy = 'id';
-    let currentOrder = 'asc';
-    const noDomainsWrapper = document.querySelector('.domains__no-data');
-    const noSearchResultsWrapper = document.querySelector('.domains__no-search-results');
-    let scrollToTable = false;
-    let currentStatus = [];
-    let currentSearchTerm = '';
-    const domainsSearchInput = document.getElementById('domains__search-field');
-    const domainsSearchSubmit = document.getElementById('domains__search-field-submit');
-    const tableHeaders = document.querySelectorAll('.domains__table th[data-sortable]');
-    const tableAnnouncementRegion = document.querySelector('.domains__table-wrapper  .usa-table__announcement-region');
-    const resetSearchButton = document.querySelector('.domains__reset-search');
-    const resetFiltersButton = document.querySelector('.domains__reset-filters');
-    const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
-    const statusIndicator = document.querySelector('.domain__filter-indicator');
-    const statusToggle = document.querySelector('.usa-button--filter');
-    const portfolioElement = document.getElementById('portfolio-js-value');
-    const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
-
-    /**
+  /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
      * based on the supplied attributes.
      * @param {*} page - the page number of the results (starts with 1)
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
      * @param {*} scroll - control for the scrollToElement functionality
+     * @param {*} status - control for the status filter
      * @param {*} searchTerm - the search term
      * @param {*} portfolio - the portfolio id
      */
-    function loadDomains(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, status = currentStatus, searchTerm = currentSearchTerm, portfolio = portfolioValue) {
+  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+
       // fetch json of page of domais, given params
       let baseUrl = document.getElementById("get_domains_json_url");
       if (!baseUrl) {
@@ -1194,10 +1390,19 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       // fetch json of page of domains, given params
-      let url = `${baseUrlValue}?page=${page}&sort_by=${sortBy}&order=${order}&status=${status}&search_term=${searchTerm}`
+      let searchParams = new URLSearchParams(
+        {
+          "page": page,
+          "sort_by": sortBy,
+          "order": order,
+          "status": status,
+          "search_term": searchTerm
+        }
+      );
       if (portfolio)
-        url += `&portfolio=${portfolio}`
+        searchParams.append("portfolio", portfolio)
 
+      let url = `${baseUrlValue}?${searchParams.toString()}`
       fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -1207,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           // handle the display of proper messaging in the event that no domains exist in the list or search returns no results
-          updateDisplay(data, domainsWrapper, noDomainsWrapper, noSearchResultsWrapper, currentSearchTerm);
+          this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
           const domainList = document.querySelector('.domains__table tbody');
@@ -1225,7 +1430,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let markupForSuborganizationRow = '';
 
-            if (portfolioValue) {
+            if (this.portfolioValue) {
               markupForSuborganizationRow = `
                 <td>
                     <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
@@ -1271,181 +1476,438 @@ document.addEventListener('DOMContentLoaded', function() {
           // Do not scroll on first page load
           if (scroll)
             ScrollToElement('class', 'domains');
-          scrollToTable = true;
+          this.scrollToTable = true;
 
           // update pagination
-          updatePagination(
+          this.updatePagination(
             'domain',
             '#domains-pagination',
             '#domains-pagination .usa-pagination__counter',
             '#domains',
-            loadDomains,
             data.page,
             data.num_pages,
             data.has_previous,
             data.has_next,
             data.total,
-            currentSearchTerm
           );
-          currentSortBy = sortBy;
-          currentOrder = order;
-          currentSearchTerm = searchTerm;
+          this.currentSortBy = sortBy;
+          this.currentOrder = order;
+          this.currentSearchTerm = searchTerm;
         })
         .catch(error => console.error('Error fetching domains:', error));
+  }
+}
+
+
+class DomainRequestsTable extends LoadTableBase {
+
+  constructor() {
+    super('.domain-requests__table', '.domain-requests__table-wrapper', '#domain-requests__search-field', '#domain-requests__search-field-submit', '.domain-requests__reset-search', '.domain-requests__reset-filters', '.domain-requests__no-data', '.domain-requests__no-search-results');
+  }
+  /**
+     * Loads rows in the domains list, as well as updates pagination around the domains list
+     * based on the supplied attributes.
+     * @param {*} page - the page number of the results (starts with 1)
+     * @param {*} sortBy - the sort column option
+     * @param {*} order - the sort order {asc, desc}
+     * @param {*} scroll - control for the scrollToElement functionality
+     * @param {*} status - control for the status filter
+     * @param {*} searchTerm - the search term
+     * @param {*} portfolio - the portfolio id
+     */
+  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm = this.currentSearchTerm, portfolio = this.portfolioValue) {
+    let baseUrl = document.getElementById("get_domain_requests_json_url");
+    if (!baseUrl) {
+      return;
     }
 
-    // Add event listeners to table headers for sorting
-    tableHeaders.forEach(header => {
-      header.addEventListener('click', function() {
-        const sortBy = this.getAttribute('data-sortable');
-        let order = 'asc';
-        // sort order will be ascending, unless the currently sorted column is ascending, and the user
-        // is selecting the same column to sort in descending order
-        if (sortBy === currentSortBy) {
-          order = currentOrder === 'asc' ? 'desc' : 'asc';
-        }
-        // load the results with the updated sort
-        loadDomains(1, sortBy, order);
-      });
-    });
+    let baseUrlValue = baseUrl.innerHTML;
+    if (!baseUrlValue) {
+      return;
+    }
 
-    domainsSearchSubmit.addEventListener('click', function(e) {
-      e.preventDefault();
-      currentSearchTerm = domainsSearchInput.value;
-      // If the search is blank, we match the resetSearch functionality
-      if (currentSearchTerm) {
-        showElement(resetSearchButton);
-      } else {
-        hideElement(resetSearchButton);
+    // add searchParams
+    let searchParams = new URLSearchParams(
+      {
+        "page": page,
+        "sort_by": sortBy,
+        "order": order,
+        "status": status,
+        "search_term": searchTerm
       }
-      loadDomains(1, 'id', 'asc');
-      resetHeaders();
-    });
+    );
+    if (portfolio)
+      searchParams.append("portfolio", portfolio)
 
-    if (statusToggle) {
-      statusToggle.addEventListener('click', function() {
-        toggleCaret(statusToggle);
-      });
-    }
+    let url = `${baseUrlValue}?${searchParams.toString()}`
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.error('Error in AJAX call: ' + data.error);
+          return;
+        }
 
-    // Add event listeners to status filter checkboxes
-    statusCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', function() {
-        const checkboxValue = this.value;
-        
-        // Update currentStatus array based on checkbox state
-        if (this.checked) {
-          currentStatus.push(checkboxValue);
+        // handle the display of proper messaging in the event that no requests exist in the list or search returns no results
+        this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+
+        // identify the DOM element where the domain request list will be inserted into the DOM
+        const tbody = document.querySelector('.domain-requests__table tbody');
+        tbody.innerHTML = '';
+
+        // Unload modals will re-inject the DOM with the initial placeholders to allow for .on() in regular use cases
+        // We do NOT want that as it will cause multiple placeholders and therefore multiple inits on delete,
+        // which will cause bad delete requests to be sent.
+        const preExistingModalPlaceholders = document.querySelectorAll('[data-placeholder-for^="toggle-delete-domain-alert"]');
+        preExistingModalPlaceholders.forEach(element => {
+            element.remove();
+        });
+
+        // remove any existing modal elements from the DOM so they can be properly re-initialized
+        // after the DOM content changes and there are new delete modal buttons added
+        unloadModals();
+
+        let needsDeleteColumn = false;
+
+        needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
+
+        // Remove existing delete th and td if they exist
+        let existingDeleteTh =  document.querySelector('.delete-header');
+        if (!needsDeleteColumn) {
+          if (existingDeleteTh)
+            existingDeleteTh.remove();
         } else {
-          const index = currentStatus.indexOf(checkboxValue);
-          if (index > -1) {
-            currentStatus.splice(index, 1);
+          if (!existingDeleteTh) {
+            const delheader = document.createElement('th');
+            delheader.setAttribute('scope', 'col');
+            delheader.setAttribute('role', 'columnheader');
+            delheader.setAttribute('class', 'delete-header');
+            delheader.innerHTML = `
+              <span class="usa-sr-only">Delete Action</span>`;
+            let tableHeaderRow = document.querySelector('.domain-requests__table thead tr');
+            tableHeaderRow.appendChild(delheader);
           }
         }
 
-        // Manage visibility of reset filters button
-        if (currentStatus.length == 0) {
-          hideElement(resetFiltersButton);
-        } else {
-          showElement(resetFiltersButton);
-        }
+        data.domain_requests.forEach(request => {
+          const options = { year: 'numeric', month: 'short', day: 'numeric' };
+          const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${utcDateString(request.created_at)})</span>`;
+          const actionUrl = request.action_url;
+          const actionLabel = request.action_label;
+          const submissionDate = request.last_submitted_date ? new Date(request.last_submitted_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
+          
+          // The markup for the delete function either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
+          // Even if the request is not deletable, we may need these empty strings for the td if the deletable column is displayed
+          let modalTrigger = '';
 
-        // Disable the auto scroll
-        scrollToTable = false;
+          let markupCreatorRow = '';
 
-        // Call loadDomains with updated status
-        loadDomains(1, 'id', 'asc');
-        resetHeaders();
-        updateStatusIndicator();
-      });
-    });
+          if (this.portfolioValue) {
+            markupCreatorRow = `
+              <td>
+                  <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
+              </td>
+            `
+          }
 
-    // Reset UI and accessibility
-    function resetHeaders() {
-      tableHeaders.forEach(header => {
-        // Unset sort UI in headers
-        unsetHeader(header);
-      });
-      // Reset the announcement region
-      tableAnnouncementRegion.innerHTML = '';
-    }
+          // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
+          if (request.is_deletable) {
+            let modalHeading = '';
+            let modalDescription = '';
 
-    function resetSearch() {
-      domainsSearchInput.value = '';
-      currentSearchTerm = '';
-      hideElement(resetSearchButton);
-      loadDomains(1, 'id', 'asc');
-      resetHeaders();
-    }
+            if (request.requested_domain) {
+              modalHeading = `Are you sure you want to delete ${request.requested_domain}?`;
+              modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+            } else {
+              if (request.created_at) {
+                modalHeading = 'Are you sure you want to delete this domain request?';
+                modalDescription = `This will remove the domain request (created ${utcDateString(request.created_at)}) from the .gov registrar. This action cannot be undone`;
+              } else {
+                modalHeading = 'Are you sure you want to delete New domain request?';
+                modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+              }
+            }
 
-    if (resetSearchButton) {
-      resetSearchButton.addEventListener('click', function() {
-        resetSearch();
-      });
-    }
+            modalTrigger = `
+              <a 
+                role="button" 
+                id="button-toggle-delete-domain-alert-${request.id}"
+                href="#toggle-delete-domain-alert-${request.id}"
+                class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger line-height-sans-5"
+                aria-controls="toggle-delete-domain-alert-${request.id}"
+                data-open-modal
+              >
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                  <use xlink:href="/public/img/sprite.svg#delete"></use>
+                </svg> Delete <span class="usa-sr-only">${domainName}</span>
+              </a>`
 
-    function resetFilters() {
-      currentStatus = [];
-      statusCheckboxes.forEach(checkbox => {
-        checkbox.checked = false; 
-      });
-      hideElement(resetFiltersButton);
+            const modalSubmit = `
+              <button type="button"
+              class="usa-button usa-button--secondary usa-modal__submit"
+              data-pk = ${request.id}
+              name="delete-domain-request">Yes, delete request</button>
+            `
 
-      // Disable the auto scroll
-      scrollToTable = false;
+            const modal = document.createElement('div');
+            modal.setAttribute('class', 'usa-modal');
+            modal.setAttribute('id', `toggle-delete-domain-alert-${request.id}`);
+            modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
+            modal.setAttribute('aria-describedby', 'Domain will be removed');
+            modal.setAttribute('data-force-action', '');
 
-      loadDomains(1, 'id', 'asc');
-      resetHeaders();
-      updateStatusIndicator();
-      // No need to toggle close the filters. The focus shift will trigger that for us.
-    }
+            modal.innerHTML = `
+              <div class="usa-modal__content">
+                <div class="usa-modal__main">
+                  <h2 class="usa-modal__heading" id="modal-1-heading">
+                    ${modalHeading}
+                  </h2>
+                  <div class="usa-prose">
+                    <p id="modal-1-description">
+                      ${modalDescription}
+                    </p>
+                  </div>
+                  <div class="usa-modal__footer">
+                      <ul class="usa-button-group">
+                        <li class="usa-button-group__item">
+                          ${modalSubmit}
+                        </li>      
+                        <li class="usa-button-group__item">
+                            <button
+                                type="button"
+                                class="usa-button usa-button--unstyled padding-105 text-center"
+                                data-close-modal
+                            >
+                                Cancel
+                            </button>
+                        </li>
+                      </ul>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="usa-button usa-modal__close"
+                  aria-label="Close this window"
+                  data-close-modal
+                >
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <use xlink:href="/public/img/sprite.svg#close"></use>
+                  </svg>
+                </button>
+              </div>
+              `
 
-    if (resetFiltersButton) {
-      resetFiltersButton.addEventListener('click', function() {
-        resetFilters();
-      });
-    }
+            this.tableWrapper.appendChild(modal);
 
-    function updateStatusIndicator() {
-      statusIndicator.innerHTML = '';
-      // Even if the element is empty, it'll mess up the flex layout unless we set display none
-      statusIndicator.hideElement();
-      if (currentStatus.length)
-        statusIndicator.innerHTML = '(' + currentStatus.length + ')';
-        statusIndicator.showElement();
-    }
+            // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
+            if (this.portfolioValue) {
+              modalTrigger = `
+              <a 
+                role="button" 
+                id="button-toggle-delete-domain-alert-${request.id}"
+                href="#toggle-delete-domain-alert-${request.id}"
+                class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile-flex line-height-sans-5"
+                aria-controls="toggle-delete-domain-alert-${request.id}"
+                data-open-modal
+              >
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                  <use xlink:href="/public/img/sprite.svg#delete"></use>
+                </svg> Delete <span class="usa-sr-only">${domainName}</span>
+              </a>
 
-    function closeFilters() {
-      if (statusToggle.getAttribute("aria-expanded") === "true") {
-        statusToggle.click();
-      }
-    }
+              <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+                <div class="usa-accordion__heading">
+                  <button
+                    type="button"
+                    class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+                    aria-expanded="false"
+                    aria-controls="more-actions-${request.id}"
+                  >
+                    <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                      <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                    </svg>
+                  </button>
+                </div>
+                <div id="more-actions-${request.id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+                  <h2>More options</h2>
+                  <a 
+                    role="button" 
+                    id="button-toggle-delete-domain-alert-${request.id}"
+                    href="#toggle-delete-domain-alert-${request.id}"
+                    class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5"
+                    aria-controls="toggle-delete-domain-alert-${request.id}"
+                    data-open-modal
+                  >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                      <use xlink:href="/public/img/sprite.svg#delete"></use>
+                    </svg> Delete <span class="usa-sr-only">${domainName}</span>
+                  </a>
+                </div>
+              </div>
+              `
+            }
+          }
 
-    // Instead of managing the toggle/close on the filter buttons in all edge cases (user clicks on search, user clicks on ANOTHER filter,
-    // user clicks on main nav...) we add a listener and close the filters whenever the focus shifts out of the dropdown menu/filter button.
-    // NOTE: We may need to evolve this as we add more filters.
-    document.addEventListener('focusin', function(event) {
-      const accordion = document.querySelector('.usa-accordion--select');
-      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
-      
-      if (accordionThatIsOpen && !accordion.contains(event.target)) {
-        closeFilters();
-      }
-    });
 
-    // Close when user clicks outside
-    // NOTE: We may need to evolve this as we add more filters.
-    document.addEventListener('click', function(event) {
-      const accordion = document.querySelector('.usa-accordion--select');
-      const accordionThatIsOpen = document.querySelector('.usa-button--filter[aria-expanded="true"]');
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <th scope="row" role="rowheader" data-label="Domain name">
+              ${domainName}
+            </th>
+            <td data-sort-value="${new Date(request.last_submitted_date).getTime()}" data-label="Date submitted">
+              ${submissionDate}
+            </td>
+            ${markupCreatorRow}
+            <td data-label="Status">
+              ${request.status}
+            </td>
+            <td>
+              <a href="${actionUrl}">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                  <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
+                </svg>
+                ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
+              </a>
+            </td>
+            ${needsDeleteColumn ? '<td>'+modalTrigger+'</td>' : ''}
+          `;
+          tbody.appendChild(row);
+        });
+
+        // initialize modals immediately after the DOM content is updated
+        initializeModals();
+
+        // Now the DOM and modals are ready, add listeners to the submit buttons
+        const modals = document.querySelectorAll('.usa-modal__content');
+
+        modals.forEach(modal => {
+          const submitButton = modal.querySelector('.usa-modal__submit');
+          const closeButton = modal.querySelector('.usa-modal__close');
+          submitButton.addEventListener('click', () => {
+            let pk = submitButton.getAttribute('data-pk');
+            // Close the modal to remove the USWDS UI local classes
+            closeButton.click();
+            // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
+            let pageToDisplay = data.page;
+            if (data.total == 1 && data.unfiltered_total > 1) {
+              pageToDisplay--;
+            }
+            this.deleteDomainRequest(pk, pageToDisplay);
+          });
+        });
+
+        // Do not scroll on first page load
+        if (scroll)
+          ScrollToElement('class', 'domain-requests');
+        this.scrollToTable = true;
+
+        // update the pagination after the domain requests list is updated
+        this.updatePagination(
+          'domain request',
+          '#domain-requests-pagination',
+          '#domain-requests-pagination .usa-pagination__counter',
+          '#domain-requests',
+          data.page,
+          data.num_pages,
+          data.has_previous,
+          data.has_next,
+          data.total,
+        );
+        this.currentSortBy = sortBy;
+        this.currentOrder = order;
+        this.currentSearchTerm = searchTerm;
+      })
+      .catch(error => console.error('Error fetching domain requests:', error));
+  }
+
+  /**
+   * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
+   * @param {*} domainRequestPk - the identifier for the request that we're deleting
+   * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
+  */
+  deleteDomainRequest(domainRequestPk, pageToDisplay) {
+    // Use to debug uswds modal issues
+    //console.log('deleteDomainRequest')
     
-      if (accordionThatIsOpen && !accordion.contains(event.target)) {
-        closeFilters();
+    // Get csrf token
+    const csrfToken = getCsrfToken();
+    // Create FormData object and append the CSRF token
+    const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&delete-domain-request=`;
+
+    fetch(`/domain-request/${domainRequestPk}/delete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrfToken,
+      },
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      // Update data and UI
+      this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+    })
+    .catch(error => console.error('Error fetching domain requests:', error));
+  }
+}
+
+
+/**
+ * An IIFE that listens for DOM Content to be loaded, then executes.  This function
+ * initializes the domains list and associated functionality on the home page of the app.
+ *
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  const isDomainsPage = document.querySelector("#domains") 
+  if (isDomainsPage){
+    const domainsTable = new DomainsTable();
+    if (domainsTable.tableWrapper) {
+      // Initial load
+      domainsTable.loadTable(1);
+    }
+  }
+});
+
+/**
+ * An IIFE that listens for DOM Content to be loaded, then executes. This function
+ * initializes the domain requests list and associated functionality on the home page of the app.
+ *
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  const domainRequestsSectionWrapper = document.querySelector('.domain-requests');
+  if (domainRequestsSectionWrapper) {
+    const domainRequestsTable = new DomainRequestsTable();
+    if (domainRequestsTable.tableWrapper) {
+      domainRequestsTable.loadTable(1);
+    }
+  }
+
+  document.addEventListener('focusin', function(event) {
+    closeOpenAccordions(event);
+  });
+  
+  document.addEventListener('click', function(event) {
+    closeOpenAccordions(event);
+  });
+
+  function closeMoreActionMenu(accordionThatIsOpen) {
+    if (accordionThatIsOpen.getAttribute("aria-expanded") === "true") {
+      accordionThatIsOpen.click();
+    }
+  }
+
+  function closeOpenAccordions(event) {
+    const openAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
+    openAccordions.forEach((openAccordionButton) => {
+      // Find the corresponding accordion
+      const accordion = openAccordionButton.closest('.usa-accordion--more-actions');
+      if (accordion && !accordion.contains(event.target)) {
+        // Close the accordion if the click is outside
+        closeMoreActionMenu(openAccordionButton);
       }
     });
-
-    // Initial load
-    loadDomains(1);
   }
 });
 
@@ -1462,458 +1924,6 @@ const utcDateString = (dateString) => {
 
   return `${utcMonth} ${utcDay}, ${utcYear}, ${utcHours}:${utcMinutes} ${ampm} UTC`;
 };
-
-/**
- * An IIFE that listens for DOM Content to be loaded, then executes. This function
- * initializes the domain requests list and associated functionality on the home page of the app.
- *
- */
-document.addEventListener('DOMContentLoaded', function() {
-  const domainRequestsSectionWrapper = document.querySelector('.domain-requests');
-  const domainRequestsWrapper = document.querySelector('.domain-requests__table-wrapper');
-
-  if (domainRequestsWrapper) {
-    let currentSortBy = 'id';
-    let currentOrder = 'asc';
-    const noDomainRequestsWrapper = document.querySelector('.domain-requests__no-data');
-    const noSearchResultsWrapper = document.querySelector('.domain-requests__no-search-results');
-    let scrollToTable = false;
-    let currentSearchTerm = '';
-    const domainRequestsSearchInput = document.getElementById('domain-requests__search-field');
-    const domainRequestsSearchSubmit = document.getElementById('domain-requests__search-field-submit');
-    const tableHeaders = document.querySelectorAll('.domain-requests__table th[data-sortable]');
-    const tableAnnouncementRegion = document.querySelector('.domain-requests__table-wrapper .usa-table__announcement-region');
-    const resetSearchButton = document.querySelector('.domain-requests__reset-search');
-    const portfolioElement = document.getElementById('portfolio-js-value');
-    const portfolioValue = portfolioElement ? portfolioElement.getAttribute('data-portfolio') : null;
-
-    /**
-     * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
-     * @param {*} domainRequestPk - the identifier for the request that we're deleting
-     * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
-    */
-    function deleteDomainRequest(domainRequestPk,pageToDisplay) {
-      
-      // Use to debug uswds modal issues
-      //console.log('deleteDomainRequest')
-      
-      // Get csrf token
-      const csrfToken = getCsrfToken();
-      // Create FormData object and append the CSRF token
-      const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&delete-domain-request=`;
-
-      fetch(`/domain-request/${domainRequestPk}/delete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': csrfToken,
-        },
-        body: formData
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        // Update data and UI
-        loadDomainRequests(pageToDisplay, currentSortBy, currentOrder, scrollToTable, currentSearchTerm);
-      })
-      .catch(error => console.error('Error fetching domain requests:', error));
-    }
-  
-    // Helper function to get the CSRF token from the cookie
-    function getCsrfToken() {
-      return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
-    }
-
-    /**
-     * Loads rows in the domain requests list, as well as updates pagination around the domain requests list
-     * based on the supplied attributes.
-     * @param {*} page - the page number of the results (starts with 1)
-     * @param {*} sortBy - the sort column option
-     * @param {*} order - the sort order {asc, desc}
-     * @param {*} scroll - control for the scrollToElement functionality
-     * @param {*} searchTerm - the search term
-     */
-    function loadDomainRequests(page, sortBy = currentSortBy, order = currentOrder, scroll = scrollToTable, searchTerm = currentSearchTerm, portfolio = portfolioValue) {
-      // fetch json of page of domain requests, given params
-      let baseUrl = document.getElementById("get_domain_requests_json_url");
-      if (!baseUrl) {
-        return;
-      }
-
-      let baseUrlValue = baseUrl.innerHTML;
-      if (!baseUrlValue) {
-        return;
-      }
-
-      // fetch json of page of requests, given params
-      let url = `${baseUrlValue}?page=${page}&sort_by=${sortBy}&order=${order}&search_term=${searchTerm}`
-      if (portfolio)
-        url += `&portfolio=${portfolio}`
-
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            console.error('Error in AJAX call: ' + data.error);
-            return;
-          }
-
-          // handle the display of proper messaging in the event that no requests exist in the list or search returns no results
-          updateDisplay(data, domainRequestsWrapper, noDomainRequestsWrapper, noSearchResultsWrapper, currentSearchTerm);
-
-          // identify the DOM element where the domain request list will be inserted into the DOM
-          const tbody = document.querySelector('.domain-requests__table tbody');
-          tbody.innerHTML = '';
-
-          // Unload modals will re-inject the DOM with the initial placeholders to allow for .on() in regular use cases
-          // We do NOT want that as it will cause multiple placeholders and therefore multiple inits on delete,
-          // which will cause bad delete requests to be sent.
-          const preExistingModalPlaceholders = document.querySelectorAll('[data-placeholder-for^="toggle-delete-domain-alert"]');
-          preExistingModalPlaceholders.forEach(element => {
-              element.remove();
-          });
-
-          // remove any existing modal elements from the DOM so they can be properly re-initialized
-          // after the DOM content changes and there are new delete modal buttons added
-          unloadModals();
-
-          let needsDeleteColumn = false;
-
-          needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
-
-          // Remove existing delete th and td if they exist
-          let existingDeleteTh =  document.querySelector('.delete-header');
-          if (!needsDeleteColumn) {
-            if (existingDeleteTh)
-              existingDeleteTh.remove();
-          } else {
-            if (!existingDeleteTh) {
-              const delheader = document.createElement('th');
-              delheader.setAttribute('scope', 'col');
-              delheader.setAttribute('role', 'columnheader');
-              delheader.setAttribute('class', 'delete-header');
-              delheader.innerHTML = `
-                <span class="usa-sr-only">Delete Action</span>`;
-              let tableHeaderRow = document.querySelector('.domain-requests__table thead tr');
-              tableHeaderRow.appendChild(delheader);
-            }
-          }
-
-          data.domain_requests.forEach(request => {
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${utcDateString(request.created_at)})</span>`;
-            const actionUrl = request.action_url;
-            const actionLabel = request.action_label;
-            const submissionDate = request.last_submitted_date ? new Date(request.last_submitted_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
-            
-            // The markup for the delete function either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
-            // Even if the request is not deletable, we may need these empty strings for the td if the deletable column is displayed
-            let modalTrigger = '';
-
-            let markupCreatorRow = '';
-
-            if (portfolioValue) {
-              markupCreatorRow = `
-                <td>
-                    <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
-                </td>
-              `
-            }
-
-            // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
-            if (request.is_deletable) {
-              let modalHeading = '';
-              let modalDescription = '';
-
-              if (request.requested_domain) {
-                modalHeading = `Are you sure you want to delete ${request.requested_domain}?`;
-                modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
-              } else {
-                if (request.created_at) {
-                  modalHeading = 'Are you sure you want to delete this domain request?';
-                  modalDescription = `This will remove the domain request (created ${utcDateString(request.created_at)}) from the .gov registrar. This action cannot be undone`;
-                } else {
-                  modalHeading = 'Are you sure you want to delete New domain request?';
-                  modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
-                }
-              }
-
-              modalTrigger = `
-                <a 
-                  role="button" 
-                  id="button-toggle-delete-domain-alert-${request.id}"
-                  href="#toggle-delete-domain-alert-${request.id}"
-                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger line-height-sans-5"
-                  aria-controls="toggle-delete-domain-alert-${request.id}"
-                  data-open-modal
-                >
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#delete"></use>
-                  </svg> Delete <span class="usa-sr-only">${domainName}</span>
-                </a>`
-
-              const modalSubmit = `
-                <button type="button"
-                class="usa-button usa-button--secondary usa-modal__submit"
-                data-pk = ${request.id}
-                name="delete-domain-request">Yes, delete request</button>
-              `
-
-              const modal = document.createElement('div');
-              modal.setAttribute('class', 'usa-modal');
-              modal.setAttribute('id', `toggle-delete-domain-alert-${request.id}`);
-              modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
-              modal.setAttribute('aria-describedby', 'Domain will be removed');
-              modal.setAttribute('data-force-action', '');
-
-              modal.innerHTML = `
-                <div class="usa-modal__content">
-                  <div class="usa-modal__main">
-                    <h2 class="usa-modal__heading" id="modal-1-heading">
-                      ${modalHeading}
-                    </h2>
-                    <div class="usa-prose">
-                      <p id="modal-1-description">
-                        ${modalDescription}
-                      </p>
-                    </div>
-                    <div class="usa-modal__footer">
-                        <ul class="usa-button-group">
-                          <li class="usa-button-group__item">
-                            ${modalSubmit}
-                          </li>      
-                          <li class="usa-button-group__item">
-                              <button
-                                  type="button"
-                                  class="usa-button usa-button--unstyled padding-105 text-center"
-                                  data-close-modal
-                              >
-                                  Cancel
-                              </button>
-                          </li>
-                        </ul>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    class="usa-button usa-modal__close"
-                    aria-label="Close this window"
-                    data-close-modal
-                  >
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                      <use xlink:href="/public/img/sprite.svg#close"></use>
-                    </svg>
-                  </button>
-                </div>
-                `
-
-              domainRequestsSectionWrapper.appendChild(modal);
-
-              // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
-              if (portfolioValue) {
-                modalTrigger = `
-                <a 
-                  role="button" 
-                  id="button-toggle-delete-domain-alert-${request.id}"
-                  href="#toggle-delete-domain-alert-${request.id}"
-                  class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile-flex line-height-sans-5"
-                  aria-controls="toggle-delete-domain-alert-${request.id}"
-                  data-open-modal
-                >
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#delete"></use>
-                  </svg> Delete <span class="usa-sr-only">${domainName}</span>
-                </a>
-
-                <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
-                  <div class="usa-accordion__heading">
-                    <button
-                      type="button"
-                      class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
-                      aria-expanded="false"
-                      aria-controls="more-actions-${request.id}"
-                    >
-                      <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-                        <use xlink:href="/public/img/sprite.svg#more_vert"></use>
-                      </svg>
-                    </button>
-                  </div>
-                  <div id="more-actions-${request.id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
-                    <h2>More options</h2>
-                    <a 
-                      role="button" 
-                      id="button-toggle-delete-domain-alert-${request.id}"
-                      href="#toggle-delete-domain-alert-${request.id}"
-                      class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5"
-                      aria-controls="toggle-delete-domain-alert-${request.id}"
-                      data-open-modal
-                    >
-                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                        <use xlink:href="/public/img/sprite.svg#delete"></use>
-                      </svg> Delete <span class="usa-sr-only">${domainName}</span>
-                    </a>
-                  </div>
-                </div>
-                `
-              }
-            }
-
-
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <th scope="row" role="rowheader" data-label="Domain name">
-                ${domainName}
-              </th>
-              <td data-sort-value="${new Date(request.last_submitted_date).getTime()}" data-label="Date submitted">
-                ${submissionDate}
-              </td>
-              ${markupCreatorRow}
-              <td data-label="Status">
-                ${request.status}
-              </td>
-              <td>
-                <a href="${actionUrl}">
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
-                  </svg>
-                  ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
-                </a>
-              </td>
-              ${needsDeleteColumn ? '<td>'+modalTrigger+'</td>' : ''}
-            `;
-            tbody.appendChild(row);
-          });
-
-          // initialize modals immediately after the DOM content is updated
-          initializeModals();
-
-          // Now the DOM and modals are ready, add listeners to the submit buttons
-          const modals = document.querySelectorAll('.usa-modal__content');
-
-          modals.forEach(modal => {
-            const submitButton = modal.querySelector('.usa-modal__submit');
-            const closeButton = modal.querySelector('.usa-modal__close');
-            submitButton.addEventListener('click', function() {
-              pk = submitButton.getAttribute('data-pk');
-              // Close the modal to remove the USWDS UI local classes
-              closeButton.click();
-              // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
-              let pageToDisplay = data.page;
-              if (data.total == 1 && data.unfiltered_total > 1) {
-                pageToDisplay--;
-              }
-              deleteDomainRequest(pk, pageToDisplay);
-            });
-          });
-
-          // Do not scroll on first page load
-          if (scroll)
-            ScrollToElement('class', 'domain-requests');
-          scrollToTable = true;
-
-          // update the pagination after the domain requests list is updated
-          updatePagination(
-            'domain request',
-            '#domain-requests-pagination',
-            '#domain-requests-pagination .usa-pagination__counter',
-            '#domain-requests',
-            loadDomainRequests,
-            data.page,
-            data.num_pages,
-            data.has_previous,
-            data.has_next,
-            data.total,
-            currentSearchTerm
-          );
-          currentSortBy = sortBy;
-          currentOrder = order;
-          currentSearchTerm = searchTerm;
-        })
-        .catch(error => console.error('Error fetching domain requests:', error));
-    }
-
-    // Add event listeners to table headers for sorting
-    tableHeaders.forEach(header => {
-      header.addEventListener('click', function() {
-        const sortBy = this.getAttribute('data-sortable');
-        let order = 'asc';
-        // sort order will be ascending, unless the currently sorted column is ascending, and the user
-        // is selecting the same column to sort in descending order
-        if (sortBy === currentSortBy) {
-          order = currentOrder === 'asc' ? 'desc' : 'asc';
-        }
-        loadDomainRequests(1, sortBy, order);
-      });
-    });
-
-    domainRequestsSearchSubmit.addEventListener('click', function(e) {
-      e.preventDefault();
-      currentSearchTerm = domainRequestsSearchInput.value;
-      // If the search is blank, we match the resetSearch functionality
-      if (currentSearchTerm) {
-        showElement(resetSearchButton);
-      } else {
-        hideElement(resetSearchButton);
-      }
-      loadDomainRequests(1, 'id', 'asc');
-      resetHeaders();
-    });
-
-    // Reset UI and accessibility
-    function resetHeaders() {
-      tableHeaders.forEach(header => {
-        // unset sort UI in headers
-        unsetHeader(header);
-      });
-      // Reset the announcement region
-      tableAnnouncementRegion.innerHTML = '';
-    }
-
-    function resetSearch() {
-      domainRequestsSearchInput.value = '';
-      currentSearchTerm = '';
-      hideElement(resetSearchButton);
-      loadDomainRequests(1, 'id', 'asc');
-      resetHeaders();
-    }
-
-    if (resetSearchButton) {
-      resetSearchButton.addEventListener('click', function() {
-        resetSearch();
-      });
-    }
-
-    function closeMoreActionMenu(accordionThatIsOpen) {
-      if (accordionThatIsOpen.getAttribute("aria-expanded") === "true") {
-        accordionThatIsOpen.click();
-      }
-    }
-
-    document.addEventListener('focusin', function(event) {
-      closeOpenAccordions(event);
-    });
-    
-    document.addEventListener('click', function(event) {
-      closeOpenAccordions(event);
-    });
-
-    function closeOpenAccordions(event) {
-      const openAccordions = document.querySelectorAll('.usa-button--more-actions[aria-expanded="true"]');
-      openAccordions.forEach((openAccordionButton) => {
-        // Find the corresponding accordion
-        const accordion = openAccordionButton.closest('.usa-accordion--more-actions');
-        if (accordion && !accordion.contains(event.target)) {
-          // Close the accordion if the click is outside
-          closeMoreActionMenu(openAccordionButton);
-        }
-      });
-    }
-
-    // Initial load
-    loadDomainRequests(1);
-  }
-});
 
 
 /**

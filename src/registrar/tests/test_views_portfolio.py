@@ -200,7 +200,7 @@ class TestPortfolio(WebTest):
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="read-only-label">Federal agency</h4>')
+            self.assertContains(response, '<h4 class="read-only-label">Organization name</h4>')
             # The read only label for city will be a h4
             self.assertContains(response, '<h4 class="read-only-label">City</h4>')
             self.assertNotContains(response, 'for="id_city"')
@@ -225,10 +225,10 @@ class TestPortfolio(WebTest):
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="read-only-label">Federal agency</h4>')
+            self.assertContains(response, '<h4 class="read-only-label">Organization name</h4>')
             # The read only label for city will be a h4
             self.assertNotContains(response, '<h4 class="read-only-label">City</h4>')
-            self.assertNotContains(response, '<p class="read-only-value">Los Angeles</p>>')
+            self.assertNotContains(response, '<p class="read-only-value">Los Angeles</p>')
             self.assertContains(response, 'for="id_city"')
 
     @less_console_noise_decorator
@@ -342,9 +342,7 @@ class TestPortfolio(WebTest):
                 user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
             )
             page = self.app.get(reverse("organization"))
-            self.assertContains(
-                page, "The name of your federal agency will be publicly listed as the domain registrant."
-            )
+            self.assertContains(page, "The name of your organization will be publicly listed as the domain registrant.")
 
     @less_console_noise_decorator
     def test_domain_org_name_address_content(self):

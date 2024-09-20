@@ -8,33 +8,30 @@
 {% block content %}
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
-    {% comment %} 
-    TODO: Uncomment in #2596
     {% if portfolio %}
       {% url 'domain-requests' as url %}
-      <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
-        <ol class="usa-breadcrumb__list">
-          <li class="usa-breadcrumb__list-item">
+    {% else %}
+      {% url 'home' as url %}
+    {% endif %}
+    <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
+      <ol class="usa-breadcrumb__list">
+        <li class="usa-breadcrumb__list-item">
+          {% if portfolio %}
             <a href="{{ url }}" class="usa-breadcrumb__link"><span>Domain requests</span></a>
-          </li>
-          <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-            <span>{{ DomainRequest.requested_domain.name }}</span
-            >
-          </li>
-        </ol>
-      </nav>
-    {% else %}{% endcomment %}
-    {% url 'home' as url %}
-    <a href="{{ url }}" class="breadcrumb__back">
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-      <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
-      </svg>
-  
-      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-        Back to manage your domains
-      </p>
-    </a>
-    {% comment %} {% endif %}{% endcomment %}
+          {% else %}
+            <a href="{{ url }}" class="usa-breadcrumb__link"><span>Manage your domains</span></a>
+          {% endif %}
+        </li>
+        <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+          {% if not DomainRequest.requested_domain and DomainRequest.status == DomainRequest.DomainRequestStatus.STARTED %}
+            <span>New domain request</span>
+          {% else %}
+            <span>{{ DomainRequest.requested_domain.name }}</span>
+          {% endif %}
+        </li>
+      </ol>
+    </nav>
+
     <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
     <div
         class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
@@ -48,25 +45,71 @@
           <span class="text-bold text-primary-darker">
              Status:
           </span>
-          {% if DomainRequest.status == 'approved' %} Approved 
-          {% elif DomainRequest.status == 'in review' %} In review 
-          {% elif DomainRequest.status == 'rejected' %} Rejected
-          {% elif DomainRequest.status == 'submitted' %} Submitted
-          {% elif DomainRequest.status == 'ineligible' %} Ineligible
-          {% else %}ERROR Please contact technical support/dev
-          {% endif %}
+          {{ DomainRequest.get_status_display|default:"ERROR Please contact technical support/dev" }}
         </p>
       </div>
     </div>
     <br>
-    <p><b class="review__step__name">Last updated:</b> {{DomainRequest.updated_at|date:"F j, Y"}}</p>
-  
+
+    {% with statuses=DomainRequest.DomainRequestStatus last_submitted=DomainRequest.last_submitted_date|date:"F j, Y" first_submitted=DomainRequest.first_submitted_date|date:"F j, Y" last_status_update=DomainRequest.last_status_update|date:"F j, Y" %}
+    {% comment %} 
+    These are intentionally seperated this way. 
+    There is some code repetition, but it gives us more flexibility rather than a dense reduction. 
+    Leave it this way until we've solidified our requirements.
+    {% endcomment %}
+    {% if DomainRequest.status == statuses.STARTED %}
+      {% with first_started_date=DomainRequest.get_first_status_started_date|date:"F j, Y" %}
+      <p class="margin-top-1">
+        {% comment %} 
+        A newly created domain request will not have a value for last_status update.
+        This is because the status never really updated. 
+        However, if this somehow goes back to started we can default to displaying that new date.
+        {% endcomment %}
+        <b class="review__step__name">Started on:</b> {{last_status_update|default:first_started_date}}
+      </p>
+      {% endwith %}
+    {% elif DomainRequest.status == statuses.SUBMITTED %}
+      <p class="margin-top-1 margin-bottom-1">
+        <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+      </p>
+      <p class="margin-top-1">
+        <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+      </p>
+    {% elif DomainRequest.status == statuses.ACTION_NEEDED %}
+      <p class="margin-top-1 margin-bottom-1">
+        <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+      </p>
+      <p class="margin-top-1">
+        <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+      </p>
+    {% elif DomainRequest.status == statuses.REJECTED %}
+      <p class="margin-top-1 margin-bottom-1">
+        <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+      </p>
+      <p class="margin-top-1">
+        <b class="review__step__name">Rejected on:</b> {{last_status_update}}
+      </p>
+    {% elif DomainRequest.status == statuses.WITHDRAWN %}
+      <p class="margin-top-1 margin-bottom-1">
+        <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
+      </p>
+      <p class="margin-top-1">
+        <b class="review__step__name">Withdrawn on:</b> {{last_status_update}}
+      </p>
+    {% else %}
+      {% comment %} Shown for in_review, approved, ineligible {% endcomment %}
+      <p class="margin-top-1">
+        <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+      </p>
+    {% endif %}
+
     {% if DomainRequest.status != 'rejected' %}
     <p>{% include "includes/domain_request.html" %}</p>
     <p><a href="{% url 'domain-request-withdraw-confirmation' pk=DomainRequest.id %}" class="usa-button usa-button--outline withdraw_outline">
       Withdraw request</a>
     </p>
     {% endif %}
+    {% endwith %}
   </div>
 
   <div class="grid-col desktop:grid-offset-2 maxw-tablet">
@@ -100,7 +143,7 @@
     {% endif %}
 
     {% if DomainRequest.organization_name %}
-      {% include "includes/summary_item.html" with title='Organization name and mailing address' value=DomainRequest  address='true' heading_level=heading_level %}
+      {% include "includes/summary_item.html" with title='Organization' value=DomainRequest  address='true' heading_level=heading_level %}
     {% endif %}
 
     {% if DomainRequest.about_your_organization %}
@@ -130,7 +173,6 @@
     {% if DomainRequest.creator %}
       {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.creator contact='true' heading_level=heading_level %}
     {% endif %}
-
     {% if DomainRequest.other_contacts.all %}
       {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.other_contacts.all contact='true' list='true' heading_level=heading_level %}
     {% else %}
@@ -141,8 +183,8 @@
     {% if DomainRequest %}
       <h3 class="register-form-review-header">CISA Regional Representative</h3>
       <ul class="usa-list usa-list--unstyled margin-top-0">
-        {% if domain_request.cisa_representative_first_name %}
-          {{domain_request.cisa_representative_first_name}} {{domain_request.cisa_representative_last_name}}
+        {% if DomainRequest.cisa_representative_first_name %}
+          {{ DomainRequest.get_formatted_cisa_rep_name }}
         {% else %}
           No
         {% endif %}
