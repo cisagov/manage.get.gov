@@ -2474,6 +2474,11 @@ class DomainInformationInline(admin.StackedInline):
                 modified_fieldsets[index][1]["fields"].extend(
                     ["domain_managers", "invited_domain_managers"]
                 )  # type: ignore
+            elif title == "Background info":
+                # move domain request and notes to background
+                modified_fieldsets[index][1]["fields"].extend(
+                    ["domain_request", "notes"]
+                )  # type: ignore
 
         # Remove or remove fieldset sections
         for index, (title, f) in enumerate(modified_fieldsets):
