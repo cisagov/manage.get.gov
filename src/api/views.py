@@ -2,7 +2,7 @@
 
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url
@@ -19,7 +19,7 @@ from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
 
 
 DOMAIN_FILE_URL = "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
-RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/"
+RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/{domain}"
 
 
 DOMAIN_API_MESSAGES = {
@@ -108,8 +108,8 @@ def rdap(request, domain=""):
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "")
 
-    rdap_response = requests.get(DOMAIN_FILE_URL, domain)
-    return rdap_response
+    rdap_data = requests.get(RDAP_URL.format(domain=domain)).json()
+    return JsonResponse(rdap_data)
 
 
 @require_http_methods(["GET"])
