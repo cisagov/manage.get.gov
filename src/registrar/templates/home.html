@@ -5,7 +5,7 @@
 {% block title %} Home | {% endblock %}
 
 {% block content %}
-<main id="main-content" class="grid-container">
+<main id="main-content" class="grid-container {% if is_widescreen_mode %} grid-container--widescreen {% endif %}">
 {% if user.is_authenticated %}
 {# the entire logged in page goes here #}
 
