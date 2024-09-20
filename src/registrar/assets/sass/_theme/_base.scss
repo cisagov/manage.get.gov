@@ -110,7 +110,7 @@ with the searchbar in widescreen mode.
 
 EXPLANATION:  The existing frontend implementation puts the searchbar and export
 button in two separate columns in a grid, which creates a solid wrap-around effect
-for mobile divices.  The searchbar had a max-width that exactly equaled the max width
+for mobile devices.  The searchbar had a max-width that exactly equaled the max width
 of its parent column (for non-widescreens), so there wasn't any issue at this time of 
 implementation.
 However, during immplementation of widescreen mode this small max-width caused the searchbar to
