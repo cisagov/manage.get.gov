@@ -931,9 +931,10 @@ ul.add-list-reset {
     font-size: 14px;
 }
 
-.domain-name-truncate {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-}
+.domain-name-wrap {
+    white-space: normal; /* Allows wrapping */
+    word-wrap: break-word; /* Ensures that long words or URLs will break and wrap */
+    overflow: visible; /* Ensures no truncation */
+    word-break: break-all; /* Breaks words at any point if needed */
+    max-width: 100%; /* Adjust as necessary to limit the width */
+  }
