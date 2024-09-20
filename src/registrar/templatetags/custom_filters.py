@@ -3,6 +3,9 @@ from django import template
 import re
 from registrar.models.domain_request import DomainRequest
 from phonenumber_field.phonenumber import PhoneNumber
+from registrar.views.domain_request import DomainRequestWizard
+
+from registrar.models.utility.generic_helper import get_url_name
 
 register = template.Library()
 logger = logging.getLogger(__name__)
@@ -174,3 +177,65 @@ def has_contact_info(user):
 @register.filter
 def model_name_lowercase(instance):
     return instance.__class__.__name__.lower()
+
+
+@register.filter(name="is_domain_subpage")
+def is_domain_subpage(path):
+    """Checks if the given page is a subpage of domains.
+    Takes a path name, like '/domains/'."""
+    # Since our pages aren't unified under a common path, we need this approach for now.
+    url_names = [
+        "domains",
+        "no-portfolio-domains",
+        "domain",
+        "domain-users",
+        "domain-dns",
+        "domain-dns-nameservers",
+        "domain-dns-dnssec",
+        "domain-dns-dnssec-dsdata",
+        "domain-your-contact-information",
+        "domain-org-name-address",
+        "domain-senior-official",
+        "domain-security-email",
+        "domain-users-add",
+        "domain-request-delete",
+        "domain-user-delete",
+        "invitation-delete",
+    ]
+    return get_url_name(path) in url_names
+
+
+@register.filter(name="is_domain_request_subpage")
+def is_domain_request_subpage(path):
+    """Checks if the given page is a subpage of domain requests.
+    Takes a path name, like '/requests/'."""
+    # Since our pages aren't unified under a common path, we need this approach for now.
+    url_names = [
+        "domain-requests",
+        "no-portfolio-requests",
+        "domain-request-status",
+        "domain-request-withdraw-confirmation",
+        "domain-request-withdrawn",
+        "domain-request-delete",
+    ]
+
+    # The domain request wizard pages don't have a defined path,
+    # so we need to check directly on it.
+    wizard_paths = [
+        DomainRequestWizard.EDIT_URL_NAME,
+        DomainRequestWizard.URL_NAMESPACE,
+        DomainRequestWizard.NEW_URL_NAME,
+    ]
+    return get_url_name(path) in url_names or any(wizard in path for wizard in wizard_paths)
+
+
+@register.filter(name="is_portfolio_subpage")
+def is_portfolio_subpage(path):
+    """Checks if the given page is a subpage of portfolio.
+    Takes a path name, like '/organization/'."""
+    # Since our pages aren't unified under a common path, we need this approach for now.
+    url_names = [
+        "organization",
+        "senior-official",
+    ]
+    return get_url_name(path) in url_names

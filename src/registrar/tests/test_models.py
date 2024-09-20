@@ -256,19 +256,9 @@ class TestDomainRequest(TestCase):
 
         email_allowed.delete()
 
-    @override_flag("profile_feature", active=False)
-    @less_console_noise_decorator
-    def test_submit_from_started_sends_email(self):
-        msg = "Create a domain request and submit it and see if email was sent."
-        domain_request = completed_domain_request(user=self.dummy_user_2)
-        self.check_email_sent(
-            domain_request, msg, "submit", 1, expected_content="Lava", expected_email=self.dummy_user_2.email
-        )
-
-    @override_flag("profile_feature", active=True)
     @less_console_noise_decorator
     def test_submit_from_started_sends_email_to_creator(self):
-        """Tests if, when the profile feature flag is on, we send an email to the creator"""
+        """tests that we send an email to the creator"""
         msg = "Create a domain request and submit it and see if email was sent when the feature flag is on."
         domain_request = completed_domain_request(user=self.dummy_user_2)
         self.check_email_sent(

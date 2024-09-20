@@ -72,12 +72,6 @@ class CheckUserProfileMiddleware:
         """Runs pre-processing logic for each view. Checks for the
         finished_setup flag on the current user. If they haven't done so,
         then we redirect them to the finish setup page."""
-        # Check that the user is "opted-in" to the profile feature flag
-        has_profile_feature_flag = flag_is_active(request, "profile_feature")
-
-        # If they aren't, skip this check entirely
-        if not has_profile_feature_flag:
-            return None
 
         if request.user.is_authenticated:
             profile_page = self.profile_page

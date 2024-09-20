@@ -1977,11 +1977,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         so we should display that information using this function.
 
         """
-
-        if hasattr(obj, "creator"):
-            recipient = obj.creator
-        else:
-            recipient = None
+        recipient = obj.creator
 
         # Displays a warning in admin when an email cannot be sent
         if recipient and recipient.email:
@@ -2186,7 +2182,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
         emails = self.get_all_action_needed_reason_emails(obj)
         extra_context["action_needed_reason_emails"] = json.dumps(emails)
-        extra_context["has_profile_feature_flag"] = flag_is_active(request, "profile_feature")
 
         # Denote if an action needed email was sent or not
         email_sent = request.session.get("action_needed_email_sent", False)

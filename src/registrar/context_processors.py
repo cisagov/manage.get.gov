@@ -1,5 +1,4 @@
 from django.conf import settings
-from waffle.decorators import flag_is_active
 
 
 def language_code(request):
@@ -52,10 +51,6 @@ def org_user_status(request):
 
 def add_path_to_context(request):
     return {"path": getattr(request, "path", None)}
-
-
-def add_has_profile_feature_flag_to_context(request):
-    return {"has_profile_feature_flag": flag_is_active(request, "profile_feature")}
 
 
 def portfolio_permissions(request):

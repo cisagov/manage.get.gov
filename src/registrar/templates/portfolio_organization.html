@@ -1,7 +1,7 @@
 {% extends 'portfolio_base.html' %}
 {% load static field_helpers%}
 
-{% block title %}Organization mailing address | {{ portfolio.name }}{% endblock %}
+{% block title %}Organization name and mailing address | {{ portfolio.name }}{% endblock %}
 
 {% load static %}
 
@@ -19,21 +19,25 @@
 
     <div class="tablet:grid-col-9" id="main-content">
 
+        {% block messages %}
+            {% include "includes/form_messages.html" %}
+        {% endblock %}
+
         <h1>Organization</h1>
 
-        <p>The name of your federal agency will be publicly listed as the domain registrant.</p>
+        <p>The name of your organization will be publicly listed as the domain registrant.</p>
 
         {% if has_edit_org_portfolio_permission %}
             <p>
-                The federal agency for your organization can’t be updated here.
+                Your organization name can’t be updated here.
                 To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
             </p>
 
             {% include "includes/form_errors.html" with form=form %}
             {% include "includes/required_fields.html" %}
-            <form class="usa-form usa-form--large" method="post" novalidate>
+            <form class="usa-form usa-form--large desktop:margin-top-4" method="post" novalidate>
                 {% csrf_token %}
-                <h4 class="read-only-label">Federal agency</h4>
+                <h4 class="read-only-label">Organization name</h4>
                 <p class="read-only-value">
                     {{ portfolio.federal_agency }}
                 </p>
@@ -49,7 +53,7 @@
                 </button>
             </form>
         {% else %}
-            <h4 class="read-only-label">Federal agency</h4>
+            <h4 class="read-only-label">Organization name</h4>
             <p class="read-only-value">
                 {{ portfolio.federal_agency }}
             </p>

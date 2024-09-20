@@ -126,7 +126,15 @@ class AvailableAPITest(MockEppLib):
 
     def setUp(self):
         super().setUp()
-        self.user = get_user_model().objects.create(username="username")
+        username = "test_user"
+        first_name = "First"
+        last_name = "Last"
+        email = "info@example.com"
+        title = "title"
+        phone = "8080102431"
+        self.user = get_user_model().objects.create(
+            username=username, title=title, first_name=first_name, last_name=last_name, email=email, phone=phone
+        )
 
     def test_available_get(self):
         self.client.force_login(self.user)
