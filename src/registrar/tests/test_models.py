@@ -115,6 +115,54 @@ class TestDomainRequest(TestCase):
             return self.assertRaises(Exception, None, exception_type)
 
     @less_console_noise_decorator
+    def test_request_is_withdrawable(self):
+        """Tests the is_withdrawable function"""
+        domain_request_1 = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            name="city2.gov",
+        )
+        domain_request_2 = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            name="city3.gov",
+        )
+        domain_request_3 = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            name="city4.gov",
+        )
+        domain_request_4 = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.REJECTED,
+            name="city5.gov",
+        )
+        self.assertTrue(domain_request_1.is_withdrawable())
+        self.assertTrue(domain_request_2.is_withdrawable())
+        self.assertTrue(domain_request_3.is_withdrawable())
+        self.assertFalse(domain_request_4.is_withdrawable())
+
+    @less_console_noise_decorator
+    def test_request_is_awaiting_review(self):
+        """Tests the is_awaiting_review function"""
+        domain_request_1 = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            name="city2.gov",
+        )
+        domain_request_2 = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            name="city3.gov",
+        )
+        domain_request_3 = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            name="city4.gov",
+        )
+        domain_request_4 = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.REJECTED,
+            name="city5.gov",
+        )
+        self.assertTrue(domain_request_1.is_awaiting_review())
+        self.assertTrue(domain_request_2.is_awaiting_review())
+        self.assertFalse(domain_request_3.is_awaiting_review())
+        self.assertFalse(domain_request_4.is_awaiting_review())
+
+    @less_console_noise_decorator
     def test_federal_agency_set_to_non_federal_on_approve(self):
         """Ensures that when the federal_agency field is 'none' when .approve() is called,
         the field is set to the 'Non-Federal Agency' record"""
