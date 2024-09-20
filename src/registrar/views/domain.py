@@ -109,22 +109,6 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
     implementations of post, form_valid and form_invalid.
     """
 
-    # send notification email for changes to any of these forms
-    notify_on_change = (
-        DomainSecurityEmailForm, 
-        DomainDnssecForm,
-        DomainDsdataFormset,
-    )
-
-    # forms of these types should not send notifications if they're part of a portfolio/Organization
-    notify_unless_portfolio = (
-        DomainOrgNameAddressForm,
-        SeniorOfficialContactForm
-    )
-
-    def should_notify(self, form) -> bool:
-        return isinstance(form, self.notify_on_change) or isinstance(form, self.notify_unless_portfolio)
-
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view.
 
@@ -141,17 +125,6 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         # updates session cache with domain
         self._update_session_with_domain()
 
-        logger.info("Valid form has changed? %s", form.has_changed())
-        if self.should_notify(form):
-            logger.info("Sending email to domain managers")
-            context={
-                        "domain": self.object,
-                        "user": self.request.user,
-                        "date": date.today(),
-                        "changes": form.changed_data
-                    }
-            self.email_domain_managers(self.object, "emails/update_to_approved_domain.txt", "emails/update_to_approved_domain_subject.txt", context)
-                
         # superclass has the redirect
         return super().form_valid(form)
 
@@ -176,6 +149,63 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         return current_domain_info
     
+    def send_update_notification(self, form, is_formset: bool=False):
+        """Send a notification to all domain managers that an update has occured 
+        for a single domain. Uses update_to_approved_domain.txt template.
+        
+        Checks for changes, and does nothing if the form has not changed.
+
+        Formsets have to be handled in a special way, so use is_formset to indicate
+        whether the value passed into form is actually a formset.
+        """
+
+        # send notification email for changes to any of these forms
+        notify_on_change = (
+            DomainSecurityEmailForm, 
+            DomainDnssecForm,
+            DomainDsdataFormset,
+        )
+
+        # forms of these types should not send notifications if they're part of a portfolio/Organization
+        notify_unless_in_portfolio = (
+            DomainOrgNameAddressForm,
+            SeniorOfficialContactForm
+        )
+
+        if isinstance(form, notify_on_change):
+            # always notify for these forms
+            should_notify=True
+        elif isinstance(form, notify_unless_in_portfolio):
+            # for these forms, only notify if the domain is not in a portfolio
+            info: DomainInformation = self.get_domain_info_from_domain()
+            if not info or info.portfolio:
+                should_notify = False
+            else:
+                should_notify=True
+        else:
+            # don't notify for any other types of forms
+            should_notify=False
+
+        if should_notify and form.has_changed:
+            logger.info("Sending email to domain managers")
+
+            changes = self._get_changes_from_formset(form) if is_formset else form.changed_data
+
+            context={
+                        "domain": self.object.name,
+                        "user": self.request.user,
+                        "date": date.today(),
+                        "changes": str(changes).strip("'")    # django templates auto-escape quotes
+                    }
+            self.email_domain_managers(self.object, "emails/update_to_approved_domain.txt", "emails/update_to_approved_domain_subject.txt", context)     
+    
+    def _get_changes_from_formset(self, formset):
+        changes = set()
+        for form in formset:
+            changes.update(form.get_changes)
+
+        return list(changes)
+
     def email_domain_managers(self, domain_name, template: str, subject_template: str, context: any = {}):
         """Send a single email built from a template to all managers for a given domain.
 
@@ -191,7 +221,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         try:
             domain = Domain.objects.get(name=domain_name)
         except Domain.DoesNotExist:
-            logger.warn(
+            logger.warning(
                 "Could not send notification email for domain %s, unable to find matching domain object",
                 domain_name
             )
@@ -206,7 +236,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 cc_addresses=emails
             )
         except EmailSendingError as exc:
-            logger.warn(
+            logger.warning(
                 "Could not sent notification email to %s for domain %s",
                 emails,
                 domain_name,
@@ -289,6 +319,8 @@ class DomainOrgNameAddressView(DomainFormBaseView):
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
         form.save()
+
+        self.send_update_notification(form)
 
         messages.success(self.request, "The organization information for this domain has been updated.")
 
@@ -387,17 +419,11 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # Set the domain information in the form so that it can be accessible
         # to associate a new Contact, if a new Contact is needed
-        # in the save() method
-        # if form.has_changed():
-        #     logger.info("Sending email to domain managers")
-        #     context={
-        #                 "domain": self.object,
-        #             }
-        #     self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
-
-
+        # in the save() methodS
         form.set_domain_info(self.object.domain_info)
         form.save()
+
+        self.send_update_notification(form)
 
         messages.success(self.request, "The senior official for this domain has been updated.")
 
@@ -516,17 +542,7 @@ class DomainNameserversView(DomainFormBaseView):
             except KeyError:
                 # no server information in this field, skip it
                 pass
-
-        old_nameservers = self.object.nameservers
-        logger.info("nameservers %s", nameservers)
-        logger.info("old nameservers: %s", old_nameservers)
-
-        logger.info("State: %s", self.object.state)
-
-        # if there are existing
-        logger.info("has changed? %s", formset.has_changed())
         try:
-            # logger.info("skipping actual assignment of nameservers")
             self.object.nameservers = nameservers
         except NameserverError as Err:
             # NamserverErrors *should* be caught in form; if reached here,
@@ -545,13 +561,7 @@ class DomainNameserversView(DomainFormBaseView):
                 messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         else:
-            # if form.has_changed():
-            #     logger.info("Sending email to domain managers")
-            #     context={
-            #                 "domain": self.object,
-            #             }
-            #     self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
-
+            self.send_update_notification(formset, is_formset=True)
             messages.success(
                 self.request,
                 "The name servers for this domain have been updated. "
@@ -604,14 +614,8 @@ class DomainDNSSECView(DomainFormBaseView):
                     errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
                     messages.error(self.request, errmsg)
-                # else:
-                #     if form.has_changed():
-                #         logger.info("Sending email to domain managers")
-                #         context={
-                #                     "domain": self.object,
-                #                 }
-                #         self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
-
+                else:
+                    self.send_update_notification(form)
         return self.form_valid(form)
 
 
@@ -735,12 +739,7 @@ class DomainDsDataView(DomainFormBaseView):
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
-            # if formset.has_changed():
-            #     logger.info("Sending email to domain managers")
-            #     context={
-            #                 "domain": self.object,
-            #             }
-            #     self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
+            self.send_update_notification(formset, is_formset=True)
 
             messages.success(self.request, "The DS data records for this domain have been updated.")
             # superclass has the redirect
@@ -808,13 +807,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
             messages.error(self.request, SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA))
             logger.error(f"Generic registry error: {Err}")
         else:
-            # if form.has_changed():
-            #     logger.info("Sending email to domain managers")
-            #     context={
-            #                 "domain": self.object,
-            #             }
-            #     self.email_domain_managers(self.object, "emails/domain_change_notification.txt", "emails/domain_change_notification_subject.txt", context)
-
+            self.send_update_notification(form)
             messages.success(self.request, "The security email for this domain has been updated.")
             
             # superclass has the redirect
