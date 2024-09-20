@@ -19,6 +19,7 @@ from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
 
 
 DOMAIN_FILE_URL = "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
+RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/"
 
 
 DOMAIN_API_MESSAGES = {
@@ -97,6 +98,18 @@ def available(request, domain=""):
         return_type=ValidationReturnType.JSON_RESPONSE,
     )
     return json_response
+
+
+@require_http_methods(["GET"])
+@login_not_required
+def rdap(request, domain=""):
+    """TODO: Write description
+    """
+    Domain = apps.get_model("registrar.Domain")
+    domain = request.GET.get("domain", "")
+
+    rdap_response = requests.get(DOMAIN_FILE_URL, domain)
+    return rdap_response
 
 
 @require_http_methods(["GET"])
