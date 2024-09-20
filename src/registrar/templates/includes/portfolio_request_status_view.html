@@ -1,0 +1,18 @@
+{% extends 'includes/request_status_manage.html' %}
+{% load custom_filters %}
+{% load static url_helpers %}
+
+{% comment %} Do not show the withdrawal text in viewonly mode {% endcomment %}
+{% block status_blurb %}
+    {% if DomainRequest.is_awaiting_review %}
+        <p>{% include "includes/domain_request_awaiting_review.html" with show_withdraw_text=False %}</p>
+    {% endif %}
+{% endblock status_blurb %}
+
+{% comment %} Do not show action buttons in viewonly mode {% endcomment %}
+{% block modify_request %}
+{% endblock modify_request %}
+
+{% block request_summary %}
+    {% include "includes/portfolio_request_review_steps.html" with domain_request=DomainRequest is_editable=False %}
+{% endblock request_summary %}
