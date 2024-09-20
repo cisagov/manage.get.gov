@@ -932,9 +932,9 @@ ul.add-list-reset {
 }
 
 .domain-name-wrap {
-    white-space: normal; /* Allows wrapping */
-    word-wrap: break-word; /* Ensures that long words or URLs will break and wrap */
-    overflow: visible; /* Ensures no truncation */
-    word-break: break-all; /* Breaks words at any point if needed */
-    max-width: 100%; /* Adjust as necessary to limit the width */
+    white-space: normal;
+    word-wrap: break-word;
+    overflow: visible; 
+    word-break: break-all;
+    max-width: 100%; 
   }
