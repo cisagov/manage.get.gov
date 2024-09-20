@@ -290,4 +290,3 @@ def request_step_list(request_wizard):
         if condition:
             step_list.append(step)
     return step_list
-

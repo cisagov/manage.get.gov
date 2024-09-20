@@ -3,6 +3,7 @@
 from enum import Enum
 from registrar.utility import StrEnum
 
+
 class ValidationReturnType(Enum):
     """Determines the return value of the validate_and_handle_errors class"""
 
@@ -64,6 +65,7 @@ class Step(StrEnum):
     REQUIREMENTS = "requirements"
     REVIEW = "review"
 
+
 class PortfolioDomainRequestStep(StrEnum):
     """
     Names for each page of the portfolio domain request wizard.
@@ -71,6 +73,7 @@ class PortfolioDomainRequestStep(StrEnum):
     As with Django's own `TextChoices` class, steps will
     appear in the order they are defined. (Order matters.)
     """
+
     # Portfolio
     REQUESTING_ENTITY = "organization_name"
     CURRENT_SITES = "current_sites"
