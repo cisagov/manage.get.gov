@@ -149,39 +149,35 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         return current_domain_info
     
-    def send_update_notification(self, form, is_formset: bool=False):
+    def send_update_notification(self, form):
         """Send a notification to all domain managers that an update has occured 
         for a single domain. Uses update_to_approved_domain.txt template.
         
         Checks for changes, and does nothing if the form has not changed.
-
-        Formsets have to be handled in a special way, so use is_formset to indicate
-        whether the value passed into form is actually a formset.
         """
 
         # send notification email for changes to any of these forms
-        notify_on_change = (
-            DomainSecurityEmailForm, 
-            DomainDnssecForm,
-            DomainDsdataFormset,
-        )
+        form_label_dict = {
+            DomainSecurityEmailForm: "Security Email", 
+            DomainDnssecForm: "DNSSec",
+            DomainDsdataFormset: "DS Data",
+            DomainOrgNameAddressForm: "Org Name/Address",
+            SeniorOfficialContactForm: "Senior Official",
+        }
 
         # forms of these types should not send notifications if they're part of a portfolio/Organization
-        notify_unless_in_portfolio = (
+        check_for_portfolio = {
             DomainOrgNameAddressForm,
-            SeniorOfficialContactForm
-        )
+            SeniorOfficialContactForm,
+        }
 
-        if isinstance(form, notify_on_change):
-            # always notify for these forms
+        if form.__class__ in form_label_dict:
             should_notify=True
-        elif isinstance(form, notify_unless_in_portfolio):
-            # for these forms, only notify if the domain is not in a portfolio
-            info: DomainInformation = self.get_domain_info_from_domain()
-            if not info or info.portfolio:
-                should_notify = False
-            else:
-                should_notify=True
+            if form.__class__ in check_for_portfolio:
+                # check for portfolio
+                info = self.get_domain_info_from_domain()
+                if not info or info.portfolio:
+                    should_notify = False 
         else:
             # don't notify for any other types of forms
             should_notify=False
@@ -189,22 +185,13 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         if should_notify and form.has_changed:
             logger.info("Sending email to domain managers")
 
-            changes = self._get_changes_from_formset(form) if is_formset else form.changed_data
-
             context={
                         "domain": self.object.name,
                         "user": self.request.user,
                         "date": date.today(),
-                        "changes": str(changes).strip("'")    # django templates auto-escape quotes
+                        "changes": form_label_dict[form.__class__]
                     }
             self.email_domain_managers(self.object, "emails/update_to_approved_domain.txt", "emails/update_to_approved_domain_subject.txt", context)     
-    
-    def _get_changes_from_formset(self, formset):
-        changes = set()
-        for form in formset:
-            changes.update(form.changed_data)
-
-        return list(changes)
 
     def email_domain_managers(self, domain_name, template: str, subject_template: str, context: any = {}):
         """Send a single email built from a template to all managers for a given domain.
@@ -561,7 +548,7 @@ class DomainNameserversView(DomainFormBaseView):
                 messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         else:
-            self.send_update_notification(formset, is_formset=True)
+            self.send_update_notification(formset)
             messages.success(
                 self.request,
                 "The name servers for this domain have been updated. "
@@ -739,7 +726,7 @@ class DomainDsDataView(DomainFormBaseView):
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
-            self.send_update_notification(formset, is_formset=True)
+            self.send_update_notification(formset)
 
             messages.success(self.request, "The DS data records for this domain have been updated.")
             # superclass has the redirect
