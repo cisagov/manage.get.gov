@@ -4,7 +4,6 @@ from itertools import zip_longest
 from typing import Callable
 from django.db.models.fields.related import ForeignObjectRel
 from django import forms
-from registrar.utility.enums import Step
 from registrar.models import DomainRequest, Contact
 
 
