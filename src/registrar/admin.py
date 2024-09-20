@@ -1511,7 +1511,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "is_election_board", "domain_managers", "invited_domain_managers")
+    readonly_fields = ("other_contacts", "is_election_board")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1604,70 +1604,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # objects rather than Contact objects.
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
-
-
-    def get_domain_managers(self, obj):
-        user_domain_roles = UserDomainRole.objects.filter(domain=obj.domain)
-        user_ids = user_domain_roles.values_list("user_id", flat=True)
-        domain_managers = User.objects.filter(id__in=user_ids)
-        return domain_managers
-
-    def get_domain_invitations(self, obj):
-        domain_invitations = DomainInvitation.objects.filter(
-            domain=obj.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
-        )
-        return domain_invitations
-
-    @admin.display(description='Domain managers')
-    def domain_managers(self, obj):
-        """Get joined users who have roles/perms that are not Admin, unpack and return an HTML block.
-
-        DJA readonly can't handle querysets, so we need to unpack and return html here.
-        Alternatively, we could return querysets in context but that would limit where this
-        data would display in a custom change form without extensive template customization.
-
-        Will be used in the after_help_text block."""
-        domain_managers = self.get_domain_managers(obj)
-        if not domain_managers:
-            return "No domain managers found."
-
-        domain_manager_details = "<table><thead><tr><th>UID</th><th>Name</th><th>Email</th>" + "</tr></thead><tbody>"
-        for domain_manager in domain_managers:
-            full_name = domain_manager.get_formatted_name()
-            change_url = reverse("admin:registrar_user_change", args=[domain_manager.pk])
-            domain_manager_details += "<tr>"
-            domain_manager_details += f'<td><a href="{change_url}">{escape(domain_manager.username)}</a>'
-            domain_manager_details += f"<td>{escape(full_name)}</td>"
-            domain_manager_details += f"<td>{escape(domain_manager.email)}</td>"
-            domain_manager_details += "</tr>"
-        domain_manager_details += "</tbody></table>"
-        return format_html(domain_manager_details)
-
-    domain_managers.short_description = "Domain managers"  # type: ignore
-
-    @admin.display(description='Invited domain managers')
-    def invited_domain_managers(self, obj):
-        """Get emails which have been invited to the domain, unpack and return an HTML block.
-
-        DJA readonly can't handle querysets, so we need to unpack and return html here.
-        Alternatively, we could return querysets in context but that would limit where this
-        data would display in a custom change form without extensive template customization.
-
-        Will be used in the after_help_text block."""
-        domain_invitations = self.get_domain_invitations(obj)
-        if not domain_invitations:
-            return "No invited domain managers found."
-
-        domain_invitation_details = "<table><thead><tr><th>Email</th><th>Status</th>" + "</tr></thead><tbody>"
-        for domain_invitation in domain_invitations:
-            domain_invitation_details += "<tr>"
-            domain_invitation_details += f"<td>{escape(domain_invitation.email)}</td>"
-            domain_invitation_details += f"<td>{escape(domain_invitation.status.capitalize())}</td>"
-            domain_invitation_details += "</tr>"
-        domain_invitation_details += "</tbody></table>"
-        return format_html(domain_invitation_details)
-
-    invited_domain_managers.short_description = "Invited domain managers"  # type: ignore
 
 
 class DomainRequestResource(FsmModelResource):
@@ -2405,23 +2341,10 @@ class DomainInformationInline(admin.StackedInline):
     template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
 
-    fieldsets = list(DomainInformationAdmin.fieldsets)
-    readonly_fields = list(DomainInformationAdmin.readonly_fields)
-    analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-    autocomplete_fields = DomainInformationAdmin.autocomplete_fields
+    fieldsets = copy.deepcopy(list(DomainInformationAdmin.fieldsets))
+    analyst_readonly_fields = copy.deepcopy(DomainInformationAdmin.analyst_readonly_fields)
+    autocomplete_fields = copy.deepcopy(DomainInformationAdmin.autocomplete_fields)
 
-    readonly_fields.extend(["domain_managers", "invited_domain_managers"])  # type: ignore
-    # Removing specific fields from the first fieldset dynamically
-    fieldsets[0][1]["fields"] = [
-        field for field in fieldsets[0][1]["fields"] if field not in ["creator", "submitter", "domain_request", "notes"]
-    ]
-    fieldsets[2][1]["fields"] = [
-        field for field in fieldsets[2][1]["fields"] if field not in ["other_contacts", "no_other_contacts_rationale"]
-    ]
-    fieldsets[2][1]["fields"].extend(["domain_managers", "invited_domain_managers"])  # type: ignore
-    fieldsets_to_move = fieldsets.pop(3)
-    fieldsets.append(fieldsets_to_move)
-    
     def get_domain_managers(self, obj):
         user_domain_roles = UserDomainRole.objects.filter(domain=obj.domain)
         user_ids = user_domain_roles.values_list("user_id", flat=True)
@@ -2434,7 +2357,6 @@ class DomainInformationInline(admin.StackedInline):
         )
         return domain_invitations
 
-    @admin.display(description='Domain managers')
     def domain_managers(self, obj):
         """Get joined users who have roles/perms that are not Admin, unpack and return an HTML block.
 
@@ -2461,7 +2383,6 @@ class DomainInformationInline(admin.StackedInline):
 
     domain_managers.short_description = "Domain managers"  # type: ignore
 
-    @admin.display(description='Invited domain managers')
     def invited_domain_managers(self, obj):
         """Get emails which have been invited to the domain, unpack and return an HTML block.
 
@@ -2523,7 +2444,9 @@ class DomainInformationInline(admin.StackedInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
-        return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
+        readonly_fields =  copy.deepcopy(DomainInformationAdmin.get_readonly_fields(self, request, obj=None))
+        readonly_fields.extend(["domain_managers", "invited_domain_managers"])  # type: ignore
+        return readonly_fields
 
     # Re-route the get_fieldsets method to utilize DomainInformationAdmin.get_fieldsets
     # since that has all the logic for excluding certain fields according to user permissions.
@@ -2532,14 +2455,30 @@ class DomainInformationInline(admin.StackedInline):
     def get_fieldsets(self, request, obj=None):
         # Grab fieldsets from DomainInformationAdmin so that it handles all logic
         # for permission-based field visibility.
-        modified_fieldsets = DomainInformationAdmin.get_fieldsets(self, request, obj=None)
+        modified_fieldsets = copy.deepcopy(DomainInformationAdmin.get_fieldsets(self, request, obj=None))
 
-        # remove .gov domain from fieldset
+        # Modify fieldset sections in place
+        for index, (title, f) in enumerate(modified_fieldsets):
+            if title is None:
+                modified_fieldsets[index][1]["fields"] = [
+                    field for field in modified_fieldsets[index][1]["fields"] if field not in ["creator", "domain_request", "notes"]
+                ]
+            elif title == "Contacts":
+                modified_fieldsets[index][1]["fields"] = [
+                    field for field in modified_fieldsets[index][1]["fields"] if field not in ["other_contacts", "no_other_contacts_rationale"]
+                ]
+                modified_fieldsets[index][1]["fields"].extend(["domain_managers", "invited_domain_managers"])  # type: ignore
+
+        # Remove or remove fieldset sections
         for index, (title, f) in enumerate(modified_fieldsets):
             if title == ".gov domain":
-                del modified_fieldsets[index]
-                break
-
+                # remove .gov domain from fieldset
+                modified_fieldsets.pop(index)
+            elif title == "Background info":
+                # move Background info to the bottom of the list
+                fieldsets_to_move = modified_fieldsets.pop(index)
+                modified_fieldsets.append(fieldsets_to_move)
+        
         return modified_fieldsets
 
 

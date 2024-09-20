@@ -167,12 +167,6 @@ class TestDomainAdminAsStaff(MockEppLib):
         expected_organization_name = "MonkeySeeMonkeyDo"
         self.assertContains(response, expected_organization_name)
 
-        # clean up this test's data
-        domain.delete()
-        domain_information.delete()
-        _domain_request.delete()
-        _creator.delete()
-
     @less_console_noise_decorator
     def test_deletion_is_successful(self):
         """
@@ -227,9 +221,6 @@ class TestDomainAdminAsStaff(MockEppLib):
 
         self.assertEqual(domain.state, Domain.State.DELETED)
 
-        # clean up data within this test
-        domain.delete()
-
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):
         """
@@ -268,9 +259,6 @@ class TestDomainAdminAsStaff(MockEppLib):
             )
 
         self.assertEqual(domain.state, Domain.State.READY)
-
-        # delete data created in this test
-        domain.delete()
 
     @less_console_noise_decorator
     def test_analyst_deletes_domain_idempotent(self):
@@ -329,9 +317,6 @@ class TestDomainAdminAsStaff(MockEppLib):
                 fail_silently=False,
             )
         self.assertEqual(domain.state, Domain.State.DELETED)
-
-        # delete data created in this test
-        domain.delete()
 
 
 class TestDomainInformationInline(MockEppLib):
@@ -540,17 +525,6 @@ class TestDomainAdminWithClient(TestCase):
         self.assertContains(response, domain.name)
 
         # Check that the fields have the right values.
-        # == Check for the creator == #
-
-        # Check for the right title, email, and phone number in the response.
-        # We only need to check for the end tag
-        # (Otherwise this test will fail if we change classes, etc)
-        self.assertContains(response, "Treat inspector")
-        self.assertContains(response, "meoward.jones@igorville.gov")
-        self.assertContains(response, "(555) 123 12345")
-
-        # Check for the field itself
-        self.assertContains(response, "Meoward Jones")
 
         # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com")
@@ -559,11 +533,6 @@ class TestDomainAdminWithClient(TestCase):
 
         # Includes things like readonly fields
         self.assertContains(response, "Testy Tester")
-
-        # == Test the other_employees field == #
-        self.assertContains(response, "testy2@town.com")
-        self.assertContains(response, "Another Tester")
-        self.assertContains(response, "(555) 555 5557")
 
         # Test for the copy link
         self.assertContains(response, "button--clipboard")
