@@ -3025,3 +3025,40 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
 
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
+
+
+class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
+
+    # Doesn't work with CSRF checking
+    # hypothesis is that CSRF_USE_SESSIONS is incompatible with WebTest
+    csrf_checks = False
+
+    def setUp(self):
+        super().setUp()
+        self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
+        self.app.set_user(self.user.username)
+        self.TITLES = DomainRequestWizard.TITLES
+
+    def tearDown(self):
+        super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        self.federal_agency.delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_domain_request_viewonly_displays_correct_fields(self):
+        """Tests that the viewonly page displays different fields"""
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        dummy_user, _ = User.objects.get_or_create(username="testusername123456")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=dummy_user)
+        domain_request.save()
+
+        detail_page = self.app.get(f"/domain-request/viewonly/{domain_request.id}")
+        self.assertContains(detail_page, "Requesting entity")
+        self.assertNotContains(detail_page, "Type of organization")
+        self.assertContains(detail_page, "city.gov")
+        self.assertContains(detail_page, "Status:")

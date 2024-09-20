@@ -26,7 +26,6 @@ from .utility import (
 logger = logging.getLogger(__name__)
 
 
-
 class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     """
     A common set of methods and configuration.
@@ -43,6 +42,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     Any method not marked as internal can be overridden in a subclass,
     although not without consulting the base implementation, first.
     """
+
     StepEnum = Step
     template_name = ""
 
@@ -903,4 +903,6 @@ class PortfolioDomainRequestStatusViewOnly(DomainRequestPortfolioViewonlyView):
         context["steps"] = request_step_list(wizard)
         context["form_titles"] = wizard.TITLES
         return context
+
+
 # endregion
