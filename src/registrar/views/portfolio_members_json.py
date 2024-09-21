@@ -9,6 +9,19 @@ from django.db.models import Q
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 
 
+# DEVELOPER'S NOTE (9-20-24):
+# The way this works is first we get a list of "member" objects
+# Then we pass this to "serialize_members", which extracts object information
+# and puts it into a JSON that is then used in get-gov.js for dynamically
+# populating the frontend members table with data.  
+# So, if you're wondering where these JSON values are used, check out the class "MembersTable"
+# in get-gov.js (specifically the "loadTable" function).
+#
+# The way get-gov.js grabs this JSON is via the html.  Specifically,
+# "get_portfolio_members_json" is embedded in members_table.html as a string, which 
+# is then referenced in get-gov.js. This path is also added to urls.py.
+
+
 @login_required
 def get_portfolio_members_json(request):
     """Given the current request,
@@ -17,28 +30,31 @@ def get_portfolio_members_json(request):
     member_ids = get_member_ids_from_request(request)
     unfiltered_total = member_ids.count()
 
-#     objects = apply_search(objects, request)
-#     objects = apply_status_filter(objects, request)
-#     objects = apply_sorting(objects, request)
+    objects = UserPortfolioPermission.objects.filter(id__in=member_ids)
+    unfiltered_total = objects.count()
 
-    paginator = Paginator(member_ids, 10)
+    # objects = apply_search(objects, request)
+    # objects = apply_status_filter(objects, request)
+    # objects = apply_sorting(objects, request)
+
+    paginator = Paginator(objects, 10)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
     members = [
         serialize_members(request, member, request.user) for member in page_obj.object_list
     ]
 
-#     return JsonResponse(
-#         {
-#             "domain_requests": domain_requests,
-#             "has_next": page_obj.has_next(),
-#             "has_previous": page_obj.has_previous(),
-#             "page": page_obj.number,
-#             "num_pages": paginator.num_pages,
-#             "total": paginator.count,
-#             "unfiltered_total": unfiltered_total,
-#         }
-#     )
+    return JsonResponse(
+        {
+            "members": members, # "domain_requests": domain_requests,  TODO: DELETE ME!
+            "has_next": page_obj.has_next(),
+            "has_previous": page_obj.has_previous(),
+            "page": page_obj.number,
+            "num_pages": paginator.num_pages,
+            "total": paginator.count,
+            "unfiltered_total": unfiltered_total,
+        }
+    )
 
 
 def get_member_ids_from_request(request):
@@ -157,15 +173,23 @@ def serialize_members(request, member, user):
 
 
 # ------- SERIALIZE
-#     return {
-#         "requested_domain": member.requested_domain.name if member.requested_domain else None,
-#         "last_submitted_date": member.last_submitted_date,
-#         "status": member.get_status_display(),
-#         "created_at": format(member.created_at, "c"),  # Serialize to ISO 8601
-#         "creator": member.creator.email,
-#         "id": member.id,
-#         "is_deletable": is_deletable,
-#         "action_url": action_url_map.get(action_label),
-#         "action_label": action_label,
-#         "svg_icon": svg_icon_map.get(action_label),
+
+    return {
+        "id": member.id,
+        # "name": ??,
+        # "last_active": ??,
+        # ("manage icon...maybe svg_icon??")
+    }
+
+#  return {
+#         "id": domain.id,
+#         "name": domain.name,
+#         "expiration_date": domain.expiration_date,
+#         "state": domain.state,
+#         "state_display": domain.state_display(),
+#         "get_state_help_text": domain.get_state_help_text(),
+#         "action_url": reverse("domain", kwargs={"pk": domain.id}),
+#         "action_label": ("View" if view_only else "Manage"),
+#         "svg_icon": ("visibility" if view_only else "settings"),
+#         "domain_info__sub_organization": suborganization_name,
 #     }

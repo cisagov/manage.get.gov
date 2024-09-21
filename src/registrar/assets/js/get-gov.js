@@ -1871,6 +1871,21 @@ class MembersTable extends LoadTableBase {
      */
   loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
 
+      // --------- SEARCH
+      // let searchParams = new URLSearchParams(
+      //   {
+      //     "page": page,
+      //     "sort_by": sortBy,
+      //     "order": order,
+      //     "status": status,
+      //     "search_term": searchTerm
+      //   }
+      // );
+      // if (portfolio)
+      //   searchParams.append("portfolio", portfolio)
+
+
+      // --------- FETCH DATA
       // fetch json of page of domais, given params
       let baseUrl = document.getElementById("get_members_json_url");
       if (!baseUrl) {
@@ -1881,19 +1896,6 @@ class MembersTable extends LoadTableBase {
       if (!baseUrlValue) {
         return;
       }
-
-      // fetch json of page of members, given params
-      let searchParams = new URLSearchParams(
-        {
-          "page": page,
-          "sort_by": sortBy,
-          "order": order,
-          "status": status,
-          "search_term": searchTerm
-        }
-      );
-      if (portfolio)
-        searchParams.append("portfolio", portfolio)
 
       let url = `${baseUrlValue}?${searchParams.toString()}`
       fetch(url)
@@ -1908,60 +1910,34 @@ class MembersTable extends LoadTableBase {
           this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
-          const domainList = document.querySelector('.members__table tbody');
-          domainList.innerHTML = '';
+          const memberList = document.querySelector('.members__table tbody');
+          memberList.innerHTML = '';
 
-          data.members.forEach(domain => {
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
-            const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
-            const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
-            const actionUrl = domain.action_url;
-            const suborganization = domain.domain_info__sub_organization ? domain.domain_info__sub_organization : '⎯';
-
+          data.members.forEach(member => {
+      //       const actionUrl = domain.action_url;
+      
             const row = document.createElement('tr');
 
-            let markupForSuborganizationRow = '';
-
-            if (this.portfolioValue) {
-              markupForSuborganizationRow = `
-                <td>
-                    <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
-                </td>
-              `
-            }
-
             row.innerHTML = `
-              <th scope="row" role="rowheader" data-label="Domain name">
-                ${domain.name}
+              <th scope="row" role="rowheader" data-label="member name">
+                TEMP -- member ID
               </th>
-              <td data-sort-value="${expirationDateSortValue}" data-label="Expires">
-                ${expirationDateFormatted}
-              </td>
-              <td data-label="Status">
-                ${domain.state_display}
-                <svg 
-                  class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
-                  data-position="top"
-                  title="${domain.get_state_help_text}"
-                  focusable="true"
-                  aria-label="${domain.get_state_help_text}"
-                  role="tooltip"
-                >
-                  <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
-                </svg>
-              </td>
-              ${markupForSuborganizationRow}
-              <td>
-                <a href="${actionUrl}">
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
-                  </svg>
-                  ${domain.action_label} <span class="usa-sr-only">${domain.name}</span>
-                </a>
+              <td data-sort-value="${member.id}" data-label="ID">
+                ${member.id}
               </td>
             `;
-            domainList.appendChild(row);
+              
+            //   <td>
+            //     <a href="${actionUrl}">
+            //       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            //         <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
+            //       </svg>
+            //       ${domain.action_label} <span class="usa-sr-only">${domain.name}</span>
+            //     </a>
+            //   </td>
+            // `;
+
+            memberList.appendChild(row);
           });
           // initialize tool tips immediately after the associated DOM elements are added
           initializeTooltips();
@@ -1973,7 +1949,7 @@ class MembersTable extends LoadTableBase {
 
           // update pagination
           this.updatePagination(
-            'domain',
+            'member',
             '#members-pagination',
             '#members-pagination .usa-pagination__counter',
             '#members',

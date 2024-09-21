@@ -12,7 +12,12 @@
         <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
       {% endif %}
       <!-- ---------- SEARCH ---------- -->
-      <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
+      <!-- 
+      =====================
+       TODO: future ticket?
+      =====================
+      -->
+      <!-- <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
         <section aria-label="Members search component" class="margin-top-2">
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
@@ -39,7 +44,7 @@
             </button>
           </form>
         </section>
-      </div>
+      </div> -->
       <!-- ---------- Export as CSV ---------- -->
       {% if portfolio_members_count and portfolio_members_count > 0 %}
       <!-- 

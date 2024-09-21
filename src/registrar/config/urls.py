@@ -73,6 +73,17 @@ urlpatterns = [
         views.PortfolioNoDomainsView.as_view(),
         name="no-portfolio-domains",
     ),
+
+    path(
+        "members/",
+        views.PortfolioMembersView.as_view(),
+        name="members",
+    ),
+    # path(
+    #     "no-organization-members/",
+    #     views.PortfolioNoMembersView.as_view(),
+    #     name="no-portfolio-members",
+    # ),
     path(
         "requests/",
         views.PortfolioDomainRequestsView.as_view(),
@@ -264,6 +275,7 @@ urlpatterns = [
     ),
     path("get-domains-json/", get_domains_json, name="get_domains_json"),
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
+    path("get-portfolio-members-json/", get_domains_json, name="get_portfolio_members_json"),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

@@ -12,6 +12,7 @@ from registrar.views.utility.permission_views import (
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
     NoPortfolioDomainsPermissionView,
+    PortfolioMembersPermissionView,
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
