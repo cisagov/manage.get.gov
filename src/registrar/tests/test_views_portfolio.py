@@ -535,6 +535,41 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Domain name")
         permission.delete()
 
+    def check_widescreen_is_loaded(self, page_to_check):
+        """Tests if class modifiers for widescreen mode are appropriately loaded into the DOM
+        for the given page"""
+
+        self.client.force_login(self.user)
+
+        # Ensure that this user can see domains with the right permissions
+        permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+        permission.save()
+        permission.refresh_from_db()
+
+        response = self.client.get(reverse(page_to_check))
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for widescreen modifier
+        self.assertContains(response, "--widescreen")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_widescreen_css_org_model(self):
+        """Tests if class modifiers for widescreen mode are appropriately
+        loaded into the DOM for org model pages"""
+        self.check_widescreen_is_loaded("domains")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=False)
+    def test_widescreen_css_non_org_model(self):
+        """Tests if class modifiers for widescreen mode are appropriately
+        loaded into the DOM for non-org model pages"""
+        self.check_widescreen_is_loaded("home")
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=False)

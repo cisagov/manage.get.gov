@@ -1,7 +1,7 @@
 {% load static %}
 
 <header class="usa-header usa-header--basic">
-  <div class="usa-nav-container">
+  <div class="usa-nav-container {% if is_widescreen_mode %} usa-nav-container--widescreen {% endif %}">
     <div class="usa-navbar">
         {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
       <button type="button" class="usa-menu-btn">Menu</button>
