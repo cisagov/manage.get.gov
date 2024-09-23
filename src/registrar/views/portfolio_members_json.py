@@ -2,6 +2,9 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
+from django.utils import timezone
+from django.db.models import Q
 
 from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
@@ -11,19 +14,6 @@ import logging
 from venv import logger
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 logger = logging.getLogger(__name__)
-
-
-# DEVELOPER'S NOTE (9-20-24):
-# The way this works is first we get a list of "member" objects
-# Then we pass this to "serialize_members", which extracts object information
-# and puts it into a JSON that is then used in get-gov.js for dynamically
-# populating the frontend members table with data.  
-# So, if you're wondering where these JSON values are used, check out the class "MembersTable"
-# in get-gov.js (specifically the "loadTable" function).
-#
-# The way get-gov.js grabs this JSON is via the html.  Specifically,
-# "get_portfolio_members_json" is embedded in members_table.html as a string, which 
-# is then referenced in get-gov.js. This path is also added to urls.py.
 
 
 @login_required
@@ -36,7 +26,7 @@ def get_portfolio_members_json(request):
         member_ids = objects.values_list("id", flat=True)
         unfiltered_total = member_ids.count()
 
-        # objects = apply_search(objects, request)
+        objects = apply_search(objects, request)
         # objects = apply_status_filter(objects, request)
         # objects = apply_sorting(objects, request)
 
@@ -47,9 +37,20 @@ def get_portfolio_members_json(request):
             serialize_members(request, member, request.user) for member in page_obj.object_list
         ]
 
+        # DEVELOPER'S NOTE (9-20-24):
+        # The way this works is first we get a list of "member" objects
+        # Then we pass this to "serialize_members", which extracts object information
+        # and puts it into a JSON that is then used in get-gov.js for dynamically
+        # populating the frontend members table with data.  
+        # So, if you're wondering where these JSON values are used, check out the class "MembersTable"
+        # in get-gov.js (specifically the "loadTable" function).
+        #
+        # The way get-gov.js grabs this JSON is via the html.  Specifically,
+        # "get_portfolio_members_json" is embedded in members_table.html as a string, which 
+        # is then referenced in get-gov.js. This path is also added to urls.py.
         return JsonResponse(
             {
-                "members": members, # "domain_requests": domain_requests,  TODO: DELETE ME!
+                "members": members,
                 "has_next": page_obj.has_next(),
                 "has_previous": page_obj.has_previous(),
                 "page": page_obj.number,
@@ -65,7 +66,7 @@ def get_portfolio_members_json(request):
         # Or maybe an assumption was made wherein we assume there will never be zero entries returned??
         return JsonResponse(
             {
-                "members": [], # "domain_requests": domain_requests,  TODO: DELETE ME!
+                "members": [],
                 "has_next": False,
                 "has_previous": False,
                 "page": 0,
@@ -103,32 +104,17 @@ def get_member_objects_from_request(request):
         return members
 
 
-# def apply_search(queryset, request):
-#     search_term = request.GET.get("search_term")
-#     is_portfolio = request.GET.get("portfolio")
+def apply_search(queryset, request):
+    search_term = request.GET.get("search_term")
 
-#     if search_term:
-#         search_term_lower = search_term.lower()
-#         new_domain_request_text = "new domain request"
-
-#         # Check if the search term is a substring of 'New domain request'
-#         # If yes, we should return domain requests that do not have a
-#         # requested_domain (those display as New domain request in the UI)
-#         if search_term_lower in new_domain_request_text:
-#             queryset = queryset.filter(
-#                 Q(requested_domain__name__icontains=search_term) | Q(requested_domain__isnull=True)
-#             )
-#         elif is_portfolio:
-#             queryset = queryset.filter(
-#                 Q(requested_domain__name__icontains=search_term)
-#                 | Q(creator__first_name__icontains=search_term)
-#                 | Q(creator__last_name__icontains=search_term)
-#                 | Q(creator__email__icontains=search_term)
-#             )
-#         # For non org users
-#         else:
-#             queryset = queryset.filter(Q(requested_domain__name__icontains=search_term))
-#     return queryset
+    if search_term:
+        queryset = queryset.filter(
+            Q(username__icontains=search_term)
+            | Q(first_name__icontains=search_term)
+            | Q(last_name__icontains=search_term)
+            | Q(email__icontains=search_term)
+        )
+    return queryset
 
 
 # def apply_status_filter(queryset, request):
@@ -157,8 +143,8 @@ def get_member_objects_from_request(request):
 
 def serialize_members(request, member, user):
 
-# ------- DELETABLE
-#     deletable_statuses = [
+    # ------- DELETABLE
+#     deletable_statuses = [    
 #         DomainRequest.DomainRequestStatus.STARTED,
 #         DomainRequest.DomainRequestStatus.WITHDRAWN,
 #     ]
@@ -173,39 +159,27 @@ def serialize_members(request, member, user):
 #         ) and member.creator == user
 
 
-# ------- EDIT / VIEW
-#     # Determine action label based on user permissions and request status
-#     editable_statuses = [
-#         DomainRequest.DomainRequestStatus.STARTED,
-#         DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-#         DomainRequest.DomainRequestStatus.WITHDRAWN,
-#     ]
+    # ------- VIEW ONLY
+    # Determine action label based on user permissions
+    # If the user has permissions to edit/manage users, show the gear icon with "Manage" link. 
+    # If the user has view user permissions only, show the "View" link (no gear icon).
+    view_only = not user.has_edit_members_portfolio_permission
 
-#     if user.has_edit_request_portfolio_permission and member.creator == user:
-#         action_label = "Edit" if member.status in editable_statuses else "Manage"
-#     else:
-#         action_label = "View"
+    # ------- ACTIVITY
+    is_invited = member.verification_type == User.VerificationTypeChoices.INVITED
+    last_active = "invited" if is_invited else "unknown"
+    if member.last_login:
+        last_active = member.last_login.strftime("%b. %d, %Y")
 
-#     # Map the action label to corresponding URLs and icons
-#     action_url_map = {
-#         "Edit": reverse("edit-domain-request", kwargs={"id": member.id}),
-#         "Manage": reverse("domain-request-status", kwargs={"pk": member.id}),
-#         "View": "#",
-#     }
-
-#     svg_icon_map = {"Edit": "edit", "Manage": "settings", "View": "visibility"}
-
-
-# ------- INVITED
-# TODO:....
-
-
-# ------- SERIALIZE
-
+    # ------- SERIALIZE
     return {
+        "id": member.id,
         "name": member.get_formatted_name(),
-        "last_active": member.id,
-        # ("manage icon...maybe svg_icon??")
+        "email": member.email,
+        "last_active": last_active,
+        "action_url": '#', #reverse("members", kwargs={"pk": member.id}), #TODO: Future ticket?
+        "action_label": ("View" if view_only else "Manage"),
+        "svg_icon": ("visibility" if view_only else "settings"),
     }
 
 #  return {

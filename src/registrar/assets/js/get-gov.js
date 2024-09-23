@@ -1918,28 +1918,30 @@ class MembersTable extends LoadTableBase {
             data.members.forEach(member => {
             // const actionUrl = domain.action_url;
             const member_name = member.name;
+            const member_email = member.email;
             const last_active = member.last_active;
+            const action_url = member.action_url;
+            const action_label = member.action_label;
+            const svg_icon = member.svg_icon;
       
             const row = document.createElement('tr');
 
             row.innerHTML = `
-              <th scope="row" role="rowheader" data-label="member name">
-                ${member_name}
+              <th scope="row" role="rowheader" data-label="member email">
+                ${member_email}
               </th>
-              <td data-sort-value="${last_active}" data-label="name">
+              <td data-sort-value="${last_active}" data-label="last_active">
                 ${last_active}
               </td>
+              <td>
+                <a href="${action_url}">
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
+                  </svg>
+                  ${action_label} <span class="usa-sr-only">${member_name}</span>
+                </a>
+              </td>
             `;
-              
-            //   <td>
-            //     <a href="${actionUrl}">
-            //       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-            //         <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
-            //       </svg>
-            //       ${domain.action_label} <span class="usa-sr-only">${domain.name}</span>
-            //     </a>
-            //   </td>
-            // `;
 
             memberList.appendChild(row);
           });
