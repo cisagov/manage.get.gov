@@ -22,17 +22,19 @@ from registrar.views.report_views import (
     ExportDataTypeUser,
 )
 
-from registrar.views.domain_request import Step
+# --jsons
 from registrar.views.domain_requests_json import get_domain_requests_json
-from registrar.views.transfer_user import TransferUserView
+from registrar.views.domains_json import get_domains_json
+from registrar.views.portfolio_members_json import get_portfolio_members_json
 from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
 )
-from registrar.views.domains_json import get_domains_json
+
+from registrar.views.domain_request import Step
+from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility import always_404
 from api.views import available, get_current_federal, get_current_full
-
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 domain_request_urls = [
@@ -280,7 +282,7 @@ urlpatterns = [
     ),
     path("get-domains-json/", get_domains_json, name="get_domains_json"),
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
-    path("get-portfolio-members-json/", get_domains_json, name="get_portfolio_members_json"),
+    path("get-portfolio-members-json/", get_portfolio_members_json, name="get_portfolio_members_json"),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

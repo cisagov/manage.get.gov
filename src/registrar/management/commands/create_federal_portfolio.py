@@ -68,6 +68,9 @@ class Command(BaseCommand):
         if parse_domains or both:
             self.handle_portfolio_domains(portfolio, federal_agency)
 
+        if parse_domains or both:
+            self.handle_portfolio_members(portfolio, federal_agency)
+
     def create_or_modify_portfolio(self, federal_agency):
         """Creates or modifies a portfolio record based on a federal agency."""
         portfolio_args = {
@@ -253,3 +256,12 @@ class Command(BaseCommand):
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
         message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains"
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+    
+
+    def handle_portfolio_members(self, portfolio: Portfolio, federal_agency: FederalAgency):
+        """
+        Associate portfolio with members for a federal agency.
+        Updates all relevant member records.
+        """
+        # TODO: future ticket?
+    

@@ -21,6 +21,12 @@ from django.views.generic.edit import FormMixin
 logger = logging.getLogger(__name__)
 
 
+#---Logger
+import logging
+from venv import logger
+from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+logger = logging.getLogger(__name__)
+
 class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
 
     template_name = "portfolio_domains.html"
@@ -48,9 +54,14 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
 
     def get(self, request):
         """Add additional context data to the template."""
+
+        if self.request.user.is_authenticated:
+            request.session["new_request"] = True
+
         # We can override the base class. This view only needs this item.
         context = {}
         portfolio = self.request.session.get("portfolio")
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f'PortfolioMembersView portfolio = {portfolio}')
         if portfolio:
 
             # # ------ Gets admin members
@@ -79,7 +90,7 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
             all_members = User.objects.filter(id__in=member_ids)
             context["portfolio_members"] = all_members
             context["portfolio_members_count"] = all_members.count()
-        return render(request, "portfolio_members.html")
+        return render(request, "portfolio_members.html", context)
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
     """Some users have access to the underlying portfolio, but not any domains.

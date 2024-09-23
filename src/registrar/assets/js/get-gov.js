@@ -1872,17 +1872,17 @@ class MembersTable extends LoadTableBase {
   loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
 
       // --------- SEARCH
-      // let searchParams = new URLSearchParams(
-      //   {
-      //     "page": page,
-      //     "sort_by": sortBy,
-      //     "order": order,
-      //     "status": status,
-      //     "search_term": searchTerm
-      //   }
-      // );
-      // if (portfolio)
-      //   searchParams.append("portfolio", portfolio)
+      let searchParams = new URLSearchParams(
+        {
+          "page": page,
+          "sort_by": sortBy,
+          "order": order,
+          "status": status,
+          "search_term": searchTerm
+        }
+      );
+      if (portfolio)
+        searchParams.append("portfolio", portfolio)
 
 
       // --------- FETCH DATA
@@ -1896,8 +1896,8 @@ class MembersTable extends LoadTableBase {
       if (!baseUrlValue) {
         return;
       }
-
-      let url = `${baseUrlValue}?${searchParams.toString()}`
+  
+      let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
       fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -1913,17 +1913,21 @@ class MembersTable extends LoadTableBase {
           const memberList = document.querySelector('.members__table tbody');
           memberList.innerHTML = '';
 
-          data.members.forEach(member => {
-      //       const actionUrl = domain.action_url;
+          if (data.members)
+          {
+            data.members.forEach(member => {
+            // const actionUrl = domain.action_url;
+            const member_name = member.name;
+            const last_active = member.last_active;
       
             const row = document.createElement('tr');
 
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member name">
-                TEMP -- member ID
+                ${member_name}
               </th>
-              <td data-sort-value="${member.id}" data-label="ID">
-                ${member.id}
+              <td data-sort-value="${last_active}" data-label="name">
+                ${last_active}
               </td>
             `;
               
@@ -1939,6 +1943,26 @@ class MembersTable extends LoadTableBase {
 
             memberList.appendChild(row);
           });
+        }
+        else
+        {
+          //TODO: error message?
+          const row = document.createElement('tr');
+          row.innerHTML = `
+          <th scope="row" role="rowheader" data-label="member name">
+            ERROR
+          </th>
+          <td data-sort-value="test" data-label="name">
+            ERROR
+          </td>
+        `;
+
+          memberList.appendChild(row);
+        }
+
+
+
+
           // initialize tool tips immediately after the associated DOM elements are added
           initializeTooltips();
 

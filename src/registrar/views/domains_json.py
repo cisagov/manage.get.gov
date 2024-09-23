@@ -6,6 +6,10 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
 
+#---Logger
+import logging
+from venv import logger
+from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 logger = logging.getLogger(__name__)
 
 
@@ -49,6 +53,8 @@ def get_domain_ids_from_request(request):
     Otherwise, return domain ids associated with request.user.
     """
     portfolio = request.GET.get("portfolio")
+    # TODO: delete me
+    TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f'domain portfolio = {portfolio}')
     if portfolio:
         current_user: User = request.user
         if current_user.is_org_user(request) and current_user.has_view_all_domains_portfolio_permission(portfolio):

@@ -17,7 +17,7 @@
        TODO: future ticket?
       =====================
       -->
-      <!-- <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
+      <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
         <section aria-label="Members search component" class="margin-top-2">
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
@@ -27,7 +27,7 @@
               </svg>
               Reset
             </button>
-            <label class="usa-sr-only" for="members__search-field">Search by domain name</label>
+            <label class="usa-sr-only" for="members__search-field">Search by member name</label>
             <input
               class="usa-input"
               id="members__search-field"
@@ -44,7 +44,7 @@
             </button>
           </form>
         </section>
-      </div> -->
+      </div>
       <!-- ---------- Export as CSV ---------- -->
       {% if portfolio_members_count and portfolio_members_count > 0 %}
       <!-- 

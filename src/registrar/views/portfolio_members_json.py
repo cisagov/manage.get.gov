@@ -1,12 +1,16 @@
+
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-from registrar.models import DomainRequest
-from django.utils.dateformat import format
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
-from django.db.models import Q
 
+from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
+
+#---Logger
+import logging
+from venv import logger
+from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+logger = logging.getLogger(__name__)
 
 
 # DEVELOPER'S NOTE (9-20-24):
@@ -27,41 +31,60 @@ def get_portfolio_members_json(request):
     """Given the current request,
     get all members that are associated with the given portfolio"""
 
-    member_ids = get_member_ids_from_request(request)
-    unfiltered_total = member_ids.count()
+    objects = get_member_objects_from_request(request)
+    if(objects is not None):
+        member_ids = objects.values_list("id", flat=True)
+        unfiltered_total = member_ids.count()
 
-    objects = UserPortfolioPermission.objects.filter(id__in=member_ids)
-    unfiltered_total = objects.count()
+        # objects = apply_search(objects, request)
+        # objects = apply_status_filter(objects, request)
+        # objects = apply_sorting(objects, request)
 
-    # objects = apply_search(objects, request)
-    # objects = apply_status_filter(objects, request)
-    # objects = apply_sorting(objects, request)
+        paginator = Paginator(objects, 10)
+        page_number = request.GET.get("page", 1)
+        page_obj = paginator.get_page(page_number)
+        members = [
+            serialize_members(request, member, request.user) for member in page_obj.object_list
+        ]
 
-    paginator = Paginator(objects, 10)
-    page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
-    members = [
-        serialize_members(request, member, request.user) for member in page_obj.object_list
-    ]
+        return JsonResponse(
+            {
+                "members": members, # "domain_requests": domain_requests,  TODO: DELETE ME!
+                "has_next": page_obj.has_next(),
+                "has_previous": page_obj.has_previous(),
+                "page": page_obj.number,
+                "num_pages": paginator.num_pages,
+                "total": paginator.count,
+                "unfiltered_total": unfiltered_total,
+            }
+        )
+    
+    else:
+        # TODO: clean this up -- this was added to handle NoneType error (test with http://localhost:8080/get-portfolio-members-json/)
+        # Perhaps this is why domain_requests_json does the wierd thing where it returns deomain request ids, then re-fetches the objects...
+        # Or maybe an assumption was made wherein we assume there will never be zero entries returned??
+        return JsonResponse(
+            {
+                "members": [], # "domain_requests": domain_requests,  TODO: DELETE ME!
+                "has_next": False,
+                "has_previous": False,
+                "page": 0,
+                "num_pages": 0,
+                "total": 0,
+                "unfiltered_total": 0,
+            }
+        )
 
-    return JsonResponse(
-        {
-            "members": members, # "domain_requests": domain_requests,  TODO: DELETE ME!
-            "has_next": page_obj.has_next(),
-            "has_previous": page_obj.has_previous(),
-            "page": page_obj.number,
-            "num_pages": paginator.num_pages,
-            "total": paginator.count,
-            "unfiltered_total": unfiltered_total,
-        }
-    )
 
-
-def get_member_ids_from_request(request):
+def get_member_objects_from_request(request):
     """Given the current request,
     get all members that are associated with the given portfolio"""
-    portfolio = request.GET.get("portfolio")
-    # filter_condition = Q(creator=request.user)
+
+    # portfolio = request.GET.get("portfolio") #TODO: WHY DOESN"T THIS WORK?? It is empty
+    # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f'portfolio = {portfolio}')  # TODO: delete me
+
+    portfolio = request.session.get("portfolio")
+
     if portfolio:
         # TODO: Permissions??
         # if request.user.is_org_user(request) and request.user.has_view_all_requests_portfolio_permission(portfolio):
@@ -69,10 +92,15 @@ def get_member_ids_from_request(request):
         # else:
         #     filter_condition = Q(portfolio=portfolio, creator=request.user)
 
-        member_ids = UserPortfolioPermission.objects.filter(
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, "getting permissions")  # TODO: delete me
+        permissions = UserPortfolioPermission.objects.filter(
                 portfolio=portfolio
-            ).values_list("user__id", flat=True)
-        return member_ids
+            )
+       
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f'permissions {permissions}')  # TODO: delete me
+        members = User.objects.filter(portfolio_permissions__in=permissions)
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f'members {members}')  # TODO: delete me
+        return members
 
 
 # def apply_search(queryset, request):
@@ -175,9 +203,8 @@ def serialize_members(request, member, user):
 # ------- SERIALIZE
 
     return {
-        "id": member.id,
-        # "name": ??,
-        # "last_active": ??,
+        "name": member.get_formatted_name(),
+        "last_active": member.id,
         # ("manage icon...maybe svg_icon??")
     }
 
