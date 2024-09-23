@@ -3042,7 +3042,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
             address_id = f"portfolio-administrator-{portfolio_admin.pk}"
             if len(admins) > 1:
-                admin_details += f'<label for="{address_id}">Organization admin {i}</label>'
+                admin_details += f'<label class="organization-admin-label" for="{address_id}">Organization admin {i+1}</label>'
             admin_details += f'<address id="{address_id}" class="margin-bottom-2 dja-address-contact-list">'
             admin_details += f'<a href="{change_url}">{escape(portfolio_admin.user)}</a><br>'
             admin_details += f"{escape(portfolio_admin.user.title)}<br>"
