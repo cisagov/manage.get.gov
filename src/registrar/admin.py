@@ -3227,28 +3227,6 @@ class PortfolioAdmin(ListHeaderAdmin):
             return self.add_fieldsets
         return super().get_fieldsets(request, obj)
 
-    def get_readonly_fields(self, request, obj=None):
-        """Set the read-only state on form elements.
-        We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the creator's status, so
-        we'll use the baseline readonly_fields and extend it as needed.
-        """
-        readonly_fields = list(self.readonly_fields)
-
-        # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
-            # For fields like CharField, IntegerField, etc., the widget used is
-            # straightforward and the readonly_fields list can control their behavior
-            readonly_fields.extend([field.name for field in self.model._meta.fields])
-
-        if request.user.has_perm("registrar.full_access_permission"):
-            return readonly_fields
-
-        # Return restrictive Read-only fields for analysts and
-        # users who might not belong to groups
-        readonly_fields.extend([field for field in self.analyst_readonly_fields])
-        return readonly_fields
-
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups.
         Add the summary for the portfolio members field (list of members that link to change_forms)."""

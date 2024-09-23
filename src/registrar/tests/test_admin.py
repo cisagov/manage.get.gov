@@ -2051,7 +2051,7 @@ class TestPortfolioAdmin(TestCase):
             email="meaoward@gov.gov",
         )
 
-        UserPortfolioPermission.objects.all().create(
+        perm_1 = UserPortfolioPermission.objects.all().create(
             user=admin_user_1, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
@@ -2063,7 +2063,7 @@ class TestPortfolioAdmin(TestCase):
             email="poopy@gov.gov",
         )
 
-        UserPortfolioPermission.objects.all().create(
+        perm_2 = UserPortfolioPermission.objects.all().create(
             user=admin_user_2, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
@@ -2075,7 +2075,7 @@ class TestPortfolioAdmin(TestCase):
             email="madmax@gov.gov",
         )
 
-        UserPortfolioPermission.objects.all().create(
+        perm_3 = UserPortfolioPermission.objects.all().create(
             user=admin_user_3, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
 
@@ -2087,7 +2087,7 @@ class TestPortfolioAdmin(TestCase):
             email="thematrix@gov.gov",
         )
 
-        UserPortfolioPermission.objects.all().create(
+        perm_4 = UserPortfolioPermission.objects.all().create(
             user=admin_user_4,
             portfolio=self.portfolio,
             additional_permissions=[
@@ -2099,23 +2099,23 @@ class TestPortfolioAdmin(TestCase):
         display_admins = self.admin.display_admins(self.portfolio)
 
         self.assertIn(
-            f'<a href="/admin/registrar/user/{admin_user_1.pk}/change/">Gerald Meoward meaoward@gov.gov</a>',
+            f'<a href="/admin/registrar/user/{perm_1.pk}/change/">Gerald Meoward meaoward@gov.gov</a>',
             display_admins,
         )
         self.assertIn("Captain", display_admins)
         self.assertIn(
-            f'<a href="/admin/registrar/user/{admin_user_2.pk}/change/">Arnold Poopy poopy@gov.gov</a>', display_admins
+            f'<a href="/admin/registrar/user/{perm_2.pk}/change/">Arnold Poopy poopy@gov.gov</a>', display_admins
         )
         self.assertIn("Major", display_admins)
 
         display_members_summary = self.admin.display_members_summary(self.portfolio)
 
         self.assertIn(
-            f'<a href="/admin/registrar/user/{admin_user_3.pk}/change/">Mad Max madmax@gov.gov</a>',
+            f'<a href="/admin/registrar/user/{perm_3.pk}/change/">Mad Max madmax@gov.gov</a>',
             display_members_summary,
         )
         self.assertIn(
-            f'<a href="/admin/registrar/user/{admin_user_4.pk}/change/">Agent Smith thematrix@gov.gov</a>',
+            f'<a href="/admin/registrar/user/{perm_4.pk}/change/">Agent Smith thematrix@gov.gov</a>',
             display_members_summary,
         )
 
