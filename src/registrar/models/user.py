@@ -3,7 +3,6 @@ import logging
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
-from django.http import HttpRequest
 
 from registrar.models import DomainInformation, UserDomainRole
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
@@ -14,6 +13,7 @@ from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 from .domain_request import DomainRequest
+from registrar.utility.waffle import flag_is_active_for_user
 from waffle.decorators import flag_is_active
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
@@ -204,14 +204,10 @@ class User(AbstractUser):
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
     def has_organization_requests_flag(self):
-        request = HttpRequest()
-        request.user = self
-        return flag_is_active(request, "organization_requests")
+        return flag_is_active_for_user(self, "organization_requests")
 
     def has_organization_members_flag(self):
-        request = HttpRequest()
-        request.user = self
-        return flag_is_active(request, "organization_members")
+        return flag_is_active_for_user(self, "organization_members")
 
     def has_view_members_portfolio_permission(self, portfolio):
         # BEGIN
@@ -422,12 +418,8 @@ class User(AbstractUser):
         for invitation in PortfolioInvitation.objects.filter(
             email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
         ):
-            # need to create a bogus request and assign user to it, in order to pass request
-            # to flag_is_active
-            request = HttpRequest()
-            request.user = self
             only_single_portfolio = (
-                not flag_is_active(request, "multiple_portfolios") and self.get_first_portfolio() is None
+                not flag_is_active_for_user(self, "multiple_portfolios") and self.get_first_portfolio() is None
             )
             if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
                 try:
