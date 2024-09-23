@@ -1242,8 +1242,10 @@ class UserDomainRoleResource(resources.ModelResource):
         model = models.UserDomainRole
 
 
+# Note: This is "viewonly" for analysts
 class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     form = UserPortfolioPermissionsForm
+    change_form_template = "django/admin/user_portfolio_permission_change_form.html"
 
     class Meta:
         """Contains meta information about this class"""
@@ -1260,6 +1262,14 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     ]
 
     autocomplete_fields = ["user", "portfolio"]
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Adds a readonly display for roles and permissions"""
+        obj = self.get_object(request, object_id)
+        extra_context = extra_context or {}
+        extra_context["display_roles"] = ", ".join(obj.get_readable_roles())
+        extra_context["display_permissions"] = ", ".join(obj.get_readable_additional_permissions())
+        return super().change_view(request, object_id, form_url, extra_context)
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
@@ -2961,7 +2971,6 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     analyst_readonly_fields = [
         "organization_name",
-        "organization_type",
     ]
 
     def get_readonly_fields(self, request, obj=None):

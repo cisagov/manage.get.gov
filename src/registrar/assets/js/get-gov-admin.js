@@ -858,11 +858,13 @@ function initializeWidgetOnList(list, parentId) {
         // $ symbolically denotes that this is using jQuery
         let $federalAgency = django.jQuery("#id_federal_agency");
         let organizationType = document.getElementById("id_organization_type");
+        let readonlyOrganizationType = document.querySelector(".field-organization_type .readonly");
+
         let federalType = document.getElementById("id_federal_type")
-        if ($federalAgency && organizationType && federalType) {
+        if ($federalAgency && (organizationType || readonlyOrganizationType) && federalType) {
             // Attach the change event listener
             $federalAgency.on("change", function() {
-                handleFederalAgencyChange($federalAgency, organizationType, federalType);
+                handleFederalAgencyChange($federalAgency, organizationType, readonlyOrganizationType, federalType);
             });
         }
         
@@ -880,7 +882,7 @@ function initializeWidgetOnList(list, parentId) {
         }
     });
 
-    function handleFederalAgencyChange(federalAgency, organizationType, federalType) {
+    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType, federalType) {
         // Don't do anything on page load
         if (isInitialPageLoad) {
             isInitialPageLoad = false;
@@ -895,13 +897,22 @@ function initializeWidgetOnList(list, parentId) {
             return;
         }
 
+        let organizationTypeValue = organizationType ? organizationType.value : readonlyOrganizationType.innerText.toLowerCase();
         if (selectedText !== "Non-Federal Agency") {
-            if (organizationType.value !== "federal") {
-                organizationType.value = "federal";
+            if (organizationTypeValue !== "federal") {
+                if (organizationType){
+                    organizationType.value = "federal";
+                }else {
+                    readonlyOrganizationType.innerText = "Federal"
+                }
             }
         }else {
-            if (organizationType.value === "federal") {
-                organizationType.value = "";
+            if (organizationTypeValue === "federal") {
+                if (organizationType){
+                    organizationType.value =  "";
+                }else {
+                    readonlyOrganizationType.innerText =  "-"
+                }
             }
         }
 
@@ -912,10 +923,12 @@ function initializeWidgetOnList(list, parentId) {
             return;
         }
 
+        organizationTypeValue = organizationType ? organizationType.value : readonlyOrganizationType.innerText.toLowerCase();
+
         // Determine if any changes are necessary to the display of portfolio type or federal type
         // based on changes to the Federal Agency
         let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
-        fetch(`${federalPortfolioApi}?organization_type=${organizationType.value}&agency_name=${selectedText}`)
+        fetch(`${federalPortfolioApi}?organization_type=${organizationTypeValue}&agency_name=${selectedText}`)
         .then(response => {
             const statusCode = response.status;
             return response.json().then(data => ({ statusCode, data }));

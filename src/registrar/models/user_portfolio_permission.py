@@ -75,7 +75,24 @@ class UserPortfolioPermission(TimeStampedModel):
     )
 
     def __str__(self):
-        return f"User '{self.user}' on Portfolio '{self.portfolio}' " f"<Roles: {self.roles}>" if self.roles else ""
+        readable_roles = []
+        if self.roles:
+            readable_roles = sorted([UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in self.roles])
+        return f"{self.user}' " f"<Roles: {', '.join(readable_roles)}>" if self.roles else ""
+
+    def get_readable_roles(self):
+        """Returns a list of labels of each role in self.roles"""
+        role_labels = []
+        for role in self.roles:
+            role_labels.append(UserPortfolioRoleChoices.get_user_portfolio_role_label(role))
+        return role_labels
+    
+    def get_readable_additional_permissions(self):
+        """Returns a list of labels of each additional_permission in self.additional_permissions"""
+        perm_labels = []
+        for perm in self.additional_permissions:
+            perm_labels.append(UserPortfolioPermissionChoices.get_user_portfolio_permission_label(perm))
+        return perm_labels
 
     def _get_portfolio_permissions(self):
         """

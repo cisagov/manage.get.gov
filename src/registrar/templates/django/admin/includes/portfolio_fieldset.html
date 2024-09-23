@@ -13,6 +13,22 @@
                 <p>No additional members found.</p>
             {% endif %}
         </div>
+    {% elif field.field.name == "roles" %}
+        <div class="readonly">
+            {% if get_readable_roles %}
+                {{ get_readable_roles }}
+            {% else %}
+                <p>No roles found.</p>
+            {% endif %}
+        </div>
+    {% elif field.field.name == "additional_permissions" %}
+        <div class="readonly">
+            {% if display_permissions %}
+                {{ display_permissions }}
+            {% else %}
+                <p>No additional permissions found.</p>
+            {% endif %}
+        </div>
     {% else %}
         <div class="readonly">{{ field.contents }}</div>
     {% endif %}
