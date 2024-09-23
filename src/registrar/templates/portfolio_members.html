@@ -14,7 +14,29 @@
 {% endblock %}
 
 <div id="main-content">
-    <h1 id="members-header">Members</h1>
+    <div class="grid-row grid-gap">
+      {% if has_edit_request_portfolio_permission %}
+          <div class="mobile:grid-col-12 tablet:grid-col-6">
+              <h1 id="members-header">Members</h1>
+          </div>
+          <div class="mobile:grid-col-12 tablet:grid-col-6">
+              {% comment %}
+              IMPORTANT:
+              If this button is added on any other page, make sure to update the
+              relevant view to reset request.session["new_request"] = True
+              {% endcomment %}
+              <p class="float-right-tablet tablet:margin-y-0">
+                  <a href="#" class="usa-button"
+                  >
+                      Add a new member
+                  </a>
+              </p>
+          </div>
+      {% else %}
+          <p class="margin-y-0">Members can only be modified by users with edit permissions.</p>
+      {% endif %}
+  </div>
+  
     {% include "includes/members_table.html" with portfolio=portfolio portfolio_members_count=portfolio_members_count %}
 </div>
 {% endblock %}
