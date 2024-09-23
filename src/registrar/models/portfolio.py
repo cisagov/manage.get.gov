@@ -137,7 +137,6 @@ class Portfolio(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
-
     @property
     def portfolio_type(self):
         """

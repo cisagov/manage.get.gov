@@ -2098,24 +2098,28 @@ class TestPortfolioAdmin(TestCase):
 
         display_admins = self.admin.display_admins(self.portfolio)
 
+        url = reverse("admin:registrar_userportfoliopermission_change", args=[perm_1.pk])
         self.assertIn(
-            f'<a href="/admin/registrar/user/{perm_1.pk}/change/">Gerald Meoward meaoward@gov.gov</a>',
+            f'<a href="{url}">Gerald Meoward meaoward@gov.gov</a>',
             display_admins,
         )
         self.assertIn("Captain", display_admins)
-        self.assertIn(
-            f'<a href="/admin/registrar/user/{perm_2.pk}/change/">Arnold Poopy poopy@gov.gov</a>', display_admins
-        )
+
+        url = reverse("admin:registrar_userportfoliopermission_change", args=[perm_2.pk])
+        self.assertIn(f'<a href="{url}">Arnold Poopy poopy@gov.gov</a>', display_admins)
         self.assertIn("Major", display_admins)
 
         display_members_summary = self.admin.display_members_summary(self.portfolio)
 
+        url = reverse("admin:registrar_userportfoliopermission_change", args=[perm_3.pk])
         self.assertIn(
-            f'<a href="/admin/registrar/user/{perm_3.pk}/change/">Mad Max madmax@gov.gov</a>',
+            f'<a href="{url}">Mad Max madmax@gov.gov</a>',
             display_members_summary,
         )
+
+        url = reverse("admin:registrar_userportfoliopermission_change", args=[perm_4.pk])
         self.assertIn(
-            f'<a href="/admin/registrar/user/{perm_4.pk}/change/">Agent Smith thematrix@gov.gov</a>',
+            f'<a href="{url}">Agent Smith thematrix@gov.gov</a>',
             display_members_summary,
         )
 
