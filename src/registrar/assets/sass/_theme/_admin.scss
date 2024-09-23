@@ -931,7 +931,10 @@ ul.add-list-reset {
     font-size: 14px;
 }
 
-.organization-admin-label {
-    font-weight: 600;
-    font-size: .8125rem;
-}
+.domain-name-wrap {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow: visible; 
+    word-break: break-all;
+    max-width: 100%; 
+  }
