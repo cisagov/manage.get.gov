@@ -4,7 +4,6 @@ from itertools import zip_longest
 from typing import Callable
 from django.db.models.fields.related import ForeignObjectRel
 from django import forms
-
 from registrar.models import DomainRequest, Contact
 
 
@@ -278,3 +277,15 @@ class BaseYesNoForm(RegistrarForm):
         # No pre-selection for new domain requests
         initial_value = self.form_is_checked if self.domain_request else None
         return initial_value
+
+
+def request_step_list(request_wizard):
+    """Dynamically generated list of steps in the form wizard."""
+    step_list = []
+    for step in request_wizard.StepEnum:
+        condition = request_wizard.WIZARD_CONDITIONS.get(step, True)
+        if callable(condition):
+            condition = condition(request_wizard)
+        if condition:
+            step_list.append(step)
+    return step_list

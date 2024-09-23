@@ -583,6 +583,10 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
+    def is_awaiting_review(self) -> bool:
+        """Checks if the current status is in submitted or in_review"""
+        return self.status in [self.DomainRequestStatus.SUBMITTED, self.DomainRequestStatus.IN_REVIEW]
+
     def get_first_status_set_date(self, status):
         """Returns the date when the domain request was first set to the given status."""
         log_entry = (
@@ -1000,6 +1004,17 @@ class DomainRequest(TimeStampedModel):
             "emails/status_change_approved_subject.txt",
             send_email=send_email,
         )
+
+    def is_withdrawable(self):
+        """Helper function that determines if the request can be withdrawn in its current status"""
+        # This list is equivalent to the source field on withdraw. We need a better way to
+        # consolidate these two lists - i.e. some sort of method that keeps these two lists in sync.
+        # django fsm is very picky with what we can define in that field.
+        return self.status in [
+            self.DomainRequestStatus.SUBMITTED,
+            self.DomainRequestStatus.IN_REVIEW,
+            self.DomainRequestStatus.ACTION_NEEDED,
+        ]
 
     @transition(
         field="status",

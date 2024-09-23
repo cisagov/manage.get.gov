@@ -108,6 +108,8 @@ def send_templated_email(
 def _can_send_email(to_address, bcc_address):
     """Raises an EmailSendingError if we cannot send an email. Does nothing otherwise."""
 
+    # testing below a global waffle flag which will not be associated with a user
+    # or with http request, so pass None to flag_is_active
     if flag_is_active(None, "disable_email_sending"):  # type: ignore
         message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
         raise EmailSendingError(message)

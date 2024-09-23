@@ -94,3 +94,8 @@ def portfolio_permissions(request):
     except AttributeError:
         # Handles cases where request.user might not exist
         return portfolio_context
+
+
+def is_widescreen_mode(request):
+    widescreen_paths = ["/domains/", "/requests/"]
+    return {"is_widescreen_mode": any(path in request.path for path in widescreen_paths) or request.path == "/"}
