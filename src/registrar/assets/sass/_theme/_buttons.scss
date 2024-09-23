@@ -1,7 +1,8 @@
 @use "uswds-core" as *;
 @use "cisa_colors" as *;
 
-/* Make "placeholder" links visually obvious */
+// Used on: TODO links
+// Used on: NONE
 a[href$="todo"]::after {
   background-color: yellow;
   color: color(blue-80v);
@@ -9,10 +10,14 @@ a[href$="todo"]::after {
   font-style: italic;
 }
 
+// Used on: profile
+// Note: Is this needed?
 a.usa-link.usa-link--always-blue {
   color: #{$dhs-blue};
 }
 
+// Used on: breadcrumbs
+// Note: This could potentially be simplified and use usa-button--with-icon
 a.breadcrumb__back {
   display:flex;
   align-items: center;
@@ -28,10 +33,18 @@ a.breadcrumb__back {
   }
 }
 
+// Remove anchor buttons' underline
 a.usa-button {
   text-decoration: none;
 }
 
+// Unstyled anchor buttons
+a.usa-button--unstyled:visited {
+  color: color('primary');
+}
+
+// Disabled anchor buttons
+// NOTE: Not used
 a.usa-button.disabled-link {
   background-color: #ccc !important;
   color: #454545 !important
@@ -58,6 +71,8 @@ a.usa-button--unstyled.disabled-link:focus {
   text-decoration: none !important;
 }
 
+// Disabled buttons
+// Used on: Domain managers, disabled logo on profile 
 .usa-button--unstyled.disabled-button,
 .usa-button--unstyled.disabled-button:hover,
 .usa-button--unstyled.disabled-button:focus {
@@ -66,6 +81,16 @@ a.usa-button--unstyled.disabled-link:focus {
   text-decoration: none !important;
 }
 
+// Unstyled variant for reverse out?
+// Used on: NONE
+.usa-button--unstyled--white,
+.usa-button--unstyled--white:hover,
+.usa-button--unstyled--white:focus,
+.usa-button--unstyled--white:active {
+  color: color('white');
+}
+
+// Solid anchor buttons
 a.usa-button:not(.usa-button--unstyled, .usa-button--outline) {
   color: color('white');
 }
@@ -76,7 +101,8 @@ a.usa-button:not(.usa-button--unstyled, .usa-button--outline):focus,
 a.usa-button:not(.usa-button--unstyled, .usa-button--outline):active {
   color: color('white');
 }
-  
+
+// Outline anchor buttons
 a.usa-button--outline,
 a.usa-button--outline:visited {
   box-shadow: inset 0 0 0 2px color('primary');
@@ -94,10 +120,22 @@ a.usa-button--outline:active {
   color: color('primary-darker');
 }
 
+// Used on: Domain request withdraw confirmation
 a.withdraw {
   background-color: color('error');
 }
+
+a.withdraw:hover,
+a.withdraw:focus {
+  background-color: color('error-dark');
+}
   
+a.withdraw:active {
+  background-color: color('error-darker');
+}
+
+// Used on: Domain request status
+//NOTE: Revise to BEM convention usa-button--outline-secondary
 a.withdraw_outline,
 a.withdraw_outline:visited {
   box-shadow: inset 0 0 0 2px color('error');
@@ -115,19 +153,8 @@ a.withdraw_outline:active {
   color: color('error-darker');
 }
 
-a.withdraw:hover,
-a.withdraw:focus {
-  background-color: color('error-dark');
-}
-  
-a.withdraw:active {
-  background-color: color('error-darker');
-}
 
-a.usa-button--unstyled:visited {
-  color: color('primary');
-}
-  
+// Used on: Domain request submit
 .dotgov-button--green {
   background-color: color('success-dark');
 
@@ -140,15 +167,8 @@ a.usa-button--unstyled:visited {
   }
 }
 
-.usa-button--unstyled--white,
-.usa-button--unstyled--white:hover,
-.usa-button--unstyled--white:focus,
-.usa-button--unstyled--white:active {
-  color: color('white');
-}
-
-// Cancel button used on the
-// DNSSEC main page
+// Cancel button
+// Used on: DNSSEC main page
 // We want to center this button on mobile
 // and add some extra left margin on tablet+
 .usa-button--cancel {
@@ -175,6 +195,8 @@ a.usa-button--unstyled:visited {
   }
 }
 
+// Used on: Profile page, toggleable fields
+// Note: Could potentially be cleaned up by using usa-button--with-icon
 // We need to deviate from some default USWDS styles here
 // in this particular case, so we have to override this.
 .usa-form .usa-button.readonly-edit-button {
@@ -186,6 +208,7 @@ a.usa-button--unstyled:visited {
   }
 }
 
+//Used on: Domains and Requests tables
 .usa-button--filter {
   width: auto;
   // For mobile stacking
@@ -201,6 +224,8 @@ a.usa-button--unstyled:visited {
   }
 }
 
+// Buttons with nested icons
+// Note: Can be simplified by adding usa-link--icon to anchors in tables
 .dotgov-table a,
 .usa-link--icon,
 .usa-button--with-icon {
@@ -224,6 +249,9 @@ a .usa-icon,
   width: 1.5em;
 }
 
+// Red, for delete buttons
+// Used on: All delete buttons
+// Note: Can be simplified by adding text-secondary to delete anchors in tables
 button.text-secondary,
 button.text-secondary:hover,
 .dotgov-table a.text-secondary {

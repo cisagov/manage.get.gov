@@ -2,13 +2,13 @@
 {% load custom_filters %}
 
 <header class="usa-header usa-header--extended">
-    <div class="usa-navbar">
+    <div class="usa-navbar {% if is_widescreen_mode %} usa-navbar--widescreen {% endif %}">
         {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
     <button type="button" class="usa-menu-btn">Menu</button>
     </div>
     {% block usa_nav %}
     <nav class="usa-nav" aria-label="Primary navigation">
-    <div class="usa-nav__inner">
+    <div class="usa-nav__inner {% if is_widescreen_mode %} usa-nav__inner--widescreen {% endif %}">
         <button type="button" class="usa-nav__close">
             <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
         </button>
@@ -18,7 +18,6 @@
                     {% if user.is_authenticated %}
                     <span class="ellipsis usa-nav__username">{{ user.email }}</span>
                 </li>
-                {% if has_profile_feature_flag %}
                 <li class="usa-nav__secondary-item">
                     {% url 'user-profile' as user_profile_url %}
                     {% url 'finish-user-profile-setup' as finish_setup_url %}
@@ -26,7 +25,6 @@
                         Your profile
                     </a>
                 </li>
-                {% endif %}
                 <li class="usa-nav__secondary-item">
                     <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
                     {% else %}
@@ -42,7 +40,7 @@
                 {% else %}
                     {% url 'no-portfolio-domains' as url %}
                 {% endif %}
-                <a href="{{ url }}" class="usa-nav-link{% if 'domain'|in_path:request.path %} usa-current{% endif %}"> 
+                <a href="{{ url }}" class="usa-nav-link{% if path|is_domain_subpage %} usa-current{% endif %}"> 
                 Domains
                 </a>
             </li>
@@ -59,7 +57,7 @@
                     {% url 'domain-requests' as url %}
                     <button
                         type="button"
-                        class="usa-accordion__button usa-nav__link{% if 'request'|in_path:request.path %} usa-current{% endif %}"
+                        class="usa-accordion__button usa-nav__link{% if path|is_domain_request_subpage %} usa-current{% endif %}"
                         aria-expanded="false"
                         aria-controls="basic-nav-section-two"
                     >
@@ -80,13 +78,13 @@
                 <!-- user has view but no edit permissions -->
                 {% elif has_any_requests_portfolio_permission %}
                     {% url 'domain-requests' as url %}
-                    <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 
+                    <a href="{{ url }}" class="usa-nav-link{% if path|is_domain_request_subpage %} usa-current{% endif %}"> 
                         Domain requests
                     </a>
                 <!-- user does not have permissions -->
                 {% else %}
                     {% url 'no-portfolio-requests' as url %}
-                    <a href="{{ url }}" class="usa-nav-link{% if 'request'|in_path:request.path %} usa-current{% endif %}"> 
+                    <a href="{{ url }}" class="usa-nav-link{% if path|is_domain_request_subpage %} usa-current{% endif %}"> 
                     Domain requests
                     </a>
                 {% endif %}
@@ -104,7 +102,7 @@
             <li class="usa-nav__primary-item">
                 {% url 'organization' as url %}
                 <!-- Move the padding from the a to the span so that the descenders do not get cut off -->
-                <a href="{{ url }}" class="usa-nav-link padding-y-0 {% if request.path == '/organization/' %} usa-current{% endif %}">
+                <a href="{{ url }}" class="usa-nav-link padding-y-0 {% if path|is_portfolio_subpage %} usa-current{% endif %}">
                     <span class="ellipsis ellipsis--23 ellipsis--desktop-50 padding-y-1 desktop:padding-y-2">
                         {{ portfolio.organization_name }}
                     </span>

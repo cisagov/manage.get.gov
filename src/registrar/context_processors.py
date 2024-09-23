@@ -1,5 +1,4 @@
 from django.conf import settings
-from waffle.decorators import flag_is_active
 
 
 def language_code(request):
@@ -54,10 +53,6 @@ def add_path_to_context(request):
     return {"path": getattr(request, "path", None)}
 
 
-def add_has_profile_feature_flag_to_context(request):
-    return {"has_profile_feature_flag": flag_is_active(request, "profile_feature")}
-
-
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
     portfolio_context = {
@@ -99,3 +94,8 @@ def portfolio_permissions(request):
     except AttributeError:
         # Handles cases where request.user might not exist
         return portfolio_context
+
+
+def is_widescreen_mode(request):
+    widescreen_paths = ["/domains/", "/requests/"]
+    return {"is_widescreen_mode": any(path in request.path for path in widescreen_paths) or request.path == "/"}

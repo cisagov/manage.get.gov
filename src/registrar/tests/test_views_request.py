@@ -1,6 +1,7 @@
 from unittest import skip
-from unittest.mock import Mock
-
+from unittest.mock import Mock, patch
+from datetime import datetime
+from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
@@ -55,6 +56,46 @@ class DomainRequestTests(TestWithUser, WebTest):
         """Tests that user is presented with intro acknowledgement page"""
         intro_page = self.app.get(reverse("domain-request:"))
         self.assertContains(intro_page, "You’re about to start your .gov domain request")
+
+    @less_console_noise_decorator
+    def test_template_status_display(self):
+        """Tests the display of status-related information in the template."""
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
+        domain_request.last_submitted_date = datetime.now()
+        domain_request.save()
+        response = self.app.get(f"/domain-request/{domain_request.id}")
+        self.assertContains(response, "Submitted on:")
+        self.assertContains(response, domain_request.last_submitted_date.strftime("%B %-d, %Y"))
+
+    @patch.object(DomainRequest, "get_first_status_set_date")
+    def test_get_first_status_started_date(self, mock_get_first_status_set_date):
+        """Tests retrieval of the first date the status was set to 'started'."""
+
+        # Set the mock to return a fixed date
+        fixed_date = timezone.datetime(2023, 1, 1).date()
+        mock_get_first_status_set_date.return_value = fixed_date
+
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        domain_request.last_status_update = None
+        domain_request.save()
+
+        response = self.app.get(f"/domain-request/{domain_request.id}")
+        # Ensure that the date is still set to None
+        self.assertIsNone(domain_request.last_status_update)
+        print(response)
+        # We should still grab a date for this field in this event - but it should come from the audit log instead
+        self.assertContains(response, "Started on:")
+        self.assertContains(response, fixed_date.strftime("%B %-d, %Y"))
+
+        # If a status date is set, we display that instead
+        domain_request.last_status_update = datetime.now()
+        domain_request.save()
+
+        response = self.app.get(f"/domain-request/{domain_request.id}")
+
+        # We should still grab a date for this field in this event - but it should come from the audit log instead
+        self.assertContains(response, "Started on:")
+        self.assertContains(response, domain_request.last_status_update.strftime("%B %-d, %Y"))
 
     @less_console_noise_decorator
     def test_domain_request_form_intro_is_skipped_when_edit_access(self):
@@ -2206,7 +2247,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         senior_official = domain_request.senior_official
         self.assertEquals("Testy2", senior_official.first_name)
 
-    @override_flag("profile_feature", active=True)
     @less_console_noise_decorator
     def test_edit_creator_in_place(self):
         """When you:
@@ -2985,3 +3025,40 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
 
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
+
+
+class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
+
+    # Doesn't work with CSRF checking
+    # hypothesis is that CSRF_USE_SESSIONS is incompatible with WebTest
+    csrf_checks = False
+
+    def setUp(self):
+        super().setUp()
+        self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
+        self.app.set_user(self.user.username)
+        self.TITLES = DomainRequestWizard.TITLES
+
+    def tearDown(self):
+        super().tearDown()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        self.federal_agency.delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_domain_request_viewonly_displays_correct_fields(self):
+        """Tests that the viewonly page displays different fields"""
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        dummy_user, _ = User.objects.get_or_create(username="testusername123456")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=dummy_user)
+        domain_request.save()
+
+        detail_page = self.app.get(f"/domain-request/viewonly/{domain_request.id}")
+        self.assertContains(detail_page, "Requesting entity")
+        self.assertNotContains(detail_page, "Type of organization")
+        self.assertContains(detail_page, "city.gov")
+        self.assertContains(detail_page, "Status:")

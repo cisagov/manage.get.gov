@@ -13,7 +13,7 @@
         <!-- Embedding the portfolio value in a data attribute -->
         <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
       {% endif %}
-      <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
+      <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %} {% if is_widescreen_mode %} section-outlined__search--widescreen {% endif %}">
         <section aria-label="Domains search component" class="margin-top-2">
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
@@ -44,7 +44,7 @@
       {% if user_domain_count and user_domain_count > 0 %}
       <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
         <section aria-label="Domains report component" class="margin-top-205">
-          <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon" role="button">
+          <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" role="button">
             <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24" height="24">
               <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
             </svg>Export as CSV
@@ -64,7 +64,7 @@
             aria-expanded="false"
             aria-controls="filter-status"
           >
-            <span class="domain__filter-indicator text-bold display-none"></span> Status
+            <span class="filter-indicator text-bold display-none"></span> Status
             <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#expand_more"></use>
             </svg>

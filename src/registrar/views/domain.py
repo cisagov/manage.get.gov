@@ -204,7 +204,7 @@ class DomainView(DomainBaseView):
 
 
 class DomainOrgNameAddressView(DomainFormBaseView):
-    """Organization name and mailing address view"""
+    """Organization view"""
 
     model = Domain
     template_name = "domain_org_name_address.html"

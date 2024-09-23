@@ -9,6 +9,10 @@
 {% endblock %}
 
 {% block portfolio_content %}
+{% block messages %}
+  {% include "includes/form_messages.html" %}
+{% endblock %}
+
 <div id="main-content">
     <h1 id="domain-requests-header">Domain requests</h1>
     <div class="grid-row grid-gap">

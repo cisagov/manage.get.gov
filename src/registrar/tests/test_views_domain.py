@@ -723,7 +723,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
 
-        other_user = User()
+        other_user = create_user()
         other_user.save()
         self.client.force_login(other_user)
         mock_client = MagicMock()
@@ -737,6 +737,12 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_invitation_flow(self):
         """Send an invitation to a new user, log in and load the dashboard."""
         email_address = "mayor@igorville.gov"
+        username = "mayor"
+        first_name = "First"
+        last_name = "Last"
+        title = "title"
+        phone = "8080102431"
+        title = "title"
         User.objects.filter(email=email_address).delete()
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
@@ -752,7 +758,9 @@ class TestDomainManagers(TestDomainOverview):
             add_page.form.submit()
 
         # user was invited, create them
-        new_user = User.objects.create(username=email_address, email=email_address)
+        new_user = User.objects.create(
+            username=username, email=email_address, first_name=first_name, last_name=last_name, title=title, phone=phone
+        )
         # log them in to `self.app`
         self.app.set_user(new_user.username)
         # and manually call the on each login callback
@@ -1298,7 +1306,9 @@ class TestDomainOrganization(TestDomainOverview):
         """Can load domain's org name and mailing address page."""
         page = self.client.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         # once on the sidebar, once in the page title, once as H1
-        self.assertContains(page, "Organization name and mailing address", count=4)
+        self.assertContains(page, "/org-name-address")
+        self.assertContains(page, "Organization name and mailing address")
+        self.assertContains(page, "Organization</h1>")
 
     @less_console_noise_decorator
     def test_domain_org_name_address_content(self):
@@ -1607,7 +1617,7 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Test for the title change
         self.assertContains(page, "Suborganization")
-        self.assertNotContains(page, "Organization name")
+        self.assertNotContains(page, "Organization")
 
         # Test for the good value
         self.assertContains(page, "Ice Cream")
