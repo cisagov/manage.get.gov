@@ -930,3 +930,11 @@ ul.add-list-reset {
 .dl-dja dt {
     font-size: 14px;
 }
+
+.domain-name-wrap {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow: visible; 
+    word-break: break-all;
+    max-width: 100%; 
+  }
