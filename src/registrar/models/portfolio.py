@@ -58,6 +58,14 @@ class Portfolio(TimeStampedModel):
         default=FederalAgency.get_non_federal_agency,
     )
 
+    federal_type = models.CharField(
+        max_length=20,
+        choices=BranchChoices.choices,
+        null=True,
+        blank=True,
+        help_text="Federal agency type (executive, judicial, legislative, etc.)",
+    )
+
     senior_official = models.ForeignKey(
         "registrar.SeniorOfficial",
         on_delete=models.PROTECT,
@@ -123,7 +131,12 @@ class Portfolio(TimeStampedModel):
         if self.state_territory != self.StateTerritoryChoices.PUERTO_RICO and self.urbanization:
             self.urbanization = None
 
+        # Set the federal type field if it doesn't exist already
+        if self.federal_type is None and self.federal_agency and self.federal_agency.federal_type:
+            self.federal_type = self.federal_agency.federal_type if self.federal_agency else None
+
         super().save(*args, **kwargs)
+
 
     @property
     def portfolio_type(self):
@@ -141,15 +154,6 @@ class Portfolio(TimeStampedModel):
             return " - ".join([org_type_label, agency_type_label])
         else:
             return org_type_label
-
-    @property
-    def federal_type(self):
-        """Returns the federal_type value on the underlying federal_agency field"""
-        return self.get_federal_type(self.federal_agency)
-
-    @classmethod
-    def get_federal_type(cls, federal_agency):
-        return federal_agency.federal_type if federal_agency else None
 
     # == Getters for domains == #
     def get_domains(self):

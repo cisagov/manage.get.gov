@@ -58,7 +58,7 @@ def get_federal_and_portfolio_types_from_federal_agency_json(request):
     organization_type = request.GET.get("organization_type")
     agency = FederalAgency.objects.filter(agency=agency_name).first()
     if agency:
-        federal_type = Portfolio.get_federal_type(agency)
+        federal_type = agency.federal_type
         portfolio_type = Portfolio.get_portfolio_type(organization_type, federal_type)
         federal_type = BranchChoices.get_branch_label(federal_type) if federal_type else "-"
 

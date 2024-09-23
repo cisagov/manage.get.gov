@@ -1,0 +1,35 @@
+{% extends "django/admin/includes/detail_table_fieldset.html" %}
+{% load custom_filters %}
+{% load static url_helpers %}
+
+{% block field_readonly %}
+    {% if field.field.name == "display_admins" %}
+        <div class="readonly">{{ field.contents|safe }}</div>
+    {% elif field.field.name == "display_members" %}
+        <div class="readonly">
+            {% if display_members_summary %}
+                {{ display_members_summary }}
+            {% else %}
+                <p>No additional members found.</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="readonly">{{ field.contents }}</div>
+    {% endif %}
+{% endblock field_readonly%}
+
+{% block after_help_text %}
+    {% if field.field.name == "senior_official" %}
+        <div class="flex-container">
+        <label aria-label="Senior official contact details"></label>
+        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.senior_official no_title_top_padding=field.is_readonly %}
+        </div>
+    {% elif field.field.name == "display_members" and field.contents %}
+        <details class="margin-top-1 dja-detail-table" aria-role="button" open>
+            <summary class="padding-1 padding-left-0 dja-details-summary">Details</summary>
+            <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+                {{ field.contents|safe }}
+            </div>
+        </details>
+    {% endif %}
+{% endblock after_help_text %}

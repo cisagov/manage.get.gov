@@ -2894,6 +2894,15 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 
 class PortfolioAdmin(ListHeaderAdmin):
+    
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.Portfolio
+        fields = "__all__"
+
+    _meta = Meta()
+
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
         # created_on is the created_at field, and portfolio_type is f"{organization_type} - {federal_type}"
@@ -2940,16 +2949,12 @@ class PortfolioAdmin(ListHeaderAdmin):
         ("Senior official", {"fields": ["senior_official"]}),
     ]
 
-    list_display = ("organization_name", "federal_agency", "creator")
+    list_display = ("organization_name", "organization_type", "federal_type", "creator")
     search_fields = ["organization_name"]
-    search_help_text = "Search by organization name."
+    search_help_text = "Search by portfolio organization."
     readonly_fields = [
         # This is the created_at field
         "created_on",
-        # Django admin doesn't allow methods to be directly listed in fieldsets. We can
-        # display the custom methods display_admins amd display_members in the admin form if
-        # they are readonly.
-        "federal_type",
         "domains",
         "domain_requests",
         "suborganizations",
@@ -2959,16 +2964,47 @@ class PortfolioAdmin(ListHeaderAdmin):
         "creator",
     ]
 
+    analyst_readonly_fields = [
+        "organization_name",
+        "organization_type",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 2 conditions that determine which fields are read-only:
+        admin user permissions and the creator's status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+        readonly_fields = list(self.readonly_fields)
+
+        # Check if the creator is restricted
+        if obj and obj.creator.status == models.User.RESTRICTED:
+            # For fields like CharField, IntegerField, etc., the widget used is
+            # straightforward and the readonly_fields list can control their behavior
+            readonly_fields.extend([field.name for field in self.model._meta.fields])
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
+
     def get_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio
-        admin_permissions = UserPortfolioPermission.objects.filter(
-            portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
+        admin_permissions = self.get_user_portfolio_permission_admins(obj)
 
         # Get the user objects associated with these permissions
         admin_users = User.objects.filter(portfolio_permissions__in=admin_permissions)
 
         return admin_users
+    
+    def get_user_portfolio_permission_admins(self, obj):
+        """Returns each admin on UserPortfolioPermission for a given portfolio."""
+        return obj.portfolio_users.filter(
+            portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
 
     def get_non_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
@@ -2980,6 +3016,13 @@ class PortfolioAdmin(ListHeaderAdmin):
         non_admin_users = User.objects.filter(portfolio_permissions__in=non_admin_permissions)
 
         return non_admin_users
+    
+    def get_user_portfolio_permission_non_admins(self, obj):
+        """Returns each admin on UserPortfolioPermission for a given portfolio."""
+        return obj.portfolio_users.exclude(
+            roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
 
     def display_admins(self, obj):
         """Get joined users who are Admin, unpack and return an HTML block.
@@ -2989,19 +3032,23 @@ class PortfolioAdmin(ListHeaderAdmin):
         data would display in a custom change form without extensive template customization.
 
         Will be used in the field_readonly block"""
-        admins = self.get_admin_users(obj)
+        admins = self.get_user_portfolio_permission_admins(obj)
         if not admins:
             return format_html("<p>No admins found.</p>")
 
         admin_details = ""
-        for portfolio_admin in admins:
-            change_url = reverse("admin:registrar_user_change", args=[portfolio_admin.pk])
-            admin_details += "<address class='margin-bottom-2 dja-address-contact-list'>"
-            admin_details += f'<a href="{change_url}">{escape(portfolio_admin)}</a><br>'
-            admin_details += f"{escape(portfolio_admin.title)}<br>"
-            admin_details += f"{escape(portfolio_admin.email)}"
+        for i, portfolio_admin in enumerate(admins):
+            change_url = reverse("admin:registrar_userportfoliopermission_change", args=[portfolio_admin.pk])
+
+            address_id = f"portfolio-administrator-{portfolio_admin.pk}"
+            if len(admins) > 1:
+                admin_details += f'<label for="{address_id}">Organization admin {i}</label>'
+            admin_details += f'<address id="{address_id}" class="margin-bottom-2 dja-address-contact-list">'
+            admin_details += f'<a href="{change_url}">{escape(portfolio_admin.user)}</a><br>'
+            admin_details += f"{escape(portfolio_admin.user.title)}<br>"
+            admin_details += f"{escape(portfolio_admin.user.email)}"
             admin_details += "<div class='admin-icon-group admin-icon-group__clipboard-link'>"
-            admin_details += f"<input aria-hidden='true' class='display-none' value='{escape(portfolio_admin.email)}'>"
+            admin_details += f"<input aria-hidden='true' class='display-none' value='{escape(portfolio_admin.user.email)}'>"
             admin_details += (
                 "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon padding-left-05"
                 + "button--clipboard copy-to-clipboard text-no-underline' type='button'>"
@@ -3012,7 +3059,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             admin_details += "Copy"
             admin_details += "</button>"
             admin_details += "</div><br>"
-            admin_details += f"{escape(portfolio_admin.phone)}"
+            admin_details += f"{escape(portfolio_admin.user.phone)}"
             admin_details += "</address>"
         return format_html(admin_details)
 
@@ -3026,7 +3073,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         data would display in a custom change form without extensive template customization.
 
         Will be used in the after_help_text block."""
-        members = self.get_non_admin_users(obj)
+        members = self.get_user_portfolio_permission_non_admins(obj)
         if not members:
             return ""
 
@@ -3035,14 +3082,14 @@ class PortfolioAdmin(ListHeaderAdmin):
             + "<th>Phone</th><th>Roles</th></tr></thead><tbody>"
         )
         for member in members:
-            full_name = member.get_formatted_name()
+            full_name = member.user.get_formatted_name()
             member_details += "<tr>"
             member_details += f"<td>{escape(full_name)}</td>"
-            member_details += f"<td>{escape(member.title)}</td>"
-            member_details += f"<td>{escape(member.email)}</td>"
-            member_details += f"<td>{escape(member.phone)}</td>"
+            member_details += f"<td>{escape(member.user.title)}</td>"
+            member_details += f"<td>{escape(member.user.email)}</td>"
+            member_details += f"<td>{escape(member.user.phone)}</td>"
             member_details += "<td>"
-            for role in member.portfolio_role_summary(obj):
+            for role in member.user.portfolio_role_summary(obj):
                 member_details += f"<span class='usa-tag'>{escape(role)}</span> "
             member_details += "</td></tr>"
         member_details += "</tbody></table>"
@@ -3052,11 +3099,11 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def display_members_summary(self, obj):
         """Will be passed as context and used in the field_readonly block."""
-        members = self.get_non_admin_users(obj)
+        members = self.get_user_portfolio_permission_non_admins(obj)
         if not members:
             return {}
 
-        return self.get_field_links_as_list(members, "user", separator=", ")
+        return self.get_field_links_as_list(members, "userportfoliopermission", attribute_name="user", separator=", ")
 
     def federal_type(self, obj: models.Portfolio):
         """Returns the federal_type field"""

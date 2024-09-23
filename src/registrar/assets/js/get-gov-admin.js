@@ -858,10 +858,11 @@ function initializeWidgetOnList(list, parentId) {
         // $ symbolically denotes that this is using jQuery
         let $federalAgency = django.jQuery("#id_federal_agency");
         let organizationType = document.getElementById("id_organization_type");
-        if ($federalAgency && organizationType) {
+        let federalType = document.getElementById("id_federal_type")
+        if ($federalAgency && organizationType && federalType) {
             // Attach the change event listener
             $federalAgency.on("change", function() {
-                handleFederalAgencyChange($federalAgency, organizationType);
+                handleFederalAgencyChange($federalAgency, organizationType, federalType);
             });
         }
         
@@ -879,7 +880,7 @@ function initializeWidgetOnList(list, parentId) {
         }
     });
 
-    function handleFederalAgencyChange(federalAgency, organizationType) {
+    function handleFederalAgencyChange(federalAgency, organizationType, federalType) {
         // Don't do anything on page load
         if (isInitialPageLoad) {
             isInitialPageLoad = false;
@@ -924,7 +925,11 @@ function initializeWidgetOnList(list, parentId) {
                 console.error("Error in AJAX call: " + data.error);
                 return;
             }
-            updateReadOnly(data.federal_type, '.field-federal_type');
+            if (data.federal_type && selectedText !== "Non-Federal Agency") {
+                federalType.value = data.federal_type.toLowerCase();
+            }else {
+                federalType.value = "";
+            }
             updateReadOnly(data.portfolio_type, '.field-portfolio_type');
         })
         .catch(error => console.error("Error fetching federal and portfolio types: ", error));
