@@ -1566,7 +1566,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             modified_fieldsets = []
             for name, data in fieldsets:
                 fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in DomainInformationAdmin.superuser_only_fields)
+                fields = [field for field in fields if field not in DomainInformationAdmin.superuser_only_fields]
                 modified_fieldsets.append((name, {**data, "fields": fields}))
             return modified_fieldsets
         return fieldsets
@@ -2358,18 +2358,12 @@ class DomainInformationInline(admin.StackedInline):
         return domain_invitations
 
     def domain_managers(self, obj):
-        """Get joined users who have roles/perms that are not Admin, unpack and return an HTML block.
-
-        DJA readonly can't handle querysets, so we need to unpack and return html here.
-        Alternatively, we could return querysets in context but that would limit where this
-        data would display in a custom change form without extensive template customization.
-
-        Will be used in the after_help_text block."""
+        """Get domain managers for the domain, unpack and return an HTML block."""
         domain_managers = self.get_domain_managers(obj)
         if not domain_managers:
             return "No domain managers found."
 
-        domain_manager_details = "<table><thead><tr><th>UID</th><th>Name</th><th>Email</th>" + "</tr></thead><tbody>"
+        domain_manager_details = "<table><thead><tr><th>UID</th><th>Name</th><th>Email</th></tr></thead><tbody>"
         for domain_manager in domain_managers:
             full_name = domain_manager.get_formatted_name()
             change_url = reverse("admin:registrar_user_change", args=[domain_manager.pk])
@@ -2384,13 +2378,7 @@ class DomainInformationInline(admin.StackedInline):
     domain_managers.short_description = "Domain managers"  # type: ignore
 
     def invited_domain_managers(self, obj):
-        """Get emails which have been invited to the domain, unpack and return an HTML block.
-
-        DJA readonly can't handle querysets, so we need to unpack and return html here.
-        Alternatively, we could return querysets in context but that would limit where this
-        data would display in a custom change form without extensive template customization.
-
-        Will be used in the after_help_text block."""
+        """Get emails which have been invited to the domain, unpack and return an HTML block."""
         domain_invitations = self.get_domain_invitations(obj)
         if not domain_invitations:
             return "No invited domain managers found."
@@ -2458,27 +2446,21 @@ class DomainInformationInline(admin.StackedInline):
         modified_fieldsets = copy.deepcopy(DomainInformationAdmin.get_fieldsets(self, request, obj=None))
 
         # Modify fieldset sections in place
-        for index, (title, f) in enumerate(modified_fieldsets):
+        for index, (title, options) in enumerate(modified_fieldsets):
             if title is None:
-                modified_fieldsets[index][1]["fields"] = [
-                    field
-                    for field in modified_fieldsets[index][1]["fields"]
-                    if field not in ["creator", "domain_request", "notes"]
+                options["fields"] = [
+                    field for field in options["fields"] if field not in ["creator", "domain_request", "notes"]
                 ]
             elif title == "Contacts":
-                modified_fieldsets[index][1]["fields"] = [
+                options["fields"] = [
                     field
-                    for field in modified_fieldsets[index][1]["fields"]
+                    for field in options["fields"]
                     if field not in ["other_contacts", "no_other_contacts_rationale"]
                 ]
-                modified_fieldsets[index][1]["fields"].extend(
-                    ["domain_managers", "invited_domain_managers"]
-                )  # type: ignore
+                options["fields"].extend(["domain_managers", "invited_domain_managers"])  # type: ignore
             elif title == "Background info":
                 # move domain request and notes to background
-                modified_fieldsets[index][1]["fields"].extend(
-                    ["domain_request", "notes"]
-                )  # type: ignore
+                options["fields"].extend(["domain_request", "notes"])  # type: ignore
 
         # Remove or remove fieldset sections
         for index, (title, f) in enumerate(modified_fieldsets):
@@ -2582,7 +2564,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         formatted_nameservers = []
         for server, ip_list in obj.nameservers:
-            formatted_nameservers.append(f"{server} [{', '.join(ip_list)}]")
+            server_display = str(server)
+            if ip_list:
+                server_display += f" [{', '.join(ip_list)}]"
+            formatted_nameservers.append(server_display)
 
         # Join the formatted strings with line breaks
         return "\n".join(formatted_nameservers)
