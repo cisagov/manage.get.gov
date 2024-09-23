@@ -560,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isEmailAlreadySent()) {
                 formLabel.innerHTML = "Email sent to creator:";
             } else {
-                formLabel.innerHTML = "Email will be sent to creator:";
+                formLabel.innerHTML = "Email:";
             }
         }
     }
