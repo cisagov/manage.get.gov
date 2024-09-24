@@ -2239,8 +2239,4 @@ const utcDateString = (dateString) => {
   };
 
   }
-  
-
-  // Optional: Push a new state to the history to handle the initial load
-  history.pushState(null, document.title, window.location.href);
 })();
