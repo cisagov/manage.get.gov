@@ -49,11 +49,13 @@ class CheckUserProfileMiddleware:
             self.setup_page,
             self.logout_page,
             "/admin",
+            "/__debug__",
         ]
         self.other_excluded_pages = [
             self.profile_page,
             self.logout_page,
             "/admin",
+            "/__debug__",
         ]
 
         self.excluded_pages = {

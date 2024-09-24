@@ -3006,7 +3006,10 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def get_user_portfolio_permission_admins(self, obj):
         """Returns each admin on UserPortfolioPermission for a given portfolio."""
-        return obj.portfolio_users.filter(portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        if obj:
+            return obj.portfolio_users.filter(portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        else:
+            return []
 
     def get_non_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
@@ -3021,7 +3024,10 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def get_user_portfolio_permission_non_admins(self, obj):
         """Returns each admin on UserPortfolioPermission for a given portfolio."""
-        return obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        if obj:
+            return obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        else:
+            return []
 
     def display_admins(self, obj):
         """Get joined users who are Admin, unpack and return an HTML block.
@@ -3042,7 +3048,9 @@ class PortfolioAdmin(ListHeaderAdmin):
             address_id = f"portfolio-administrator-{portfolio_admin.pk}"
             if len(admins) > 1:
                 admin_details += (
-                    f'<label class="organization-admin-label" for="{address_id}">Organization admin {i+1}</label>'
+                    f'<label class="organization-admin-label padding-top-0" for="{address_id}">'
+                    f'Organization admin {i+1}'
+                    '</label>'
                 )
             admin_details += f'<address id="{address_id}" class="margin-bottom-2 dja-address-contact-list">'
             admin_details += f'<a href="{change_url}">{escape(portfolio_admin.user)}</a><br>'

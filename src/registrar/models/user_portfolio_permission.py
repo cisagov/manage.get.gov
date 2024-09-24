@@ -80,7 +80,7 @@ class UserPortfolioPermission(TimeStampedModel):
             readable_roles = sorted(
                 [UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in self.roles]
             )
-        return f"{self.user}' " f"<Roles: {', '.join(readable_roles)}>" if self.roles else ""
+        return f"{self.user}" f" <Roles: {', '.join(readable_roles)}>" if self.roles else ""
 
     def get_readable_roles(self):
         """Returns a list of labels of each role in self.roles"""
