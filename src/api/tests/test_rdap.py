@@ -18,7 +18,7 @@ from epplibwrapper import (
 API_BASE_PATH = "/api/v1/rdap/?domain="
 
 
-class RDapViewTest(TestCase):
+class RdapViewTest(TestCase):
     """Test that the RDAP view function works as expected"""
 
     def setUp(self):
