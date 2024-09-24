@@ -135,7 +135,7 @@ class AvailableAPITest(MockEppLib):
         self.user = get_user_model().objects.create(
             username=username, title=title, first_name=first_name, last_name=last_name, email=email, phone=phone
         )
-
+        
     def test_available_get(self):
         self.client.force_login(self.user)
         response = self.client.get(API_BASE_PATH + "nonsense")

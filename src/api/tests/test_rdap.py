@@ -6,8 +6,9 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 from django.test import TestCase
 
-from ..views import available, check_domain_available
+from ..views import available, check_domain_available, rdap
 from .common import less_console_noise
+from registrar.tests.common import MockRdapLib, MockEppLib
 from registrar.utility.errors import GenericError, GenericErrorCodes
 from unittest.mock import call
 
@@ -17,10 +18,42 @@ from epplibwrapper import (
 
 API_BASE_PATH = "/api/v1/rdap/?domain="
 
-class RdapAPITest(MockEppLib):
-     """Test that the RDAP API can be called as expected."""
 
-     def setUp(self):
+class RDapViewTest(MockRdapLib):
+    """Test that the RDAP view function works as expected"""
+
+    def setUp(self):
+        super().setUp()
+        self.user = get_user_model().objects.create(username="username")
+        self.factory = RequestFactory()
+
+    def test_rdap_get_no_tld(self):
+        """RDAP API successfully fetches RDAP for domain without a TLD"""
+        request = self.factory.get(API_BASE_PATH + "whitehouse")
+        request.user = self.user
+        response = rdap(request, domain="whitehouse")
+        # contains the right text
+        self.assertContains(response, "rdap")
+        # can be parsed into JSON with appropriate keys
+        response_object = json.loads(response.content)
+        self.assertIn("rdapConformance", response_object)
+
+    def test_rdap_invalid_domain(self):
+        """RDAP API accepts invalid domain queries and returns JSON response
+        with appropriate error codes"""
+        request = self.factory.get(API_BASE_PATH + "whitehouse.com")
+        request.user = self.user
+        response = rdap(request, domain="whitehouse.com")
+
+        self.assertContains(response, "errorCode")
+        response_object = json.loads(response.content)
+        self.assertIn("errorCode", response_object)
+
+
+class RdapAPITest(MockRdapLib):
+    """Test that the API can be called as expected."""
+
+    def setUp(self):
         super().setUp()
         username = "test_user"
         first_name = "First"
@@ -33,8 +66,10 @@ class RdapAPITest(MockEppLib):
         )
         
     def test_rdap_get(self):
+        """Can call RDAP API"""
         self.client.force_login(self.user)
         response = self.client.get(API_BASE_PATH + "whitehouse.gov")
-        self.assertContains(response, "RDAP")
+        self.assertContains(response, "rdap")
         response_object = json.loads(response.content)
-        self.assertIn("RDAP", response_object)
+        self.assertIn("rdapConformance", response_object)
+
