@@ -149,11 +149,12 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         return current_domain_info
     
-    def send_update_notification(self, form):
+    def send_update_notification(self, form, force_send=False):
         """Send a notification to all domain managers that an update has occured 
         for a single domain. Uses update_to_approved_domain.txt template.
         
-        Checks for changes, and does nothing if the form has not changed.
+        If there are no changes to the form, emails will NOT be sent unless force_send
+        is set to True.
         """
 
         # send notification email for changes to any of these forms
@@ -172,9 +173,10 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         }
 
         if form.__class__ in form_label_dict:
+            # these types of forms can cause notifications
             should_notify=True
             if form.__class__ in check_for_portfolio:
-                # check for portfolio
+                # some forms shouldn't cause notifications if they are in a portfolio
                 info = self.get_domain_info_from_domain()
                 if not info or info.portfolio:
                     should_notify = False 
@@ -182,7 +184,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             # don't notify for any other types of forms
             should_notify=False
 
-        if should_notify and form.has_changed:
+        if (should_notify and form.has_changed()) or force_send:
             logger.info("Sending email to domain managers")
 
             context={
@@ -305,9 +307,9 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
-        form.save()
-
         self.send_update_notification(form)
+
+        form.save()
 
         messages.success(self.request, "The organization information for this domain has been updated.")
 
@@ -602,7 +604,7 @@ class DomainDNSSECView(DomainFormBaseView):
                     logger.error(errmsg + ": " + err)
                     messages.error(self.request, errmsg)
                 else:
-                    self.send_update_notification(form)
+                    self.send_update_notification(form, force_send=True)
         return self.form_valid(form)
 
 

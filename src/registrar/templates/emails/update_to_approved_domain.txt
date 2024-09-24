@@ -1,6 +1,8 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+
 Hi,
 An update was made to a domain you manage.
-DOMAIN: {{domain.gov}}
+DOMAIN: {{domain}}
 UPDATED BY: {{user}}
 UPDATED ON: {{date}}
 INFORMATION UPDATED: {{changes}}
@@ -11,7 +13,7 @@ Get help with managing your .gov domain <https://get.gov/help/domain-management/
 
 ----------------------------------------------------------------
 WHY DID YOU RECEIVE THIS EMAIL? 
-You’re listed as a domain manager for $domain.gov, so you’ll receive a notification whenever changes are made to that domain.
+You’re listed as a domain manager for {{domain}}, so you’ll receive a notification whenever changes are made to that domain.
 If you have questions or concerns, reach out to the person who made the change or reply to this email.
 
 THANK YOU
@@ -21,3 +23,4 @@ THANK YOU
 The .gov team
 Contact us <https://get.gov/contact/> 
 Learn about .gov <https://get.gov>
+{% endautoescape %}
