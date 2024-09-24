@@ -90,5 +90,5 @@ def get_action_needed_email_for_user_json(request):
         return JsonResponse({"error": "No domain_request_id specified"}, status=404)
 
     domain_request = DomainRequest.objects.filter(id=domain_request_id).first()
-    emails = get_all_action_needed_reason_emails(request, domain_request)
+    emails = get_all_action_needed_reason_emails(domain_request)
     return JsonResponse({"action_needed_email": emails.get(reason)}, status=200)

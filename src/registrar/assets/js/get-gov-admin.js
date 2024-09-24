@@ -500,83 +500,41 @@ function initializeWidgetOnList(list, parentId) {
     }
 })();
 
+class CustomizableEmailBase {
+    constructor(dropdown, textarea, textareaPlaceholder, directEditButton, modalTrigger, modalConfirm, formLabel, lastSentEmailContent, apiUrl) {
+        this.dropdown = dropdown;
+        this.textarea = textarea;
+        this.textareaPlaceholder = textareaPlaceholder;
+        this.directEditButton = directEditButton;
+        this.modalTrigger = modalTrigger;
+        this.modalConfirm = modalConfirm;
+        this.formLabel = formLabel;
+        this.lastSentEmailContent = lastSentEmailContent;
+        this.apiUrl = apiUrl;
 
-/** An IIFE that hooks to the show/hide button underneath action needed reason.
- * This shows the auto generated email on action needed reason.
-*/
-document.addEventListener('DOMContentLoaded', function() {
-    const dropdown = document.getElementById("id_action_needed_reason");
-    const textarea = document.getElementById("id_action_needed_reason_email")
-    const domainRequestId = dropdown ? document.getElementById("domain_request_id").value : null
-    const textareaPlaceholder = document.querySelector(".field-action_needed_reason_email__placeholder");
-    const directEditButton = document.querySelector('.field-action_needed_reason_email__edit');
-    const modalTrigger = document.querySelector('.field-action_needed_reason_email__modal-trigger');
-    const modalConfirm = document.getElementById('confirm-edit-email');
-    const formLabel = document.querySelector('label[for="id_action_needed_reason_email"]');
-    let lastSentEmailContent = document.getElementById("last-sent-email-content");
-    const initialDropdownValue = dropdown ? dropdown.value : null;
-    const initialEmailValue = textarea.value;
+        this.domainRequestId = this.dropdown ? document.getElementById("domain_request_id").value : null
+        this.initialDropdownValue = this.dropdown ? this.dropdown.value : null;
+        this.initialEmailValue = this.textarea ? this.textarea.value : null;
 
-    // We will use the const to control the modal
-    let isEmailAlreadySentConst = lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
-    // We will use the function to control the label and help
-    function isEmailAlreadySent() {
-        return lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
-    }
-
-    if (!dropdown || !textarea || !domainRequestId || !formLabel || !modalConfirm) return;
-    const apiUrl = document.getElementById("get-action-needed-email-for-user-json").value;
-
-    function updateUserInterface(reason) {
-        if (!reason) {
-            // No reason selected, we will set the label to "Email", show the "Make a selection" placeholder, hide the trigger, textarea, hide the help text
-            formLabel.innerHTML = "Email:";
-            textareaPlaceholder.innerHTML = "Select an action needed reason to see email";
-            showElement(textareaPlaceholder);
-            hideElement(directEditButton);
-            hideElement(modalTrigger);
-            hideElement(textarea);
-        } else if (reason === 'other') {
-            // 'Other' selected, we will set the label to "Email", show the "No email will be sent" placeholder, hide the trigger, textarea, hide the help text
-            formLabel.innerHTML = "Email:";
-            textareaPlaceholder.innerHTML = "No email will be sent";
-            showElement(textareaPlaceholder);
-            hideElement(directEditButton);
-            hideElement(modalTrigger);
-            hideElement(textarea);
-        } else {
-            // A triggering selection is selected, all hands on board:
-            textarea.setAttribute('readonly', true);
-            showElement(textarea);
-            hideElement(textareaPlaceholder);
-
-            if (isEmailAlreadySentConst) {
-                hideElement(directEditButton);
-                showElement(modalTrigger);
-            } else {
-                showElement(directEditButton);
-                hideElement(modalTrigger);
-            }
-            if (isEmailAlreadySent()) {
-                formLabel.innerHTML = "Email sent to creator:";
-            } else {
-                formLabel.innerHTML = "Email:";
-            }
+        this.isEmailAlreadySentConst;
+        if (lastSentEmailContent && textarea) {
+            this.isEmailAlreadySentConst = lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
         }
     }
 
-    // Initialize UI
-    updateUserInterface(dropdown.value);
-
-    dropdown.addEventListener("change", function() {
-        const reason = dropdown.value;
-        // Update the UI
-        updateUserInterface(reason);
-        if (reason && reason !== "other") {
-            // If it's not the initial value
-            if (initialDropdownValue !== dropdown.value || initialEmailValue !== textarea.value) {
+    initializeDropdown(errorMessage) {
+        this.dropdown.addEventListener("change", () => {
+            console.log(this.dropdown)
+            let reason = this.dropdown.value;
+            if (this.initialDropdownValue !== this.dropdown.value || this.initialEmailValue !== this.textarea.value) {
+                let searchParams = new URLSearchParams(
+                    {
+                        "reason": reason,
+                        "domain_request_id": this.domainRequestId,
+                    }
+                );
                 // Replace the email content
-                fetch(`${apiUrl}?reason=${reason}&domain_request_id=${domainRequestId}`)
+                fetch(`${this.apiUrl}?${searchParams.toString()}`)
                 .then(response => {
                     return response.json().then(data => data);
                 })
@@ -584,30 +542,174 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.error) {
                         console.error("Error in AJAX call: " + data.error);
                     }else {
-                        textarea.value = data.action_needed_email;
+                        this.textarea.value = data.action_needed_email;
                     }
-                    updateUserInterface(reason);
+                    this.updateUserInterface(reason);
                 })
                 .catch(error => {
-                    console.error("Error action needed email: ", error)
+                    console.error(errorMessage, error)
                 });
             }
+        });
+    }
+
+    initializeModalConfirm() {
+        this.modalConfirm.addEventListener("click", () => {
+            this.textarea.removeAttribute('readonly');
+            this.textarea.focus();
+            hideElement(this.directEditButton);
+            hideElement(this.modalTrigger);  
+        });
+    }
+
+    initializeDirectEditButton() {
+        this.directEditButton.addEventListener("click", () => {
+            this.textarea.removeAttribute('readonly');
+            this.textarea.focus();
+            hideElement(this.directEditButton);
+            hideElement(this.modalTrigger);  
+        });
+    }
+
+    isEmailAlreadySent() {
+        return this.lastSentEmailContent.value.replace(/\s+/g, '') === this.textarea.value.replace(/\s+/g, '');
+    }
+
+    updateUserInterface(reason) {
+        if (!reason) {
+            // No reason selected, we will set the label to "Email", show the "Make a selection" placeholder, hide the trigger, textarea, hide the help text
+            this.showPlaceholder("Email:", "Select an action needed reason to see email");
+        } else if (reason === 'other') {
+            // 'Other' selected, we will set the label to "Email", show the "No email will be sent" placeholder, hide the trigger, textarea, hide the help text
+            this.showPlaceholder("Email:", "No email will be sent");
+        } else {
+            // A triggering selection is selected, all hands on board:
+            this.textarea.setAttribute('readonly', true);
+            showElement(this.textarea);
+            hideElement(this.textareaPlaceholder);
+
+            if (this.isEmailAlreadySentConst) {
+                hideElement(this.directEditButton);
+                showElement(this.modalTrigger);
+            } else {
+                showElement(this.directEditButton);
+                hideElement(this.modalTrigger);
+            }
+
+            if (this.isEmailAlreadySent()) {
+                this.formLabel.innerHTML = "Email sent to creator:";
+            } else {
+                this.formLabel.innerHTML = "Email:";
+            }
         }
+    }
 
-    });
+    showPlaceholder(formLabelText, placeholderText) {
+        this.formLabel.innerHTML = formLabelText;
+        this.textareaPlaceholder.innerHTML = placeholderText;
+        showElement(this.textareaPlaceholder);
+        hideElement(this.directEditButton);
+        hideElement(this.modalTrigger);
+        hideElement(this.textarea);
+    }
+}
 
-    modalConfirm.addEventListener("click", () => {
-        textarea.removeAttribute('readonly');
-        textarea.focus();
-        hideElement(directEditButton);
-        hideElement(modalTrigger);  
-    });
-    directEditButton.addEventListener("click", () => {
-        textarea.removeAttribute('readonly');
-        textarea.focus();
-        hideElement(directEditButton);
-        hideElement(modalTrigger);  
-    });
+
+
+class customActionNeededEmail extends CustomizableEmailBase {
+    constructor() {
+        const dropdown = document.getElementById("id_action_needed_reason");
+        const textarea = document.getElementById("id_action_needed_reason_email")
+        const textareaPlaceholder = document.querySelector(".field-action_needed_reason_email__placeholder");
+        const directEditButton = document.querySelector('.field-action_needed_reason_email__edit');
+        const modalTrigger = document.querySelector('.field-action_needed_reason_email__modal-trigger');
+        const modalConfirm = document.getElementById('confirm-edit-email');
+        const formLabel = document.querySelector('label[for="id_action_needed_reason_email"]');
+        const lastSentEmailContent = document.getElementById("last-sent-email-content");
+
+        let apiContainer = document.getElementById("get-action-needed-email-for-user-json")
+        const apiUrl = apiContainer ? apiContainer.value : null;
+        super(
+            dropdown, 
+            textarea, 
+            textareaPlaceholder, 
+            directEditButton, 
+            modalTrigger, 
+            modalConfirm, 
+            formLabel, 
+            lastSentEmailContent, 
+            apiUrl
+        );
+    }
+
+    loadActionNeededEmail() {
+        this.updateUserInterface(this.dropdown.value);
+        this.initializeDropdown("Error when attempting to grab action needed email: ")
+        this.initializeModalConfirm()
+        this.initializeDirectEditButton()
+    }
+}
+
+/** An IIFE that hooks to the show/hide button underneath action needed reason.
+ * This shows the auto generated email on action needed reason.
+*/
+document.addEventListener('DOMContentLoaded', function() {
+    const customEmail = new customActionNeededEmail();
+    if (!customEmail.dropdown || !customEmail.textarea || !customEmail.domainRequestId || !customEmail.formLabel || !customEmail.modalConfirm){
+        return;
+    }
+
+    // Initialize UI
+    customEmail.loadActionNeededEmail()
+});
+
+
+class customRejectedEmail extends CustomizableEmailBase {
+    constructor() {
+        const dropdown = document.getElementById("id_rejection_reason");
+        const textarea = document.getElementById("id_rejection_reason_email")
+        const textareaPlaceholder = document.querySelector(".field-rejection_reason_email__placeholder");
+        const directEditButton = document.querySelector('.field-rejection_reason_email__edit');
+        const modalTrigger = document.querySelector('.field-rejection_reason_email__modal-trigger');
+        const modalConfirm = document.getElementById('confirm-edit-email');
+        const formLabel = document.querySelector('label[for="id_rejection_reason_email"]');
+        const lastSentEmailContent = document.getElementById("last-sent-email-content");
+
+        let apiContainer = document.getElementById("get-rejection-reason-email-for-user-json")
+        const apiUrl = apiContainer ? apiContainer.value : null;
+        super(
+            dropdown, 
+            textarea, 
+            textareaPlaceholder, 
+            directEditButton, 
+            modalTrigger, 
+            modalConfirm, 
+            formLabel, 
+            lastSentEmailContent, 
+            apiUrl
+        );
+    }
+
+    loadRejectedEmail() {
+        this.updateUserInterface(this.dropdown.value);
+        this.initializeDropdown("Error when attempting to grab rejected email: ")
+        this.initializeModalConfirm()
+        this.initializeDirectEditButton()
+    }
+}
+
+
+/** An IIFE that hooks to the show/hide button underneath rejected reason.
+ * This shows the auto generated email on action needed reason.
+*/
+document.addEventListener('DOMContentLoaded', function() {
+    const customEmail = new customRejectedEmail();
+    if (!customEmail.dropdown || !customEmail.textarea || !customEmail.domainRequestId || !customEmail.formLabel || !customEmail.modalConfirm){
+        return;
+    }
+
+    // Initialize UI
+    customEmail.loadRejectedEmail()
 });
 
 

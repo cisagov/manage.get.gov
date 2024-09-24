@@ -1,0 +1,15 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+{% include "emails/includes/status_change_rejected_header.html" %}
+REJECTION REASON
+Your domain request was rejected because {{ domain_request.organization_name }} has a .gov domain. Our 
+practice is to approve one domain per online service per government organization. We 
+evaluate additional requests on a case-by-case basis. You did not provide sufficient 
+justification for an additional domain. 
+
+Read more about our practice of approving one domain per online service 
+<https://get.gov/domains/before/#one-domain-per-service>. 
+
+If you have questions or comments, reply to this email.
+
+{% include "emails/includes/email_footer.html" %}
+{% endautoescape %}

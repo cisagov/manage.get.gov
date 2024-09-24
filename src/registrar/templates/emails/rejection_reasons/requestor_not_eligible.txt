@@ -1,0 +1,14 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+{% include "emails/includes/status_change_rejected_header.html" %}
+REJECTION REASON
+Your domain request was rejected because we don’t believe you’re eligible to request a 
+.gov domain on behalf of {{ domain_request.organization_name }}. You must be a government employee, or be 
+working on behalf of a government organization, to request a .gov domain.
+
+
+DEMONSTRATE ELIGIBILITY
+If you can provide more information that demonstrates your eligibility, or you want to 
+discuss further, reply to this email.
+
+{% include "emails/includes/email_footer.html" %}
+{% endautoescape %}

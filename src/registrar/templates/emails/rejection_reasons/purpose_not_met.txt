@@ -1,0 +1,15 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+{% include "emails/includes/status_change_rejected_header.html" %}
+REJECTION REASON
+Your domain request was rejected because the purpose you provided did not meet our 
+requirements. You didn’t provide enough information about how you intend to use the 
+domain. 
+
+Learn more about:
+- Eligibility for a .gov domain <https://get.gov/domains/eligibility>
+- What you can and can’t do with .gov domains <https://get.gov/domains/requirements/>
+
+If you have questions or comments, reply to this email.
+
+{% include "emails/includes/email_footer.html" %}
+{% endautoescape %}

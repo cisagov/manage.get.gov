@@ -300,6 +300,11 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
+    rejection_reason_email = models.TextField(
+        null=True,
+        blank=True,
+    )
+
     action_needed_reason = models.TextField(
         choices=ActionNeededReasons.choices,
         null=True,
@@ -798,6 +803,21 @@ class DomainRequest(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
+    def _send_custom_status_update_email(self, email_content):
+        """Wrapper for `_send_status_update_email` that bcc's help@get.gov
+        and sends an email equivalent to the 'email_content' variable."""
+        if settings.IS_PRODUCTION:
+            bcc_address = settings.DEFAULT_FROM_EMAIL
+
+        self._send_status_update_email(
+            new_status="action needed",
+            email_template=f"emails/includes/custom_email.txt",
+            email_template_subject=f"emails/status_change_subject.txt",
+            bcc_address=bcc_address,
+            custom_email_content=email_content,
+            wrap_email=True,
+        )
+
     def investigator_exists_and_is_staff(self):
         """Checks if the current investigator is in a valid state for a state transition"""
         is_valid = True
@@ -901,7 +921,7 @@ class DomainRequest(TimeStampedModel):
         target=DomainRequestStatus.ACTION_NEEDED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
-    def action_needed(self, send_email=True):
+    def action_needed(self):
         """Send back an domain request that is under investigation or rejected.
 
         This action is logged.
@@ -924,27 +944,7 @@ class DomainRequest(TimeStampedModel):
         # Send out an email if an action needed reason exists
         if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
             email_content = self.action_needed_reason_email
-            self._send_action_needed_reason_email(send_email, email_content)
-
-    def _send_action_needed_reason_email(self, send_email=True, email_content=None):
-        """Sends out an automatic email for each valid action needed reason provided"""
-
-        email_template_name = "custom_email.txt"
-        email_template_subject_name = f"{self.action_needed_reason}_subject.txt"
-
-        bcc_address = ""
-        if settings.IS_PRODUCTION:
-            bcc_address = settings.DEFAULT_FROM_EMAIL
-
-        self._send_status_update_email(
-            new_status="action needed",
-            email_template=f"emails/action_needed_reasons/{email_template_name}",
-            email_template_subject=f"emails/action_needed_reasons/{email_template_subject_name}",
-            send_email=send_email,
-            bcc_address=bcc_address,
-            custom_email_content=email_content,
-            wrap_email=True,
-        )
+            self._send_custom_status_update_email(email_content)
 
     @transition(
         field="status",
@@ -1050,6 +1050,11 @@ class DomainRequest(TimeStampedModel):
             "emails/status_change_rejected.txt",
             "emails/status_change_rejected_subject.txt",
         )
+
+        # Send out an email if a rejection reason exists
+        if self.rejection_reason:
+            email_content = self.rejection_reason_email
+            self._send_custom_status_update_email(email_content)
 
     @transition(
         field="status",

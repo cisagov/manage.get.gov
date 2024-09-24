@@ -1,0 +1,8 @@
+Hi, {{ recipient.first_name }}.
+
+Your .gov domain request has been rejected.
+
+DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
+REQUEST RECEIVED ON: {{ domain_request.last_submitted_date|date }}
+STATUS: Rejected
+----------------------------------------------------------------
