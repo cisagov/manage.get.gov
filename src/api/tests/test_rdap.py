@@ -8,7 +8,6 @@ from django.test import TestCase
 
 from ..views import available, check_domain_available, rdap
 from .common import less_console_noise
-from registrar.tests.common import MockRdapLib, MockEppLib
 from registrar.utility.errors import GenericError, GenericErrorCodes
 from unittest.mock import call
 
@@ -19,7 +18,7 @@ from epplibwrapper import (
 API_BASE_PATH = "/api/v1/rdap/?domain="
 
 
-class RDapViewTest(MockRdapLib):
+class RDapViewTest(TestCase):
     """Test that the RDAP view function works as expected"""
 
     def setUp(self):
@@ -50,7 +49,7 @@ class RDapViewTest(MockRdapLib):
         self.assertIn("errorCode", response_object)
 
 
-class RdapAPITest(MockRdapLib):
+class RdapAPITest(TestCase):
     """Test that the API can be called as expected."""
 
     def setUp(self):

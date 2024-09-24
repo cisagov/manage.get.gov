@@ -1029,23 +1029,6 @@ def generic_domain_object(domain_type, object_name):
     return domain_request
 
 
-class MockRdapLib(TestCase):
-    class fakedRdapObject(object):
-        def __init__(
-            self,
-            rdapConformance=...,
-            description=...,
-            errorCode=...,
-            title=...
-        ):
-            self.rdapConformance = rdapConformance
-            self.description = description
-            self.errorCode = errorCode
-            self.title = title
-    
-
-            
-
 class MockEppLib(TestCase):
     class fakedEppObject(object):
         """"""
