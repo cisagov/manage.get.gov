@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.db.models import Q
 
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 
@@ -13,6 +14,7 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 import logging
 from venv import logger
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 logger = logging.getLogger(__name__)
 
 
@@ -24,6 +26,17 @@ def get_portfolio_members_json(request):
     objects = get_member_objects_from_request(request)
     if(objects is not None):
         member_ids = objects.values_list("id", flat=True)
+
+        portfolio = request.session.get("portfolio")
+        admin_ids = UserPortfolioPermission.objects.filter(
+                portfolio=portfolio,
+                roles__overlap=[
+                    UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                ],
+            ).values_list("user__id", flat=True)
+        portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list("email", flat=True)
+       
+        
         unfiltered_total = member_ids.count()
 
         objects = apply_search(objects, request)
@@ -34,7 +47,7 @@ def get_portfolio_members_json(request):
         page_number = request.GET.get("page", 1)
         page_obj = paginator.get_page(page_number)
         members = [
-            serialize_members(request, member, request.user) for member in page_obj.object_list
+            serialize_members(request, member, request.user, admin_ids, portfolio_invitation_emails) for member in page_obj.object_list
         ]
 
         # DEVELOPER'S NOTE (9-20-24):
@@ -93,13 +106,13 @@ def get_member_objects_from_request(request):
         # else:
         #     filter_condition = Q(portfolio=portfolio, creator=request.user)
 
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, "getting permissions")  # TODO: delete me
         permissions = UserPortfolioPermission.objects.filter(
                 portfolio=portfolio
             )
-       
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f'permissions {permissions}')  # TODO: delete me
-        members = User.objects.filter(portfolio_permissions__in=permissions)
+        
+        portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list("email", flat=True)
+        
+        members = User.objects.filter(Q(portfolio_permissions__in=permissions) | Q(email__in=portfolio_invitation_emails))
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f'members {members}')  # TODO: delete me
         return members
 
@@ -141,7 +154,35 @@ def apply_search(queryset, request):
 #     return queryset.order_by(sort_by)
 
 
-def serialize_members(request, member, user):
+
+
+# TODO: delete these...(failed experiment)
+# def get_admin_members(request):
+#         portfolio = request.GET.get("portfolio")
+#         # Filter UserPortfolioPermission objects related to the portfolio
+#         admin_permissions = UserPortfolioPermission.objects.filter(
+#             portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+#         )
+
+#         # Get the user objects associated with these permissions
+#         admin_users = User.objects.filter(portfolio_permissions__in=admin_permissions)
+
+#         return admin_users
+
+# def get_non_admin_members(request):
+#     portfolio = request.GET.get("portfolio")
+#     # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
+#     non_admin_permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio).exclude(
+#         roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+#     )
+
+#     # Get the user objects associated with these permissions
+#     non_admin_users = User.objects.filter(portfolio_permissions__in=non_admin_permissions)
+
+#     return non_admin_users
+
+
+def serialize_members(request, member, user, admin_ids, portfolio_invitation_emails):
 
     # ------- DELETABLE
 #     deletable_statuses = [    
@@ -165,32 +206,32 @@ def serialize_members(request, member, user):
     # If the user has view user permissions only, show the "View" link (no gear icon).
     view_only = not user.has_edit_members_portfolio_permission
 
-    # ------- ACTIVITY
-    is_invited = member.verification_type == User.VerificationTypeChoices.INVITED
-    last_active = "invited" if is_invited else "unknown"
+    # ------- USER STATUS
+    is_invited = member.email in portfolio_invitation_emails
+    last_active = "Invited" if is_invited else "Unknown"
     if member.last_login:
         last_active = member.last_login.strftime("%b. %d, %Y")
+
+
+    # portfolio = request.session.get("portfolio")
+    # roles = member.portfolio_role_summary(portfolio)
+    # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f'roles {roles}')  # TODO: delete me
+    # is_admin = 'Admin' in roles # TODO: use enums? Is there a better way to grab this?
+
+    # is_admin = member.has_edit_suborganization_portfolio_permission(portfolio) 
+    # is_admin = member._has_portfolio_permission(portfolio, UserPortfolioRoleChoices.ORGANIZATION_ADMIN)
+
+    is_admin = member.id in admin_ids
+
 
     # ------- SERIALIZE
     return {
         "id": member.id,
         "name": member.get_formatted_name(),
         "email": member.email,
+        "is_admin": is_admin,
         "last_active": last_active,
         "action_url": '#', #reverse("members", kwargs={"pk": member.id}), #TODO: Future ticket?
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
     }
-
-#  return {
-#         "id": domain.id,
-#         "name": domain.name,
-#         "expiration_date": domain.expiration_date,
-#         "state": domain.state,
-#         "state_display": domain.state_display(),
-#         "get_state_help_text": domain.get_state_help_text(),
-#         "action_url": reverse("domain", kwargs={"pk": domain.id}),
-#         "action_label": ("View" if view_only else "Manage"),
-#         "svg_icon": ("visibility" if view_only else "settings"),
-#         "domain_info__sub_organization": suborganization_name,
-#     }

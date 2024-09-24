@@ -1926,9 +1926,13 @@ class MembersTable extends LoadTableBase {
       
             const row = document.createElement('tr');
 
+            let admin_tagHTML = ``;
+            if (member.is_admin)
+              admin_tagHTML = `<span class="usa-tag margin-left-1">Admin</span>`
+
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
-                ${member_email}
+                ${member_email} ${admin_tagHTML}
               </th>
               <td data-sort-value="${last_active}" data-label="last_active">
                 ${last_active}
