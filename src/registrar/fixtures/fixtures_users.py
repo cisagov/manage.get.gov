@@ -81,7 +81,7 @@ class UserFixture:
             "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
             "first_name": "Paul",
             "last_name": "Kuykendall",
-            "title": "Silvertongue",
+            "title": "Dr. Silvertongue",
         },
         {
             "username": "2a88a97b-be96-4aad-b99e-0b605b492c78",
