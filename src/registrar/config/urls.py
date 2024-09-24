@@ -29,6 +29,7 @@ from registrar.views.portfolio_members_json import get_portfolio_members_json
 from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
+    get_action_needed_email_for_user_json,
 )
 
 from registrar.views.domain_request import Step
@@ -165,6 +166,11 @@ urlpatterns = [
         "admin/api/get-federal-and-portfolio-types-from-federal-agency-json/",
         get_federal_and_portfolio_types_from_federal_agency_json,
         name="get-federal-and-portfolio-types-from-federal-agency-json",
+    ),
+    path(
+        "admin/api/get-action-needed-email-for-user-json/",
+        get_action_needed_email_for_user_json,
+        name="get-action-needed-email-for-user-json",
     ),
     path("admin/", admin.site.urls),
     path(

@@ -504,167 +504,111 @@ function initializeWidgetOnList(list, parentId) {
 /** An IIFE that hooks to the show/hide button underneath action needed reason.
  * This shows the auto generated email on action needed reason.
 */
-(function () {
-    // Since this is an iife, these vars will be removed from memory afterwards
-    var actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
-    
-    // Placeholder text (for certain "action needed" reasons that do not involve e=mails)
-    var placeholderText = document.querySelector("#action-needed-reason-email-placeholder-text")
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdown = document.getElementById("id_action_needed_reason");
+    const textarea = document.getElementById("id_action_needed_reason_email")
+    const domainRequestId = dropdown ? document.getElementById("domain_request_id").value : null
+    const textareaPlaceholder = document.querySelector(".field-action_needed_reason_email__placeholder");
+    const directEditButton = document.querySelector('.field-action_needed_reason_email__edit');
+    const modalTrigger = document.querySelector('.field-action_needed_reason_email__modal-trigger');
+    const modalConfirm = document.getElementById('confirm-edit-email');
+    const formLabel = document.querySelector('label[for="id_action_needed_reason_email"]');
+    let lastSentEmailContent = document.getElementById("last-sent-email-content");
+    const initialDropdownValue = dropdown ? dropdown.value : null;
+    const initialEmailValue = textarea.value;
 
-    // E-mail divs and textarea components
-    var actionNeededEmail = document.querySelector("#id_action_needed_reason_email")
-    var actionNeededEmailReadonly = document.querySelector("#action-needed-reason-email-readonly")
-    var actionNeededEmailReadonlyTextarea = document.querySelector("#action-needed-reason-email-readonly-textarea")
-
-    // Edit e-mail modal (and its confirmation button)
-    var confirmEditEmailButton = document.querySelector("#email-already-sent-modal_continue-editing-button")
-
-    // Headers and footers (which change depending on if the e-mail was sent or not)
-    var actionNeededEmailHeader = document.querySelector("#action-needed-email-header")
-    var actionNeededEmailHeaderOnSave = document.querySelector("#action-needed-email-header-email-sent")
-    var actionNeededEmailFooter = document.querySelector("#action-needed-email-footer")
-
-    let emailWasSent = document.getElementById("action-needed-email-sent");
-    let lastSentEmailText = document.getElementById("action-needed-email-last-sent-text");
-
-    // Get the list of e-mails associated with each action-needed dropdown value
-    let emailData = document.getElementById('action-needed-emails-data');
-    if (!emailData) {
-        return;
-    }
-    let actionNeededEmailData = emailData.textContent;
-    if(!actionNeededEmailData) {
-        return;
-    }
-    let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
-
-    const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
-    const emailSentSessionVariableName = `actionNeededEmailSent-${domainRequestId}`;
-    const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
-    const oldEmailValue = actionNeededEmailData ? actionNeededEmailData.value : null;
-
-    if(actionNeededReasonDropdown && actionNeededEmail && domainRequestId) {
-        // Add a change listener to dom load
-        document.addEventListener('DOMContentLoaded', function() {
-            let reason = actionNeededReasonDropdown.value;
-
-            // Handle the session boolean (to enable/disable editing)
-            if (emailWasSent && emailWasSent.value === "True") {
-                // An email was sent out - store that information in a session variable
-                addOrRemoveSessionBoolean(emailSentSessionVariableName, add=true);
-            }
-            
-            // Show an editable email field or a readonly one
-            updateActionNeededEmailDisplay(reason)
-        });
-
-        // editEmailButton.addEventListener("click", function() {
-        //     if (!checkEmailAlreadySent()) {
-        //         showEmail(canEdit=true)
-        //     }
-        // });
-
-        confirmEditEmailButton.addEventListener("click", function() {
-            // Show editable view
-            showEmail(canEdit=true)
-        });
-
-
-        // Add a change listener to the action needed reason dropdown
-        actionNeededReasonDropdown.addEventListener("change", function() {
-            let reason = actionNeededReasonDropdown.value;
-            let emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
-            
-            if (reason && emailBody) {
-                // Reset the session object on change since change refreshes the email content.
-                if (oldDropdownValue !== actionNeededReasonDropdown.value || oldEmailValue !== actionNeededEmail.value) {
-                    // Replace the email content
-                    actionNeededEmail.value = emailBody;
-                    actionNeededEmailReadonlyTextarea.value = emailBody;
-                    hideEmailAlreadySentView();
-                }
-            }
-
-            // Show either a preview of the email or some text describing no email will be sent
-            updateActionNeededEmailDisplay(reason)
-        });
+    // We will use the const to control the modal
+    let isEmailAlreadySentConst = lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
+    // We will use the function to control the label and help
+    function isEmailAlreadySent() {
+        return lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
     }
 
-    function checkEmailAlreadySent()
-    {
-        lastEmailSent = lastSentEmailText.value.replace(/\s+/g, '')
-        currentEmailInTextArea = actionNeededEmail.value.replace(/\s+/g, '')
-        return lastEmailSent === currentEmailInTextArea
-    }
+    if (!dropdown || !textarea || !domainRequestId || !formLabel || !modalConfirm) return;
+    const apiUrl = document.getElementById("get-action-needed-email-for-user-json").value;
 
-    // Shows a readonly preview of the email with updated messaging to indicate this email was sent
-    function showEmailAlreadySentView()
-    {
-        hideElement(actionNeededEmailHeader)
-        showElement(actionNeededEmailHeaderOnSave)
-        actionNeededEmailFooter.innerHTML = "This email has been sent to the creator of this request";
-    }
-
-    // Shows a readonly preview of the email with updated messaging to indicate this email was sent
-    function hideEmailAlreadySentView()
-    {
-        showElement(actionNeededEmailHeader)
-        hideElement(actionNeededEmailHeaderOnSave)
-        actionNeededEmailFooter.innerHTML = "This email will be sent to the creator of this request after saving";
-    }
-
-    // Shows either a preview of the email or some text describing no email will be sent.
-    // If the email doesn't exist or if we're of reason "other", display that no email was sent.
-    function updateActionNeededEmailDisplay(reason) {
-        hideElement(actionNeededEmail.parentElement)
-
-        if (reason) {
-            if (reason === "other") {
-                // Hide email preview and show this text instead
-                showPlaceholderText("No email will be sent");
-            }
-            else {
-                // Always show readonly view of email to start
-                showEmail(canEdit=false)
-                if(checkEmailAlreadySent())
-                {
-                    showEmailAlreadySentView();
-                }
-            }
+    function updateUserInterface(reason) {
+        if (!reason) {
+            // No reason selected, we will set the label to "Email", show the "Make a selection" placeholder, hide the trigger, textarea, hide the help text
+            formLabel.innerHTML = "Email:";
+            textareaPlaceholder.innerHTML = "Select an action needed reason to see email";
+            showElement(textareaPlaceholder);
+            hideElement(directEditButton);
+            hideElement(modalTrigger);
+            hideElement(textarea);
+        } else if (reason === 'other') {
+            // 'Other' selected, we will set the label to "Email", show the "No email will be sent" placeholder, hide the trigger, textarea, hide the help text
+            formLabel.innerHTML = "Email:";
+            textareaPlaceholder.innerHTML = "No email will be sent";
+            showElement(textareaPlaceholder);
+            hideElement(directEditButton);
+            hideElement(modalTrigger);
+            hideElement(textarea);
         } else {
-            // Hide email preview and show this text instead
-            showPlaceholderText("Select an action needed reason to see email");
+            // A triggering selection is selected, all hands on board:
+            textarea.setAttribute('readonly', true);
+            showElement(textarea);
+            hideElement(textareaPlaceholder);
+
+            if (isEmailAlreadySentConst) {
+                hideElement(directEditButton);
+                showElement(modalTrigger);
+            } else {
+                showElement(directEditButton);
+                hideElement(modalTrigger);
+            }
+            if (isEmailAlreadySent()) {
+                formLabel.innerHTML = "Email sent to creator:";
+            } else {
+                formLabel.innerHTML = "Email:";
+            }
         }
     }
 
-    // Shows either a readonly view (canEdit=false) or editable view (canEdit=true) of the action needed email
-    function showEmail(canEdit)
-    {
-        if(!canEdit)
-        {
-            showElement(actionNeededEmailReadonly)
-            hideElement(actionNeededEmail.parentElement)
-        }
-        else
-        {
-            hideElement(actionNeededEmailReadonly)
-            showElement(actionNeededEmail.parentElement)
-        }
-        showElement(actionNeededEmailFooter) // this is the same for both views, so it was separated out
-        hideElement(placeholderText)
-    }
+    // Initialize UI
+    updateUserInterface(dropdown.value);
 
-    // Hides preview of action needed email and instead displays the given text (innerHTML)
-    function showPlaceholderText(innerHTML)
-    {
-        hideElement(actionNeededEmail.parentElement)
-        hideElement(actionNeededEmailReadonly)
-        hideElement(actionNeededEmailFooter)
+    dropdown.addEventListener("change", function() {
+        const reason = dropdown.value;
+        // Update the UI
+        updateUserInterface(reason);
+        if (reason && reason !== "other") {
+            // If it's not the initial value
+            if (initialDropdownValue !== dropdown.value || initialEmailValue !== textarea.value) {
+                // Replace the email content
+                fetch(`${apiUrl}?reason=${reason}&domain_request_id=${domainRequestId}`)
+                .then(response => {
+                    return response.json().then(data => data);
+                })
+                .then(data => {
+                    if (data.error) {
+                        console.error("Error in AJAX call: " + data.error);
+                    }else {
+                        textarea.value = data.action_needed_email;
+                    }
+                    updateUserInterface(reason);
+                })
+                .catch(error => {
+                    console.error("Error action needed email: ", error)
+                });
+            }
+        }
 
-        placeholderText.innerHTML = innerHTML;
-        showElement(placeholderText)
-    }
-})();
+    });
+
+    modalConfirm.addEventListener("click", () => {
+        textarea.removeAttribute('readonly');
+        textarea.focus();
+        hideElement(directEditButton);
+        hideElement(modalTrigger);  
+    });
+    directEditButton.addEventListener("click", () => {
+        textarea.removeAttribute('readonly');
+        textarea.focus();
+        hideElement(directEditButton);
+        hideElement(modalTrigger);  
+    });
+});
 
 
 /** An IIFE for copy summary button (appears in DomainRegistry models)
