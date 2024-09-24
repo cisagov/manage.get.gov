@@ -1,5 +1,4 @@
 import logging
-from sqlite3 import DatabaseError
 from faker import Faker
 from django.db import transaction
 
@@ -68,15 +67,19 @@ class UserPortfolioPermissionFixture:
                     except Exception as e:
                         logger.warning(e)
 
-            # Bulk create domain requests
             # Bulk create permissions
-            if user_portfolio_permissions_to_create:
-                try:
-                    UserPortfolioPermission.objects.bulk_create(user_portfolio_permissions_to_create)
-                    logger.info(
-                        f"Successfully created {len(user_portfolio_permissions_to_create)} user portfolio permissions."
-                    )
-                except Exception as e:
-                    logger.error(f"Unexpected error during portfolio permission bulk creation: {e}")
-            else:
-                logger.info("No new user portfolio permissions to create.")
+            cls._bulk_create_permissions(user_portfolio_permissions_to_create)
+
+    @classmethod
+    def _bulk_create_permissions(cls, user_portfolio_permissions_to_create):
+        """Bulk creates permissions and logs success or errors."""
+        if user_portfolio_permissions_to_create:
+            try:
+                UserPortfolioPermission.objects.bulk_create(user_portfolio_permissions_to_create)
+                logger.info(
+                    f"Successfully created {len(user_portfolio_permissions_to_create)} user portfolio permissions."
+                )
+            except Exception as e:
+                logger.error(f"Unexpected error during portfolio permission bulk creation: {e}")
+        else:
+            logger.info("No new user portfolio permissions to create.")

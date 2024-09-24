@@ -304,12 +304,7 @@ class DomainRequestFixture:
                     logger.warning(e)
 
         # Bulk create domain requests
-        if len(domain_requests_to_create) > 0:
-            try:
-                DomainRequest.objects.bulk_create(domain_requests_to_create)
-                logger.info(f"Successfully created {len(domain_requests_to_create)} requests.")
-            except Exception as e:
-                logger.error(f"Unexpected error during requests bulk creation: {e}")
+        cls._bulk_create_requests(domain_requests_to_create)
 
         # Now many-to-many relationships
         for domain_request in domain_requests_to_create:
@@ -317,3 +312,13 @@ class DomainRequestFixture:
                 cls._set_many_to_many_relations(domain_request, request_data)
             except Exception as e:
                 logger.warning(e)
+
+    @classmethod
+    def _bulk_create_requests(cls, domain_requests_to_create):
+        """Bulk create domain requests."""
+        if len(domain_requests_to_create) > 0:
+            try:
+                DomainRequest.objects.bulk_create(domain_requests_to_create)
+                logger.info(f"Successfully created {len(domain_requests_to_create)} requests.")
+            except Exception as e:
+                logger.error(f"Unexpected error during requests bulk creation: {e}")

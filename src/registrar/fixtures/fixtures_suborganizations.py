@@ -45,7 +45,8 @@ class SuborganizationFixture:
 
     @classmethod
     def _get_portfolios(cls):
-        """Fetches portfolios with organization_name 'Hotel California' and 'Wish You Were Here' and logs warnings if not found."""
+        """Fetches portfolios with organization_name 'Hotel California' and 'Wish You Were Here'
+        and logs warnings if not found."""
         try:
             portfolio1 = Portfolio.objects.filter(organization_name="Hotel California").first()
             portfolio2 = Portfolio.objects.filter(organization_name="Wish You Were Here").first()
