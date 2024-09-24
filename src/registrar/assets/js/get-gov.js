@@ -2233,6 +2233,7 @@ const utcDateString = (dateString) => {
 (function() {
   const currentPath = window.location.pathname;
   if(currentPath == "/request/finished/"){
+    history.pushState(null, null, currentPath);
     window.onpopstate = function(event) {
 
       window.location.href = ""
