@@ -2228,3 +2228,19 @@ const utcDateString = (dateString) => {
     }
   }
 })();
+
+
+(function() {
+  const currentPath = window.location.pathname;
+  if(currentPath == "/request/finished"){
+    window.onpopstate = function(event) {
+
+      window.location.href = ""
+  };
+
+  }
+  
+
+  // Optional: Push a new state to the history to handle the initial load
+  history.pushState(null, document.title, window.location.href);
+})();

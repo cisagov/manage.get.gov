@@ -497,7 +497,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         for form in forms:
             if form is not None and hasattr(form, "to_database"):
                 form.to_database(self.domain_request)
-    
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete
 class PortfolioDomainRequestWizard(DomainRequestWizard):
