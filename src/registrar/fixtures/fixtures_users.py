@@ -24,13 +24,6 @@ class UserFixture:
 
     ADMINS = [
         {
-            "username": "43a7fa8d-0550-4494-a6fe-81500324d590",
-            "first_name": "Jyoti",
-            "last_name": "Bock",
-            "email": "jyotibock@truss.works",
-            "title": "GIFted",
-        },
-        {
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
             "first_name": "Aditi",
             "last_name": "Green",
@@ -77,12 +70,6 @@ class UserFixture:
             "last_name": "Dixon",
             "email": "cameron.dixon@cisa.dhs.gov",
             "title": "Supreme leader",
-        },
-        {
-            "username": "0353607a-cbba-47d2-98d7-e83dcd5b90ea",
-            "first_name": "Ryan",
-            "last_name": "Brooks",
-            "title": "Honorable discharge",
         },
         {
             "username": "30001ee7-0467-4df2-8db2-786e79606060",
@@ -144,13 +131,6 @@ class UserFixture:
             "title": "Groovy",
         },
         {
-            "username": "012f844d-8a0f-4225-9d82-cbf87bff1d3e",
-            "first_name": "Riley",
-            "last_name": "Orr",
-            "email": "riley+320@truss.works",
-            "title": "Honorable discharge",
-        },
-        {
             "username": "76612d84-66b0-4ae9-9870-81e98b9858b6",
             "first_name": "Anna",
             "last_name": "Gingle",
@@ -160,12 +140,6 @@ class UserFixture:
     ]
 
     STAFF = [
-        {
-            "username": "a5906815-dd80-4c64-aebe-2da6a4c9d7a4",
-            "first_name": "Jyoti-Analyst",
-            "last_name": "Bock-Analyst",
-            "email": "jyotibock+1@truss.works",
-        },
         {
             "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
             "first_name": "Aditi-Analyst",
@@ -250,18 +224,6 @@ class UserFixture:
             "first_name": "Christina-Analyst",
             "last_name": "Burnett-Analyst",
             "email": "christina.burnett@gwe.cisa.dhs.gov",
-        },
-        {
-            "username": "d9839768-0c17-4fa2-9c8e-36291eef5c11",
-            "first_name": "Alex-Analyst",
-            "last_name": "Mcelya-Analyst",
-            "email": "ALEXANDER.MCELYA@cisa.dhs.gov",
-        },
-        {
-            "username": "082a066f-e0a4-45f6-8672-4343a1208a36",
-            "first_name": "Riley-Analyst",
-            "last_name": "Orr-Analyst",
-            "email": "riley+321@truss.works",
         },
         {
             "username": "e1e350b1-cfc1-4753-a6cb-3ae6d912f99c",
