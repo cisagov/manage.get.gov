@@ -108,6 +108,10 @@ def rdap(request, domain=""):
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "")
 
+    # If inputted domain doesn't have a TLD, append .gov to it
+    if "." not in domain:
+        domain = f"{domain}.gov"
+
     rdap_data = requests.get(RDAP_URL.format(domain=domain)).json()
     return JsonResponse(rdap_data)
 
