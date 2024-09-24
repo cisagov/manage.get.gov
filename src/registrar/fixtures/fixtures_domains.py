@@ -111,8 +111,16 @@ class DomainFixture(DomainRequestFixture):
 
         # Bulk update approved domain requests
         if domain_requests_to_update:
-            DomainRequest.objects.bulk_update(domain_requests_to_update, ["status", "investigator"])
+            try:
+                DomainRequest.objects.bulk_update(domain_requests_to_update, ["status", "investigator"])
+                logger.info(f"Successfully updated {len(domain_requests_to_update)} requests.")
+            except Exception as e:
+                logger.error(f"Unexpected error during requests bulk update: {e}")
 
         # Bulk update domains with expiration dates
         if domains_to_update:
-            Domain.objects.bulk_update(domains_to_update, ["expiration_date"])
+            try:
+                Domain.objects.bulk_update(domains_to_update, ["expiration_date"])
+                logger.info(f"Successfully updated {len(domains_to_update)} domains.")
+            except Exception as e:
+                logger.error(f"Unexpected error during domains bulk update: {e}")

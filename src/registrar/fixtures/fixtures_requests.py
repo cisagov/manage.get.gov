@@ -218,8 +218,10 @@ class DomainRequestFixture:
     @classmethod
     def _get_random_portfolio(cls):
         try:
-            portfolio_options = [Portfolio.objects.first(), Portfolio.objects.last()]
-            return random.choice(portfolio_options)  # nosec
+            portfolio_options = Portfolio.objects.filter(
+                organization_name__in=["Hotel California", "Wish You Were Here"]
+            )
+            return random.choice(portfolio_options) if portfolio_options.exists() else None  # nosec
         except Exception as e:
             logger.warning(f"Expected fixture portfolio, did not find it: {e}")
             return None
@@ -303,7 +305,11 @@ class DomainRequestFixture:
 
         # Bulk create domain requests
         if len(domain_requests_to_create) > 0:
-            DomainRequest.objects.bulk_create(domain_requests_to_create)
+            try:
+                DomainRequest.objects.bulk_create(domain_requests_to_create)
+                logger.info(f"Successfully created {len(domain_requests_to_create)} requests.")
+            except Exception as e:
+                logger.error(f"Unexpected error during requests bulk creation: {e}")
 
         # Now many-to-many relationships
         for domain_request in domain_requests_to_create:

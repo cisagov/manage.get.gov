@@ -1,4 +1,5 @@
 import logging
+from sqlite3 import DatabaseError
 from faker import Faker
 from django.db import transaction
 
@@ -32,7 +33,18 @@ class UserPortfolioPermissionFixture:
                 # Filter users to only include those created by the fixture
                 users = list(User.objects.filter(username__in=created_usernames))
 
-                portfolios = list(Portfolio.objects.all())
+                portfolios = list(
+                    Portfolio.objects.filter(organization_name__in=["Hotel California", "Wish You Were Here"])
+                )
+
+                if not users:
+                    logger.warning("User fixtures missing.")
+                    return
+
+                if not portfolios:
+                    logger.warning("Portfolio fixtures missing.")
+                    return
+
             except Exception as e:
                 logger.warning(e)
                 return
@@ -57,5 +69,14 @@ class UserPortfolioPermissionFixture:
                         logger.warning(e)
 
             # Bulk create domain requests
-            if len(user_portfolio_permissions_to_create) > 0:
-                UserPortfolioPermission.objects.bulk_create(user_portfolio_permissions_to_create)
+            # Bulk create permissions
+            if user_portfolio_permissions_to_create:
+                try:
+                    UserPortfolioPermission.objects.bulk_create(user_portfolio_permissions_to_create)
+                    logger.info(
+                        f"Successfully created {len(user_portfolio_permissions_to_create)} user portfolio permissions."
+                    )
+                except Exception as e:
+                    logger.error(f"Unexpected error during portfolio permission bulk creation: {e}")
+            else:
+                logger.info("No new user portfolio permissions to create.")

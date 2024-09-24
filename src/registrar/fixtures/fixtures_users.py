@@ -272,8 +272,11 @@ class UserFixture:
 
         # Perform bulk creation for new users
         if new_users:
-            User.objects.bulk_create(new_users)
-            logger.info(f"Created {len(new_users)} new users.")
+            try:
+                User.objects.bulk_create(new_users)
+                logger.info(f"Created {len(new_users)} new users.")
+            except Exception as e:
+                logger.error(f"Unexpected error during user bulk creation: {e}")
         else:
             logger.info("No new users to create.")
 
@@ -309,8 +312,11 @@ class UserFixture:
                 new_allowed_emails.append(AllowedEmail(email=email))
 
         if new_allowed_emails:
-            AllowedEmail.objects.bulk_create(new_allowed_emails)
-            logger.info(f"Loaded {len(new_allowed_emails)} allowed emails")
+            try:
+                AllowedEmail.objects.bulk_create(new_allowed_emails)
+                logger.info(f"Loaded {len(new_allowed_emails)} allowed emails")
+            except Exception as e:
+                logger.error(f"Unexpected error during allowed emails bulk creation: {e}")
         else:
             logger.info("No allowed emails to load")
 
