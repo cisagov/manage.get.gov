@@ -497,6 +497,12 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         for form in forms:
             if form is not None and hasattr(form, "to_database"):
                 form.to_database(self.domain_request)
+    
+    def go_to_home_page_if_last_step_back_button(self):
+        print(self.request.session.get("last_page"))
+        if self.request.session.get("last_page") == "request/finished": 
+            return redirect(reverse("home"))
+        return None
 
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete
