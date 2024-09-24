@@ -103,8 +103,7 @@ def available(request, domain=""):
 @require_http_methods(["GET"])
 @login_not_required
 def rdap(request, domain=""):
-    """TODO: Write description
-    """
+    """TODO: Write description"""
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "")
 

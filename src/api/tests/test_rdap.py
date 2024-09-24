@@ -63,7 +63,7 @@ class RdapAPITest(TestCase):
         self.user = get_user_model().objects.create(
             username=username, title=title, first_name=first_name, last_name=last_name, email=email, phone=phone
         )
-        
+
     def test_rdap_get(self):
         """Can call RDAP API"""
         self.client.force_login(self.user)
@@ -71,4 +71,3 @@ class RdapAPITest(TestCase):
         self.assertContains(response, "rdap")
         response_object = json.loads(response.content)
         self.assertIn("rdapConformance", response_object)
-
