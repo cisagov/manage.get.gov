@@ -6,14 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 from django.test import TestCase
 
-from ..views import available, check_domain_available, rdap
-from .common import less_console_noise
-from registrar.utility.errors import GenericError, GenericErrorCodes
-from unittest.mock import call
-
-from epplibwrapper import (
-    commands,
-)
+from ..views import rdap
 
 API_BASE_PATH = "/api/v1/rdap/?domain="
 

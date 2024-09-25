@@ -103,8 +103,7 @@ def available(request, domain=""):
 @require_http_methods(["GET"])
 @login_not_required
 def rdap(request, domain=""):
-    """TODO: Write description"""
-    Domain = apps.get_model("registrar.Domain")
+    """Returns JSON dictionary of a domain's RDAP data from Cloudflare API"""
     domain = request.GET.get("domain", "")
 
     # If inputted domain doesn't have a TLD, append .gov to it
