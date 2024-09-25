@@ -33,8 +33,12 @@
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.senior_official no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "display_admins" %}
-        {% include "django/admin/includes/portfolio_admins_table.html" with admins=admins %}
+        {% if admins|length > 0 %}
+            {% include "django/admin/includes/portfolio_admins_table.html" with admins=admins %}
+        {% endif %}
     {% elif field.field.name == "display_members" %}
-        {% include "django/admin/includes/portfolio_members_table.html" with members=members %}
+        {% if members|length > 0 %}
+            {% include "django/admin/includes/portfolio_members_table.html" with members=members %}
+        {% endif %}
     {% endif %}
 {% endblock after_help_text %}
