@@ -2910,15 +2910,14 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
-        # created_on is the created_at field, and portfolio_type is f"{organization_type} - {federal_type}"
-        (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_on", "notes"]}),
-        ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
-        ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
+        # created_on is the created_at field
+        (None, {"fields": ["creator", "created_on", "notes"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
             {
                 "fields": [
+                    "organization_name",
                     "federal_agency",
                     "state_territory",
                     "address_line1",
@@ -2929,6 +2928,8 @@ class PortfolioAdmin(ListHeaderAdmin):
                 ]
             },
         ),
+        ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
+        ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
         ("Suborganizations", {"fields": ["suborganizations"]}),
         ("Senior official", {"fields": ["senior_official"]}),
     ]
@@ -2960,6 +2961,10 @@ class PortfolioAdmin(ListHeaderAdmin):
     readonly_fields = [
         # This is the created_at field
         "created_on",
+        # Django admin doesn't allow methods to be directly listed in fieldsets. We can
+        # display the custom methods display_admins amd display_members in the admin form if
+        # they are readonly.
+        "federal_type",
         "domains",
         "domain_requests",
         "suborganizations",

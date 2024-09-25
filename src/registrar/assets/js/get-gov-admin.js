@@ -860,11 +860,10 @@ function initializeWidgetOnList(list, parentId) {
         let organizationType = document.getElementById("id_organization_type");
         let readonlyOrganizationType = document.querySelector(".field-organization_type .readonly");
 
-        let federalType = document.getElementById("id_federal_type")
-        if ($federalAgency && (organizationType || readonlyOrganizationType) && federalType) {
+        if ($federalAgency && (organizationType || readonlyOrganizationType)) {
             // Attach the change event listener
             $federalAgency.on("change", function() {
-                handleFederalAgencyChange($federalAgency, organizationType, readonlyOrganizationType, federalType);
+                handleFederalAgencyChange($federalAgency, organizationType, readonlyOrganizationType);
             });
         }
         
@@ -880,9 +879,28 @@ function initializeWidgetOnList(list, parentId) {
                 handleStateTerritoryChange(stateTerritory, urbanizationField);
             });
         }
+
+        // Handle hiding the organization name field when the organization_type is federal.
+        // Run this first one page load, then secondly on a change event.
+        let organizationNameContainer = document.querySelector(".field-organization_name")
+        handleOrganizationTypeChange(organizationType, organizationNameContainer);
+        organizationType.addEventListener("change", function() {
+            handleOrganizationTypeChange(organizationType, organizationNameContainer);
+        });
     });
 
-    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType, federalType) {
+    function handleOrganizationTypeChange(organizationType, organizationNameContainer) {
+        if (organizationType && organizationNameContainer) {
+            let selectedValue = organizationType.value;
+            if (selectedValue === "federal") {
+                hideElement(organizationNameContainer);
+            } else {
+                showElement(organizationNameContainer);
+            }
+        }
+    }
+
+    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType) {
         // Don't do anything on page load
         if (isInitialPageLoad) {
             isInitialPageLoad = false;
@@ -923,12 +941,10 @@ function initializeWidgetOnList(list, parentId) {
             return;
         }
 
-        organizationTypeValue = organizationType ? organizationType.value : readonlyOrganizationType.innerText.toLowerCase();
-
         // Determine if any changes are necessary to the display of portfolio type or federal type
         // based on changes to the Federal Agency
         let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
-        fetch(`${federalPortfolioApi}?organization_type=${organizationTypeValue}&agency_name=${selectedText}`)
+        fetch(`${federalPortfolioApi}?&agency_name=${selectedText}`)
         .then(response => {
             const statusCode = response.status;
             return response.json().then(data => ({ statusCode, data }));
@@ -938,12 +954,7 @@ function initializeWidgetOnList(list, parentId) {
                 console.error("Error in AJAX call: " + data.error);
                 return;
             }
-            if (data.federal_type && selectedText !== "Non-Federal Agency") {
-                federalType.value = data.federal_type.toLowerCase();
-            }else {
-                federalType.value = "";
-            }
-            updateReadOnly(data.portfolio_type, '.field-portfolio_type');
+            updateReadOnly(data.federal_type, '.field-federal_type');
         })
         .catch(error => console.error("Error fetching federal and portfolio types: ", error));
 

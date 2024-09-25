@@ -25,7 +25,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0129_portfolio_federal_type"),
+        ("registrar", "0128_alter_domaininformation_state_territory_and_more"),
     ]
 
     operations = [

@@ -34,7 +34,6 @@ class Portfolio(TimeStampedModel):
     organization_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Portfolio organization",
     )
 
     organization_type = models.CharField(
@@ -56,14 +55,6 @@ class Portfolio(TimeStampedModel):
         help_text="Associated federal agency",
         unique=False,
         default=FederalAgency.get_non_federal_agency,
-    )
-
-    federal_type = models.CharField(
-        max_length=20,
-        choices=BranchChoices.choices,
-        null=True,
-        blank=True,
-        help_text="Federal agency type (executive, judicial, legislative, etc.)",
     )
 
     senior_official = models.ForeignKey(
@@ -131,28 +122,16 @@ class Portfolio(TimeStampedModel):
         if self.state_territory != self.StateTerritoryChoices.PUERTO_RICO and self.urbanization:
             self.urbanization = None
 
-        # Set the federal type field if it doesn't exist already
-        if self.federal_type is None and self.federal_agency and self.federal_agency.federal_type:
-            self.federal_type = self.federal_agency.federal_type if self.federal_agency else None
-
         super().save(*args, **kwargs)
 
     @property
-    def portfolio_type(self):
-        """
-        Returns a combination of organization_type / federal_type, seperated by ' - '.
-        If no federal_type is found, we just return the org type.
-        """
-        return self.get_portfolio_type(self.organization_type, self.federal_type)
+    def federal_type(self):
+        """Returns the federal_type value on the underlying federal_agency field"""
+        return self.get_federal_type(self.federal_agency)
 
     @classmethod
-    def get_portfolio_type(cls, organization_type, federal_type):
-        org_type_label = cls.OrganizationChoices.get_org_label(organization_type)
-        agency_type_label = BranchChoices.get_branch_label(federal_type)
-        if organization_type == cls.OrganizationChoices.FEDERAL and agency_type_label:
-            return " - ".join([org_type_label, agency_type_label])
-        else:
-            return org_type_label
+    def get_federal_type(cls, federal_agency):
+        return federal_agency.federal_type if federal_agency else None
 
     # == Getters for domains == #
     def get_domains(self):
