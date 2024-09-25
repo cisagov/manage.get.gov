@@ -41,7 +41,7 @@ def get_portfolio_members_json(request):
 
         objects = apply_search(objects, request)
         # objects = apply_status_filter(objects, request)
-        # objects = apply_sorting(objects, request)
+        objects = apply_sorting(objects, request)
 
         paginator = Paginator(objects, 10)
         page_number = request.GET.get("page", 1)
@@ -50,17 +50,18 @@ def get_portfolio_members_json(request):
             serialize_members(request, member, request.user, admin_ids, portfolio_invitation_emails) for member in page_obj.object_list
         ]
 
-        # DEVELOPER'S NOTE (9-20-24):
-        # The way this works is first we get a list of "member" objects
-        # Then we pass this to "serialize_members", which extracts object information
-        # and puts it into a JSON that is then used in get-gov.js for dynamically
-        # populating the frontend members table with data.  
-        # So, if you're wondering where these JSON values are used, check out the class "MembersTable"
+        # DEVELOPER'S NOTE (9-24-24):
+        # If you're wondering where these JSON values are used, check out the class "MembersTable"
         # in get-gov.js (specifically the "loadTable" function).
         #
-        # The way get-gov.js grabs this JSON is via the html.  Specifically,
-        # "get_portfolio_members_json" is embedded in members_table.html as a string, which 
-        # is then referenced in get-gov.js. This path is also added to urls.py.
+        # The way this JSON gets passed to get-gov.js is via ajax, which depends on our HTML and Url.py
+        # files having routes to this json file.  Specifically, "get_portfolio_members_json" is embedded
+        # in members_table.html as a string, which is then referenced in get-gov.js to grab the appropriate
+        # path in url.py.  In short, make sure that both members_table.html and url.py have references to
+        # this json function in order for all of this to work.
+        #
+        # HELPFUL TIP:  You can easily test this json file's output by visiting 
+        # http://localhost:8080/get-portfolio-members-json/
         return JsonResponse(
             {
                 "members": members,
@@ -74,9 +75,9 @@ def get_portfolio_members_json(request):
         )
     
     else:
-        # TODO: clean this up -- this was added to handle NoneType error (test with http://localhost:8080/get-portfolio-members-json/)
-        # Perhaps this is why domain_requests_json does the wierd thing where it returns deomain request ids, then re-fetches the objects...
-        # Or maybe an assumption was made wherein we assume there will never be zero entries returned??
+        # This was added to handle NoneType error
+        # In other examples of we assume there will never be zero entries returned...which is *fine*...until
+        # something goes wrong.
         return JsonResponse(
             {
                 "members": [],
@@ -145,84 +146,28 @@ def apply_search(queryset, request):
 #     return queryset
 
 
-# def apply_sorting(queryset, request):
-#     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
-#     order = request.GET.get("order", "asc")  # Default to 'asc'
+def apply_sorting(queryset, request):
+    sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
+    order = request.GET.get("order", "asc")  # Default to 'asc'
 
-#     if order == "desc":
-#         sort_by = f"-{sort_by}"
-#     return queryset.order_by(sort_by)
-
-
-
-
-# TODO: delete these...(failed experiment)
-# def get_admin_members(request):
-#         portfolio = request.GET.get("portfolio")
-#         # Filter UserPortfolioPermission objects related to the portfolio
-#         admin_permissions = UserPortfolioPermission.objects.filter(
-#             portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-#         )
-
-#         # Get the user objects associated with these permissions
-#         admin_users = User.objects.filter(portfolio_permissions__in=admin_permissions)
-
-#         return admin_users
-
-# def get_non_admin_members(request):
-#     portfolio = request.GET.get("portfolio")
-#     # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
-#     non_admin_permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio).exclude(
-#         roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-#     )
-
-#     # Get the user objects associated with these permissions
-#     non_admin_users = User.objects.filter(portfolio_permissions__in=non_admin_permissions)
-
-#     return non_admin_users
+    if order == "desc":
+        sort_by = f"-{sort_by}"
+    return queryset.order_by(sort_by)
 
 
 def serialize_members(request, member, user, admin_ids, portfolio_invitation_emails):
 
-    # ------- DELETABLE
-#     deletable_statuses = [    
-#         DomainRequest.DomainRequestStatus.STARTED,
-#         DomainRequest.DomainRequestStatus.WITHDRAWN,
-#     ]
-
-#     # Determine if the request is deletable
-#     if not user.is_org_user(request):
-#         is_deletable = member.status in deletable_statuses
-#     else:
-#         portfolio = request.session.get("portfolio")
-#         is_deletable = (
-#             member.status in deletable_statuses and user.has_edit_request_portfolio_permission(portfolio)
-#         ) and member.creator == user
-
-
     # ------- VIEW ONLY
-    # Determine action label based on user permissions
-    # If the user has permissions to edit/manage users, show the gear icon with "Manage" link. 
-    # If the user has view user permissions only, show the "View" link (no gear icon).
+    # If not view_only (the user has permissions to edit/manage users), show the gear icon with "Manage" link. 
+    # If view_only (the user only has view user permissions), show the "View" link (no gear icon).
     view_only = not user.has_edit_members_portfolio_permission
 
-    # ------- USER STATUS
+    # ------- USER STATUSES
     is_invited = member.email in portfolio_invitation_emails
     last_active = "Invited" if is_invited else "Unknown"
     if member.last_login:
         last_active = member.last_login.strftime("%b. %d, %Y")
-
-
-    # portfolio = request.session.get("portfolio")
-    # roles = member.portfolio_role_summary(portfolio)
-    # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f'roles {roles}')  # TODO: delete me
-    # is_admin = 'Admin' in roles # TODO: use enums? Is there a better way to grab this?
-
-    # is_admin = member.has_edit_suborganization_portfolio_permission(portfolio) 
-    # is_admin = member._has_portfolio_permission(portfolio, UserPortfolioRoleChoices.ORGANIZATION_ADMIN)
-
     is_admin = member.id in admin_ids
-
 
     # ------- SERIALIZE
     return {
@@ -231,7 +176,7 @@ def serialize_members(request, member, user, admin_ids, portfolio_invitation_ema
         "email": member.email,
         "is_admin": is_admin,
         "last_active": last_active,
-        "action_url": '#', #reverse("members", kwargs={"pk": member.id}), #TODO: Future ticket?
+        "action_url": '#', #reverse("members", kwargs={"pk": member.id}), # TODO: Future ticket?
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
     }
