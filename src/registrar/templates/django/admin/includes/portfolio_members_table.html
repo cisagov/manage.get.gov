@@ -20,7 +20,13 @@
                 <tr>
                     <td><a href={{url}}>{{ member.user.get_formatted_name}}</a></td>
                     <td>{{ member.user.title }}</td>
-                    <td>{{ member.user.email }}</td>
+                    <td>
+                        {% if member.user.email %}
+                        {{ member.user.email }}
+                        {% else %}
+                        None
+                        {% endif %}
+                    </td>
                     <td>{{ member.user.phone }}</td>
                     <td>
                         {% for role in member.user|portfolio_role_summary:original %}
@@ -28,6 +34,7 @@
                         {% endfor %}
                     </td>
                     <td class="padding-left-1 text-size-small">
+                        {% if member.user.email %}
                         <input aria-hidden="true" class="display-none" value="{{ member.user.email }}" />
                         <button 
                         class="usa-button usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard usa-button__small-text text-no-underline" 
@@ -40,6 +47,7 @@
                             </svg>
                             <span>Copy email</span>
                         </button>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
