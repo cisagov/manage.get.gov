@@ -41,7 +41,6 @@ class Portfolio(TimeStampedModel):
         choices=OrganizationChoices.choices,
         null=True,
         blank=True,
-        help_text="Type of organization",
     )
 
     notes = models.TextField(
@@ -52,7 +51,6 @@ class Portfolio(TimeStampedModel):
     federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
-        help_text="Associated federal agency",
         unique=False,
         default=FederalAgency.get_non_federal_agency,
     )

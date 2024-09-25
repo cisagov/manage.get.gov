@@ -1243,7 +1243,6 @@ class UserDomainRoleResource(resources.ModelResource):
         model = models.UserDomainRole
 
 
-# Note: This is "viewonly" for analysts
 class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     form = UserPortfolioPermissionsForm
     change_form_template = "django/admin/user_portfolio_permission_change_form.html"

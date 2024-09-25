@@ -79,7 +79,7 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "userportfoliopermission",
-                "permissions": ["view_userportfoliopermission"],
+                "permissions": ["add_userportfoliopermission", "change_userportfoliopermission", "delete_userportfoliopermission"],
             },
         ]
 
