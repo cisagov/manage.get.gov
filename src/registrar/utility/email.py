@@ -76,7 +76,7 @@ def send_templated_email(  # noqa
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             config=settings.BOTO_CONFIG,
         )
-        logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
+        logger.info(f"Connected to SES client! Template name: {template_name} to {to_address}")
     except Exception as exc:
         logger.debug("E-mail unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
@@ -153,14 +153,12 @@ def get_sendable_addresses(addresses: list[str]) -> tuple[list[str], list[str]]:
     Paramaters:
 
     addresses: a list of strings representing all addresses to be checked.
-
-    raises:
-        EmailSendingError if email sending is disabled
     """
 
     if flag_is_active(None, "disable_email_sending"):  # type: ignore
         message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
-        raise EmailSendingError(message)
+        logger.warning(message)
+        return ([],[])
     else:
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
         allowed_emails = []
