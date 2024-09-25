@@ -100,7 +100,6 @@ def available(request, domain=""):
     return json_response
 
 
-
 @require_http_methods(["GET"])
 @login_not_required
 # Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
@@ -113,7 +112,7 @@ def rdap(request, domain=""):
     if "." not in domain:
         domain = f"{domain}.gov"
 
-    rdap_data = requests.get(RDAP_URL.format(domain=domain)).json()
+    rdap_data = requests.get(RDAP_URL.format(domain=domain), timeout=5).json()
     return JsonResponse(rdap_data)
 
 
