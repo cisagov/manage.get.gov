@@ -100,8 +100,11 @@ def available(request, domain=""):
     return json_response
 
 
+
 @require_http_methods(["GET"])
 @login_not_required
+# Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
+@ttl_cache(ttl=600)
 def rdap(request, domain=""):
     """Returns JSON dictionary of a domain's RDAP data from Cloudflare API"""
     domain = request.GET.get("domain", "")
