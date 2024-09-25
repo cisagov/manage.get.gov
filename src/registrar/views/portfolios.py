@@ -21,14 +21,6 @@ from django.views.generic.edit import FormMixin
 logger = logging.getLogger(__name__)
 
 
-# ---Logger
-import logging
-from venv import logger
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-
-logger = logging.getLogger(__name__)
-
-
 class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
 
     template_name = "portfolio_domains.html"
@@ -63,27 +55,7 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
         # We can override the base class. This view only needs this item.
         context = {}
         portfolio = self.request.session.get("portfolio")
-        TerminalHelper.colorful_logger(
-            logger.info, TerminalColors.OKGREEN, f"PortfolioMembersView portfolio = {portfolio}"
-        )
         if portfolio:
-
-            # # ------ Gets admin members
-            # admin_ids = UserPortfolioPermission.objects.filter(
-            #     portfolio=portfolio,
-            #     roles__overlap=[
-            #         UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-            #     ],
-            # ).values_list("user__id", flat=True)
-
-            # # ------ Gets non-admin members
-            # # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
-            # non_admin_permissions = UserPortfolioPermission.objects.filter(portfolio=obj).exclude(
-            #     roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-            # )
-            # # Get the user objects associated with these permissions
-            # non_admin_users = User.objects.filter(portfolio_permissions__in=non_admin_permissions)
-
             # ------- Gets all members
             member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
 

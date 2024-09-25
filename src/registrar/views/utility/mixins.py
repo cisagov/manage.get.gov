@@ -15,14 +15,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# TODO: delete me
-import logging
-from venv import logger
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-
-logger = logging.getLogger(__name__)
-
-
 class OrderableFieldsMixin:
     """
     Mixin to add multi-field ordering capabilities to a Django ModelAdmin on admin_order_field.

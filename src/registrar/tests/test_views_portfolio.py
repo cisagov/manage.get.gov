@@ -667,7 +667,6 @@ class TestPortfolio(WebTest):
         self.assertContains(home, "Hotel California")
         self.assertContains(home, "Members")
 
-
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
@@ -685,14 +684,13 @@ class TestPortfolio(WebTest):
         # (1) - User is not admin and can view portfolio, but not the members table
         # (1) - User is admin and can view portfolio, but not the members table
 
-
         # --- non-admin
         self.app.set_user(self.user.username)
 
         UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
-            role = UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            role=UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             ],
@@ -703,13 +701,9 @@ class TestPortfolio(WebTest):
         # Assert the response is a 403 Forbidden
         self.assertEqual(response.status_code, 403)
 
-
         # --- admin
-        UserPortfolioPermission.objects.filter(
-            user=self.user,
-            portfolio=self.portfolio
-        ).update(
-            role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN,  
+        UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).update(
+            role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
         )
 
         # Verify that the user cannot access the members page
@@ -771,8 +765,7 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, '<use xlink:href="/public/img/sprite.svg#settings"></use>')
-        self.assertContains(response, 'Manage')
-
+        self.assertContains(response, "Manage")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -803,8 +796,7 @@ class TestPortfolio(WebTest):
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
 
-        self.assertContains(response, 'View')
-
+        self.assertContains(response, "View")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)

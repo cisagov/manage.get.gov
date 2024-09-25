@@ -1,21 +1,12 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
-from django.utils import timezone
 from django.db.models import Q
 
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
-
-# ---Logger
-import logging
-from venv import logger
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
-
-logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -173,9 +164,6 @@ def serialize_members(request, member, user, admin_ids, portfolio_invitation_ema
             user_can_edit_other_users = True
         index += 1
     view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
-    TerminalHelper.colorful_logger(
-        logger.info, TerminalColors.OKCYAN, f"user_can_edit_other_users {user_can_edit_other_users}"
-    )  # TODO: delete me
 
     # ------- USER STATUSES
     is_invited = member.email in portfolio_invitation_emails
