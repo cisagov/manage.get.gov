@@ -1928,7 +1928,7 @@ class MembersTable extends LoadTableBase {
 
             let admin_tagHTML = ``;
             if (member.is_admin)
-              admin_tagHTML = `<span class="usa-tag margin-left-1">Admin</span>`
+              admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
 
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
