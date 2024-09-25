@@ -48,7 +48,7 @@ class UserFixture:
             "first_name": "Alysia",
             "last_name": "Broddrick",
             "email": "abroddrick@truss.works",
-            "title": "Professional coffee taster",
+            "title": "I drink coffee and know things",
         },
         {
             "username": "8f8e7293-17f7-4716-889b-1990241cbd39",
