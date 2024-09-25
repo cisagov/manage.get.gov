@@ -118,7 +118,6 @@ def get_member_objects_from_request(request):
         members = User.objects.filter(
             Q(portfolio_permissions__in=permissions) | Q(email__in=portfolio_invitation_emails)
         )
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"members {members}")  # TODO: delete me
         return members
 
 
@@ -161,10 +160,22 @@ def apply_sorting(queryset, request):
 
 def serialize_members(request, member, user, admin_ids, portfolio_invitation_emails):
 
+    portfolio = request.session.get("portfolio")
     # ------- VIEW ONLY
     # If not view_only (the user has permissions to edit/manage users), show the gear icon with "Manage" link.
     # If view_only (the user only has view user permissions), show the "View" link (no gear icon).
-    view_only = not user.has_edit_members_portfolio_permission
+    user_can_edit_other_users = False
+    user_edit_permissions = ["registrar.full_access_permission", "registrar.change_user"]
+    index = 0
+    while not user_can_edit_other_users and index < len(user_edit_permissions):
+        perm = user_edit_permissions[index]
+        if user.has_perm(perm):
+            user_can_edit_other_users = True
+        index += 1
+    view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
+    TerminalHelper.colorful_logger(
+        logger.info, TerminalColors.OKCYAN, f"user_can_edit_other_users {user_can_edit_other_users}"
+    )  # TODO: delete me
 
     # ------- USER STATUSES
     is_invited = member.email in portfolio_invitation_emails
@@ -174,7 +185,7 @@ def serialize_members(request, member, user, admin_ids, portfolio_invitation_ema
     is_admin = member.id in admin_ids
 
     # ------- SERIALIZE
-    return {
+    member_json = {
         "id": member.id,
         "name": member.get_formatted_name(),
         "email": member.email,
@@ -184,3 +195,4 @@ def serialize_members(request, member, user, admin_ids, portfolio_invitation_ema
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
     }
+    return member_json
