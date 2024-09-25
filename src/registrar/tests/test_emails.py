@@ -66,10 +66,10 @@ class TestEmails(TestCase):
         """Test sending email with cc works"""
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             send_templated_email(
-                "test content",
-                "test subject",
+                "emails/update_to_approved_domain.txt",
+                "emails/update_to_approved_domain_subject.txt",
                 "doesnotexist@igorville.com",
-                context={"domain_request": self},
+                context={"domain": "test", "user": "test", "date": 1, "changes": "test"},
                 bcc_address=None,
                 cc_addresses=["test_email1@example.com", "test_email2@example.com"],
             )
