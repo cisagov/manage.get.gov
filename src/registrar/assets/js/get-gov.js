@@ -2230,14 +2230,35 @@ const utcDateString = (dateString) => {
 })();
 
 
+// (function() {
+//   const currentPath = window.location.pathname;
+
+//   if (currentPath === "/request/finished/") {
+//       // Push a new state to prevent going back
+//       history.pushState({}, "", "");
+
+//       console.log("requesteeefrf")
+//       window.addEventListener('popstate', function(event){
+//         window.location.href = "/";
+//       })
+//       // // Set up the popstate event handler
+//       // window.onpopstate = function(event) {
+//       //     console.log("Back button pressed");
+//       //     // Redirect or handle state change
+//       //     window.location.href = "/"; // Replace with your target URL
+//       // };
+//   }
+// })();
+
 (function() {
+  // Set up the popstate event handler
   const currentPath = window.location.pathname;
-  if(currentPath == "/request/finished/"){
-    history.pushState(null, null, currentPath);
-    window.onpopstate = function(event) {
-
-      window.location.href = ""
+  history.pushState({}, "", "");
+  if (currentPath === "/request/finished/") {
+  window.onpopstate = function(event) {
+      console.log("Back button pressed");
+      window.location.href = "/";
   };
+}
 
-  }
-})();
+})(); 
