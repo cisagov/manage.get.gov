@@ -883,22 +883,22 @@ function initializeWidgetOnList(list, parentId) {
         // Handle hiding the organization name field when the organization_type is federal.
         // Run this first one page load, then secondly on a change event.
         let organizationNameContainer = document.querySelector(".field-organization_name");
-        if (!organizationNameContainer) {
-            organizationNameContainer = document.querySelector("#id_organization_name");
-        }
-        handleOrganizationTypeChange(organizationType, organizationNameContainer);
+        let federalType = document.querySelector(".field-federal_type");
+        handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
         organizationType.addEventListener("change", function() {
-            handleOrganizationTypeChange(organizationType, organizationNameContainer);
+            handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
         });
     });
 
-    function handleOrganizationTypeChange(organizationType, organizationNameContainer) {
-        if (organizationType && organizationNameContainer) {
+    function handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType) {
+        if (organizationType && organizationNameContainer && federalType) {
             let selectedValue = organizationType.value;
             if (selectedValue === "federal") {
                 hideElement(organizationNameContainer);
+                showElement(federalType);
             } else {
                 showElement(organizationNameContainer);
+                hideElement(federalType);
             }
         }
     }

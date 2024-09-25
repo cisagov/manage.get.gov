@@ -453,7 +453,8 @@ details.dja-detail-table {
     background-color: var(--body-bg);
     .dja-details-summary {
         cursor: pointer;
-        color: var(--body-quiet-color);
+        color: var(--link-fg);
+        text-decoration: underline;
     }
 
     @media (max-width: 1024px){
