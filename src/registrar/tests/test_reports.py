@@ -357,9 +357,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Test the output for readonly admin
-        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
-        portfolio_permission.save()
-        portfolio_permission.refresh_from_db()
+        # portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
+        # portfolio_permission.save()
+        # portfolio_permission.refresh_from_db()
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)

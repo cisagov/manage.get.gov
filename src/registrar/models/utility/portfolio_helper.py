@@ -7,7 +7,7 @@ class UserPortfolioRoleChoices(models.TextChoices):
     """
 
     ORGANIZATION_ADMIN = "organization_admin", "Admin"
-    ORGANIZATION_ADMIN_READ_ONLY = "organization_admin_read_only", "Admin read only"
+    # ORGANIZATION_ADMIN_READ_ONLY = "organization_admin_read_only", "Admin read only"
     ORGANIZATION_MEMBER = "organization_member", "Member"
 
 
