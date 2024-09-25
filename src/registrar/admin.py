@@ -2919,13 +2919,22 @@ class PortfolioAdmin(ListHeaderAdmin):
                 "fields": [
                     "organization_name",
                     "federal_agency",
+                ]
+            },
+        ),
+        (
+            "Show details",
+            {
+                "classes": ["collapse--dgfieldset"],
+                "description": "Extends organization name and mailing address",
+                "fields": [
                     "state_territory",
                     "address_line1",
                     "address_line2",
                     "city",
                     "zipcode",
                     "urbanization",
-                ]
+                ],
             },
         ),
         ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
