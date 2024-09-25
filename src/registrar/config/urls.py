@@ -76,7 +76,6 @@ urlpatterns = [
         views.PortfolioNoDomainsView.as_view(),
         name="no-portfolio-domains",
     ),
-
     path(
         "members/",
         views.PortfolioMembersView.as_view(),

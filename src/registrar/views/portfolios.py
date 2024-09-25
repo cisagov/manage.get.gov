@@ -21,11 +21,13 @@ from django.views.generic.edit import FormMixin
 logger = logging.getLogger(__name__)
 
 
-#---Logger
+# ---Logger
 import logging
 from venv import logger
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+
 logger = logging.getLogger(__name__)
+
 
 class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
 
@@ -61,7 +63,9 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
         # We can override the base class. This view only needs this item.
         context = {}
         portfolio = self.request.session.get("portfolio")
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f'PortfolioMembersView portfolio = {portfolio}')
+        TerminalHelper.colorful_logger(
+            logger.info, TerminalColors.OKGREEN, f"PortfolioMembersView portfolio = {portfolio}"
+        )
         if portfolio:
 
             # # ------ Gets admin members
@@ -72,7 +76,6 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
             #     ],
             # ).values_list("user__id", flat=True)
 
-
             # # ------ Gets non-admin members
             # # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
             # non_admin_permissions = UserPortfolioPermission.objects.filter(portfolio=obj).exclude(
@@ -81,16 +84,14 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
             # # Get the user objects associated with these permissions
             # non_admin_users = User.objects.filter(portfolio_permissions__in=non_admin_permissions)
 
-
             # ------- Gets all members
-            member_ids = UserPortfolioPermission.objects.filter(
-                portfolio=portfolio
-            ).values_list("user__id", flat=True)
+            member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
 
             all_members = User.objects.filter(id__in=member_ids)
             context["portfolio_members"] = all_members
             context["portfolio_members_count"] = all_members.count()
         return render(request, "portfolio_members.html", context)
+
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
     """Some users have access to the underlying portfolio, but not any domains.

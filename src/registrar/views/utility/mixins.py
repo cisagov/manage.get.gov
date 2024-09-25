@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 import logging
 from venv import logger
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+
 logger = logging.getLogger(__name__)
 
 

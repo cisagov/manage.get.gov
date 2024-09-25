@@ -1,4 +1,3 @@
-
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -10,11 +9,12 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 
-#---Logger
+# ---Logger
 import logging
 from venv import logger
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,19 +24,20 @@ def get_portfolio_members_json(request):
     get all members that are associated with the given portfolio"""
 
     objects = get_member_objects_from_request(request)
-    if(objects is not None):
+    if objects is not None:
         member_ids = objects.values_list("id", flat=True)
 
         portfolio = request.session.get("portfolio")
         admin_ids = UserPortfolioPermission.objects.filter(
-                portfolio=portfolio,
-                roles__overlap=[
-                    UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-                ],
-            ).values_list("user__id", flat=True)
-        portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list("email", flat=True)
-       
-        
+            portfolio=portfolio,
+            roles__overlap=[
+                UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            ],
+        ).values_list("user__id", flat=True)
+        portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
+            "email", flat=True
+        )
+
         unfiltered_total = member_ids.count()
 
         objects = apply_search(objects, request)
@@ -47,7 +48,8 @@ def get_portfolio_members_json(request):
         page_number = request.GET.get("page", 1)
         page_obj = paginator.get_page(page_number)
         members = [
-            serialize_members(request, member, request.user, admin_ids, portfolio_invitation_emails) for member in page_obj.object_list
+            serialize_members(request, member, request.user, admin_ids, portfolio_invitation_emails)
+            for member in page_obj.object_list
         ]
 
         # DEVELOPER'S NOTE (9-24-24):
@@ -60,7 +62,7 @@ def get_portfolio_members_json(request):
         # path in url.py.  In short, make sure that both members_table.html and url.py have references to
         # this json function in order for all of this to work.
         #
-        # HELPFUL TIP:  You can easily test this json file's output by visiting 
+        # HELPFUL TIP:  You can easily test this json file's output by visiting
         # http://localhost:8080/get-portfolio-members-json/
         return JsonResponse(
             {
@@ -73,7 +75,7 @@ def get_portfolio_members_json(request):
                 "unfiltered_total": unfiltered_total,
             }
         )
-    
+
     else:
         # This was added to handle NoneType error
         # In other examples of we assume there will never be zero entries returned...which is *fine*...until
@@ -107,14 +109,16 @@ def get_member_objects_from_request(request):
         # else:
         #     filter_condition = Q(portfolio=portfolio, creator=request.user)
 
-        permissions = UserPortfolioPermission.objects.filter(
-                portfolio=portfolio
-            )
-        
-        portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list("email", flat=True)
-        
-        members = User.objects.filter(Q(portfolio_permissions__in=permissions) | Q(email__in=portfolio_invitation_emails))
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f'members {members}')  # TODO: delete me
+        permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio)
+
+        portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
+            "email", flat=True
+        )
+
+        members = User.objects.filter(
+            Q(portfolio_permissions__in=permissions) | Q(email__in=portfolio_invitation_emails)
+        )
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"members {members}")  # TODO: delete me
         return members
 
 
@@ -158,7 +162,7 @@ def apply_sorting(queryset, request):
 def serialize_members(request, member, user, admin_ids, portfolio_invitation_emails):
 
     # ------- VIEW ONLY
-    # If not view_only (the user has permissions to edit/manage users), show the gear icon with "Manage" link. 
+    # If not view_only (the user has permissions to edit/manage users), show the gear icon with "Manage" link.
     # If view_only (the user only has view user permissions), show the "View" link (no gear icon).
     view_only = not user.has_edit_members_portfolio_permission
 
@@ -176,7 +180,7 @@ def serialize_members(request, member, user, admin_ids, portfolio_invitation_ema
         "email": member.email,
         "is_admin": is_admin,
         "last_active": last_active,
-        "action_url": '#', #reverse("members", kwargs={"pk": member.id}), # TODO: Future ticket?
+        "action_url": "#",  # reverse("members", kwargs={"pk": member.id}), # TODO: Future ticket?
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
     }
