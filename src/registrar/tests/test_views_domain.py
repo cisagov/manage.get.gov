@@ -2,17 +2,14 @@ from unittest import skip
 from unittest.mock import MagicMock, ANY, patch
 
 from django.conf import settings
-from django.test import override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
-from registrar.utility.email import send_templated_email
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
-from django.middleware.csrf import get_token
 
 from registrar.utility.errors import (
     NameserverError,
@@ -105,7 +102,6 @@ class TestWithDomainPermissions(TestWithUser):
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_deleted)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dns_needed)
-
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -1995,7 +1991,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
             AllowedEmail(email="doesnotexist@igorville.com"),
         ]
         AllowedEmail.objects.bulk_create(allowed_emails)
-    
+
     def setUp(self):
         super().setUp()
         self.mock_client_class = MagicMock()
@@ -2010,14 +2006,14 @@ class TestDomainChangeNotifications(TestDomainOverview):
     @less_console_noise_decorator
     def test_notification_on_org_name_change(self):
         """Test that an email is sent when the organization name is changed."""
-            
+
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.address_line1 = "123 Main St"
         self.domain_information.city = "Igorville"
         self.domain_information.state_territory = "IL"
         self.domain_information.zipcode = "62052"
         self.domain_information.save()
-        
+
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
@@ -2028,8 +2024,8 @@ class TestDomainChangeNotifications(TestDomainOverview):
             org_name_page.form.submit()
 
         # Check that an email was sent
-        self.assertTrue(self.mock_client.send_email.called)        
-              
+        self.assertTrue(self.mock_client.send_email.called)
+
         # Check email content
         # check the call sequence for the email
         _, kwargs = self.mock_client.send_email.call_args
@@ -2048,7 +2044,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     @less_console_noise_decorator
     def test_no_notification_on_org_name_change_with_portfolio(self):
         """Test that an email is not sent on org name change when the domain is in a portfolio"""
-            
+
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
 
         self.domain_information.organization_name = "Town of Igorville"
@@ -2058,7 +2054,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.domain_information.zipcode = "62052"
         self.domain_information.portfolio = portfolio
         self.domain_information.save()
-        
+
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
@@ -2069,13 +2065,13 @@ class TestDomainChangeNotifications(TestDomainOverview):
             org_name_page.form.submit()
 
         # Check that an email was not sent
-        self.assertFalse(self.mock_client.send_email.called)        
+        self.assertFalse(self.mock_client.send_email.called)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_notification_on_security_email_change(self):
         """Test that an email is sent when the security email is changed."""
-        
+
         security_email_page = self.app.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
@@ -2085,8 +2081,8 @@ class TestDomainChangeNotifications(TestDomainOverview):
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             security_email_page.form.submit()
 
-        self.assertTrue(self.mock_client.send_email.called)        
-              
+        self.assertTrue(self.mock_client.send_email.called)
+
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
@@ -2098,7 +2094,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     @less_console_noise_decorator
     def test_notification_on_dnssec_enable(self):
         """Test that an email is sent when DNSSEC is enabled."""
-        
+
         page = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain_multdsdata.id}))
         self.assertContains(page, "Disable DNSSEC")
 
@@ -2118,8 +2114,8 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         self.assertContains(updated_page, "Enable DNSSEC")
 
-        self.assertTrue(self.mock_client.send_email.called)        
-              
+        self.assertTrue(self.mock_client.send_email.called)
+
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
@@ -2131,7 +2127,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     @less_console_noise_decorator
     def test_notification_on_ds_data_change(self):
         """Test that an email is sent when DS data is changed."""
-        
+
         ds_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
@@ -2140,14 +2136,14 @@ class TestDomainChangeNotifications(TestDomainOverview):
         ds_data_page.forms[0]["form-0-algorithm"] = "13"
         ds_data_page.forms[0]["form-0-digest_type"] = "2"
         ds_data_page.forms[0]["form-0-digest"] = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF"
-        
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             ds_data_page.forms[0].submit()
 
         # check that the email was sent
-        self.assertTrue(self.mock_client.send_email.called)        
-        
+        self.assertTrue(self.mock_client.send_email.called)
+
         # check some stuff about the email
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
@@ -2160,12 +2156,12 @@ class TestDomainChangeNotifications(TestDomainOverview):
     @less_console_noise_decorator
     def test_notification_on_senior_official_change(self):
         """Test that an email is sent when the senior official information is changed."""
-        
+
         self.domain_information.senior_official = Contact.objects.create(
             first_name="Old", last_name="Official", title="Manager", email="old_official@example.com"
         )
         self.domain_information.save()
-        
+
         senior_official_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
@@ -2178,8 +2174,8 @@ class TestDomainChangeNotifications(TestDomainOverview):
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             senior_official_page.form.submit()
 
-        self.assertTrue(self.mock_client.send_email.called)        
-              
+        self.assertTrue(self.mock_client.send_email.called)
+
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
@@ -2192,17 +2188,17 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_on_senior_official_when_portfolio(self):
         """Test that an email is not sent when the senior official information is changed
         and the domain is in a portfolio."""
-        
+
         self.domain_information.senior_official = Contact.objects.create(
             first_name="Old", last_name="Official", title="Manager", email="old_official@example.com"
-        ) 
-        portfolio, _ =Portfolio.objects.get_or_create(
+        )
+        portfolio, _ = Portfolio.objects.get_or_create(
             organization_name="portfolio",
             creator=self.user,
         )
         self.domain_information.portfolio = portfolio
         self.domain_information.save()
-        
+
         senior_official_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
@@ -2216,12 +2212,12 @@ class TestDomainChangeNotifications(TestDomainOverview):
             senior_official_page.form.submit()
 
         self.assertFalse(self.mock_client.send_email.called)
-    
+
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_no_notification_when_dns_needed(self):
         """Test that an email is not sent when nameservers are changed while the state is DNS_NEEDED."""
-        
+
         nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain_dns_needed.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 

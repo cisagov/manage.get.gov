@@ -60,20 +60,20 @@ class TestEmails(TestCase):
 
         # Assert that an email wasn't sent
         self.assertFalse(self.mock_client.send_email.called)
-    
+
     @boto3_mocking.patching
     def test_email_with_cc(self):
         """Test sending email with cc works"""
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             send_templated_email(
-                    "test content",
-                    "test subject",
-                    "doesnotexist@igorville.com",
-                    context={"domain_request": self},
-                    bcc_address=None,
-                    cc_addresses=["test_email1@example.com", "test_email2@example.com"]
-                )
-            
+                "test content",
+                "test subject",
+                "doesnotexist@igorville.com",
+                context={"domain_request": self},
+                bcc_address=None,
+                cc_addresses=["test_email1@example.com", "test_email2@example.com"],
+            )
+
         # check that an email was sent
         self.assertTrue(self.mock_client.send_email.called)
 

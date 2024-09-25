@@ -22,15 +22,15 @@ class EmailSendingError(RuntimeError):
     pass
 
 
-def send_templated_email(
+def send_templated_email(  # noqa
     template_name: str,
     subject_template_name: str,
-    to_address: str="",
-    bcc_address: str="",
+    to_address: str = "",
+    bcc_address: str = "",
     context={},
     attachment_file=None,
     wrap_email=False,
-    cc_addresses: list[str]=[],
+    cc_addresses: list[str] = [],
 ):
     """Send an email built from a template.
 
@@ -57,7 +57,6 @@ def send_templated_email(
 
         if len(sendable_cc_addresses) < len(cc_addresses):
             logger.warning("Some CC'ed addresses were removed: %s.", blocked_cc_addresses)
-
 
     template = get_template(template_name)
     email_body = template.render(context=context)
@@ -127,6 +126,7 @@ def send_templated_email(
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
 
+
 def _can_send_email(to_address, bcc_address):
     """Raises an EmailSendingError if we cannot send an email. Does nothing otherwise."""
 
@@ -144,15 +144,16 @@ def _can_send_email(to_address, bcc_address):
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
 
+
 def get_sendable_addresses(addresses: list[str]) -> tuple[list[str], list[str]]:
     """Checks whether a list of addresses can be sent to.
-    
+
     Returns: a lists of all provided addresses that are ok to send to and a list of addresses that were blocked.
 
     Paramaters:
-    
+
     addresses: a list of strings representing all addresses to be checked.
-    
+
     raises:
         EmailSendingError if email sending is disabled
     """

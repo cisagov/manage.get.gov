@@ -149,18 +149,18 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             logger.error("Could get domain_info. No domain info exists, or duplicates exist.")
 
         return current_domain_info
-    
+
     def send_update_notification(self, form, force_send=False):
-        """Send a notification to all domain managers that an update has occured 
+        """Send a notification to all domain managers that an update has occured
         for a single domain. Uses update_to_approved_domain.txt template.
-        
+
         If there are no changes to the form, emails will NOT be sent unless force_send
         is set to True.
         """
 
         # send notification email for changes to any of these forms
         form_label_dict = {
-            DomainSecurityEmailForm: "Security Email", 
+            DomainSecurityEmailForm: "Security Email",
             DomainDnssecForm: "DNSSec",
             DomainDsdataFormset: "DS Data",
             DomainOrgNameAddressForm: "Org Name/Address",
@@ -176,29 +176,35 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         if form.__class__ in form_label_dict:
             # these types of forms can cause notifications
-            should_notify=True
+            should_notify = True
             if form.__class__ in check_for_portfolio:
                 # some forms shouldn't cause notifications if they are in a portfolio
                 info = self.get_domain_info_from_domain()
                 if not info or info.portfolio:
-                    logger.info(f"Not notifying because of portfolio")
-                    should_notify = False 
+                    should_notify = False
         else:
             # don't notify for any other types of forms
-            should_notify=False
+            should_notify = False
             logger.info(f"Not notifying for {form.__class__}")
         if (should_notify and form.has_changed()) or force_send:
-            context={
-                        "domain": self.object.name,
-                        "user": self.request.user,
-                        "date": date.today(),
-                        "changes": form_label_dict[form.__class__]
-                    }
-            self.email_domain_managers(self.object, "emails/update_to_approved_domain.txt", "emails/update_to_approved_domain_subject.txt", context)     
+            context = {
+                "domain": self.object.name,
+                "user": self.request.user,
+                "date": date.today(),
+                "changes": form_label_dict[form.__class__],
+            }
+            self.email_domain_managers(
+                self.object,
+                "emails/update_to_approved_domain.txt",
+                "emails/update_to_approved_domain_subject.txt",
+                context,
+            )
         else:
-            logger.info(f"Not notifying for {form.__class__}, form changes: {form.has_changed()}, force_send: {force_send}")
+            logger.info(
+                f"Not notifying for {form.__class__}, form changes: {form.has_changed()}, force_send: {force_send}"
+            )
 
-    def email_domain_managers(self, domain_name, template: str, subject_template: str, context: any = {}):
+    def email_domain_managers(self, domain_name, template: str, subject_template: str, context={}):
         """Send a single email built from a template to all managers for a given domain.
 
         template_name and subject_template_name are relative to the same template
@@ -214,20 +220,16 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             domain = Domain.objects.get(name=domain_name)
         except Domain.DoesNotExist:
             logger.warning(
-                "Could not send notification email for domain %s, unable to find matching domain object",
-                domain_name
+                "Could not send notification email for domain %s, unable to find matching domain object", domain_name
             )
-        manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list("user", flat=True)
+        manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list(
+            "user", flat=True
+        )
         emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
         logger.debug("attempting to send templated email to domain managers")
         try:
-            send_templated_email(
-                template,
-                subject_template,
-                context=context,
-                cc_addresses=emails
-            )
-        except EmailSendingError as exc:
+            send_templated_email(template, subject_template, context=context, cc_addresses=emails)
+        except EmailSendingError:
             logger.warning(
                 "Could not sent notification email to %s for domain %s",
                 emails,
@@ -492,8 +494,6 @@ class DomainNameserversView(DomainFormBaseView):
 
         This post method harmonizes using DomainBaseView and FormMixin
         """
-        logger.info(f"POST request to DomainNameserversView")
-
         self._get_domain(request)
         formset = self.get_form()
 
@@ -502,14 +502,13 @@ class DomainNameserversView(DomainFormBaseView):
             return HttpResponseRedirect(url)
 
         if formset.is_valid():
-            logger.info(f"Formset is valid")
             return self.form_valid(formset)
         else:
             return self.form_invalid(formset)
 
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
-    
+
         self.request.session["nameservers_form_domain"] = self.object
 
         # Set the nameservers from the formset
@@ -800,7 +799,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
         else:
             self.send_update_notification(form)
             messages.success(self.request, "The security email for this domain has been updated.")
-            
+
             # superclass has the redirect
             return super().form_valid(form)
 
