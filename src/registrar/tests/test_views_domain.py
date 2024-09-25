@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.utility.email import send_templated_email
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -67,6 +68,10 @@ class TestWithDomainPermissions(TestWithUser):
                 datetime.combine(date.today() + timedelta(days=1), datetime.min.time())
             ),
         )
+        self.domain_dns_needed, _ = Domain.objects.get_or_create(
+            name="dns-needed.gov",
+            state=Domain.State.DNS_NEEDED,
+        )
         self.domain_deleted, _ = Domain.objects.get_or_create(
             name="deleted.gov",
             state=Domain.State.DELETED,
@@ -85,6 +90,12 @@ class TestWithDomainPermissions(TestWithUser):
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
+        self.security_contact, _ = PublicContact.objects.get_or_create(
+            domain=self.domain,
+            contact_type=PublicContact.ContactTypeChoices.SECURITY,
+            email="security@igorville.gov",
+        )
+
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
@@ -93,6 +104,8 @@ class TestWithDomainPermissions(TestWithUser):
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_deleted)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dns_needed)
+
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -100,6 +113,9 @@ class TestWithDomainPermissions(TestWithUser):
 
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_dns_needed, role=UserDomainRole.Roles.MANAGER
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
@@ -1976,6 +1992,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         super().setUpClass()
         allowed_emails = [
             AllowedEmail(email="info@example.com"),
+            AllowedEmail(email="doesnotexist@igorville.com"),
         ]
         AllowedEmail.objects.bulk_create(allowed_emails)
     
@@ -1990,10 +2007,15 @@ class TestDomainChangeNotifications(TestDomainOverview):
         AllowedEmail.objects.all().delete()
 
     @boto3_mocking.patching
-    def test_notification_email_sent_on_org_name_change(self):
+    @less_console_noise_decorator
+    def test_notification_on_org_name_change(self):
         """Test that an email is sent when the organization name is changed."""
             
         self.domain_information.organization_name = "Town of Igorville"
+        self.domain_information.address_line1 = "123 Main St"
+        self.domain_information.city = "Igorville"
+        self.domain_information.state_territory = "IL"
+        self.domain_information.zipcode = "62052"
         self.domain_information.save()
         
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
@@ -2003,22 +2025,215 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            success_result_page = org_name_page.form.submit()
-            # Check that the page loads successfully
-        self.assertEqual(success_result_page.status_code, 200)
-        self.assertContains(success_result_page, "Not igorville")
+            org_name_page.form.submit()
 
         # Check that an email was sent
         self.assertTrue(self.mock_client.send_email.called)        
+              
         # Check email content
         # check the call sequence for the email
-        args, kwargs = self.mock_client.send_email.call_args
+        _, kwargs = self.mock_client.send_email.call_args
         self.assertIn("Content", kwargs)
         self.assertIn("Simple", kwargs["Content"])
         self.assertIn("Subject", kwargs["Content"]["Simple"])
         self.assertIn("Body", kwargs["Content"]["Simple"])
 
-        # check for things in the email content (not an exhaustive list)
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN:", body)
+        self.assertIn("DOMAIN: igorville.gov", body)
+        self.assertIn("UPDATED BY: First Last info@example.com", body)
+        self.assertIn("INFORMATION UPDATED: Org Name/Address", body)
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_no_notification_on_org_name_change_with_portfolio(self):
+        """Test that an email is not sent on org name change when the domain is in a portfolio"""
+            
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+
+        self.domain_information.organization_name = "Town of Igorville"
+        self.domain_information.address_line1 = "123 Main St"
+        self.domain_information.city = "Igorville"
+        self.domain_information.state_territory = "IL"
+        self.domain_information.zipcode = "62052"
+        self.domain_information.portfolio = portfolio
+        self.domain_information.save()
+        
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        org_name_page.form["organization_name"] = "Not igorville"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            org_name_page.form.submit()
+
+        # Check that an email was not sent
+        self.assertFalse(self.mock_client.send_email.called)        
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_notification_on_security_email_change(self):
+        """Test that an email is sent when the security email is changed."""
+        
+        security_email_page = self.app.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        security_email_page.form["security_email"] = "new_security@example.com"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            security_email_page.form.submit()
+
+        self.assertTrue(self.mock_client.send_email.called)        
+              
+        _, kwargs = self.mock_client.send_email.call_args
+        body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+
+        self.assertIn("DOMAIN: igorville.gov", body)
+        self.assertIn("UPDATED BY: First Last info@example.com", body)
+        self.assertIn("INFORMATION UPDATED: Security Email", body)
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_notification_on_dnssec_enable(self):
+        """Test that an email is sent when DNSSEC is enabled."""
+        
+        page = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain_multdsdata.id}))
+        self.assertContains(page, "Disable DNSSEC")
+
+        # Prepare the data for the POST request
+        post_data = {
+            "disable_dnssec": "Disable DNSSEC",
+        }
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            updated_page = self.client.post(
+                reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}),
+                post_data,
+                follow=True,
+            )
+
+        self.assertEqual(updated_page.status_code, 200)
+
+        self.assertContains(updated_page, "Enable DNSSEC")
+
+        self.assertTrue(self.mock_client.send_email.called)        
+              
+        _, kwargs = self.mock_client.send_email.call_args
+        body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+
+        self.assertIn("DOMAIN: igorville.gov", body)
+        self.assertIn("UPDATED BY: First Last info@example.com", body)
+        self.assertIn("INFORMATION UPDATED: DNSSec", body)
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_notification_on_ds_data_change(self):
+        """Test that an email is sent when DS data is changed."""
+        
+        ds_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # Add DS data
+        ds_data_page.forms[0]["form-0-key_tag"] = "12345"
+        ds_data_page.forms[0]["form-0-algorithm"] = "13"
+        ds_data_page.forms[0]["form-0-digest_type"] = "2"
+        ds_data_page.forms[0]["form-0-digest"] = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF"
+        
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            ds_data_page.forms[0].submit()
+
+        # check that the email was sent
+        self.assertTrue(self.mock_client.send_email.called)        
+        
+        # check some stuff about the email
+        _, kwargs = self.mock_client.send_email.call_args
+        body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+
+        self.assertIn("DOMAIN: igorville.gov", body)
+        self.assertIn("UPDATED BY: First Last info@example.com", body)
+        self.assertIn("INFORMATION UPDATED: DS Data", body)
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_notification_on_senior_official_change(self):
+        """Test that an email is sent when the senior official information is changed."""
+        
+        self.domain_information.senior_official = Contact.objects.create(
+            first_name="Old", last_name="Official", title="Manager", email="old_official@example.com"
+        )
+        self.domain_information.save()
+        
+        senior_official_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        senior_official_page.form["first_name"] = "New"
+        senior_official_page.form["last_name"] = "Official"
+        senior_official_page.form["title"] = "Director"
+        senior_official_page.form["email"] = "new_official@example.com"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            senior_official_page.form.submit()
+
+        self.assertTrue(self.mock_client.send_email.called)        
+              
+        _, kwargs = self.mock_client.send_email.call_args
+        body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+
+        self.assertIn("DOMAIN: igorville.gov", body)
+        self.assertIn("UPDATED BY: First Last info@example.com", body)
+        self.assertIn("INFORMATION UPDATED: Senior Official", body)
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_no_notification_on_senior_official_when_portfolio(self):
+        """Test that an email is not sent when the senior official information is changed
+        and the domain is in a portfolio."""
+        
+        self.domain_information.senior_official = Contact.objects.create(
+            first_name="Old", last_name="Official", title="Manager", email="old_official@example.com"
+        ) 
+        portfolio, _ =Portfolio.objects.get_or_create(
+            organization_name="portfolio",
+            creator=self.user,
+        )
+        self.domain_information.portfolio = portfolio
+        self.domain_information.save()
+        
+        senior_official_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        senior_official_page.form["first_name"] = "New"
+        senior_official_page.form["last_name"] = "Official"
+        senior_official_page.form["title"] = "Director"
+        senior_official_page.form["email"] = "new_official@example.com"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            senior_official_page.form.submit()
+
+        self.assertFalse(self.mock_client.send_email.called)
+    
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_no_notification_when_dns_needed(self):
+        """Test that an email is not sent when nameservers are changed while the state is DNS_NEEDED."""
+        
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain_dns_needed.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # add nameservers
+        nameservers_page.form["form-0-server"] = "ns1-new.igorville.gov"
+        nameservers_page.form["form-0-ip"] = "192.168.1.1"
+        nameservers_page.form["form-1-server"] = "ns2-new.igorville.gov"
+        nameservers_page.form["form-1-ip"] = "192.168.1.2"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            nameservers_page.form.submit()
+
+        # Check that an email was not sent
+        self.assertFalse(self.mock_client.send_email.called)

@@ -71,7 +71,7 @@ class TestEmails(TestCase):
                     "doesnotexist@igorville.com",
                     context={"domain_request": self},
                     bcc_address=None,
-                    cc=["test_email1@example.com", "test_email2@example.com"]
+                    cc_addresses=["test_email1@example.com", "test_email2@example.com"]
                 )
             
         # check that an email was sent

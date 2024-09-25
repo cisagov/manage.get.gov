@@ -119,6 +119,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         if form.is_valid():
             return self.form_valid(form)
         else:
+            logger.debug(f"Form errors: {form.errors}")
             return self.form_invalid(form)
 
     def form_valid(self, form):
@@ -164,6 +165,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             DomainDsdataFormset: "DS Data",
             DomainOrgNameAddressForm: "Org Name/Address",
             SeniorOfficialContactForm: "Senior Official",
+            NameserverFormset: "Nameservers",
         }
 
         # forms of these types should not send notifications if they're part of a portfolio/Organization
@@ -179,14 +181,13 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 # some forms shouldn't cause notifications if they are in a portfolio
                 info = self.get_domain_info_from_domain()
                 if not info or info.portfolio:
+                    logger.info(f"Not notifying because of portfolio")
                     should_notify = False 
         else:
             # don't notify for any other types of forms
             should_notify=False
-
+            logger.info(f"Not notifying for {form.__class__}")
         if (should_notify and form.has_changed()) or force_send:
-            logger.info("Sending email to domain managers")
-
             context={
                         "domain": self.object.name,
                         "user": self.request.user,
@@ -194,6 +195,8 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                         "changes": form_label_dict[form.__class__]
                     }
             self.email_domain_managers(self.object, "emails/update_to_approved_domain.txt", "emails/update_to_approved_domain_subject.txt", context)     
+        else:
+            logger.info(f"Not notifying for {form.__class__}, form changes: {form.has_changed()}, force_send: {force_send}")
 
     def email_domain_managers(self, domain_name, template: str, subject_template: str, context: any = {}):
         """Send a single email built from a template to all managers for a given domain.
@@ -489,8 +492,7 @@ class DomainNameserversView(DomainFormBaseView):
 
         This post method harmonizes using DomainBaseView and FormMixin
         """
-
-        logger.info("Posted to Namservers View")
+        logger.info(f"POST request to DomainNameserversView")
 
         self._get_domain(request)
         formset = self.get_form()
@@ -500,6 +502,7 @@ class DomainNameserversView(DomainFormBaseView):
             return HttpResponseRedirect(url)
 
         if formset.is_valid():
+            logger.info(f"Formset is valid")
             return self.form_valid(formset)
         else:
             return self.form_invalid(formset)
@@ -507,8 +510,6 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
     
-        logger.info("------ Nameserver Form is valid -------")
-
         self.request.session["nameservers_form_domain"] = self.object
 
         # Set the nameservers from the formset
@@ -550,7 +551,8 @@ class DomainNameserversView(DomainFormBaseView):
                 messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         else:
-            self.send_update_notification(formset)
+            if self.object.state == Domain.State.READY:
+                self.send_update_notification(formset)
             messages.success(
                 self.request,
                 "The name servers for this domain have been updated. "
