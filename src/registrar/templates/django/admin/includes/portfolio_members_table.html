@@ -1,0 +1,49 @@
+{% load custom_filters %}
+{% load static url_helpers %}
+
+<details class="margin-top-1 dja-detail-table" aria-role="button" closed>
+    <summary class="padding-1 padding-left-0 dja-details-summary">Details</summary>
+    <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Title</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Roles</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in members %}
+                {% url 'admin:registrar_userportfoliopermission_change' member.pk as url %}
+                <tr>
+                    <td><a href={{url}}>{{ member.user.get_formatted_name}}</a></td>
+                    <td>{{ member.user.title }}</td>
+                    <td>{{ member.user.email }}</td>
+                    <td>{{ member.user.phone }}</td>
+                    <td>
+                        {% for role in member.user|portfolio_role_summary:original %}
+                            <span class="usa-tag">{{ role }}</span>
+                        {% endfor %}
+                    </td>
+                    <td class="padding-left-1 text-size-small">
+                        <input aria-hidden="true" class="display-none" value="{{ member.user.email }}" />
+                        <button 
+                        class="usa-button usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard usa-button__small-text text-no-underline" 
+                        type="button"
+                        >
+                            <svg 
+                            class="usa-icon" 
+                            >
+                                <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                            </svg>
+                            <span>Copy email</span>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</details>

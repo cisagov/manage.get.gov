@@ -3,16 +3,8 @@
 {% load static url_helpers %}
 
 {% block field_readonly %}
-    {% if field.field.name == "display_admins" %}
+    {% if field.field.name == "display_admins" or field.field.name == "display_members" %}
         <div class="readonly">{{ field.contents|safe }}</div>
-    {% elif field.field.name == "display_members" %}
-        <div class="readonly">
-            {% if display_members_summary %}
-                {{ display_members_summary }}
-            {% else %}
-                <p>No additional members found.</p>
-            {% endif %}
-        </div>
     {% elif field.field.name == "roles" %}
         <div class="readonly">
             {% if get_readable_roles %}
@@ -40,12 +32,9 @@
         <label aria-label="Senior official contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.senior_official no_title_top_padding=field.is_readonly %}
         </div>
-    {% elif field.field.name == "display_members" and field.contents %}
-        <details class="margin-top-1 dja-detail-table" aria-role="button" open>
-            <summary class="padding-1 padding-left-0 dja-details-summary">Details</summary>
-            <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
-                {{ field.contents|safe }}
-            </div>
-        </details>
+    {% elif field.field.name == "display_admins" %}
+        {% include "django/admin/includes/portfolio_admins_table.html" with admins=admins %}
+    {% elif field.field.name == "display_members" %}
+        {% include "django/admin/includes/portfolio_members_table.html" with members=members %}
     {% endif %}
 {% endblock after_help_text %}

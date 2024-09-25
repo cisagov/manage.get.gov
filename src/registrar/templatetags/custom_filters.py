@@ -239,3 +239,12 @@ def is_portfolio_subpage(path):
         "senior-official",
     ]
     return get_url_name(path) in url_names
+
+
+@register.filter(name="portfolio_role_summary")
+def portfolio_role_summary(user, portfolio):
+    """Returns the value of user.portfolio_role_summary"""
+    if user and portfolio:
+        return user.portfolio_role_summary(portfolio)
+    else:
+        return []

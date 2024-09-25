@@ -5,6 +5,7 @@ import json
 from django.template.loader import get_template
 from django import forms
 from django.db.models import Value, CharField, Q
+from django.template.loader import render_to_string
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.conf import settings
@@ -2945,12 +2946,13 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     # This is the fieldset display when adding a new model
     add_fieldsets = [
-        (None, {"fields": ["organization_name", "creator", "notes"]}),
+        (None, {"fields": ["creator", "notes"]}),
         ("Type of organization", {"fields": ["organization_type"]}),
         (
             "Organization name and mailing address",
             {
                 "fields": [
+                    "organization_name",
                     "federal_agency",
                     "state_territory",
                     "address_line1",
@@ -3043,93 +3045,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         else:
             return []
 
-    def display_admins(self, obj):
-        """Get joined users who are Admin, unpack and return an HTML block.
-
-        'DJA readonly can't handle querysets, so we need to unpack and return html here.
-        Alternatively, we could return querysets in context but that would limit where this
-        data would display in a custom change form without extensive template customization.
-
-        Will be used in the field_readonly block"""
-        admins = self.get_user_portfolio_permission_admins(obj)
-        if not admins:
-            return format_html("<p>No admins found.</p>")
-
-        admin_details = ""
-        for i, portfolio_admin in enumerate(admins):
-            change_url = reverse("admin:registrar_userportfoliopermission_change", args=[portfolio_admin.pk])
-
-            address_id = f"portfolio-administrator-{portfolio_admin.pk}"
-            if len(admins) > 1:
-                admin_details += (
-                    f'<label class="organization-admin-label padding-top-0" for="{address_id}">'
-                    f'Organization admin {i+1}'
-                    '</label>'
-                )
-            admin_details += f'<address id="{address_id}" class="margin-bottom-2 dja-address-contact-list">'
-            admin_details += f'<a href="{change_url}">{escape(portfolio_admin.user)}</a><br>'
-            admin_details += f"{escape(portfolio_admin.user.title)}<br>"
-            admin_details += f"{escape(portfolio_admin.user.email)}"
-            admin_details += "<div class='admin-icon-group admin-icon-group__clipboard-link'>"
-            admin_details += (
-                f"<input aria-hidden='true' class='display-none' value='{escape(portfolio_admin.user.email)}'>"
-            )
-            admin_details += (
-                "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon padding-left-05"
-                + "button--clipboard copy-to-clipboard text-no-underline' type='button'>"
-            )
-            admin_details += "<svg class='usa-icon'>"
-            admin_details += "<use aria-hidden='true' xlink:href='/public/img/sprite.svg#content_copy'></use>"
-            admin_details += "</svg>"
-            admin_details += "Copy"
-            admin_details += "</button>"
-            admin_details += "</div><br>"
-            admin_details += f"{escape(portfolio_admin.user.phone)}"
-            admin_details += "</address>"
-        return format_html(admin_details)
-
-    display_admins.short_description = "Administrators"  # type: ignore
-
-    def display_members(self, obj):
-        """Get joined users who have roles/perms that are not Admin, unpack and return an HTML block.
-
-        DJA readonly can't handle querysets, so we need to unpack and return html here.
-        Alternatively, we could return querysets in context but that would limit where this
-        data would display in a custom change form without extensive template customization.
-
-        Will be used in the after_help_text block."""
-        members = self.get_user_portfolio_permission_non_admins(obj)
-        if not members:
-            return ""
-
-        member_details = (
-            "<table><thead><tr><th>Name</th><th>Title</th><th>Email</th>"
-            + "<th>Phone</th><th>Roles</th></tr></thead><tbody>"
-        )
-        for member in members:
-            full_name = member.user.get_formatted_name()
-            member_details += "<tr>"
-            member_details += f"<td>{escape(full_name)}</td>"
-            member_details += f"<td>{escape(member.user.title)}</td>"
-            member_details += f"<td>{escape(member.user.email)}</td>"
-            member_details += f"<td>{escape(member.user.phone)}</td>"
-            member_details += "<td>"
-            for role in member.user.portfolio_role_summary(obj):
-                member_details += f"<span class='usa-tag'>{escape(role)}</span> "
-            member_details += "</td></tr>"
-        member_details += "</tbody></table>"
-        return format_html(member_details)
-
-    display_members.short_description = "Members"  # type: ignore
-
-    def display_members_summary(self, obj):
-        """Will be passed as context and used in the field_readonly block."""
-        members = self.get_user_portfolio_permission_non_admins(obj)
-        if not members:
-            return {}
-
-        return self.get_field_links_as_list(members, "userportfoliopermission", attribute_name="user", separator=", ")
-
     def federal_type(self, obj: models.Portfolio):
         """Returns the federal_type field"""
         return BranchChoices.get_branch_label(obj.federal_type) if obj.federal_type else "-"
@@ -3180,6 +3095,28 @@ class PortfolioAdmin(ListHeaderAdmin):
         return "No domain requests"
 
     domain_requests.short_description = "Domain requests"  # type: ignore
+
+    def display_admins(self, obj):
+        """Returns the number of administrators for this portfolio"""
+        admin_count = len(self.get_user_portfolio_permission_admins(obj))
+        if admin_count > 0:
+            url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
+            # Create a clickable link with the count
+            return format_html(f'<a href="{url}">{admin_count} administrators</a>')
+        return "No administrators found."
+
+    display_admins.short_description = "Administrators"  # type: ignore
+
+    def display_members(self, obj):
+        """Returns the number of members for this portfolio"""
+        member_count = len(self.get_user_portfolio_permission_non_admins(obj))
+        if member_count > 0:
+            url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
+            # Create a clickable link with the count
+            return format_html(f'<a href="{url}">{member_count} members</a>')
+        return "No additional members found."
+
+    display_members.short_description = "Members"  # type: ignore
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
@@ -3254,7 +3191,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         obj = self.get_object(request, object_id)
         extra_context = extra_context or {}
         extra_context["skip_additional_contact_info"] = True
-        extra_context["display_members_summary"] = self.display_members_summary(obj)
+        extra_context["members"] = self.get_user_portfolio_permission_non_admins(obj)
+        extra_context["admins"] = self.get_user_portfolio_permission_admins(obj)
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
