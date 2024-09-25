@@ -91,7 +91,7 @@
             </li>
             {% endif %}
 
-            {% if has_organization_members_flag %}
+            {% if has_organization_members_flag and has_view_members_portfolio_permission %}
             <li class="usa-nav__primary-item">
                 <a href="/members/" class="usa-nav-link">
                     Members

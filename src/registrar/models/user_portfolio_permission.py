@@ -15,8 +15,8 @@ class UserPortfolioPermission(TimeStampedModel):
     PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBERS,
-            UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            # UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            # UserPortfolioPermissionChoices.EDIT_MEMBERS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
