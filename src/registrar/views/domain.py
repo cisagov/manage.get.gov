@@ -823,15 +823,15 @@ class DomainAddUserView(DomainFormBaseView):
             existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
             requestor_org = UserPortfolioPermission.objects.get(user=requestor).portfolio
             print("Requestor org: ", requestor_org)
-            if (existing_org_permission and existing_org_permission.portfolio != requestor_org) or \
-            (existing_org_invitation and existing_org_invitation.portfolio != requestor_org):
-                add_success=False
+            if (existing_org_permission and existing_org_permission.portfolio != requestor_org) or (
+                existing_org_invitation and existing_org_invitation.portfolio != requestor_org
+            ):
+                add_success = False
                 messages.error(
                     self.request,
                     f"That email is already a member of another .gov organization.",
                 )
                 raise Exception
-            
 
         # Check to see if an invite has already been sent
         try:
@@ -898,7 +898,9 @@ class DomainAddUserView(DomainFormBaseView):
         else:
             # if user already exists then just send an email
             try:
-                self._send_domain_invitation_email(requested_email, requestor, requested_user=requested_user, add_success=False)
+                self._send_domain_invitation_email(
+                    requested_email, requestor, requested_user=requested_user, add_success=False
+                )
             except EmailSendingError:
                 logger.warn(
                     "Could not send email invitation (EmailSendingError)",
