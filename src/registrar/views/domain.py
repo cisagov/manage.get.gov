@@ -930,6 +930,12 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
+            except OutsideOrgMemberError:
+                logger.warn(
+                    "Could not send email. Can not invite member of a .gov organization to a different organization.",
+                    self.object,
+                    exc_info=True,
+                )
             except Exception:
                 logger.warn(
                     "Could not send email invitation (Other Exception)",
