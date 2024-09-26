@@ -828,7 +828,6 @@ class DomainRequest(TimeStampedModel):
         DraftDomain = apps.get_model("registrar.DraftDomain")
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
-        logger.info(f"Draft Domain")
         # if the domain has not been submitted before this  must be the first time
         if not self.first_submitted_date:
             self.first_submitted_date = timezone.now().date()
@@ -836,7 +835,6 @@ class DomainRequest(TimeStampedModel):
         # Update last_submitted_date to today
         self.last_submitted_date = timezone.now().date()
         self.save()
-        logger.info(f"updated submission date")
 
         # Limit email notifications to transitions from Started and Withdrawn
         limited_statuses = [self.DomainRequestStatus.STARTED, self.DomainRequestStatus.WITHDRAWN]

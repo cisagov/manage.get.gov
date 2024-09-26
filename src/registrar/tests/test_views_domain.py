@@ -2003,7 +2003,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         super().tearDownClass()
         AllowedEmail.objects.all().delete()
 
-
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_notification_on_org_name_change(self):
