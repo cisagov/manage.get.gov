@@ -781,7 +781,6 @@ class DomainRequest(TimeStampedModel):
 
             if custom_email_content:
                 context["custom_email_content"] = custom_email_content
-            logger.info(f"Sending email to: {recipient.email}")
             send_templated_email(
                 email_template,
                 email_template_subject,
@@ -823,7 +822,6 @@ class DomainRequest(TimeStampedModel):
         # requested_domain could be None here
         if not hasattr(self, "requested_domain") or self.requested_domain is None:
             raise ValueError("Requested domain is missing.")
-        logger.info(f"Submitting domain request: {self.requested_domain.name}")
 
         DraftDomain = apps.get_model("registrar.DraftDomain")
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
