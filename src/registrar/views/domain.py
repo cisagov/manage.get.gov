@@ -35,9 +35,9 @@ from registrar.utility.errors import (
     NameserverErrorCodes as nsErrorCodes,
     DsDataError,
     DsDataErrorCodes,
-    OutsideOrgMemberError,
     SecurityEmailError,
     SecurityEmailErrorCodes,
+    OutsideOrgMemberError,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
@@ -859,6 +859,10 @@ class DomainAddUserView(DomainFormBaseView):
                 messages.success(self.request, f"{email} has been invited to this domain.")
         except Exception:
             logger.error("An error occured")
+        except OutsideOrgMemberError:
+            logger.error(
+                "Could not send email. Can not invite member of a .gov organization to a different organization."
+            )
         except EmailSendingError as exc:
             logger.warn(
                 "Could not sent email invitation to %s for domain %s",
@@ -867,6 +871,29 @@ class DomainAddUserView(DomainFormBaseView):
                 exc_info=True,
             )
             raise EmailSendingError("Could not send email invitation.") from exc
+
+        try:
+            send_templated_email(
+                "emails/domain_invitation.txt",
+                "emails/domain_invitation_subject.txt",
+                to_address=email,
+                context={
+                    "domain_url": self._domain_abs_url(),
+                    "domain": self.object,
+                    "requestor_email": requestor_email,
+                },
+            )
+        except EmailSendingError as exc:
+            logger.warn(
+                "Could not sent email invitation to %s for domain %s",
+                email,
+                self.object,
+                exc_info=True,
+            )
+            raise EmailSendingError("Could not send email invitation.") from exc
+        else:
+            if add_success:
+                messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
@@ -896,14 +923,6 @@ class DomainAddUserView(DomainFormBaseView):
                 self._send_domain_invitation_email(
                     requested_email, requestor, requested_user=requested_user, add_success=False
                 )
-
-                UserDomainRole.objects.create(
-                        user=requested_user,
-                        domain=self.object,
-                        role=UserDomainRole.Roles.MANAGER,
-                    )
-        
-                messages.success(self.request, f"Added user {requested_email}.")
             except EmailSendingError:
                 logger.warn(
                     "Could not send email invitation (EmailSendingError)",
@@ -911,12 +930,6 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
-            except OutsideOrgMemberError:
-                logger.warn(
-                    "Could not send email invitation to a user in a different org.",
-                    self.object,
-                    exc_info=True,
-                )
             except Exception:
                 logger.warn(
                     "Could not send email invitation (Other Exception)",
@@ -924,8 +937,17 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
-            except IntegrityError:
-                messages.warning(self.request, f"{requested_email} is already a manager for this domain")
+            else:
+                try:
+                    UserDomainRole.objects.create(
+                        user=requested_user,
+                        domain=self.object,
+                        role=UserDomainRole.Roles.MANAGER,
+                    )
+                except IntegrityError:
+                    messages.warning(self.request, f"{requested_email} is already a manager for this domain")
+                else:
+                    messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
 
 
