@@ -2555,7 +2555,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def dnssecdata(self, obj):
         return "Yes" if obj.dnssecdata else "No"
 
-    dnssecdata.short_description = "DNS Sec Enabled"  # type: ignore
+    dnssecdata.short_description = "DNSSEC enabled"  # type: ignore
 
     # Custom method to display formatted nameservers
     def nameservers(self, obj):
@@ -2572,7 +2572,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Join the formatted strings with line breaks
         return "\n".join(formatted_nameservers)
 
-    nameservers.short_description = "Nameservers"  # type: ignore
+    nameservers.short_description = "Name servers"  # type: ignore
 
     def custom_election_board(self, obj):
         domain_info = getattr(obj, "domain_info", None)
