@@ -2097,17 +2097,8 @@ class TestPortfolioAdmin(TestCase):
         )
 
         display_admins = self.admin.display_admins(self.portfolio)
-
-        url = reverse("admin:registrar_userportfoliopermission_change", args=[perm_1.pk])
-        self.assertIn(
-            f'<a href="{url}">Gerald Meoward meaoward@gov.gov</a>',
-            display_admins,
-        )
-        self.assertIn("Captain", display_admins)
-
-        url = reverse("admin:registrar_userportfoliopermission_change", args=[perm_2.pk])
-        self.assertIn(f'<a href="{url}">Arnold Poopy poopy@gov.gov</a>', display_admins)
-        self.assertIn("Major", display_admins)
+        url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={self.portfolio.id}"
+        self.assertIn(f'<a href="{url}">2 administrators</a>', display_admins)
 
         display_members_summary = self.admin.display_members_summary(self.portfolio)
 

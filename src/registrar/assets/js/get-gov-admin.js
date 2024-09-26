@@ -891,14 +891,18 @@ function initializeWidgetOnList(list, parentId) {
     });
 
     function handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType) {
-        if (organizationType && organizationNameContainer && federalType) {
+        if (organizationType && organizationNameContainer) {
             let selectedValue = organizationType.value;
             if (selectedValue === "federal") {
                 hideElement(organizationNameContainer);
-                showElement(federalType);
+                if (federalType) {
+                    showElement(federalType);
+                }
             } else {
                 showElement(organizationNameContainer);
-                hideElement(federalType);
+                if (federalType) {
+                    hideElement(federalType);
+                }
             }
         }
     }
