@@ -690,7 +690,7 @@ class TestPortfolio(WebTest):
         UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
-            role=UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             ],
@@ -731,7 +731,7 @@ class TestPortfolio(WebTest):
 
         # Verify that the user can access the members page
         # This will redirect the user to the members page.
-        response = self.app.get(reverse("members"), follow=True)
+        response = self.app.get(reverse("members"))
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
 
@@ -761,8 +761,6 @@ class TestPortfolio(WebTest):
         # Verify that the user can access the members page
         # This will redirect the user to the members page.
         response = self.client.get(reverse("members"), follow=True)
-        # Make sure the page loaded
-        self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, '<use xlink:href="/public/img/sprite.svg#settings"></use>')
         self.assertContains(response, "Manage")
