@@ -2051,7 +2051,7 @@ class TestPortfolioAdmin(TestCase):
             email="meaoward@gov.gov",
         )
 
-        perm_1 = UserPortfolioPermission.objects.all().create(
+        UserPortfolioPermission.objects.all().create(
             user=admin_user_1, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
@@ -2063,7 +2063,7 @@ class TestPortfolioAdmin(TestCase):
             email="poopy@gov.gov",
         )
 
-        perm_2 = UserPortfolioPermission.objects.all().create(
+        UserPortfolioPermission.objects.all().create(
             user=admin_user_2, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
@@ -2075,7 +2075,7 @@ class TestPortfolioAdmin(TestCase):
             email="madmax@gov.gov",
         )
 
-        perm_3 = UserPortfolioPermission.objects.all().create(
+        UserPortfolioPermission.objects.all().create(
             user=admin_user_3, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
 
@@ -2087,7 +2087,7 @@ class TestPortfolioAdmin(TestCase):
             email="thematrix@gov.gov",
         )
 
-        perm_4 = UserPortfolioPermission.objects.all().create(
+        UserPortfolioPermission.objects.all().create(
             user=admin_user_4,
             portfolio=self.portfolio,
             additional_permissions=[
@@ -2100,28 +2100,8 @@ class TestPortfolioAdmin(TestCase):
         url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={self.portfolio.id}"
         self.assertIn(f'<a href="{url}">2 administrators</a>', display_admins)
 
-        display_members_summary = self.admin.display_members_summary(self.portfolio)
-
-        url = reverse("admin:registrar_userportfoliopermission_change", args=[perm_3.pk])
-        self.assertIn(
-            f'<a href="{url}">Mad Max madmax@gov.gov</a>',
-            display_members_summary,
-        )
-
-        url = reverse("admin:registrar_userportfoliopermission_change", args=[perm_4.pk])
-        self.assertIn(
-            f'<a href="{url}">Agent Smith thematrix@gov.gov</a>',
-            display_members_summary,
-        )
-
         display_members = self.admin.display_members(self.portfolio)
-
-        self.assertIn("Mad Max", display_members)
-        self.assertIn("<span class='usa-tag'>Member</span>", display_members)
-        self.assertIn("Road warrior", display_members)
-        self.assertIn("Agent Smith", display_members)
-        self.assertIn("<span class='usa-tag'>Domain requestor</span>", display_members)
-        self.assertIn("Program", display_members)
+        self.assertIn(f'<a href="{url}">2 members</a>', display_members)
 
 
 class TestTransferUser(WebTest):

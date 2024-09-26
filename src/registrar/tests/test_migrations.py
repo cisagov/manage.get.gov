@@ -50,7 +50,9 @@ class TestGroups(TestCase):
             "change_user",
             "delete_userdomainrole",
             "view_userdomainrole",
-            "view_userportfoliopermission",
+            "add_userportfoliopermission",
+            "change_userportfoliopermission",
+            "delete_userportfoliopermission",
             "add_verifiedbystaff",
             "change_verifiedbystaff",
             "delete_verifiedbystaff",
@@ -58,6 +60,7 @@ class TestGroups(TestCase):
 
         # Get the codenames of actual permissions associated with the group
         actual_permissions = [p.codename for p in cisa_analysts_group.permissions.all()]
+        self.maxDiff = None
 
         # Assert that the actual permissions match the expected permissions
         self.assertListEqual(actual_permissions, expected_permissions)

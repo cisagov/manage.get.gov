@@ -5,7 +5,6 @@ import json
 from django.template.loader import get_template
 from django import forms
 from django.db.models import Value, CharField, Q
-from django.template.loader import render_to_string
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from django.conf import settings
@@ -2981,28 +2980,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         "organization_name",
     ]
 
-    def get_readonly_fields(self, request, obj=None):
-        """Set the read-only state on form elements.
-        We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the creator's status, so
-        we'll use the baseline readonly_fields and extend it as needed.
-        """
-        readonly_fields = list(self.readonly_fields)
-
-        # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
-            # For fields like CharField, IntegerField, etc., the widget used is
-            # straightforward and the readonly_fields list can control their behavior
-            readonly_fields.extend([field.name for field in self.model._meta.fields])
-
-        if request.user.has_perm("registrar.full_access_permission"):
-            return readonly_fields
-
-        # Return restrictive Read-only fields for analysts and
-        # users who might not belong to groups
-        readonly_fields.extend([field for field in self.analyst_readonly_fields])
-        return readonly_fields
-
     def get_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio
         admin_permissions = self.get_user_portfolio_permission_admins(obj)
@@ -3015,7 +2992,9 @@ class PortfolioAdmin(ListHeaderAdmin):
     def get_user_portfolio_permission_admins(self, obj):
         """Returns each admin on UserPortfolioPermission for a given portfolio."""
         if obj:
-            return obj.portfolio_users.filter(portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+            return obj.portfolio_users.filter(
+                portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            )
         else:
             return []
 
@@ -3177,6 +3156,28 @@ class PortfolioAdmin(ListHeaderAdmin):
             return self.add_fieldsets
         return super().get_fieldsets(request, obj)
 
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 2 conditions that determine which fields are read-only:
+        admin user permissions and the creator's status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+        readonly_fields = list(self.readonly_fields)
+
+        # Check if the creator is restricted
+        if obj and obj.creator.status == models.User.RESTRICTED:
+            # For fields like CharField, IntegerField, etc., the widget used is
+            # straightforward and the readonly_fields list can control their behavior
+            readonly_fields.extend([field.name for field in self.model._meta.fields])
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
+
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups.
         Add the summary for the portfolio members field (list of members that link to change_forms)."""
@@ -3184,7 +3185,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         extra_context = extra_context or {}
         extra_context["skip_additional_contact_info"] = True
 
-        # We repeat these calls twice. 
+        # We repeat these calls twice.
         extra_context["members"] = self.get_user_portfolio_permission_non_admins(obj)
         extra_context["admins"] = self.get_user_portfolio_permission_admins(obj)
         extra_context["domains"] = obj.get_domains()
@@ -3205,7 +3206,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
-        
+
         # Remove this line when senior_official is no longer readonly in /admin.
         if obj.federal_agency and obj.federal_agency.so_federal_agency.exists():
             obj.senior_official = obj.federal_agency.so_federal_agency.first()

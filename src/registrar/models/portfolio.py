@@ -2,7 +2,6 @@ from django.db import models
 
 from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
-from registrar.utility.constants import BranchChoices
 
 from .utility.time_stamped_model import TimeStampedModel
 
