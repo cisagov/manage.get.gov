@@ -1,8 +1,6 @@
-import re
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.config import settings
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import Portfolio, SeniorOfficial
 from django_webtest import WebTest  # type: ignore
 from registrar.models import (
@@ -745,7 +743,6 @@ class TestPortfolio(WebTest):
         # Make sure the page loaded
         self.assertContains(response, "Members")
 
-    
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_can_manage_members(self):
@@ -776,7 +773,7 @@ class TestPortfolio(WebTest):
         response = self.client.get(reverse("members"), follow=True)
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
-       
+
         # Verify that manage settings are sent in the dynamic HTML
         self.client.force_login(self.user)
         response = self.client.get(reverse("get_portfolio_members_json"))
@@ -812,12 +809,11 @@ class TestPortfolio(WebTest):
         response = self.client.get(reverse("members"), follow=True)
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
-       
+
         # Verify that view-only settings are sent in the dynamic HTML
         response = self.client.get(reverse("get_portfolio_members_json"))
         self.assertContains(response, '"action_label": "View"')
         self.assertContains(response, '"svg_icon": "visibility"')
-    
 
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
@@ -851,9 +847,8 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
         # Verify that admin info is sent in the dynamic HTML
         response = self.client.get(reverse("get_portfolio_members_json"))
-        # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"{response.content}") 
+        # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"{response.content}")
         self.assertContains(response, '"is_admin": true')
-
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
