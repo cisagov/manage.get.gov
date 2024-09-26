@@ -3178,7 +3178,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         extra_context = extra_context or {}
         extra_context["skip_additional_contact_info"] = True
 
-        # We repeat these calls twice.
         extra_context["members"] = self.get_user_portfolio_permission_non_admins(obj)
         extra_context["admins"] = self.get_user_portfolio_permission_admins(obj)
         extra_context["domains"] = obj.get_domains()
