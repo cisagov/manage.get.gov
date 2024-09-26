@@ -34,7 +34,7 @@ def send_templated_email(  # noqa
 ):
     """Send an email built from a template.
 
-    to_address and bcc_address currently only supports a single address.
+    to_address and bcc_address currently only support single addresses.
 
     cc_address is a list and can contain many addresses. Emails not in the
     whitelist (if applicable) will be filtered out before sending.
@@ -111,7 +111,7 @@ def send_templated_email(  # noqa
                     },
                 },
             )
-            logger.info("Email sent to %s, bcc %s, cc %s", to_address, bcc_address, cc_addresses)
+            logger.info("Email sent to %s, bcc %s, cc %s", to_address, bcc_address, sendable_cc_addresses)
         else:
             ses_client = boto3.client(
                 "ses",
@@ -158,7 +158,7 @@ def get_sendable_addresses(addresses: list[str]) -> tuple[list[str], list[str]]:
     if flag_is_active(None, "disable_email_sending"):  # type: ignore
         message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
         logger.warning(message)
-        return ([],[])
+        return ([], [])
     else:
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
         allowed_emails = []

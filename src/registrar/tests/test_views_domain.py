@@ -250,6 +250,7 @@ class TestDomainDetail(TestDomainOverview):
         # At the time of this test's writing, there are 6 UNKNOWN domains inherited
         # from constructors. Let's reset.
         with less_console_noise():
+            PublicContact.objects.all().delete()
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
 
@@ -2001,6 +2002,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def tearDownClass(cls):
         super().tearDownClass()
         AllowedEmail.objects.all().delete()
+
 
     @boto3_mocking.patching
     @less_console_noise_decorator

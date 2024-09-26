@@ -413,7 +413,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # Set the domain information in the form so that it can be accessible
         # to associate a new Contact, if a new Contact is needed
-        # in the save() methodS
+        # in the save() method
         form.set_domain_info(self.object.domain_info)
         form.save()
 

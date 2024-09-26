@@ -268,7 +268,7 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     def test_submit_from_withdrawn_sends_email(self):
         msg = "Create a withdrawn domain request and submit it and see if email was sent."
-        user, _ = User.objects.get_or_create(username="testy")
+        user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.WITHDRAWN, user=user)
         self.check_email_sent(domain_request, msg, "submit", 1, expected_content="Hi", expected_email=user.email)
 
@@ -287,14 +287,14 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     def test_approve_sends_email(self):
         msg = "Create a domain request and approve it and see if email was sent."
-        user, _ = User.objects.get_or_create(username="testy")
+        user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
         self.check_email_sent(domain_request, msg, "approve", 1, expected_content="approved", expected_email=user.email)
 
     @less_console_noise_decorator
     def test_withdraw_sends_email(self):
         msg = "Create a domain request and withdraw it and see if email was sent."
-        user, _ = User.objects.get_or_create(username="testy")
+        user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
         self.check_email_sent(
             domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
@@ -303,7 +303,7 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     def test_reject_sends_email(self):
         msg = "Create a domain request and reject it and see if email was sent."
-        user, _ = User.objects.get_or_create(username="testy")
+        user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED, user=user)
         self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hi", expected_email=user.email)
 

@@ -781,7 +781,7 @@ class DomainRequest(TimeStampedModel):
 
             if custom_email_content:
                 context["custom_email_content"] = custom_email_content
-
+            logger.info(f"Sending email to: {recipient.email}")
             send_templated_email(
                 email_template,
                 email_template_subject,
@@ -823,11 +823,12 @@ class DomainRequest(TimeStampedModel):
         # requested_domain could be None here
         if not hasattr(self, "requested_domain") or self.requested_domain is None:
             raise ValueError("Requested domain is missing.")
+        logger.info(f"Submitting domain request: {self.requested_domain.name}")
 
         DraftDomain = apps.get_model("registrar.DraftDomain")
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
-
+        logger.info(f"Draft Domain")
         # if the domain has not been submitted before this  must be the first time
         if not self.first_submitted_date:
             self.first_submitted_date = timezone.now().date()
@@ -835,6 +836,7 @@ class DomainRequest(TimeStampedModel):
         # Update last_submitted_date to today
         self.last_submitted_date = timezone.now().date()
         self.save()
+        logger.info(f"updated submission date")
 
         # Limit email notifications to transitions from Started and Withdrawn
         limited_statuses = [self.DomainRequestStatus.STARTED, self.DomainRequestStatus.WITHDRAWN]
