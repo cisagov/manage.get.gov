@@ -84,7 +84,9 @@ class UserPortfolioPermission(TimeStampedModel):
         """Returns a readable list of self.roles"""
         readable_roles = []
         if self.roles:
-            readable_roles = sorted([UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in self.roles])
+            readable_roles = sorted(
+                [UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in self.roles]
+            )
         return readable_roles
 
     def _get_portfolio_permissions(self):

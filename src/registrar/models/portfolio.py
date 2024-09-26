@@ -145,7 +145,6 @@ class Portfolio(TimeStampedModel):
             return self.DomainRequest_portfolio.all()
         else:
             return self.DomainRequest_portfolio.all().order_by(*order_by)
-        
 
     # == Getters for suborganization == #
     def get_suborganizations(self):
