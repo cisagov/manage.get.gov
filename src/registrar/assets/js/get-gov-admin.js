@@ -860,10 +860,13 @@ function initializeWidgetOnList(list, parentId) {
         let organizationType = document.getElementById("id_organization_type");
         let readonlyOrganizationType = document.querySelector(".field-organization_type .readonly");
 
+        let organizationNameContainer = document.querySelector(".field-organization_name");
+        let federalType = document.querySelector(".field-federal_type");
+
         if ($federalAgency && (organizationType || readonlyOrganizationType)) {
             // Attach the change event listener
             $federalAgency.on("change", function() {
-                handleFederalAgencyChange($federalAgency, organizationType, readonlyOrganizationType);
+                handleFederalAgencyChange($federalAgency, organizationType, readonlyOrganizationType, organizationNameContainer, federalType);
             });
         }
         
@@ -882,8 +885,6 @@ function initializeWidgetOnList(list, parentId) {
 
         // Handle hiding the organization name field when the organization_type is federal.
         // Run this first one page load, then secondly on a change event.
-        let organizationNameContainer = document.querySelector(".field-organization_name");
-        let federalType = document.querySelector(".field-federal_type");
         handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
         organizationType.addEventListener("change", function() {
             handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
@@ -907,7 +908,7 @@ function initializeWidgetOnList(list, parentId) {
         }
     }
 
-    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType) {
+    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType, organizationNameContainer, federalType) {
         // Don't do anything on page load
         if (isInitialPageLoad) {
             isInitialPageLoad = false;
@@ -940,6 +941,8 @@ function initializeWidgetOnList(list, parentId) {
                 }
             }
         }
+
+        handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
 
         // Determine if any changes are necessary to the display of portfolio type or federal type
         // based on changes to the Federal Agency
