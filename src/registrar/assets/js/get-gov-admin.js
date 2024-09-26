@@ -937,13 +937,6 @@ function initializeWidgetOnList(list, parentId) {
             }
         }
 
-        // Get the associated senior official with this federal agency
-        let $seniorOfficial = django.jQuery("#id_senior_official");
-        if (!$seniorOfficial) {
-            console.log("Could not find the senior official field");
-            return;
-        }
-
         // Determine if any changes are necessary to the display of portfolio type or federal type
         // based on changes to the Federal Agency
         let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
@@ -965,6 +958,7 @@ function initializeWidgetOnList(list, parentId) {
         // If we can update the contact information, it'll be shown again.
         hideElement(contactList.parentElement);
         
+        let $seniorOfficial = django.jQuery("#id_senior_official");
         let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
         fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
         .then(response => {
@@ -986,28 +980,42 @@ function initializeWidgetOnList(list, parentId) {
             // Update the "contact details" blurb beneath senior official
             updateContactInfo(data);
             showElement(contactList.parentElement);
-
+            
+            // Get the associated senior official with this federal agency
             let seniorOfficialId = data.id;
             let seniorOfficialName = [data.first_name, data.last_name].join(" ");
-            if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
-                // Clear the field if the SO doesn't exist
-                $seniorOfficial.val("").trigger("change");
-                return;
-            }
-
-            // Add the senior official to the dropdown.
-            // This format supports select2 - if we decide to convert this field in the future.
-            if ($seniorOfficial.find(`option[value='${seniorOfficialId}']`).length) {
-                // Select the value that is associated with the current Senior Official.
-                $seniorOfficial.val(seniorOfficialId).trigger("change");
-            } else { 
-                // Create a DOM Option that matches the desired Senior Official. Then append it and select it.
-                let userOption = new Option(seniorOfficialName, seniorOfficialId, true, true);
-                $seniorOfficial.append(userOption).trigger("change");
+            if (!$seniorOfficial) {
+                // If the senior official is a dropdown field, edit that
+                updateSeniorOfficialDropdown($seniorOfficial, seniorOfficialId, seniorOfficialName);
+            }else {
+                let readonlySeniorOfficial = document.querySelector(".field-senior_official .readonly");
+                if (readonlySeniorOfficial) {
+                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
+                    readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
+                }
             }
         })
         .catch(error => console.error("Error fetching senior official: ", error));
 
+    }
+
+    function updateSeniorOfficialDropdown(dropdown, seniorOfficialId, seniorOfficialName) {
+        if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
+            // Clear the field if the SO doesn't exist
+            dropdown.val("").trigger("change");
+            return;
+        }
+
+        // Add the senior official to the dropdown.
+        // This format supports select2 - if we decide to convert this field in the future.
+        if (dropdown.find(`option[value='${seniorOfficialId}']`).length) {
+            // Select the value that is associated with the current Senior Official.
+            dropdown.val(seniorOfficialId).trigger("change");
+        } else { 
+            // Create a DOM Option that matches the desired Senior Official. Then append it and select it.
+            let userOption = new Option(seniorOfficialName, seniorOfficialId, true, true);
+            dropdown.append(userOption).trigger("change");
+        }
     }
 
     function handleStateTerritoryChange(stateTerritory, urbanizationField) {

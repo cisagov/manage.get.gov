@@ -2982,6 +2982,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         "display_admins",
         "display_members",
         "creator",
+        # As of now this means that only federal agency can update this, but this will change.
+        "senior_official",
     ]
 
     analyst_readonly_fields = [
@@ -3208,6 +3210,11 @@ class PortfolioAdmin(ListHeaderAdmin):
         is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
+        
+        # Remove this line when senior_official is no longer readonly in /admin.
+        if obj.federal_agency and obj.federal_agency.so_federal_agency.exists():
+            obj.senior_official = obj.federal_agency.so_federal_agency.first()
+
         super().save_model(request, obj, form, change)
 
 

@@ -61,6 +61,7 @@ class Portfolio(TimeStampedModel):
         unique=False,
         null=True,
         blank=True,
+        related_name="portfolios",
     )
 
     address_line1 = models.CharField(
