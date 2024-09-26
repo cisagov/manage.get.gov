@@ -2230,15 +2230,30 @@ const utcDateString = (dateString) => {
 })();
 
 
+/**
+ * An IIFE that redirects to the home page when a user clicks on the back button on the 'request/finished/' page
+ */
+
 (function() {
-  const currentPath = window.location.pathname;
-  if (currentPath === "/request/finished/") {
-     history.replaceState({ data: '' }, '', '');
-     window.onpopstate = function(event) {
-      if (event.state) {
-          console.log("Back button pressed");
-          window.location.href = "/";
+  document.addEventListener("DOMContentLoaded", () => {
+      const currentPath = window.location.pathname;
+
+      if (currentPath === "/request/finished/") {
+
+          // Push a dummy state to create a history entry
+          history.pushState({ page: "dummy" }, "Dummy Page", "/request/review");
+          // Replace the current state with the correct page state
+          history.replaceState({ page: "finished" }, "Finished Page", "/request/finished/")
+
+          // Listen for back button click event
+          window.addEventListener("popstate", (event) => {
+              // Handle back navigation
+              if (!event.state || event.state.page !== "finished") {
+                  // Redirect to home page 
+                  window.location.href = "/";
+              }
+          });
       }
-  };
-  }
+  });
 })();
+
