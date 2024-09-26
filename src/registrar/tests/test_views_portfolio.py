@@ -703,7 +703,7 @@ class TestPortfolio(WebTest):
 
         # --- admin
         UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).update(
-            role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
 
         # Verify that the user cannot access the members page
@@ -723,6 +723,7 @@ class TestPortfolio(WebTest):
         UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
@@ -733,7 +734,7 @@ class TestPortfolio(WebTest):
         # This will redirect the user to the members page.
         response = self.app.get(reverse("members"))
         # Make sure the page loaded
-        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Members")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -747,6 +748,7 @@ class TestPortfolio(WebTest):
         UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
@@ -760,8 +762,11 @@ class TestPortfolio(WebTest):
 
         # Verify that the user can access the members page
         # This will redirect the user to the members page.
+        self.client.force_login(self.user)
         response = self.client.get(reverse("members"), follow=True)
-
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
+        # Check that the manage settings appear in the DOM
         self.assertContains(response, '<use xlink:href="/public/img/sprite.svg#settings"></use>')
         self.assertContains(response, "Manage")
 
@@ -790,10 +795,12 @@ class TestPortfolio(WebTest):
 
         # Verify that the user can access the members page
         # This will redirect the user to the members page.
+        self.client.force_login(self.user)
         response = self.client.get(reverse("members"), follow=True)
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
-
+        # Check that the view-only settings appear in the DOM
+        self.assertContains(response, '<use xlink:href="/public/img/sprite.svg#visibility"></use>')
         self.assertContains(response, "View")
 
     @less_console_noise_decorator
