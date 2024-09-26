@@ -1267,7 +1267,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
 
-    get_roles.short_description = "Roles"
+    get_roles.short_description = "Roles"  # type: ignore
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
