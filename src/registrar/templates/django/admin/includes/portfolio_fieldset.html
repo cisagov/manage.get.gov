@@ -21,6 +21,15 @@
                 <p>No additional permissions found.</p>
             {% endif %}
         </div>
+    {% elif field.field.name == "senior_official" %}
+        {% if original_object.senior_official %}
+            <div class="readonly">{{ field.contents }}</div>
+        {% else %}
+            {% url "admin:registrar_seniorofficial_add" as url %}
+            <div class="readonly">
+                <a href={{ url }}>No senior official has been found. Create one now.</a>
+            </div>
+        {% endif %}
     {% else %}
         <div class="readonly">{{ field.contents }}</div>
     {% endif %}
@@ -30,7 +39,7 @@
     {% if field.field.name == "senior_official" %}
         <div class="flex-container">
         <label aria-label="Senior official contact details"></label>
-        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.senior_official no_title_top_padding=field.is_readonly %}
+        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.senior_official no_title_top_padding=field.is_readonly hide_no_contact_info_message=True %}
         </div>
     {% elif field.field.name == "display_admins" %}
         {% if admins|length > 0 %}
@@ -39,6 +48,14 @@
     {% elif field.field.name == "display_members" %}
         {% if members|length > 0 %}
             {% include "django/admin/includes/portfolio_members_table.html" with members=members %}
+        {% endif %}
+    {% elif field.field.name == "domains" %}
+        {% if domains|length > 0 %}
+            {% include "django/admin/includes/portfolio_domains_table.html" with domains=domains %}
+        {% endif %}
+    {% elif field.field.name == "domain_requests" %}
+        {% if domain_requests|length > 0 %}
+            {% include "django/admin/includes/portfolio_domain_requests_table.html" with domain_requests=domain_requests %}
         {% endif %}
     {% endif %}
 {% endblock after_help_text %}

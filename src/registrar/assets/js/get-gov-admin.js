@@ -959,6 +959,7 @@ function initializeWidgetOnList(list, parentId) {
         hideElement(contactList.parentElement);
         
         let $seniorOfficial = django.jQuery("#id_senior_official");
+        let readonlySeniorOfficial = document.querySelector(".field-senior_official .readonly");
         let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
         fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
         .then(response => {
@@ -969,7 +970,12 @@ function initializeWidgetOnList(list, parentId) {
             if (data.error) {
                 // Clear the field if the SO doesn't exist.
                 if (statusCode === 404) {
-                    $seniorOfficial.val("").trigger("change");
+                    if ($seniorOfficial && $seniorOfficial.length > 0) {
+                        $seniorOfficial.val("").trigger("change");
+                    }else {
+                        // Show the "create one now" text if this field is none in readonly mode.
+                        readonlySeniorOfficial.innerHTML = '<a href="admin/registrar/seniorofficial/add/">No senior official has been found. Create one now.</a>'
+                    }
                     console.warn("Record not found: " + data.error);
                 }else {
                     console.error("Error in AJAX call: " + data.error);
@@ -984,11 +990,10 @@ function initializeWidgetOnList(list, parentId) {
             // Get the associated senior official with this federal agency
             let seniorOfficialId = data.id;
             let seniorOfficialName = [data.first_name, data.last_name].join(" ");
-            if (!$seniorOfficial) {
+            if ($seniorOfficial && $seniorOfficial.length > 0) {
                 // If the senior official is a dropdown field, edit that
                 updateSeniorOfficialDropdown($seniorOfficial, seniorOfficialId, seniorOfficialName);
             }else {
-                let readonlySeniorOfficial = document.querySelector(".field-senior_official .readonly");
                 if (readonlySeniorOfficial) {
                     let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
                     readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";

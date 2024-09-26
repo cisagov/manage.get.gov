@@ -1,0 +1,32 @@
+{% load static url_helpers %}
+
+<details class="margin-top-1 dja-detail-table" aria-role="button" closed>
+    <summary class="padding-1 padding-left-0 dja-details-summary">Details</summary>
+    <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>State</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for domain_info in domains %}
+                {% if domain_info.domain %}
+                    {% with domain=domain_info.domain %}
+                    {% url 'admin:registrar_domain_change' domain.pk as url %}
+                    <tr>
+                        <td><a href={{url}}>{{ domain }}</a></td>
+                        {% if domain and domain.get_state_display %}
+                            <td>{{ domain.get_state_display }}</td>
+                        {% else %}
+                            <td>None</td>
+                        {% endif %}
+                    </tr>
+                    {% endwith %}
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</details>

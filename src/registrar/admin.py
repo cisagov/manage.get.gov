@@ -2938,7 +2938,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             },
         ),
         ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
-        ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
+        ("Domains and requests", {"fields": ["domains", "domain_requests"]}),
         ("Suborganizations", {"fields": ["suborganizations"]}),
         ("Senior official", {"fields": ["senior_official"]}),
     ]
@@ -3192,8 +3192,12 @@ class PortfolioAdmin(ListHeaderAdmin):
         obj = self.get_object(request, object_id)
         extra_context = extra_context or {}
         extra_context["skip_additional_contact_info"] = True
+
+        # We repeat these calls twice. 
         extra_context["members"] = self.get_user_portfolio_permission_non_admins(obj)
         extra_context["admins"] = self.get_user_portfolio_permission_admins(obj)
+        extra_context["domains"] = obj.get_domains()
+        extra_context["domain_requests"] = obj.get_domain_requests()
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
