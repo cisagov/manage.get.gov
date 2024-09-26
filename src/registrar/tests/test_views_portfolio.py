@@ -821,7 +821,7 @@ class TestPortfolio(WebTest):
 
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_members_admin_tag(self):
+    def test_members_admin_detection(self):
         """Test that user with proper permission is able to manage members"""
         user = self.user
         self.app.set_user(user.username)
@@ -849,8 +849,10 @@ class TestPortfolio(WebTest):
         response = self.client.get(reverse("members"), follow=True)
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
-        # Check that the manage settings appear in the DOM
-        self.assertContains(response, '<th scope="row" role="rowheader" data-label="member email">')
+        # Verify that admin info is sent in the dynamic HTML
+        response = self.client.get(reverse("get_portfolio_members_json"))
+        # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"{response.content}") 
+        self.assertContains(response, '"is_admin": true')
 
 
     @less_console_noise_decorator
