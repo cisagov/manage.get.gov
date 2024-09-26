@@ -21,8 +21,10 @@ from registrar.models import (
     DomainRequest,
     DomainInformation,
     DomainInvitation,
+    PortfolioInvitation,
     User,
     UserDomainRole,
+    UserPortfolioPermission,
     PublicContact,
 )
 from registrar.utility.enums import DefaultEmail
@@ -38,6 +40,7 @@ from registrar.utility.errors import (
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
+from registrar.utility.waffle import flag_is_active_for_user
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -778,7 +781,14 @@ class DomainAddUserView(DomainFormBaseView):
         """Get an absolute URL for this domain."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
 
-    def _send_domain_invitation_email(self, email: str, requestor: User, add_success=True):
+    def _is_member_of_different_org(self, email, org):
+        """Verifies if an email belongs to a different organization as a member or invited member."""
+        # Check if user is a member of a different organization
+        existing_org_permission = UserPortfolioPermission.objects.get(email=email)
+        print("Existing org permission: ", existing_org_permission)
+        return True
+
+    def _send_domain_invitation_email(self, email: str, requestor: User, requested_user=None, add_success=True):
         """Performs the sending of the domain invitation email,
         does not make a domain information object
         email: string- email to send to
@@ -802,6 +812,26 @@ class DomainAddUserView(DomainFormBaseView):
                 exc_info=True,
             )
             return None
+
+        # Check is user is a member or invited member of a different org from this domain's org
+        print("org feature flag is active: ", flag_is_active_for_user(requestor, "organization_feature"))
+        if flag_is_active_for_user(requestor, "organization_feature"):
+            # Check if invited user is a member from a different org from this domain's org
+            existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
+            print("Existing org permission for requested email: ", existing_org_permission)
+
+            existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
+            requestor_org = UserPortfolioPermission.objects.get(user=requestor).portfolio
+            print("Requestor org: ", requestor_org)
+            if (existing_org_permission and existing_org_permission.portfolio != requestor_org) or \
+            (existing_org_invitation and existing_org_invitation.portfolio != requestor_org):
+                add_success=False
+                messages.error(
+                    self.request,
+                    f"That email is already a member of another .gov organization.",
+                )
+                raise Exception
+            
 
         # Check to see if an invite has already been sent
         try:
@@ -868,7 +898,7 @@ class DomainAddUserView(DomainFormBaseView):
         else:
             # if user already exists then just send an email
             try:
-                self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+                self._send_domain_invitation_email(requested_email, requestor, requested_user=requested_user, add_success=False)
             except EmailSendingError:
                 logger.warn(
                     "Could not send email invitation (EmailSendingError)",
@@ -883,17 +913,17 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
-
-        try:
-            UserDomainRole.objects.create(
-                user=requested_user,
-                domain=self.object,
-                role=UserDomainRole.Roles.MANAGER,
-            )
-        except IntegrityError:
-            messages.warning(self.request, f"{requested_email} is already a manager for this domain")
-        else:
-            messages.success(self.request, f"Added user {requested_email}.")
+            else:
+                try:
+                    UserDomainRole.objects.create(
+                        user=requested_user,
+                        domain=self.object,
+                        role=UserDomainRole.Roles.MANAGER,
+                    )
+                except IntegrityError:
+                    messages.warning(self.request, f"{requested_email} is already a manager for this domain")
+                else:
+                    messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
 
 
