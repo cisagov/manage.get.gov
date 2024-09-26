@@ -978,7 +978,7 @@ function initializeWidgetOnList(list, parentId) {
                         $seniorOfficial.val("").trigger("change");
                     }else {
                         // Show the "create one now" text if this field is none in readonly mode.
-                        readonlySeniorOfficial.innerHTML = '<a href="admin/registrar/seniorofficial/add/">No senior official has been found. Create one now.</a>'
+                        readonlySeniorOfficial.innerHTML = '<a href="admin/registrar/seniorofficial/add/">No senior official found. Create one now.</a>'
                     }
                     console.warn("Record not found: " + data.error);
                 }else {

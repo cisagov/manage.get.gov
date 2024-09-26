@@ -2957,7 +2957,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     list_display = ("organization_name", "organization_type", "federal_type", "creator")
     search_fields = ["organization_name"]
-    search_help_text = "Search by portfolio organization."
+    search_help_text = "Search by organization name."
     readonly_fields = [
         # This is the created_at field
         "created_on",
