@@ -69,13 +69,13 @@ class UserFixture:
             "first_name": "Cameron",
             "last_name": "Dixon",
             "email": "cameron.dixon@cisa.dhs.gov",
-            "title": "Supreme leader",
+            "title": "Product owner",
         },
         {
             "username": "30001ee7-0467-4df2-8db2-786e79606060",
             "first_name": "Zander",
             "last_name": "Adkinson",
-            "title": "ACME Specialist",
+            "title": "ACME specialist",
         },
         {
             "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
