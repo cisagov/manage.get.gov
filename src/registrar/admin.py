@@ -2968,7 +2968,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         "domains",
         "domain_requests",
         "suborganizations",
-        "portfolio_type",
         "display_admins",
         "display_members",
         "creator",
@@ -3028,12 +3027,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         return obj.created_at.strftime("%b %d, %Y") if obj.created_at else "-"
 
     created_on.short_description = "Created on"  # type: ignore
-
-    def portfolio_type(self, obj: models.Portfolio):
-        """Returns the portfolio type, or "-" if the result is empty"""
-        return obj.portfolio_type if obj.portfolio_type else "-"
-
-    portfolio_type.short_description = "Portfolio type"  # type: ignore
 
     def suborganizations(self, obj: models.Portfolio):
         """Returns a list of links for each related suborg"""
