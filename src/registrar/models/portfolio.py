@@ -132,13 +132,20 @@ class Portfolio(TimeStampedModel):
         return federal_agency.federal_type if federal_agency else None
 
     # == Getters for domains == #
-    def get_domains(self):
+    def get_domains(self, order_by=None):
         """Returns all DomainInformations associated with this portfolio"""
-        return self.information_portfolio.all()
+        if not order_by:
+            return self.information_portfolio.all()
+        else:
+            return self.information_portfolio.all().order_by(*order_by)
 
-    def get_domain_requests(self):
+    def get_domain_requests(self, order_by=None):
         """Returns all DomainRequests associated with this portfolio"""
-        return self.DomainRequest_portfolio.all()
+        if not order_by:
+            return self.DomainRequest_portfolio.all()
+        else:
+            return self.DomainRequest_portfolio.all().order_by(*order_by)
+        
 
     # == Getters for suborganization == #
     def get_suborganizations(self):

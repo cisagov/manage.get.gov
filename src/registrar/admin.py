@@ -10,8 +10,7 @@ from django.http import HttpResponseRedirect
 from django.conf import settings
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models.domain_information import DomainInformation
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
@@ -1257,9 +1256,18 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     list_display = [
         "user",
         "portfolio",
+        "get_roles",
     ]
 
     autocomplete_fields = ["user", "portfolio"]
+    search_fields = ["user__first_name", "user__last_name", "user__email", "portfolio__organization_name"]
+    search_help_text = "Search by first name, last name, email, or portfolio."
+
+    def get_roles(self, obj):
+        readable_roles = obj.get_readable_roles()
+        return ", ".join(readable_roles)
+
+    get_roles.short_description = "Roles"
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
@@ -3174,14 +3182,14 @@ class PortfolioAdmin(ListHeaderAdmin):
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups.
         Add the summary for the portfolio members field (list of members that link to change_forms)."""
-        obj = self.get_object(request, object_id)
+        obj: Portfolio = self.get_object(request, object_id)
         extra_context = extra_context or {}
         extra_context["skip_additional_contact_info"] = True
 
         extra_context["members"] = self.get_user_portfolio_permission_non_admins(obj)
         extra_context["admins"] = self.get_user_portfolio_permission_admins(obj)
-        extra_context["domains"] = obj.get_domains()
-        extra_context["domain_requests"] = obj.get_domain_requests()
+        extra_context["domains"] = obj.get_domains(order_by=["domain_information__name"])
+        extra_context["domain_requests"] = obj.get_domain_requests(order_by=["domain_information__name"])
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
