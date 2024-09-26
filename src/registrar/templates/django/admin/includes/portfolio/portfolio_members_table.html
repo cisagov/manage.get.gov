@@ -1,0 +1,55 @@
+{% extends "django/admin/includes/details_button.html" %}
+{% load custom_filters %}
+{% load static url_helpers %}
+
+{% block detail_content %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Title</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Roles</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in members %}
+            {% url 'admin:registrar_userportfoliopermission_change' member.pk as url %}
+            <tr>
+                <td><a href={{url}}>{{ member.user.get_formatted_name}}</a></td>
+                <td>{{ member.user.title }}</td>
+                <td>
+                    {% if member.user.email %}
+                    {{ member.user.email }}
+                    {% else %}
+                    None
+                    {% endif %}
+                </td>
+                <td>{{ member.user.phone }}</td>
+                <td>
+                    {% for role in member.user|portfolio_role_summary:original %}
+                        <span class="usa-tag">{{ role }}</span>
+                    {% endfor %}
+                </td>
+                <td class="padding-left-1 text-size-small">
+                    {% if member.user.email %}
+                    <input aria-hidden="true" class="display-none" value="{{ member.user.email }}" />
+                    <button 
+                    class="usa-button usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard usa-button__small-text text-no-underline" 
+                    type="button"
+                    >
+                        <svg 
+                        class="usa-icon" 
+                        >
+                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                        </svg>
+                        <span>Copy email</span>
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
