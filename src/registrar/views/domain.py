@@ -782,14 +782,15 @@ class DomainAddUserView(DomainFormBaseView):
         """Get an absolute URL for this domain."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
 
-    def _is_member_of_different_org(self, email, requested_user, org):
+    def _is_member_of_different_org(self, email, requestor, requested_user):
         """Verifies if an email belongs to a different organization as a member or invited member."""
-        # Check if user is a already member of a different organization than the given org
+        # Check if user is a already member of a different organization than the requestor's org
+        requestor_org = UserPortfolioPermission.objects.get(user=requestor).portfolio
         existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
         existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
 
-        return (existing_org_permission and existing_org_permission.portfolio != org) or (
-            existing_org_invitation and existing_org_invitation.portfolio != org
+        return (existing_org_permission and existing_org_permission.portfolio != requestor_org) or (
+            existing_org_invitation and existing_org_invitation.portfolio != requestor_org
         )
 
     def _send_domain_invitation_email(self, email: str, requestor: User, requested_user=None, add_success=True):
@@ -818,16 +819,15 @@ class DomainAddUserView(DomainFormBaseView):
             return None
 
         # Check is user is a member or invited member of a different org from this domain's org
-        if flag_is_active_for_user(requestor, "organization_feature"):
-            # Check if invited user is a member from a different org from this domain's org
-            requestor_org = UserPortfolioPermission.objects.get(user=requestor).portfolio
-            if self._is_member_of_different_org(email, requested_user, requestor_org):
-                add_success = False
-                messages.error(
-                    self.request,
-                    "That email is already a member of another .gov organization.",
-                )
-                raise OutsideOrgMemberError
+        if flag_is_active_for_user(requestor, "organization_feature") and self._is_member_of_different_org(
+            email, requestor, requested_user
+        ):
+            add_success = False
+            messages.error(
+                self.request,
+                "That email is already a member of another .gov organization.",
+            )
+            raise OutsideOrgMemberError
 
         # Check to see if an invite has already been sent
         try:
@@ -843,34 +843,8 @@ class DomainAddUserView(DomainFormBaseView):
                 add_success = False
                 # else if it has been sent but not accepted
                 messages.warning(self.request, f"{email} has already been invited to this domain")
-
-            send_templated_email(
-                "emails/domain_invitation.txt",
-                "emails/domain_invitation_subject.txt",
-                to_address=email,
-                context={
-                    "domain_url": self._domain_abs_url(),
-                    "domain": self.object,
-                    "requestor_email": requestor_email,
-                },
-            )
-
-            if add_success:
-                messages.success(self.request, f"{email} has been invited to this domain.")
         except Exception:
             logger.error("An error occured")
-        except OutsideOrgMemberError:
-            logger.error(
-                "Could not send email. Can not invite member of a .gov organization to a different organization."
-            )
-        except EmailSendingError as exc:
-            logger.warn(
-                "Could not sent email invitation to %s for domain %s",
-                email,
-                self.object,
-                exc_info=True,
-            )
-            raise EmailSendingError("Could not send email invitation.") from exc
 
         try:
             send_templated_email(
@@ -883,6 +857,8 @@ class DomainAddUserView(DomainFormBaseView):
                     "requestor_email": requestor_email,
                 },
             )
+            if add_success:
+                messages.success(self.request, f"{email} has been invited to this domain.")
         except EmailSendingError as exc:
             logger.warn(
                 "Could not sent email invitation to %s for domain %s",
@@ -891,9 +867,6 @@ class DomainAddUserView(DomainFormBaseView):
                 exc_info=True,
             )
             raise EmailSendingError("Could not send email invitation.") from exc
-        else:
-            if add_success:
-                messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
