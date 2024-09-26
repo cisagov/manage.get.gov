@@ -119,7 +119,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             {% endfor %}
             {% endwith %}
         </div>
-    {% elif field.field.name == "display_admins" %}
+    {% elif field.field.name == "display_admins" or field.field.name == "domain_managers" or field.field.namd == "invited_domain_managers" %}
         <div class="readonly">{{ field.contents|safe }}</div>
     {% elif field.field.name == "display_members" %}
         <div class="readonly">

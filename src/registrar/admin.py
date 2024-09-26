@@ -9,6 +9,7 @@ from django.conf import settings
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models.domain_information import DomainInformation
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
@@ -1564,7 +1565,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             modified_fieldsets = []
             for name, data in fieldsets:
                 fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in DomainInformationAdmin.superuser_only_fields)
+                fields = [field for field in fields if field not in DomainInformationAdmin.superuser_only_fields]
                 modified_fieldsets.append((name, {**data, "fields": fields}))
             return modified_fieldsets
         return fieldsets
@@ -2299,10 +2300,58 @@ class DomainInformationInline(admin.StackedInline):
     template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
 
-    fieldsets = DomainInformationAdmin.fieldsets
-    readonly_fields = DomainInformationAdmin.readonly_fields
-    analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-    autocomplete_fields = DomainInformationAdmin.autocomplete_fields
+    fieldsets = copy.deepcopy(list(DomainInformationAdmin.fieldsets))
+    analyst_readonly_fields = copy.deepcopy(DomainInformationAdmin.analyst_readonly_fields)
+    autocomplete_fields = copy.deepcopy(DomainInformationAdmin.autocomplete_fields)
+
+    def get_domain_managers(self, obj):
+        user_domain_roles = UserDomainRole.objects.filter(domain=obj.domain)
+        user_ids = user_domain_roles.values_list("user_id", flat=True)
+        domain_managers = User.objects.filter(id__in=user_ids)
+        return domain_managers
+
+    def get_domain_invitations(self, obj):
+        domain_invitations = DomainInvitation.objects.filter(
+            domain=obj.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        return domain_invitations
+
+    def domain_managers(self, obj):
+        """Get domain managers for the domain, unpack and return an HTML block."""
+        domain_managers = self.get_domain_managers(obj)
+        if not domain_managers:
+            return "No domain managers found."
+
+        domain_manager_details = "<table><thead><tr><th>UID</th><th>Name</th><th>Email</th></tr></thead><tbody>"
+        for domain_manager in domain_managers:
+            full_name = domain_manager.get_formatted_name()
+            change_url = reverse("admin:registrar_user_change", args=[domain_manager.pk])
+            domain_manager_details += "<tr>"
+            domain_manager_details += f'<td><a href="{change_url}">{escape(domain_manager.username)}</a>'
+            domain_manager_details += f"<td>{escape(full_name)}</td>"
+            domain_manager_details += f"<td>{escape(domain_manager.email)}</td>"
+            domain_manager_details += "</tr>"
+        domain_manager_details += "</tbody></table>"
+        return format_html(domain_manager_details)
+
+    domain_managers.short_description = "Domain managers"  # type: ignore
+
+    def invited_domain_managers(self, obj):
+        """Get emails which have been invited to the domain, unpack and return an HTML block."""
+        domain_invitations = self.get_domain_invitations(obj)
+        if not domain_invitations:
+            return "No invited domain managers found."
+
+        domain_invitation_details = "<table><thead><tr><th>Email</th><th>Status</th>" + "</tr></thead><tbody>"
+        for domain_invitation in domain_invitations:
+            domain_invitation_details += "<tr>"
+            domain_invitation_details += f"<td>{escape(domain_invitation.email)}</td>"
+            domain_invitation_details += f"<td>{escape(domain_invitation.status.capitalize())}</td>"
+            domain_invitation_details += "</tr>"
+        domain_invitation_details += "</tbody></table>"
+        return format_html(domain_invitation_details)
+
+    invited_domain_managers.short_description = "Invited domain managers"  # type: ignore
 
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
@@ -2342,7 +2391,9 @@ class DomainInformationInline(admin.StackedInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
-        return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
+        readonly_fields = copy.deepcopy(DomainInformationAdmin.get_readonly_fields(self, request, obj=None))
+        readonly_fields.extend(["domain_managers", "invited_domain_managers"])  # type: ignore
+        return readonly_fields
 
     # Re-route the get_fieldsets method to utilize DomainInformationAdmin.get_fieldsets
     # since that has all the logic for excluding certain fields according to user permissions.
@@ -2351,13 +2402,34 @@ class DomainInformationInline(admin.StackedInline):
     def get_fieldsets(self, request, obj=None):
         # Grab fieldsets from DomainInformationAdmin so that it handles all logic
         # for permission-based field visibility.
-        modified_fieldsets = DomainInformationAdmin.get_fieldsets(self, request, obj=None)
+        modified_fieldsets = copy.deepcopy(DomainInformationAdmin.get_fieldsets(self, request, obj=None))
 
-        # remove .gov domain from fieldset
+        # Modify fieldset sections in place
+        for index, (title, options) in enumerate(modified_fieldsets):
+            if title is None:
+                options["fields"] = [
+                    field for field in options["fields"] if field not in ["creator", "domain_request", "notes"]
+                ]
+            elif title == "Contacts":
+                options["fields"] = [
+                    field
+                    for field in options["fields"]
+                    if field not in ["other_contacts", "no_other_contacts_rationale"]
+                ]
+                options["fields"].extend(["domain_managers", "invited_domain_managers"])  # type: ignore
+            elif title == "Background info":
+                # move domain request and notes to background
+                options["fields"].extend(["domain_request", "notes"])  # type: ignore
+
+        # Remove or remove fieldset sections
         for index, (title, f) in enumerate(modified_fieldsets):
             if title == ".gov domain":
-                del modified_fieldsets[index]
-                break
+                # remove .gov domain from fieldset
+                modified_fieldsets.pop(index)
+            elif title == "Background info":
+                # move Background info to the bottom of the list
+                fieldsets_to_move = modified_fieldsets.pop(index)
+                modified_fieldsets.append(fieldsets_to_move)
 
         return modified_fieldsets
 
@@ -2415,12 +2487,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ["name", "state", "expiration_date", "first_ready", "deleted"]},
+            {"fields": ["state", "expiration_date", "first_ready", "deleted", "dnssecdata", "nameservers"]},
         ),
     )
-
-    # this ordering effects the ordering of results in autocomplete_fields for domain
-    ordering = ["name"]
 
     def generic_org_type(self, obj):
         return obj.domain_info.get_generic_org_type_display()
@@ -2441,6 +2510,28 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return obj.domain_info.organization_name if obj.domain_info else None
 
     organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
+
+    def dnssecdata(self, obj):
+        return "Yes" if obj.dnssecdata else "No"
+
+    dnssecdata.short_description = "DNSSEC enabled"  # type: ignore
+
+    # Custom method to display formatted nameservers
+    def nameservers(self, obj):
+        if not obj.nameservers:
+            return "No nameservers"
+
+        formatted_nameservers = []
+        for server, ip_list in obj.nameservers:
+            server_display = str(server)
+            if ip_list:
+                server_display += f" [{', '.join(ip_list)}]"
+            formatted_nameservers.append(server_display)
+
+        # Join the formatted strings with line breaks
+        return "\n".join(formatted_nameservers)
+
+    nameservers.short_description = "Name servers"  # type: ignore
 
     def custom_election_board(self, obj):
         domain_info = getattr(obj, "domain_info", None)
@@ -2468,7 +2559,15 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    readonly_fields = ("state", "expiration_date", "first_ready", "deleted", "federal_agency")
+    readonly_fields = (
+        "state",
+        "expiration_date",
+        "first_ready",
+        "deleted",
+        "federal_agency",
+        "dnssecdata",
+        "nameservers",
+    )
 
     # Table ordering
     ordering = ["name"]
