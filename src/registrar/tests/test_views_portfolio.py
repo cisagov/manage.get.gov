@@ -697,7 +697,8 @@ class TestPortfolio(WebTest):
         )
         # Verify that the user cannot access the members page
         # This will redirect the user to the members page.
-        response = self.app.get(reverse("members"))
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("members"), follow=True)
         # Assert the response is a 403 Forbidden
         self.assertEqual(response.status_code, 403)
 
@@ -708,7 +709,7 @@ class TestPortfolio(WebTest):
 
         # Verify that the user cannot access the members page
         # This will redirect the user to the members page.
-        response = self.app.get(reverse("members"), follow=True)
+        response = self.client.get(reverse("members"), follow=True)
         # Assert the response is a 403 Forbidden
         self.assertEqual(response.status_code, 403)
 
@@ -732,7 +733,10 @@ class TestPortfolio(WebTest):
 
         # Verify that the user can access the members page
         # This will redirect the user to the members page.
-        response = self.app.get(reverse("members"))
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("members"), follow=True)
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
 
         # ---- Useful debugging stub to see what "assertContains" is finding
         # pattern = r'Members'
@@ -743,6 +747,7 @@ class TestPortfolio(WebTest):
         # Make sure the page loaded
         self.assertContains(response, "Members")
 
+    @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_can_manage_members(self):
