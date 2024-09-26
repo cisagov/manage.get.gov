@@ -1,6 +1,8 @@
+import re
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.config import settings
+from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import Portfolio, SeniorOfficial
 from django_webtest import WebTest  # type: ignore
 from registrar.models import (
@@ -733,10 +735,17 @@ class TestPortfolio(WebTest):
         # Verify that the user can access the members page
         # This will redirect the user to the members page.
         response = self.app.get(reverse("members"))
+
+        # ---- Useful debugging stub to see what "assertContains" is finding
+        # pattern = r'Members'
+        # matches = re.findall(pattern, response.content.decode('utf-8'))
+        # for match in matches:
+        #     TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"{match}")
+
         # Make sure the page loaded
         self.assertContains(response, "Members")
 
-    @less_console_noise_decorator
+    
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_can_manage_members(self):
@@ -755,6 +764,7 @@ class TestPortfolio(WebTest):
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
+
         # Give user permissions to modify user objects in the DB
         group, _ = UserGroup.objects.get_or_create(name="full_access_group")
         # Add the user to the group
@@ -766,9 +776,12 @@ class TestPortfolio(WebTest):
         response = self.client.get(reverse("members"), follow=True)
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
-        # Check that the manage settings appear in the DOM
-        self.assertContains(response, '<use xlink:href="/public/img/sprite.svg#settings"></use>')
-        self.assertContains(response, "Manage")
+       
+        # Verify that manage settings are sent in the dynamic HTML
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("get_portfolio_members_json"))
+        self.assertContains(response, '"action_label": "Manage"')
+        self.assertContains(response, '"svg_icon": "settings"')
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -799,9 +812,46 @@ class TestPortfolio(WebTest):
         response = self.client.get(reverse("members"), follow=True)
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
-        # Check that the view-only settings appear in the DOM
-        self.assertContains(response, '<use xlink:href="/public/img/sprite.svg#visibility"></use>')
-        self.assertContains(response, "View")
+       
+        # Verify that view-only settings are sent in the dynamic HTML
+        response = self.client.get(reverse("get_portfolio_members_json"))
+        self.assertContains(response, '"action_label": "View"')
+        self.assertContains(response, '"svg_icon": "visibility"')
+    
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_members_admin_tag(self):
+        """Test that user with proper permission is able to manage members"""
+        user = self.user
+        self.app.set_user(user.username)
+
+        # give user permissions to view AND manage members
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Give user permissions to modify user objects in the DB
+        group, _ = UserGroup.objects.get_or_create(name="full_access_group")
+        # Add the user to the group
+        user.groups.set([group])
+
+        # Verify that the user can access the members page
+        # This will redirect the user to the members page.
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("members"), follow=True)
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
+        # Check that the manage settings appear in the DOM
+        self.assertContains(response, '<th scope="row" role="rowheader" data-label="member email">')
+
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
