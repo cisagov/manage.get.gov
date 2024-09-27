@@ -43,7 +43,6 @@ def get_portfolio_members_json(request):
             for member in page_obj.object_list
         ]
 
-        # DEVELOPER'S NOTE (9-24-24):
         # If you're wondering where these JSON values are used, check out the class "MembersTable"
         # in get-gov.js (specifically the "loadTable" function).
         #
@@ -68,9 +67,6 @@ def get_portfolio_members_json(request):
         )
 
     else:
-        # This was added to handle NoneType error
-        # In other examples of we assume there will never be zero entries returned...which is *fine*...until
-        # something goes wrong.
         return JsonResponse(
             {
                 "members": [],

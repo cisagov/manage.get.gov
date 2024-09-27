@@ -256,10 +256,3 @@ class Command(BaseCommand):
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
         message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains"
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
-
-    def handle_portfolio_members(self, portfolio: Portfolio, federal_agency: FederalAgency):
-        """
-        Associate portfolio with members for a federal agency.
-        Updates all relevant member records.
-        """
-        # TODO: future ticket?

@@ -40,8 +40,9 @@
           </form>
         </section>
       </div>
+      {% comment %}
       <!-- ---------- Export as CSV ---------- -->
-      {% if portfolio_members_count and portfolio_members_count > 0 %}
+      {% if portfolio_members and portfolio_members|length > 0 %}
       <!-- 
       =====================
        TODO: future ticket?
@@ -57,6 +58,7 @@
         </section>
       </div> -->
       {% endif %}
+      {% endcomment %}
     </div>
     {% if portfolio %}
 
@@ -188,19 +190,6 @@
     </div>
     <div class="members__no-data display-none">
       <p>You don't have any members.</p>
-      <!-- 
-      =====================
-       TODO: discard me?
-      =====================
-      -->
-      <!-- <p class="maxw-none clearfix">
-        <a href="https://get.gov/help/faq/#do-not-see-my-domain" class="float-right-tablet usa-link usa-link--icon" target="_blank">
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-            <use xlink:href="{%static 'img/sprite.svg'%}#help_outline"></use>
-          </svg>
-          Why don't I see my domain when I sign in to the registrar?
-        </a>
-      </p> -->
     </div>
     <div class="members__no-search-results display-none">
       <p>No results found</p>

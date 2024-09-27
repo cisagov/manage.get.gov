@@ -61,7 +61,6 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
 
             all_members = User.objects.filter(id__in=member_ids)
             context["portfolio_members"] = all_members
-            context["portfolio_members_count"] = all_members.count()
         return render(request, "portfolio_members.html", context)
 
 
