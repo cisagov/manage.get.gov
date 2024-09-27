@@ -348,7 +348,7 @@ function initializeWidgetOnList(list, parentId) {
  * status select and to show/hide the rejection reason
 */
 (function (){
-    let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+    let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason');
     // This is the "action needed reason" field
     let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
     // This is the "Email" field
@@ -501,7 +501,7 @@ function initializeWidgetOnList(list, parentId) {
 })();
 
 class CustomizableEmailBase {
-    constructor(dropdown, textarea, textareaPlaceholder, directEditButton, modalTrigger, modalConfirm, formLabel, lastSentEmailContent, apiUrl) {
+    constructor(dropdown, textarea, textareaPlaceholder, directEditButton, modalTrigger, modalConfirm, formLabel, lastSentEmailContent, apiUrl, textAreaFormGroup, dropdownFormGroup) {
         this.dropdown = dropdown;
         this.textarea = textarea;
         this.textareaPlaceholder = textareaPlaceholder;
@@ -512,6 +512,11 @@ class CustomizableEmailBase {
         this.lastSentEmailContent = lastSentEmailContent;
         this.apiUrl = apiUrl;
 
+        // These fields are hidden on pageload
+        this.textAreaFormGroup = textAreaFormGroup;
+        this.dropdownFormGroup = dropdownFormGroup;
+        this.statusSelect = document.getElementById("id_status");
+
         this.domainRequestId = this.dropdown ? document.getElementById("domain_request_id").value : null
         this.initialDropdownValue = this.dropdown ? this.dropdown.value : null;
         this.initialEmailValue = this.textarea ? this.textarea.value : null;
@@ -520,11 +525,47 @@ class CustomizableEmailBase {
         if (lastSentEmailContent && textarea) {
             this.isEmailAlreadySentConst = lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
         }
+
+    }
+
+    // Handle showing/hiding the related fields on page load.
+    initializeFormGroups(statusToCheck, sessionVariableName) {
+        let isStatus = statusSelect.value == statusToCheck;
+
+        // Initial handling of these groups.
+        updateFormGroupVisibility(isStatus, isStatus);
+
+        // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
+        this.statusSelect.addEventListener('change', () => {
+            // Show the action needed field if the status is what we expect.
+            // Then track if its shown or hidden in our session cache.
+            isStatus = statusSelect.value == statusToCheck;
+            updateFormGroupVisibility(isStatus, isStatus);
+            addOrRemoveSessionBoolean(sessionVariableName, add=isStatus);
+        });
+        
+        // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
+        // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
+        // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
+        // accurately for this edge case, we use cache and test for the back/forward navigation.
+        const observer = new PerformanceObserver((list) => {
+            list.getEntries().forEach((entry) => {
+            if (entry.type === "back_forward") {
+                let showTextAreaFormGroup = sessionStorage.getItem(sessionVariableName) !== null;
+                updateFormGroupVisibility(showTextAreaFormGroup, isStatus);
+            }
+            });
+        });
+        observer.observe({ type: "navigation" });
+    }
+
+    updateFormGroupVisibility(showTextAreaFormGroup, showdropDownFormGroup) {
+        showTextAreaFormGroup ? showElement(this.textAreaFormGroup) : hideElement(this.textAreaFormGroup);
+        showdropDownFormGroup ? showElement(this.dropdownFormGroup) : hideElement(this.dropdownFormGroup);
     }
 
     initializeDropdown(errorMessage) {
         this.dropdown.addEventListener("change", () => {
-            console.log(this.dropdown)
             let reason = this.dropdown.value;
             if (this.initialDropdownValue !== this.dropdown.value || this.initialEmailValue !== this.textarea.value) {
                 let searchParams = new URLSearchParams(
@@ -542,7 +583,7 @@ class CustomizableEmailBase {
                     if (data.error) {
                         console.error("Error in AJAX call: " + data.error);
                     }else {
-                        this.textarea.value = data.action_needed_email;
+                        this.textarea.value = data.email;
                     }
                     this.updateUserInterface(reason);
                 })
@@ -578,30 +619,45 @@ class CustomizableEmailBase {
     updateUserInterface(reason) {
         if (!reason) {
             // No reason selected, we will set the label to "Email", show the "Make a selection" placeholder, hide the trigger, textarea, hide the help text
-            this.showPlaceholder("Email:", "Select an action needed reason to see email");
+            this.showPlaceholderNoReason();
         } else if (reason === 'other') {
             // 'Other' selected, we will set the label to "Email", show the "No email will be sent" placeholder, hide the trigger, textarea, hide the help text
-            this.showPlaceholder("Email:", "No email will be sent");
+            this.showPlaceholderOtherReason();
         } else {
-            // A triggering selection is selected, all hands on board:
-            this.textarea.setAttribute('readonly', true);
-            showElement(this.textarea);
-            hideElement(this.textareaPlaceholder);
-
-            if (this.isEmailAlreadySentConst) {
-                hideElement(this.directEditButton);
-                showElement(this.modalTrigger);
-            } else {
-                showElement(this.directEditButton);
-                hideElement(this.modalTrigger);
-            }
-
-            if (this.isEmailAlreadySent()) {
-                this.formLabel.innerHTML = "Email sent to creator:";
-            } else {
-                this.formLabel.innerHTML = "Email:";
-            }
+            this.showReadonlyTextarea();
         }
+    }
+
+    // Helper function that makes overriding the readonly textarea easy
+    showReadonlyTextarea() {
+        // A triggering selection is selected, all hands on board:
+        this.textarea.setAttribute('readonly', true);
+        showElement(this.textarea);
+        hideElement(this.textareaPlaceholder);
+
+        if (this.isEmailAlreadySentConst) {
+            hideElement(this.directEditButton);
+            showElement(this.modalTrigger);
+        } else {
+            showElement(this.directEditButton);
+            hideElement(this.modalTrigger);
+        }
+
+        if (this.isEmailAlreadySent()) {
+            this.formLabel.innerHTML = "Email sent to creator:";
+        } else {
+            this.formLabel.innerHTML = "Email:";
+        }
+    }
+
+    // Helper function that makes overriding the placeholder reason easy
+    showPlaceholderNoReason() {
+        this.showPlaceholder("Email:", "Select a reason to see email");
+    }
+
+    // Helper function that makes overriding the placeholder reason easy
+    showPlaceholderOtherReason() {
+        this.showPlaceholder("Email:", "No email will be sent");
     }
 
     showPlaceholder(formLabelText, placeholderText) {
@@ -629,6 +685,11 @@ class customActionNeededEmail extends CustomizableEmailBase {
 
         let apiContainer = document.getElementById("get-action-needed-email-for-user-json")
         const apiUrl = apiContainer ? apiContainer.value : null;
+
+        // These fields are hidden on pageload
+        const textAreaFormGroup = document.querySelector('.field-action_needed_reason');
+        const dropdownFormGroup = document.querySelector('.field-action_needed_reason_email');
+
         super(
             dropdown, 
             textarea, 
@@ -638,15 +699,31 @@ class customActionNeededEmail extends CustomizableEmailBase {
             modalConfirm, 
             formLabel, 
             lastSentEmailContent, 
-            apiUrl
+            apiUrl,
+            textAreaFormGroup,
+            dropdownFormGroup,
         );
+
     }
 
     loadActionNeededEmail() {
+        if (this.textAreaFormGroup && this.dropdownFormGroup) {
+            this.initializeFormGroups("action needed", "showActionNeededReason");
+        }
         this.updateUserInterface(this.dropdown.value);
         this.initializeDropdown("Error when attempting to grab action needed email: ")
         this.initializeModalConfirm()
         this.initializeDirectEditButton()
+    }
+
+    // Overrides the placeholder text when no reason is selected
+    showPlaceholderNoReason() {
+        this.showPlaceholder("Email:", "Select an action needed reason to see email");
+    }
+
+    // Overrides the placeholder text when the reason other is selected
+    showPlaceholderOtherReason() {
+        this.showPlaceholder("Email:", "No email will be sent");
     }
 }
 
@@ -675,8 +752,13 @@ class customRejectedEmail extends CustomizableEmailBase {
         const formLabel = document.querySelector('label[for="id_rejection_reason_email"]');
         const lastSentEmailContent = document.getElementById("last-sent-email-content");
 
-        let apiContainer = document.getElementById("get-rejection-reason-email-for-user-json")
+        let apiContainer = document.getElementById("get-rejection-email-for-user-json");
         const apiUrl = apiContainer ? apiContainer.value : null;
+
+        // These fields are hidden on pageload
+        const textAreaFormGroup = document.querySelector('.field-rejection_reason');
+        const dropdownFormGroup = document.querySelector('.field-rejection_reason_email');
+
         super(
             dropdown, 
             textarea, 
@@ -686,15 +768,30 @@ class customRejectedEmail extends CustomizableEmailBase {
             modalConfirm, 
             formLabel, 
             lastSentEmailContent, 
-            apiUrl
+            apiUrl,
+            textAreaFormGroup,
+            dropdownFormGroup,
         );
     }
 
     loadRejectedEmail() {
+        if (this.textAreaFormGroup && this.dropdownFormGroup) {
+            this.initializeFormGroups("rejected", "showRejectionReason");
+        }
         this.updateUserInterface(this.dropdown.value);
         this.initializeDropdown("Error when attempting to grab rejected email: ")
         this.initializeModalConfirm()
         this.initializeDirectEditButton()
+    }
+
+    // Overrides the placeholder text when no reason is selected
+    showPlaceholderNoReason() {
+        this.showPlaceholder("Email:", "Select a rejection reason to see email");
+    }
+
+    // Overrides the placeholder text when the reason other is selected
+    showPlaceholderOtherReason() {
+        this.showPlaceholder("Email:", "No email will be sent");
     }
 }
 

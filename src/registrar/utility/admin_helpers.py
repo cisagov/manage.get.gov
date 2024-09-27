@@ -19,9 +19,9 @@ def get_all_action_needed_reason_emails(domain_request):
 def get_action_needed_reason_default_email(domain_request, action_needed_reason):
     """Returns the default email associated with the given action needed reason"""
     return _get_default_email(
-        domain_request, 
-        path_root="emails/rejection_reasons", 
-        reason=action_needed_reason, 
+        domain_request,
+        path_root="emails/action_needed_reasons",
+        reason=action_needed_reason,
         excluded_reasons=[DomainRequest.ActionNeededReasons.OTHER]
     )
 
@@ -40,12 +40,12 @@ def get_all_rejection_reason_emails(domain_request):
     )
 
 
-def get_rejection_reason_default_email(domain_request, action_needed_reason):
+def get_rejection_reason_default_email(domain_request, rejection_reason):
     """Returns the default email associated with the given rejection reason"""
     return _get_default_email(
-        domain_request, 
-        path_root="emails/rejection_reasons", 
-        reason=action_needed_reason, 
+        domain_request,
+        path_root="emails/rejection_reasons",
+        reason=rejection_reason,
         excluded_reasons=[DomainRequest.RejectionReasons.OTHER]
     )
 
@@ -56,6 +56,7 @@ def _get_all_default_emails(reasons, path_root, excluded_reasons, domain_request
         emails[reason.value] = _get_default_email(
             domain_request, path_root, reason, excluded_reasons
         )
+    return emails
 
 def _get_default_email(domain_request, path_root, reason, excluded_reasons=None):
     if not reason:

@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-{% include "emails/includes/status_change_rejected_header.html" %}
+{% include "emails/includes/status_change_rejected_header.txt" %}
 REJECTION REASON
 Your domain request was rejected because it does not meet our naming requirements. 
 Domains should uniquely identify a government organization and be clear to the 
@@ -11,5 +11,5 @@ YOU CAN SUBMIT A NEW REQUEST
 We encourage you to request a domain that meets our requirements. If you have 
 questions or want to discuss potential domain names, reply to this email.
 
-{% include "emails/includes/email_footer.html" %}
+{% include "emails/includes/email_footer.txt" %}
 {% endautoescape %}

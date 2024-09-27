@@ -640,15 +640,16 @@ class DomainRequest(TimeStampedModel):
         # Actually updates the organization_type field
         org_type_helper.create_or_update_organization_type()
 
-    def _cache_status_and_action_needed_reason(self):
+    def _cache_status_and_status_reasons(self):
         """Maintains a cache of properties so we can avoid a DB call"""
         self._cached_action_needed_reason = self.action_needed_reason
+        self._cached_rejection_reason = self.rejection_reason
         self._cached_status = self.status
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Store original values for caching purposes. Used to compare them on save.
-        self._cache_status_and_action_needed_reason()
+        self._cache_status_and_status_reasons()
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
@@ -662,21 +663,42 @@ class DomainRequest(TimeStampedModel):
 
         # Handle the action needed email.
         # An email is sent out when action_needed_reason is changed or added.
-        if self.action_needed_reason and self.status == self.DomainRequestStatus.ACTION_NEEDED:
-            self.sync_action_needed_reason()
+        if self.status == self.DomainRequestStatus.ACTION_NEEDED:
+            self.send_another_status_reason_email(
+                checked_status=self.DomainRequestStatus.ACTION_NEEDED,
+                old_reason=self._cached_action_needed_reason,
+                new_reason=self.action_needed_reason,
+                excluded_reasons=[DomainRequest.ActionNeededReasons.OTHER],
+                email_to_send=self.action_needed_reason_email
+            )
+        elif self.status == self.DomainRequestStatus.REJECTED:
+            self.send_another_status_reason_email(
+                checked_status=self.DomainRequestStatus.REJECTED,
+                old_reason=self._cached_rejection_reason,
+                new_reason=self.rejection_reason,
+                excluded_reasons=[DomainRequest.RejectionReasons.OTHER],
+                email_to_send=self.rejection_reason_email,
+            )
 
         # Update the cached values after saving
-        self._cache_status_and_action_needed_reason()
+        self._cache_status_and_status_reasons()
 
-    def sync_action_needed_reason(self):
-        """Checks if we need to send another action needed email"""
-        was_already_action_needed = self._cached_status == self.DomainRequestStatus.ACTION_NEEDED
-        reason_exists = self._cached_action_needed_reason is not None and self.action_needed_reason is not None
-        reason_changed = self._cached_action_needed_reason != self.action_needed_reason
-        if was_already_action_needed and reason_exists and reason_changed:
-            # We don't send emails out in state "other"
-            if self.action_needed_reason != self.ActionNeededReasons.OTHER:
-                self._send_action_needed_reason_email(email_content=self.action_needed_reason_email)
+    def send_another_status_reason_email(self, checked_status, old_reason, new_reason, excluded_reasons, email_to_send):
+        """Helper function to send out a second status email when the status remains the same,
+        but the reason has changed."""
+
+        # If the status itself changed, then we already sent out an email
+        if self._cached_status != checked_status or old_reason is None:
+            return
+
+        # We should never send an email if no reason was specified
+        # Additionally, Don't send out emails for reasons that shouldn't send them
+        if new_reason is None or self.action_needed_reason in excluded_reasons:
+            return 
+
+        # Only send out an email if the underlying email itself changed
+        if old_reason != new_reason:
+            self._send_custom_status_update_email(email_content=email_to_send)
 
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
@@ -806,9 +828,7 @@ class DomainRequest(TimeStampedModel):
     def _send_custom_status_update_email(self, email_content):
         """Wrapper for `_send_status_update_email` that bcc's help@get.gov
         and sends an email equivalent to the 'email_content' variable."""
-        if settings.IS_PRODUCTION:
-            bcc_address = settings.DEFAULT_FROM_EMAIL
-
+        bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
         self._send_status_update_email(
             new_status="action needed",
             email_template=f"emails/includes/custom_email.txt",

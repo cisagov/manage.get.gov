@@ -4,7 +4,7 @@ from django.forms.models import model_to_dict
 from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from registrar.utility.admin_helpers import get_all_action_needed_reason_emails
+from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
 from registrar.models.portfolio import Portfolio
 from registrar.utility.constants import BranchChoices
 
@@ -90,5 +90,30 @@ def get_action_needed_email_for_user_json(request):
         return JsonResponse({"error": "No domain_request_id specified"}, status=404)
 
     domain_request = DomainRequest.objects.filter(id=domain_request_id).first()
-    emails = get_all_action_needed_reason_emails(domain_request)
-    return JsonResponse({"action_needed_email": emails.get(reason)}, status=200)
+
+    email = get_action_needed_reason_default_email(domain_request, reason)
+    return JsonResponse({"email": email}, status=200)
+
+
+@login_required
+@staff_member_required
+def get_rejection_email_for_user_json(request):
+    """Returns a default rejection email for a given user"""
+
+    # This API is only accessible to admins and analysts
+    superuser_perm = request.user.has_perm("registrar.full_access_permission")
+    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
+        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
+
+    reason = request.GET.get("reason")
+    domain_request_id = request.GET.get("domain_request_id")
+    if not reason:
+        return JsonResponse({"error": "No reason specified"}, status=404)
+
+    if not domain_request_id:
+        return JsonResponse({"error": "No domain_request_id specified"}, status=404)
+
+    domain_request = DomainRequest.objects.filter(id=domain_request_id).first()
+    email = get_rejection_reason_default_email(domain_request, reason)
+    return JsonResponse({"email": email}, status=200)

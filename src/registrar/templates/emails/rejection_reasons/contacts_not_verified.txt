@@ -1,8 +1,8 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-{% include "emails/includes/status_change_rejected_header.html" %}
+{% include "emails/includes/status_change_rejected_header.txt" %}
 REJECTION REASON
 Your domain request was rejected because we could not verify the organizational 
 contacts you provided. If you have questions or comments, reply to this email.
 
-{% include "emails/includes/email_footer.html" %}
+{% include "emails/includes/email_footer.txt" %}
 {% endautoescape %}

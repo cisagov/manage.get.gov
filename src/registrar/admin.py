@@ -1994,7 +1994,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Set the rejection_reason_email to the default if nothing exists.
         # Since this check occurs after save, if the user enters a value then we won't update.
 
-        default_email = get_rejection_reason_default_email(obj, obj.action_needed_reason)
+        default_email = get_rejection_reason_default_email(obj, obj.rejection_reason)
         if obj.rejection_reason_email:
             emails = get_all_rejection_reason_emails(obj)
             is_custom_email = obj.rejection_reason_email not in emails.values()
