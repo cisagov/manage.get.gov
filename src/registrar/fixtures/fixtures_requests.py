@@ -244,7 +244,7 @@ class DomainRequestFixture:
                 request.other_contacts.add(Contact.objects.get_or_create(**contact)[0])
         elif not request.other_contacts.exists():
             other_contacts = [
-                Contact.objects.create(**cls.fake_contact()) for _ in range(random.randint(0, 3))  # nosec
+                Contact.objects.create(**cls.fake_contact()) for _ in range(random.randint(1, 3))  # nosec
             ]
             request.other_contacts.add(*other_contacts)
 
