@@ -78,7 +78,7 @@ def send_templated_email(
             # Wrap the email body to a maximum width of 80 characters per line.
             # Not all email clients support CSS to do this, and our .txt files require parsing.
             if wrap_email:
-                email_body = wrap_text_and_preserve_paragraphs(email_body, width=80)
+                email_body = wrap_text_and_preserve_paragraphs(email_body, width=110)
 
             ses_client.send_email(
                 FromEmailAddress=settings.DEFAULT_FROM_EMAIL,

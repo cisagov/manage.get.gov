@@ -1065,12 +1065,6 @@ class DomainRequest(TimeStampedModel):
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject")
 
-        self._send_status_update_email(
-            "action needed",
-            "emails/status_change_rejected.txt",
-            "emails/status_change_rejected_subject.txt",
-        )
-
         # Send out an email if a rejection reason exists
         if self.rejection_reason:
             email_content = self.rejection_reason_email

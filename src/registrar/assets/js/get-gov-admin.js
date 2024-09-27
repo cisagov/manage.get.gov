@@ -344,69 +344,6 @@ function initializeWidgetOnList(list, parentId) {
     }
 }
 
-/** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
- * status select and to show/hide the rejection reason
-*/
-(function (){
-    let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason');
-    // This is the "action needed reason" field
-    let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
-    // This is the "Email" field
-    let actionNeededReasonEmailFormGroup = document.querySelector('.field-action_needed_reason_email')
-
-    if (rejectionReasonFormGroup && actionNeededReasonFormGroup && actionNeededReasonEmailFormGroup) {
-        let statusSelect = document.getElementById('id_status')
-        let isRejected = statusSelect.value == "rejected"
-        let isActionNeeded = statusSelect.value == "action needed"
-
-        // Initial handling of rejectionReasonFormGroup display
-        showOrHideObject(rejectionReasonFormGroup, show=isRejected)
-        showOrHideObject(actionNeededReasonFormGroup, show=isActionNeeded)
-        showOrHideObject(actionNeededReasonEmailFormGroup, show=isActionNeeded)
-
-        // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
-        statusSelect.addEventListener('change', function() {
-            // Show the rejection reason field if the status is rejected.
-            // Then track if its shown or hidden in our session cache.
-            isRejected = statusSelect.value == "rejected"
-            showOrHideObject(rejectionReasonFormGroup, show=isRejected)
-            addOrRemoveSessionBoolean("showRejectionReason", add=isRejected)
-
-            isActionNeeded = statusSelect.value == "action needed"
-            showOrHideObject(actionNeededReasonFormGroup, show=isActionNeeded)
-            showOrHideObject(actionNeededReasonEmailFormGroup, show=isActionNeeded)
-            addOrRemoveSessionBoolean("showActionNeededReason", add=isActionNeeded)
-        });
-        
-        // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
-
-        // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
-        // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
-        // accurately for this edge case, we use cache and test for the back/forward navigation.
-        const observer = new PerformanceObserver((list) => {
-            list.getEntries().forEach((entry) => {
-            if (entry.type === "back_forward") {
-                let showRejectionReason = sessionStorage.getItem("showRejectionReason") !== null
-                showOrHideObject(rejectionReasonFormGroup, show=showRejectionReason)
-
-                let showActionNeededReason = sessionStorage.getItem("showActionNeededReason") !== null
-                showOrHideObject(actionNeededReasonFormGroup, show=showActionNeededReason)
-                showOrHideObject(actionNeededReasonEmailFormGroup, show=isActionNeeded)
-            }
-            });
-        });
-        observer.observe({ type: "navigation" });
-    }
-
-    // Adds or removes the display-none class to object depending on the value of boolean show
-    function showOrHideObject(object, show){
-        if (show){
-            object.classList.remove("display-none");
-        }else {
-            object.classList.add("display-none");
-        }
-    }
-})();
 
 /** An IIFE for toggling the submit bar on domain request forms
 */
@@ -530,17 +467,17 @@ class CustomizableEmailBase {
 
     // Handle showing/hiding the related fields on page load.
     initializeFormGroups(statusToCheck, sessionVariableName) {
-        let isStatus = statusSelect.value == statusToCheck;
+        let isStatus = this.statusSelect.value == statusToCheck;
 
         // Initial handling of these groups.
-        updateFormGroupVisibility(isStatus, isStatus);
+        this.updateFormGroupVisibility(isStatus, isStatus);
 
         // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
         this.statusSelect.addEventListener('change', () => {
             // Show the action needed field if the status is what we expect.
             // Then track if its shown or hidden in our session cache.
-            isStatus = statusSelect.value == statusToCheck;
-            updateFormGroupVisibility(isStatus, isStatus);
+            isStatus = this.statusSelect.value == statusToCheck;
+            this.updateFormGroupVisibility(isStatus, isStatus);
             addOrRemoveSessionBoolean(sessionVariableName, add=isStatus);
         });
         
@@ -552,7 +489,7 @@ class CustomizableEmailBase {
             list.getEntries().forEach((entry) => {
             if (entry.type === "back_forward") {
                 let showTextAreaFormGroup = sessionStorage.getItem(sessionVariableName) !== null;
-                updateFormGroupVisibility(showTextAreaFormGroup, isStatus);
+                this.updateFormGroupVisibility(showTextAreaFormGroup, isStatus);
             }
             });
         });
@@ -681,7 +618,7 @@ class customActionNeededEmail extends CustomizableEmailBase {
         const modalTrigger = document.querySelector('.field-action_needed_reason_email__modal-trigger');
         const modalConfirm = document.getElementById('confirm-edit-email');
         const formLabel = document.querySelector('label[for="id_action_needed_reason_email"]');
-        const lastSentEmailContent = document.getElementById("last-sent-email-content");
+        const lastSentEmailContent = document.getElementById("last-sent-action-needed-email-content");
 
         let apiContainer = document.getElementById("get-action-needed-email-for-user-json")
         const apiUrl = apiContainer ? apiContainer.value : null;
@@ -750,7 +687,7 @@ class customRejectedEmail extends CustomizableEmailBase {
         const modalTrigger = document.querySelector('.field-rejection_reason_email__modal-trigger');
         const modalConfirm = document.getElementById('confirm-edit-email');
         const formLabel = document.querySelector('label[for="id_rejection_reason_email"]');
-        const lastSentEmailContent = document.getElementById("last-sent-email-content");
+        const lastSentEmailContent = document.getElementById("last-sent-rejection-email-content");
 
         let apiContainer = document.getElementById("get-rejection-email-for-user-json");
         const apiUrl = apiContainer ? apiContainer.value : null;
@@ -776,6 +713,7 @@ class customRejectedEmail extends CustomizableEmailBase {
 
     loadRejectedEmail() {
         if (this.textAreaFormGroup && this.dropdownFormGroup) {
+            // TODO: fix this for rejected
             this.initializeFormGroups("rejected", "showRejectionReason");
         }
         this.updateUserInterface(this.dropdown.value);

@@ -221,9 +221,9 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         </div>
         
         {% if original_object.action_needed_reason_email %}
-        <input id="last-sent-email-content" class="display-none" value="{{original_object.action_needed_reason_email}}">
+        <input id="last-sent-action-needed-email-content" class="display-none" value="{{original_object.action_needed_reason_email}}">
         {% else %}
-        <input id="last-sent-email-content" class="display-none" value="None">
+        <input id="last-sent-action-needed-email-content" class="display-none" value="None">
         {% endif %}
 
     {% elif field.field.name == "rejection_reason_email" %}
@@ -310,9 +310,9 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         </div>
         
         {% if original_object.rejection_reason_reason_email %}
-        <input id="last-sent-email-content" class="display-none" value="{{original_object.action_needed_reason_email}}">
+        <input id="last-sent-rejection-email-content" class="display-none" value="{{original_object.rejection_reason_email}}">
         {% else %}
-        <input id="last-sent-email-content" class="display-none" value="None">
+        <input id="last-sent-rejection-email-content" class="display-none" value="None">
         {% endif %}
     {% else %}
         {{ field.field }}
