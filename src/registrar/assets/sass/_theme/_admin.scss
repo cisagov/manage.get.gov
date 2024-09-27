@@ -126,7 +126,8 @@ html[data-theme="light"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .custom-admin-template, dt {
+    .custom-admin-template,
+    .dl-dja dt {
         color: var(--body-fg);
     }
     .usa-table td {
@@ -155,7 +156,8 @@ html[data-theme="dark"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .custom-admin-template, dt {
+    .custom-admin-template,
+    .dl-dja dt {
         color: var(--body-fg);
     }
     .usa-table td {
