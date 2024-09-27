@@ -221,9 +221,7 @@ class DomainRequestFixture:
         try:
             organization_names = [portfolio["organization_name"] for portfolio in PortfolioFixture.PORTFOLIOS]
 
-            portfolio_options = Portfolio.objects.filter(
-                organization_name__in=organization_names
-            )
+            portfolio_options = Portfolio.objects.filter(organization_name__in=organization_names)
             return random.choice(portfolio_options) if portfolio_options.exists() else None  # nosec
         except Exception as e:
             logger.warning(f"Expected fixture portfolio, did not find it: {e}")

@@ -35,9 +35,7 @@ class UserPortfolioPermissionFixture:
 
                 organization_names = [portfolio["organization_name"] for portfolio in PortfolioFixture.PORTFOLIOS]
 
-                portfolios = list(
-                    Portfolio.objects.filter(organization_name__in=organization_names)
-                )
+                portfolios = list(Portfolio.objects.filter(organization_name__in=organization_names))
 
                 if not users:
                     logger.warning("User fixtures missing.")
