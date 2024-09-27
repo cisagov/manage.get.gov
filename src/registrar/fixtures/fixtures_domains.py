@@ -56,10 +56,10 @@ class DomainFixture(DomainRequestFixture):
         return current_date + timedelta(days=random.randint(-365, -1))  # nosec
 
     @classmethod
-    def _approve_request(cls, domain_request, users, is_expired=False):
-        """Helper function to approve a domain request and set expiration dates."""
+    def _approve_request(cls, domain_request, users):
+        """Helper function to approve a domain request."""
         if not domain_request:
-            return None, None
+            return None
 
         if domain_request.investigator is None:
             # Assign random investigator if not already assigned
@@ -68,21 +68,13 @@ class DomainFixture(DomainRequestFixture):
         # Approve the domain request
         domain_request.approve(send_email=False)
 
-        # Set expiration date for domain
-        domain = None
-        if domain_request.requested_domain:
-            domain, _ = Domain.objects.get_or_create(name=domain_request.requested_domain.name)
-            domain.expiration_date = (
-                cls._generate_fake_expiration_date_in_past() if is_expired else cls._generate_fake_expiration_date()
-            )
-
-        return domain
+        return domain_request
 
     @classmethod
     def _approve_domain_requests(cls, users):
         """Approves one current and one expired request per user."""
         domain_requests_to_update = []
-        domains_to_update = []
+        expired_requests = []
 
         for user in users:
             # Get the latest and second-to-last domain requests
@@ -95,22 +87,34 @@ class DomainFixture(DomainRequestFixture):
             # Second-to-last domain request (expired)
             domain_request_expired = domain_requests[1] if len(domain_requests) > 1 else None
 
-            # Approve the current and expired domain requests
-            approved_domain = cls._approve_request(domain_request, users)
-            expired_domain = cls._approve_request(domain_request_expired, users, is_expired=True)
-
-            # Collect objects to update
+            # Approve the current domain request
             if domain_request:
+                cls._approve_request(domain_request, users)
                 domain_requests_to_update.append(domain_request)
-            if domain_request_expired:
-                domain_requests_to_update.append(domain_request_expired)
-            if approved_domain:
-                domains_to_update.append(approved_domain)
-            if expired_domain:
-                domains_to_update.append(expired_domain)
 
-        # Perform bulk updates
+            # Approve the expired domain request
+            if domain_request_expired:
+                cls._approve_request(domain_request_expired, users)
+                domain_requests_to_update.append(domain_request_expired)
+                expired_requests.append(domain_request_expired)
+
+        # Perform bulk update for the domain requests
         cls._bulk_update_requests(domain_requests_to_update)
+
+        # Retrieve all domains associated with the domain requests
+        domains_to_update = Domain.objects.filter(domain_info__domain_request__in=domain_requests_to_update)
+
+        # Loop through and update expiration dates for domains
+        for domain in domains_to_update:
+            domain_request = domain.domain_info.domain_request
+
+            # Set the expiration date based on whether the request is expired
+            if domain_request in expired_requests:
+                domain.expiration_date = cls._generate_fake_expiration_date_in_past()
+            else:
+                domain.expiration_date = cls._generate_fake_expiration_date()
+
+        # Perform bulk update for the domains
         cls._bulk_update_domains(domains_to_update)
 
     @classmethod

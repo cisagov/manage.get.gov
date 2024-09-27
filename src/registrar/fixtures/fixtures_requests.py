@@ -5,6 +5,7 @@ import random
 from faker import Faker
 from django.db import transaction
 
+from registrar.fixtures.fixtures_portfolios import PortfolioFixture
 from registrar.fixtures.fixtures_users import UserFixture
 from registrar.models import User, DomainRequest, DraftDomain, Contact, Website, FederalAgency
 from registrar.models.portfolio import Portfolio
@@ -218,8 +219,10 @@ class DomainRequestFixture:
     @classmethod
     def _get_random_portfolio(cls):
         try:
+            organization_names = [portfolio["organization_name"] for portfolio in PortfolioFixture.PORTFOLIOS]
+
             portfolio_options = Portfolio.objects.filter(
-                organization_name__in=["Hotel California", "Wish You Were Here"]
+                organization_name__in=organization_names
             )
             return random.choice(portfolio_options) if portfolio_options.exists() else None  # nosec
         except Exception as e:

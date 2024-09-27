@@ -2,6 +2,7 @@ import logging
 from faker import Faker
 from django.db import transaction
 
+from registrar.fixtures.fixtures_portfolios import PortfolioFixture
 from registrar.fixtures.fixtures_users import UserFixture
 from registrar.models import User
 from registrar.models.portfolio import Portfolio
@@ -32,8 +33,10 @@ class UserPortfolioPermissionFixture:
                 # Filter users to only include those created by the fixture
                 users = list(User.objects.filter(username__in=created_usernames))
 
+                organization_names = [portfolio["organization_name"] for portfolio in PortfolioFixture.PORTFOLIOS]
+
                 portfolios = list(
-                    Portfolio.objects.filter(organization_name__in=["Hotel California", "Wish You Were Here"])
+                    Portfolio.objects.filter(organization_name__in=organization_names)
                 )
 
                 if not users:

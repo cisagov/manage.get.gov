@@ -67,13 +67,13 @@ class PortfolioFixture:
     def _set_foreign_key_fields(cls, portfolio: Portfolio, portfolio_dict: dict, user: User):
         """Helper method used by `load`."""
         if not portfolio.senior_official:
-            if "senior_official" in portfolio_dict and portfolio_dict["senior_official"] is not None:
+            if portfolio_dict.get("senior_official") is not None:
                 portfolio.senior_official, _ = SeniorOfficial.objects.get_or_create(**portfolio_dict["senior_official"])
             else:
                 portfolio.senior_official = SeniorOfficial.objects.create(**cls.fake_so())
 
         if not portfolio.federal_agency:
-            if "federal_agency" in portfolio_dict and portfolio_dict["federal_agency"] is not None:
+            if portfolio_dict.get("federal_agency") is not None:
                 portfolio.federal_agency, _ = FederalAgency.objects.get_or_create(name=portfolio_dict["federal_agency"])
             else:
                 federal_agencies = FederalAgency.objects.all()
