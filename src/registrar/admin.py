@@ -3291,7 +3291,7 @@ class FederalAgencyResource(resources.ModelResource):
 class FederalAgencyAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]
-    search_help_text = "Search by agency name."
+    search_help_text = "Search by federal agency."
     ordering = ["agency"]
     resource_classes = [FederalAgencyResource]
 

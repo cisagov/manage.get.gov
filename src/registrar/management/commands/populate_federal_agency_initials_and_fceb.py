@@ -42,7 +42,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         """For each record, update the initials and is_fceb field if data exists for it"""
         initials, agency_status = self.federal_agency_dict.get(record.agency)
 
-        record.initials = initials
+        record.acronym = initials
         if agency_status and isinstance(agency_status, str) and agency_status.strip().upper() == "FCEB":
             record.is_fceb = True
         else:
