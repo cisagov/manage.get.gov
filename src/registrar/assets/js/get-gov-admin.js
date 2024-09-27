@@ -668,12 +668,13 @@ class customActionNeededEmail extends CustomizableEmailBase {
  * This shows the auto generated email on action needed reason.
 */
 document.addEventListener('DOMContentLoaded', function() {
-    const customEmail = new customActionNeededEmail();
-    if (!customEmail.dropdown || !customEmail.textarea || !customEmail.domainRequestId || !customEmail.formLabel || !customEmail.modalConfirm){
+    const domainRequestForm = document.getElementById("domainrequest_form");
+    if (!domainRequestForm) {
         return;
     }
 
     // Initialize UI
+    const customEmail = new customActionNeededEmail();
     customEmail.loadActionNeededEmail()
 });
 
@@ -738,12 +739,13 @@ class customRejectedEmail extends CustomizableEmailBase {
  * This shows the auto generated email on action needed reason.
 */
 document.addEventListener('DOMContentLoaded', function() {
-    const customEmail = new customRejectedEmail();
-    if (!customEmail.dropdown || !customEmail.textarea || !customEmail.domainRequestId || !customEmail.formLabel || !customEmail.modalConfirm){
+    const domainRequestForm = document.getElementById("domainrequest_form");
+    if (!domainRequestForm) {
         return;
     }
 
     // Initialize UI
+    const customEmail = new customRejectedEmail();
     customEmail.loadRejectedEmail()
 });
 
