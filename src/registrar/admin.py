@@ -3186,10 +3186,11 @@ class PortfolioAdmin(ListHeaderAdmin):
         extra_context = extra_context or {}
         extra_context["skip_additional_contact_info"] = True
 
-        extra_context["members"] = self.get_user_portfolio_permission_non_admins(obj)
-        extra_context["admins"] = self.get_user_portfolio_permission_admins(obj)
-        extra_context["domains"] = obj.get_domains(order_by=["domain__name"])
-        extra_context["domain_requests"] = obj.get_domain_requests(order_by=["requested_domain__name"])
+        if obj:
+            extra_context["members"] = self.get_user_portfolio_permission_non_admins(obj)
+            extra_context["admins"] = self.get_user_portfolio_permission_admins(obj)
+            extra_context["domains"] = obj.get_domains(order_by=["domain__name"])
+            extra_context["domain_requests"] = obj.get_domain_requests(order_by=["requested_domain__name"])
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
@@ -3208,8 +3209,11 @@ class PortfolioAdmin(ListHeaderAdmin):
             obj.organization_name = obj.federal_agency.agency
 
         # Remove this line when senior_official is no longer readonly in /admin.
-        if obj.federal_agency and obj.federal_agency.so_federal_agency.exists():
-            obj.senior_official = obj.federal_agency.so_federal_agency.first()
+        if obj.federal_agency:
+            if obj.federal_agency.so_federal_agency.exists():
+                obj.senior_official = obj.federal_agency.so_federal_agency.first()
+            else:
+                obj.senior_official = None
 
         super().save_model(request, obj, form, change)
 
