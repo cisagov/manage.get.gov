@@ -68,9 +68,6 @@ class Command(BaseCommand):
         if parse_domains or both:
             self.handle_portfolio_domains(portfolio, federal_agency)
 
-        if parse_domains or both:
-            self.handle_portfolio_members(portfolio, federal_agency)
-
     def create_or_modify_portfolio(self, federal_agency):
         """Creates or modifies a portfolio record based on a federal agency."""
         portfolio_args = {
