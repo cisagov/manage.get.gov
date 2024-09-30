@@ -449,7 +449,7 @@ class CustomizableEmailBase {
         this.lastSentEmailContent = lastSentEmailContent;
         this.apiUrl = apiUrl;
 
-        // These fields are hidden on pageload
+        // These fields are hidden/shown on pageload depending on the current status
         this.textAreaFormGroup = textAreaFormGroup;
         this.dropdownFormGroup = dropdownFormGroup;
         this.statusSelect = document.getElementById("id_status");
@@ -459,8 +459,8 @@ class CustomizableEmailBase {
         this.initialEmailValue = this.textarea ? this.textarea.value : null;
 
         this.isEmailAlreadySentConst;
-        if (lastSentEmailContent && textarea) {
-            this.isEmailAlreadySentConst = lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
+        if (this.lastSentEmailContent && this.textarea) {
+            this.isEmailAlreadySentConst = this.lastSentEmailContent.value.replace(/\s+/g, '') === this.textarea.value.replace(/\s+/g, '');
         }
 
     }
@@ -478,7 +478,7 @@ class CustomizableEmailBase {
             // Then track if its shown or hidden in our session cache.
             isStatus = this.statusSelect.value == statusToCheck;
             this.updateFormGroupVisibility(isStatus, isStatus);
-            addOrRemoveSessionBoolean(sessionVariableName, add=isStatus);
+            addOrRemoveSessionBoolean(sessionVariableName, isStatus);
         });
         
         // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
@@ -489,16 +489,16 @@ class CustomizableEmailBase {
             list.getEntries().forEach((entry) => {
             if (entry.type === "back_forward") {
                 let showTextAreaFormGroup = sessionStorage.getItem(sessionVariableName) !== null;
-                this.updateFormGroupVisibility(showTextAreaFormGroup, isStatus);
+                this.updateFormGroupVisibility(showTextAreaFormGroup, showTextAreaFormGroup);
             }
             });
         });
         observer.observe({ type: "navigation" });
     }
 
-    updateFormGroupVisibility(showTextAreaFormGroup, showdropDownFormGroup) {
+    updateFormGroupVisibility(showTextAreaFormGroup, showDropDownFormGroup) {
         showTextAreaFormGroup ? showElement(this.textAreaFormGroup) : hideElement(this.textAreaFormGroup);
-        showdropDownFormGroup ? showElement(this.dropdownFormGroup) : hideElement(this.dropdownFormGroup);
+        showDropDownFormGroup ? showElement(this.dropdownFormGroup) : hideElement(this.dropdownFormGroup);
     }
 
     initializeDropdown(errorMessage) {
