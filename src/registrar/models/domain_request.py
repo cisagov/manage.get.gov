@@ -665,12 +665,12 @@ class DomainRequest(TimeStampedModel):
         # An email is sent out when a, for example, action_needed_reason is changed or added.
         statuses_that_send_custom_emails = [self.DomainRequestStatus.ACTION_NEEDED, self.DomainRequestStatus.REJECTED]
         if self.status in statuses_that_send_custom_emails:
-            self.send_another_status_reason_email(self.status)
+            self.send_custom_status_update_email(self.status)
 
         # Update the cached values after saving
         self._cache_status_and_status_reasons()
 
-    def send_another_status_reason_email(self, status):
+    def send_custom_status_update_email(self, status):
         """Helper function to send out a second status email when the status remains the same,
         but the reason has changed."""
 
@@ -691,24 +691,29 @@ class DomainRequest(TimeStampedModel):
                 "excluded_reasons": [DomainRequest.RejectionReasons.OTHER],
             }
         }
+        status_info = status_information.get(status)
 
-        current_status = status_information.get(status)
-        old_reason = status_information.get("cached_reason")
-        new_reason = status_information.get("reason")
-        email_to_send = status_information.get("email")
-
-        # If the status itself changed, then we already sent out an email
-        if self._cached_status != status or old_reason is None:
+        # Don't send an email if there is nothing to send.
+        if status_info.get("email") is None:
+            logger.warning("send_custom_status_update_email() => Tried sending an empty email.")
             return
 
-        # We should never send an email if no reason was specified
-        # Additionally, Don't send out emails for reasons that shouldn't send them
-        if new_reason is None or new_reason in current_status.get("excluded_reasons"):
+        # We should never send an email if no reason was specified.
+        # Additionally, Don't send out emails for reasons that shouldn't send them.
+        if status_info.get("reason") is None or status_info.get("reason") in status_info.get("excluded_reasons"):
             return
 
-        # Only send out an email if the underlying email itself changed
-        if old_reason != new_reason:
-            self._send_custom_status_update_email(email_content=email_to_send)
+        # Only send out an email if the underlying reason itself changed or if no email was sent previously.
+        if status_info.get("cached_reason") != status_info.get("reason") or status_info.get("cached_reason") is None:
+            bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
+            self._send_status_update_email(
+                new_status="action needed",
+                email_template=f"emails/includes/custom_email.txt",
+                email_template_subject=f"emails/status_change_subject.txt",
+                bcc_address=bcc_address,
+                custom_email_content=status_info.get("email"),
+                wrap_email=True,
+            )
 
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
@@ -835,19 +840,6 @@ class DomainRequest(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
-    def _send_custom_status_update_email(self, email_content):
-        """Wrapper for `_send_status_update_email` that bcc's help@get.gov
-        and sends an email equivalent to the 'email_content' variable."""
-        bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
-        self._send_status_update_email(
-            new_status="action needed",
-            email_template=f"emails/includes/custom_email.txt",
-            email_template_subject=f"emails/status_change_subject.txt",
-            bcc_address=bcc_address,
-            custom_email_content=email_content,
-            wrap_email=True,
-        )
-
     def investigator_exists_and_is_staff(self):
         """Checks if the current investigator is in a valid state for a state transition"""
         is_valid = True
@@ -959,22 +951,22 @@ class DomainRequest(TimeStampedModel):
         This action cleans up the rejection status if moving away from rejected.
 
         As side effects this will delete the domain and domain_information
-        (will cascade) when they exist."""
+        (will cascade) when they exist.
+        
+        Afterwards, we send out an email for action_needed in def save().
+        See the function send_custom_status_update_email.
+        """
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
         elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
+        # Check if the tuple is setup correctly, then grab its value.
+
         literal = DomainRequest.DomainRequestStatus.ACTION_NEEDED
-        # Check if the tuple is setup correctly, then grab its value
         action_needed = literal if literal is not None else "Action Needed"
         logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
-
-        # Send out an email if an action needed reason exists
-        if self.action_needed_reason and self.action_needed_reason != self.ActionNeededReasons.OTHER:
-            email_content = self.action_needed_reason_email
-            self._send_custom_status_update_email(email_content)
 
     @transition(
         field="status",
@@ -1070,15 +1062,11 @@ class DomainRequest(TimeStampedModel):
         """Reject an domain request that has been submitted.
 
         As side effects this will delete the domain and domain_information
-        (will cascade), and send an email notification."""
+        (will cascade), and send an email notification using send_custom_status_update_email.
+        """
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject")
-
-        # Send out an email if a rejection reason exists
-        if self.rejection_reason:
-            email_content = self.rejection_reason_email
-            self._send_custom_status_update_email(email_content)
 
     @transition(
         field="status",

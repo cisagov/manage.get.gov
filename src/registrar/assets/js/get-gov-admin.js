@@ -651,9 +651,9 @@ class customActionNeededEmail extends CustomizableEmailBase {
             apiUrl: document.getElementById("get-action-needed-email-for-user-json")?.value || null,
             textAreaFormGroup: document.querySelector('.field-action_needed_reason'),
             dropdownFormGroup: document.querySelector('.field-action_needed_reason_email'),
-            statusToCheck: "rejected",
-            sessionVariableName: "showRejectionReason",
-            apiErrorMessage: "Error when attempting to grab rejected email: "
+            statusToCheck: "action needed",
+            sessionVariableName: "showActionNeededReason",
+            apiErrorMessage: "Error when attempting to grab action needed email: "
         }
         super(emailConfig);
     }
