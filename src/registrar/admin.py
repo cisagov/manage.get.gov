@@ -1944,16 +1944,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
 
-        # == Handle action_needed_reason == #
-        action_needed_reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
-        if action_needed_reason_changed:
-            obj = self._handle_action_needed_reason(request, obj, original_obj)
-
-        # == Handle rejection_reason == #
-        rejection_reason_changed = obj.rejection_reason != original_obj.rejection_reason
-        if rejection_reason_changed:
-            obj = self._handle_rejection_reason(request, obj, original_obj)
-
         # == Handle allowed emails == #
         if obj.status in DomainRequest.get_statuses_that_send_emails() and not settings.IS_PRODUCTION:
             self._check_for_valid_email(request, obj)
@@ -1969,40 +1959,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # We should only save if we don't display any errors in the steps above.
             if should_save:
                 return super().save_model(request, obj, form, change)
-
-    def _handle_action_needed_reason(self, request, obj, original_obj):
-        # Track the fact that we sent out an email
-        request.session["action_needed_email_sent"] = True
-
-        # Set the action_needed_reason_email to the default if nothing exists.
-        # Since this check occurs after save, if the user enters a value then we won't update.
-
-        default_email = get_action_needed_reason_default_email(obj, obj.action_needed_reason)
-        if obj.action_needed_reason_email:
-            emails = get_all_action_needed_reason_emails(obj)
-            is_custom_email = obj.action_needed_reason_email not in emails.values()
-            if not is_custom_email:
-                obj.action_needed_reason_email = default_email
-        else:
-                obj.action_needed_reason_email = default_email
-        return obj
-
-    def _handle_rejection_reason(self, request, obj, original_obj):
-        # Track the fact that we sent out an email
-        request.session["rejection_reason_email_sent"] = True
-
-        # Set the rejection_reason_email to the default if nothing exists.
-        # Since this check occurs after save, if the user enters a value then we won't update.
-
-        default_email = get_rejection_reason_default_email(obj, obj.rejection_reason)
-        if obj.rejection_reason_email:
-            emails = get_all_rejection_reason_emails(obj)
-            is_custom_email = obj.rejection_reason_email not in emails.values()
-            if not is_custom_email:
-                obj.rejection_reason_email = default_email
-        else:
-            obj.rejection_reason_email = default_email
-        return obj
 
     def _check_for_valid_email(self, request, obj):
         """Certain emails are whitelisted in non-production environments,
