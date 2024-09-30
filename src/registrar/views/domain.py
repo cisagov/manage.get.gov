@@ -857,8 +857,6 @@ class DomainAddUserView(DomainFormBaseView):
                     "requestor_email": requestor_email,
                 },
             )
-            if add_success:
-                messages.success(self.request, f"{email} has been invited to this domain.")
         except EmailSendingError as exc:
             logger.warn(
                 "Could not sent email invitation to %s for domain %s",
@@ -867,6 +865,9 @@ class DomainAddUserView(DomainFormBaseView):
                 exc_info=True,
             )
             raise EmailSendingError("Could not send email invitation.") from exc
+        else:
+            if add_success:
+                messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
