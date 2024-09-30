@@ -2,7 +2,7 @@
 
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url
@@ -18,7 +18,7 @@ from cachetools.func import ttl_cache
 from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
 
 
-DOMAIN_FILE_URL = "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
+RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/{domain}"
 
 
 DOMAIN_API_MESSAGES = {
@@ -39,30 +39,6 @@ DOMAIN_API_MESSAGES = {
                evaluate whether your request meets our requirements.",
     "error": GenericError.get_error_message(GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
 }
-
-
-# this file doesn't change that often, nor is it that big, so cache the result
-# in memory for ten minutes
-@ttl_cache(ttl=600)
-def _domains():
-    """Return a list of the current .gov domains.
-
-    Fetch a file from DOMAIN_FILE_URL, parse the CSV for the domain,
-    lowercase everything and return the list.
-    """
-    DraftDomain = apps.get_model("registrar.DraftDomain")
-    # 5 second timeout
-    file_contents = requests.get(DOMAIN_FILE_URL, timeout=5).text
-    domains = set()
-    # skip the first line
-    for line in file_contents.splitlines()[1:]:
-        # get the domain before the first comma
-        domain = line.split(",", 1)[0]
-        # sanity-check the string we got from the file here
-        if DraftDomain.string_could_be_domain(domain):
-            # lowercase everything when we put it in domains
-            domains.add(domain.lower())
-    return domains
 
 
 def check_domain_available(domain):
@@ -97,6 +73,22 @@ def available(request, domain=""):
         return_type=ValidationReturnType.JSON_RESPONSE,
     )
     return json_response
+
+
+@require_http_methods(["GET"])
+@login_not_required
+# Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
+@ttl_cache(ttl=600)
+def rdap(request, domain=""):
+    """Returns JSON dictionary of a domain's RDAP data from Cloudflare API"""
+    domain = request.GET.get("domain", "")
+
+    # If inputted domain doesn't have a TLD, append .gov to it
+    if "." not in domain:
+        domain = f"{domain}.gov"
+
+    rdap_data = requests.get(RDAP_URL.format(domain=domain), timeout=5).json()
+    return JsonResponse(rdap_data)
 
 
 @require_http_methods(["GET"])
