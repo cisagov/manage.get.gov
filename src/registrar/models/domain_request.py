@@ -661,39 +661,49 @@ class DomainRequest(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
-        # Handle the action needed email.
-        # An email is sent out when action_needed_reason is changed or added.
-        if self.status == self.DomainRequestStatus.ACTION_NEEDED:
-            self.send_another_status_reason_email(
-                checked_status=self.DomainRequestStatus.ACTION_NEEDED,
-                old_reason=self._cached_action_needed_reason,
-                new_reason=self.action_needed_reason,
-                excluded_reasons=[DomainRequest.ActionNeededReasons.OTHER],
-                email_to_send=self.action_needed_reason_email
-            )
-        elif self.status == self.DomainRequestStatus.REJECTED:
-            self.send_another_status_reason_email(
-                checked_status=self.DomainRequestStatus.REJECTED,
-                old_reason=self._cached_rejection_reason,
-                new_reason=self.rejection_reason,
-                excluded_reasons=[DomainRequest.RejectionReasons.OTHER],
-                email_to_send=self.rejection_reason_email,
-            )
+        # Handle custom status emails.
+        # An email is sent out when a, for example, action_needed_reason is changed or added.
+        statuses_that_send_custom_emails = [self.DomainRequestStatus.ACTION_NEEDED, self.DomainRequestStatus.REJECTED]
+        if self.status in statuses_that_send_custom_emails:
+            self.send_another_status_reason_email(self.status)
 
         # Update the cached values after saving
         self._cache_status_and_status_reasons()
 
-    def send_another_status_reason_email(self, checked_status, old_reason, new_reason, excluded_reasons, email_to_send):
+    def send_another_status_reason_email(self, status):
         """Helper function to send out a second status email when the status remains the same,
         but the reason has changed."""
 
+        # Currently, we store all this information in three variables.
+        # When adding new reasons, this can be a lot to manage so we store it here
+        # in a centralized location. However, this may need to change if this scales.
+        status_information = {
+            self.DomainRequestStatus.ACTION_NEEDED: {
+                "cached_reason": self._cached_action_needed_reason,
+                "reason": self.action_needed_reason,
+                "email": self.action_needed_reason_email,
+                "excluded_reasons": [DomainRequest.ActionNeededReasons.OTHER],
+            },
+            self.DomainRequestStatus.REJECTED: {
+                "cached_reason": self._cached_rejection_reason,
+                "reason": self.rejection_reason,
+                "email": self.rejection_reason_email,
+                "excluded_reasons": [DomainRequest.RejectionReasons.OTHER],
+            }
+        }
+
+        current_status = status_information.get(status)
+        old_reason = status_information.get("cached_reason")
+        new_reason = status_information.get("reason")
+        email_to_send = status_information.get("email")
+
         # If the status itself changed, then we already sent out an email
-        if self._cached_status != checked_status or old_reason is None:
+        if self._cached_status != status or old_reason is None:
             return
 
         # We should never send an email if no reason was specified
         # Additionally, Don't send out emails for reasons that shouldn't send them
-        if new_reason is None or new_reason in excluded_reasons:
+        if new_reason is None or new_reason in current_status.get("excluded_reasons"):
             return
 
         # Only send out an email if the underlying email itself changed
