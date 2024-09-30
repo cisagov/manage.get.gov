@@ -644,9 +644,9 @@ class customActionNeededEmail extends CustomizableEmailBase {
     }
 
     loadActionNeededEmail() {
-        if (this.textAreaFormGroup && this.dropdownFormGroup) {
-            this.initializeFormGroups("action needed", "showActionNeededReason");
-        }
+        // Hide/show the email fields depending on the current status
+        this.initializeFormGroups("action needed", "showActionNeededReason");
+        // Setup the textarea, edit button, helper text
         this.updateUserInterface(this.dropdown.value);
         this.initializeDropdown("Error when attempting to grab action needed email: ")
         this.initializeModalConfirm()
@@ -713,10 +713,7 @@ class customRejectedEmail extends CustomizableEmailBase {
     }
 
     loadRejectedEmail() {
-        if (this.textAreaFormGroup && this.dropdownFormGroup) {
-            // TODO: fix this for rejected
-            this.initializeFormGroups("rejected", "showRejectionReason");
-        }
+        this.initializeFormGroups("rejected", "showRejectionReason");
         this.updateUserInterface(this.dropdown.value);
         this.initializeDropdown("Error when attempting to grab rejected email: ")
         this.initializeModalConfirm()

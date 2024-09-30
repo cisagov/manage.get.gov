@@ -693,8 +693,8 @@ class DomainRequest(TimeStampedModel):
 
         # We should never send an email if no reason was specified
         # Additionally, Don't send out emails for reasons that shouldn't send them
-        if new_reason is None or self.action_needed_reason in excluded_reasons:
-            return 
+        if new_reason is None or new_reason in excluded_reasons:
+            return
 
         # Only send out an email if the underlying email itself changed
         if old_reason != new_reason:
