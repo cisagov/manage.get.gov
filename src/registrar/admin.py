@@ -865,7 +865,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
         """Returns a list of links for each related suborg"""
         portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
         queryset = models.Portfolio.objects.filter(id__in=portfolio_ids)
-        return get_field_links_as_list(queryset, "portfolio")
+        return get_field_links_as_list(queryset, "portfolio", msg_for_none="No portfolios.")
 
     portfolios.short_description = "Portfolios"  # type: ignore
 

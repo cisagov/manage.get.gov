@@ -41,7 +41,7 @@ def get_action_needed_reason_default_email(request, domain_request, action_neede
 
 
 def get_field_links_as_list(
-        queryset, model_name, attribute_name=None, link_info_attribute=None, separator=None
+        queryset, model_name, attribute_name=None, link_info_attribute=None, separator=None, msg_for_none="-",
     ):
         """
         Generate HTML links for items in a queryset, using a specified attribute for link text.
@@ -53,6 +53,8 @@ def get_field_links_as_list(
             link_info_attribute: Appends f"({value_of_attribute})" to the end of the link.
             separator: The separator to use between links in the resulting HTML.
             If none, an unordered list is returned.
+            msg_for_none: What to return when the field would otherwise display None.
+            Defaults to `-`.
 
         Returns:
             A formatted HTML string with links to the admin change pages for each item.
@@ -80,8 +82,8 @@ def get_field_links_as_list(
 
         # If no separator is specified, just return an unordered list.
         if separator:
-            return format_html(separator.join(links)) if links else "-"
+            return format_html(separator.join(links)) if links else msg_for_none
         else:
             links = "".join(links)
-            return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else "-"
+            return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else msg_for_none
 
