@@ -335,6 +335,7 @@ def get_url_name(path):
         logger.error(f"No matching URL name found for path: {path}")
         return None
 
+
 def value_of_attribute(obj, attribute_name: str):
     """Returns the value of getattr if the attribute isn't callable.
     If it is, execute the underlying function and return that result instead."""

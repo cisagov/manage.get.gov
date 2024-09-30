@@ -20,7 +20,11 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
-from registrar.utility.admin_helpers import get_all_action_needed_reason_emails, get_action_needed_reason_default_email, get_field_links_as_list
+from registrar.utility.admin_helpers import (
+    get_all_action_needed_reason_emails,
+    get_action_needed_reason_default_email,
+    get_field_links_as_list,
+)
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
