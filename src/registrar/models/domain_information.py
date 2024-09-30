@@ -63,7 +63,7 @@ class DomainInformation(TimeStampedModel):
         null=True,
         blank=True,
         related_name="information_portfolio",
-        help_text="Portfolio associated with this domain",
+        help_text="If blank, domain is not associated with a portfolio.",
     )
 
     sub_organization = models.ForeignKey(
@@ -72,7 +72,8 @@ class DomainInformation(TimeStampedModel):
         null=True,
         blank=True,
         related_name="information_sub_organization",
-        help_text="The suborganization that this domain is included under",
+        help_text="If blank, domain is associated with the overarching organization for this portfolio.",
+        verbose_name="Suborganization",
     )
 
     domain_request = models.OneToOneField(
