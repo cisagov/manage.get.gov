@@ -20,7 +20,7 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
-from registrar.utility.admin_helpers import get_all_action_needed_reason_emails, get_action_needed_reason_default_email
+from registrar.utility.admin_helpers import get_all_action_needed_reason_emails, get_action_needed_reason_default_email, get_field_links_as_list
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
@@ -755,9 +755,10 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
+        ("Associated portfolios", {"fields": ("portfolios",)}),
     )
 
-    readonly_fields = ("verification_type",)
+    readonly_fields = ("verification_type", "portfolios")
 
     analyst_fieldsets = (
         (
@@ -780,6 +781,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
+        ("Associated portfolios", {"fields": ("portfolios",)}),
     )
 
     # TODO: delete after we merge organization feature
@@ -858,6 +860,14 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
     search_help_text = "Search by first name, last name, or email."
+
+    def portfolios(self, obj: models.User):
+        """Returns a list of links for each related suborg"""
+        portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
+        queryset = models.Portfolio.objects.filter(id__in=portfolio_ids)
+        return get_field_links_as_list(queryset, "portfolio")
+
+    portfolios.short_description = "Portfolios"  # type: ignore
 
     def get_search_results(self, request, queryset, search_term):
         """
@@ -3101,7 +3111,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     def suborganizations(self, obj: models.Portfolio):
         """Returns a list of links for each related suborg"""
         queryset = obj.get_suborganizations()
-        return self.get_field_links_as_list(queryset, "suborganization")
+        return get_field_links_as_list(queryset, "suborganization")
 
     suborganizations.short_description = "Suborganizations"  # type: ignore
 
@@ -3158,59 +3168,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         "federal_agency",
         "senior_official",
     ]
-
-    def get_field_links_as_list(
-        self, queryset, model_name, attribute_name=None, link_info_attribute=None, separator=None
-    ):
-        """
-        Generate HTML links for items in a queryset, using a specified attribute for link text.
-
-        Args:
-            queryset: The queryset of items to generate links for.
-            model_name: The model name used to construct the admin change URL.
-            attribute_name: The attribute or method name to use for link text. If None, the item itself is used.
-            link_info_attribute: Appends f"({value_of_attribute})" to the end of the link.
-            separator: The separator to use between links in the resulting HTML.
-            If none, an unordered list is returned.
-
-        Returns:
-            A formatted HTML string with links to the admin change pages for each item.
-        """
-        links = []
-        for item in queryset:
-
-            # This allows you to pass in attribute_name="get_full_name" for instance.
-            if attribute_name:
-                item_display_value = self.value_of_attribute(item, attribute_name)
-            else:
-                item_display_value = item
-
-            if item_display_value:
-                change_url = reverse(f"admin:registrar_{model_name}_change", args=[item.pk])
-
-                link = f'<a href="{change_url}">{escape(item_display_value)}</a>'
-                if link_info_attribute:
-                    link += f" ({self.value_of_attribute(item, link_info_attribute)})"
-
-                if separator:
-                    links.append(link)
-                else:
-                    links.append(f"<li>{link}</li>")
-
-        # If no separator is specified, just return an unordered list.
-        if separator:
-            return format_html(separator.join(links)) if links else "-"
-        else:
-            links = "".join(links)
-            return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else "-"
-
-    def value_of_attribute(self, obj, attribute_name: str):
-        """Returns the value of getattr if the attribute isn't callable.
-        If it is, execute the underlying function and return that result instead."""
-        value = getattr(obj, attribute_name)
-        if callable(value):
-            value = value()
-        return value
 
     def get_fieldsets(self, request, obj=None):
         """Override of the default get_fieldsets definition to add an add_fieldsets view"""
@@ -3348,6 +3305,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "portfolio",
     ]
     search_fields = ["name"]
+    search_help_text = "Search by suborganization."
 
     change_form_template = "django/admin/suborg_change_form.html"
 
