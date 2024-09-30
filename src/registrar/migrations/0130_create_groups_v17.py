@@ -25,7 +25,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0128_alter_domaininformation_state_territory_and_more"),
+        ("registrar", "0129_remove_federalagency_initials_federalagency_acronym_and_more"),
     ]
 
     operations = [

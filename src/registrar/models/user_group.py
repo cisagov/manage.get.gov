@@ -78,6 +78,11 @@ class UserGroup(Group):
             },
             {
                 "app_label": "registrar",
+                "model": "seniorofficial",
+                "permissions": ["add_seniorofficial", "change_seniorofficial", "delete_seniorofficial"],
+            },
+            {
+                "app_label": "registrar",
                 "model": "userportfoliopermission",
                 "permissions": [
                     "add_userportfoliopermission",
