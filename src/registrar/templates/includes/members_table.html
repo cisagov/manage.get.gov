@@ -42,12 +42,9 @@
       </div>
       {% comment %}
       <!-- ---------- Export as CSV ---------- -->
+      Note - the following if check will need to be done in javascript.
+      This is because you can dynamically delete these fields.
       {% if portfolio_members and portfolio_members|length > 0 %}
-      <!-- 
-      =====================
-       TODO: future ticket?
-      =====================
-      -->
       <!-- <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
         <section aria-label="Members report component" class="margin-top-205">
           <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon" role="button">
@@ -63,11 +60,6 @@
     {% if portfolio %}
 
     <!-- ---------- FILTERING ---------- -->
-      <!-- 
-      =====================
-       TODO: future ticket?
-      =====================
-      -->
     <!-- <div class="display-flex flex-align-center"> 
       <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
       <div class="usa-accordion usa-accordion--select margin-right-2">
