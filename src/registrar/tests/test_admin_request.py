@@ -595,7 +595,12 @@ class TestDomainRequestAdmin(MockEppLib):
 
     @less_console_noise_decorator
     def transition_state_and_send_email(
-        self, domain_request, status, rejection_reason=None, action_needed_reason=None, action_needed_reason_email=None
+        self, 
+        domain_request, 
+        status, 
+        rejection_reason=None, 
+        rejection_reason_email=None, 
+        action_needed_reason=None, action_needed_reason_email=None
     ):
         """Helper method for the email test cases."""
 
@@ -612,6 +617,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
             if rejection_reason:
                 domain_request.rejection_reason = rejection_reason
+            
+            if rejection_reason_email:
+                domain_request.rejection_reason_email = rejection_reason_email
 
             if action_needed_reason:
                 domain_request.action_needed_reason = action_needed_reason
@@ -632,6 +640,7 @@ class TestDomainRequestAdmin(MockEppLib):
         with less_console_noise():
             # Access the arguments passed to send_email
             call_args = self.mock_client.EMAILS_SENT
+            logger.info(f"what are the call args? {call_args}")
             kwargs = call_args[email_index]["kwargs"]
 
             # Retrieve the email details from the arguments
@@ -757,55 +766,85 @@ class TestDomainRequestAdmin(MockEppLib):
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 6)
 
-    # def test_action_needed_sends_reason_email_prod_bcc(self):
-    #     """When an action needed reason is set, an email is sent out and help@get.gov
-    #     is BCC'd in production"""
-    #     # Ensure there is no user with this email
-    #     EMAIL = "mayor@igorville.gov"
-    #     BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
-    #     User.objects.filter(email=EMAIL).delete()
-    #     in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
-    #     action_needed = DomainRequest.DomainRequestStatus.ACTION_NEEDED
+    @override_settings(IS_PRODUCTION=True)
+    @less_console_noise_decorator
+    def test_rejected_sends_reason_email_prod_bcc(self):
+        """When a rejection reason is set, an email is sent out and help@get.gov
+        is BCC'd in production"""
+        # Create fake creator
+        EMAIL = "meoward.jones@igorville.gov"
 
-    #     # Create a sample domain request
-    #     domain_request = completed_domain_request(status=in_review)
+        _creator = User.objects.create(
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            email=EMAIL,
+            phone="(555) 123 12345",
+            title="Treat inspector",
+        )
 
-    #     # Test the email sent out for already_has_domains
-    #     already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
-    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
-    #     self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
-    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+        BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
+        in_review = DomainRequest.DomainRequestStatus.IN_REVIEW
+        rejected = DomainRequest.DomainRequestStatus.REJECTED
 
-    #     # Test the email sent out for bad_name
-    #     bad_name = DomainRequest.ActionNeededReasons.BAD_NAME
-    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=bad_name)
-    #     self.assert_email_is_accurate(
-    #         "DOMAIN NAME DOES NOT MEET .GOV REQUIREMENTS", 1, EMAIL, bcc_email_address=BCC_EMAIL
-    #     )
-    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        # Create a sample domain request
+        domain_request = completed_domain_request(status=in_review, user=_creator)
 
-    #     # Test the email sent out for eligibility_unclear
-    #     eligibility_unclear = DomainRequest.ActionNeededReasons.ELIGIBILITY_UNCLEAR
-    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=eligibility_unclear)
-    #     self.assert_email_is_accurate(
-    #         "ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", 2, EMAIL, bcc_email_address=BCC_EMAIL
-    #     )
-    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+        expected_emails = {
+            DomainRequest.RejectionReasons.DOMAIN_PURPOSE: "You didn’t provide enough information about how",
+            DomainRequest.RejectionReasons.REQUESTOR_NOT_ELIGIBLE: "You must be a government employee, or be",
+            DomainRequest.RejectionReasons.ORG_HAS_DOMAIN: "Our practice is to approve one domain",
+            DomainRequest.RejectionReasons.CONTACTS_NOT_VERIFIED: "we could not verify the organizational",
+            DomainRequest.RejectionReasons.ORG_NOT_ELIGIBLE: ".Gov domains are only available to official U.S.-based",
+            DomainRequest.RejectionReasons.NAMING_REQUIREMENTS: "does not meet our naming requirements",
+            # TODO - add back other?
+            #DomainRequest.RejectionReasons.OTHER: "",
+        }
+        for i, (reason, email_content) in enumerate(expected_emails.items()):
+            with self.subTest(reason=reason):
+                self.transition_state_and_send_email(domain_request, status=rejected, rejection_reason=reason)
+                self.assert_email_is_accurate(email_content, i, EMAIL, bcc_email_address=BCC_EMAIL)
+                self.assertEqual(len(self.mock_client.EMAILS_SENT), i+1)
 
-    #     # Test the email sent out for questionable_so
-    #     questionable_so = DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL
-    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=questionable_so)
-    #     self.assert_email_is_accurate(
-    #         "SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", 3, EMAIL, bcc_email_address=BCC_EMAIL
-    #     )
-    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
+        # Tests if an analyst can override existing email content
+        domain_purpose = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
+        self.transition_state_and_send_email(
+            domain_request,
+            status=rejected,
+            rejection_reason=domain_purpose,
+            rejection_reason_email="custom email content",
+        )
 
-    #     # Assert that no other emails are sent on OTHER
-    #     other = DomainRequest.ActionNeededReasons.OTHER
-    #     self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=other)
+        logger.info(f"look: {len(self.mock_client.EMAILS_SENT)}")
+        domain_request.refresh_from_db()
+        self.assert_email_is_accurate("custom email content", 6, _creator.email, bcc_email_address=BCC_EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 7)
 
-    #     # Should be unchanged from before
-    #     self.assertEqual(len(self.mock_client.EMAILS_SENT), 4)
+        # Tests if a new email gets sent when just the email is changed.
+        # An email should NOT be sent out if we just modify the email content.
+        self.transition_state_and_send_email(
+            domain_request,
+            status=rejected,
+            action_needed_reason=domain_purpose,
+            action_needed_reason_email="dummy email content",
+        )
+
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 7)
+
+        # Set the request back to in review
+        domain_request.in_review()
+
+        # Try sending another email when changing states AND including content
+        self.transition_state_and_send_email(
+            domain_request,
+            status=rejected,
+            rejection_reason=domain_purpose,
+            rejection_reason_email="custom content when starting anew",
+        )
+        self.assert_email_is_accurate(
+            "custom content when starting anew", 7, _creator.email, bcc_email_address=BCC_EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 8)
 
     @less_console_noise_decorator
     def test_save_model_sends_submitted_email(self):
@@ -1034,7 +1073,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Reject for reason REQUESTOR and test email including dynamic organization name
         self.transition_state_and_send_email(
-            domain_request, DomainRequest.DomainRequestStatus.REJECTED, DomainRequest.RejectionReasons.REQUESTOR
+            domain_request, DomainRequest.DomainRequestStatus.REJECTED, DomainRequest.RejectionReasons.REQUESTOR_NOT_ELIGIBLE
         )
         self.assert_email_is_accurate(
             "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "
@@ -1072,7 +1111,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.transition_state_and_send_email(
             domain_request,
             DomainRequest.DomainRequestStatus.REJECTED,
-            DomainRequest.RejectionReasons.SECOND_DOMAIN_REASONING,
+            DomainRequest.RejectionReasons.ORG_HAS_DOMAIN,
         )
         self.assert_email_is_accurate(
             "Your domain request was rejected because Testorg has a .gov domain.", 0, _creator.email
@@ -1108,7 +1147,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.transition_state_and_send_email(
             domain_request,
             DomainRequest.DomainRequestStatus.REJECTED,
-            DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY,
+            DomainRequest.RejectionReasons.CONTACTS_NOT_VERIFIED,
         )
         self.assert_email_is_accurate(
             "Your domain request was rejected because we could not verify the organizational \n"
@@ -1146,7 +1185,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.transition_state_and_send_email(
             domain_request,
             DomainRequest.DomainRequestStatus.REJECTED,
-            DomainRequest.RejectionReasons.ORGANIZATION_ELIGIBILITY,
+            DomainRequest.RejectionReasons.ORG_NOT_ELIGIBLE,
         )
         self.assert_email_is_accurate(
             "Your domain request was rejected because we determined that Testorg is not \neligible for "
@@ -1275,7 +1314,7 @@ class TestDomainRequestAdmin(MockEppLib):
             stack.enter_context(patch.object(messages, "error"))
             stack.enter_context(patch.object(messages, "warning"))
             domain_request.status = DomainRequest.DomainRequestStatus.REJECTED
-            domain_request.rejection_reason = DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY
+            domain_request.rejection_reason = DomainRequest.RejectionReasons.CONTACTS_NOT_VERIFIED
 
             self.admin.save_model(request, domain_request, None, True)
 
@@ -1840,7 +1879,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.trigger_saving_approved_to_another_state(
             False,
             DomainRequest.DomainRequestStatus.REJECTED,
-            DomainRequest.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY,
+            DomainRequest.RejectionReasons.CONTACTS_NOT_VERIFIED,
         )
 
     def test_side_effects_when_saving_approved_to_ineligible(self):

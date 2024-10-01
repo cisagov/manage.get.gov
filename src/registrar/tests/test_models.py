@@ -39,8 +39,12 @@ from .common import (
 from django_fsm import TransitionNotAllowed
 from waffle.testutils import override_flag
 
+import logging
+
 from api.tests.common import less_console_noise_decorator
 
+
+logger = logging.getLogger(__name__)
 
 @boto3_mocking.patching
 class TestDomainRequest(TestCase):

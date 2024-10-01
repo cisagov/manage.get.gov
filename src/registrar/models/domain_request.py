@@ -254,18 +254,18 @@ class DomainRequest(TimeStampedModel):
         )
 
     class RejectionReasons(models.TextChoices):
-        DOMAIN_PURPOSE = "purpose_not_met", "Purpose requirements not met"
-        REQUESTOR = "requestor_not_eligible", "Requestor not eligible to make request"
-        SECOND_DOMAIN_REASONING = (
+        DOMAIN_PURPOSE = "domain_purpose", "Purpose requirements not met"
+        REQUESTOR_NOT_ELIGIBLE = "requestor_not_eligible", "Requestor not eligible to make request"
+        ORG_HAS_DOMAIN = (
             "org_has_domain",
             "Org already has a .gov domain",
         )
-        CONTACTS_OR_ORGANIZATION_LEGITIMACY = (
+        CONTACTS_NOT_VERIFIED = (
             "contacts_not_verified",
             "Org contacts couldn't be verified",
         )
-        ORGANIZATION_ELIGIBILITY = "org_not_eligible", "Org not eligible for a .gov domain"
-        NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
+        ORG_NOT_ELIGIBLE = "org_not_eligible", "Org not eligible for a .gov domain"
+        NAMING_REQUIREMENTS = "naming_requirements", "Naming requirements not met"
         OTHER = "other", "Other/Unspecified"
 
         @classmethod
@@ -958,7 +958,7 @@ class DomainRequest(TimeStampedModel):
         """
 
         if self.status == self.DomainRequestStatus.APPROVED:
-            self.delete_and_clean_up_domain("reject_with_prejudice")
+            self.delete_and_clean_up_domain("action_needed")
         elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
