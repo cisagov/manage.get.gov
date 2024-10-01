@@ -470,4 +470,4 @@ class User(AbstractUser):
         if self.is_org_user(request) and self.has_view_all_domain_requests_portfolio_permission(portfolio):
             return DomainRequest.objects.filter(portfolio=portfolio).values_list("id", flat=True)
         else:
-            return UserDomainRole.objects.filter(user=self).values_list("domain_request_id", flat=True)
+            return UserDomainRole.objects.filter(user=self).values_list("id", flat=True)

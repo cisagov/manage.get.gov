@@ -605,7 +605,7 @@ class DomainRequestsDataType:
         return attribute if attribute is not None else default
 
     @classmethod
-    def export_data_to_csv(cls, response, request=None):
+    def exporting_dr_data_to_csv(cls, response, request=None):
         import csv
 
         writer = csv.writer(response)
@@ -645,6 +645,12 @@ class DomainRequestsDataType:
         )
 
         queryset = cls.get_queryset(request)
+        # TO REMOVE
+        print("Queryset IDs:", list(queryset.values_list("id", flat=True)))
+        # TO REMOVE
+        for request in queryset:
+            print("Processing request:", request)
+
         for request in queryset:
             writer.writerow(
                 [
