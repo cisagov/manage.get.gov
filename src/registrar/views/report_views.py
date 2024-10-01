@@ -169,6 +169,17 @@ class ExportDataTypeUser(View):
         return response
 
 
+class ExportDataTypeRequests(View):
+    """Returns a domain requests report for a given user on the request"""
+
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="domain-requests.csv"'
+        csv_export.DomainRequestsDataType.export_data_to_csv(response, request=request)
+
+        return response
+
+
 class ExportDataFull(View):
     def get(self, request, *args, **kwargs):
         # Smaller export based on 1
