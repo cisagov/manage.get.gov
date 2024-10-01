@@ -113,7 +113,6 @@ class UserGroup(Group):
                     + cisa_analysts_group.name
                 )
 
-                cisa_analysts_group.save()
                 logger.debug("CISA Analyst permissions added to group " + cisa_analysts_group.name)
         except Exception as e:
             logger.error(f"Error creating analyst permissions group: {e}")
@@ -135,7 +134,6 @@ class UserGroup(Group):
             # Assign all permissions to the group
             full_access_group.permissions.add(*all_permissions)
 
-            full_access_group.save()
             logger.debug("All permissions added to group " + full_access_group.name)
         except Exception as e:
             logger.error(f"Error creating full access group: {e}")
