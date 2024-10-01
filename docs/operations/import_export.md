@@ -97,6 +97,9 @@ with --skipEppSave option set to False. If you set to False, it will attempt to 
 records to the registry on load. If this is unset, or set to True, it will load the database and not
 attempt to update the registry on load.
 
+Please note that there is currently a bug (missing batch importing, see #2862) so this may not work
+smoothly right now currently.
+
 To scp the exported_tables.zip file from local to the sandbox, run the following:
 
 Get passcode by running:
