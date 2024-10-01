@@ -5,6 +5,7 @@ from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
 from django.conf import settings
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
@@ -1938,6 +1939,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
+
+        # == Handle action needed and rejected emails == #
+        # Edge case: this logic is handled by javascript, so contexts outside that must be handled
+        if obj.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
+            if obj.action_needed_reason and not obj.action_needed_reason_email:
+                obj.action_needed_reason_email = get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+        elif obj.status == DomainRequest.DomainRequestStatus.REJECTED:
+            if obj.rejection_reason and not obj.rejection_reason_email:
+                obj.rejection_reason_email = get_rejection_reason_default_email(obj, obj.rejection_reason)
 
         # == Handle allowed emails == #
         if obj.status in DomainRequest.get_statuses_that_send_emails() and not settings.IS_PRODUCTION:

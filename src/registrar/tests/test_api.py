@@ -177,3 +177,71 @@ class GetActionNeededEmailForUserJsonTest(TestCase):
             },
         )
         self.assertEqual(response.status_code, 302)
+
+
+class GetRejectionEmailForUserJsonTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.superuser = create_superuser()
+        self.analyst_user = create_user()
+        self.agency = FederalAgency.objects.create(agency="Test Agency")
+        self.domain_request = completed_domain_request(
+            federal_agency=self.agency,
+            name="test.gov",
+            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+        )
+
+        self.api_url = reverse("get-action-needed-email-for-user-json")
+
+    def tearDown(self):
+        DomainRequest.objects.all().delete()
+        User.objects.all().delete()
+        FederalAgency.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_get_action_needed_email_for_user_json_superuser(self):
+        """Test that a superuser can fetch the action needed email."""
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(
+            self.api_url,
+            {
+                "reason": DomainRequest.ActionNeededReasons.ELIGIBILITY_UNCLEAR,
+                "domain_request_id": self.domain_request.id,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("action_needed_email", data)
+        self.assertIn("ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", data["action_needed_email"])
+
+    @less_console_noise_decorator
+    def test_get_action_needed_email_for_user_json_analyst(self):
+        """Test that an analyst can fetch the action needed email."""
+        self.client.force_login(self.analyst_user)
+
+        response = self.client.get(
+            self.api_url,
+            {
+                "reason": DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL,
+                "domain_request_id": self.domain_request.id,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("action_needed_email", data)
+        self.assertIn("SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", data["action_needed_email"])
+
+    @less_console_noise_decorator
+    def test_get_action_needed_email_for_user_json_regular(self):
+        """Test that a regular user receives a 403 with an error message."""
+        p = "password"
+        self.client.login(username="testuser", password=p)
+        response = self.client.get(
+            self.api_url,
+            {
+                "reason": DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL,
+                "domain_request_id": self.domain_request.id,
+            },
+        )
+        self.assertEqual(response.status_code, 302)

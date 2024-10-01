@@ -46,7 +46,7 @@ Learn more about eligibility for .gov domains
 <https://get.gov/domains/eligibility/>.
 
 If you have questions or comments, reply to this email.
-{% elif reason == domain_request.RejectionReasons.DOMAIN_PURPOSE.NAMING_NOT_MET %}
+{% elif reason == domain_request.RejectionReasons.DOMAIN_PURPOSE.NAMING_REQUIREMENTS %}
 Your domain request was rejected because it does not meet our naming requirements. 
 Domains should uniquely identify a government organization and be clear to the 
 general public. Learn more about naming requirements for your type of organization 

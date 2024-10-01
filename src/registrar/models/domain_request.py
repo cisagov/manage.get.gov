@@ -688,7 +688,8 @@ class DomainRequest(TimeStampedModel):
                 "cached_reason": self._cached_rejection_reason,
                 "reason": self.rejection_reason,
                 "email": self.rejection_reason_email,
-                "excluded_reasons": [DomainRequest.RejectionReasons.OTHER],
+                "excluded_reasons": [],
+                # "excluded_reasons": [DomainRequest.RejectionReasons.OTHER],
             },
         }
         status_info = status_information.get(status)
@@ -707,7 +708,7 @@ class DomainRequest(TimeStampedModel):
         if status_info.get("cached_reason") != status_info.get("reason") or status_info.get("cached_reason") is None:
             bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
             self._send_status_update_email(
-                new_status=status.label,
+                new_status=status,
                 email_template=f"emails/includes/custom_email.txt",
                 email_template_subject=f"emails/status_change_subject.txt",
                 bcc_address=bcc_address,
