@@ -48,20 +48,7 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
 
     def get(self, request):
         """Add additional context data to the template."""
-
-        if self.request.user.is_authenticated:
-            request.session["new_request"] = True
-
-        # We can override the base class. This view only needs this item.
-        context = {}
-        portfolio = self.request.session.get("portfolio")
-        if portfolio:
-            # ------- Gets all members
-            member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
-
-            all_members = User.objects.filter(id__in=member_ids)
-            context["portfolio_members"] = all_members
-        return render(request, "portfolio_members.html", context)
+        return render(request, "portfolio_members.html")
 
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):

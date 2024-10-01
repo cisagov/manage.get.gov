@@ -1913,9 +1913,7 @@ class MembersTable extends LoadTableBase {
           const memberList = document.querySelector('.members__table tbody');
           memberList.innerHTML = '';
 
-          if (data.members)
-          {
-            data.members.forEach(member => {
+          data.members.forEach(member => {
             // const actionUrl = domain.action_url;
             const member_name = member.name;
             const member_email = member.email;
@@ -1946,31 +1944,8 @@ class MembersTable extends LoadTableBase {
                 </a>
               </td>
             `;
-
             memberList.appendChild(row);
           });
-        }
-        else
-        {
-          //TODO: error message?
-          const row = document.createElement('tr');
-          row.innerHTML = `
-          <th scope="row" role="rowheader" data-label="member name">
-            ERROR
-          </th>
-          <td data-sort-value="test" data-label="name">
-            ERROR
-          </td>
-        `;
-
-          memberList.appendChild(row);
-        }
-
-
-
-
-          // initialize tool tips immediately after the associated DOM elements are added
-          initializeTooltips();
 
           // Do not scroll on first page load
           if (scroll)
@@ -1992,8 +1967,8 @@ class MembersTable extends LoadTableBase {
           this.currentSortBy = sortBy;
           this.currentOrder = order;
           this.currentSearchTerm = searchTerm;
-        })
-        .catch(error => console.error('Error fetching members:', error));
+      })
+      .catch(error => console.error('Error fetching members:', error));
   }
 }
 

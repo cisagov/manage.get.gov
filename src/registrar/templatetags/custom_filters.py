@@ -239,3 +239,14 @@ def is_portfolio_subpage(path):
         "senior-official",
     ]
     return get_url_name(path) in url_names
+
+
+@register.filter(name="is_members_subpage")
+def is_members_subpage(path):
+    """Checks if the given page is a subpage of portfolio.
+    Takes a path name, like '/organization/'."""
+    # Since our pages aren't unified under a common path, we need this approach for now.
+    url_names = [
+        "members",
+    ]
+    return get_url_name(path) in url_names

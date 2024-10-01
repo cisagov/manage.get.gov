@@ -1,6 +1,5 @@
 @use "uswds-core" as *;
 
-
 // Only apply this custom wrapping to desktop
 @include at-media(desktop) {
   .usa-tooltip--registrar .usa-tooltip__body {

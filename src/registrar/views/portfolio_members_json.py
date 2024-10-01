@@ -14,98 +14,55 @@ def get_portfolio_members_json(request):
     """Given the current request,
     get all members that are associated with the given portfolio"""
 
-    objects = get_member_objects_from_request(request)
-    if objects is not None:
-        member_ids = objects.values_list("id", flat=True)
-
-        portfolio = request.session.get("portfolio")
-        admin_ids = UserPortfolioPermission.objects.filter(
-            portfolio=portfolio,
-            roles__overlap=[
-                UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-            ],
-        ).values_list("user__id", flat=True)
-        portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
-            "email", flat=True
-        )
-
-        unfiltered_total = member_ids.count()
-
-        objects = apply_search(objects, request)
-        # objects = apply_status_filter(objects, request)
-        objects = apply_sorting(objects, request)
-
-        paginator = Paginator(objects, 10)
-        page_number = request.GET.get("page", 1)
-        page_obj = paginator.get_page(page_number)
-        members = [
-            serialize_members(request, member, request.user, admin_ids, portfolio_invitation_emails)
-            for member in page_obj.object_list
-        ]
-
-        # If you're wondering where these JSON values are used, check out the class "MembersTable"
-        # in get-gov.js (specifically the "loadTable" function).
-        #
-        # The way this JSON gets passed to get-gov.js is via ajax, which depends on our HTML and Url.py
-        # files having routes to this json file.  Specifically, "get_portfolio_members_json" is embedded
-        # in members_table.html as a string, which is then referenced in get-gov.js to grab the appropriate
-        # path in url.py.  In short, make sure that both members_table.html and url.py have references to
-        # this json function in order for all of this to work.
-        #
-        # HELPFUL TIP:  You can easily test this json file's output by visiting
-        # http://localhost:8080/get-portfolio-members-json/
-        return JsonResponse(
-            {
-                "members": members,
-                "has_next": page_obj.has_next(),
-                "has_previous": page_obj.has_previous(),
-                "page": page_obj.number,
-                "num_pages": paginator.num_pages,
-                "total": paginator.count,
-                "unfiltered_total": unfiltered_total,
-            }
-        )
-
-    else:
-        return JsonResponse(
-            {
-                "members": [],
-                "has_next": False,
-                "has_previous": False,
-                "page": 0,
-                "num_pages": 0,
-                "total": 0,
-                "unfiltered_total": 0,
-            }
-        )
-
-
-def get_member_objects_from_request(request):
-    """Given the current request,
-    get all members that are associated with the given portfolio"""
-
-    # portfolio = request.GET.get("portfolio") #TODO: WHY DOESN"T THIS WORK?? It is empty
-    # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f'portfolio = {portfolio}')  # TODO: delete me
+    member_ids = get_member_ids_from_request(request)
+    objects = User.objects.filter(id__in=member_ids)
 
     portfolio = request.session.get("portfolio")
+    admin_ids = UserPortfolioPermission.objects.filter(
+        portfolio=portfolio,
+        roles__overlap=[
+            UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+        ],
+    ).values_list("user__id", flat=True)
+    portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
+        "email", flat=True
+    )
 
+    unfiltered_total = member_ids.count()
+
+    objects = apply_search(objects, request)
+    # objects = apply_status_filter(objects, request)
+    objects = apply_sorting(objects, request)
+
+    paginator = Paginator(objects, 10)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+    members = [
+        serialize_members(request, member, request.user, admin_ids, portfolio_invitation_emails)
+        for member in page_obj.object_list
+    ]
+
+    return JsonResponse(
+        {
+            "members": members,
+            "page": page_obj.number,
+            "num_pages": paginator.num_pages,
+            "has_previous": page_obj.has_previous(),
+            "has_next": page_obj.has_next(),
+            "total": paginator.count,
+            "unfiltered_total": unfiltered_total,
+        }
+    )
+
+
+def get_member_ids_from_request(request):
+    """Given the current request,
+    get all members that are associated with the given portfolio"""
+    portfolio = request.session.get("portfolio")
+    member_ids = None
     if portfolio:
-        # TODO: Permissions??
-        # if request.user.is_org_user(request) and request.user.has_view_all_requests_portfolio_permission(portfolio):
-        #     filter_condition = Q(portfolio=portfolio)
-        # else:
-        #     filter_condition = Q(portfolio=portfolio, creator=request.user)
-
-        permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio)
-
-        portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
-            "email", flat=True
-        )
-
-        members = User.objects.filter(
-            Q(portfolio_permissions__in=permissions) | Q(email__in=portfolio_invitation_emails)
-        )
-        return members
+        member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
+    return member_ids
 
 
 def apply_search(queryset, request):
@@ -119,21 +76,6 @@ def apply_search(queryset, request):
             | Q(email__icontains=search_term)
         )
     return queryset
-
-
-# def apply_status_filter(queryset, request):
-#     status_param = request.GET.get("status")
-#     if status_param:
-#         status_list = status_param.split(",")
-#         statuses = [status for status in status_list if status in DomainRequest.DomainRequestStatus.values]
-#         # Construct Q objects for statuses that can be queried through ORM
-#         status_query = Q()
-#         if statuses:
-#             status_query |= Q(status__in=statuses)
-#         # Apply the combined query
-#         queryset = queryset.filter(status_query)
-
-#     return queryset
 
 
 def apply_sorting(queryset, request):
@@ -151,14 +93,13 @@ def serialize_members(request, member, user, admin_ids, portfolio_invitation_ema
     # ------- VIEW ONLY
     # If not view_only (the user has permissions to edit/manage users), show the gear icon with "Manage" link.
     # If view_only (the user only has view user permissions), show the "View" link (no gear icon).
+    # We check on user_group_permision to account for the upcoming "Manage portfolio" button on admin.
     user_can_edit_other_users = False
-    user_edit_permissions = ["registrar.full_access_permission", "registrar.change_user"]
-    index = 0
-    while not user_can_edit_other_users and index < len(user_edit_permissions):
-        perm = user_edit_permissions[index]
-        if user.has_perm(perm):
+    for user_group_permission in ["registrar.full_access_permission", "registrar.change_user"]:
+        if user.has_perm(user_group_permission):
             user_can_edit_other_users = True
-        index += 1
+            break
+
     view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
 
     # ------- USER STATUSES

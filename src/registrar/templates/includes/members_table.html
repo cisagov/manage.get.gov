@@ -3,16 +3,10 @@
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_portfolio_members_json' as url %}
 <span id="get_members_json_url" class="display-none">{{url}}</span>
-<section class="section-outlined members margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="members">
-  <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
-      {% if not portfolio %}
-        <h2 id="members-header" class="display-inline-block">Members</h2>
-      {% else %}
-        <!-- Embedding the portfolio value in a data attribute -->
-        <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
-      {% endif %}
+<section class="section-outlined members margin-top-0 section-outlined--border-base-light" id="members">
+  <div class="section-outlined__header margin-bottom-3 grid-row">
       <!-- ---------- SEARCH ---------- -->
-      <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %}">
+      <div class="section-outlined__search mobile:grid-col-12 desktop:grid-col-6">
         <section aria-label="Members search component" class="margin-top-2">
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
@@ -28,7 +22,7 @@
               id="members__search-field"
               type="search"
               name="search"
-              placeholder="Search by domain name"
+              placeholder="Search by member name"
             />
             <button class="usa-button" type="submit" id="members__search-field-submit">
               <img
@@ -40,120 +34,7 @@
           </form>
         </section>
       </div>
-      {% comment %}
-      <!-- ---------- Export as CSV ---------- -->
-      Note - the following if check will need to be done in javascript.
-      This is because you can dynamically delete these fields.
-      {% if portfolio_members and portfolio_members|length > 0 %}
-      <!-- <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
-        <section aria-label="Members report component" class="margin-top-205">
-          <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon" role="button">
-            <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-              <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
-            </svg>Export as CSV
-          </a>
-        </section>
-      </div> -->
-      {% endif %}
-      {% endcomment %}
     </div>
-    {% if portfolio %}
-
-    <!-- ---------- FILTERING ---------- -->
-    <!-- <div class="display-flex flex-align-center"> 
-      <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
-      <div class="usa-accordion usa-accordion--select margin-right-2">
-        <div class="usa-accordion__heading">
-          <button
-            type="button"
-            class="usa-button usa-button--small padding--8-8-9 usa-button--outline usa-button--filter usa-accordion__button"
-            aria-expanded="false"
-            aria-controls="filter-status"
-          >
-            <span class="filter-indicator text-bold display-none"></span> Status
-            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-              <use xlink:href="/public/img/sprite.svg#expand_more"></use>
-            </svg>
-          </button>
-        </div>
-        <div id="filter-status" class="usa-accordion__content usa-prose shadow-1">
-          <h2>Status</h2>
-          <fieldset class="usa-fieldset margin-top-0">
-            <legend class="usa-legend">Select to apply <span class="sr-only">status</span> filter</legend>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-dns-needed"
-                type="checkbox"
-                name="filter-status"
-                value="unknown"
-              />
-              <label class="usa-checkbox__label" for="filter-status-dns-needed"
-                >DNS Needed</label
-              >
-            </div>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-ready"
-                type="checkbox"
-                name="filter-status"
-                value="ready"
-              />
-              <label class="usa-checkbox__label" for="filter-status-ready"
-                >Ready</label
-              >
-            </div>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-on-hold"
-                type="checkbox"
-                name="filter-status"
-                value="on hold"
-              />
-              <label class="usa-checkbox__label" for="filter-status-on-hold"
-                >On hold</label
-              >
-            </div>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-expired"
-                type="checkbox"
-                name="filter-status"
-                value="expired"
-              />
-              <label class="usa-checkbox__label" for="filter-status-expired"
-                >Expired</label
-              >
-            </div>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-deleted"
-                type="checkbox"
-                name="filter-status"
-                value="deleted"
-              />
-              <label class="usa-checkbox__label" for="filter-status-deleted"
-                >Deleted</label
-              >
-            </div>
-          </fieldset>
-        </div>
-      </div>
-      <button
-        type="button"
-        class="usa-button usa-button--small padding--8-12-9-12 usa-button--outline usa-button--filter members__reset-filters display-none"
-      >
-        Clear filters
-        <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
-          <use xlink:href="/public/img/sprite.svg#close"></use>
-        </svg>
-      </button>
-    </div> -->
-    {% endif %}
 
     <!-- ---------- MAIN TABLE ---------- -->
     <div class="members__table-wrapper display-none usa-table-container--scrollable margin-top-0" tabindex="0">
