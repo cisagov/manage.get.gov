@@ -707,7 +707,7 @@ class DomainRequest(TimeStampedModel):
         if status_info.get("cached_reason") != status_info.get("reason") or status_info.get("cached_reason") is None:
             bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
             self._send_status_update_email(
-                new_status="action needed",
+                new_status=status.label,
                 email_template=f"emails/includes/custom_email.txt",
                 email_template_subject=f"emails/status_change_subject.txt",
                 bcc_address=bcc_address,
