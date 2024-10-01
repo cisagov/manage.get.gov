@@ -20,10 +20,11 @@
             </li>
             {% if opts.model_name == 'domainrequest' %}
             <li>
-                <a id="id-copy-to-clipboard-summary" class="button--clipboard" type="button" href="#">
+                <a id="id-copy-to-clipboard-summary" class="usa-button--dja button--clipboard" type="button" href="#">
                     <svg class="usa-icon" >
                         <use xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
                     </svg>
+                    <!-- the span is targeted in JS, do not remove -->
                     <span>{% translate "Copy request summary" %}</span>
                 </a>
             </li>

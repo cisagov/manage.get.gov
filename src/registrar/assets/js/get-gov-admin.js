@@ -515,10 +515,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const formLabel = document.querySelector('label[for="id_action_needed_reason_email"]');
     let lastSentEmailContent = document.getElementById("last-sent-email-content");
     const initialDropdownValue = dropdown ? dropdown.value : null;
-    const initialEmailValue = textarea.value;
+    let initialEmailValue;
+    if (textarea)
+        initialEmailValue = textarea.value
 
     // We will use the const to control the modal
-    let isEmailAlreadySentConst = lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
+    let isEmailAlreadySentConst;
+    if (lastSentEmailContent)
+        isEmailAlreadySentConst = lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
     // We will use the function to control the label and help
     function isEmailAlreadySent() {
         return lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
@@ -706,18 +710,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return '';
             }
-            // Extract the submitter name, title, email, and phone number
-            const submitterDiv = document.querySelector('.form-row.field-submitter');
-            const submitterNameElement = document.getElementById('id_submitter');
-            // We have to account for different superuser and analyst markups
-            const submitterName = submitterNameElement 
-                ? submitterNameElement.options[submitterNameElement.selectedIndex].text 
-                : submitterDiv.querySelector('a').text;
-            const submitterTitle = extractTextById('contact_info_title', submitterDiv);
-            const submitterEmail = extractTextById('contact_info_email', submitterDiv);
-            const submitterPhone = extractTextById('contact_info_phone', submitterDiv);
-            let submitterInfo = `${submitterName}${submitterTitle}${submitterEmail}${submitterPhone}`;
-
 
             //------ Senior Official
             const seniorOfficialDiv = document.querySelector('.form-row.field-senior_official');
@@ -734,7 +726,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             `<strong>Current Websites:</strong> ${existingWebsites.join(', ')}</br>` +
                             `<strong>Rationale:</strong></br>` +
                             `<strong>Alternative Domains:</strong> ${alternativeDomains.join(', ')}</br>` +
-                            `<strong>Submitter:</strong> ${submitterInfo}</br>` +
                             `<strong>Senior Official:</strong> ${seniorOfficialInfo}</br>` +
                             `<strong>Other Employees:</strong> ${otherContactsSummary}</br>`;
             

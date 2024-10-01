@@ -3112,7 +3112,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             admin_details += f'<a href="{change_url}">{escape(portfolio_admin)}</a><br>'
             admin_details += f"{escape(portfolio_admin.title)}<br>"
             admin_details += f"{escape(portfolio_admin.email)}"
-            admin_details += "<div class='admin-icon-group admin-icon-group__clipboard-link'>"
+            admin_details += "<div class='admin-icon-group'>"
             admin_details += f"<input aria-hidden='true' class='display-none' value='{escape(portfolio_admin.email)}'>"
             admin_details += (
                 "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon padding-left-05"
