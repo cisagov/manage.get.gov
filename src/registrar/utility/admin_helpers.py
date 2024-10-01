@@ -18,7 +18,7 @@ def get_rejection_reason_default_email(domain_request, rejection_reason):
         domain_request,
         file_path="emails/status_change_rejected.txt",
         reason=rejection_reason,
-        excluded_reasons=[DomainRequest.RejectionReasons.OTHER]
+        # excluded_reasons=[DomainRequest.RejectionReasons.OTHER]
     )
 
 def _get_default_email(domain_request, file_path, reason, excluded_reasons=None):

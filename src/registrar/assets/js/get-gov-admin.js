@@ -581,11 +581,11 @@ class CustomizableEmailBase {
         return this.lastSentEmailContent.value.replace(/\s+/g, '') === this.textarea.value.replace(/\s+/g, '');
     }
 
-    updateUserInterface(reason=this.dropdown.value) {
+    updateUserInterface(reason=this.dropdown.value, excluded_reasons=["other"]) {
         if (!reason) {
             // No reason selected, we will set the label to "Email", show the "Make a selection" placeholder, hide the trigger, textarea, hide the help text
             this.showPlaceholderNoReason();
-        } else if (reason === 'other') {
+        } else if (excluded_reasons.includes(reason)) {
             // 'Other' selected, we will set the label to "Email", show the "No email will be sent" placeholder, hide the trigger, textarea, hide the help text
             this.showPlaceholderOtherReason();
         } else {
@@ -728,10 +728,13 @@ class customRejectedEmail extends CustomizableEmailBase {
         this.showPlaceholder("Email:", "Select a rejection reason to see email");
     }
 
-    // Overrides the placeholder text when the reason other is selected
-    showPlaceholderOtherReason() {
-        this.showPlaceholder("Email:", "No email will be sent");
+    updateUserInterface(reason=this.dropdown.value, excluded_reasons=[]) {
+        super.updateUserInterface(reason, excluded_reasons);
     }
+    // Overrides the placeholder text when the reason other is selected
+    // showPlaceholderOtherReason() {
+    //     this.showPlaceholder("Email:", "No email will be sent");
+    // }
 }
 
 
