@@ -790,7 +790,7 @@ class TestPortfolio(WebTest):
     @override_flag("organization_members", active=True)
     def test_view_only_members(self):
         """Test that user with view only permission settings can only
-        view members (not mange them)"""
+        view members (not manage them)"""
         user = self.user
         self.app.set_user(user.username)
 
