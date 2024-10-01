@@ -28,7 +28,7 @@ def get_portfolio_members_json(request):
         "email", flat=True
     )
 
-    unfiltered_total = member_ids.count()
+    unfiltered_total = objects.count()
 
     objects = apply_search(objects, request)
     # objects = apply_status_filter(objects, request)
@@ -59,7 +59,7 @@ def get_member_ids_from_request(request):
     """Given the current request,
     get all members that are associated with the given portfolio"""
     portfolio = request.session.get("portfolio")
-    member_ids = None
+    member_ids = []
     if portfolio:
         member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
     return member_ids
