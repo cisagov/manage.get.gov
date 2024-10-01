@@ -63,7 +63,7 @@ class UserPortfolioPermissionFixture:
                         else:
                             logger.info(
                                 f"Permission exists for user '{user.username}' "
-                                "on portfolio '{portfolio.organization_name}'."
+                                f"on portfolio '{portfolio.organization_name}'."
                             )
                     except Exception as e:
                         logger.warning(e)
