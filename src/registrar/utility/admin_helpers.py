@@ -8,7 +8,7 @@ def get_action_needed_reason_default_email(domain_request, action_needed_reason)
         domain_request,
         file_path=f"emails/action_needed_reasons/{action_needed_reason}.txt",
         reason=action_needed_reason,
-        excluded_reasons=[DomainRequest.ActionNeededReasons.OTHER]
+        excluded_reasons=[DomainRequest.ActionNeededReasons.OTHER],
     )
 
 
@@ -20,6 +20,7 @@ def get_rejection_reason_default_email(domain_request, rejection_reason):
         reason=rejection_reason,
         # excluded_reasons=[DomainRequest.RejectionReasons.OTHER]
     )
+
 
 def _get_default_email(domain_request, file_path, reason, excluded_reasons=None):
     if not reason:

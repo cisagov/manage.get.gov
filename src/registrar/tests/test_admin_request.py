@@ -595,12 +595,13 @@ class TestDomainRequestAdmin(MockEppLib):
 
     @less_console_noise_decorator
     def transition_state_and_send_email(
-        self, 
-        domain_request, 
-        status, 
-        rejection_reason=None, 
-        rejection_reason_email=None, 
-        action_needed_reason=None, action_needed_reason_email=None
+        self,
+        domain_request,
+        status,
+        rejection_reason=None,
+        rejection_reason_email=None,
+        action_needed_reason=None,
+        action_needed_reason_email=None,
     ):
         """Helper method for the email test cases."""
 
@@ -617,7 +618,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
             if rejection_reason:
                 domain_request.rejection_reason = rejection_reason
-            
+
             if rejection_reason_email:
                 domain_request.rejection_reason_email = rejection_reason_email
 
@@ -798,13 +799,13 @@ class TestDomainRequestAdmin(MockEppLib):
             DomainRequest.RejectionReasons.ORG_NOT_ELIGIBLE: ".Gov domains are only available to official U.S.-based",
             DomainRequest.RejectionReasons.NAMING_REQUIREMENTS: "does not meet our naming requirements",
             # TODO - add back other?
-            #DomainRequest.RejectionReasons.OTHER: "",
+            # DomainRequest.RejectionReasons.OTHER: "",
         }
         for i, (reason, email_content) in enumerate(expected_emails.items()):
             with self.subTest(reason=reason):
                 self.transition_state_and_send_email(domain_request, status=rejected, rejection_reason=reason)
                 self.assert_email_is_accurate(email_content, i, EMAIL, bcc_email_address=BCC_EMAIL)
-                self.assertEqual(len(self.mock_client.EMAILS_SENT), i+1)
+                self.assertEqual(len(self.mock_client.EMAILS_SENT), i + 1)
 
         # Tests if an analyst can override existing email content
         domain_purpose = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
@@ -1073,7 +1074,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Reject for reason REQUESTOR and test email including dynamic organization name
         self.transition_state_and_send_email(
-            domain_request, DomainRequest.DomainRequestStatus.REJECTED, DomainRequest.RejectionReasons.REQUESTOR_NOT_ELIGIBLE
+            domain_request,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.RejectionReasons.REQUESTOR_NOT_ELIGIBLE,
         )
         self.assert_email_is_accurate(
             "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "

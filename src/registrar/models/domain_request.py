@@ -689,7 +689,7 @@ class DomainRequest(TimeStampedModel):
                 "reason": self.rejection_reason,
                 "email": self.rejection_reason_email,
                 "excluded_reasons": [DomainRequest.RejectionReasons.OTHER],
-            }
+            },
         }
         status_info = status_information.get(status)
 
@@ -952,7 +952,7 @@ class DomainRequest(TimeStampedModel):
 
         As side effects this will delete the domain and domain_information
         (will cascade) when they exist.
-        
+
         Afterwards, we send out an email for action_needed in def save().
         See the function send_custom_status_update_email.
         """

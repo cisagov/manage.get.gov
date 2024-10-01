@@ -46,6 +46,7 @@ from api.tests.common import less_console_noise_decorator
 
 logger = logging.getLogger(__name__)
 
+
 @boto3_mocking.patching
 class TestDomainRequest(TestCase):
     @less_console_noise_decorator
@@ -293,6 +294,8 @@ class TestDomainRequest(TestCase):
                 # Perform the specified action
                 action_method = getattr(domain_request, action)
                 action_method()
+                domain_request.save()
+                domain_request.refresh_from_db()
 
             # Check if an email was sent
             sent_emails = [
