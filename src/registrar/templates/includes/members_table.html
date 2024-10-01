@@ -1,5 +1,7 @@
 {% load static %}
 
+<!-- Embedding the portfolio value in a data attribute -->
+<span id="portfolio-js-value" class="display-none" data-portfolio="{{ portfolio.id }}"></span>
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_portfolio_members_json' as url %}
 <span id="get_members_json_url" class="display-none">{{url}}</span>

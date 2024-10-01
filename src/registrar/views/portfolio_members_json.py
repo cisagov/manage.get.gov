@@ -13,11 +13,10 @@ from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 def get_portfolio_members_json(request):
     """Given the current request,
     get all members that are associated with the given portfolio"""
-
-    member_ids = get_member_ids_from_request(request)
+    portfolio = request.GET.get("portfolio")
+    member_ids = get_member_ids_from_request(request, portfolio)
     objects = User.objects.filter(id__in=member_ids)
 
-    portfolio = request.session.get("portfolio")
     admin_ids = UserPortfolioPermission.objects.filter(
         portfolio=portfolio,
         roles__overlap=[
@@ -38,7 +37,7 @@ def get_portfolio_members_json(request):
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
     members = [
-        serialize_members(request, member, request.user, admin_ids, portfolio_invitation_emails)
+        serialize_members(request, portfolio, member, request.user, admin_ids, portfolio_invitation_emails)
         for member in page_obj.object_list
     ]
 
@@ -55,10 +54,9 @@ def get_portfolio_members_json(request):
     )
 
 
-def get_member_ids_from_request(request):
+def get_member_ids_from_request(request, portfolio):
     """Given the current request,
     get all members that are associated with the given portfolio"""
-    portfolio = request.session.get("portfolio")
     member_ids = []
     if portfolio:
         member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
@@ -87,9 +85,7 @@ def apply_sorting(queryset, request):
     return queryset.order_by(sort_by)
 
 
-def serialize_members(request, member, user, admin_ids, portfolio_invitation_emails):
-
-    portfolio = request.session.get("portfolio")
+def serialize_members(request, portfolio, member, user, admin_ids, portfolio_invitation_emails):
     # ------- VIEW ONLY
     # If not view_only (the user has permissions to edit/manage users), show the gear icon with "Manage" link.
     # If view_only (the user only has view user permissions), show the "View" link (no gear icon).
