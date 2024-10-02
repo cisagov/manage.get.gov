@@ -48,14 +48,19 @@ def send_templated_email(  # noqa
         No valid recipient addresses are provided
     """
 
+    # by default assume we can send to all addresses (prod has no whitelist)
+    sendable_cc_addresses = cc_addresses
+
     if not settings.IS_PRODUCTION:  # type: ignore
         # Split into a function: C901 'send_templated_email' is too complex.
         # Raises an error if we cannot send an email (due to restrictions).
         # Does nothing otherwise.
         _can_send_email(to_address, bcc_address)
+
+        # if we're not in prod, we need to check the whitelist for CC'ed addresses
         sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
 
-        if len(sendable_cc_addresses) < len(cc_addresses):
+        if blocked_cc_addresses:
             logger.warning("Some CC'ed addresses were removed: %s.", blocked_cc_addresses)
 
     template = get_template(template_name)
@@ -111,7 +116,7 @@ def send_templated_email(  # noqa
                     },
                 },
             )
-            logger.info("Email sent to %s, bcc %s, cc %s", to_address, bcc_address, sendable_cc_addresses)
+            logger.info("Email sent to [%s], bcc [%s], cc %s", to_address, bcc_address, sendable_cc_addresses)
         else:
             ses_client = boto3.client(
                 "ses",
@@ -123,6 +128,10 @@ def send_templated_email(  # noqa
             send_email_with_attachment(
                 settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, attachment_file, ses_client
             )
+            logger.info(
+                "Email with attachment sent to [%s], bcc [%s], cc %s", to_address, bcc_address, sendable_cc_addresses
+            )
+
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
 

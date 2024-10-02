@@ -77,6 +77,37 @@ class TestEmails(TestCase):
         # check that an email was sent
         self.assertTrue(self.mock_client.send_email.called)
 
+        # check the call sequence for the email
+        args, kwargs = self.mock_client.send_email.call_args
+        self.assertIn("Destination", kwargs)
+        self.assertIn("CcAddresses", kwargs["Destination"])
+
+        self.assertEqual(["testy2@town.com", "mayor@igorville.gov"], kwargs["Destination"]["CcAddresses"])
+
+    @boto3_mocking.patching
+    @override_settings(IS_PRODUCTION=True)
+    def test_email_with_cc_in_prod(self):
+        """Test sending email with cc works in prod"""
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            send_templated_email(
+                "emails/update_to_approved_domain.txt",
+                "emails/update_to_approved_domain_subject.txt",
+                "doesnotexist@igorville.com",
+                context={"domain": "test", "user": "test", "date": 1, "changes": "test"},
+                bcc_address=None,
+                cc_addresses=["testy2@town.com", "mayor@igorville.gov"],
+            )
+
+        # check that an email was sent
+        self.assertTrue(self.mock_client.send_email.called)
+
+        # check the call sequence for the email
+        args, kwargs = self.mock_client.send_email.call_args
+        self.assertIn("Destination", kwargs)
+        self.assertIn("CcAddresses", kwargs["Destination"])
+
+        self.assertEqual(["testy2@town.com", "mayor@igorville.gov"], kwargs["Destination"]["CcAddresses"])
+
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_submission_confirmation(self):

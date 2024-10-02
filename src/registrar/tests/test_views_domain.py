@@ -87,12 +87,6 @@ class TestWithDomainPermissions(TestWithUser):
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        self.security_contact, _ = PublicContact.objects.get_or_create(
-            domain=self.domain,
-            contact_type=PublicContact.ContactTypeChoices.SECURITY,
-            email="security@igorville.gov",
-        )
-
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
@@ -2007,6 +2001,8 @@ class TestDomainChangeNotifications(TestDomainOverview):
     @less_console_noise_decorator
     def test_notification_on_org_name_change(self):
         """Test that an email is sent when the organization name is changed."""
+        # We may end up sending emails on org name changes later, but it will be addressed
+        # in the portfolio itself, rather than the individual domain.
 
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.address_line1 = "123 Main St"
