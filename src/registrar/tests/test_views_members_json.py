@@ -1,15 +1,11 @@
-from registrar.models import DomainRequest
 from django.urls import reverse
 
-from registrar.models.draft_domain import DraftDomain
 from registrar.models.portfolio import Portfolio
 from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
-from django.utils.dateparse import parse_datetime
-from waffle.testutils import override_flag
 
 
 class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
@@ -54,7 +50,7 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            ]
+            ],
         )
         UserPortfolioPermission.objects.create(
             user=cls.user2,
@@ -116,7 +112,9 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
                 roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             )
 
-        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "page": 1})
+        response = self.app.get(
+            reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "page": 1}
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -131,7 +129,9 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         # Check the number of members on page 1
         self.assertEqual(len(data["members"]), 10)
 
-        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "page": 2})
+        response = self.app.get(
+            reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "page": 2}
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -147,7 +147,9 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
     def test_search(self):
         """Test search functionality for portfolio members."""
         # Search by first name
-        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "Second"})
+        response = self.app.get(
+            reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "Second"}
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
         self.assertEqual(len(data["members"]), 1)
@@ -155,21 +157,28 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["members"][0]["email"], "second@example.com")
 
         # Search by last name
-        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "Last3"})
+        response = self.app.get(
+            reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "Last3"}
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
         self.assertEqual(len(data["members"]), 1)
         self.assertEqual(data["members"][0]["last_name"], "User")
 
         # Search by email
-        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "fourth@example.com"})
+        response = self.app.get(
+            reverse("get_portfolio_members_json"),
+            params={"portfolio": self.portfolio.id, "search_term": "fourth@example.com"},
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
         self.assertEqual(len(data["members"]), 1)
         self.assertEqual(data["members"][0]["email"], "fourth@example.com")
 
         # Search with no matching results
-        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "NonExistent"})
+        response = self.app.get(
+            reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "NonExistent"}
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
         self.assertEqual(len(data["members"]), 0)
