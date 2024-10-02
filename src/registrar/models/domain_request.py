@@ -683,6 +683,7 @@ class DomainRequest(TimeStampedModel):
                 "reason": self.action_needed_reason,
                 "email": self.action_needed_reason_email,
                 "excluded_reasons": [DomainRequest.ActionNeededReasons.OTHER],
+                "wrap_email": True,
             },
             self.DomainRequestStatus.REJECTED: {
                 "cached_reason": self._cached_rejection_reason,
@@ -690,6 +691,7 @@ class DomainRequest(TimeStampedModel):
                 "email": self.rejection_reason_email,
                 "excluded_reasons": [],
                 # "excluded_reasons": [DomainRequest.RejectionReasons.OTHER],
+                "wrap_email": False,
             },
         }
         status_info = status_information.get(status)
@@ -713,7 +715,7 @@ class DomainRequest(TimeStampedModel):
                 email_template_subject="emails/status_change_subject.txt",
                 bcc_address=bcc_address,
                 custom_email_content=status_info.get("email"),
-                wrap_email=True,
+                wrap_email=status_information.get("wrap_email"),
             )
 
     def sync_yes_no_form_fields(self):
