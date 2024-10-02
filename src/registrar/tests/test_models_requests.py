@@ -18,13 +18,13 @@ from registrar.models import (
 
 import boto3_mocking
 from registrar.utility.constants import BranchChoices
+from registrar.utility.errors import FSMDomainRequestError
 
 from .common import (
     MockSESClient,
     less_console_noise,
     completed_domain_request,
     set_domain_request_investigators,
-    create_test_user,
 )
 from django_fsm import TransitionNotAllowed
 
