@@ -144,8 +144,8 @@ class GetActionNeededEmailForUserJsonTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("action_needed_email", data)
-        self.assertIn("ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", data["action_needed_email"])
+        self.assertIn("email", data)
+        self.assertIn("ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", data["email"])
 
     @less_console_noise_decorator
     def test_get_action_needed_email_for_user_json_analyst(self):
@@ -161,8 +161,8 @@ class GetActionNeededEmailForUserJsonTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("action_needed_email", data)
-        self.assertIn("SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", data["action_needed_email"])
+        self.assertIn("email", data)
+        self.assertIn("SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", data["email"])
 
     @less_console_noise_decorator
     def test_get_action_needed_email_for_user_json_regular(self):
@@ -188,10 +188,10 @@ class GetRejectionEmailForUserJsonTest(TestCase):
         self.domain_request = completed_domain_request(
             federal_agency=self.agency,
             name="test.gov",
-            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            status=DomainRequest.DomainRequestStatus.REJECTED,
         )
 
-        self.api_url = reverse("get-action-needed-email-for-user-json")
+        self.api_url = reverse("get-rejection-email-for-user-json")
 
     def tearDown(self):
         DomainRequest.objects.all().delete()
@@ -199,21 +199,21 @@ class GetRejectionEmailForUserJsonTest(TestCase):
         FederalAgency.objects.all().delete()
 
     @less_console_noise_decorator
-    def test_get_action_needed_email_for_user_json_superuser(self):
+    def test_get_rejected_email_for_user_json_superuser(self):
         """Test that a superuser can fetch the action needed email."""
         self.client.force_login(self.superuser)
 
         response = self.client.get(
             self.api_url,
             {
-                "reason": DomainRequest.ActionNeededReasons.ELIGIBILITY_UNCLEAR,
+                "reason": DomainRequest.RejectionReasons.CONTACTS_NOT_VERIFIED,
                 "domain_request_id": self.domain_request.id,
             },
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("action_needed_email", data)
-        self.assertIn("ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS", data["action_needed_email"])
+        self.assertIn("email", data)
+        self.assertIn("we could not verify the organizational", data["email"])
 
     @less_console_noise_decorator
     def test_get_action_needed_email_for_user_json_analyst(self):
@@ -223,14 +223,14 @@ class GetRejectionEmailForUserJsonTest(TestCase):
         response = self.client.get(
             self.api_url,
             {
-                "reason": DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL,
+                "reason": DomainRequest.RejectionReasons.CONTACTS_NOT_VERIFIED,
                 "domain_request_id": self.domain_request.id,
             },
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("action_needed_email", data)
-        self.assertIn("SENIOR OFFICIAL DOES NOT MEET ELIGIBILITY REQUIREMENTS", data["action_needed_email"])
+        self.assertIn("email", data)
+        self.assertIn("we could not verify the organizational", data["email"])
 
     @less_console_noise_decorator
     def test_get_action_needed_email_for_user_json_regular(self):
@@ -240,7 +240,7 @@ class GetRejectionEmailForUserJsonTest(TestCase):
         response = self.client.get(
             self.api_url,
             {
-                "reason": DomainRequest.ActionNeededReasons.QUESTIONABLE_SENIOR_OFFICIAL,
+                "reason": DomainRequest.RejectionReasons.CONTACTS_NOT_VERIFIED,
                 "domain_request_id": self.domain_request.id,
             },
         )

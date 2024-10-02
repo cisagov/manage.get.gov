@@ -1637,6 +1637,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "updated_at",
             "status",
             "rejection_reason",
+            "rejection_reason_email",
             "action_needed_reason",
             "action_needed_reason_email",
             "federal_agency",
