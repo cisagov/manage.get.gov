@@ -781,7 +781,7 @@ class TestPortfolio(WebTest):
 
         # Verify that manage settings are sent in the dynamic HTML
         self.client.force_login(self.user)
-        response = self.client.get(reverse("get_portfolio_members_json"))
+        response = self.client.get(reverse("get_portfolio_members_json") + f"?portfolio={self.portfolio.pk}")
         self.assertContains(response, '"action_label": "Manage"')
         self.assertContains(response, '"svg_icon": "settings"')
 
@@ -816,7 +816,8 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
 
         # Verify that view-only settings are sent in the dynamic HTML
-        response = self.client.get(reverse("get_portfolio_members_json"))
+        response = self.client.get(reverse("get_portfolio_members_json") + f"?portfolio={self.portfolio.pk}")
+        print(response.content)
         self.assertContains(response, '"action_label": "View"')
         self.assertContains(response, '"svg_icon": "visibility"')
 
@@ -851,7 +852,7 @@ class TestPortfolio(WebTest):
         # Make sure the page loaded
         self.assertEqual(response.status_code, 200)
         # Verify that admin info is sent in the dynamic HTML
-        response = self.client.get(reverse("get_portfolio_members_json"))
+        response = self.client.get(reverse("get_portfolio_members_json") + f"?portfolio={self.portfolio.pk}")
         # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"{response.content}")
         self.assertContains(response, '"is_admin": true')
 
