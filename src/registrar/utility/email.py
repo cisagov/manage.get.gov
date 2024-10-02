@@ -91,7 +91,7 @@ def send_templated_email(  # noqa
 
     # make sure we don't try and send an email to nowhere
     if not destination:
-        message = "E-mail unable to send, no valid recipients provided."
+        message = "Email unable to send, no valid recipients provided."
         raise EmailSendingError(message)
 
     try:
