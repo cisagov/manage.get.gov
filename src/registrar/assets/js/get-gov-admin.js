@@ -716,11 +716,11 @@ class customRejectedEmail extends CustomizableEmailBase {
     }
 
     loadRejectedEmail() {
-        this.initializeFormGroups("rejected", "showRejectionReason");
+        this.initializeFormGroups();
         this.updateUserInterface();
-        this.initializeDropdown("Error when attempting to grab rejected email: ")
-        this.initializeModalConfirm()
-        this.initializeDirectEditButton()
+        this.initializeDropdown();
+        this.initializeModalConfirm();
+        this.initializeDirectEditButton();
     }
 
     // Overrides the placeholder text when no reason is selected
