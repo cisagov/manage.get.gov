@@ -18,7 +18,6 @@ from registrar.models import (
 
 import boto3_mocking
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 
 from .common import (
     MockSESClient,
@@ -667,7 +666,7 @@ class TestDomainRequest(TestCase):
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]
         self.assert_fsm_transition_raises_error(test_cases, "approve")
-    
+
     @less_console_noise_decorator
     def test_approved_transition_not_allowed_when_domain_already_approved(self):
         """
