@@ -1498,16 +1498,6 @@ class DomainsTable extends LoadTableBase {
   }
 }
 
-function showExportElement(element) {
-  console.log(`Showing element: ${element.id}`);
-  element.style.display = 'block'; 
-}
-
-function hideExportElement(element) {
-  console.log(`Hiding element: ${element.id}`); 
-  element.style.display = 'none'; 
-}
-
 class DomainRequestsTable extends LoadTableBase {
 
   constructor() {
@@ -1516,13 +1506,13 @@ class DomainRequestsTable extends LoadTableBase {
   
   toggleExportButton(requests) {
     console.log("Toggling Export Button Visibility");
-    const exportButton = document.getElementById('export-csv-button'); 
+    const exportButton = document.getElementById('export-csv'); 
     if (exportButton) {
         console.log(`Current requests length: ${requests.length}`); 
         if (requests.length > 0) {
-            showExportElement(exportButton);
+            showElement(exportButton);
         } else {
-            hideExportElement(exportButton);
+            hideElement(exportButton);
         }
         console.log(exportButton);
     }
