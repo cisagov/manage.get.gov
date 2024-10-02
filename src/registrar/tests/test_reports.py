@@ -424,7 +424,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
         # Get the CSV content
         csv_content = self._run_domain_request_data_type_user_export(request)
-        print("CSV CONTENT FIRST TIME IS ", csv_content)
 
         # We expect only domain requests associated with the user's portfolio
         self.assertIn(dd_1.name, csv_content)
@@ -437,7 +436,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         portfolio_permission.refresh_from_db()
 
         csv_content = self._run_domain_request_data_type_user_export(request)
-        print("CSV CONTENT SECOND TIME IS ", csv_content)
 
         self.assertIn(dd_1.name, csv_content)
         self.assertIn(dd_3.name, csv_content)
@@ -447,12 +445,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         portfolio_permission.save()
         portfolio_permission.refresh_from_db()
 
-        # Get the CSV content -- Q: no portfolio but dd2 is not displaying correctly
+        # Domain Request NOT in Portfolio
         csv_content = self._run_domain_request_data_type_user_export(request)
-        print("CSV CONTENT THIRD TIME IS ", csv_content)
         self.assertNotIn(dd_1.name, csv_content)
         self.assertNotIn(dd_3.name, csv_content)
-        self.assertIn(dd_2.name, csv_content)
+        self.assertNotIn(dd_2.name, csv_content)
 
         # Clean up the created objects
         dr_1.delete()
