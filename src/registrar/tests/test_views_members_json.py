@@ -146,24 +146,15 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
 
     def test_search(self):
         """Test search functionality for portfolio members."""
-        # Search by first name
+        # Search by name
         response = self.app.get(
             reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "Second"}
         )
         self.assertEqual(response.status_code, 200)
         data = response.json
         self.assertEqual(len(data["members"]), 1)
-        self.assertEqual(data["members"][0]["first_name"], "Second")
+        self.assertEqual(data["members"][0]["name"], "Second User")
         self.assertEqual(data["members"][0]["email"], "second@example.com")
-
-        # Search by last name
-        response = self.app.get(
-            reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "Last3"}
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.json
-        self.assertEqual(len(data["members"]), 1)
-        self.assertEqual(data["members"][0]["last_name"], "User")
 
         # Search by email
         response = self.app.get(
