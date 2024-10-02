@@ -1514,7 +1514,6 @@ class DomainRequestsTable extends LoadTableBase {
         } else {
             hideElement(exportButton);
         }
-        console.log(exportButton);
     }
 }
 
