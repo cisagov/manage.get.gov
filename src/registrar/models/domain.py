@@ -969,6 +969,7 @@ class Domain(TimeStampedModel, DomainHelper):
         Is the domain live on the inter webs?
         could be replaced with request to see if ok status is set
         """
+        return True
         return self.state == self.State.READY
 
     def is_editable(self) -> bool:

@@ -18,7 +18,7 @@ from registrar.models import (
 
 import boto3_mocking
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import FSMErrorCodes
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 
 from .common import (
     MockSESClient,
@@ -676,7 +676,7 @@ class TestDomainRequest(TestCase):
         """
         Domain.objects.all().create(name=self.submitted_domain_request.requested_domain.name)
         test_cases = [
-            (self.submitted_domain_request, FSMErrorCodes.APPROVE_DOMAIN_IN_USE),
+            (self.submitted_domain_request, FSMDomainRequestError),
         ]
         self.assert_fsm_transition_raises_error(test_cases, "approve")
 

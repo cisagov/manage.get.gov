@@ -95,7 +95,7 @@ class FSMDomainRequestError(Exception):
     """
 
     _error_mapping = {
-        FSMErrorCodes.APPROVE_DOMAIN_IN_USE: ("The domain name for this request is already in use. The name will need to be updated before this request can be approved."),
+        FSMErrorCodes.APPROVE_DOMAIN_IN_USE: ("Cannot approve. Requested domain is already in use."),
         FSMErrorCodes.NO_INVESTIGATOR: ("Investigator is required for this status."),
         FSMErrorCodes.INVESTIGATOR_NOT_STAFF: ("Investigator is not a staff user."),
         FSMErrorCodes.NO_REJECTION_REASON: ("A reason is required for this status."),
