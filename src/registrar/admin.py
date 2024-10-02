@@ -1942,12 +1942,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         # == Handle action needed and rejected emails == #
         # Edge case: this logic is handled by javascript, so contexts outside that must be handled
-        if obj.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
-            if obj.action_needed_reason and not obj.action_needed_reason_email:
-                obj.action_needed_reason_email = get_action_needed_reason_default_email(obj, obj.action_needed_reason)
-        elif obj.status == DomainRequest.DomainRequestStatus.REJECTED:
-            if obj.rejection_reason and not obj.rejection_reason_email:
-                obj.rejection_reason_email = get_rejection_reason_default_email(obj, obj.rejection_reason)
+        obj = self._handle_custom_emails()
 
         # == Handle allowed emails == #
         if obj.status in DomainRequest.get_statuses_that_send_emails() and not settings.IS_PRODUCTION:
@@ -1964,6 +1959,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # We should only save if we don't display any errors in the steps above.
             if should_save:
                 return super().save_model(request, obj, form, change)
+
+    def _handle_custom_emails(self, obj):
+        if obj.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
+            if obj.action_needed_reason and not obj.action_needed_reason_email:
+                obj.action_needed_reason_email = get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+        elif obj.status == DomainRequest.DomainRequestStatus.REJECTED:
+            if obj.rejection_reason and not obj.rejection_reason_email:
+                obj.rejection_reason_email = get_rejection_reason_default_email(obj, obj.rejection_reason)
+        return obj
 
     def _check_for_valid_email(self, request, obj):
         """Certain emails are whitelisted in non-production environments,

@@ -709,8 +709,8 @@ class DomainRequest(TimeStampedModel):
             bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
             self._send_status_update_email(
                 new_status=status,
-                email_template=f"emails/includes/custom_email.txt",
-                email_template_subject=f"emails/status_change_subject.txt",
+                email_template="emails/includes/custom_email.txt",
+                email_template_subject="emails/status_change_subject.txt",
                 bcc_address=bcc_address,
                 custom_email_content=status_info.get("email"),
                 wrap_email=True,

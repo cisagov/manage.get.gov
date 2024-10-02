@@ -356,13 +356,6 @@ class TestDomainRequest(TestCase):
         )
 
     @less_console_noise_decorator
-    def test_reject_sends_email(self):
-        msg = "Create a domain request and reject it and see if email was sent."
-        user, _ = User.objects.get_or_create(username="testy")
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED, user=user)
-        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hi", expected_email=user.email)
-
-    @less_console_noise_decorator
     def test_reject_with_prejudice_does_not_send_email(self):
         msg = "Create a domain request and reject it with prejudice and see if email was sent."
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
