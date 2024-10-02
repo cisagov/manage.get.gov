@@ -63,7 +63,6 @@ class DomainInformation(TimeStampedModel):
         null=True,
         blank=True,
         related_name="information_portfolio",
-        help_text="If blank, domain is not associated with a portfolio.",
     )
 
     sub_organization = models.ForeignKey(

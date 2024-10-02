@@ -327,7 +327,6 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         related_name="DomainRequest_portfolio",
-        help_text="If blank, request is not associated with a portfolio.",
     )
 
     sub_organization = models.ForeignKey(
