@@ -1930,7 +1930,7 @@ class MembersTable extends LoadTableBase {
 
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
-                ${member_email} ${admin_tagHTML}
+                ${member_email ? member_email : member_name} ${admin_tagHTML}
               </th>
               <td data-sort-value="${last_active}" data-label="last_active">
                 ${last_active}

@@ -80,9 +80,15 @@ def apply_sorting(queryset, request):
     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
     order = request.GET.get("order", "asc")  # Default to 'asc'
 
+    if sort_by == "member":
+        sort_by = ["email", "first_name", "middle_name", "last_name"]
+    else:
+        sort_by = [sort_by]
+
     if order == "desc":
-        sort_by = f"-{sort_by}"
-    return queryset.order_by(sort_by)
+        sort_by = [f"-{field}" for field in sort_by]
+
+    return queryset.order_by(*sort_by)
 
 
 def serialize_members(request, portfolio, member, user, admin_ids, portfolio_invitation_emails):
