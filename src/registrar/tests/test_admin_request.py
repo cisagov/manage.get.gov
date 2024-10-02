@@ -25,7 +25,6 @@ from registrar.models import (
     Portfolio,
     AllowedEmail,
 )
-from registrar.utility.errors import FSMErrorCodes
 from .common import (
     MockSESClient,
     completed_domain_request,
@@ -38,7 +37,6 @@ from .common import (
     GenericTestHelper,
 )
 from unittest.mock import patch
-from django_fsm import TransitionNotAllowed
 
 from django.conf import settings
 import boto3_mocking  # type: ignore
@@ -1798,10 +1796,18 @@ class TestDomainRequestAdmin(MockEppLib):
 
                 domain_request.rejection_reason = rejection_reason
 
+                self.admin.save_model(request, domain_request, None, True)
+
+                # Assert that the error message was called with the correct argument
                 if domain_is_active:
-                    with self.assertRaises(TransitionNotAllowed):
-                        self.admin.save_model(request, domain_request, None, True)
+                    messages.error.assert_called_once_with(
+                        request,
+                        "This action is not permitted. The domain " + "is already active.",
+                    )
                 else:
+                    # Assert that the error message was never called
+                    messages.error.assert_not_called()
+
                     self.assertEqual(domain_request.approved_domain, None)
 
                     # Assert that Domain got Deleted
@@ -1811,27 +1817,6 @@ class TestDomainRequestAdmin(MockEppLib):
                     # Assert that DomainInformation got Deleted
                     with self.assertRaises(DomainInformation.DoesNotExist):
                         domain_information.refresh_from_db()
-
-
-                # # Assert that the error message was called with the correct argument
-                # if domain_is_active:
-                #     messages.error.assert_called_once_with(
-                #         request,
-                #         FSMErrorCodes.APPROVE_DOMAIN_IN_USE,
-                #     )
-                # else:
-                #     # Assert that the error message was never called
-                #     messages.error.assert_not_called()
-
-                #     self.assertEqual(domain_request.approved_domain, None)
-
-                #     # Assert that Domain got Deleted
-                #     with self.assertRaises(Domain.DoesNotExist):
-                #         domain.refresh_from_db()
-
-                #     # Assert that DomainInformation got Deleted
-                #     with self.assertRaises(DomainInformation.DoesNotExist):
-                #         domain_information.refresh_from_db()
 
     def test_error_when_saving_approved_to_in_review_and_domain_is_active(self):
         self.trigger_saving_approved_to_another_state(True, DomainRequest.DomainRequestStatus.IN_REVIEW)
