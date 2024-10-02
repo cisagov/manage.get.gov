@@ -216,7 +216,7 @@ class GetRejectionEmailForUserJsonTest(TestCase):
         self.assertIn("we could not verify the organizational", data["email"])
 
     @less_console_noise_decorator
-    def test_get_action_needed_email_for_user_json_analyst(self):
+    def test_get_rejected_email_for_user_json_analyst(self):
         """Test that an analyst can fetch the action needed email."""
         self.client.force_login(self.analyst_user)
 
@@ -233,7 +233,7 @@ class GetRejectionEmailForUserJsonTest(TestCase):
         self.assertIn("we could not verify the organizational", data["email"])
 
     @less_console_noise_decorator
-    def test_get_action_needed_email_for_user_json_regular(self):
+    def test_get_rejected_email_for_user_json_regular(self):
         """Test that a regular user receives a 403 with an error message."""
         p = "password"
         self.client.login(username="testuser", password=p)
