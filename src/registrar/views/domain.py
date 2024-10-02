@@ -226,7 +226,6 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             "user", flat=True
         )
         emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
-        logger.debug("attempting to send templated email to domain managers")
         try:
             send_templated_email(template, subject_template, context=context, cc_addresses=emails)
         except EmailSendingError:
