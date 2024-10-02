@@ -1942,7 +1942,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         # == Handle action needed and rejected emails == #
         # Edge case: this logic is handled by javascript, so contexts outside that must be handled
-        obj = self._handle_custom_emails()
+        obj = self._handle_custom_emails(obj)
 
         # == Handle allowed emails == #
         if obj.status in DomainRequest.get_statuses_that_send_emails() and not settings.IS_PRODUCTION:
