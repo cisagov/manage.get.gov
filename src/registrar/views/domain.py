@@ -204,7 +204,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 f"Not notifying for {form.__class__}, form changes: {form.has_changed()}, force_send: {force_send}"
             )
 
-    def email_domain_managers(self, domain_name, template: str, subject_template: str, context={}):
+    def email_domain_managers(self, domain: Domain, template: str, subject_template: str, context={}):
         """Send a single email built from a template to all managers for a given domain.
 
         template_name and subject_template_name are relative to the same template
@@ -216,12 +216,6 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         Will log a warning if the email fails to send for any reason, but will not raise an error.
         """
-        try:
-            domain = Domain.objects.get(name=domain_name)
-        except Domain.DoesNotExist:
-            logger.warning(
-                "Could not send notification email for domain %s, unable to find matching domain object", domain_name
-            )
         manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list(
             "user", flat=True
         )
@@ -233,7 +227,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             logger.warning(
                 "Could not sent notification email to %s for domain %s",
                 emails,
-                domain_name,
+                domain.name,
                 exc_info=True,
             )
 
