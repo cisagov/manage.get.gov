@@ -240,7 +240,7 @@ class SecurityEmailError(Exception):
     """
 
     _error_mapping = {
-        SecurityEmailErrorCodes.BAD_DATA: ("Enter an email address in the required format, " "like name@example.com."),
+        SecurityEmailErrorCodes.BAD_DATA: ("Enter an email address in the required format, like name@example.com."),
     }
 
     def __init__(self, *args, code=None, **kwargs):

@@ -17,7 +17,7 @@ class PortfolioOrgAddressForm(forms.ModelForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
+                message="Enter a 5-digit or 9-digit ZIP code, like 12345 or 12345-6789.",
             )
         ],
     )
@@ -38,6 +38,7 @@ class PortfolioOrgAddressForm(forms.ModelForm):
             "state_territory": {
                 "required": "Select the state, territory, or military post where your organization is located."
             },
+            "zipcode": {"required": "Enter a 5-digit or 9-digit ZIP code, like 12345 or 12345-6789."},
         }
         widgets = {
             # We need to set the required attributed for State/territory
