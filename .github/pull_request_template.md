@@ -87,11 +87,11 @@ Resolves #001
 - [ ] Checked different states (empty, one, some, error)
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
 
-- [ ] Tested with multiple browsers (check off which ones were used)
-  - [ ] Chrome
-  - [ ] Microsoft Edge
-  - [ ] FireFox
-  - [ ] Safari
+#### Test support on multiple browsers. Check the browser(s) tested.
+- [ ] Chrome
+- [ ] Microsoft Edge
+- [ ] FireFox
+- [ ] Safari
 
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
 
