@@ -718,6 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitterPhone = extractTextById('contact_info_phone', submitterDiv);
             let submitterInfo = `${submitterName}${submitterTitle}${submitterEmail}${submitterPhone}`;
 
+
             //------ Senior Official
             const seniorOfficialDiv = document.querySelector('.form-row.field-senior_official');
             const seniorOfficialElement = document.getElementById('id_senior_official');
