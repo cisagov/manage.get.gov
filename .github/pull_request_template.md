@@ -59,9 +59,9 @@ Resolves #001
 
 - [ ] Pulled this branch locally and tested it
 - [ ] Verified code meets above code standards and user-facing checks. Addresses any checks that are not satisfied
-- [ ] Reviewed this code and left comments. Indicate if comments must be addressed before code is merged.
+- [ ] Reviewed this code and left comments. Indicate if comments must be addressed before code is merged
 - [ ] Checked that all code is adequately covered by tests
-- [ ] If any model was updated to modify/add/delete columns, verified migrations can be run with `makemigrations`.
+- [ ] If any model was updated to modify/add/delete columns, verified migrations can be run with `makemigrations`
 
 #### Validated user-facing changes as a developer
 
