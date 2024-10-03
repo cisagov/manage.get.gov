@@ -75,9 +75,10 @@ class PortfolioDomainRequestStep(StrEnum):
     """
 
     # Portfolio
-    REQUESTING_ENTITY = "organization_name"
+    REQUESTING_ENTITY = "requesting_entity"
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
     PURPOSE = "purpose"
     ADDITIONAL_DETAILS = "additional_details"
     REQUIREMENTS = "requirements"
+    REVIEW = "review"

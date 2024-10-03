@@ -19,3 +19,4 @@ from .health import *
 from .index import *
 from .portfolios import *
 from .transfer_user import TransferUserView
+from .portfolio_domain_request import *

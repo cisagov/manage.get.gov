@@ -22,7 +22,7 @@ from registrar.views.report_views import (
     ExportDataTypeUser,
 )
 
-from registrar.views.domain_request import Step
+from registrar.views.domain_request import Step, PortfolioDomainRequestStep
 from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility.api_views import (
@@ -61,6 +61,18 @@ for step, view in [
 ]:
     domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
 
+PORTFOLIO_DOMAIN_REQUEST_NAMESPACE = views.PortfolioDomainRequestWizard.URL_NAMESPACE
+portfolio_domain_request_urls = [
+    # Portfolio views
+    path("portfolio/", views.PortfolioDomainRequestWizard.as_view(), name="new-portfolio-domain-request"),
+    path("portfolio/finished/", views.Finished.as_view(), name="portfolio-finished"),
+]
+
+for step, view in [
+    (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
+    (Step.REVIEW, views.Review),
+]:
+    portfolio_domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
 
 urlpatterns = [
     path("", views.index, name="home"),
@@ -193,6 +205,7 @@ urlpatterns = [
     path("health", views.health, name="health"),
     path("openid/", include("djangooidc.urls")),
     path("request/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
+    path("portfolio/request/", include((portfolio_domain_request_urls, PORTFOLIO_DOMAIN_REQUEST_NAMESPACE))),
     path("api/v1/available/", available, name="available"),
     path("api/v1/rdap/", rdap, name="rdap"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),

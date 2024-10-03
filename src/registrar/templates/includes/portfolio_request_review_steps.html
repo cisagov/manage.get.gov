@@ -4,7 +4,7 @@
 {% for step in steps %}
 <section class="summary-item margin-top-3">
     {% if is_editable %}
-        {% namespaced_url 'domain-request' step as domain_request_url %}
+        {% namespaced_url URL_NAMESPACE step as domain_request_url %}
     {% endif %}
 
     {% if step == Step.REQUESTING_ENTITY %}

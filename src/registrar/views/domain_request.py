@@ -204,14 +204,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # subclasseswill NOT be redirected. The purpose of this is to allow code to
         # send users "to the domain request wizard" without needing to know which view
         # is first in the list of steps.
-        if self.__class__ == DomainRequestWizard:
-            if request.path_info == self.NEW_URL_NAME:
-                # Clear context so the prop getter won't create a request here.
-                # Creating a request will be handled in the post method for the
-                # intro page.
-                return render(request, "domain_request_intro.html", {})
-            else:
-                return self.goto(self.steps.first)
+        redirect = self.redirect_to_intro_or_first_step(request)
+        if redirect:
+            return redirect
 
         # refresh step_history to ensure we don't erroneously unlock unfinished
         # steps just because we visited it
@@ -236,7 +231,25 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         context["pending_requests_exist"] = len(pending_requests) > 0
 
+        context["URL_NAMESPACE"] = self.URL_NAMESPACE
+
         return render(request, self.template_name, context)
+
+    def redirect_to_intro_or_first_step(self, request):
+        # if accessing this class directly, redirect to either to an acknowledgement
+        # page or to the first step in the processes (if an edit rather than a new request);
+        # subclasseswill NOT be redirected. The purpose of this is to allow code to
+        # send users "to the domain request wizard" without needing to know which view
+        # is first in the list of steps.
+        if self.__class__ == DomainRequestWizard:
+            if request.path_info == self.NEW_URL_NAME:
+                # Clear context so the prop getter won't create a request here.
+                # Creating a request will be handled in the post method for the
+                # intro page.
+                return render(request, "domain_request_intro.html", {})
+            else:
+                return self.goto(self.steps.first)
+        return None
 
     def get_all_forms(self, **kwargs) -> list:
         """
@@ -497,26 +510,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         for form in forms:
             if form is not None and hasattr(form, "to_database"):
                 form.to_database(self.domain_request)
-
-
-# TODO - this is a WIP until the domain request experience for portfolios is complete
-class PortfolioDomainRequestWizard(DomainRequestWizard):
-    StepEnum: PortfolioDomainRequestStep = PortfolioDomainRequestStep  # type: ignore
-
-    TITLES = {
-        StepEnum.REQUESTING_ENTITY: _("Requesting entity"),
-        StepEnum.CURRENT_SITES: _("Current websites"),
-        StepEnum.DOTGOV_DOMAIN: _(".gov domain"),
-        StepEnum.PURPOSE: _("Purpose of your domain"),
-        StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
-        StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
-        # Step.REVIEW: _("Review and submit your domain request"),
-    }
-
-    def __init__(self):
-        super().__init__()
-        self.steps = StepsHelper(self)
-        self._domain_request = None  # for caching
 
 
 class OrganizationType(DomainRequestWizard):
