@@ -5938,12 +5938,21 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     return offset;
   };
 
+  /*
+   DOTGOV: Added calculations to allow flexible position settings of tooltip
+   */
   const tooltipStyle = window.getComputedStyle(tooltipBody);
   const tooltipIsFixedPositioned = tooltipStyle.position === 'fixed';
-  const triggerRect = tooltipTrigger.getBoundingClientRect();
-  const element_left = tooltipIsFixedPositioned ? triggerRect.left + triggerRect.width/2 + 'px': `50%`
-  const element_top = tooltipIsFixedPositioned ? triggerRect.top + triggerRect.height/2 + 'px': `50%`
-
+  const triggerRect = tooltipTrigger.getBoundingClientRect(); //detect if tooltip is set to "fixed" position
+  const targetLeft = tooltipIsFixedPositioned ? triggerRect.left + triggerRect.width/2 + 'px': `50%`
+  const targetTop = tooltipIsFixedPositioned ? triggerRect.top + triggerRect.height/2 + 'px': `50%`
+  if (tooltipIsFixedPositioned) {
+    // DOTGOV: Add listener to handle scrolling if tooltip position = 'fixed'
+    // (so that the tooltip doesn't appear to stick to the screen)
+    window.addEventListener('scroll', function() {
+      findBestPosition(tooltipBody)
+    });
+  }
   /**
    * Positions tooltip at the top
    * @param {HTMLElement} e - this is the tooltip body
@@ -5955,7 +5964,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     const topMargin = calculateMarginOffset("top", e.offsetHeight, tooltipTrigger);
     const leftMargin = calculateMarginOffset("left", e.offsetWidth, tooltipTrigger);
     setPositionClass("top");
-    e.style.left = element_left; // center the element
+    e.style.left = targetLeft; // center the element
     e.style.top = tooltipIsFixedPositioned ?`${triggerRect.top-TRIANGLE_SIZE}px`:`-${TRIANGLE_SIZE}px`; // consider the pseudo element
     // apply our margins based on the offset
     e.style.margin = `-${topMargin}px 0 0 -${leftMargin / 2}px`;
@@ -5972,7 +5981,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     if (tooltipIsFixedPositioned){
       e.style.top = triggerRect.bottom+'px';
     }
-    e.style.left = element_left;
+    e.style.left = targetLeft;
     e.style.margin = `${TRIANGLE_SIZE}px 0 0 -${leftMargin / 2}px`;
   };
 
@@ -5984,7 +5993,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     resetPositionStyles(e);
     const topMargin = calculateMarginOffset("top", e.offsetHeight, tooltipTrigger);
     setPositionClass("right");
-    e.style.top = element_top;
+    e.style.top = targetTop;
     e.style.left = tooltipIsFixedPositioned ? `${triggerRect.right + TRIANGLE_SIZE}px`:`${tooltipTrigger.offsetLeft + tooltipTrigger.offsetWidth + TRIANGLE_SIZE}px`;
 ;
     e.style.margin = `-${topMargin / 2}px 0 0 0`;
@@ -6001,7 +6010,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     // we have to check for some utility margins
     const leftMargin = calculateMarginOffset("left", tooltipTrigger.offsetLeft > e.offsetWidth ? tooltipTrigger.offsetLeft - e.offsetWidth : e.offsetWidth, tooltipTrigger);
     setPositionClass("left");
-    e.style.top = element_top;
+    e.style.top = targetTop;
     e.style.left = tooltipIsFixedPositioned ? `${triggerRect.left-TRIANGLE_SIZE}px` : `-${TRIANGLE_SIZE}px`;
     e.style.margin = `-${topMargin / 2}px 0 0 ${tooltipTrigger.offsetLeft > e.offsetWidth ? leftMargin : -leftMargin}px`; // adjust the margin
   };
@@ -6027,9 +6036,6 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
       if (i < positions.length) {
         const pos = positions[i];
         pos(element);
-        
-        const rect = element.getBoundingClientRect();
-        console.log("***RECTANGLE**** "+rect.width);
 
         if (!isElementInViewport(element)) {
           // eslint-disable-next-line no-param-reassign
@@ -6142,11 +6148,14 @@ const setUpAttributes = tooltipTrigger => {
   tooltipBody.setAttribute("aria-hidden", "true");
 
   // place the text in the tooltip
-  // DOTGOV: nest elements for tooltip to prevent clipping (works around viewport calcs)
+  // DOTGOV: nest the text element within a paragraph to prevent clipping.
    tooltipBody.innerHTML = `
-    <p>
-      ${tooltipContent}
-    </p>`
+    <div class="usa-tooltip__content">
+      ${tooltipContent} 
+
+     n oainef aoieiu aw eghr hilabiuyabewisofuha libfasuiybefiae ruhawioeufh aiwfh iahf iuahefailusef aiwsfbali wefbaiue fbaliuefbalieuwfhauiowera jhfasiuf aiuwenail ewfasdn fiausfn iuafia ewfn ia fisfn iuf niuwnf iwenfailuhfiauefn aliefnaifnialsudnf aiufnailufnailefialenf ailefia fa filanf ilaefiunaifalfn ailfnialuefn ialuefnailf lifniasn filsa fnialn fila fi af ai fniaufn ilaufn ial fia fnila fiua fnilaefn ialuefn ial efailf ia fnial fia fniu ialf nailf a fal f Before this domain can be used, you’ll need to add name server addresses.
+    
+    </div>`
   // tooltipBody.textContent = tooltipContent;
 
   return {
