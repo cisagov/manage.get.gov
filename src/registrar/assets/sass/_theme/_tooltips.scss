@@ -28,3 +28,28 @@
 #extended-logo .usa-tooltip__body {
   font-weight: 400 !important;
 }
+
+.usa-tooltip__body > p {
+  margin-top: 0;
+  width: 40vw;
+  text-wrap: wrap;
+  text-align: center;
+  font-size: .9rem;
+  margin-block-start: 0em;
+  margin-block-end: 0em;
+  max-width: fit-content;
+  @include at-media('tablet') {
+    width: 70vw;
+  }
+}
+
+.usa-tooltip__body {
+  white-space: inherit;
+  max-width: fit-content;
+  // position: fixed;
+}
+
+.usa-tooltip__body--wrap {
+  min-width: inherit;
+  width: inherit;
+}

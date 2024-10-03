@@ -5938,6 +5938,10 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     return offset;
   };
 
+  const element_is_fixed_positioned = false
+  const parentRect = tooltipTrigger.getBoundingClientRect();
+  const element_left = element_is_fixed_positioned ? parentRect.left + parentRect.width : `50%`
+
   /**
    * Positions tooltip at the top
    * @param {HTMLElement} e - this is the tooltip body
@@ -5949,7 +5953,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     const topMargin = calculateMarginOffset("top", e.offsetHeight, tooltipTrigger);
     const leftMargin = calculateMarginOffset("left", e.offsetWidth, tooltipTrigger);
     setPositionClass("top");
-    e.style.left = `50%`; // center the element
+    e.style.left = element_left; // center the element
     e.style.top = `-${TRIANGLE_SIZE}px`; // consider the pseudo element
     // apply our margins based on the offset
     e.style.margin = `-${topMargin}px 0 0 -${leftMargin / 2}px`;
@@ -5963,7 +5967,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     resetPositionStyles(e);
     const leftMargin = calculateMarginOffset("left", e.offsetWidth, tooltipTrigger);
     setPositionClass("bottom");
-    e.style.left = `50%`;
+    e.style.left = element_left;
     e.style.margin = `${TRIANGLE_SIZE}px 0 0 -${leftMargin / 2}px`;
   };
 
@@ -5975,7 +5979,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     resetPositionStyles(e);
     const topMargin = calculateMarginOffset("top", e.offsetHeight, tooltipTrigger);
     setPositionClass("right");
-    e.style.top = `50%`;
+    e.style.top = element_left;
     e.style.left = `${tooltipTrigger.offsetLeft + tooltipTrigger.offsetWidth + TRIANGLE_SIZE}px`;
     e.style.margin = `-${topMargin / 2}px 0 0 0`;
   };
@@ -5991,7 +5995,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     // we have to check for some utility margins
     const leftMargin = calculateMarginOffset("left", tooltipTrigger.offsetLeft > e.offsetWidth ? tooltipTrigger.offsetLeft - e.offsetWidth : e.offsetWidth, tooltipTrigger);
     setPositionClass("left");
-    e.style.top = `50%`;
+    e.style.top = element_left;
     e.style.left = `-${TRIANGLE_SIZE}px`;
     e.style.margin = `-${topMargin / 2}px 0 0 ${tooltipTrigger.offsetLeft > e.offsetWidth ? leftMargin : -leftMargin}px`; // adjust the margin
   };
@@ -6017,6 +6021,10 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
       if (i < positions.length) {
         const pos = positions[i];
         pos(element);
+        
+        const rect = element.getBoundingClientRect();
+        console.log("***RECTANGLE**** "+rect.width);
+
         if (!isElementInViewport(element)) {
           // eslint-disable-next-line no-param-reassign
           tryPositions(i += 1);
@@ -6128,7 +6136,13 @@ const setUpAttributes = tooltipTrigger => {
   tooltipBody.setAttribute("aria-hidden", "true");
 
   // place the text in the tooltip
-  tooltipBody.textContent = tooltipContent;
+  // DOTGOV: nest elements for tooltip to prevent clipping (works around viewport calcs)
+   tooltipBody.innerHTML = `
+    <p>
+      ${tooltipContent}
+    </p>`
+  // tooltipBody.textContent = tooltipContent;
+
   return {
     tooltipBody,
     position,
