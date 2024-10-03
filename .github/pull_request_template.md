@@ -43,7 +43,8 @@ Resolves #001
 - [ ] Update documentation in READMEs and/or onboarding guide
 
 #### Ensured code standards are met (Original Developer)
-
+<!-- Write N/A if the below code standards are not applicable to your PR -->
+N/A - no external systems or errors, this is just docs refactoring.
 - [ ] Interactions with external systems are wrapped in try/except
 - [ ] Error handling exists for unusual or missing values
 
@@ -58,7 +59,7 @@ Resolves #001
 #### Reviewed, tested, and left feedback about the changes
 
 - [ ] Pulled this branch locally and tested it
-- [ ] Verified code meets code standards and comments if any standards above are not satisfied
+- [ ] Verified code meets above code standards and user-facing checks. Addresses any checks that are not satisfied
 - [ ] Reviewed this code and left comments. Indicate if comments must be addressed before code is merged.
 - [ ] Checked that all code is adequately covered by tests
 - [ ] If any model was updated to modify/add/delete columns, verified migrations can be run with `makemigrations`.
@@ -85,7 +86,7 @@ Resolves #001
 
 #### Validated user-facing changes as a designer
 
-- [ ] Checked keyboard navigability
+- [ ] Checked different states (empty, one, some, error)
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
 
 - [ ] Tested with multiple browsers (check off which ones were used)
