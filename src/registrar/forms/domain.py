@@ -458,7 +458,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a 5-digit or 9-digit ZIP code, like 12345 or 12345-6789.",
+                message="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
             )
         ],
     )

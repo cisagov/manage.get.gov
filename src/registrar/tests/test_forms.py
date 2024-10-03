@@ -33,7 +33,7 @@ class TestFormValidation(MockEppLib):
         form = OrganizationContactForm(data={"zipcode": "nah"})
         self.assertEqual(
             form.errors["zipcode"],
-            ["Enter a 5-digit or 9-digit ZIP code, like 12345 or 12345-6789."],
+            ["Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789."],
         )
 
     def test_org_contact_zip_valid(self):
