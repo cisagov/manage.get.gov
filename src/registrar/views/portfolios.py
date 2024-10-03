@@ -12,6 +12,7 @@ from registrar.views.utility.permission_views import (
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
     NoPortfolioDomainsPermissionView,
+    PortfolioMemberPermissionView,
     PortfolioMembersPermissionView,
 )
 from django.views.generic import View
@@ -49,6 +50,18 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
     def get(self, request):
         """Add additional context data to the template."""
         return render(request, "portfolio_members.html")
+
+
+class PortfolioMemberView(PortfolioMemberPermissionView, View):
+
+    template_name = "portfolio_member.html"
+    model = User
+
+    # def get(self, request):
+    #     """Add additional context data to the template."""
+    #     return render(request, self.template_name, context=self.get_context_data())
+    
+
 
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):

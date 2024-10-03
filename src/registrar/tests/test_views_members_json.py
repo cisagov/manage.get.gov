@@ -68,6 +68,11 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
 
+    def tearDownClass(cls):
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)

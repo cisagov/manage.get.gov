@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.urls import reverse
 
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
@@ -118,7 +119,7 @@ def serialize_members(request, portfolio, member, user, admin_ids, portfolio_inv
         "email": member.email,
         "is_admin": is_admin,
         "last_active": last_active,
-        "action_url": "#",  # reverse("members", kwargs={"pk": member.id}), # TODO: Future ticket?
+        "action_url": reverse("member", kwargs={"pk": member.id}), # TODO: Future ticket?
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
     }

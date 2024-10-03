@@ -19,6 +19,7 @@ from .mixins import (
     UserProfilePermission,
     PortfolioBasePermission,
     PortfolioMembersPermission,
+    PortfolioMemberPermission,
     DomainRequestPortfolioViewonlyPermission,
 )
 import logging
@@ -253,7 +254,15 @@ class PortfolioDomainRequestsPermissionView(PortfolioDomainRequestsPermission, P
 
 
 class PortfolioMembersPermissionView(PortfolioMembersPermission, PortfolioBasePermissionView, abc.ABC):
-    """Abstract base view for portfolio domain request views that enforces permissions.
+    """Abstract base view for portfolio members views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+
+class PortfolioMemberPermissionView(PortfolioMemberPermission, PortfolioBasePermissionView, abc.ABC):
+    """Abstract base view for portfolio member views that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.

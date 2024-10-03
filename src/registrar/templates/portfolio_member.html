@@ -1,0 +1,32 @@
+{% extends 'portfolio_base.html' %}
+{% load static field_helpers%}
+
+{% block title %}Organization member {% endblock %}
+
+{% load static %}
+
+{% block portfolio_content %}
+<div class="grid-row grid-gap">
+    <div class="tablet:grid-col-3">
+        <p class="font-body-md margin-top-0 margin-bottom-2
+                    text-primary-darker text-semibold"
+        >
+            <span class="usa-sr-only"> Portfolio name:</span> {{ portfolio }}
+        </p>
+    </div>
+
+    <div class="tablet:grid-col-9" id="main-content">
+
+        {% block messages %}
+            {% include "includes/form_messages.html" %}
+        {% endblock %}
+
+        <h1>Member</h1>
+
+        <p>The name of your organization will be publicly listed as the domain registrant.</p>
+
+        
+
+    </div>
+</div>
+{% endblock %}

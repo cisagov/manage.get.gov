@@ -81,6 +81,11 @@ urlpatterns = [
         views.PortfolioMembersView.as_view(),
         name="members",
     ),
+    path(
+        "member/<int:pk>",
+        views.PortfolioMemberView.as_view(),
+        name="member",
+    ),
     # path(
     #     "no-organization-members/",
     #     views.PortfolioNoMembersView.as_view(),
