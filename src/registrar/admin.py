@@ -3116,7 +3116,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             admin_details += f"<input aria-hidden='true' class='display-none' value='{escape(portfolio_admin.email)}'>"
             admin_details += (
                 "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon padding-left-05"
-                + "button--clipboard copy-to-clipboard text-no-underline' type='button'>"
+                + "copy-to-clipboard text-no-underline' type='button'>"
             )
             admin_details += "<svg class='usa-icon'>"
             admin_details += "<use aria-hidden='true' xlink:href='/public/img/sprite.svg#content_copy'></use>"

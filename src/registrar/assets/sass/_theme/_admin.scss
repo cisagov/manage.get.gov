@@ -383,6 +383,7 @@ a.button,
     font-kerning: auto;
     font-family: inherit;
     font-weight: normal;
+    text-decoration: none !important;
 }
 .button svg,
 .button span,
@@ -422,13 +423,6 @@ input[type=submit].button--dja-toolbar {
 input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-toolbar:hover {
     border-color: var(--body-quiet-color);
 }
-// Targets the DJA buttom with a nested icon
-button .usa-icon,
-.button .usa-icon,
-.button--clipboard .usa-icon {
-    vertical-align: middle;      
-}
-// Make the clipboard button "float" inside of the input box
 .admin-icon-group {
     position: relative;
     display: inline;
@@ -441,7 +435,6 @@ button .usa-icon,
 
     button {
         width: max-content;
-        text-decoration: none !important;
     }
 
     @media (max-width: 1000px) {
@@ -857,6 +850,9 @@ div.dja__model-description{
     padding-top: 0 !important;
 }
 
+.padding-bottom-0 {
+    padding-bottom: 0 !important;
+}
 
 .flex-container {
     @media screen and (min-width: 700px) and (max-width: 1150px) {
