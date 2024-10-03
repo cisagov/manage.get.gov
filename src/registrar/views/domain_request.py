@@ -130,10 +130,16 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # If a user is creating a request, we assume that perms are handled upstream
         if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
             self._domain_request = DomainRequest.objects.create(
                 creator=self.request.user,
-                portfolio=self.request.session.get("portfolio"),
+                portfolio=portfolio,
             )
+
+            # TODO - is this needed?
+            if portfolio:
+                self._domain_request.generic_org_type = portfolio.organization_type
+                self._domain_request.save()
         else:
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
 
@@ -233,7 +239,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
                 # intro page.
-                return render(request, "domain_request_intro.html", {})
+                return render(request, "domain_request_intro.html", {"hide_requests": True, "hide_domains": True})
             else:
                 return self.goto(self.steps.first)
 
@@ -360,7 +366,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # from the list of "unlocked" steps.
         if self.is_portfolio:
             history_dict = {
-                "requesting_entity": self.domain_request.is_policy_acknowledged is not None,
+                "requesting_entity": self.domain_request.organization_name is not None,
                 "current_sites": (
                     self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
                 ),
@@ -459,6 +465,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
             }
+
+        # Hides the requests and domains buttons in the navbar
+        context_stuff["hide_requests"] = self.is_portfolio
+        context_stuff["hide_domains"] = self.is_portfolio
+
         return context_stuff
 
     def get_step_list(self) -> list:

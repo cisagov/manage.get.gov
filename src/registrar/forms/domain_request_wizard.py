@@ -22,11 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 class RequestingEntityForm(RegistrarForm):
-    is_policy_acknowledged = forms.BooleanField(
-        label="I read and agree to the requirements for operating a .gov domain.",
-        error_messages={
-            "required": ("Check the box if you read and agree to the requirements for operating a .gov domain.")
-        },
+    organization_name = forms.CharField(
+        label="Organization name",
+        error_messages={"required": "Enter the name of your organization."},
     )
 
 

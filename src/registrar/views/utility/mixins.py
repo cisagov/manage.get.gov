@@ -391,6 +391,12 @@ class DomainRequestWizardPermission(PermissionsLoginMixin):
         if self.request.user.is_restricted():
             return False
 
+        # If the user is an org user and doesn't have add/edit perms, forbid this
+        if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
+            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
+                return False
+
         # user needs to be the creator of the domain request to edit it.
         id = self.kwargs.get("id") if hasattr(self, "kwargs") else None
         if not id:
@@ -398,12 +404,10 @@ class DomainRequestWizardPermission(PermissionsLoginMixin):
             if domain_request_wizard:
                 id = domain_request_wizard.get("domain_request_id")
 
-        if not DomainRequest.objects.filter(creator=self.request.user, id=id).exists():
-            return False
-
-        if self.request.user.is_org_user(self.request):
-            portfolio = self.request.session.get("portfolio")
-            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
+        # If no id is provided, we can assume that the user is starting a new request.
+        # If one IS provided, check that they are the original creator of it.
+        if id:
+            if not DomainRequest.objects.filter(creator=self.request.user, id=id).exists():
                 return False
 
         return True
