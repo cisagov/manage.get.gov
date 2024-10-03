@@ -1868,6 +1868,125 @@ class DomainRequestsTable extends LoadTableBase {
   }
 }
 
+class MembersTable extends LoadTableBase {
+
+  constructor() {
+    super('.members__table', '.members__table-wrapper', '#members__search-field', '#members__search-field-submit', '.members__reset-search', '.members__reset-filters', '.members__no-data', '.members__no-search-results');
+  }
+  /**
+     * Loads rows in the members list, as well as updates pagination around the members list
+     * based on the supplied attributes.
+     * @param {*} page - the page number of the results (starts with 1)
+     * @param {*} sortBy - the sort column option
+     * @param {*} order - the sort order {asc, desc}
+     * @param {*} scroll - control for the scrollToElement functionality
+     * @param {*} status - control for the status filter
+     * @param {*} searchTerm - the search term
+     * @param {*} portfolio - the portfolio id
+     */
+  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+
+      // --------- SEARCH
+      let searchParams = new URLSearchParams(
+        {
+          "page": page,
+          "sort_by": sortBy,
+          "order": order,
+          "status": status,
+          "search_term": searchTerm
+        }
+      );
+      if (portfolio)
+        searchParams.append("portfolio", portfolio)
+
+
+      // --------- FETCH DATA
+      // fetch json of page of domais, given params
+      let baseUrl = document.getElementById("get_members_json_url");
+      if (!baseUrl) {
+        return;
+      }
+
+      let baseUrlValue = baseUrl.innerHTML;
+      if (!baseUrlValue) {
+        return;
+      }
+  
+      let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            console.error('Error in AJAX call: ' + data.error);
+            return;
+          }
+
+          // handle the display of proper messaging in the event that no members exist in the list or search returns no results
+          this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+
+          // identify the DOM element where the domain list will be inserted into the DOM
+          const memberList = document.querySelector('.members__table tbody');
+          memberList.innerHTML = '';
+
+          data.members.forEach(member => {
+            // const actionUrl = domain.action_url;
+            const member_name = member.name;
+            const member_email = member.email;
+            const last_active = member.last_active;
+            const action_url = member.action_url;
+            const action_label = member.action_label;
+            const svg_icon = member.svg_icon;
+      
+            const row = document.createElement('tr');
+
+            let admin_tagHTML = ``;
+            if (member.is_admin)
+              admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
+
+            row.innerHTML = `
+              <th scope="row" role="rowheader" data-label="member email">
+                ${member_email ? member_email : member_name} ${admin_tagHTML}
+              </th>
+              <td data-sort-value="${last_active}" data-label="last_active">
+                ${last_active}
+              </td>
+              <td>
+                <a href="${action_url}">
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
+                  </svg>
+                  ${action_label} <span class="usa-sr-only">${member_name}</span>
+                </a>
+              </td>
+            `;
+            memberList.appendChild(row);
+          });
+
+          // Do not scroll on first page load
+          if (scroll)
+            ScrollToElement('class', 'members');
+          this.scrollToTable = true;
+
+          // update pagination
+          this.updatePagination(
+            'member',
+            '#members-pagination',
+            '#members-pagination .usa-pagination__counter',
+            '#members',
+            data.page,
+            data.num_pages,
+            data.has_previous,
+            data.has_next,
+            data.total,
+          );
+          this.currentSortBy = sortBy;
+          this.currentOrder = order;
+          this.currentSearchTerm = searchTerm;
+      })
+      .catch(error => console.error('Error fetching members:', error));
+  }
+}
+
 
 /**
  * An IIFE that listens for DOM Content to be loaded, then executes.  This function
@@ -1940,6 +2059,23 @@ const utcDateString = (dateString) => {
   return `${utcMonth} ${utcDay}, ${utcYear}, ${utcHours}:${utcMinutes} ${ampm} UTC`;
 };
 
+
+
+/**
+ * An IIFE that listens for DOM Content to be loaded, then executes.  This function
+ * initializes the domains list and associated functionality on the home page of the app.
+ *
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  const isMembersPage = document.querySelector("#members") 
+  if (isMembersPage){
+    const membersTable = new MembersTable();
+    if (membersTable.tableWrapper) {
+      // Initial load
+      membersTable.loadTable(1);
+    }
+  }
+});
 
 /**
  * An IIFE that displays confirmation modal on the user profile page
