@@ -70,7 +70,6 @@ N/A - no external systems or errors, this is just docs refactoring.
 - [ ] Checked keyboard navigability
 - [ ] Meets all designs and user flows provided by design/product
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
-
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
 
 **Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist
