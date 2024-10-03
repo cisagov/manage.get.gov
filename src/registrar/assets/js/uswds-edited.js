@@ -5938,17 +5938,11 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     return offset;
   };
 
-  const style = window.getComputedStyle(tooltipBody);
-  // Check if the position property is 'fixed'
-  if (style.position === 'fixed') {
-      console.log('The element has a fixed position.');
-  } else {
-      console.log('The element does not have a fixed position.');
-  }
-  const element_is_fixed_positioned = style.position === 'fixed';
-  const parentRect = tooltipTrigger.getBoundingClientRect();
-  const element_left = element_is_fixed_positioned ? parentRect.left + parentRect.width/2 + 'px': `50%`
-  const element_top = element_is_fixed_positioned ? parentRect.top + parentRect.height/2 + 'px': `50%`
+  const tooltipStyle = window.getComputedStyle(tooltipBody);
+  const tooltipIsFixedPositioned = tooltipStyle.position === 'fixed';
+  const triggerRect = tooltipTrigger.getBoundingClientRect();
+  const element_left = tooltipIsFixedPositioned ? triggerRect.left + triggerRect.width/2 + 'px': `50%`
+  const element_top = tooltipIsFixedPositioned ? triggerRect.top + triggerRect.height/2 + 'px': `50%`
 
   /**
    * Positions tooltip at the top
@@ -5962,7 +5956,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     const leftMargin = calculateMarginOffset("left", e.offsetWidth, tooltipTrigger);
     setPositionClass("top");
     e.style.left = element_left; // center the element
-    e.style.top = element_is_fixed_positioned ?`${parentRect.top-TRIANGLE_SIZE}px`:`-${TRIANGLE_SIZE}px`; // consider the pseudo element
+    e.style.top = tooltipIsFixedPositioned ?`${triggerRect.top-TRIANGLE_SIZE}px`:`-${TRIANGLE_SIZE}px`; // consider the pseudo element
     // apply our margins based on the offset
     e.style.margin = `-${topMargin}px 0 0 -${leftMargin / 2}px`;
   };
@@ -5975,8 +5969,8 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     resetPositionStyles(e);
     const leftMargin = calculateMarginOffset("left", e.offsetWidth, tooltipTrigger);
     setPositionClass("bottom");
-    if (element_is_fixed_positioned){
-      e.style.top = parentRect.bottom+'px';
+    if (tooltipIsFixedPositioned){
+      e.style.top = triggerRect.bottom+'px';
     }
     e.style.left = element_left;
     e.style.margin = `${TRIANGLE_SIZE}px 0 0 -${leftMargin / 2}px`;
@@ -5991,7 +5985,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     const topMargin = calculateMarginOffset("top", e.offsetHeight, tooltipTrigger);
     setPositionClass("right");
     e.style.top = element_top;
-    e.style.left = element_is_fixed_positioned ? `${parentRect.right + TRIANGLE_SIZE}px`:`${tooltipTrigger.offsetLeft + tooltipTrigger.offsetWidth + TRIANGLE_SIZE}px`;
+    e.style.left = tooltipIsFixedPositioned ? `${triggerRect.right + TRIANGLE_SIZE}px`:`${tooltipTrigger.offsetLeft + tooltipTrigger.offsetWidth + TRIANGLE_SIZE}px`;
 ;
     e.style.margin = `-${topMargin / 2}px 0 0 0`;
   };
@@ -6008,7 +6002,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     const leftMargin = calculateMarginOffset("left", tooltipTrigger.offsetLeft > e.offsetWidth ? tooltipTrigger.offsetLeft - e.offsetWidth : e.offsetWidth, tooltipTrigger);
     setPositionClass("left");
     e.style.top = element_top;
-    e.style.left = element_is_fixed_positioned ? `${parentRect.left-TRIANGLE_SIZE}px` : `-${TRIANGLE_SIZE}px`;
+    e.style.left = tooltipIsFixedPositioned ? `${triggerRect.left-TRIANGLE_SIZE}px` : `-${TRIANGLE_SIZE}px`;
     e.style.margin = `-${topMargin / 2}px 0 0 ${tooltipTrigger.offsetLeft > e.offsetWidth ? leftMargin : -leftMargin}px`; // adjust the margin
   };
 
