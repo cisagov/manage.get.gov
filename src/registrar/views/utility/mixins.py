@@ -384,9 +384,27 @@ class DomainRequestWizardPermission(PermissionsLoginMixin):
         The user is in self.request.user
         """
 
+        if not self.request.user.is_authenticated:
+            return False
+
         # The user has an ineligible flag
         if self.request.user.is_restricted():
             return False
+
+        # user needs to be the creator of the domain request to edit it.
+        id = self.kwargs.get("id") if hasattr(self, "kwargs") else None
+        if not id:
+            domain_request_wizard = self.request.session.get("wizard_domain_request")
+            if domain_request_wizard:
+                id = domain_request_wizard.get("domain_request_id")
+
+        if not DomainRequest.objects.filter(creator=self.request.user, id=id).exists():
+            return False
+
+        if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
+            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
+                return False
 
         return True
 

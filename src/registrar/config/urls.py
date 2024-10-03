@@ -175,7 +175,7 @@ urlpatterns = [
         name="export_data_type_user",
     ),
     path(
-        "domain-request/<id>/edit/",
+        "domain-request/<int:id>/edit/",
         views.DomainRequestWizard.as_view(),
         name=views.DomainRequestWizard.EDIT_URL_NAME,
     ),
