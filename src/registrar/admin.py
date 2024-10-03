@@ -2022,6 +2022,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # duplicated in the model and the error is raised from the model.
             # This avoids an ugly Django error screen.
             error_message = "This action is not permitted. The domain is already active."
+        elif (
+            original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+            and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
+            and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
+        ):
+            # REDUNDANT CHECK:
+            # This action (approving a request when the domain exists)
+            # would still not go through even without this check as the rules are
+            # duplicated in the model and the error is raised from the model.
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
         elif obj.status == models.DomainRequest.DomainRequestStatus.REJECTED and not obj.rejection_reason:
             # This condition should never be triggered.
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
