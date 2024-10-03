@@ -44,7 +44,6 @@ Resolves #001
 
 #### Ensured code standards are met (Original Developer)
 <!-- Write N/A if the below code standards are not applicable to your PR -->
-N/A - no external systems or errors, this is just docs refactoring.
 - [ ] Interactions with external systems are wrapped in try/except
 - [ ] Error handling exists for unusual or missing values
 
