@@ -6161,10 +6161,7 @@ const setUpAttributes = tooltipTrigger => {
   // DOTGOV: nest the text element to allow us creater control over width and wrapping behavior
    tooltipBody.innerHTML = `
     <div class="usa-tooltip__content">
-      ${tooltipContent} 
-
-     n oainef aoieiu aw eghr hilabiuyabewisofuha libfasuiybefiae ruhawioeufh aiwfh iahf iuahefailusef aiwsfbali wefbaiue fbaliuefbalieuwfhauiowera jhfasiuf aiuwenail ewfasdn fiausfn iuafia ewfn ia fisfn iuf niuwnf iwenfailuhfiauefn aliefnaifnialsudnf aiufnailufnailefialenf ailefia fa filanf ilaefiunaifalfn ailfnialuefn ialuefnailf lifniasn filsa fnialn fila fi af ai fniaufn ilaufn ial fia fnila fiua fnilaefn ialuefn ial efailf ia fnial fia fniu ialf nailf a fal f Before this domain can be used, you’ll need to add name server addresses.
-    
+      ${tooltipContent}
     </div>`
   // tooltipBody.textContent = tooltipContent;
 

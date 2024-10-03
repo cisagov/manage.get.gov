@@ -340,7 +340,10 @@ class TestDomainDetail(TestDomainOverview):
         detail_page = self.client.get(f"/domain/{domain.id}")
         # Check that alert message displays properly
         self.assertContains(
-            detail_page, "You don't have access to manage "+domain.name+". If you need to make updates, contact one of the listed domain managers."
+            detail_page,
+            "You don't have access to manage "
+            + domain.name
+            + ". If you need to make updates, contact one of the listed domain managers.",
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")
