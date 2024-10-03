@@ -380,7 +380,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             requested_domain_name = self.domain_request.requested_domain.name
 
         text_domain_name = str(requested_domain_name) if requested_domain_name is not None else None
-        
+
         if text_domain_name and len(text_domain_name) > 30:
             text_domain_name = text_domain_name[:27] + "..."
 
@@ -394,8 +394,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
                 "modal_button": modal_button,
-                "modal_heading": "You are about to submit a domain request for "
-                + text_domain_name,
+                "modal_heading": "You are about to submit a domain request for " + text_domain_name,
                 "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
                 You’ll only be able to withdraw your request.",
                 "review_form_is_complete": True,
