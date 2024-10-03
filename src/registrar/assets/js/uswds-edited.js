@@ -25,6 +25,8 @@
 /**
  * Edits made for dotgov project:
  *  - tooltip exposed to window to be accessible in other js files
+ *  - tooltip postiioning logic updated to allow position:fixed
+ *  - tooltip dynamic content updated to include nested element (for better sizing control)
  *  - modal exposed to window to be accessible in other js files
  *  - fixed bug in createHeaderButton which added newlines to header button tooltips
  */
@@ -5939,7 +5941,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
   };
 
   /*
-   DOTGOV: Added calculations to allow flexible position settings of tooltip
+   DOTGOV: Tooltip postiioning logic updated to allow position:fixed
    */
   const tooltipStyle = window.getComputedStyle(tooltipBody);
   const tooltipIsFixedPositioned = tooltipStyle.position === 'fixed';
@@ -5964,8 +5966,10 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     const topMargin = calculateMarginOffset("top", e.offsetHeight, tooltipTrigger);
     const leftMargin = calculateMarginOffset("left", e.offsetWidth, tooltipTrigger);
     setPositionClass("top");
+
+    // DOTGOV: updated logic for position:fixed
     e.style.left = targetLeft; // center the element
-    e.style.top = tooltipIsFixedPositioned ?`${triggerRect.top-TRIANGLE_SIZE}px`:`-${TRIANGLE_SIZE}px`; // consider the pseudo element
+    e.style.top = tooltipIsFixedPositioned ?`${triggerRect.top-TRIANGLE_SIZE}px`:`-${TRIANGLE_SIZE}px`; // consider the pseudo element 
     // apply our margins based on the offset
     e.style.margin = `-${topMargin}px 0 0 -${leftMargin / 2}px`;
   };
@@ -5978,6 +5982,8 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     resetPositionStyles(e);
     const leftMargin = calculateMarginOffset("left", e.offsetWidth, tooltipTrigger);
     setPositionClass("bottom");
+
+    // DOTGOV: updated logic for position:fixed
     if (tooltipIsFixedPositioned){
       e.style.top = triggerRect.bottom+'px';
     }
@@ -5993,6 +5999,8 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     resetPositionStyles(e);
     const topMargin = calculateMarginOffset("top", e.offsetHeight, tooltipTrigger);
     setPositionClass("right");
+
+    // DOTGOV: updated logic for position:fixed
     e.style.top = targetTop;
     e.style.left = tooltipIsFixedPositioned ? `${triggerRect.right + TRIANGLE_SIZE}px`:`${tooltipTrigger.offsetLeft + tooltipTrigger.offsetWidth + TRIANGLE_SIZE}px`;
 ;
@@ -6010,6 +6018,8 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     // we have to check for some utility margins
     const leftMargin = calculateMarginOffset("left", tooltipTrigger.offsetLeft > e.offsetWidth ? tooltipTrigger.offsetLeft - e.offsetWidth : e.offsetWidth, tooltipTrigger);
     setPositionClass("left");
+
+    // DOTGOV: updated logic for position:fixed
     e.style.top = targetTop;
     e.style.left = tooltipIsFixedPositioned ? `${triggerRect.left-TRIANGLE_SIZE}px` : `-${TRIANGLE_SIZE}px`;
     e.style.margin = `-${topMargin / 2}px 0 0 ${tooltipTrigger.offsetLeft > e.offsetWidth ? leftMargin : -leftMargin}px`; // adjust the margin
@@ -6148,7 +6158,7 @@ const setUpAttributes = tooltipTrigger => {
   tooltipBody.setAttribute("aria-hidden", "true");
 
   // place the text in the tooltip
-  // DOTGOV: nest the text element within a paragraph to prevent clipping.
+  // DOTGOV: nest the text element to allow us creater control over width and wrapping behavior
    tooltipBody.innerHTML = `
     <div class="usa-tooltip__content">
       ${tooltipContent} 
