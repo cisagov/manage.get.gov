@@ -18,4 +18,4 @@ For now we're simply moving PR template content into the code review document fo
 ### Plain language
 All functions and methods should use plain language.
 
-TODO: Description and examples in code standards ticket.
+TODO: Plain language description and examples in code standards ticket.
