@@ -8,7 +8,7 @@ import registrar.models.federal_agency
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0128_alter_domaininformation_state_territory_and_more"),
+        ("registrar", "0129_alter_portfolioinvitation_portfolio_roles_and_more"),
     ]
 
     operations = [

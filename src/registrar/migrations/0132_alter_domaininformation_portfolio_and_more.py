@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0130_create_groups_v17"),
+        ("registrar", "0131_create_groups_v17"),
     ]
 
     operations = [
