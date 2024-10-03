@@ -26,7 +26,7 @@
         {% if user.email %}
             <span id="contact_info_email">{{ user.email }}</span>
             {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
-            <br>
+            <br class="admin-icon-group__br">
         {% else %}
             None<br>
         {% endif %}

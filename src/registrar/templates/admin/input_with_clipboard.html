@@ -8,7 +8,7 @@ Template for an input field with a clipboard
 <div class="admin-icon-group">
     {{ field }}
     <button 
-    class="usa-button--dja usa-button usa-button__small-text usa-button--unstyled padding-left-1 usa-button--icon button--clipboard copy-to-clipboard" 
+    class="usa-button usa-button--unstyled padding-left-1 usa-button--icon button--clipboard copy-to-clipboard" 
     type="button"
     >
         <div class="no-outline-on-click">
@@ -17,7 +17,6 @@ Template for an input field with a clipboard
             >
                 <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
             </svg>
-            <!-- the span is targeted in JS, do not remove -->
             <span>Copy</span>
         </div>
     </button>
@@ -25,19 +24,16 @@ Template for an input field with a clipboard
 {% else %}
 <div class="admin-icon-group">
     <input aria-hidden="true" class="display-none" value="{{ field.email }}" />
-    {% if field.email is not None %}
-        <button 
-        class="usa-button--dja usa-button usa-button__small-text usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard text-no-underline padding-left-05" 
-        type="button"
+    <button 
+    class="usa-button usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard text-no-underline padding-left-0"
+    type="button"
+    >
+        <svg 
+        class="usa-icon" 
         >
-            <svg 
-            class="usa-icon" 
-            >
-                <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
-            </svg>
-            <!-- the span is targeted in JS, do not remove -->
-            <span>Copy</span>
-        </button>
-    {% endif %}
+            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+        </svg>
+        <span>Copy</span>
+    </button>
 </div>
 {% endif %}

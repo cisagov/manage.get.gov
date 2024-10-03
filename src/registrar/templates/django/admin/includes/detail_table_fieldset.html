@@ -269,15 +269,13 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                 <td class="padding-left-1 text-size-small">
                                     <input aria-hidden="true" class="display-none" value="{{ contact.email }}" />
                                     <button 
-                                    class="usa-button--dja usa-button usa-button__small-text usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard usa-button__small-text text-no-underline" 
-                                    type="button"
+                                    class="usa-button usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard usa-button__small-text text-no-underline"
                                     >
                                         <svg 
                                         class="usa-icon" 
                                         >
                                             <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
                                         </svg>
-                                        <!-- the span is targeted in JS, do not remove -->
                                         <span>Copy email</span>
                                     </button>
                                 </td>
