@@ -21,6 +21,15 @@ from registrar.utility.constants import BranchChoices
 logger = logging.getLogger(__name__)
 
 
+class RequestingEntityForm(RegistrarForm):
+    is_policy_acknowledged = forms.BooleanField(
+        label="I read and agree to the requirements for operating a .gov domain.",
+        error_messages={
+            "required": ("Check the box if you read and agree to the requirements for operating a .gov domain.")
+        },
+    )
+
+
 class OrganizationTypeForm(RegistrarForm):
     generic_org_type = forms.ChoiceField(
         # use the long names in the domain request form

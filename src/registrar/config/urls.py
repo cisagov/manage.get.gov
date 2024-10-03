@@ -22,7 +22,7 @@ from registrar.views.report_views import (
     ExportDataTypeUser,
 )
 
-from registrar.views.domain_request import Step
+from registrar.views.domain_request import Step, PortfolioDomainRequestStep
 from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility.api_views import (
@@ -58,6 +58,15 @@ for step, view in [
     (Step.ADDITIONAL_DETAILS, views.AdditionalDetails),
     (Step.REQUIREMENTS, views.Requirements),
     (Step.REVIEW, views.Review),
+
+    # Portfolio steps
+    (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
+    # (PortfolioDomainRequestStep.CURRENT_SITES, views.CurrentSites),
+    # (PortfolioDomainRequestStep.DOTGOV_DOMAIN, views.DotgovDomain),
+    # (PortfolioDomainRequestStep.PURPOSE, views.Purpose),
+    # (PortfolioDomainRequestStep.ADDITIONAL_DETAILS, views.AdditionalDetails),
+    # (PortfolioDomainRequestStep.REQUIREMENTS, views.Requirements),
+    # (PortfolioDomainRequestStep.REVIEW, views.Review),
 ]:
     domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
 

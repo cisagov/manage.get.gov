@@ -1,0 +1,16 @@
+{% extends 'domain_request_form.html' %}
+{% load field_helpers url_helpers %}
+
+{% block form_instructions %}
+    <p>🛸🛸🛸🛸 Placeholder content 🛸🛸🛸🛸</p>
+{% endblock %}
+
+{% block form_fields %}
+    <fieldset class="usa-fieldset">
+        <legend>
+        <h2>Are you from the polaris star system?</h2>
+        </legend>
+
+        {% input_with_errors forms.0.is_policy_acknowledged %}
+    </fieldset>
+{% endblock %}
