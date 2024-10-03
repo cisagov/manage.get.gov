@@ -3,7 +3,7 @@ from django.http import Http404
 from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
-from registrar.forms.portfolio import PortfolioOrgAddressForm, PortfolioSeniorOfficialForm
+from registrar.forms.portfolio import PortfolioMemberForm, PortfolioOrgAddressForm, PortfolioSeniorOfficialForm
 from registrar.models import Portfolio, User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -17,7 +17,7 @@ from registrar.views.utility.permission_views import (
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
-
+from django.shortcuts import get_object_or_404, redirect
 
 logger = logging.getLogger(__name__)
 
@@ -55,11 +55,33 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
 class PortfolioMemberView(PortfolioMemberPermissionView, View):
 
     template_name = "portfolio_member.html"
-    model = User
+    form_class = PortfolioMemberForm
 
-    # def get(self, request):
-    #     """Add additional context data to the template."""
-    #     return render(request, self.template_name, context=self.get_context_data())
+    def get(self, request, pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        user = portfolio_permission.user
+        
+        form = self.form_class(instance=portfolio_permission)
+        
+        return render(request, self.template_name, {
+            'form': form,
+            'user': user,
+        })
+
+    def post(self, request, pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        user = portfolio_permission.user
+        
+        form = self.form_class(request.POST, instance=portfolio_permission)
+        
+        if form.is_valid():
+            form.save()
+            return redirect('home')
+        
+        return render(request, self.template_name, {
+            'form': form,
+            'user': user,  # Pass the user object again to the template
+        })
     
 
 

@@ -4,6 +4,9 @@ import logging
 from django import forms
 from django.core.validators import RegexValidator
 
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+
 from ..models import DomainInformation, Portfolio, SeniorOfficial
 
 logger = logging.getLogger(__name__)
@@ -95,3 +98,31 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         cleaned_data = super().clean()
         cleaned_data.pop("full_name", None)
         return cleaned_data
+    
+
+class PortfolioMemberForm(forms.ModelForm):
+    """
+    Form for updating a portfolio member.
+    """
+
+    roles = forms.MultipleChoiceField(
+        choices=UserPortfolioRoleChoices.choices,
+        widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
+        required=False,
+        label="Roles",
+    )
+
+    additional_permissions = forms.MultipleChoiceField(
+        choices=UserPortfolioPermissionChoices.choices,
+        widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
+        required=False,
+        label="Additional Permissions",
+    )
+    
+    class Meta:
+        model = UserPortfolioPermission
+        fields = [
+            "roles",
+            "additional_permissions",
+        ]
+

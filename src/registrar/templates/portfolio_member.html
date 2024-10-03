@@ -7,14 +7,6 @@
 
 {% block portfolio_content %}
 <div class="grid-row grid-gap">
-    <div class="tablet:grid-col-3">
-        <p class="font-body-md margin-top-0 margin-bottom-2
-                    text-primary-darker text-semibold"
-        >
-            <span class="usa-sr-only"> Portfolio name:</span> {{ portfolio }}
-        </p>
-    </div>
-
     <div class="tablet:grid-col-9" id="main-content">
 
         {% block messages %}
@@ -23,7 +15,22 @@
 
         <h1>Member</h1>
 
-        <p>The name of your organization will be publicly listed as the domain registrant.</p>
+        <p>{{ user.first_name }}</p>
+
+
+        <hr>
+
+        <form class="usa-form usa-form--large" method="post" novalidate>
+            {% csrf_token %}
+        
+            {% input_with_errors form.roles %}
+            {% input_with_errors form.additional_permissions %}
+        
+            <button
+              type="submit"
+              class="usa-button"
+            >Submit</button>
+          </form>
 
         
 

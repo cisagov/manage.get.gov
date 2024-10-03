@@ -8,6 +8,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from operator import itemgetter
 
 
 @login_required
@@ -15,31 +16,60 @@ def get_portfolio_members_json(request):
     """Given the current request,
     get all members that are associated with the given portfolio"""
     portfolio = request.GET.get("portfolio")
-    member_ids = get_member_ids_from_request(request, portfolio)
-    objects = User.objects.filter(id__in=member_ids)
+    # member_ids = get_member_ids_from_request(request, portfolio)
+    # members = User.objects.filter(id__in=member_ids)
 
-    admin_ids = UserPortfolioPermission.objects.filter(
-        portfolio=portfolio,
-        roles__overlap=[
-            UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-        ],
-    ).values_list("user__id", flat=True)
-    portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
-        "email", flat=True
+    permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio).select_related("user").values_list("pk", "user__first_name", "user__last_name", "user__email", "user__last_login", "roles")
+    invitations = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
+        'pk', 'email', 'portfolio_roles', 'portfolio_additional_permissions', 'status'
     )
 
-    unfiltered_total = objects.count()
+    # Convert the permissions queryset into a list of dictionaries
+    permission_list = [
+        {
+            'id': perm[0],
+            'first_name': perm[1],
+            'last_name': perm[2],
+            'email': perm[3],
+            'last_active': perm[4],
+            'roles': perm[5],
+            'source': 'permission'  # Mark the source as permissions
+        }
+        for perm in permissions
+    ]
 
-    objects = apply_search(objects, request)
-    # objects = apply_status_filter(objects, request)
-    objects = apply_sorting(objects, request)
+    # Convert the invitations queryset into a list of dictionaries
+    invitation_list = [
+        {
+            'id': invite[0],
+            'first_name': None,  # No first name in invitations
+            'last_name': None,   # No last name in invitations
+            'email': invite[1],
+            'roles': invite[2],
+            'additional_permissions': invite[3],
+            'status': invite[4],
+            'last_active': 'Invited',
+            'source': 'invitation'  # Mark the source as invitations
+        }
+        for invite in invitations
+    ]
 
-    paginator = Paginator(objects, 10)
+    # Combine both lists into one unified list
+    combined_list = permission_list + invitation_list
+
+    unfiltered_total = len(combined_list)
+
+    combined_list = apply_search(combined_list, request)
+    combined_list = apply_sorting(combined_list, request)
+
+    paginator = Paginator(combined_list, 10)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
+    
+    
     members = [
-        serialize_members(request, portfolio, member, request.user, admin_ids, portfolio_invitation_emails)
-        for member in page_obj.object_list
+        serialize_members(request, portfolio, item, request.user)
+        for item in page_obj.object_list
     ]
 
     return JsonResponse(
@@ -55,44 +85,43 @@ def get_portfolio_members_json(request):
     )
 
 
-def get_member_ids_from_request(request, portfolio):
-    """Given the current request,
-    get all members that are associated with the given portfolio"""
-    member_ids = []
-    if portfolio:
-        member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
-    return member_ids
+# def get_member_ids_from_request(request, portfolio):
+#     """Given the current request,
+#     get all members that are associated with the given portfolio"""
+#     member_ids = []
+#     if portfolio:
+#         member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
+#     return member_ids
 
-
-def apply_search(queryset, request):
-    search_term = request.GET.get("search_term")
+def apply_search(data_list, request):
+    search_term = request.GET.get("search_term", "").lower()
 
     if search_term:
-        queryset = queryset.filter(
-            Q(username__icontains=search_term)
-            | Q(first_name__icontains=search_term)
-            | Q(last_name__icontains=search_term)
-            | Q(email__icontains=search_term)
-        )
-    return queryset
+        # Filter the list based on the search term (case-insensitive)
+        data_list = [
+            item for item in data_list
+            if search_term in (item.get('first_name', '') or '').lower()
+            or search_term in (item.get('last_name', '') or '').lower()
+            or search_term in (item.get('email', '') or '').lower()
+        ]
+    
+    return data_list
 
 
-def apply_sorting(queryset, request):
+def apply_sorting(data_list, request):
     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
     order = request.GET.get("order", "asc")  # Default to 'asc'
 
     if sort_by == "member":
-        sort_by = ["email", "first_name", "middle_name", "last_name"]
-    else:
-        sort_by = [sort_by]
+        sort_by = "email"
 
-    if order == "desc":
-        sort_by = [f"-{field}" for field in sort_by]
+    # Sort the list
+    data_list = sorted(data_list, key=itemgetter(sort_by), reverse=(order == "desc"))
 
-    return queryset.order_by(*sort_by)
+    return data_list
 
 
-def serialize_members(request, portfolio, member, user, admin_ids, portfolio_invitation_emails):
+def serialize_members(request, portfolio, item, user):
     # ------- VIEW ONLY
     # If not view_only (the user has permissions to edit/manage users), show the gear icon with "Manage" link.
     # If view_only (the user only has view user permissions), show the "View" link (no gear icon).
@@ -106,20 +135,20 @@ def serialize_members(request, portfolio, member, user, admin_ids, portfolio_inv
     view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
 
     # ------- USER STATUSES
-    is_invited = member.email in portfolio_invitation_emails
-    last_active = "Invited" if is_invited else "Unknown"
-    if member.last_login:
-        last_active = member.last_login.strftime("%b. %d, %Y")
-    is_admin = member.id in admin_ids
+    is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in item['roles']
+
+    action_url = '#'
+    if item['source'] == 'permission':
+        action_url = reverse("member", kwargs={"pk": item['id']})
 
     # ------- SERIALIZE
     member_json = {
-        "id": member.id,
-        "name": member.get_formatted_name(),
-        "email": member.email,
+        "id": item['id'],
+        "name": (item['first_name'] or '') + ' ' + (item['last_name'] or ''),
+        "email": item['email'],
         "is_admin": is_admin,
-        "last_active": last_active,
-        "action_url": reverse("member", kwargs={"pk": member.id}), # TODO: Future ticket?
+        "last_active": item['last_active'],
+        "action_url": action_url,
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
     }
