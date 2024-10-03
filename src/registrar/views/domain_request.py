@@ -382,8 +382,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         text_domain_name = str(requested_domain_name) if requested_domain_name is not None else None
 
         if text_domain_name and len(text_domain_name) > 30:
-            text_domain_name = text_domain_name[:27] + "..."
-
+            text_domain_name = text_domain_name[:30] + "\n" + text_domain_name[30:]
+ 
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request, self.request):
             modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
