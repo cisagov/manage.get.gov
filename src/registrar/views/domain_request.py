@@ -206,8 +206,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         self.WIZARD_CONDITIONS = {}
 
         # Regenerate the steps helper
-        print("look, da fuq")
-        print(self.storage)
         self.steps = StepsHelper(self)
 
     def get(self, request, *args, **kwargs):
@@ -237,7 +235,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 # intro page.
                 return render(request, "domain_request_intro.html", {})
             else:
-                print(f"look at these steps: {self.steps}")
                 return self.goto(self.steps.first)
 
         # refresh step_history to ensure we don't erroneously unlock unfinished
@@ -246,9 +243,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         context = self.get_context_data()
         self.steps.current = current_url
         context["forms"] = self.get_forms()
-        print(f"storage is: {self.storage}")
-        print(f"steps are: {self.steps}")
-        print(f"context is: {context}")
 
         # if pending requests exist and user does not have approved domains,
         # present message that domain request cannot be submitted
@@ -383,6 +377,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                         and self.domain_request.has_cisa_representative is not None
                     )
                 ),
+                "requirements": self.domain_request.is_policy_acknowledged is not None,
                 "review": self.domain_request.is_policy_acknowledged is not None,
             }
         else:
@@ -509,7 +504,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 if self.request.session["new_request"] is True:
                     # This will trigger the domain_request getter into creating a new DomainRequest
                     del self.storage
-            print(f"what are the steps? {self.steps}")
             return self.goto(self.steps.first)
 
         # if accessing this class directly, redirect to the first step
@@ -756,7 +750,7 @@ class Review(DomainRequestWizard):
         if DomainRequest._form_complete(self.domain_request, self.request) is False:
             logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()
-        context["Step"] = Step.__members__
+        context["Step"] = self.StepEnum.__members__
         context["domain_request"] = self.domain_request
         return context
 
