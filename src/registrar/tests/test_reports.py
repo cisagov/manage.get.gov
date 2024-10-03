@@ -401,7 +401,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         """Tests DomainRequestsDataType export with portfolio permissions"""
 
         # Create a portfolio and assign it to the user
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Testy Test Portfolio")
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
         # Create DraftDomain objects
