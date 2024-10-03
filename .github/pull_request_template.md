@@ -1,11 +1,6 @@
 ## Ticket
 
 Resolves #001
-<!--Reminder, when a code change is made that is user facing, beyond content updates, then the following are required:
-- a developer approves the PR
-- a designer approves the PR or checks off all relevant items in this checklist.
-
-All other changes require just a single approving review.-->
 
 ## Changes
 
@@ -45,15 +40,10 @@ All other changes require just a single approving review.-->
 
 - [ ] Met the acceptance criteria, or will meet them in a subsequent PR
 - [ ] Created/modified automated tests
-- [ ] Added at least 2 developers as PR reviewers (only 1 will need to approve)
-- [ ] Messaged on Slack or in standup to notify the team that a PR is ready for review
-- [ ] Changes to “how we do things” are documented in READMEs and or onboarding guide
-- [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the associated migrations file has been commited.
+- [ ] Update documentation in READMEs and/or onboarding guide
 
 #### Ensured code standards are met (Original Developer)
 
-- [ ] All new functions and methods are commented using plain language
-- [ ] Did dependency updates in Pipfile also get changed in requirements.txt?
 - [ ] Interactions with external systems are wrapped in try/except
 - [ ] Error handling exists for unusual or missing values
 
@@ -62,24 +52,16 @@ All other changes require just a single approving review.-->
 - [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
-- [ ] Add at least 1 designer as PR reviewer
 
 ### As a code reviewer, I have
 
 #### Reviewed, tested, and left feedback about the changes
 
 - [ ] Pulled this branch locally and tested it
-- [ ] Reviewed this code and left comments
+- [ ] Verified code meets code standards and comments if any standards above are not satisfied
+- [ ] Reviewed this code and left comments. Indicate if comments must be addressed before code is merged.
 - [ ] Checked that all code is adequately covered by tests
-- [ ] Made it clear which comments need to be addressed before this work is merged
-- [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the associated migrations file has been commited.
-
-#### Ensured code standards are met (Code reviewer)
-
-- [ ] All new functions and methods are commented using plain language
-- [ ] Interactions with external systems are wrapped in try/except
-- [ ] Error handling exists for unusual or missing values
-- [ ] (Rarely needed) Did dependency updates in Pipfile also get changed in requirements.txt?
+- [ ] If any model was updated to modify/add/delete columns, verified migrations can be run with `makemigrations`.
 
 #### Validated user-facing changes as a developer
 
@@ -87,12 +69,6 @@ All other changes require just a single approving review.-->
 - [ ] Checked keyboard navigability
 - [ ] Meets all designs and user flows provided by design/product
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
-
-- [ ] Tested with multiple browsers, the suggestion is to use ones that the developer didn't (check off which ones were used)
-  - [ ] Chrome
-  - [ ] Microsoft Edge
-  - [ ] FireFox
-  - [ ] Safari
 
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
 
@@ -103,10 +79,9 @@ All other changes require just a single approving review.-->
 #### Verified that the changes match the design intention
 
 - [ ] Checked that the design translated visually
-- [ ] Checked behavior
+- [ ] Checked behavior. Comment any found issues or broken flows.
 - [ ] Checked different states (empty, one, some, error)
 - [ ] Checked for landmarks, page heading structure, and links
-- [ ] Tried to break the intended flow
 
 #### Validated user-facing changes as a designer
 
