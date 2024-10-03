@@ -1505,10 +1505,8 @@ class DomainRequestsTable extends LoadTableBase {
   }
   
   toggleExportButton(requests) {
-    console.log("Toggling Export Button Visibility");
     const exportButton = document.getElementById('export-csv'); 
     if (exportButton) {
-        console.log(`Current requests length: ${requests.length}`); 
         if (requests.length > 0) {
             showElement(exportButton);
         } else {
@@ -1562,7 +1560,7 @@ class DomainRequestsTable extends LoadTableBase {
           return;
         }
 
-        // Call toggleExportButton to manage button visibility
+        // Manage "export as CSV" visibility for domain requests
         this.toggleExportButton(data.domain_requests);
 
         // handle the display of proper messaging in the event that no requests exist in the list or search returns no results

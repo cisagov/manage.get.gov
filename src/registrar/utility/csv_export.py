@@ -645,12 +645,6 @@ class DomainRequestsDataType:
         )
 
         queryset = cls.get_queryset(request)
-        # TO REMOVE
-        print("Queryset IDs:", list(queryset.values_list("id", flat=True)))
-        # TO REMOVE
-        for request in queryset:
-            print("Processing request:", request)
-
         for request in queryset:
             writer.writerow(
                 [

@@ -49,6 +49,7 @@
                 </form>
             </section>
         </div>
+        {% if portfolio %}
         <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}" id="export-csv">
             <section aria-label="Domain Requests report component" class="margin-top-205">
               <a href="{% url 'export_data_type_requests' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" role="button">
@@ -58,6 +59,7 @@
               </a>
           </section>
         </div>
+        {% endif %}
     </div>
 
     {% if portfolio %}
