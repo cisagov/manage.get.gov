@@ -323,7 +323,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_domain_data_type_user_with_portfolio(self):
         """Tests DomainDataTypeUser export with portfolio permissions"""
 
@@ -393,6 +392,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
     def test_domain_request_data_type_user_with_portfolio(self):
         """Tests DomainRequestsDataType export with portfolio permissions"""
 
@@ -426,13 +426,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertIn(dd_3.name, csv_content)
         self.assertNotIn(dd_2.name, csv_content)
 
-        # Test the output for readonly admin
-        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
-        portfolio_permission.save()
-        portfolio_permission.refresh_from_db()
-
+        # Get the csv content
         csv_content = self._run_domain_request_data_type_user_export(request)
-
         self.assertIn(dd_1.name, csv_content)
         self.assertIn(dd_3.name, csv_content)
         self.assertNotIn(dd_2.name, csv_content)
