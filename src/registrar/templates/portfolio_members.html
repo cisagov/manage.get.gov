@@ -1,0 +1,33 @@
+{% extends 'portfolio_base.html' %}
+
+{% load static %}
+
+{% block title %} Members | {% endblock %}
+
+{% block wrapper_class %}
+  {{ block.super }} dashboard--grey-1
+{% endblock %}
+
+{% block portfolio_content %}
+{% block messages %}
+  {% include "includes/form_messages.html" %}
+{% endblock %}
+
+<div id="main-content">
+    <div class="grid-row grid-gap">
+          <div class="mobile:grid-col-12 tablet:grid-col-6">
+              <h1 id="members-header">Members</h1>
+          </div>
+          <div class="mobile:grid-col-12 tablet:grid-col-6">
+              <p class="float-right-tablet tablet:margin-y-0">
+                  <a href="#" class="usa-button"
+                  >
+                      Add a new member
+                  </a>
+              </p>
+          </div>
+  </div>
+  
+    {% include "includes/members_table.html" with portfolio=portfolio %}
+</div>
+{% endblock %}

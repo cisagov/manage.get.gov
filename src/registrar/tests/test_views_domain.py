@@ -1571,7 +1571,7 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Add portfolio perms to the user object
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
 
         self.assertEqual(self.domain_information.sub_organization, suborg)
