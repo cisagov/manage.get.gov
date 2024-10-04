@@ -65,13 +65,13 @@ Resolves #001
 
 #### Validated user-facing changes as a developer
 
+**Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist
+
 - [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
 - [ ] Meets all designs and user flows provided by design/product
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
-
-**Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist
 
 ### As a designer reviewer, I have
 
