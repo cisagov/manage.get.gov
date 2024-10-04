@@ -86,14 +86,6 @@ def get_portfolio_members_json(request):
     )
 
 
-# def get_member_ids_from_request(request, portfolio):
-#     """Given the current request,
-#     get all members that are associated with the given portfolio"""
-#     member_ids = []
-#     if portfolio:
-#         member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
-#     return member_ids
-
 def apply_search(data_list, request):
     search_term = request.GET.get("search_term", "").lower()
 
@@ -153,11 +145,15 @@ def serialize_members(request, portfolio, item, user):
     view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
 
     # ------- USER STATUSES
-    is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in item['roles']
+    is_admin = False
+    if item['roles']:
+        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in item['roles']
 
     action_url = '#'
     if item['source'] == 'permission':
         action_url = reverse("member", kwargs={"pk": item['id']})
+    elif item['source'] == 'invitation':
+        action_url = reverse("invitedmember", kwargs={"pk": item['id']})
 
     # ------- SERIALIZE
     member_json = {

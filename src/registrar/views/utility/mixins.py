@@ -515,3 +515,22 @@ class PortfolioMemberPermission(PortfolioBasePermission):
             return False
 
         return super().has_permission()
+
+
+class PortfolioInvitedMemberPermission(PortfolioBasePermission):
+    """Permission mixin that allows access to portfolio invited member pages if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to members for this portfolio.
+
+        The user is in self.request.user and the portfolio can be looked
+        up from the portfolio's primary key in self.kwargs["pk"]"""
+
+        portfolio = self.request.session.get("portfolio")
+        if not self.request.user.has_view_members_portfolio_permission(
+            portfolio
+        ) and not self.request.user.has_edit_members_portfolio_permission(portfolio):
+            return False
+
+        return super().has_permission()

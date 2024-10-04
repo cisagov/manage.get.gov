@@ -817,7 +817,6 @@ class TestPortfolio(WebTest):
 
         # Verify that view-only settings are sent in the dynamic HTML
         response = self.client.get(reverse("get_portfolio_members_json") + f"?portfolio={self.portfolio.pk}")
-        print(response.content)
         self.assertContains(response, '"action_label": "View"')
         self.assertContains(response, '"svg_icon": "visibility"')
 

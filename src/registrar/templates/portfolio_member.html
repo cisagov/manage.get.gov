@@ -15,17 +15,22 @@
 
         <h1>Member</h1>
 
-        <p>{{ user.first_name }}</p>
+        <p>{{ member.first_name }}</p>
 
 
         <hr>
 
         <form class="usa-form usa-form--large" method="post" novalidate>
             {% csrf_token %}
-        
-            {% input_with_errors form.roles %}
-            {% input_with_errors form.additional_permissions %}
-        
+            {% if form.roles %}
+              {% comment - handling form fields for member %}
+              {% input_with_errors form.roles %}
+              {% input_with_errors form.additional_permissions %}
+            {% elif form.portfolio_roles %}
+              {% comment - handling form fields for invited member %}
+              {% input_with_errors form.portfolio_roles %}
+              {% input_with_errors form.portfolio_additional_permissions %}
+            {% endif %}
             <button
               type="submit"
               class="usa-button"

@@ -15,6 +15,7 @@ from .mixins import (
     DomainRequestWizardPermission,
     PortfolioDomainRequestsPermission,
     PortfolioDomainsPermission,
+    PortfolioInvitedMemberPermission,
     UserDeleteDomainRolePermission,
     UserProfilePermission,
     PortfolioBasePermission,
@@ -262,6 +263,14 @@ class PortfolioMembersPermissionView(PortfolioMembersPermission, PortfolioBasePe
 
 
 class PortfolioMemberPermissionView(PortfolioMemberPermission, PortfolioBasePermissionView, abc.ABC):
+    """Abstract base view for portfolio member views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+
+class PortfolioInvitedMemberPermissionView(PortfolioInvitedMemberPermission, PortfolioBasePermissionView, abc.ABC):
     """Abstract base view for portfolio member views that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify
