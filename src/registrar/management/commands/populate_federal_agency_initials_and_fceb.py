@@ -36,13 +36,13 @@ class Command(BaseCommand, PopulateScriptTemplate):
                     self.federal_agency_dict[agency_name.strip()] = (initials, agency_status)
 
         # Update every federal agency record
-        self.mass_update_records(FederalAgency, {"agency__isnull": False}, ["initials", "is_fceb"])
+        self.mass_update_records(FederalAgency, {"agency__isnull": False}, ["acronym", "is_fceb"])
 
     def update_record(self, record: FederalAgency):
         """For each record, update the initials and is_fceb field if data exists for it"""
         initials, agency_status = self.federal_agency_dict.get(record.agency)
 
-        record.initials = initials
+        record.acronym = initials
         if agency_status and isinstance(agency_status, str) and agency_status.strip().upper() == "FCEB":
             record.is_fceb = True
         else:
