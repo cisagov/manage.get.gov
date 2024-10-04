@@ -3,8 +3,9 @@ from django.http import Http404
 from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
-from registrar.forms.portfolio import PortfolioMemberForm, PortfolioOrgAddressForm, PortfolioSeniorOfficialForm
+from registrar.forms.portfolio import PortfolioInvitedMemberForm, PortfolioMemberForm, PortfolioOrgAddressForm, PortfolioSeniorOfficialForm
 from registrar.models import Portfolio, User
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.views.utility.permission_views import (
@@ -12,6 +13,7 @@ from registrar.views.utility.permission_views import (
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
     NoPortfolioDomainsPermissionView,
+    PortfolioInvitedMemberPermissionView,
     PortfolioMemberPermissionView,
     PortfolioMembersPermissionView,
 )
@@ -65,7 +67,7 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
         
         return render(request, self.template_name, {
             'form': form,
-            'user': user,
+            'member': user,
         })
 
     def post(self, request, pk):
@@ -76,14 +78,40 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
         
         if form.is_valid():
             form.save()
-            return redirect('home')
+            return redirect('members')
         
         return render(request, self.template_name, {
             'form': form,
-            'user': user,  # Pass the user object again to the template
+            'member': user,  # Pass the user object again to the template
         })
     
 
+
+class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
+
+    template_name = "portfolio_member.html"
+    form_class = PortfolioInvitedMemberForm
+
+    def get(self, request, pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        form = self.form_class(instance=portfolio_invitation)
+        return render(request, self.template_name, {
+            'form': form,
+            'member': None,
+        })
+
+    def post(self, request, pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        form = self.form_class(request.POST, instance=portfolio_invitation)
+        if form.is_valid():
+            form.save()
+            return redirect('members')
+        
+        return render(request, self.template_name, {
+            'form': form,
+            'member': None,  # Pass the user object again to the template
+        })
+    
 
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):

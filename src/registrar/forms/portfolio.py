@@ -4,6 +4,7 @@ import logging
 from django import forms
 from django.core.validators import RegexValidator
 
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
@@ -124,5 +125,32 @@ class PortfolioMemberForm(forms.ModelForm):
         fields = [
             "roles",
             "additional_permissions",
+        ]
+
+
+class PortfolioInvitedMemberForm(forms.ModelForm):
+    """
+    Form for updating a portfolio invited member.
+    """
+
+    portfolio_roles = forms.MultipleChoiceField(
+        choices=UserPortfolioRoleChoices.choices,
+        widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
+        required=False,
+        label="Roles",
+    )
+
+    portfolio_additional_permissions = forms.MultipleChoiceField(
+        choices=UserPortfolioPermissionChoices.choices,
+        widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
+        required=False,
+        label="Additional Permissions",
+    )
+    
+    class Meta:
+        model = PortfolioInvitation
+        fields = [
+            "portfolio_roles",
+            "portfolio_additional_permissions",
         ]
 
