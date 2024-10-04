@@ -1,0 +1,30 @@
+{% extends "django/admin/includes/details_button.html" %}
+{% load static url_helpers %}
+
+{% block detail_content %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>State</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for domain_info in domains %}
+        {% if domain_info.domain %}
+            {% with domain=domain_info.domain %}
+            {% url 'admin:registrar_domain_change' domain.pk as url %}
+            <tr>
+                <td><a href={{url}}>{{ domain }}</a></td>
+                {% if domain and domain.get_state_display %}
+                    <td>{{ domain.get_state_display }}</td>
+                {% else %}
+                    <td>None</td>
+                {% endif %}
+            </tr>
+            {% endwith %}
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock detail_content%}
