@@ -2788,7 +2788,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def test_non_creator_access(self):
         """Tests that a user cannot edit a domain request they didn't create"""
-        other_user = User.objects.create_user(username="other_user", password="password")
+        p = "password"
+        other_user = User.objects.create_user(username="other_user", password=p)
         domain_request = completed_domain_request(user=other_user)
 
         edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}), expect_errors=True)
