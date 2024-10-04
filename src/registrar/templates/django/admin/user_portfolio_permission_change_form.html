@@ -1,0 +1,16 @@
+{% extends 'django/admin/email_clipboard_change_form.html' %}
+{% load custom_filters %}
+{% load i18n static %}
+
+{% block field_sets %}
+    {% for fieldset in adminform %}
+        {% comment %}
+        This is a placeholder for now.
+
+        Disclaimer:
+        When extending the fieldset view consider whether you need to make a new one that extends from detail_table_fieldset.
+        detail_table_fieldset is used on multiple admin pages, so a change there can have unintended consequences.
+        {% endcomment %}
+        {% include "django/admin/includes/user_portfolio_permission_fieldset.html" with original_object=original %}
+    {% endfor %}
+{% endblock %}

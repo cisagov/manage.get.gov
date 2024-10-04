@@ -22,21 +22,20 @@ class FederalAgency(TimeStampedModel):
         choices=BranchChoices.choices,
         null=True,
         blank=True,
-        help_text="Federal agency type (executive, judicial, legislative, etc.)",
     )
 
-    initials = models.CharField(
+    acronym = models.CharField(
         max_length=10,
         null=True,
         blank=True,
-        help_text="Agency initials",
+        help_text="Acronym commonly used to reference the federal agency (Optional)",
     )
 
     is_fceb = models.BooleanField(
         null=True,
         blank=True,
         verbose_name="FCEB",
-        help_text="Determines if this agency is FCEB",
+        help_text="Federal Civilian Executive Branch (FCEB)",
     )
 
     def __str__(self) -> str:

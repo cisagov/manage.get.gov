@@ -9,6 +9,10 @@ class UserPortfolioRoleChoices(models.TextChoices):
     ORGANIZATION_ADMIN = "organization_admin", "Admin"
     ORGANIZATION_MEMBER = "organization_member", "Member"
 
+    @classmethod
+    def get_user_portfolio_role_label(cls, user_portfolio_role):
+        return cls(user_portfolio_role).label if user_portfolio_role else None
+
 
 class UserPortfolioPermissionChoices(models.TextChoices):
     """ """
@@ -28,3 +32,7 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     # Domain: field specific permissions
     VIEW_SUBORGANIZATION = "view_suborganization", "View suborganization"
     EDIT_SUBORGANIZATION = "edit_suborganization", "Edit suborganization"
+
+    @classmethod
+    def get_user_portfolio_permission_label(cls, user_portfolio_permission):
+        return cls(user_portfolio_permission).label if user_portfolio_permission else None

@@ -49,11 +49,15 @@ class CheckUserProfileMiddleware:
             self.setup_page,
             self.logout_page,
             "/admin",
+            # These are here as there is a bug with this middleware that breaks djangos built in debug console.
+            # The debug console uses this directory, but since this overrides that, it throws errors.
+            "/__debug__",
         ]
         self.other_excluded_pages = [
             self.profile_page,
             self.logout_page,
             "/admin",
+            "/__debug__",
         ]
 
         self.excluded_pages = {
