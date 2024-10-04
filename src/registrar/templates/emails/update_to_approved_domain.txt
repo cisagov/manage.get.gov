@@ -12,6 +12,7 @@ You can view this update in the .gov registrar <https://manage.get.gov/>.
 Get help with managing your .gov domain <https://get.gov/help/domain-management/>.
 
 ----------------------------------------------------------------
+
 WHY DID YOU RECEIVE THIS EMAIL? 
 You’re listed as a domain manager for {{domain}}, so you’ll receive a notification whenever changes are made to that domain.
 If you have questions or concerns, reach out to the person who made the change or reply to this email.
