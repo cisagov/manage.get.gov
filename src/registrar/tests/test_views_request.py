@@ -2771,17 +2771,18 @@ class DomainRequestTests(TestWithUser, WebTest):
         portfolio_perm, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
-        
+
         # This user should be allowed to create new domain requests
         intro_page = self.app.get(reverse("domain-request:"))
         self.assertEqual(intro_page.status_code, 200)
 
         # This user should also be allowed to edit existing ones
         domain_request = completed_domain_request(user=self.user)
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
         self.assertEqual(edit_page.status_code, 200)
 
         # Cleanup
+        DomainRequest.objects.all().delete()
         portfolio_perm.delete()
         portfolio.delete()
 
@@ -2797,7 +2798,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """Tests that a user can edit a domain request they created"""
         domain_request = completed_domain_request(user=self.user)
 
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
         self.assertEqual(edit_page.status_code, 200)
 
 
@@ -2986,10 +2987,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
     def test_unlocked_steps_full_domain_request(self):
         """Test when all fields in the domain request are filled."""
 
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED, 
-            user=self.user
-        )
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
         domain_request.anything_else = False
         domain_request.has_anything_else_text = False
         domain_request.save()
@@ -3099,7 +3097,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         - The user lands on the "Requesting entity" page
         - The user does not see the Domain and Domain requests buttons
         """
-        
+
         # This should unlock 4 steps by default.
         # Purpose, .gov domain, current websites, and requirements for operating
         domain_request = completed_domain_request(
@@ -3167,7 +3165,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertNotContains(detail_page, "Domain requests")
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
-        
+
         # Data cleanup
         user_portfolio_permission.delete()
         portfolio.delete()
