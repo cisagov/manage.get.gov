@@ -64,7 +64,6 @@ Resolves #001
 - [ ] If any model was updated to modify/add/delete columns, verified migrations can be run with `makemigrations`
 
 #### Validated user-facing changes as a developer
-
 **Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist
 
 - [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
@@ -86,13 +85,11 @@ Resolves #001
 
 - [ ] Checked different states (empty, one, some, error)
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
-
-#### Test support on multiple browsers. Check the browser(s) tested.
-- [ ] Chrome
-- [ ] Microsoft Edge
-- [ ] FireFox
-- [ ] Safari
-
+- [ ] Tested with multiple browsers (check off which ones were used)
+  - [ ] Chrome
+  - [ ] Microsoft Edge
+  - [ ] FireFox
+  - [ ] Safari
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
 
 ## Screenshots

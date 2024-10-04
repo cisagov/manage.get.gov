@@ -1,5 +1,8 @@
 ## Code Review
 
+Pull requests should be titled in the format of `#issue_number: Descriptive name ideally matching ticket name - [sandbox]`
+Any pull requests including a migration should be suffixed with ` - MIGRATION`
+
 After creating a pull request, pull request submitters should:
 - Add at least 2 developers as PR reviewers (only 1 will need to approve).
 - Message on Slack or in standup to notify the team that a PR is ready for review.
@@ -7,10 +10,12 @@ After creating a pull request, pull request submitters should:
 - If any updated dependencies on Pipfile, also update dependencies in requirements.txt.
 
 Code changes on user-facing features (excluding content updates) require approval from at least one developer and one designer.
-All other changes require just a single approving review.
+All other changes require a single approving review.
 
 ## Pull Requests for User-facing changes
 When making user-facing changes, test that your changes work on multiple browsers including Chrome, Microsoft Edge, Firefox, and Safari.
+
+Add new pages to the .pa11yci file so they are included in our automated accessibility testing.
 
 ## Coding standards
 (The Coding standards section may be moved to a new code standards file in a future ticket.
