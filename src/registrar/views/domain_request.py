@@ -571,19 +571,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete
 class PortfolioDomainRequestWizard(DomainRequestWizard):
-    TITLES: dict = {
-        PortfolioDomainRequestStep.REQUESTING_ENTITY: _("Requesting entity"),
-        PortfolioDomainRequestStep.CURRENT_SITES: _("Current websites"),
-        PortfolioDomainRequestStep.DOTGOV_DOMAIN: _(".gov domain"),
-        PortfolioDomainRequestStep.PURPOSE: _("Purpose of your domain"),
-        PortfolioDomainRequestStep.ADDITIONAL_DETAILS: _("Additional details"),
-        PortfolioDomainRequestStep.REQUIREMENTS: _("Requirements for operating a .gov domain"),
-    }
-
-    def __init__(self):
-        super().__init__()
-        self.steps = StepsHelper(self)
-        self._domain_request = None  # for caching
+    is_portfolio = True
 
 
 # Portfolio pages
@@ -981,7 +969,7 @@ class PortfolioDomainRequestStatusViewOnly(DomainRequestPortfolioViewonlyView):
         wizard.request = self.request
         context["Step"] = PortfolioDomainRequestStep.__members__
         context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
-        context["form_titles"] = wizard.TITLES
+        context["form_titles"] = wizard.titles
         return context
 
 
