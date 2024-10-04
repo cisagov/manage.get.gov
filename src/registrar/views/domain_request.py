@@ -554,7 +554,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete
 class PortfolioDomainRequestWizard(DomainRequestWizard):
-    StepEnum: PortfolioDomainRequestStep = PortfolioDomainRequestStep  # type: ignore
+    StepEnum = PortfolioDomainRequestStep  # type: ignore
 
     TITLES = {
         StepEnum.REQUESTING_ENTITY: _("Requesting entity"),
