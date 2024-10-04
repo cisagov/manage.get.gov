@@ -43,7 +43,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         super().setUp()
         self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
         self.app.set_user(self.user.username)
-        self.TITLES = DomainRequestWizard.TITLES
+        self.TITLES = DomainRequestWizard.titles
 
     def tearDown(self):
         super().tearDown()
@@ -3186,7 +3186,7 @@ class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
         super().setUp()
         self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
         self.app.set_user(self.user.username)
-        self.TITLES = DomainRequestWizard.TITLES
+        self.TITLES = DomainRequestWizard.titles
 
     def tearDown(self):
         super().tearDown()

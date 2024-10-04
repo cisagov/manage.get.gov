@@ -279,11 +279,11 @@ class BaseYesNoForm(RegistrarForm):
         return initial_value
 
 
-def request_step_list(request_wizard):
+def request_step_list(request_wizard, step_enum):
     """Dynamically generated list of steps in the form wizard."""
     step_list = []
-    for step in request_wizard.StepEnum:
-        condition = request_wizard.WIZARD_CONDITIONS.get(step, True)
+    for step in step_enum:
+        condition = request_wizard.wizard_conditions.get(step, True)
         if callable(condition):
             condition = condition(request_wizard)
         if condition:
