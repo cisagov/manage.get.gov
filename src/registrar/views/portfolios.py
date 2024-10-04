@@ -95,9 +95,10 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
     def get(self, request, pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
         form = self.form_class(instance=portfolio_invitation)
+
         return render(request, self.template_name, {
             'form': form,
-            'member': None,
+            'invitation': portfolio_invitation,
         })
 
     def post(self, request, pk):
@@ -109,7 +110,7 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
         
         return render(request, self.template_name, {
             'form': form,
-            'member': None,  # Pass the user object again to the template
+            'invitation': portfolio_invitation,  # Pass the user object again to the template
         })
     
 

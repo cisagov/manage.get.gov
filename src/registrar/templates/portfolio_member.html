@@ -13,9 +13,46 @@
             {% include "includes/form_messages.html" %}
         {% endblock %}
 
-        <h1>Member</h1>
+        <h1>Manage member</h1>
+        
+        <p>
+          {% if member %}
+            {{ member.email }}
+          {% elif invitation %}
+            {{ invitation.email }}
+          {% endif %}
+        </p>
 
-        <p>{{ member.first_name }}</p>
+        <p>Last active: 
+          {% if member and member.last_login %}
+            {{ member.last_login }}
+          {% elif invitation %}
+            Invited
+          {% else %}
+            --
+          {% endif %}
+        </p>
+
+        <p>Full name:
+          {% if member %}
+            {% if member.first_name or member.last_name %}
+              {{ member.get_formatted_name }}
+            {% else %}
+              --
+            {% endif %}
+          {% else %}
+            --
+          {% endif %}
+        </p>
+
+        <p>Title or organization role:
+          {% if member and member.title %}
+            {{ member.title }}
+          {% else %}
+            --
+          {% endif %}
+        </p>
+      
 
 
         <hr>
@@ -23,11 +60,9 @@
         <form class="usa-form usa-form--large" method="post" novalidate>
             {% csrf_token %}
             {% if form.roles %}
-              {% comment - handling form fields for member %}
               {% input_with_errors form.roles %}
               {% input_with_errors form.additional_permissions %}
             {% elif form.portfolio_roles %}
-              {% comment - handling form fields for invited member %}
               {% input_with_errors form.portfolio_roles %}
               {% input_with_errors form.portfolio_additional_permissions %}
             {% endif %}
