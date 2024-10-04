@@ -564,7 +564,7 @@ class PortfolioDomainRequestWizard(DomainRequestWizard):
         StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
         StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
         # Step.REVIEW: _("Review and submit your domain request"),
-    }  # type: ignore
+    }
 
     def __init__(self):
         super().__init__()
