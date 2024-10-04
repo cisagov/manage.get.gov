@@ -17,8 +17,6 @@ def get_portfolio_members_json(request):
     """Given the current request,
     get all members that are associated with the given portfolio"""
     portfolio = request.GET.get("portfolio")
-    # member_ids = get_member_ids_from_request(request, portfolio)
-    # members = User.objects.filter(id__in=member_ids)
 
     permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio).select_related("user").values_list("pk", "user__first_name", "user__last_name", "user__email", "user__last_login", "roles")
     invitations = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(

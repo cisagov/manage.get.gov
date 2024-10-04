@@ -24,7 +24,9 @@
       {% if sub_header_text %}
         <h4 class="register-form-review-header">{{ sub_header_text }}</h4>
       {% endif %}
-      {% if address %}
+      {% if permissions %}
+        {% include "includes/member_permissions.html" with permissions=value %}
+      {% elif address %}
         {% include "includes/organization_address.html" with organization=value %}
       {% elif contact %}
         {% if list %}
@@ -122,9 +124,9 @@
           class="usa-link usa-link--icon font-sans-sm line-height-sans-5"
       >
         <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-          <use xlink:href="{% static 'img/sprite.svg' %}#edit"></use>
+          <use xlink:href="{% static 'img/sprite.svg' %}#{% if manage_button %}settings{% elif view_button %}visibility{% else %}edit{% endif %}"></use>
         </svg>
-        Edit<span class="sr-only"> {{ title }}</span>
+        {% if manage_button %}Manage{% elif view_button %}View{% else %}Edit{% endif %}<span class="sr-only"> {{ title }}</span>
       </a>
       </div>
     {% endif %}

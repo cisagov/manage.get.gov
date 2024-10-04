@@ -6,74 +6,75 @@
 {% load static %}
 
 {% block portfolio_content %}
-<div class="grid-row grid-gap">
-    <div class="tablet:grid-col-9" id="main-content">
+<div id="main-content">
 
-        {% block messages %}
-            {% include "includes/form_messages.html" %}
-        {% endblock %}
+  {% url 'members' as url %}
+  <nav class="usa-breadcrumb padding-top-0 margin-bottom-3" aria-label="Portfolio member breadcrumb">
+  <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{{ url }}" class="usa-breadcrumb__link"><span>Members</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>Manage member</span>
+      </li>
+  </ol>
+  </nav>
+  
 
-        <h1>Manage member</h1>
+  <h1>Manage member</h1>
+
+  <h2 class="margin-y-3">
+    {% if member %}
+      {{ member.email }}
+    {% elif portfolio_invitation %}
+      {{ portfolio_invitation.email }}
+    {% endif %}
+  </h2>
+
+  <address>
+    <strong class="text-primary-dark">Last active:</strong>
+    {% if member and member.last_login %}
+        {{ member.last_login }}
+      {% elif portfolio_invitation %}
+        Invited
+      {% else %}
+        --
+      {% endif %}
+    <br />
+
+    <strong class="text-primary-dark">Full name:</strong>
+    {% if member %}
+      {% if member.first_name or member.last_name %}
+        {{ member.get_formatted_name }}
+      {% else %}
+        --
+      {% endif %}
+    {% else %}
+      --
+    {% endif %}
+    <br />
+
+    <strong class="text-primary-dark">Title or organization role:</strong>
+    {% if member and member.title %}
+      {{ member.title }}
+    {% else %}
+      --
+    {% endif %}
+  </address>
+
+  {% if portfolio_permission %}
+    {% include "includes/summary_item.html" with title='Member access and permissions' permissions='true' value=portfolio_permission edit_link=edit_url editable=has_edit_members_portfolio_permission %}
+  {% elif portfolio_invitation %}
+    {% include "includes/summary_item.html" with title='Member access and permissions' permissions='true' value=portfolio_invitation edit_link=edit_url editable=has_edit_members_portfolio_permission %}
+  {% endif %}
+
+  {% if has_any_domains_portfolio_permission %}
+    {% if has_edit_members_portfolio_permission %}
+      {% include "includes/summary_item.html" with title='Domain management' value="Asdasd" edit_link='#' editable='true' manage_button='true' %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='Domain management' value="Asdasd" edit_link='#' editable='true' view_button='true' %}
+    {% endif %}
+  {% endif %}
         
-        <p>
-          {% if member %}
-            {{ member.email }}
-          {% elif portfolio_invitation %}
-            {{ portfolio_invitation.email }}
-          {% endif %}
-        </p>
-
-        <p>Last active: 
-          {% if member and member.last_login %}
-            {{ member.last_login }}
-          {% elif portfolio_invitation %}
-            Invited
-          {% else %}
-            --
-          {% endif %}
-        </p>
-
-        <p>Full name:
-          {% if member %}
-            {% if member.first_name or member.last_name %}
-              {{ member.get_formatted_name }}
-            {% else %}
-              --
-            {% endif %}
-          {% else %}
-            --
-          {% endif %}
-        </p>
-
-        <p>Title or organization role:
-          {% if member and member.title %}
-            {{ member.title }}
-          {% else %}
-            --
-          {% endif %}
-        </p>
-      
-
-
-        <hr>
-
-        <form class="usa-form usa-form--large" method="post" novalidate>
-            {% csrf_token %}
-            {% if form.roles %}
-              {% input_with_errors form.roles %}
-              {% input_with_errors form.additional_permissions %}
-            {% elif form.portfolio_roles %}
-              {% input_with_errors form.portfolio_roles %}
-              {% input_with_errors form.portfolio_additional_permissions %}
-            {% endif %}
-            <button
-              type="submit"
-              class="usa-button"
-            >Submit</button>
-          </form>
-
-        
-
-    </div>
 </div>
 {% endblock %}

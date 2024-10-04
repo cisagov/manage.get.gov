@@ -65,6 +65,7 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
         user = portfolio_permission.user
         
         return render(request, self.template_name, {
+            'edit_url': reverse('member-permissions', args=[pk]),
             'portfolio_permission': portfolio_permission,
             'member': user,
         })
@@ -94,7 +95,7 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
         
         if form.is_valid():
             form.save()
-            return redirect('member',pk=pk)
+            return redirect('member', pk=pk)
         
         return render(request, self.template_name, {
             'form': form,
@@ -112,6 +113,7 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
         # form = self.form_class(instance=portfolio_invitation)
 
         return render(request, self.template_name, {
+            'edit_url': reverse('invitedmember-permissions', args=[pk]),
             'portfolio_invitation': portfolio_invitation,
         })
 
