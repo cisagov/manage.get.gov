@@ -554,9 +554,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete
 class PortfolioDomainRequestWizard(DomainRequestWizard):
-    StepEnum = PortfolioDomainRequestStep  # type: ignore
+    StepEnum: PortfolioDomainRequestStep = PortfolioDomainRequestStep  # type: ignore
 
-    TITLES = {
+    TITLES: dict[PortfolioDomainRequestStep, str] = {
         StepEnum.REQUESTING_ENTITY: _("Requesting entity"),
         StepEnum.CURRENT_SITES: _("Current websites"),
         StepEnum.DOTGOV_DOMAIN: _(".gov domain"),
