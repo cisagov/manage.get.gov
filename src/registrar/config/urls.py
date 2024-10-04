@@ -60,15 +60,8 @@ for step, view in [
     (Step.ADDITIONAL_DETAILS, views.AdditionalDetails),
     (Step.REQUIREMENTS, views.Requirements),
     (Step.REVIEW, views.Review),
-
     # Portfolio steps
     (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
-    # (PortfolioDomainRequestStep.CURRENT_SITES, views.CurrentSites),
-    # (PortfolioDomainRequestStep.DOTGOV_DOMAIN, views.DotgovDomain),
-    # (PortfolioDomainRequestStep.PURPOSE, views.Purpose),
-    # (PortfolioDomainRequestStep.ADDITIONAL_DETAILS, views.AdditionalDetails),
-    # (PortfolioDomainRequestStep.REQUIREMENTS, views.Requirements),
-    # (PortfolioDomainRequestStep.REVIEW, views.Review),
 ]:
     domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
 

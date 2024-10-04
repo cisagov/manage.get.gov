@@ -136,8 +136,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 portfolio=portfolio,
             )
 
-            # TODO - is this needed?
-            if portfolio:
+            # Question for reviewers: we should probably be doing this right?
+            if portfolio and not self._domain_request.generic_org_type:
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
         else:
@@ -505,17 +505,14 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
-        # If a user hits the new request url directly
+
         if "new_request" not in request.session:
             request.session["new_request"] = True
+
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
-            if request.path_info == self.NEW_URL_NAME:
-
-                if self.request.session["new_request"] is True:
-                    # This will trigger the domain_request getter into creating a new DomainRequest
-                    del self.storage
-            return self.goto(self.steps.first)
+            # Split into a function: C901 'DomainRequestWizard.post' is too complex (11)
+            self.handle_intro_acknowledge(request)
 
         # if accessing this class directly, redirect to the first step
         if self.__class__ == DomainRequestWizard:
@@ -545,6 +542,14 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # otherwise, proceed as normal
         return self.goto_next_step()
+
+    def handle_intro_acknowledge(self, request):
+        """If we are starting a new request, clear storage
+        and redirect to the first step"""
+        if request.path_info == self.NEW_URL_NAME:
+            if self.request.session["new_request"] is True:
+                del self.storage
+        return self.goto(self.steps.first)
 
     def save(self, forms: list):
         """
@@ -576,10 +581,12 @@ class PortfolioDomainRequestWizard(DomainRequestWizard):
         self.steps = StepsHelper(self)
         self._domain_request = None  # for caching
 
+
 # Portfolio pages
 class RequestingEntity(DomainRequestWizard):
     template_name = "domain_request_requesting_entity.html"
     forms = [forms.RequestingEntityForm]
+
 
 # Non-portfolio pages
 class OrganizationType(DomainRequestWizard):
