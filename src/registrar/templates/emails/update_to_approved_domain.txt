@@ -2,6 +2,7 @@
 
 Hi,
 An update was made to a domain you manage.
+
 DOMAIN: {{domain}}
 UPDATED BY: {{user}}
 UPDATED ON: {{date}}
