@@ -13,7 +13,9 @@ from registrar.views.utility.permission_views import (
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
     NoPortfolioDomainsPermissionView,
+    PortfolioInvitedMemberEditPermissionView,
     PortfolioInvitedMemberPermissionView,
+    PortfolioMemberEditPermissionView,
     PortfolioMemberPermissionView,
     PortfolioMembersPermissionView,
 )
@@ -57,6 +59,20 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
 class PortfolioMemberView(PortfolioMemberPermissionView, View):
 
     template_name = "portfolio_member.html"
+
+    def get(self, request, pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        user = portfolio_permission.user
+        
+        return render(request, self.template_name, {
+            'portfolio_permission': portfolio_permission,
+            'member': user,
+        })
+
+    
+class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
+
+    template_name = "portfolio_member_permissions.html"
     form_class = PortfolioMemberForm
 
     def get(self, request, pk):
@@ -78,7 +94,7 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
         
         if form.is_valid():
             form.save()
-            return redirect('members')
+            return redirect('member',pk=pk)
         
         return render(request, self.template_name, {
             'form': form,
@@ -86,10 +102,23 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
         })
     
 
-
 class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
 
     template_name = "portfolio_member.html"
+    # form_class = PortfolioInvitedMemberForm
+
+    def get(self, request, pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        # form = self.form_class(instance=portfolio_invitation)
+
+        return render(request, self.template_name, {
+            'portfolio_invitation': portfolio_invitation,
+        })
+
+
+class PortfolioInvitedMemberEditView(PortfolioInvitedMemberEditPermissionView, View):
+
+    template_name = "portfolio_member_permissions.html"
     form_class = PortfolioInvitedMemberForm
 
     def get(self, request, pk):
@@ -106,7 +135,7 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
         form = self.form_class(request.POST, instance=portfolio_invitation)
         if form.is_valid():
             form.save()
-            return redirect('members')
+            return redirect('invitedmember', pk=pk)
         
         return render(request, self.template_name, {
             'form': form,

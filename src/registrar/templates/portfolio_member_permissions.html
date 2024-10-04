@@ -18,42 +18,10 @@
         <p>
           {% if member %}
             {{ member.email }}
-          {% elif portfolio_invitation %}
-            {{ portfolio_invitation.email }}
+          {% elif invitation %}
+            {{ invitation.email }}
           {% endif %}
         </p>
-
-        <p>Last active: 
-          {% if member and member.last_login %}
-            {{ member.last_login }}
-          {% elif portfolio_invitation %}
-            Invited
-          {% else %}
-            --
-          {% endif %}
-        </p>
-
-        <p>Full name:
-          {% if member %}
-            {% if member.first_name or member.last_name %}
-              {{ member.get_formatted_name }}
-            {% else %}
-              --
-            {% endif %}
-          {% else %}
-            --
-          {% endif %}
-        </p>
-
-        <p>Title or organization role:
-          {% if member and member.title %}
-            {{ member.title }}
-          {% else %}
-            --
-          {% endif %}
-        </p>
-      
-
 
         <hr>
 
