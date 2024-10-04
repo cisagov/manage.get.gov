@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -115,8 +116,25 @@ def apply_sorting(data_list, request):
     if sort_by == "member":
         sort_by = "email"
 
-    # Sort the list
-    data_list = sorted(data_list, key=itemgetter(sort_by), reverse=(order == "desc"))
+    # Custom key function that handles None, 'Invited', and datetime values for last_active
+    def sort_key(item):
+        value = item.get(sort_by)
+        if sort_by == "last_active":
+            # Return a tuple to ensure consistent data types for comparison
+            # First element: ordering value (0 for valid datetime, 1 for 'Invited', 2 for None)
+            # Second element: the actual value to sort by
+            if value is None:
+                return (2, value)  # Position None last
+            if value == 'Invited':
+                return (1, value)  # Position 'Invited' before None but after valid datetimes
+            if isinstance(value, datetime):
+                return (0, value)  # Position valid datetime values first
+        
+        # Default case: return the value as is for comparison
+        return value
+
+    # Sort the list using the custom key function
+    data_list = sorted(data_list, key=sort_key, reverse=(order == "desc"))
 
     return data_list
 
