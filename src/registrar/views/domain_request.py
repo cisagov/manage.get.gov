@@ -72,7 +72,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
         StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
         StepEnum.REVIEW: _("Review and submit your domain request"),
-    }
+    }  # type: ignore
 
     # We can use a dictionary with step names and callables that return booleans
     # to show or hide particular steps based on the state of the process.
@@ -81,7 +81,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         StepEnum.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
         StepEnum.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
         StepEnum.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
-    }
+    }  # type: ignore
 
     def __init__(self):
         super().__init__()
@@ -208,7 +208,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             self.StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
             self.StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
             self.StepEnum.REVIEW: _("Review and submit your domain request"),
-        }
+        }  # type: ignore
         self.WIZARD_CONDITIONS = {}
 
         # Regenerate the steps helper
@@ -490,7 +490,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
-        if not self.is_portfolio and self.request.user.is_org_user(request):
+        if not self.is_portfolio and self.request.user.is_org_user(request):  # type: ignore
             self.mark_as_portfolio_wizard()
 
         # which button did the user press?

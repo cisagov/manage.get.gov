@@ -3157,7 +3157,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, "usa-current", count=1)
 
             # We default to the requesting entity page
-            expected_url = reverse("domain-request:requesting_entity")
+            expected_url = reverse("domain-request:portfolio_requesting_entity")
             # This returns the entire url, thus "in"
             self.assertIn(expected_url, detail_page.request.url)
 
