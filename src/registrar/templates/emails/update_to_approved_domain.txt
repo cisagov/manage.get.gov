@@ -6,6 +6,7 @@ DOMAIN: {{domain}}
 UPDATED BY: {{user}}
 UPDATED ON: {{date}}
 INFORMATION UPDATED: {{changes}}
+
 You can view this update in the .gov registrar <https://manage.get.gov/>.
 
 Get help with managing your .gov domain <https://get.gov/help/domain-management/>.
