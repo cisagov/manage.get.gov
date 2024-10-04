@@ -1,6 +1,7 @@
 from django.urls import reverse
 
 from registrar.models.portfolio import Portfolio
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -38,6 +39,7 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
             phone="8003114567",
             title="Admin",
         )
+        cls.email5 = "fifth@example.com"
 
         # Create Portfolio
         cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
@@ -67,11 +69,23 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
             portfolio=cls.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
+        PortfolioInvitation.objects.create(
+            email=cls.email5,
+            portfolio=cls.portfolio,
+            portfolio_roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            portfolio_additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
 
+    @classmethod
     def tearDownClass(cls):
+        PortfolioInvitation.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
+        super().tearDownClass()
 
     def setUp(self):
         super().setUp()
@@ -88,14 +102,14 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
-        self.assertEqual(data["total"], 4)
-        self.assertEqual(data["unfiltered_total"], 4)
+        self.assertEqual(data["total"], 5)
+        self.assertEqual(data["unfiltered_total"], 5)
 
         # Check the number of members
-        self.assertEqual(len(data["members"]), 4)
+        self.assertEqual(len(data["members"]), 5)
 
         # Check member fields
-        expected_emails = {self.user.email, self.user2.email, self.user3.email, self.user4.email}
+        expected_emails = {self.user.email, self.user2.email, self.user3.email, self.user4.email, self.user4.email, self.email5}
         actual_emails = {member["email"] for member in data["members"]}
         self.assertEqual(expected_emails, actual_emails)
 
@@ -128,8 +142,8 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         self.assertTrue(data["has_next"])
         self.assertFalse(data["has_previous"])
         self.assertEqual(data["num_pages"], 2)
-        self.assertEqual(data["total"], 14)
-        self.assertEqual(data["unfiltered_total"], 14)
+        self.assertEqual(data["total"], 15)
+        self.assertEqual(data["unfiltered_total"], 15)
 
         # Check the number of members on page 1
         self.assertEqual(len(data["members"]), 10)
@@ -147,7 +161,7 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["num_pages"], 2)
 
         # Check the number of members on page 2
-        self.assertEqual(len(data["members"]), 4)
+        self.assertEqual(len(data["members"]), 5)
 
     def test_search(self):
         """Test search functionality for portfolio members."""
