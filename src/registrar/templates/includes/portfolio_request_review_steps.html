@@ -53,32 +53,8 @@
     {% endif %}
 
     {% if step == Step.ADDITIONAL_DETAILS %}
-        {% with title=form_titles|get_item:step %}
-            {% if domain_request.has_additional_details %}
-                {% include "includes/summary_item.html" with title="Additional Details" value=" " heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
-                <h3 class="register-form-review-header">CISA Regional Representative</h3>
-                <ul class="usa-list usa-list--unstyled margin-top-0">
-                    {% if domain_request.cisa_representative_first_name %}
-                        <li>{{domain_request.cisa_representative_first_name}} {{domain_request.cisa_representative_last_name}}</li>
-                    {% if domain_request.cisa_representative_email %}
-                        <li>{{domain_request.cisa_representative_email}}</li>
-                    {% endif %}
-                    {% else %}
-                    No
-                    {% endif %}
-                </ul>
-
-            <h3 class="register-form-review-header">Anything else</h3>
-            <ul class="usa-list usa-list--unstyled margin-top-0">
-                {% if domain_request.anything_else %}
-                    {{domain_request.anything_else}}
-                {% else %}
-                    No
-                {% endif %}
-            </ul>
-            {% else %}
-                {% include "includes/summary_item.html" with title="Additional Details" value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
-            {% endif %}
+        {% with title=form_titles|get_item:step value=domain_request.anything_else|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
         {% endwith %}
     {% endif %}
 

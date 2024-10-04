@@ -366,33 +366,23 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # from the list of "unlocked" steps.
         if self.is_portfolio:
             history_dict = {
-                "requesting_entity": self.domain_request.organization_name is not None,
-                "current_sites": (
+                self.StepEnum.REQUESTING_ENTITY: self.domain_request.organization_name is not None,
+                self.StepEnum.CURRENT_SITES: (
                     self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
                 ),
-                "dotgov_domain": self.domain_request.requested_domain is not None,
-                "purpose": self.domain_request.purpose is not None,
-                "other_contacts": (
-                    self.domain_request.other_contacts.exists()
-                    or self.domain_request.no_other_contacts_rationale is not None
-                ),
-                "additional_details": (
-                    # Additional details is complete as long as "has anything else" and "has cisa rep" are not None
-                    (
-                        self.domain_request.has_anything_else_text is not None
-                        and self.domain_request.has_cisa_representative is not None
-                    )
-                ),
-                "requirements": self.domain_request.is_policy_acknowledged is not None,
-                "review": self.domain_request.is_policy_acknowledged is not None,
+                self.StepEnum.DOTGOV_DOMAIN: self.domain_request.requested_domain is not None,
+                self.StepEnum.PURPOSE: self.domain_request.purpose is not None,
+                self.StepEnum.ADDITIONAL_DETAILS: self.domain_request.anything_else is not None,
+                self.StepEnum.REQUIREMENTS: self.domain_request.is_policy_acknowledged is not None,
+                self.StepEnum.REVIEW: self.domain_request.is_policy_acknowledged is not None,
             }
         else:
             history_dict = {
-                "generic_org_type": self.domain_request.generic_org_type is not None,
-                "tribal_government": self.domain_request.tribe_name is not None,
-                "organization_federal": self.domain_request.federal_type is not None,
-                "organization_election": self.domain_request.is_election_board is not None,
-                "organization_contact": (
+                self.StepEnum.ORGANIZATION_TYPE: self.domain_request.generic_org_type is not None,
+                self.StepEnum.TRIBAL_GOVERNMENT: self.domain_request.tribe_name is not None,
+                self.StepEnum.ORGANIZATION_FEDERAL: self.domain_request.federal_type is not None,
+                self.StepEnum.ORGANIZATION_ELECTION: self.domain_request.is_election_board is not None,
+                self.StepEnum.ORGANIZATION_CONTACT: (
                     self.domain_request.federal_agency is not None
                     or self.domain_request.organization_name is not None
                     or self.domain_request.address_line1 is not None
@@ -401,26 +391,26 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                     or self.domain_request.zipcode is not None
                     or self.domain_request.urbanization is not None
                 ),
-                "about_your_organization": self.domain_request.about_your_organization is not None,
-                "senior_official": self.domain_request.senior_official is not None,
-                "current_sites": (
+                self.StepEnum.ABOUT_YOUR_ORGANIZATION: self.domain_request.about_your_organization is not None,
+                self.StepEnum.SENIOR_OFFICIAL: self.domain_request.senior_official is not None,
+                self.StepEnum.CURRENT_SITES: (
                     self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
                 ),
-                "dotgov_domain": self.domain_request.requested_domain is not None,
-                "purpose": self.domain_request.purpose is not None,
-                "other_contacts": (
+                self.StepEnum.DOTGOV_DOMAIN: self.domain_request.requested_domain is not None,
+                self.StepEnum.PURPOSE: self.domain_request.purpose is not None,
+                self.StepEnum.OTHER_CONTACTS: (
                     self.domain_request.other_contacts.exists()
                     or self.domain_request.no_other_contacts_rationale is not None
                 ),
-                "additional_details": (
+                self.StepEnum.ADDITIONAL_DETAILS: (
                     # Additional details is complete as long as "has anything else" and "has cisa rep" are not None
                     (
                         self.domain_request.has_anything_else_text is not None
                         and self.domain_request.has_cisa_representative is not None
                     )
                 ),
-                "requirements": self.domain_request.is_policy_acknowledged is not None,
-                "review": self.domain_request.is_policy_acknowledged is not None,
+                self.StepEnum.REQUIREMENTS: self.domain_request.is_policy_acknowledged is not None,
+                self.StepEnum.REVIEW: self.domain_request.is_policy_acknowledged is not None,
             }
         return [key for key, value in history_dict.items() if value]
 
@@ -477,7 +467,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return request_step_list(self)
 
     def goto(self, step):
-        if step == "generic_org_type" or step == "requesting_entity":
+        if step == "generic_org_type" or step == "portfolio_requesting_entity":
             # We need to avoid creating a new domain request if the user
             # clicks the back button
             self.request.session["new_request"] = False
@@ -586,6 +576,12 @@ class PortfolioDomainRequestWizard(DomainRequestWizard):
 class RequestingEntity(DomainRequestWizard):
     template_name = "domain_request_requesting_entity.html"
     forms = [forms.RequestingEntityForm]
+
+
+class PortfolioAdditionalDetails(DomainRequestWizard):
+    template_name = "portfolio_domain_request_additional_details.html"
+
+    forms = [forms.AnythingElseForm]
 
 
 # Non-portfolio pages

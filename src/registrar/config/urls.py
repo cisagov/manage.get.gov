@@ -62,6 +62,7 @@ for step, view in [
     (Step.REVIEW, views.Review),
     # Portfolio steps
     (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
+    (PortfolioDomainRequestStep.ADDITIONAL_DETAILS, views.PortfolioAdditionalDetails)
 ]:
     domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
 
