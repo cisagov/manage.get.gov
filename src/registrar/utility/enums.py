@@ -73,6 +73,7 @@ class PortfolioDomainRequestStep(StrEnum):
     As with Django's own `TextChoices` class, steps will
     appear in the order they are defined. (Order matters.)
     """
+
     # NOTE: Append portfolio_ when customizing a view for portfolio.
     # By default, these will redirect to the normal request flow views.
     # After creating a new view, you will need to add this to urls.py.

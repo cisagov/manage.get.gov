@@ -3104,6 +3104,8 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             status=DomainRequest.DomainRequestStatus.STARTED,
             user=self.user,
         )
+        domain_request.anything_else = None
+        domain_request.save()
 
         federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
         # Add a portfolio
