@@ -1,5 +1,6 @@
 ## Ticket
 
+<!-- PR title format: `#issue_number: Descriptive name ideally matching ticket name - [sandbox]`-->
 Resolves #00
 
 ## Changes
