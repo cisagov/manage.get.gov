@@ -96,7 +96,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
     }
 
-    PORTFOLIO_WIZARD_CONDITIONS = {}
+    PORTFOLIO_WIZARD_CONDITIONS = {}  # type: ignore
     # endregion
 
     # region: Unlocking steps
