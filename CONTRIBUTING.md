@@ -30,4 +30,4 @@ We also have labels for each discipline and for research and project management 
 
 ## Branch Naming
 
-Our branch naming convention is `name/issue_no-description`, for example: `lmm/0000-add-contributing-doc`. 
+Our branch naming convention is `name/issue_no-description`, for example: `lmm/1234-add-contributing-doc`. 
