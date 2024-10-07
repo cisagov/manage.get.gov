@@ -8,18 +8,18 @@
 {% endif %}
 
 <h4 class="margin-bottom-0 text-primary">Organization domain requests</h4>
-{% if permissions.roles and 'organization_admin' in permissions.roles or 'edit_requests' in permissions.additional_permissions %}
+{% if member_has_edit_request_portfolio_permission %}
     <p class="margin-top-0">View all requests plus create requests</p>
-{% elif permissions.additional_permissions and 'view_all_requests' in permissions.additional_permissions %}
+{% elif member_has_view_all_requests_portfolio_permission %}
     <p class="margin-top-0">View all requests</p>
 {% else %}
     <p class="margin-top-0">No access</p>
 {% endif %}
 
 <h4 class="margin-bottom-0 text-primary">Organization members</h4>
-{% if permissions.additional_permissions and 'edit_members' in permissions.additional_permissions %}
+{% if member_has_edit_members_portfolio_permission %}
     <p class="margin-top-0">View all members plus manage members</p>
-{% elif permissions.additional_permissions and 'view_members' in permissions.additional_permissions %}
+{% elif member_has_view_members_portfolio_permission %}
     <p class="margin-top-0">View all members</p>
 {% else %}
     <p class="margin-top-0">No access</p>

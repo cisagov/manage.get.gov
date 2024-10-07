@@ -109,9 +109,9 @@
   </address>
 
   {% if portfolio_permission %}
-    {% include "includes/summary_item.html" with title='Member access and permissions' permissions='true' value=portfolio_permission edit_link=edit_url editable=has_edit_members_portfolio_permission %}
+    {% include "includes/summary_item.html" with title='Member access and permissions' permissions='true' value=portfolio_permission member_has_view_all_requests_portfolio_permission=member_has_view_all_requests_portfolio_permission member_has_edit_request_portfolio_permission=member_has_edit_request_portfolio_permission member_has_view_members_portfolio_permission=member_has_view_members_portfolio_permission member_has_edit_members_portfolio_permission=member_has_edit_members_portfolio_permission edit_link=edit_url editable=has_edit_members_portfolio_permission %}
   {% elif portfolio_invitation %}
-    {% include "includes/summary_item.html" with title='Member access and permissions' permissions='true' value=portfolio_invitation edit_link=edit_url editable=has_edit_members_portfolio_permission %}
+    {% include "includes/summary_item.html" with title='Member access and permissions' permissions='true' value=portfolio_invitation member_has_view_all_requests_portfolio_permission=member_has_view_all_requests_portfolio_permission member_has_edit_request_portfolio_permission=member_has_edit_request_portfolio_permission member_has_view_members_portfolio_permission=member_has_view_members_portfolio_permission member_has_edit_members_portfolio_permission=member_has_edit_members_portfolio_permission edit_link=edit_url editable=has_edit_members_portfolio_permission %}
   {% endif %}
 
   {% if portfolio_permission %}

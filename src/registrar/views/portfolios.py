@@ -7,7 +7,7 @@ from registrar.forms.portfolio import PortfolioInvitedMemberForm, PortfolioMembe
 from registrar.models import Portfolio, User
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
     PortfolioDomainsPermissionView,
@@ -62,12 +62,22 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
 
     def get(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
-        user = portfolio_permission.user
-        
+        member = portfolio_permission.user
+
+        # We have to explicitely name these with member_ otherwise we'll have conflicts with context preprocessors
+        member_has_view_all_requests_portfolio_permission =  member.has_view_all_requests_portfolio_permission(portfolio_permission.portfolio)
+        member_has_edit_request_portfolio_permission = member.has_edit_request_portfolio_permission(portfolio_permission.portfolio)
+        member_has_view_members_portfolio_permission =  member.has_view_members_portfolio_permission(portfolio_permission.portfolio)
+        member_has_edit_members_portfolio_permission = member.has_edit_members_portfolio_permission(portfolio_permission.portfolio)
+
         return render(request, self.template_name, {
             'edit_url': reverse('member-permissions', args=[pk]),
             'portfolio_permission': portfolio_permission,
-            'member': user,
+            'member': member,
+            'member_has_view_all_requests_portfolio_permission': member_has_view_all_requests_portfolio_permission,
+            'member_has_edit_request_portfolio_permission': member_has_edit_request_portfolio_permission,
+            'member_has_view_members_portfolio_permission': member_has_view_members_portfolio_permission,
+            'member_has_edit_members_portfolio_permission': member_has_edit_members_portfolio_permission
         })
 
     
@@ -112,9 +122,19 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
         # form = self.form_class(instance=portfolio_invitation)
 
+        # We have to explicitely name these with member_ otherwise we'll have conflicts with context preprocessors
+        member_has_view_all_requests_portfolio_permission = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in portfolio_invitation.get_portfolio_permissions()
+        member_has_edit_request_portfolio_permission = UserPortfolioPermissionChoices.EDIT_REQUESTS in portfolio_invitation.get_portfolio_permissions()
+        member_has_view_members_portfolio_permission = UserPortfolioPermissionChoices.VIEW_MEMBERS in portfolio_invitation.get_portfolio_permissions()
+        member_has_edit_members_portfolio_permission = UserPortfolioPermissionChoices.EDIT_MEMBERS in portfolio_invitation.get_portfolio_permissions()
+
         return render(request, self.template_name, {
             'edit_url': reverse('invitedmember-permissions', args=[pk]),
             'portfolio_invitation': portfolio_invitation,
+            'member_has_view_all_requests_portfolio_permission': member_has_view_all_requests_portfolio_permission,
+            'member_has_edit_request_portfolio_permission': member_has_edit_request_portfolio_permission,
+            'member_has_view_members_portfolio_permission': member_has_view_members_portfolio_permission,
+            'member_has_edit_members_portfolio_permission': member_has_edit_members_portfolio_permission
         })
 
 
