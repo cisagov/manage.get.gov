@@ -389,8 +389,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
                 "modal_button": modal_button,
-                "modal_heading": "You are about to submit a domain request \
-                    for "
+                "modal_heading": "You are about to submit a domain request for "
                 + str(self.domain_request.requested_domain),
                 "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
                 You’ll only be able to withdraw your request.",

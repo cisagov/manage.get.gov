@@ -917,13 +917,18 @@ ul.add-list-reset {
     font-size: 14px;
 }
 
-.domain-name-wrap {
+.domain-name-wrap,
+.domain-name-wrap-modal {
     white-space: normal;
     word-wrap: break-word;
     overflow: visible; 
-    word-break: break-all;
     max-width: 100%; 
 }
+
+.domain-name-wrap {
+    word-break: break-all;
+}
+
 
 .organization-admin-label {
     font-weight: 600;
