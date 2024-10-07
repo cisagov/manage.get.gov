@@ -2035,7 +2035,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
-        self.assertIn("INFORMATION UPDATED: Org Name/Address", body)
+        self.assertIn("INFORMATION UPDATED: Organization details", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
@@ -2085,7 +2085,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
-        self.assertIn("INFORMATION UPDATED: Security Email", body)
+        self.assertIn("INFORMATION UPDATED: Security email", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
@@ -2147,7 +2147,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
-        self.assertIn("INFORMATION UPDATED: DS Data", body)
+        self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
@@ -2178,7 +2178,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
-        self.assertIn("INFORMATION UPDATED: Senior Official", body)
+        self.assertIn("INFORMATION UPDATED: Senior official", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
@@ -2219,9 +2219,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # add nameservers
-        nameservers_page.form["form-0-server"] = "ns1-new.igorville.gov"
+        nameservers_page.form["form-0-server"] = "ns1-new.dns-needed.gov"
         nameservers_page.form["form-0-ip"] = "192.168.1.1"
-        nameservers_page.form["form-1-server"] = "ns2-new.igorville.gov"
+        nameservers_page.form["form-1-server"] = "ns2-new.dns-needed.gov"
         nameservers_page.form["form-1-ip"] = "192.168.1.2"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)

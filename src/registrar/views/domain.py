@@ -119,7 +119,6 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         if form.is_valid():
             return self.form_valid(form)
         else:
-            logger.debug(f"Form errors: {form.errors}")
             return self.form_invalid(form)
 
     def form_valid(self, form):
@@ -160,12 +159,12 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         # send notification email for changes to any of these forms
         form_label_dict = {
-            DomainSecurityEmailForm: "Security Email",
+            DomainSecurityEmailForm: "Security email",
             DomainDnssecForm: "DNSSec",
-            DomainDsdataFormset: "DS Data",
-            DomainOrgNameAddressForm: "Org Name/Address",
-            SeniorOfficialContactForm: "Senior Official",
-            NameserverFormset: "Nameservers",
+            DomainDsdataFormset: "DNSSEC / DS Data",
+            DomainOrgNameAddressForm: "Organization details",
+            SeniorOfficialContactForm: "Senior official",
+            NameserverFormset: "Name servers",
         }
 
         # forms of these types should not send notifications if they're part of a portfolio/Organization
@@ -182,6 +181,9 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 info = self.get_domain_info_from_domain()
                 if not info or info.portfolio:
                     should_notify = False
+        elif "analyst_action" in self.session and "analyst_action_location" in self.session:
+            # action is being made by an analyst
+            should_notify = False
         else:
             # don't notify for any other types of forms
             should_notify = False
@@ -220,9 +222,16 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             "user", flat=True
         )
         emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
-        logger.debug("attempting to send templated email to domain managers")
         try:
-            send_templated_email(template, subject_template, context=context, cc_addresses=emails)
+            # Remove the current user so they aren't CC'ed, since they will be the "to_address"
+            emails.remove(self.request.user.email)
+        except ValueError:
+            pass
+
+        try:
+            send_templated_email(
+                template, subject_template, to_address=self.request.user.email, context=context, cc_addresses=emails
+            )
         except EmailSendingError:
             logger.warning(
                 "Could not sent notification email to %s for domain %s",
@@ -491,19 +500,25 @@ class DomainNameserversView(DomainFormBaseView):
         self._get_domain(request)
         formset = self.get_form()
 
+        logger.debug("got formet")
+
         if "btn-cancel-click" in request.POST:
             url = self.get_success_url()
             return HttpResponseRedirect(url)
 
         if formset.is_valid():
+            logger.debug("formset is valid")
             return self.form_valid(formset)
         else:
+            logger.debug("formset is invalid")
+            logger.debug(formset.errors)
             return self.form_invalid(formset)
 
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
         self.request.session["nameservers_form_domain"] = self.object
+        initial_state = self.object.state
 
         # Set the nameservers from the formset
         nameservers = []
@@ -544,7 +559,7 @@ class DomainNameserversView(DomainFormBaseView):
                 messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         else:
-            if self.object.state == Domain.State.READY:
+            if initial_state == Domain.State.READY:
                 self.send_update_notification(formset)
             messages.success(
                 self.request,
