@@ -2,8 +2,13 @@
 
 <div class="usa-modal__content">
     <div class="usa-modal__main">
-        <h2 class="usa-modal__heading domain-name-wrap-modal" id="modal-1-heading">
+        <h2 class="usa-modal__heading" id="modal-1-heading">
             {{ modal_heading }}
+            {%if domain_name_modal is not None %}
+                <span class="domain-name-wrap">           
+                    {{ domain_name_modal }}
+                </span>
+            {%endif%}
             {% if heading_value is not None %}
             {# Add a breakpoint #}
             <div aria-hidden="true"></div>
