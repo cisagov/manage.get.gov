@@ -21,15 +21,61 @@
   </nav>
   
 
-  <h1>Manage member</h1>
+  <h1 class="margin-bottom-3">Manage member</h1>
 
-  <h2 class="margin-y-3">
-    {% if member %}
-      {{ member.email }}
-    {% elif portfolio_invitation %}
-      {{ portfolio_invitation.email }}
+  <div class="tablet:display-flex tablet:flex-justify">
+    <h2 class="margin-top-0 margin-bottom-3 break-word">
+      {% if member %}
+        {{ member.email }}
+      {% elif portfolio_invitation %}
+        {{ portfolio_invitation.email }}
+      {% endif %}
+    </h2>
+    {% if has_edit_members_portfolio_permission %}
+      <a 
+        role="button" 
+        href="#"
+        class="display-block usa-button text-secondary usa-button--unstyled text-no-underline margin-bottom-3 line-height-sans-5 visible-mobile-flex"
+      >
+        Remove member
+      </a>
+
+      <div class="usa-accordion usa-accordion--more-actions hidden-mobile-flex">
+        <div class="usa-accordion__heading">
+          <button
+            type="button"
+            class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+            aria-expanded="false"
+            aria-controls="more-actions"
+          >
+            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+            </svg>
+          </button>
+        </div>
+        <div id="more-actions" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+          <h2>More options</h2>
+          {% if member %}
+            <a 
+              role="button" 
+              href="#"
+              class="usa-button text-secondary usa-button--unstyled text-no-underline margin-top-2 line-height-sans-5"
+            >
+              Remove member
+            </a>
+          {% else %}
+            <a 
+              role="button" 
+              href="#"
+              class="usa-button text-secondary usa-button--unstyled text-no-underline margin-top-2 line-height-sans-5"
+            >
+              Cancel invitation
+            </a>
+          {% endif %}
+        </div>
+      </div>
     {% endif %}
-  </h2>
+  </div>
 
   <address>
     <strong class="text-primary-dark">Last active:</strong>
@@ -38,7 +84,7 @@
       {% elif portfolio_invitation %}
         Invited
       {% else %}
-        --
+        ⎯
       {% endif %}
     <br />
 
@@ -47,10 +93,10 @@
       {% if member.first_name or member.last_name %}
         {{ member.get_formatted_name }}
       {% else %}
-        --
+        ⎯
       {% endif %}
     {% else %}
-      --
+      ⎯
     {% endif %}
     <br />
 
@@ -58,7 +104,7 @@
     {% if member and member.title %}
       {{ member.title }}
     {% else %}
-      --
+      ⎯
     {% endif %}
   </address>
 
