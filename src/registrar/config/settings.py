@@ -476,6 +476,8 @@ class JsonServerFormatter(ServerFormatter):
 
     def format(self, record):
         formatted_record = super().format(record)
+        if not hasattr(record, "server_time"):
+            record.server_time = self.formatTime(record, self.datefmt)
         log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
         return json.dumps(log_entry)
 
@@ -721,6 +723,7 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-el.app.cloud.gov",
     "getgov-ad.app.cloud.gov",
     "getgov-ms.app.cloud.gov",
     "getgov-ag.app.cloud.gov",

@@ -15,8 +15,6 @@ class UserPortfolioPermission(TimeStampedModel):
     PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBERS,
-            UserPortfolioPermissionChoices.EDIT_MEMBERS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
@@ -24,14 +22,6 @@ class UserPortfolioPermission(TimeStampedModel):
             # Domain: field specific permissions
             UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
             UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
-        ],
-        UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBERS,
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            # Domain: field specific permissions
-            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
         ],
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
@@ -75,7 +65,19 @@ class UserPortfolioPermission(TimeStampedModel):
     )
 
     def __str__(self):
-        return f"User '{self.user}' on Portfolio '{self.portfolio}' " f"<Roles: {self.roles}>" if self.roles else ""
+        readable_roles = []
+        if self.roles:
+            readable_roles = self.get_readable_roles()
+        return f"{self.user}" f" <Roles: {', '.join(readable_roles)}>" if self.roles else ""
+
+    def get_readable_roles(self):
+        """Returns a readable list of self.roles"""
+        readable_roles = []
+        if self.roles:
+            readable_roles = sorted(
+                [UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in self.roles]
+            )
+        return readable_roles
 
     def _get_portfolio_permissions(self):
         """
@@ -103,7 +105,8 @@ class UserPortfolioPermission(TimeStampedModel):
             existing_permissions = UserPortfolioPermission.objects.filter(user=self.user)
             if not flag_is_active_for_user(self.user, "multiple_portfolios") and existing_permissions.exists():
                 raise ValidationError(
-                    "Only one portfolio permission is allowed per user when multiple portfolios are disabled."
+                    "This user is already assigned to a portfolio. "
+                    "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
                 )
 
         # Check if portfolio is set without accessing the related object.

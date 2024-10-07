@@ -12,6 +12,7 @@ from registrar.views.utility.permission_views import (
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
     NoPortfolioDomainsPermissionView,
+    PortfolioMembersPermissionView,
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
@@ -39,6 +40,15 @@ class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
         if self.request.user.is_authenticated:
             request.session["new_request"] = True
         return render(request, "portfolio_requests.html")
+
+
+class PortfolioMembersView(PortfolioMembersPermissionView, View):
+
+    template_name = "portfolio_members.html"
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        return render(request, "portfolio_members.html")
 
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
