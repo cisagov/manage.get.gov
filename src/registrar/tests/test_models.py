@@ -1176,8 +1176,8 @@ class TestPortfolioInvitations(TestCase):
         self.invitation, _ = PortfolioInvitation.objects.get_or_create(
             email=self.email,
             portfolio=self.portfolio,
-            portfolio_roles=[self.portfolio_role_base, self.portfolio_role_admin],
-            portfolio_additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
+            roles=[self.portfolio_role_base, self.portfolio_role_admin],
+            additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
         )
 
     def tearDown(self):
@@ -1233,8 +1233,8 @@ class TestPortfolioInvitations(TestCase):
         PortfolioInvitation.objects.get_or_create(
             email=self.email,
             portfolio=portfolio2,
-            portfolio_roles=[self.portfolio_role_base, self.portfolio_role_admin],
-            portfolio_additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
+            roles=[self.portfolio_role_base, self.portfolio_role_admin],
+            additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
         )
         with override_flag("multiple_portfolios", active=True):
             self.user.check_portfolio_invitations_on_login()
@@ -1257,8 +1257,8 @@ class TestPortfolioInvitations(TestCase):
         PortfolioInvitation.objects.get_or_create(
             email=self.email,
             portfolio=portfolio2,
-            portfolio_roles=[self.portfolio_role_base, self.portfolio_role_admin],
-            portfolio_additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
+            roles=[self.portfolio_role_base, self.portfolio_role_admin],
+            additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
         )
         self.user.check_portfolio_invitations_on_login()
         self.user.refresh_from_db()

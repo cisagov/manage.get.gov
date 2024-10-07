@@ -1,14 +1,8 @@
 <h4 class="margin-bottom-0 text-primary">Member access</h4>
 {% if permissions.roles and 'organization_admin' in permissions.roles %}
     <p class="margin-top-0">Admin access</p>
-{% elif permissions.portfolio_roles and 'organization_admin' in permissions.portfolio_roles %}
-    <p class="margin-top-0">Admin access</p>
-
 {% elif permissions.roles and 'organization_member' in permissions.roles %}
     <p class="margin-top-0">Basic access</p>
-{% elif permissions.portfolio_roles and 'organization_member' in permissions.portfolio_roles %}
-    <p class="margin-top-0">Basic access</p>
-
 {% else %}
     <p class="margin-top-0">⎯</p>
 {% endif %}
@@ -16,14 +10,8 @@
 <h4 class="margin-bottom-0 text-primary">Organization domain requests</h4>
 {% if permissions.roles and 'organization_admin' in permissions.roles or 'edit_requests' in permissions.additional_permissions %}
     <p class="margin-top-0">View all requests plus create requests</p>
-{% elif permissions.portfolio_roles and 'organization_admin' in permissions.portfolio_roles or 'edit_requests' in permissions.portfolio_additional_permissions %}
-    <p class="margin-top-0">View all requests plus create requests</p>
-
 {% elif permissions.additional_permissions and 'view_all_requests' in permissions.additional_permissions %}
     <p class="margin-top-0">View all requests</p>
-{% elif permissions.portfolio_additional_permissions and 'view_all_requests' in permissions.portfolio_additional_permissions %}
-    <p class="margin-top-0">View all requests</p>
-
 {% else %}
     <p class="margin-top-0">No access</p>
 {% endif %}
@@ -31,14 +19,8 @@
 <h4 class="margin-bottom-0 text-primary">Organization members</h4>
 {% if permissions.additional_permissions and 'edit_members' in permissions.additional_permissions %}
     <p class="margin-top-0">View all members plus manage members</p>
-{% elif permissions.portfolio_additional_permissions and 'edit_members' in permissions.portfolio_additional_permissions %}
-    <p class="margin-top-0">View all members plus manage members</p>
-
 {% elif permissions.additional_permissions and 'view_members' in permissions.additional_permissions %}
     <p class="margin-top-0">View all members</p>
-{% elif permissions.portfolio_additional_permissions and 'view_members' in permissions.portfolio_additional_permissions %}
-    <p class="margin-top-0">View all members</p>
-
 {% else %}
     <p class="margin-top-0">No access</p>
 {% endif %}

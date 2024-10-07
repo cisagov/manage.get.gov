@@ -72,8 +72,8 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         PortfolioInvitation.objects.create(
             email=cls.email5,
             portfolio=cls.portfolio,
-            portfolio_roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            portfolio_additional_permissions=[
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],

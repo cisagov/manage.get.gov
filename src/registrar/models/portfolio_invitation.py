@@ -38,7 +38,7 @@ class PortfolioInvitation(TimeStampedModel):
         related_name="portfolios",
     )
 
-    portfolio_roles = ArrayField(
+    roles = ArrayField(
         models.CharField(
             max_length=50,
             choices=UserPortfolioRoleChoices.choices,
@@ -48,7 +48,7 @@ class PortfolioInvitation(TimeStampedModel):
         help_text="Select one or more roles.",
     )
 
-    portfolio_additional_permissions = ArrayField(
+    additional_permissions = ArrayField(
         models.CharField(
             max_length=50,
             choices=UserPortfolioPermissionChoices.choices,
@@ -88,8 +88,8 @@ class PortfolioInvitation(TimeStampedModel):
         user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             portfolio=self.portfolio, user=user
         )
-        if self.portfolio_roles and len(self.portfolio_roles) > 0:
-            user_portfolio_permission.roles = self.portfolio_roles
-        if self.portfolio_additional_permissions and len(self.portfolio_additional_permissions) > 0:
-            user_portfolio_permission.additional_permissions = self.portfolio_additional_permissions
+        if self.roles and len(self.roles) > 0:
+            user_portfolio_permission.roles = self.roles
+        if self.additional_permissions and len(self.additional_permissions) > 0:
+            user_portfolio_permission.additional_permissions = self.additional_permissions
         user_portfolio_permission.save()
