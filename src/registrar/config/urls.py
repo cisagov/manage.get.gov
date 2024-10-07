@@ -20,6 +20,7 @@ from registrar.views.report_views import (
     AnalyticsView,
     ExportDomainRequestDataFull,
     ExportDataTypeUser,
+    ExportDataTypeRequests,
 )
 
 # --jsons
@@ -176,6 +177,11 @@ urlpatterns = [
         "reports/export_data_type_user/",
         ExportDataTypeUser.as_view(),
         name="export_data_type_user",
+    ),
+    path(
+        "reports/export_data_type_requests/",
+        ExportDataTypeRequests.as_view(),
+        name="export_data_type_requests",
     ),
     path(
         "domain-request/<id>/edit/",
