@@ -2464,14 +2464,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     generic_org_type.admin_order_field = "domain_info__generic_org_type"  # type: ignore
 
     def federal_agency(self, obj):
-        # Print the state of obj and obj.domain_info for troubleshooting
-        print(f"federal_agency method called for: {obj}")
         if obj.domain_info:
-            print(f"Domain info exists: {obj.domain_info}")
-            print(f"Federal agency value: {obj.domain_info.federal_agency}")
             return obj.domain_info.federal_agency
         else:
-            print("Domain info does not exist")
             return None
 
     federal_agency.admin_order_field = "domain_info__federal_agency"  # type: ignore
