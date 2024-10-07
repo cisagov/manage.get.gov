@@ -1,6 +1,6 @@
 ## Ticket
 
-Resolves #001
+Resolves #00
 
 ## Changes
 
@@ -44,12 +44,14 @@ Resolves #001
 
 #### Ensured code standards are met (Original Developer)
 <!-- Write N/A if the below code standards are not applicable to your PR -->
+- [ ] If any updated dependencies on Pipfile, also update dependencies in requirements.txt.
 - [ ] Interactions with external systems are wrapped in try/except
 - [ ] Error handling exists for unusual or missing values
 
 #### Validated user-facing changes (if applicable)
 
-- [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
+- [ ] Tag @dotgov-designers for design review. If code is not user-facing, delete design reviewer checklist
+- [ ] Verify new pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
 
@@ -58,10 +60,10 @@ Resolves #001
 #### Reviewed, tested, and left feedback about the changes
 
 - [ ] Pulled this branch locally and tested it
-- [ ] Verified code meets above code standards and user-facing checks. Addresses any checks that are not satisfied
+- [ ] Verified code meets above code standards and user-facing checklist. Address any checks that are not satisfied
 - [ ] Reviewed this code and left comments. Indicate if comments must be addressed before code is merged
 - [ ] Checked that all code is adequately covered by tests
-- [ ] If any model was updated to modify/add/delete columns, verified migrations can be run with `makemigrations`
+- [ ] Verify migrations are valid and do not conflict with existing migrations
 
 #### Validated user-facing changes as a developer
 **Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist
@@ -91,6 +93,9 @@ Resolves #001
   - [ ] FireFox
   - [ ] Safari
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
+
+### References
+- [Code review best practices](../docs/dev-practices/code_review.md)
 
 ## Screenshots
 
