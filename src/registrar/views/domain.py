@@ -224,13 +224,17 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
         try:
             # Remove the current user so they aren't CC'ed, since they will be the "to_address"
-            emails.remove(self.request.user.email)
+            emails.remove(self.request.user.email)  # type: ignore
         except ValueError:
             pass
 
         try:
             send_templated_email(
-                template, subject_template, to_address=self.request.user.email, context=context, cc_addresses=emails
+                template,
+                subject_template,
+                to_address=self.request.user.email,  # type: ignore
+                context=context,
+                cc_addresses=emails,
             )
         except EmailSendingError:
             logger.warning(
