@@ -1387,18 +1387,18 @@ class TestPopulateFederalAgencyInitialsAndFceb(TestCase):
         self.agency4.refresh_from_db()
 
         # Check if FederalAgency objects were updated correctly
-        self.assertEqual(self.agency1.initials, "ABMC")
+        self.assertEqual(self.agency1.acronym, "ABMC")
         self.assertTrue(self.agency1.is_fceb)
 
-        self.assertEqual(self.agency2.initials, "ACHP")
+        self.assertEqual(self.agency2.acronym, "ACHP")
         self.assertTrue(self.agency2.is_fceb)
 
         # We expect that this field doesn't have any data,
         # as none is specified in the CSV
-        self.assertIsNone(self.agency3.initials)
+        self.assertIsNone(self.agency3.acronym)
         self.assertIsNone(self.agency3.is_fceb)
 
-        self.assertEqual(self.agency4.initials, "KC")
+        self.assertEqual(self.agency4.acronym, "KC")
         self.assertFalse(self.agency4.is_fceb)
 
     @less_console_noise_decorator
@@ -1411,7 +1411,7 @@ class TestPopulateFederalAgencyInitialsAndFceb(TestCase):
 
         # Verify that the missing agency was not updated
         missing_agency.refresh_from_db()
-        self.assertIsNone(missing_agency.initials)
+        self.assertIsNone(missing_agency.acronym)
         self.assertIsNone(missing_agency.is_fceb)
 
 

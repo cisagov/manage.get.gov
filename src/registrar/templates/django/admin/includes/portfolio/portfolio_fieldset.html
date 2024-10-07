@@ -1,0 +1,61 @@
+{% extends "django/admin/includes/detail_table_fieldset.html" %}
+{% load custom_filters %}
+{% load static url_helpers %}
+
+{% block field_readonly %}
+    {% if field.field.name == "display_admins" or field.field.name == "display_members" %}
+        <div class="readonly">{{ field.contents|safe }}</div>
+    {% elif field.field.name == "roles" %}
+        <div class="readonly">
+            {% if get_readable_roles %}
+                {{ get_readable_roles }}
+            {% else %}
+                <p>No roles found.</p>
+            {% endif %}
+        </div>
+    {% elif field.field.name == "additional_permissions" %}
+        <div class="readonly">
+            {% if display_permissions %}
+                {{ display_permissions }}
+            {% else %}
+                <p>No additional permissions found.</p>
+            {% endif %}
+        </div>
+    {% elif field.field.name == "senior_official" %}
+        {% if original_object.senior_official %}
+            <div class="readonly">{{ field.contents }}</div>
+        {% else %}
+            {% url "admin:registrar_seniorofficial_add" as url %}
+            <div class="readonly">
+                <a href={{ url }}>No senior official found. Create one now.</a>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="readonly">{{ field.contents }}</div>
+    {% endif %}
+{% endblock field_readonly%}
+
+{% block after_help_text %}
+    {% if field.field.name == "senior_official" %}
+        <div class="flex-container">
+        <label aria-label="Senior official contact details"></label>
+        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.senior_official no_title_top_padding=field.is_readonly hide_no_contact_info_message=True %}
+        </div>
+    {% elif field.field.name == "display_admins" %}
+        {% if admins|length > 0 %}
+            {% include "django/admin/includes/portfolio/portfolio_admins_table.html" with admins=admins %}
+        {% endif %}
+    {% elif field.field.name == "display_members" %}
+        {% if members|length > 0 %}
+            {% include "django/admin/includes/portfolio/portfolio_members_table.html" with members=members %}
+        {% endif %}
+    {% elif field.field.name == "domains" %}
+        {% if domains|length > 0 %}
+            {% include "django/admin/includes/portfolio/portfolio_domains_table.html" with domains=domains %}
+        {% endif %}
+    {% elif field.field.name == "domain_requests" %}
+        {% if domain_requests|length > 0 %}
+            {% include "django/admin/includes/portfolio/portfolio_domain_requests_table.html" with domain_requests=domain_requests %}
+        {% endif %}
+    {% endif %}
+{% endblock after_help_text %}

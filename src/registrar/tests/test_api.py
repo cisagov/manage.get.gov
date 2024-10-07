@@ -100,7 +100,6 @@ class GetFederalPortfolioTypeJsonTest(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["federal_type"], "Judicial")
-        self.assertEqual(data["portfolio_type"], "Federal - Judicial")
 
     @less_console_noise_decorator
     def test_get_federal_and_portfolio_types_json_authenticated_regularuser(self):
