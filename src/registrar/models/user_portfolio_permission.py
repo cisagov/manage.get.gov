@@ -1,10 +1,10 @@
 from django.db import models
 from django.forms import ValidationError
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
-
 
 class UserPortfolioPermission(TimeStampedModel):
     """This is a linking table that connects a user with a role on a portfolio."""
@@ -67,6 +67,16 @@ class UserPortfolioPermission(TimeStampedModel):
     def __str__(self):
         return f"User '{self.user}' on Portfolio '{self.portfolio}' " f"<Roles: {self.roles}>" if self.roles else ""
 
+    def get_managed_domains_count(self):
+        """Return the count of domains managed by the user for this portfolio."""
+        # Filter the UserDomainRole model to get domains where the user has a manager role
+        managed_domains = UserDomainRole.objects.filter(
+            user=self.user,
+            role=UserDomainRole.Roles.MANAGER,
+            domain__domain_info__portfolio=self.portfolio
+        ).count()
+        return managed_domains
+    
     def _get_portfolio_permissions(self):
         """
         Retrieve the permissions for the user's portfolio roles.

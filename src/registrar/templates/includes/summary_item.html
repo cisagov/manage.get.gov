@@ -26,6 +26,8 @@
       {% endif %}
       {% if permissions %}
         {% include "includes/member_permissions.html" with permissions=value %}
+      {% elif domain_mgmt %}
+        {% include "includes/member_domain_mgmt.html" with domain_count=value %}
       {% elif address %}
         {% include "includes/organization_address.html" with organization=value %}
       {% elif contact %}
