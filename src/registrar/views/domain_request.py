@@ -123,8 +123,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         Step.PURPOSE: lambda self: self.domain_request.purpose is not None,
         Step.OTHER_CONTACTS: lambda self: (
-            self.domain_request.other_contacts.exists()
-            or self.domain_request.no_other_contacts_rationale is not None
+            self.domain_request.other_contacts.exists() or self.domain_request.no_other_contacts_rationale is not None
         ),
         Step.ADDITIONAL_DETAILS: lambda self: (
             # Additional details is complete as long as "has anything else" and "has cisa rep" are not None
@@ -152,6 +151,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def __init__(self):
         super().__init__()
+        self.titles = {}
+        self.wizard_conditions = {}
+        self.unlocking_steps = {}
+        self.steps = None
+        # Configure titles, wizard_conditions, unlocking_steps, and steps
         self.configure_step_options()
         self._domain_request = None  # for caching
 
@@ -161,7 +165,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         Using this information, we then set three configuration variables.
         - self.titles => Returns the page titles for each step
-        - self.wizard_conditions => Conditionally shows / hides certain steps  
+        - self.wizard_conditions => Conditionally shows / hides certain steps
         - self.unlocking_steps => Determines what steps are locked/unlocked
 
         Then, we create self.steps.
@@ -293,6 +297,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         if not self.is_portfolio and self.request.user.is_org_user(request):
             self.is_portfolio = True
+            # Configure titles, wizard_conditions, unlocking_steps, and steps
             self.configure_step_options()
 
         current_url = resolve(request.path_info).url_name
@@ -508,6 +513,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         """This method handles POST requests."""
         if not self.is_portfolio and self.request.user.is_org_user(request):  # type: ignore
             self.is_portfolio = True
+            # Configure titles, wizard_conditions, unlocking_steps, and steps
             self.configure_step_options()
 
         # which button did the user press?
