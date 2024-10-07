@@ -4,7 +4,7 @@ import logging
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
-from registrar.models import DomainRequest
+from registrar.models import DomainRequest, FederalAgency
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.models.suborganization import Suborganization
 from registrar.models.utility.domain_helper import DomainHelper
@@ -527,19 +527,57 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         if field_to_disable is not None:
             DomainHelper.disable_field(self.fields[field_to_disable], disable_required=True)
 
+    # def save(self, commit=True):
+    #     """Override the save() method of the BaseModelForm."""
+    #     if self.has_changed():
+
+    #         # This action should be blocked by the UI, as the text fields are readonly.
+    #         # If they get past this point, we forbid it this way.
+    #         # This could be malicious, so lets reserve information for the backend only.
+    #         if self.is_federal and not self._field_unchanged("federal_agency"):
+    #             raise ValueError("federal_agency cannot be modified when the generic_org_type is federal")
+    #         elif self.is_tribal and not self._field_unchanged("organization_name"):
+    #             raise ValueError("organization_name cannot be modified when the generic_org_type is tribal")
+
+    #     super().save()
+
     def save(self, commit=True):
         """Override the save() method of the BaseModelForm."""
+
+        # print("Save method called")
         if self.has_changed():
+            # print("Form has changed")
+            # print("Generic org type:", self.instance.generic_org_type)
+            # print("Federal agency:", self.instance.federal_agency)
+
+            # address_fields = [
+            #     "address_line1",
+            #     "address_line2",
+            #     "city",
+            #     "state_territory",
+            #     "zipcode",
+            #     "urbanization",
+            # ]
+
+            # if any(field in self.changed_data for field in address_fields):
+            #     print("Address fields have changed")
 
             # This action should be blocked by the UI, as the text fields are readonly.
             # If they get past this point, we forbid it this way.
             # This could be malicious, so lets reserve information for the backend only.
-            if self.is_federal and not self._field_unchanged("federal_agency"):
-                raise ValueError("federal_agency cannot be modified when the generic_org_type is federal")
+
+            if self.is_federal:
+                if not self._field_unchanged("federal_agency"):
+                    raise ValueError("federal_agency cannot be modified when the generic_org_type is federal")
+
             elif self.is_tribal and not self._field_unchanged("organization_name"):
                 raise ValueError("organization_name cannot be modified when the generic_org_type is tribal")
 
-        super().save()
+            else:  # If this error that means Non-Federal Agency is missing
+                non_federal_agency_instance = FederalAgency.get_non_federal_agency()
+                self.instance.federal_agency = non_federal_agency_instance
+
+        return super().save(commit=commit)
 
     def _field_unchanged(self, field_name) -> bool:
         """
