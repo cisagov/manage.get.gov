@@ -116,6 +116,8 @@
 
   {% if portfolio_permission %}
     {% include "includes/summary_item.html" with title='Domain management' domain_mgmt='true' value=portfolio_permission.get_managed_domains_count edit_link='#' editable=has_edit_members_portfolio_permission manage_button='true' %}
+  {% elif portfolio_invitation %}
+    {% include "includes/summary_item.html" with title='Domain management' domain_mgmt='true' value=portfolio_invitation.get_managed_domains_count edit_link='#' editable=has_edit_members_portfolio_permission manage_button='true' %}
   {% else %}
     {% include "includes/summary_item.html" with title='Domain management' domain_mgmt='true' value=0 edit_link='#' editable=has_edit_members_portfolio_permission manage_button='true' %}
   {% endif %}

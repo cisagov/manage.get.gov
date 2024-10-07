@@ -4,6 +4,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db import models
 from django_fsm import FSMField, transition
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
@@ -66,6 +67,15 @@ class PortfolioInvitation(TimeStampedModel):
 
     def __str__(self):
         return f"Invitation for {self.email} on {self.portfolio} is {self.status}"
+
+    def get_managed_domains_count(self):
+        """Return the count of domain invitations managed by the invited user for this portfolio."""
+        # Filter the UserDomainRole model to get domains where the user has a manager role
+        managed_domains = DomainInvitation.objects.filter(
+            email=self.email,
+            domain__domain_info__portfolio=self.portfolio
+        ).count()
+        return managed_domains
 
     @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
     def retrieve(self):
