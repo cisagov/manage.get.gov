@@ -289,6 +289,29 @@ class DomainRequestPermission(PermissionsLoginMixin):
         return True
 
 
+class DomainRequestPortfolioViewonlyPermission(PermissionsLoginMixin):
+    """Permission mixin that redirects to domain request if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to this domain request.
+
+        The user is in self.request.user and the domain needs to be looked
+        up from the domain's primary key in self.kwargs["pk"]
+        """
+        if not self.request.user.is_authenticated:
+            return False
+
+        if not self.request.user.is_org_user(self.request):
+            return False
+
+        portfolio = self.request.session.get("portfolio")
+        if not self.request.user.has_view_all_requests_portfolio_permission(portfolio):
+            return False
+
+        return True
+
+
 class UserDeleteDomainRolePermission(PermissionsLoginMixin):
     """Permission mixin for UserDomainRole if user
     has access, otherwise 403"""
@@ -467,7 +490,7 @@ class PortfolioMembersPermission(PortfolioBasePermission):
         up from the portfolio's primary key in self.kwargs["pk"]"""
 
         portfolio = self.request.session.get("portfolio")
-        if not self.request.user.has_view_members(portfolio):
+        if not self.request.user.has_view_members_portfolio_permission(portfolio):
             return False
 
         return super().has_permission()

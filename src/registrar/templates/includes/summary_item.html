@@ -35,8 +35,15 @@
               <dl class="usa-list usa-list--unstyled margin-top-0">
                 {% for item in value %}
                   <dt>
-                    Contact {{forloop.counter}}
-                  </dt>
+                  
+                 <h4 class="summary-item__title
+             font-sans-md
+             text-primary-dark text-semibold
+             margin-bottom-05
+             padding-right-1">
+                      Contact {{forloop.counter}}
+                  </h4>
+                </dt>
                   <dd>
                     {% include "includes/contact.html" with contact=item %}
                   </dd>

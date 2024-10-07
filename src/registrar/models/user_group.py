@@ -66,6 +66,30 @@ class UserGroup(Group):
                 "model": "federalagency",
                 "permissions": ["add_federalagency", "change_federalagency", "delete_federalagency"],
             },
+            {
+                "app_label": "registrar",
+                "model": "portfolio",
+                "permissions": ["add_portfolio", "change_portfolio", "delete_portfolio"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "suborganization",
+                "permissions": ["add_suborganization", "change_suborganization", "delete_suborganization"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "seniorofficial",
+                "permissions": ["add_seniorofficial", "change_seniorofficial", "delete_seniorofficial"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "userportfoliopermission",
+                "permissions": [
+                    "add_userportfoliopermission",
+                    "change_userportfoliopermission",
+                    "delete_userportfoliopermission",
+                ],
+            },
         ]
 
         # Avoid error: You can't execute queries until the end
@@ -113,7 +137,6 @@ class UserGroup(Group):
                     + cisa_analysts_group.name
                 )
 
-                cisa_analysts_group.save()
                 logger.debug("CISA Analyst permissions added to group " + cisa_analysts_group.name)
         except Exception as e:
             logger.error(f"Error creating analyst permissions group: {e}")
@@ -135,7 +158,6 @@ class UserGroup(Group):
             # Assign all permissions to the group
             full_access_group.permissions.add(*all_permissions)
 
-            full_access_group.save()
             logger.debug("All permissions added to group " + full_access_group.name)
         except Exception as e:
             logger.error(f"Error creating full access group: {e}")

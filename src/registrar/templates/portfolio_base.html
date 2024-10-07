@@ -4,11 +4,14 @@
   <div id="wrapper" class="{% block wrapper_class %}dashboard--portfolio{% endblock %}">
     {% block content %}
         
-        <main class="grid-container">
+        <main class="grid-container {% if is_widescreen_mode %} grid-container--widescreen {% endif %}">
             {% if user.is_authenticated %}
             {# the entire logged in page goes here #}
             
-            <div class="tablet:grid-col-12">
+            <div class="tablet:grid-col-11 desktop:grid-col-10 tablet:grid-offset-1">
+                {% block messages %}
+                    {% include "includes/form_messages.html" %}
+                {% endblock %}
             
                 {% block portfolio_content %}{% endblock %}
             

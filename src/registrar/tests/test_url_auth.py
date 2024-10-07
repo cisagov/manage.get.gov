@@ -116,6 +116,7 @@ class TestURLAuth(TestCase):
         "/api/v1/available/",
         "/api/v1/get-report/current-federal",
         "/api/v1/get-report/current-full",
+        "/api/v1/rdap/",
         "/health",
     ]
 

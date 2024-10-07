@@ -341,7 +341,9 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
             if creator[i] != self.user.email:
                 # Test case where action is View
                 self.assertEqual("View", action_labels[i])
-                self.assertEqual("#", action_urls[i])
+                self.assertEqual(
+                    reverse("domain-request-status-viewonly", kwargs={"pk": expected_domain_request.id}), action_urls[i]
+                )
                 self.assertEqual("visibility", svg_icons[i])
             elif status[i] in [
                 DomainRequest.DomainRequestStatus.STARTED.label,

@@ -754,7 +754,7 @@ Example: `cf ssh getgov-za`
 | 1 | **emailTo**                | Specifies where the email will be emailed. Defaults to help@get.gov on production. |
 
 ## Populate federal agency initials and FCEB
-This script adds to the "is_fceb" and "initials" fields on the FederalAgency model. This script expects a CSV of federal CIOs to pull from, which can be sourced from [here](https://docs.google.com/spreadsheets/d/14oXHFpKyUXS5_mDWARPusghGdHCrP67jCleOknaSx38/edit?gid=479328070#gid=479328070). 
+This script adds to the "is_fceb" and "acronym" fields on the FederalAgency model. This script expects a CSV of federal CIOs to pull from, which can be sourced from [here](https://docs.google.com/spreadsheets/d/14oXHFpKyUXS5_mDWARPusghGdHCrP67jCleOknaSx38/edit?gid=479328070#gid=479328070). 
 
 ### Running on sandboxes
 

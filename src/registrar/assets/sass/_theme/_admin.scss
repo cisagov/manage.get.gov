@@ -126,7 +126,8 @@ html[data-theme="light"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .custom-admin-template, dt {
+    .custom-admin-template,
+    .dl-dja dt {
         color: var(--body-fg);
     }
     .usa-table td {
@@ -155,7 +156,8 @@ html[data-theme="dark"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .custom-admin-template, dt {
+    .custom-admin-template,
+    .dl-dja dt {
         color: var(--body-fg);
     }
     .usa-table td {
@@ -453,7 +455,8 @@ details.dja-detail-table {
     background-color: var(--body-bg);
     .dja-details-summary {
         cursor: pointer;
-        color: var(--body-quiet-color);
+        color: var(--link-fg);
+        text-decoration: underline;
     }
 
     @media (max-width: 1024px){
@@ -893,23 +896,6 @@ div.dja__model-description{
     }
 }
 
-.vertical-separator {
-    min-height: 20px;
-    height: 100%;
-    width: 1px;
-    background-color: #d1d2d2;
-    vertical-align: middle
-}
-
-.usa-summary-box_admin {
-    color: var(--body-fg);
-    border-color: var(--summary-box-border);
-    background-color: var(--summary-box-bg);
-    min-width: fit-content;
-    padding: .5rem;
-    border-radius: .25rem;
-}
-
 .text-faded {
     color: #{$dhs-gray-60};
 }
@@ -929,4 +915,17 @@ ul.add-list-reset {
 
 .dl-dja dt {
     font-size: 14px;
+}
+
+.domain-name-wrap {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow: visible; 
+    word-break: break-all;
+    max-width: 100%; 
+}
+
+.organization-admin-label {
+    font-weight: 600;
+    font-size: .8125rem;
 }

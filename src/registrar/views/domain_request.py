@@ -7,46 +7,23 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
-
 from registrar.forms import domain_request_wizard as forms
+from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
-from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
+from registrar.utility.enums import Step, PortfolioDomainRequestStep
 
 from .utility import (
     DomainRequestPermissionView,
     DomainRequestPermissionWithdrawView,
     DomainRequestWizardPermissionView,
+    DomainRequestPortfolioViewonlyView,
 )
 
 logger = logging.getLogger(__name__)
-
-
-class Step(StrEnum):
-    """
-    Names for each page of the domain request wizard.
-
-    As with Django's own `TextChoices` class, steps will
-    appear in the order they are defined. (Order matters.)
-    """
-
-    ORGANIZATION_TYPE = "generic_org_type"
-    TRIBAL_GOVERNMENT = "tribal_government"
-    ORGANIZATION_FEDERAL = "organization_federal"
-    ORGANIZATION_ELECTION = "organization_election"
-    ORGANIZATION_CONTACT = "organization_contact"
-    ABOUT_YOUR_ORGANIZATION = "about_your_organization"
-    SENIOR_OFFICIAL = "senior_official"
-    CURRENT_SITES = "current_sites"
-    DOTGOV_DOMAIN = "dotgov_domain"
-    PURPOSE = "purpose"
-    OTHER_CONTACTS = "other_contacts"
-    ADDITIONAL_DETAILS = "additional_details"
-    REQUIREMENTS = "requirements"
-    REVIEW = "review"
 
 
 class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
@@ -66,6 +43,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     although not without consulting the base implementation, first.
     """
 
+    StepEnum: Step = Step  # type: ignore
     template_name = ""
 
     # uniquely namespace the wizard in urls.py
@@ -78,29 +56,29 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     NEW_URL_NAME = "/request/"
     # We need to pass our human-readable step titles as context to the templates.
     TITLES = {
-        Step.ORGANIZATION_TYPE: _("Type of organization"),
-        Step.TRIBAL_GOVERNMENT: _("Tribal government"),
-        Step.ORGANIZATION_FEDERAL: _("Federal government branch"),
-        Step.ORGANIZATION_ELECTION: _("Election office"),
-        Step.ORGANIZATION_CONTACT: _("Organization"),
-        Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
-        Step.SENIOR_OFFICIAL: _("Senior official"),
-        Step.CURRENT_SITES: _("Current websites"),
-        Step.DOTGOV_DOMAIN: _(".gov domain"),
-        Step.PURPOSE: _("Purpose of your domain"),
-        Step.OTHER_CONTACTS: _("Other employees from your organization"),
-        Step.ADDITIONAL_DETAILS: _("Additional details"),
-        Step.REQUIREMENTS: _("Requirements for operating a .gov domain"),
-        Step.REVIEW: _("Review and submit your domain request"),
+        StepEnum.ORGANIZATION_TYPE: _("Type of organization"),
+        StepEnum.TRIBAL_GOVERNMENT: _("Tribal government"),
+        StepEnum.ORGANIZATION_FEDERAL: _("Federal government branch"),
+        StepEnum.ORGANIZATION_ELECTION: _("Election office"),
+        StepEnum.ORGANIZATION_CONTACT: _("Organization"),
+        StepEnum.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
+        StepEnum.SENIOR_OFFICIAL: _("Senior official"),
+        StepEnum.CURRENT_SITES: _("Current websites"),
+        StepEnum.DOTGOV_DOMAIN: _(".gov domain"),
+        StepEnum.PURPOSE: _("Purpose of your domain"),
+        StepEnum.OTHER_CONTACTS: _("Other employees from your organization"),
+        StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
+        StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
+        StepEnum.REVIEW: _("Review and submit your domain request"),
     }
 
     # We can use a dictionary with step names and callables that return booleans
     # to show or hide particular steps based on the state of the process.
     WIZARD_CONDITIONS = {
-        Step.ORGANIZATION_FEDERAL: lambda w: w.from_model("show_organization_federal", False),
-        Step.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
-        Step.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
-        Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
+        StepEnum.ORGANIZATION_FEDERAL: lambda w: w.from_model("show_organization_federal", False),
+        StepEnum.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
+        StepEnum.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
+        StepEnum.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
     }
 
     def __init__(self):
@@ -439,15 +417,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
-        step_list = []
-        for step in Step:
-            condition = self.WIZARD_CONDITIONS.get(step, True)
-            if callable(condition):
-                condition = condition(self)
-            if condition:
-                step_list.append(step)
-
-        return step_list
+        return request_step_list(self)
 
     def goto(self, step):
         if step == "generic_org_type":
@@ -527,6 +497,26 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         for form in forms:
             if form is not None and hasattr(form, "to_database"):
                 form.to_database(self.domain_request)
+
+
+# TODO - this is a WIP until the domain request experience for portfolios is complete
+class PortfolioDomainRequestWizard(DomainRequestWizard):
+    StepEnum: PortfolioDomainRequestStep = PortfolioDomainRequestStep  # type: ignore
+
+    TITLES = {
+        StepEnum.REQUESTING_ENTITY: _("Requesting entity"),
+        StepEnum.CURRENT_SITES: _("Current websites"),
+        StepEnum.DOTGOV_DOMAIN: _(".gov domain"),
+        StepEnum.PURPOSE: _("Purpose of your domain"),
+        StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
+        StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
+        # Step.REVIEW: _("Review and submit your domain request"),
+    }
+
+    def __init__(self):
+        super().__init__()
+        self.steps = StepsHelper(self)
+        self._domain_request = None  # for caching
 
 
 class OrganizationType(DomainRequestWizard):
@@ -750,6 +740,21 @@ class Finished(DomainRequestWizard):
 class DomainRequestStatus(DomainRequestPermissionView):
     template_name = "domain_request_status.html"
 
+    def has_permission(self):
+        """
+        Override of the base has_permission class to account for portfolio permissions
+        """
+        has_base_perms = super().has_permission()
+        if not has_base_perms:
+            return False
+
+        if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
+            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
+                return False
+
+        return True
+
 
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
@@ -883,3 +888,21 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         duplicates = [item for item, count in object_dict.items() if count > 1]
         return duplicates
+
+
+# region Portfolio views
+class PortfolioDomainRequestStatusViewOnly(DomainRequestPortfolioViewonlyView):
+    template_name = "portfolio_domain_request_status_viewonly.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Create a temp wizard object to grab the step list
+        wizard = PortfolioDomainRequestWizard()
+        wizard.request = self.request
+        context["Step"] = wizard.StepEnum.__members__
+        context["steps"] = request_step_list(wizard)
+        context["form_titles"] = wizard.TITLES
+        return context
+
+
+# endregion

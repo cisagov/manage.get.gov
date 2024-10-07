@@ -1,8 +1,6 @@
 from datetime import date
 import logging
 import copy
-import json
-from django.template.loader import get_template
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
@@ -10,8 +8,7 @@ from django.http import HttpResponseRedirect
 from django.conf import settings
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models.domain_information import DomainInformation
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
@@ -23,6 +20,11 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
+from registrar.utility.admin_helpers import (
+    get_all_action_needed_reason_emails,
+    get_action_needed_reason_default_email,
+    get_field_links_as_list,
+)
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
@@ -757,9 +759,10 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
+        ("Associated portfolios", {"fields": ("portfolios",)}),
     )
 
-    readonly_fields = ("verification_type",)
+    readonly_fields = ("verification_type", "portfolios")
 
     analyst_fieldsets = (
         (
@@ -782,6 +785,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
+        ("Associated portfolios", {"fields": ("portfolios",)}),
     )
 
     # TODO: delete after we merge organization feature
@@ -860,6 +864,14 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
     search_help_text = "Search by first name, last name, or email."
+
+    def portfolios(self, obj: models.User):
+        """Returns a list of links for each related suborg"""
+        portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
+        queryset = models.Portfolio.objects.filter(id__in=portfolio_ids)
+        return get_field_links_as_list(queryset, "portfolio", msg_for_none="No portfolios.")
+
+    portfolios.short_description = "Portfolios"  # type: ignore
 
     def get_search_results(self, request, queryset, search_term):
         """
@@ -1257,9 +1269,18 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     list_display = [
         "user",
         "portfolio",
+        "get_roles",
     ]
 
     autocomplete_fields = ["user", "portfolio"]
+    search_fields = ["user__first_name", "user__last_name", "user__email", "portfolio__organization_name"]
+    search_help_text = "Search by first name, last name, email, or portfolio."
+
+    def get_roles(self, obj):
+        readable_roles = obj.get_readable_roles()
+        return ", ".join(readable_roles)
+
+    get_roles.short_description = "Roles"  # type: ignore
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
@@ -1542,33 +1563,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ordering = ["domain__name"]
 
     change_form_template = "django/admin/domain_information_change_form.html"
-
-    superuser_only_fields = [
-        "portfolio",
-        "sub_organization",
-    ]
-
-    # DEVELOPER's NOTE:
-    # Normally, to exclude a field from an Admin form, we could simply utilize
-    # Django's "exclude" feature.  However, it causes a "missing key" error if we
-    # go that route for this particular form.  The error gets thrown by our
-    # custom fieldset.html code and is due to the fact that "exclude" removes
-    # fields from base_fields but not fieldsets.  Rather than reworking our
-    # custom frontend, it seems more straightforward (and easier to read) to simply
-    # modify the fieldsets list so that it excludes any fields we want to remove
-    # based on permissions (eg. superuser_only_fields) or other conditions.
-    def get_fieldsets(self, request, obj=None):
-        fieldsets = self.fieldsets
-
-        # Create a modified version of fieldsets to exclude certain fields
-        if not request.user.has_perm("registrar.full_access_permission"):
-            modified_fieldsets = []
-            for name, data in fieldsets:
-                fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in DomainInformationAdmin.superuser_only_fields)
-                modified_fieldsets.append((name, {**data, "fields": fields}))
-            return modified_fieldsets
-        return fieldsets
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -1865,33 +1859,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
-    superuser_only_fields = [
-        "portfolio",
-        "sub_organization",
-    ]
-
-    # DEVELOPER's NOTE:
-    # Normally, to exclude a field from an Admin form, we could simply utilize
-    # Django's "exclude" feature.  However, it causes a "missing key" error if we
-    # go that route for this particular form.  The error gets thrown by our
-    # custom fieldset.html code and is due to the fact that "exclude" removes
-    # fields from base_fields but not fieldsets.  Rather than reworking our
-    # custom frontend, it seems more straightforward (and easier to read) to simply
-    # modify the fieldsets list so that it excludes any fields we want to remove
-    # based on permissions (eg. superuser_only_fields) or other conditions.
-    def get_fieldsets(self, request, obj=None):
-        fieldsets = super().get_fieldsets(request, obj)
-
-        # Create a modified version of fieldsets to exclude certain fields
-        if not request.user.has_perm("registrar.full_access_permission"):
-            modified_fieldsets = []
-            for name, data in fieldsets:
-                fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in self.superuser_only_fields)
-                modified_fieldsets.append((name, {**data, "fields": fields}))
-            return modified_fieldsets
-        return fieldsets
-
     # Table ordering
     # NOTE: This impacts the select2 dropdowns (combobox)
     # Currentl, there's only one for requests on DomainInfo
@@ -1948,9 +1915,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Set the action_needed_reason_email to the default if nothing exists.
             # Since this check occurs after save, if the user enters a value then we won't update.
 
-            default_email = self._get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+            default_email = get_action_needed_reason_default_email(request, obj, obj.action_needed_reason)
             if obj.action_needed_reason_email:
-                emails = self.get_all_action_needed_reason_emails(obj)
+                emails = get_all_action_needed_reason_emails(request, obj)
                 is_custom_email = obj.action_needed_reason_email not in emails.values()
                 if not is_custom_email:
                     obj.action_needed_reason_email = default_email
@@ -2180,8 +2147,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
         extra_context["filtered_audit_log_entries"] = filtered_audit_log_entries
-        emails = self.get_all_action_needed_reason_emails(obj)
-        extra_context["action_needed_reason_emails"] = json.dumps(emails)
 
         # Denote if an action needed email was sent or not
         email_sent = request.session.get("action_needed_email_sent", False)
@@ -2191,39 +2156,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         # Call the superclass method with updated extra_context
         return super().change_view(request, object_id, form_url, extra_context)
-
-    def get_all_action_needed_reason_emails(self, domain_request):
-        """Returns a json dictionary of every action needed reason and its associated email
-        for this particular domain request."""
-
-        emails = {}
-        for action_needed_reason in domain_request.ActionNeededReasons:
-            # Map the action_needed_reason to its default email
-            emails[action_needed_reason.value] = self._get_action_needed_reason_default_email(
-                domain_request, action_needed_reason.value
-            )
-
-        return emails
-
-    def _get_action_needed_reason_default_email(self, domain_request, action_needed_reason):
-        """Returns the default email associated with the given action needed reason"""
-        if not action_needed_reason or action_needed_reason == DomainRequest.ActionNeededReasons.OTHER:
-            return None
-
-        recipient = domain_request.creator
-
-        # Return the context of the rendered views
-        context = {"domain_request": domain_request, "recipient": recipient}
-
-        # Get the email body
-        template_path = f"emails/action_needed_reasons/{action_needed_reason}.txt"
-
-        email_body_text = get_template(template_path).render(context=context)
-        email_body_text_cleaned = None
-        if email_body_text:
-            email_body_text_cleaned = email_body_text.strip().lstrip("\n")
-
-        return email_body_text_cleaned
 
     def process_log_entry(self, log_entry):
         """Process a log entry and return filtered entry dictionary if applicable."""
@@ -2335,10 +2267,58 @@ class DomainInformationInline(admin.StackedInline):
     template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
 
-    fieldsets = DomainInformationAdmin.fieldsets
-    readonly_fields = DomainInformationAdmin.readonly_fields
-    analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
-    autocomplete_fields = DomainInformationAdmin.autocomplete_fields
+    fieldsets = copy.deepcopy(list(DomainInformationAdmin.fieldsets))
+    analyst_readonly_fields = copy.deepcopy(DomainInformationAdmin.analyst_readonly_fields)
+    autocomplete_fields = copy.deepcopy(DomainInformationAdmin.autocomplete_fields)
+
+    def get_domain_managers(self, obj):
+        user_domain_roles = UserDomainRole.objects.filter(domain=obj.domain)
+        user_ids = user_domain_roles.values_list("user_id", flat=True)
+        domain_managers = User.objects.filter(id__in=user_ids)
+        return domain_managers
+
+    def get_domain_invitations(self, obj):
+        domain_invitations = DomainInvitation.objects.filter(
+            domain=obj.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        return domain_invitations
+
+    def domain_managers(self, obj):
+        """Get domain managers for the domain, unpack and return an HTML block."""
+        domain_managers = self.get_domain_managers(obj)
+        if not domain_managers:
+            return "No domain managers found."
+
+        domain_manager_details = "<table><thead><tr><th>UID</th><th>Name</th><th>Email</th></tr></thead><tbody>"
+        for domain_manager in domain_managers:
+            full_name = domain_manager.get_formatted_name()
+            change_url = reverse("admin:registrar_user_change", args=[domain_manager.pk])
+            domain_manager_details += "<tr>"
+            domain_manager_details += f'<td><a href="{change_url}">{escape(domain_manager.username)}</a>'
+            domain_manager_details += f"<td>{escape(full_name)}</td>"
+            domain_manager_details += f"<td>{escape(domain_manager.email)}</td>"
+            domain_manager_details += "</tr>"
+        domain_manager_details += "</tbody></table>"
+        return format_html(domain_manager_details)
+
+    domain_managers.short_description = "Domain managers"  # type: ignore
+
+    def invited_domain_managers(self, obj):
+        """Get emails which have been invited to the domain, unpack and return an HTML block."""
+        domain_invitations = self.get_domain_invitations(obj)
+        if not domain_invitations:
+            return "No invited domain managers found."
+
+        domain_invitation_details = "<table><thead><tr><th>Email</th><th>Status</th>" + "</tr></thead><tbody>"
+        for domain_invitation in domain_invitations:
+            domain_invitation_details += "<tr>"
+            domain_invitation_details += f"<td>{escape(domain_invitation.email)}</td>"
+            domain_invitation_details += f"<td>{escape(domain_invitation.status.capitalize())}</td>"
+            domain_invitation_details += "</tr>"
+        domain_invitation_details += "</tbody></table>"
+        return format_html(domain_invitation_details)
+
+    invited_domain_managers.short_description = "Invited domain managers"  # type: ignore
 
     def has_change_permission(self, request, obj=None):
         """Custom has_change_permission override so that we can specify that
@@ -2378,7 +2358,9 @@ class DomainInformationInline(admin.StackedInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
-        return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
+        readonly_fields = copy.deepcopy(DomainInformationAdmin.get_readonly_fields(self, request, obj=None))
+        readonly_fields.extend(["domain_managers", "invited_domain_managers"])  # type: ignore
+        return readonly_fields
 
     # Re-route the get_fieldsets method to utilize DomainInformationAdmin.get_fieldsets
     # since that has all the logic for excluding certain fields according to user permissions.
@@ -2387,13 +2369,34 @@ class DomainInformationInline(admin.StackedInline):
     def get_fieldsets(self, request, obj=None):
         # Grab fieldsets from DomainInformationAdmin so that it handles all logic
         # for permission-based field visibility.
-        modified_fieldsets = DomainInformationAdmin.get_fieldsets(self, request, obj=None)
+        modified_fieldsets = copy.deepcopy(DomainInformationAdmin.get_fieldsets(self, request, obj=None))
 
-        # remove .gov domain from fieldset
+        # Modify fieldset sections in place
+        for index, (title, options) in enumerate(modified_fieldsets):
+            if title is None:
+                options["fields"] = [
+                    field for field in options["fields"] if field not in ["creator", "domain_request", "notes"]
+                ]
+            elif title == "Contacts":
+                options["fields"] = [
+                    field
+                    for field in options["fields"]
+                    if field not in ["other_contacts", "no_other_contacts_rationale"]
+                ]
+                options["fields"].extend(["domain_managers", "invited_domain_managers"])  # type: ignore
+            elif title == "Background info":
+                # move domain request and notes to background
+                options["fields"].extend(["domain_request", "notes"])  # type: ignore
+
+        # Remove or remove fieldset sections
         for index, (title, f) in enumerate(modified_fieldsets):
             if title == ".gov domain":
-                del modified_fieldsets[index]
-                break
+                # remove .gov domain from fieldset
+                modified_fieldsets.pop(index)
+            elif title == "Background info":
+                # move Background info to the bottom of the list
+                fieldsets_to_move = modified_fieldsets.pop(index)
+                modified_fieldsets.append(fieldsets_to_move)
 
         return modified_fieldsets
 
@@ -2451,12 +2454,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ["name", "state", "expiration_date", "first_ready", "deleted"]},
+            {"fields": ["state", "expiration_date", "first_ready", "deleted", "dnssecdata", "nameservers"]},
         ),
     )
-
-    # this ordering effects the ordering of results in autocomplete_fields for domain
-    ordering = ["name"]
 
     def generic_org_type(self, obj):
         return obj.domain_info.get_generic_org_type_display()
@@ -2477,6 +2477,28 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return obj.domain_info.organization_name if obj.domain_info else None
 
     organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
+
+    def dnssecdata(self, obj):
+        return "Yes" if obj.dnssecdata else "No"
+
+    dnssecdata.short_description = "DNSSEC enabled"  # type: ignore
+
+    # Custom method to display formatted nameservers
+    def nameservers(self, obj):
+        if not obj.nameservers:
+            return "No nameservers"
+
+        formatted_nameservers = []
+        for server, ip_list in obj.nameservers:
+            server_display = str(server)
+            if ip_list:
+                server_display += f" [{', '.join(ip_list)}]"
+            formatted_nameservers.append(server_display)
+
+        # Join the formatted strings with line breaks
+        return "\n".join(formatted_nameservers)
+
+    nameservers.short_description = "Name servers"  # type: ignore
 
     def custom_election_board(self, obj):
         domain_info = getattr(obj, "domain_info", None)
@@ -2504,7 +2526,15 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    readonly_fields = ("state", "expiration_date", "first_ready", "deleted", "federal_agency")
+    readonly_fields = (
+        "state",
+        "expiration_date",
+        "first_ready",
+        "deleted",
+        "federal_agency",
+        "dnssecdata",
+        "nameservers",
+    )
 
     # Table ordering
     ordering = ["name"]
@@ -2943,39 +2973,59 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 
 class PortfolioAdmin(ListHeaderAdmin):
+
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.Portfolio
+        fields = "__all__"
+
+    _meta = Meta()
+
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
-        # created_on is the created_at field, and portfolio_type is f"{organization_type} - {federal_type}"
-        (None, {"fields": ["portfolio_type", "organization_name", "creator", "created_on", "notes"]}),
-        ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
-        ("Portfolio domains", {"fields": ["domains", "domain_requests"]}),
+        # created_on is the created_at field
+        (None, {"fields": ["creator", "created_on", "notes"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
             {
                 "fields": [
+                    "organization_name",
                     "federal_agency",
+                ]
+            },
+        ),
+        (
+            "Show details",
+            {
+                "classes": ["collapse--dgfieldset"],
+                "description": "Extends organization name and mailing address",
+                "fields": [
                     "state_territory",
                     "address_line1",
                     "address_line2",
                     "city",
                     "zipcode",
                     "urbanization",
-                ]
+                ],
             },
         ),
+        ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
+        ("Domains and requests", {"fields": ["domains", "domain_requests"]}),
         ("Suborganizations", {"fields": ["suborganizations"]}),
         ("Senior official", {"fields": ["senior_official"]}),
     ]
 
     # This is the fieldset display when adding a new model
     add_fieldsets = [
-        (None, {"fields": ["organization_name", "creator", "notes"]}),
+        (None, {"fields": ["creator", "notes"]}),
         ("Type of organization", {"fields": ["organization_type"]}),
         (
             "Organization name and mailing address",
             {
                 "fields": [
+                    "organization_name",
                     "federal_agency",
                     "state_territory",
                     "address_line1",
@@ -2989,7 +3039,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         ("Senior official", {"fields": ["senior_official"]}),
     ]
 
-    list_display = ("organization_name", "federal_agency", "creator")
+    list_display = ("organization_name", "organization_type", "federal_type", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
     readonly_fields = [
@@ -3002,22 +3052,34 @@ class PortfolioAdmin(ListHeaderAdmin):
         "domains",
         "domain_requests",
         "suborganizations",
-        "portfolio_type",
         "display_admins",
         "display_members",
         "creator",
+        # As of now this means that only federal agency can update this, but this will change.
+        "senior_official",
+    ]
+
+    analyst_readonly_fields = [
+        "organization_name",
     ]
 
     def get_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio
-        admin_permissions = UserPortfolioPermission.objects.filter(
-            portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
+        admin_permissions = self.get_user_portfolio_permission_admins(obj)
 
         # Get the user objects associated with these permissions
         admin_users = User.objects.filter(portfolio_permissions__in=admin_permissions)
 
         return admin_users
+
+    def get_user_portfolio_permission_admins(self, obj):
+        """Returns each admin on UserPortfolioPermission for a given portfolio."""
+        if obj:
+            return obj.portfolio_users.filter(
+                portfolio=obj, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            )
+        else:
+            return []
 
     def get_non_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio that do NOT have the "Admin" role
@@ -3030,82 +3092,12 @@ class PortfolioAdmin(ListHeaderAdmin):
 
         return non_admin_users
 
-    def display_admins(self, obj):
-        """Get joined users who are Admin, unpack and return an HTML block.
-
-        'DJA readonly can't handle querysets, so we need to unpack and return html here.
-        Alternatively, we could return querysets in context but that would limit where this
-        data would display in a custom change form without extensive template customization.
-
-        Will be used in the field_readonly block"""
-        admins = self.get_admin_users(obj)
-        if not admins:
-            return format_html("<p>No admins found.</p>")
-
-        admin_details = ""
-        for portfolio_admin in admins:
-            change_url = reverse("admin:registrar_user_change", args=[portfolio_admin.pk])
-            admin_details += "<address class='margin-bottom-2 dja-address-contact-list'>"
-            admin_details += f'<a href="{change_url}">{escape(portfolio_admin)}</a><br>'
-            admin_details += f"{escape(portfolio_admin.title)}<br>"
-            admin_details += f"{escape(portfolio_admin.email)}"
-            admin_details += "<div class='admin-icon-group admin-icon-group__clipboard-link'>"
-            admin_details += f"<input aria-hidden='true' class='display-none' value='{escape(portfolio_admin.email)}'>"
-            admin_details += (
-                "<button class='usa-button usa-button--unstyled padding-right-1 usa-button--icon padding-left-05"
-                + "button--clipboard copy-to-clipboard text-no-underline' type='button'>"
-            )
-            admin_details += "<svg class='usa-icon'>"
-            admin_details += "<use aria-hidden='true' xlink:href='/public/img/sprite.svg#content_copy'></use>"
-            admin_details += "</svg>"
-            admin_details += "Copy"
-            admin_details += "</button>"
-            admin_details += "</div><br>"
-            admin_details += f"{escape(portfolio_admin.phone)}"
-            admin_details += "</address>"
-        return format_html(admin_details)
-
-    display_admins.short_description = "Administrators"  # type: ignore
-
-    def display_members(self, obj):
-        """Get joined users who have roles/perms that are not Admin, unpack and return an HTML block.
-
-        DJA readonly can't handle querysets, so we need to unpack and return html here.
-        Alternatively, we could return querysets in context but that would limit where this
-        data would display in a custom change form without extensive template customization.
-
-        Will be used in the after_help_text block."""
-        members = self.get_non_admin_users(obj)
-        if not members:
-            return ""
-
-        member_details = (
-            "<table><thead><tr><th>Name</th><th>Title</th><th>Email</th>"
-            + "<th>Phone</th><th>Roles</th></tr></thead><tbody>"
-        )
-        for member in members:
-            full_name = member.get_formatted_name()
-            member_details += "<tr>"
-            member_details += f"<td>{escape(full_name)}</td>"
-            member_details += f"<td>{escape(member.title)}</td>"
-            member_details += f"<td>{escape(member.email)}</td>"
-            member_details += f"<td>{escape(member.phone)}</td>"
-            member_details += "<td>"
-            for role in member.portfolio_role_summary(obj):
-                member_details += f"<span class='usa-tag'>{escape(role)}</span> "
-            member_details += "</td></tr>"
-        member_details += "</tbody></table>"
-        return format_html(member_details)
-
-    display_members.short_description = "Members"  # type: ignore
-
-    def display_members_summary(self, obj):
-        """Will be passed as context and used in the field_readonly block."""
-        members = self.get_non_admin_users(obj)
-        if not members:
-            return {}
-
-        return self.get_field_links_as_list(members, "user", separator=", ")
+    def get_user_portfolio_permission_non_admins(self, obj):
+        """Returns each admin on UserPortfolioPermission for a given portfolio."""
+        if obj:
+            return obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        else:
+            return []
 
     def federal_type(self, obj: models.Portfolio):
         """Returns the federal_type field"""
@@ -3120,16 +3112,10 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     created_on.short_description = "Created on"  # type: ignore
 
-    def portfolio_type(self, obj: models.Portfolio):
-        """Returns the portfolio type, or "-" if the result is empty"""
-        return obj.portfolio_type if obj.portfolio_type else "-"
-
-    portfolio_type.short_description = "Portfolio type"  # type: ignore
-
     def suborganizations(self, obj: models.Portfolio):
         """Returns a list of links for each related suborg"""
         queryset = obj.get_suborganizations()
-        return self.get_field_links_as_list(queryset, "suborganization")
+        return get_field_links_as_list(queryset, "suborganization")
 
     suborganizations.short_description = "Suborganizations"  # type: ignore
 
@@ -3158,65 +3144,34 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     domain_requests.short_description = "Domain requests"  # type: ignore
 
+    def display_admins(self, obj):
+        """Returns the number of administrators for this portfolio"""
+        admin_count = len(self.get_user_portfolio_permission_admins(obj))
+        if admin_count > 0:
+            url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
+            # Create a clickable link with the count
+            return format_html(f'<a href="{url}">{admin_count} administrators</a>')
+        return "No administrators found."
+
+    display_admins.short_description = "Administrators"  # type: ignore
+
+    def display_members(self, obj):
+        """Returns the number of members for this portfolio"""
+        member_count = len(self.get_user_portfolio_permission_non_admins(obj))
+        if member_count > 0:
+            url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
+            # Create a clickable link with the count
+            return format_html(f'<a href="{url}">{member_count} members</a>')
+        return "No additional members found."
+
+    display_members.short_description = "Members"  # type: ignore
+
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
         "creator",
         "federal_agency",
         "senior_official",
     ]
-
-    def get_field_links_as_list(
-        self, queryset, model_name, attribute_name=None, link_info_attribute=None, separator=None
-    ):
-        """
-        Generate HTML links for items in a queryset, using a specified attribute for link text.
-
-        Args:
-            queryset: The queryset of items to generate links for.
-            model_name: The model name used to construct the admin change URL.
-            attribute_name: The attribute or method name to use for link text. If None, the item itself is used.
-            link_info_attribute: Appends f"({value_of_attribute})" to the end of the link.
-            separator: The separator to use between links in the resulting HTML.
-            If none, an unordered list is returned.
-
-        Returns:
-            A formatted HTML string with links to the admin change pages for each item.
-        """
-        links = []
-        for item in queryset:
-
-            # This allows you to pass in attribute_name="get_full_name" for instance.
-            if attribute_name:
-                item_display_value = self.value_of_attribute(item, attribute_name)
-            else:
-                item_display_value = item
-
-            if item_display_value:
-                change_url = reverse(f"admin:registrar_{model_name}_change", args=[item.pk])
-
-                link = f'<a href="{change_url}">{escape(item_display_value)}</a>'
-                if link_info_attribute:
-                    link += f" ({self.value_of_attribute(item, link_info_attribute)})"
-
-                if separator:
-                    links.append(link)
-                else:
-                    links.append(f"<li>{link}</li>")
-
-        # If no separator is specified, just return an unordered list.
-        if separator:
-            return format_html(separator.join(links)) if links else "-"
-        else:
-            links = "".join(links)
-            return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else "-"
-
-    def value_of_attribute(self, obj, attribute_name: str):
-        """Returns the value of getattr if the attribute isn't callable.
-        If it is, execute the underlying function and return that result instead."""
-        value = getattr(obj, attribute_name)
-        if callable(value):
-            value = value()
-        return value
 
     def get_fieldsets(self, request, obj=None):
         """Override of the default get_fieldsets definition to add an add_fieldsets view"""
@@ -3250,10 +3205,15 @@ class PortfolioAdmin(ListHeaderAdmin):
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups.
         Add the summary for the portfolio members field (list of members that link to change_forms)."""
-        obj = self.get_object(request, object_id)
+        obj: Portfolio = self.get_object(request, object_id)
         extra_context = extra_context or {}
         extra_context["skip_additional_contact_info"] = True
-        extra_context["display_members_summary"] = self.display_members_summary(obj)
+
+        if obj:
+            extra_context["members"] = self.get_user_portfolio_permission_non_admins(obj)
+            extra_context["admins"] = self.get_user_portfolio_permission_admins(obj)
+            extra_context["domains"] = obj.get_domains(order_by=["domain__name"])
+            extra_context["domain_requests"] = obj.get_domain_requests(order_by=["requested_domain__name"])
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
@@ -3270,6 +3230,14 @@ class PortfolioAdmin(ListHeaderAdmin):
         is_federal = obj.organization_type == DomainRequest.OrganizationChoices.FEDERAL
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
+
+        # Remove this line when senior_official is no longer readonly in /admin.
+        if obj.federal_agency:
+            if obj.federal_agency.so_federal_agency.exists():
+                obj.senior_official = obj.federal_agency.so_federal_agency.first()
+            else:
+                obj.senior_official = None
+
         super().save_model(request, obj, form, change)
 
 
@@ -3284,7 +3252,7 @@ class FederalAgencyResource(resources.ModelResource):
 class FederalAgencyAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]
-    search_help_text = "Search by agency name."
+    search_help_text = "Search by federal agency."
     ordering = ["agency"]
     resource_classes = [FederalAgencyResource]
 
@@ -3341,6 +3309,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "portfolio",
     ]
     search_fields = ["name"]
+    search_help_text = "Search by suborganization."
 
     change_form_template = "django/admin/suborg_change_form.html"
 

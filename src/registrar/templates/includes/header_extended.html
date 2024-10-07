@@ -2,13 +2,13 @@
 {% load custom_filters %}
 
 <header class="usa-header usa-header--extended">
-    <div class="usa-navbar">
+    <div class="usa-navbar {% if is_widescreen_mode %} usa-navbar--widescreen {% endif %}">
         {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
     <button type="button" class="usa-menu-btn">Menu</button>
     </div>
     {% block usa_nav %}
     <nav class="usa-nav" aria-label="Primary navigation">
-    <div class="usa-nav__inner">
+    <div class="usa-nav__inner {% if is_widescreen_mode %} usa-nav__inner--widescreen {% endif %}">
         <button type="button" class="usa-nav__close">
             <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
         </button>
@@ -91,9 +91,9 @@
             </li>
             {% endif %}
 
-            {% if has_organization_members_flag %}
+            {% if has_organization_members_flag and has_view_members_portfolio_permission %}
             <li class="usa-nav__primary-item">
-                <a href="#" class="usa-nav-link">
+                <a href="/members/" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
                     Members
                 </a>
             </li>

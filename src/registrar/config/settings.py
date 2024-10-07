@@ -246,6 +246,7 @@ TEMPLATES = [
                 "registrar.context_processors.org_user_status",
                 "registrar.context_processors.add_path_to_context",
                 "registrar.context_processors.portfolio_permissions",
+                "registrar.context_processors.is_widescreen_mode",
             ],
         },
     },
@@ -478,7 +479,7 @@ class JsonServerFormatter(ServerFormatter):
 
         if not hasattr(record, "server_time"):
             record.server_time = self.formatTime(record, self.datefmt)
-
+            
         log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
         return json.dumps(log_entry)
 
@@ -724,6 +725,7 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-el.app.cloud.gov",
     "getgov-ad.app.cloud.gov",
     "getgov-ms.app.cloud.gov",
     "getgov-ag.app.cloud.gov",
