@@ -27,13 +27,8 @@
 
         <form class="usa-form usa-form--large" method="post" novalidate>
             {% csrf_token %}
-            {% if form.roles %}
-              {% input_with_errors form.roles %}
-              {% input_with_errors form.additional_permissions %}
-            {% elif form.portfolio_roles %}
-              {% input_with_errors form.portfolio_roles %}
-              {% input_with_errors form.portfolio_additional_permissions %}
-            {% endif %}
+            {% input_with_errors form.roles %}
+            {% input_with_errors form.additional_permissions %}
             <button
               type="submit"
               class="usa-button"

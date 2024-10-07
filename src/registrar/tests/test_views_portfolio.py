@@ -288,9 +288,9 @@ class TestPortfolio(WebTest):
     def test_accessible_pages_when_user_does_not_have_role(self):
         """Test that admin / memmber roles are associated with the right access"""
         self.app.set_user(self.user.username)
-        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=portfolio_roles
+            user=self.user, portfolio=self.portfolio, roles=roles
         )
         with override_flag("organization_feature", active=True):
             # This will redirect the user to the portfolio page.
@@ -398,8 +398,8 @@ class TestPortfolio(WebTest):
         """When organization_feature flag is true and user has a portfolio,
         the portfolio should be set in session."""
         self.client.force_login(self.user)
-        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
         with override_flag("organization_feature", active=True):
             response = self.client.get(reverse("home"))
             # Ensure that middleware processes the session
@@ -420,8 +420,8 @@ class TestPortfolio(WebTest):
         This test also satisfies the condition when multiple_portfolios flag
         is false and user has a portfolio, so won't add a redundant test for that."""
         self.client.force_login(self.user)
-        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
         response = self.client.get(reverse("home"))
         # Ensure that middleware processes the session
         session_middleware = SessionMiddleware(lambda request: None)
@@ -457,8 +457,8 @@ class TestPortfolio(WebTest):
         """When multiple_portfolios flag is true and user has a portfolio,
         the portfolio should be set in session."""
         self.client.force_login(self.user)
-        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
         with override_flag("organization_feature", active=True), override_flag("multiple_portfolios", active=True):
             response = self.client.get(reverse("home"))
             # Ensure that middleware processes the session
@@ -1014,8 +1014,8 @@ class TestPortfolio(WebTest):
     def test_portfolio_cache_updates_when_modified(self):
         """Test that the portfolio in session updates when the portfolio is modified"""
         self.client.force_login(self.user)
-        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
 
         with override_flag("organization_feature", active=True):
             # Initial request to set the portfolio in session
@@ -1043,8 +1043,8 @@ class TestPortfolio(WebTest):
     def test_portfolio_cache_updates_when_flag_disabled_while_logged_in(self):
         """Test that the portfolio in session is set to None when the organization_feature flag is disabled"""
         self.client.force_login(self.user)
-        portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=portfolio_roles)
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
 
         with override_flag("organization_feature", active=True):
             # Initial request to set the portfolio in session

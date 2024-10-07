@@ -133,14 +133,14 @@ class PortfolioInvitedMemberForm(forms.ModelForm):
     Form for updating a portfolio invited member.
     """
 
-    portfolio_roles = forms.MultipleChoiceField(
+    roles = forms.MultipleChoiceField(
         choices=UserPortfolioRoleChoices.choices,
         widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
         required=False,
         label="Roles",
     )
 
-    portfolio_additional_permissions = forms.MultipleChoiceField(
+    additional_permissions = forms.MultipleChoiceField(
         choices=UserPortfolioPermissionChoices.choices,
         widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
         required=False,
@@ -150,7 +150,7 @@ class PortfolioInvitedMemberForm(forms.ModelForm):
     class Meta:
         model = PortfolioInvitation
         fields = [
-            "portfolio_roles",
-            "portfolio_additional_permissions",
+            "roles",
+            "additional_permissions",
         ]
 

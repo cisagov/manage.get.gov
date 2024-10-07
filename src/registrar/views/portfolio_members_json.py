@@ -20,7 +20,7 @@ def get_portfolio_members_json(request):
 
     permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio).select_related("user").values_list("pk", "user__first_name", "user__last_name", "user__email", "user__last_login", "roles")
     invitations = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
-        'pk', 'email', 'portfolio_roles', 'portfolio_additional_permissions', 'status'
+        'pk', 'email', 'roles', 'additional_permissions', 'status'
     )
 
     # Convert the permissions queryset into a list of dictionaries
