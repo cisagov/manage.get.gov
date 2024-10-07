@@ -5,6 +5,11 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 
+# ---Logger
+import logging
+from venv import logger
+from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+logger = logging.getLogger(__name__)
 
 class UserPortfolioPermission(TimeStampedModel):
     """This is a linking table that connects a user with a role on a portfolio."""
@@ -98,11 +103,17 @@ class UserPortfolioPermission(TimeStampedModel):
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"**** CLEANING ****") 
 
         # Check if a user is set without accessing the related object.
         has_user = bool(self.user_id)
-        if self.pk is None and has_user:
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"User: {self.user.email}")
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"pk: {self.pk}")
+        if has_user:
             existing_permissions = UserPortfolioPermission.objects.filter(user=self.user)
+            has_flag = flag_is_active_for_user(self.user, "multiple_portfolios")
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"multiple portfolios enabled: {has_flag}") 
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"existing permissions detected: {existing_permissions.exists()}") 
             if not flag_is_active_for_user(self.user, "multiple_portfolios") and existing_permissions.exists():
                 raise ValidationError(
                     "This user is already assigned to a portfolio. "
