@@ -1914,10 +1914,12 @@ class MembersTable extends LoadTableBase {
           memberList.innerHTML = '';
 
           data.members.forEach(member => {
-            // const actionUrl = domain.action_url;
             const member_name = member.name;
             const member_email = member.email;
-            const last_active = member.last_active;
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const last_active = member.last_active ? member.last_active != 'Invited' ? new Date(member.last_active) : 'Invited' : null;
+            const last_active_formatted = last_active ? last_active != 'Invited' ? last_active.toLocaleDateString('en-Us', options) : 'Invited' : '';
+            const last_active_sort_value = last_active ? last_active != 'Invited' ? last_active.getTime() : 'Invited' : '';
             const action_url = member.action_url;
             const action_label = member.action_label;
             const svg_icon = member.svg_icon;
@@ -1932,8 +1934,8 @@ class MembersTable extends LoadTableBase {
               <th scope="row" role="rowheader" data-label="member email">
                 ${member_email ? member_email : member_name} ${admin_tagHTML}
               </th>
-              <td data-sort-value="${last_active}" data-label="last_active">
-                ${last_active}
+              <td data-sort-value="${last_active_sort_value}" data-label="last_active">
+                ${last_active_formatted}
               </td>
               <td>
                 <a href="${action_url}">
