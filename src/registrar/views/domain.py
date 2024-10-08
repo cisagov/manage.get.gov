@@ -917,16 +917,16 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
-            try:
-                UserDomainRole.objects.create(
-                    user=requested_user,
-                    domain=self.object,
-                    role=UserDomainRole.Roles.MANAGER,
-                )
-            except IntegrityError:
-                messages.warning(self.request, f"{requested_email} is already a manager for this domain")
-            else:
-                messages.success(self.request, f"Added user {requested_email}.")
+        try:
+            UserDomainRole.objects.create(
+                user=requested_user,
+                domain=self.object,
+                role=UserDomainRole.Roles.MANAGER,
+            )
+        except IntegrityError:
+            messages.warning(self.request, f"{requested_email} is already a manager for this domain")
+        else:
+            messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
 
 
