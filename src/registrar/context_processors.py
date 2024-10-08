@@ -97,5 +97,5 @@ def portfolio_permissions(request):
 
 
 def is_widescreen_mode(request):
-    widescreen_paths = ["/domains/", "/requests/"]
+    widescreen_paths = ["/domains/", "/requests/", "/members/"]
     return {"is_widescreen_mode": any(path in request.path for path in widescreen_paths) or request.path == "/"}
