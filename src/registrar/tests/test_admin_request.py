@@ -1863,7 +1863,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Use ExitStack to combine patch contexts
         with ExitStack() as stack:
-            # Patch Domain.is_active and django.contrib.messages.error simultaneously
+            # Patch django.contrib.messages.error
             stack.enter_context(patch.object(messages, "error"))
 
             new_request.status = DomainRequest.DomainRequestStatus.APPROVED
