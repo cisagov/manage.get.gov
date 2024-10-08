@@ -41,7 +41,6 @@ from waffle.testutils import override_flag
 
 from api.tests.common import less_console_noise_decorator
 
-
 @boto3_mocking.patching
 class TestDomainRequest(TestCase):
     @less_console_noise_decorator
@@ -1274,6 +1273,7 @@ class TestUserPortfolioPermission(TestCase):
     @less_console_noise_decorator
     def setUp(self):
         self.user, _ = User.objects.get_or_create(email="mayor@igorville.gov")
+        self.user2, _ = User.objects.get_or_create(email="user2@igorville.gov", username="user2")
         super().setUp()
 
     def tearDown(self):
@@ -1306,21 +1306,20 @@ class TestUserPortfolioPermission(TestCase):
             portfolio_permission_2.clean()
         except ValidationError as error:
             self.fail(f"Raised ValidationError unexpectedly: {error}")
-
+    
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=False)
     def test_clean_on_creates_multiple_portfolios(self):
         """Ensures that a user cannot create multiple portfolio permission objects when the flag is disabled"""
-        # Create an instance of User with a portfolio but no roles or additional permissions
+        # Create an instance of User with a single portfolio
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
-        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Motel California")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
+        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Motel California")
         portfolio_permission_2 = UserPortfolioPermission(
             portfolio=portfolio_2, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
-
         # This should work as intended
         portfolio_permission.clean()
 
@@ -1328,7 +1327,35 @@ class TestUserPortfolioPermission(TestCase):
         with self.assertRaises(ValidationError) as cm:
             portfolio_permission_2.clean()
 
-        portfolio_permission_2, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
+        self.assertEqual(
+            cm.exception.message,
+            (
+                "This user is already assigned to a portfolio. "
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+            ),
+        )
+    
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=False)
+    def test_multiple_portfolio_reassignment(self):
+        """Ensures that a user cannot be assigned to multiple portfolios based on reassignment"""
+        # Create an instance of two users with separate portfolios
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Motel California")
+        portfolio_permission_2 = UserPortfolioPermission(
+            portfolio=portfolio_2, user=self.user2, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # This should work as intended
+        portfolio_permission.clean()
+        portfolio_permission_2.clean()
+        
+        with self.assertRaises(ValidationError) as cm:
+            portfolio_permission_2.user = self.user
+            portfolio_permission_2.clean()
 
         self.assertEqual(
             cm.exception.message,
