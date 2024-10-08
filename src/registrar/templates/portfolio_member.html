@@ -124,6 +124,7 @@
     {% include "includes/summary_item.html" with title='Member access and permissions' permissions='true' value=portfolio_invitation member_has_view_all_requests_portfolio_permission=member_has_view_all_requests_portfolio_permission member_has_edit_request_portfolio_permission=member_has_edit_request_portfolio_permission member_has_view_members_portfolio_permission=member_has_view_members_portfolio_permission member_has_edit_members_portfolio_permission=member_has_edit_members_portfolio_permission edit_link=edit_url editable=has_edit_members_portfolio_permission %}
   {% endif %}
 
+  {% comment %}view_button is passed below as true in all cases. This is because manage_button logic will trump view_button logic; ie. if manage_button is true, view_button will never be looked at{% endcomment %}
   {% if portfolio_permission %}
     {% include "includes/summary_item.html" with title='Domain management' domain_mgmt='true' value=portfolio_permission.get_managed_domains_count edit_link='#' editable='true' manage_button=has_edit_members_portfolio_permission view_button='true' %}
   {% elif portfolio_invitation %}
