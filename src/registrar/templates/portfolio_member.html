@@ -32,13 +32,23 @@
       {% endif %}
     </h2>
     {% if has_edit_members_portfolio_permission %}
-      <a 
-        role="button" 
-        href="#"
-        class="display-block usa-button text-secondary usa-button--unstyled text-no-underline margin-bottom-3 line-height-sans-5 visible-mobile-flex"
-      >
-        Remove member
-      </a>
+      {% if member %}
+        <a 
+          role="button" 
+          href="#"
+          class="display-block usa-button text-secondary usa-button--unstyled text-no-underline margin-bottom-3 line-height-sans-5 visible-mobile-flex"
+        >
+          Remove member
+        </a>
+      {% else %}
+        <a 
+          role="button" 
+          href="#"
+          class="display-block usa-button text-secondary usa-button--unstyled text-no-underline margin-bottom-3 line-height-sans-5 visible-mobile-flex"
+        >
+          Cancel invitation
+        </a>
+      {% endif %}
 
       <div class="usa-accordion usa-accordion--more-actions hidden-mobile-flex">
         <div class="usa-accordion__heading">
