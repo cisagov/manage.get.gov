@@ -97,8 +97,15 @@ class UserPortfolioPermission(TimeStampedModel):
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"**** CLEANING ****") 
 
+        # Check if portfolio is set without accessing the related object.
+        has_portfolio = bool(self.portfolio_id)
+        if not has_portfolio and self._get_portfolio_permissions():
+            raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
+
+        if has_portfolio and not self._get_portfolio_permissions():
+            raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
+        
         # Check if a user is set without accessing the related object.
         has_user = bool(self.user_id)
         if has_user:
@@ -108,11 +115,3 @@ class UserPortfolioPermission(TimeStampedModel):
                     "This user is already assigned to a portfolio. "
                     "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
                 )
-
-        # Check if portfolio is set without accessing the related object.
-        has_portfolio = bool(self.portfolio_id)
-        if not has_portfolio and self._get_portfolio_permissions():
-            raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
-
-        if has_portfolio and not self._get_portfolio_permissions():
-            raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
