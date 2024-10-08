@@ -2025,6 +2025,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         elif (
             original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
             and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
+            and original_obj.requested_domain is not None
             and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
         ):
             # REDUNDANT CHECK:
