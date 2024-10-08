@@ -6,7 +6,7 @@ from registrar.models import (
     Domain,
     UserDomainRole,
 )
-from registrar.models import Portfolio
+from registrar.models import Portfolio, DraftDomain
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.csv_export import (
@@ -14,6 +14,7 @@ from registrar.utility.csv_export import (
     DomainDataType,
     DomainDataFederal,
     DomainDataTypeUser,
+    DomainRequestsDataType,
     DomainGrowth,
     DomainManaged,
     DomainUnmanaged,
@@ -385,6 +386,77 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
         # Read the content into a variable
+        csv_content = csv_file.read()
+
+        return csv_content
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_domain_request_data_type_user_with_portfolio(self):
+        """Tests DomainRequestsDataType export with portfolio permissions"""
+
+        # Create a portfolio and assign it to the user
+        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
+
+        # Create DraftDomain objects
+        dd_1 = DraftDomain.objects.create(name="example1.com")
+        dd_2 = DraftDomain.objects.create(name="example2.com")
+        dd_3 = DraftDomain.objects.create(name="example3.com")
+
+        # Create some domain requests
+        dr_1 = DomainRequest.objects.create(creator=self.user, requested_domain=dd_1, portfolio=portfolio)
+        dr_2 = DomainRequest.objects.create(creator=self.user, requested_domain=dd_2)
+        dr_3 = DomainRequest.objects.create(creator=self.user, requested_domain=dd_3, portfolio=portfolio)
+
+        # Set up user permissions
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
+
+        # Make a GET request using self.client to get a request object
+        request = get_wsgi_request_object(client=self.client, user=self.user)
+
+        # Get the CSV content
+        csv_content = self._run_domain_request_data_type_user_export(request)
+
+        # We expect only domain requests associated with the user's portfolio
+        self.assertIn(dd_1.name, csv_content)
+        self.assertIn(dd_3.name, csv_content)
+        self.assertNotIn(dd_2.name, csv_content)
+
+        # Get the csv content
+        csv_content = self._run_domain_request_data_type_user_export(request)
+        self.assertIn(dd_1.name, csv_content)
+        self.assertIn(dd_3.name, csv_content)
+        self.assertNotIn(dd_2.name, csv_content)
+
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
+
+        # Domain Request NOT in Portfolio
+        csv_content = self._run_domain_request_data_type_user_export(request)
+        self.assertNotIn(dd_1.name, csv_content)
+        self.assertNotIn(dd_3.name, csv_content)
+        self.assertNotIn(dd_2.name, csv_content)
+
+        # Clean up the created objects
+        dr_1.delete()
+        dr_2.delete()
+        dr_3.delete()
+        portfolio.delete()
+
+    def _run_domain_request_data_type_user_export(self, request):
+        """Helper function to run the exporting_dr_data_to_csv function on DomainRequestsDataType"""
+
+        csv_file = StringIO()
+
+        DomainRequestsDataType.exporting_dr_data_to_csv(csv_file, request=request)
+
+        csv_file.seek(0)
+
         csv_content = csv_file.read()
 
         return csv_content
