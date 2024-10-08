@@ -10,6 +10,7 @@ from registrar.models import (
     UserDomainRole,
     User,
 )
+from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .common import MockSESClient, completed_domain_request, create_test_user
@@ -665,6 +666,195 @@ class TestPortfolio(WebTest):
 
         self.assertContains(home, "Hotel California")
         self.assertContains(home, "Members")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_cannot_view_members_table(self):
+        """Test that user without proper permission is denied access to members view"""
+
+        # Users can only view the members table if they have
+        # Portfolio Permission "view_members" selected.
+        # NOTE: Admins, by default, do NOT have permission
+        # to view/edit members.  This must be enabled explicitly
+        # in the "additional permissions" section for a portfolio
+        # permission.
+        #
+        # Scenarios to test include;
+        # (1) - User is not admin and can view portfolio, but not the members table
+        # (1) - User is admin and can view portfolio, but not the members table
+
+        # --- non-admin
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            ],
+        )
+        # Verify that the user cannot access the members page
+        # This will redirect the user to the members page.
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("members"), follow=True)
+        # Assert the response is a 403 Forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # --- admin
+        UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).update(
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Verify that the user cannot access the members page
+        # This will redirect the user to the members page.
+        response = self.client.get(reverse("members"), follow=True)
+        # Assert the response is a 403 Forbidden
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_can_view_members_table(self):
+        """Test that user with proper permission is able to access members view"""
+
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        # Verify that the user can access the members page
+        # This will redirect the user to the members page.
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("members"), follow=True)
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
+
+        # ---- Useful debugging stub to see what "assertContains" is finding
+        # pattern = r'Members'
+        # matches = re.findall(pattern, response.content.decode('utf-8'))
+        # for match in matches:
+        #     TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"{match}")
+
+        # Make sure the page loaded
+        self.assertContains(response, "Members")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_can_manage_members(self):
+        """Test that user with proper permission is able to manage members"""
+        user = self.user
+        self.app.set_user(user.username)
+
+        # give user permissions to view AND manage members
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Give user permissions to modify user objects in the DB
+        group, _ = UserGroup.objects.get_or_create(name="full_access_group")
+        # Add the user to the group
+        user.groups.set([group])
+
+        # Verify that the user can access the members page
+        # This will redirect the user to the members page.
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("members"), follow=True)
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
+
+        # Verify that manage settings are sent in the dynamic HTML
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("get_portfolio_members_json") + f"?portfolio={self.portfolio.pk}")
+        self.assertContains(response, '"action_label": "Manage"')
+        self.assertContains(response, '"svg_icon": "settings"')
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_view_only_members(self):
+        """Test that user with view only permission settings can only
+        view members (not manage them)"""
+        user = self.user
+        self.app.set_user(user.username)
+
+        # give user permissions to view AND manage members
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+        # Give user permissions to modify user objects in the DB
+        group, _ = UserGroup.objects.get_or_create(name="full_access_group")
+        # Add the user to the group
+        user.groups.set([group])
+
+        # Verify that the user can access the members page
+        # This will redirect the user to the members page.
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("members"), follow=True)
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
+
+        # Verify that view-only settings are sent in the dynamic HTML
+        response = self.client.get(reverse("get_portfolio_members_json") + f"?portfolio={self.portfolio.pk}")
+        print(response.content)
+        self.assertContains(response, '"action_label": "View"')
+        self.assertContains(response, '"svg_icon": "visibility"')
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_members_admin_detection(self):
+        """Test that user with proper permission is able to manage members"""
+        user = self.user
+        self.app.set_user(user.username)
+
+        # give user permissions to view AND manage members
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Give user permissions to modify user objects in the DB
+        group, _ = UserGroup.objects.get_or_create(name="full_access_group")
+        # Add the user to the group
+        user.groups.set([group])
+
+        # Verify that the user can access the members page
+        # This will redirect the user to the members page.
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("members"), follow=True)
+        # Make sure the page loaded
+        self.assertEqual(response.status_code, 200)
+        # Verify that admin info is sent in the dynamic HTML
+        response = self.client.get(reverse("get_portfolio_members_json") + f"?portfolio={self.portfolio.pk}")
+        # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"{response.content}")
+        self.assertContains(response, '"is_admin": true')
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)

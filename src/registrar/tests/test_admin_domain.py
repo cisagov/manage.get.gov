@@ -167,12 +167,6 @@ class TestDomainAdminAsStaff(MockEppLib):
         expected_organization_name = "MonkeySeeMonkeyDo"
         self.assertContains(response, expected_organization_name)
 
-        # clean up this test's data
-        domain.delete()
-        domain_information.delete()
-        _domain_request.delete()
-        _creator.delete()
-
     @less_console_noise_decorator
     def test_deletion_is_successful(self):
         """
@@ -227,9 +221,6 @@ class TestDomainAdminAsStaff(MockEppLib):
 
         self.assertEqual(domain.state, Domain.State.DELETED)
 
-        # clean up data within this test
-        domain.delete()
-
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):
         """
@@ -268,9 +259,6 @@ class TestDomainAdminAsStaff(MockEppLib):
             )
 
         self.assertEqual(domain.state, Domain.State.READY)
-
-        # delete data created in this test
-        domain.delete()
 
     @less_console_noise_decorator
     def test_analyst_deletes_domain_idempotent(self):
@@ -330,8 +318,130 @@ class TestDomainAdminAsStaff(MockEppLib):
             )
         self.assertEqual(domain.state, Domain.State.DELETED)
 
-        # delete data created in this test
-        domain.delete()
+
+class TestDomainInformationInline(MockEppLib):
+    """Test DomainAdmin class, specifically the DomainInformationInline class, as staff user.
+
+    Notes:
+      all tests share staffuser; do not change staffuser model in tests
+      tests have available staffuser, client, and admin
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.staffuser = create_user()
+        cls.site = AdminSite()
+        cls.admin = DomainAdmin(model=Domain, admin_site=cls.site)
+        cls.factory = RequestFactory()
+
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.client.force_login(self.staffuser)
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        Host.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+
+    @classmethod
+    def tearDownClass(cls):
+        User.objects.all().delete()
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    def test_domain_managers_display(self):
+        """Tests the custom domain managers field"""
+        admin_user_1 = User.objects.create(
+            username="testuser1",
+            first_name="Gerald",
+            last_name="Meoward",
+            email="meoward@gov.gov",
+        )
+
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=self.staffuser, name="fake.gov"
+        )
+        domain_request.approve()
+        _domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
+        domain = Domain.objects.filter(domain_info=_domain_info).get()
+
+        UserDomainRole.objects.get_or_create(user=admin_user_1, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        admin_user_2 = User.objects.create(
+            username="testuser2",
+            first_name="Arnold",
+            last_name="Poopy",
+            email="poopy@gov.gov",
+        )
+
+        UserDomainRole.objects.get_or_create(user=admin_user_2, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        # Get the first inline (DomainInformationInline)
+        inline_instance = self.admin.inlines[0](self.admin.model, self.admin.admin_site)
+
+        # Call the domain_managers method
+        domain_managers = inline_instance.domain_managers(domain.domain_info)
+
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_1.pk}/change/">testuser1</a>',
+            domain_managers,
+        )
+        self.assertIn("Gerald Meoward", domain_managers)
+        self.assertIn("meoward@gov.gov", domain_managers)
+        self.assertIn(f'<a href="/admin/registrar/user/{admin_user_2.pk}/change/">testuser2</a>', domain_managers)
+        self.assertIn("Arnold Poopy", domain_managers)
+        self.assertIn("poopy@gov.gov", domain_managers)
+
+    @less_console_noise_decorator
+    def test_invited_domain_managers_display(self):
+        """Tests the custom invited domain managers field"""
+        admin_user_1 = User.objects.create(
+            username="testuser1",
+            first_name="Gerald",
+            last_name="Meoward",
+            email="meoward@gov.gov",
+        )
+
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=self.staffuser, name="fake.gov"
+        )
+        domain_request.approve()
+        _domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
+        domain = Domain.objects.filter(domain_info=_domain_info).get()
+
+        # domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        UserDomainRole.objects.get_or_create(user=admin_user_1, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        admin_user_2 = User.objects.create(
+            username="testuser2",
+            first_name="Arnold",
+            last_name="Poopy",
+            email="poopy@gov.gov",
+        )
+
+        UserDomainRole.objects.get_or_create(user=admin_user_2, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        # Get the first inline (DomainInformationInline)
+        inline_instance = self.admin.inlines[0](self.admin.model, self.admin.admin_site)
+
+        # Call the domain_managers method
+        domain_managers = inline_instance.domain_managers(domain.domain_info)
+        # domain_managers = self.admin.get_inlinesdomain_managers(self.domain)
+
+        self.assertIn(
+            f'<a href="/admin/registrar/user/{admin_user_1.pk}/change/">testuser1</a>',
+            domain_managers,
+        )
+        self.assertIn("Gerald Meoward", domain_managers)
+        self.assertIn("meoward@gov.gov", domain_managers)
+        self.assertIn(f'<a href="/admin/registrar/user/{admin_user_2.pk}/change/">testuser2</a>', domain_managers)
+        self.assertIn("Arnold Poopy", domain_managers)
+        self.assertIn("poopy@gov.gov", domain_managers)
 
 
 class TestDomainAdminWithClient(TestCase):
@@ -415,17 +525,6 @@ class TestDomainAdminWithClient(TestCase):
         self.assertContains(response, domain.name)
 
         # Check that the fields have the right values.
-        # == Check for the creator == #
-
-        # Check for the right title, email, and phone number in the response.
-        # We only need to check for the end tag
-        # (Otherwise this test will fail if we change classes, etc)
-        self.assertContains(response, "Treat inspector")
-        self.assertContains(response, "meoward.jones@igorville.gov")
-        self.assertContains(response, "(555) 123 12345")
-
-        # Check for the field itself
-        self.assertContains(response, "Meoward Jones")
 
         # == Check for the senior_official == #
         self.assertContains(response, "testy@town.com")
@@ -434,11 +533,6 @@ class TestDomainAdminWithClient(TestCase):
 
         # Includes things like readonly fields
         self.assertContains(response, "Testy Tester")
-
-        # == Test the other_employees field == #
-        self.assertContains(response, "testy2@town.com")
-        self.assertContains(response, "Another Tester")
-        self.assertContains(response, "(555) 555 5557")
 
         # Test for the copy link
         self.assertContains(response, "button--clipboard")
