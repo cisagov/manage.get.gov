@@ -1381,7 +1381,10 @@ class TestUserPortfolioPermission(TestCase):
 
         self.assertEqual(
             cm.exception.message,
-            "Only one portfolio permission is allowed per user when multiple portfolios are disabled.",
+            (
+                "This user is already assigned to a portfolio. "
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+            ),
         )
 
     @less_console_noise_decorator

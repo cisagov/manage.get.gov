@@ -66,7 +66,19 @@ class UserPortfolioPermission(TimeStampedModel):
     )
 
     def __str__(self):
-        return f"User '{self.user}' on Portfolio '{self.portfolio}' " f"<Roles: {self.roles}>" if self.roles else ""
+        readable_roles = []
+        if self.roles:
+            readable_roles = self.get_readable_roles()
+        return f"{self.user}" f" <Roles: {', '.join(readable_roles)}>" if self.roles else ""
+
+    def get_readable_roles(self):
+        """Returns a readable list of self.roles"""
+        readable_roles = []
+        if self.roles:
+            readable_roles = sorted(
+                [UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in self.roles]
+            )
+        return readable_roles
 
     def get_managed_domains_count(self):
         """Return the count of domains managed by the user for this portfolio."""
@@ -102,7 +114,8 @@ class UserPortfolioPermission(TimeStampedModel):
             existing_permissions = UserPortfolioPermission.objects.filter(user=self.user)
             if not flag_is_active_for_user(self.user, "multiple_portfolios") and existing_permissions.exists():
                 raise ValidationError(
-                    "Only one portfolio permission is allowed per user when multiple portfolios are disabled."
+                    "This user is already assigned to a portfolio. "
+                    "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
                 )
 
         # Check if portfolio is set without accessing the related object.

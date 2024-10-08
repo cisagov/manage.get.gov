@@ -229,6 +229,10 @@ class User(AbstractUser):
         """Determines if the current user can view all available domains in a given portfolio"""
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
 
+    def has_view_all_domain_requests_portfolio_permission(self, portfolio):
+        """Determines if the current user can view all available domains in a given portfolio"""
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+
     def has_any_requests_portfolio_permission(self, portfolio):
         # BEGIN
         # Note code below is to add organization_request feature
@@ -458,3 +462,12 @@ class User(AbstractUser):
             return DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
         else:
             return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)
+
+    def get_user_domain_request_ids(self, request):
+        """Returns either the domain request ids associated with this user on UserDomainRole or Portfolio"""
+        portfolio = request.session.get("portfolio")
+
+        if self.is_org_user(request) and self.has_view_all_domain_requests_portfolio_permission(portfolio):
+            return DomainRequest.objects.filter(portfolio=portfolio).values_list("id", flat=True)
+        else:
+            return UserDomainRole.objects.filter(user=self).values_list("id", flat=True)
