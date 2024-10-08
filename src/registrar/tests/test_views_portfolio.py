@@ -10,6 +10,7 @@ from registrar.models import (
     UserDomainRole,
     User,
 )
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -854,6 +855,226 @@ class TestPortfolio(WebTest):
         response = self.client.get(reverse("get_portfolio_members_json") + f"?portfolio={self.portfolio.pk}")
         # TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"{response.content}")
         self.assertContains(response, '"is_admin": true')
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_cannot_view_member_page_when_flag_is_off(self):
+        """Test that user cannot access the member page when waffle flag is off"""
+
+        # Verify that the user cannot access the member page
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("member", kwargs={"pk": 1}), follow=True)
+        # Make sure the page is denied
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_cannot_view_member_page_when_user_has_no_permission(self):
+        """Test that user cannot access the member page without proper permission"""
+
+        # give user base permissions
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        # Verify that the user cannot access the member page
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("member", kwargs={"pk": 1}), follow=True)
+        # Make sure the page is denied
+        self.assertEqual(response.status_code, 403)
+    
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_can_view_member_page_when_user_has_view_members(self):
+        """Test that user can access the member page with view_members permission"""
+
+        # Arrange
+        # give user permissions to view members
+        permission_obj, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        # Verify the page can be accessed
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("member", kwargs={"pk": permission_obj.pk}), follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        # Assert text within the page is correct
+        self.assertContains(response, "First Last")
+        self.assertContains(response, self.user.email)
+        self.assertContains(response, "Basic access")
+        self.assertContains(response, "No access")
+        self.assertContains(response, "View all members")
+        self.assertContains(response, "This member does not manage any domains.")
+
+        # Assert buttons and links within the page are correct
+        self.assertNotContains(response, "usa-button--more-actions") # test that 3 dot is not present
+        self.assertNotContains(response, "sprite.svg#edit") # test that Edit link is not present
+        self.assertNotContains(response, "sprite.svg#settings") # test that Manage link is not present
+        self.assertContains(response, "sprite.svg#visibility") # test that View link is present
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_can_view_member_page_when_user_has_edit_members(self):
+        """Test that user can access the member page with edit_members permission"""
+
+        # Arrange
+        # give user permissions to view AND manage members
+        permission_obj, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Verify the page can be accessed
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("member", kwargs={"pk": permission_obj.pk}), follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        # Assert text within the page is correct
+        self.assertContains(response, "First Last")
+        self.assertContains(response, self.user.email)
+        self.assertContains(response, "Admin access")
+        self.assertContains(response, "View all requests plus create requests")
+        self.assertContains(response, "View all members plus manage members")
+        self.assertContains(response, "This member does not manage any domains. To assign this member a domain, click \"Manage\"")
+
+        # Assert buttons and links within the page are correct
+        self.assertContains(response, "usa-button--more-actions") # test that 3 dot is present
+        self.assertContains(response, "sprite.svg#edit") # test that Edit link is present
+        self.assertContains(response, "sprite.svg#settings") # test that Manage link is present
+        self.assertNotContains(response, "sprite.svg#visibility") # test that View link is not present
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_cannot_view_invitedmember_page_when_flag_is_off(self):
+        """Test that user cannot access the invitedmember page when waffle flag is off"""
+
+        # Verify that the user cannot access the member page
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("invitedmember", kwargs={"pk": 1}), follow=True)
+        # Make sure the page is denied
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_cannot_view_invitedmember_page_when_user_has_no_permission(self):
+        """Test that user cannot access the invitedmember page without proper permission"""
+
+        # give user base permissions
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        # Verify that the user cannot access the member page
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("invitedmember", kwargs={"pk": 1}), follow=True)
+        # Make sure the page is denied
+        self.assertEqual(response.status_code, 403)
+    
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_can_view_invitedmember_page_when_user_has_view_members(self):
+        """Test that user can access the invitedmember page with view_members permission"""
+
+        # Arrange
+        # give user permissions to view members
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
+            email="info@example.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        # Verify the page can be accessed
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("invitedmember", kwargs={"pk": portfolio_invitation.pk}), follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        # Assert text within the page is correct
+        self.assertContains(response, "Invited")
+        self.assertContains(response, portfolio_invitation.email)
+        self.assertContains(response, "Basic access")
+        self.assertContains(response, "No access")
+        self.assertContains(response, "View all members")
+        self.assertContains(response, "This member does not manage any domains.")
+
+        # Assert buttons and links within the page are correct
+        self.assertNotContains(response, "usa-button--more-actions") # test that 3 dot is not present
+        self.assertNotContains(response, "sprite.svg#edit") # test that Edit link is not present
+        self.assertNotContains(response, "sprite.svg#settings") # test that Manage link is not present
+        self.assertContains(response, "sprite.svg#visibility") # test that View link is present
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_can_view_invitedmember_page_when_user_has_edit_members(self):
+        """Test that user can access the invitedmember page with edit_members permission"""
+
+        # Arrange
+        # give user permissions to view AND manage members
+        permission_obj, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
+            email="info@example.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Verify the page can be accessed
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("invitedmember", kwargs={"pk": portfolio_invitation.pk}), follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        # Assert text within the page is correct
+        self.assertContains(response, "Invited")
+        self.assertContains(response, portfolio_invitation.email)
+        self.assertContains(response, "Admin access")
+        self.assertContains(response, "View all requests plus create requests")
+        self.assertContains(response, "View all members plus manage members")
+        self.assertContains(response, "This member does not manage any domains. To assign this member a domain, click \"Manage\"")
+
+        # Assert buttons and links within the page are correct
+        self.assertContains(response, "usa-button--more-actions") # test that 3 dot is present
+        self.assertContains(response, "sprite.svg#edit") # test that Edit link is present
+        self.assertContains(response, "sprite.svg#settings") # test that Manage link is present
+        self.assertNotContains(response, "sprite.svg#visibility") # test that View link is not present
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)

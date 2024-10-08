@@ -2,5 +2,5 @@
 {% if domain_count > 0 %}
     <p class="margin-top-0">{{domain_count}}</p>
 {% else %}
-    <p class="margin-top-0">This member does not manage any domains.{% if editable %} To assign this member a domain, click "Manage".{% endif %}</p>
+    <p class="margin-top-0">This member does not manage any domains.{% if manage_button %} To assign this member a domain, click "Manage".{% endif %}</p>
 {% endif %}
