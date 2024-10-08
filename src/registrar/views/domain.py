@@ -785,7 +785,7 @@ class DomainAddUserView(DomainFormBaseView):
     def _is_member_of_different_org(self, email, requestor, requested_user):
         """Verifies if an email belongs to a different organization as a member or invited member."""
         # Check if user is a already member of a different organization than the requestor's org
-        requestor_org = UserPortfolioPermission.objects.get(user=requestor).portfolio
+        requestor_org = UserPortfolioPermission.objects.filter(user=requestor).first().portfolio
         existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
         existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
 
