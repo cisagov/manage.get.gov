@@ -515,7 +515,7 @@ class PortfolioMemberPermission(PortfolioBasePermission):
             return False
 
         return super().has_permission()
-    
+
 
 class PortfolioMemberEditPermission(PortfolioBasePermission):
     """Permission mixin that allows access to portfolio member pages if user
@@ -551,7 +551,7 @@ class PortfolioInvitedMemberPermission(PortfolioBasePermission):
             return False
 
         return super().has_permission()
-    
+
 
 class PortfolioInvitedMemberEditPermission(PortfolioBasePermission):
     """Permission mixin that allows access to portfolio invited member pages if user

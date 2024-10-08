@@ -109,7 +109,14 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         self.assertEqual(len(data["members"]), 5)
 
         # Check member fields
-        expected_emails = {self.user.email, self.user2.email, self.user3.email, self.user4.email, self.user4.email, self.email5}
+        expected_emails = {
+            self.user.email,
+            self.user2.email,
+            self.user3.email,
+            self.user4.email,
+            self.user4.email,
+            self.email5,
+        }
         actual_emails = {member["email"] for member in data["members"]}
         self.assertEqual(expected_emails, actual_emails)
 

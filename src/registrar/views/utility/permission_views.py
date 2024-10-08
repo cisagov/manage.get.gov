@@ -288,7 +288,9 @@ class PortfolioInvitedMemberPermissionView(PortfolioInvitedMemberPermission, Por
     """
 
 
-class PortfolioInvitedMemberEditPermissionView(PortfolioInvitedMemberEditPermission, PortfolioBasePermissionView, abc.ABC):
+class PortfolioInvitedMemberEditPermissionView(
+    PortfolioInvitedMemberEditPermission, PortfolioBasePermissionView, abc.ABC
+):
     """Abstract base view for portfolio member edit views that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify

@@ -2,14 +2,11 @@ from datetime import datetime
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
 from django.urls import reverse
 
 from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
-from operator import itemgetter
 
 
 @login_required
@@ -18,21 +15,25 @@ def get_portfolio_members_json(request):
     get all members that are associated with the given portfolio"""
     portfolio = request.GET.get("portfolio")
 
-    permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio).select_related("user").values_list("pk", "user__first_name", "user__last_name", "user__email", "user__last_login", "roles")
+    permissions = (
+        UserPortfolioPermission.objects.filter(portfolio=portfolio)
+        .select_related("user")
+        .values_list("pk", "user__first_name", "user__last_name", "user__email", "user__last_login", "roles")
+    )
     invitations = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
-        'pk', 'email', 'roles', 'additional_permissions', 'status'
+        "pk", "email", "roles", "additional_permissions", "status"
     )
 
     # Convert the permissions queryset into a list of dictionaries
     permission_list = [
         {
-            'id': perm[0],
-            'first_name': perm[1],
-            'last_name': perm[2],
-            'email': perm[3],
-            'last_active': perm[4],
-            'roles': perm[5],
-            'source': 'permission'  # Mark the source as permissions
+            "id": perm[0],
+            "first_name": perm[1],
+            "last_name": perm[2],
+            "email": perm[3],
+            "last_active": perm[4],
+            "roles": perm[5],
+            "source": "permission",  # Mark the source as permissions
         }
         for perm in permissions
     ]
@@ -40,15 +41,15 @@ def get_portfolio_members_json(request):
     # Convert the invitations queryset into a list of dictionaries
     invitation_list = [
         {
-            'id': invite[0],
-            'first_name': None,  # No first name in invitations
-            'last_name': None,   # No last name in invitations
-            'email': invite[1],
-            'roles': invite[2],
-            'additional_permissions': invite[3],
-            'status': invite[4],
-            'last_active': 'Invited',
-            'source': 'invitation'  # Mark the source as invitations
+            "id": invite[0],
+            "first_name": None,  # No first name in invitations
+            "last_name": None,  # No last name in invitations
+            "email": invite[1],
+            "roles": invite[2],
+            "additional_permissions": invite[3],
+            "status": invite[4],
+            "last_active": "Invited",
+            "source": "invitation",  # Mark the source as invitations
         }
         for invite in invitations
     ]
@@ -64,12 +65,8 @@ def get_portfolio_members_json(request):
     paginator = Paginator(combined_list, 10)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
-    
-    
-    members = [
-        serialize_members(request, portfolio, item, request.user)
-        for item in page_obj.object_list
-    ]
+
+    members = [serialize_members(request, portfolio, item, request.user) for item in page_obj.object_list]
 
     return JsonResponse(
         {
@@ -90,12 +87,13 @@ def apply_search(data_list, request):
     if search_term:
         # Filter the list based on the search term (case-insensitive)
         data_list = [
-            item for item in data_list
-            if search_term in (item.get('first_name', '') or '').lower()
-            or search_term in (item.get('last_name', '') or '').lower()
-            or search_term in (item.get('email', '') or '').lower()
+            item
+            for item in data_list
+            if search_term in (item.get("first_name", "") or "").lower()
+            or search_term in (item.get("last_name", "") or "").lower()
+            or search_term in (item.get("email", "") or "").lower()
         ]
-    
+
     return data_list
 
 
@@ -115,11 +113,11 @@ def apply_sorting(data_list, request):
             # Second element: the actual value to sort by
             if value is None:
                 return (2, value)  # Position None last
-            if value == 'Invited':
+            if value == "Invited":
                 return (1, value)  # Position 'Invited' before None but after valid datetimes
             if isinstance(value, datetime):
                 return (0, value)  # Position valid datetime values first
-        
+
         # Default case: return the value as is for comparison
         return value
 
@@ -144,22 +142,22 @@ def serialize_members(request, portfolio, item, user):
 
     # ------- USER STATUSES
     is_admin = False
-    if item['roles']:
-        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in item['roles']
+    if item["roles"]:
+        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in item["roles"]
 
-    action_url = '#'
-    if item['source'] == 'permission':
-        action_url = reverse("member", kwargs={"pk": item['id']})
-    elif item['source'] == 'invitation':
-        action_url = reverse("invitedmember", kwargs={"pk": item['id']})
+    action_url = "#"
+    if item["source"] == "permission":
+        action_url = reverse("member", kwargs={"pk": item["id"]})
+    elif item["source"] == "invitation":
+        action_url = reverse("invitedmember", kwargs={"pk": item["id"]})
 
     # ------- SERIALIZE
     member_json = {
-        "id": item['id'],
-        "name": (item['first_name'] or '') + ' ' + (item['last_name'] or ''),
-        "email": item['email'],
+        "id": item["id"],
+        "name": (item["first_name"] or "") + " " + (item["last_name"] or ""),
+        "email": item["email"],
         "is_admin": is_admin,
-        "last_active": item['last_active'],
+        "last_active": item["last_active"],
         "action_url": action_url,
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),

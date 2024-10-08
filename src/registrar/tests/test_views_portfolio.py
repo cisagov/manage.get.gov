@@ -885,7 +885,7 @@ class TestPortfolio(WebTest):
         response = self.client.get(reverse("member", kwargs={"pk": 1}), follow=True)
         # Make sure the page is denied
         self.assertEqual(response.status_code, 403)
-    
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
@@ -917,10 +917,10 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "This member does not manage any domains.")
 
         # Assert buttons and links within the page are correct
-        self.assertNotContains(response, "usa-button--more-actions") # test that 3 dot is not present
-        self.assertNotContains(response, "sprite.svg#edit") # test that Edit link is not present
-        self.assertNotContains(response, "sprite.svg#settings") # test that Manage link is not present
-        self.assertContains(response, "sprite.svg#visibility") # test that View link is present
+        self.assertNotContains(response, "usa-button--more-actions")  # test that 3 dot is not present
+        self.assertNotContains(response, "sprite.svg#edit")  # test that Edit link is not present
+        self.assertNotContains(response, "sprite.svg#settings")  # test that Manage link is not present
+        self.assertContains(response, "sprite.svg#visibility")  # test that View link is present
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -950,13 +950,15 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Admin access")
         self.assertContains(response, "View all requests plus create requests")
         self.assertContains(response, "View all members plus manage members")
-        self.assertContains(response, "This member does not manage any domains. To assign this member a domain, click \"Manage\"")
+        self.assertContains(
+            response, 'This member does not manage any domains. To assign this member a domain, click "Manage"'
+        )
 
         # Assert buttons and links within the page are correct
-        self.assertContains(response, "usa-button--more-actions") # test that 3 dot is present
-        self.assertContains(response, "sprite.svg#edit") # test that Edit link is present
-        self.assertContains(response, "sprite.svg#settings") # test that Manage link is present
-        self.assertNotContains(response, "sprite.svg#visibility") # test that View link is not present
+        self.assertContains(response, "usa-button--more-actions")  # test that 3 dot is present
+        self.assertContains(response, "sprite.svg#edit")  # test that Edit link is present
+        self.assertContains(response, "sprite.svg#settings")  # test that Manage link is present
+        self.assertNotContains(response, "sprite.svg#visibility")  # test that View link is not present
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -987,7 +989,7 @@ class TestPortfolio(WebTest):
         response = self.client.get(reverse("invitedmember", kwargs={"pk": 1}), follow=True)
         # Make sure the page is denied
         self.assertEqual(response.status_code, 403)
-    
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
@@ -1027,10 +1029,10 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "This member does not manage any domains.")
 
         # Assert buttons and links within the page are correct
-        self.assertNotContains(response, "usa-button--more-actions") # test that 3 dot is not present
-        self.assertNotContains(response, "sprite.svg#edit") # test that Edit link is not present
-        self.assertNotContains(response, "sprite.svg#settings") # test that Manage link is not present
-        self.assertContains(response, "sprite.svg#visibility") # test that View link is present
+        self.assertNotContains(response, "usa-button--more-actions")  # test that 3 dot is not present
+        self.assertNotContains(response, "sprite.svg#edit")  # test that Edit link is not present
+        self.assertNotContains(response, "sprite.svg#settings")  # test that Manage link is not present
+        self.assertContains(response, "sprite.svg#visibility")  # test that View link is present
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -1068,13 +1070,15 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Admin access")
         self.assertContains(response, "View all requests plus create requests")
         self.assertContains(response, "View all members plus manage members")
-        self.assertContains(response, "This member does not manage any domains. To assign this member a domain, click \"Manage\"")
+        self.assertContains(
+            response, 'This member does not manage any domains. To assign this member a domain, click "Manage"'
+        )
 
         # Assert buttons and links within the page are correct
-        self.assertContains(response, "usa-button--more-actions") # test that 3 dot is present
-        self.assertContains(response, "sprite.svg#edit") # test that Edit link is present
-        self.assertContains(response, "sprite.svg#settings") # test that Manage link is present
-        self.assertNotContains(response, "sprite.svg#visibility") # test that View link is not present
+        self.assertContains(response, "usa-button--more-actions")  # test that 3 dot is present
+        self.assertContains(response, "sprite.svg#edit")  # test that Edit link is present
+        self.assertContains(response, "sprite.svg#settings")  # test that Manage link is present
+        self.assertNotContains(response, "sprite.svg#visibility")  # test that View link is not present
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)

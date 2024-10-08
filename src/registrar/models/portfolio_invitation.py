@@ -72,11 +72,10 @@ class PortfolioInvitation(TimeStampedModel):
         """Return the count of domain invitations managed by the invited user for this portfolio."""
         # Filter the UserDomainRole model to get domains where the user has a manager role
         managed_domains = DomainInvitation.objects.filter(
-            email=self.email,
-            domain__domain_info__portfolio=self.portfolio
+            email=self.email, domain__domain_info__portfolio=self.portfolio
         ).count()
         return managed_domains
-    
+
     def get_portfolio_permissions(self):
         """
         Retrieve the permissions for the user's portfolio roles from the invite.

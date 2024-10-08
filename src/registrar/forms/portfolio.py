@@ -99,7 +99,7 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         cleaned_data = super().clean()
         cleaned_data.pop("full_name", None)
         return cleaned_data
-    
+
 
 class PortfolioMemberForm(forms.ModelForm):
     """
@@ -108,18 +108,18 @@ class PortfolioMemberForm(forms.ModelForm):
 
     roles = forms.MultipleChoiceField(
         choices=UserPortfolioRoleChoices.choices,
-        widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
         required=False,
         label="Roles",
     )
 
     additional_permissions = forms.MultipleChoiceField(
         choices=UserPortfolioPermissionChoices.choices,
-        widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
         required=False,
         label="Additional Permissions",
     )
-    
+
     class Meta:
         model = UserPortfolioPermission
         fields = [
@@ -135,22 +135,21 @@ class PortfolioInvitedMemberForm(forms.ModelForm):
 
     roles = forms.MultipleChoiceField(
         choices=UserPortfolioRoleChoices.choices,
-        widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
         required=False,
         label="Roles",
     )
 
     additional_permissions = forms.MultipleChoiceField(
         choices=UserPortfolioPermissionChoices.choices,
-        widget=forms.SelectMultiple(attrs={'class': 'usa-select'}),
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
         required=False,
         label="Additional Permissions",
     )
-    
+
     class Meta:
         model = PortfolioInvitation
         fields = [
             "roles",
             "additional_permissions",
         ]
-

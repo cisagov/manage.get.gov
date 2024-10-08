@@ -1284,8 +1284,12 @@ class TestPortfolioInvitations(TestCase):
         domain_in_portfolio, _ = Domain.objects.get_or_create(name="domain_in_portfolio.gov", state=Domain.State.READY)
         DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio, portfolio=self.portfolio)
         # domain_in_portfolio_and_invited should be included in the count
-        domain_in_portfolio_and_invited, _ = Domain.objects.get_or_create(name="domain_in_portfolio_and_invited.gov", state=Domain.State.READY)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio_and_invited, portfolio=self.portfolio)
+        domain_in_portfolio_and_invited, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_and_invited, portfolio=self.portfolio
+        )
         DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_and_invited)
         # domain_invited should not be included in the count
         domain_invited, _ = Domain.objects.get_or_create(name="domain_invited.gov", state=Domain.State.READY)
@@ -1302,8 +1306,12 @@ class TestPortfolioInvitations(TestCase):
         # Arrange
         test_permission_list = set()
         # add the arrays that are defined in UserPortfolioPermission for member and admin
-        test_permission_list.update(UserPortfolioPermission.PORTFOLIO_ROLE_PERMISSIONS.get(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, []))
-        test_permission_list.update(UserPortfolioPermission.PORTFOLIO_ROLE_PERMISSIONS.get(UserPortfolioRoleChoices.ORGANIZATION_ADMIN, []))
+        test_permission_list.update(
+            UserPortfolioPermission.PORTFOLIO_ROLE_PERMISSIONS.get(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, [])
+        )
+        test_permission_list.update(
+            UserPortfolioPermission.PORTFOLIO_ROLE_PERMISSIONS.get(UserPortfolioRoleChoices.ORGANIZATION_ADMIN, [])
+        )
         # add the permissions that are added to the invitation as additional_permissions
         test_permission_list.update([self.portfolio_permission_1, self.portfolio_permission_2])
         perm_list = list(test_permission_list)
@@ -1393,9 +1401,15 @@ class TestUserPortfolioPermission(TestCase):
         domain_in_portfolio, _ = Domain.objects.get_or_create(name="domain_in_portfolio.gov", state=Domain.State.READY)
         DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio, portfolio=portfolio)
         # domain_in_portfolio_and_managed should be included in the count
-        domain_in_portfolio_and_managed, _ = Domain.objects.get_or_create(name="domain_in_portfolio_and_managed.gov", state=Domain.State.READY)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio_and_managed, portfolio=portfolio)
-        UserDomainRole.objects.get_or_create(user=test_user, domain=domain_in_portfolio_and_managed, role=UserDomainRole.Roles.MANAGER)
+        domain_in_portfolio_and_managed, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_managed.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_and_managed, portfolio=portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=test_user, domain=domain_in_portfolio_and_managed, role=UserDomainRole.Roles.MANAGER
+        )
         # domain_managed should not be included in the count
         domain_managed, _ = Domain.objects.get_or_create(name="domain_managed.gov", state=Domain.State.READY)
         DomainInformation.objects.get_or_create(creator=self.user, domain=domain_managed)
