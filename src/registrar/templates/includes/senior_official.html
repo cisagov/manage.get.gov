@@ -21,7 +21,9 @@
         {% input_with_errors form.first_name %}
         {% input_with_errors form.last_name %}
         {% input_with_errors form.title %}
-        {% input_with_errors form.email %}
+        {% with sublabel_text="Enter an email address in the required format, like name@example.com." %}
+            {% input_with_errors form.email %}
+        {% endwith %}
         <button type="submit" class="usa-button">Save</button>
     </form>
 {% elif not form.full_name.value and not form.title.value and not form.email.value %}
