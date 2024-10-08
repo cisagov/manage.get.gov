@@ -2017,7 +2017,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if obj_is_not_approved and not obj.domain_is_not_active():
             # REDUNDANT CHECK / ERROR SCREEN AVOIDANCE:
             # This action (moving a request from approved to
-            # another status when the domain is already active (READY),
+            # another status) when the domain is already active (READY),
             # would still not go through even without this check as the rules are
             # duplicated in the model and the error is raised from the model.
             # This avoids an ugly Django error screen.
