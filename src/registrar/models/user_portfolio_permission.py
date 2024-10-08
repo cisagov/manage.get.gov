@@ -5,12 +5,6 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 
-# ---Logger
-import logging
-from venv import logger
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-logger = logging.getLogger(__name__)
-
 
 class UserPortfolioPermission(TimeStampedModel):
     """This is a linking table that connects a user with a role on a portfolio."""
@@ -115,11 +109,8 @@ class UserPortfolioPermission(TimeStampedModel):
 
         # Check if a user is set without accessing the related object.
         has_user = bool(self.user_id)
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"***CLEANING***") 
         if has_user:
             existing_permission_pks = UserPortfolioPermission.objects.filter(user=self.user).values_list("pk", flat=True)
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"existing_permission_pks: {existing_permission_pks}") 
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"self pk: {self.pk}") 
             if not flag_is_active_for_user(self.user, "multiple_portfolios") and existing_permission_pks.exists() and not self.pk in existing_permission_pks:
                 raise ValidationError(
                     "This user is already assigned to a portfolio. "
