@@ -18,7 +18,7 @@ from registrar.models import (
     UserPortfolioPermission,
     AllowedEmail,
 )
-
+import boto3_mocking
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.transition_domain import TransitionDomain
@@ -26,12 +26,68 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
 
 from .common import (
+    MockSESClient,
     completed_domain_request,
     create_test_user,
 )
 from waffle.testutils import override_flag
 
 from api.tests.common import less_console_noise_decorator
+
+
+class TestDomainInformation(TestCase):
+    """Test the DomainInformation model, when approved or otherwise"""
+
+    def setUp(self):
+        super().setUp()
+        self.mock_client = MockSESClient()
+
+    def tearDown(self):
+        super().tearDown()
+        self.mock_client.EMAILS_SENT.clear()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        User.objects.all().delete()
+        DraftDomain.objects.all().delete()
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_approval_creates_info(self):
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
+        user, _ = User.objects.get_or_create()
+        investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
+        domain_request = DomainRequest.objects.create(
+            creator=user, requested_domain=draft_domain, notes="test notes", investigator=investigator
+        )
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            # skip using the submit method
+            domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
+            domain_request.approve()
+
+            # should be an information present for this domain
+            domain = Domain.objects.get(name="igorville.gov")
+            domain_information = DomainInformation.objects.filter(domain=domain)
+            self.assertTrue(domain_information.exists())
+
+            # Test that both objects are what we expect
+            current_domain_information = domain_information.get().__dict__
+            expected_domain_information = DomainInformation(
+                creator=user,
+                domain=domain,
+                notes="test notes",
+                domain_request=domain_request,
+                federal_agency=FederalAgency.objects.get(agency="Non-Federal Agency"),
+            ).__dict__
+
+            # Test the two records for consistency
+            self.assertEqual(self.clean_dict(current_domain_information), self.clean_dict(expected_domain_information))
+
+    def clean_dict(self, dict_obj):
+        """Cleans dynamic fields in a dictionary"""
+        bad_fields = ["_state", "created_at", "id", "updated_at"]
+        return {k: v for k, v in dict_obj.items() if k not in bad_fields}
 
 
 class TestDomainInvitations(TestCase):
