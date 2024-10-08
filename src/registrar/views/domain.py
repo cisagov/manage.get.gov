@@ -917,6 +917,7 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
+
         try:
             UserDomainRole.objects.create(
                 user=requested_user,
