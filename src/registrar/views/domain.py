@@ -823,10 +823,6 @@ class DomainAddUserView(DomainFormBaseView):
             email, requestor, requested_user
         ):
             add_success = False
-            messages.error(
-                self.request,
-                "That email is already a member of another .gov organization.",
-            )
             raise OutsideOrgMemberError
 
         # Check to see if an invite has already been sent
@@ -880,6 +876,18 @@ class DomainAddUserView(DomainFormBaseView):
             DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         return redirect(self.get_success_url())
 
+    def _create_user_domain_role(self, requested_user, requested_email, domain, role):
+        """Assign a user to a domain as a specified role"""
+        try:
+            UserDomainRole.objects.create(
+                user=requested_user,
+                domain=self.object,
+                role=UserDomainRole.Roles.MANAGER,
+            )
+            messages.success(self.request, f"Added user {requested_email}.")
+        except IntegrityError:
+            messages.warning(self.request, f"{requested_email} is already a manager for this domain")
+
     def form_valid(self, form):
         """Add the specified user on this domain.
         Throws EmailSendingError."""
@@ -890,7 +898,8 @@ class DomainAddUserView(DomainFormBaseView):
             requested_user = User.objects.get(email=requested_email)
         except User.DoesNotExist:
             # no matching user, go make an invitation
-            return self._make_invitation(requested_email, requestor)
+            requested_user = self._make_invitation(requested_email, requestor)
+            self._create_user_domain_role(requested_user, requested_email, self.object, UserDomainRole.Roles.MANAGER)
         else:
             # if user already exists then just send an email
             try:
@@ -910,6 +919,10 @@ class DomainAddUserView(DomainFormBaseView):
                     self.object,
                     exc_info=True,
                 )
+                messages.error(
+                    self.request,
+                    "That email is already a member of another .gov organization.",
+                )
             except Exception:
                 logger.warn(
                     "Could not send email invitation (Other Exception)",
@@ -917,17 +930,10 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
-
-        try:
-            UserDomainRole.objects.create(
-                user=requested_user,
-                domain=self.object,
-                role=UserDomainRole.Roles.MANAGER,
-            )
-        except IntegrityError:
-            messages.warning(self.request, f"{requested_email} is already a manager for this domain")
-        else:
-            messages.success(self.request, f"Added user {requested_email}.")
+            else:
+                self._create_user_domain_role(
+                    requested_user, requested_email, self.object, UserDomainRole.Roles.MANAGER
+                )
         return redirect(self.get_success_url())
 
 
