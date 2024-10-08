@@ -906,6 +906,9 @@ class DomainAddUserView(DomainFormBaseView):
                 self._send_domain_invitation_email(
                     requested_email, requestor, requested_user=requested_user, add_success=False
                 )
+                self._create_user_domain_role(
+                    requested_user, requested_email, self.object, UserDomainRole.Roles.MANAGER
+                )
             except EmailSendingError:
                 logger.warn(
                     "Could not send email invitation (EmailSendingError)",
@@ -930,10 +933,6 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
-            else:
-                self._create_user_domain_role(
-                    requested_user, requested_email, self.object, UserDomainRole.Roles.MANAGER
-                )
         return redirect(self.get_success_url())
 
 
